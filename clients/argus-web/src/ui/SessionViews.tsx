@@ -16,6 +16,7 @@ import {
   Toggle,
 } from "@argus/peacock";
 import type { RemoteAgentStatus, RemoteSession } from "../lib/protocol";
+import type { AgentRef } from "../routing/open";
 import { useGitStore } from "../stores/git";
 import { useProjectsStore } from "../stores/projects";
 import {
@@ -44,7 +45,7 @@ export function SessionGroup({
   agents: RemoteAgentStatus[];
   repoRoot: string;
   hasControl: boolean;
-  onOpenAgent: (agentId: string, label: string) => void;
+  onOpenAgent: (agent: AgentRef) => void;
   onOpenChanges: (sessionId: string, label: string) => void;
   onSpawn: (sessionId: string) => void;
   onChanged: () => void;
@@ -209,7 +210,7 @@ export function SessionGroup({
             role="button"
             tabIndex={0}
             style={{ cursor: "pointer" }}
-            onClick={() => onOpenAgent(a.agent_id, name)}
+            onClick={() => onOpenAgent(a)}
           />
         );
       })}

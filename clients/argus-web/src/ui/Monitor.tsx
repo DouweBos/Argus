@@ -1,7 +1,7 @@
 /**
- * The paired-device shell. Narrow screens show one view at a time (the top of
- * the history stack); from tablet width up the master and detail panes sit side
- * by side, so picking an agent leaves the project list on screen.
+ * The paired-device shell. The URL names one screen. Narrow screens show just
+ * that; from tablet width up the master and detail panes sit side by side, so
+ * an agent opens next to its project rather than over it.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -21,20 +21,23 @@ import {
   setNotificationDecider,
   startServiceWorkerRouting,
 } from "../lib/webpush";
+import { openAgentById } from "../routing/open";
+import { appNavigate, navigateBack, stripQuery } from "../routing/router";
+import { paneFor, type Screen } from "../routing/screens";
+import { useAppLocation } from "../routing/useAppLocation";
 import { useConnectionStore } from "../stores/connection";
 import { useDevicesStore } from "../stores/devices";
 import { usePromptsStore } from "../stores/prompts";
 import { usePushStore } from "../stores/push";
 import { DetailPane, MasterPane, SinglePane } from "./MonitorPanes";
+import { parentOf, useMasterScreen } from "./panes";
 import { loadSidebarWidth, saveSidebarWidth } from "./sidebarWidth";
-import { useHistoryView } from "./useHistoryView";
 import { useIsWide } from "./useIsWide";
 import { useKeyboardShortcuts, WEB_SHORTCUTS } from "./useKeyboardShortcuts";
 import { useViewportInset } from "./useViewportInset";
 
 export function Monitor() {
-  const { view, masterView, detailView, push, back, canGoBack } =
-    useHistoryView();
+  const { screen } = useAppLocation();
   const isWide = useIsWide();
   const connection = useConnectionStore((s) => s.connection);
   const refreshDevices = useDevicesStore((s) => s.refreshDevices);
@@ -42,6 +45,17 @@ export function Monitor() {
   const setPushEnabled = usePushStore((s) => s.setPushEnabled);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const master = useMasterScreen(screen);
+  const detail = paneFor(screen) === "detail" ? screen : null;
+  // Browsing the master pane while a detail is open moves the pane alone:
+  // the URL keeps naming what is open on the right.
+  const [masterOverride, setMasterOverride] = useState<Screen | null>(null);
+  useEffect(() => setMasterOverride(null), [screen]);
+  const goMaster = useCallback(
+    (next: Screen) => (detail ? setMasterOverride(next) : appNavigate(next)),
+    [detail],
+  );
+  const back = useCallback(() => navigateBack(parentOf(screen)), [screen]);
 
   useViewportInset();
   useKeyboardShortcuts({
@@ -54,7 +68,7 @@ export function Monitor() {
 
   // Fetched once, not polled: this only decides where the device button in an
   // agent's header goes.
-  const showingAgent = view.name === "agent" || detailView?.name === "agent";
+  const showingAgent = screen.name === "agent";
   useEffect(() => {
     if (connection === "ready" && showingAgent) {
       void refreshDevices({ background: true }).catch(() => {});
@@ -64,9 +78,7 @@ export function Monitor() {
   // Let a notification click navigate to its agent — from this tab, or
   // forwarded by the service worker when a background push is tapped.
   useEffect(() => {
-    setNotificationOpener((agentId, agentLabel) =>
-      push({ name: "agent", agentId, agentLabel }),
-    );
+    setNotificationOpener((agentId) => void openAgentById(agentId));
     setNotificationDecider((agentId, toolUseId, decision) => {
       void usePromptsStore.getState().decidePrompt(agentId, toolUseId, decision);
     });
@@ -77,7 +89,7 @@ export function Monitor() {
       setNotificationDecider(null);
       stopRouting();
     };
-  }, [push]);
+  }, []);
 
   // Ask for notification permission once the channel is up (desktop/Android;
   // iOS Safari needs the Settings button, which provides a user gesture).
@@ -105,18 +117,14 @@ export function Monitor() {
     }
     const decision = params.get("decide");
     const toolUseId = params.get("tool");
-    window.history.replaceState(
-      window.history.state,
-      "",
-      window.location.pathname,
-    );
+    stripQuery("agent", "decide", "tool");
     if ((decision === "allow" || decision === "deny") && toolUseId) {
       void usePromptsStore.getState().decidePrompt(agentId, toolUseId, decision);
 
       return;
     }
-    push({ name: "agent", agentId, agentLabel: "Agent" });
-  }, [push]);
+    void openAgentById(agentId);
+  }, []);
 
   const offlineBanner = connection === "offline" && (
     <Banner tone="warning">
@@ -129,19 +137,13 @@ export function Monitor() {
   if (!isWide) {
     return (
       <div className="aw-shell">
-        <SinglePane
-          banner={offlineBanner}
-          canGoBack={canGoBack}
-          onBack={back}
-          push={push}
-          view={view}
+        <SinglePane banner={offlineBanner} onBack={back} screen={screen} />
+        <ShortcutCheatsheet
+          open={showShortcuts}
+          scope="session"
+          shortcuts={WEB_SHORTCUTS}
+          onClose={() => setShowShortcuts(false)}
         />
-      <ShortcutCheatsheet
-        open={showShortcuts}
-        scope="session"
-        shortcuts={WEB_SHORTCUTS}
-        onClose={() => setShowShortcuts(false)}
-      />
       </div>
     );
   }
@@ -155,11 +157,15 @@ export function Monitor() {
         minSidebarWidth={240}
         onSidebarResize={onResize}
         sidebar={
-          <MasterPane banner={offlineBanner} push={push} view={masterView} />
+          <MasterPane
+            banner={offlineBanner}
+            goMaster={goMaster}
+            screen={masterOverride ?? master}
+          />
         }
       >
-        {detailView ? (
-          <DetailPane onClose={back} push={push} view={detailView} />
+        {detail ? (
+          <DetailPane onClose={() => appNavigate(master)} screen={detail} />
         ) : (
           <div className="aw-pane">
             <div className="aw-main aw-empty-detail">

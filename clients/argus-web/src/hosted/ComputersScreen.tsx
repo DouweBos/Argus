@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AccountMemberList,
   Banner,
@@ -9,7 +9,8 @@ import { useAccountStore } from "../account/accountStore";
 import { type AccountComputer, presenceLabel } from "../account/directory";
 import { AccountFields } from "./AccountFields";
 import { HostedFrame } from "./HostedFrame";
-import { openComputer } from "./openComputer";
+import { appNavigate, currentLocation } from "../routing/router";
+import { HOME } from "../routing/screens";
 
 /** The directory moves slowly; a visible list re-reads it this often (as the apps do). */
 const DIRECTORY_REFRESH_MS = 60_000;
@@ -42,35 +43,39 @@ function useDirectoryRefresh(refresh: () => Promise<void>): void {
   }, [refresh]);
 }
 
-/** Every computer on the account; picking one opens it in the monitor. */
+/** Reopening the last computer happens once per page load, so Back can leave it. */
+let reopened = false;
+
+/** Every computer on the account; picking one opens it (`?host=`) in the monitor. */
 export function ComputersScreen() {
   const computers = useAccountStore((s) => s.computers);
   const lastHostId = useAccountStore((s) => s.lastHostId);
   const error = useAccountStore((s) => s.error);
   const refresh = useAccountStore((s) => s.refresh);
   const [showAccount, setShowAccount] = useState(false);
-  const reopened = useRef(false);
   const now = Date.now();
 
   useDirectoryRefresh(useCallback(() => refresh(), [refresh]));
 
-  // Back on the computer used last time, once per visit.
+  // Back on the computer used last time, once per visit, on whatever path
+  // the visit opened (a link without `?host=`).
   useEffect(() => {
-    if (reopened.current || !lastHostId) {
+    if (reopened || !lastHostId) {
       return;
     }
     const last = computers.find((c) => c.id === lastHostId);
     if (last && last.routes.length > 0) {
-      reopened.current = true;
-      openComputer(last);
+      reopened = true;
+      appNavigate(currentLocation().screen, {
+        hostId: last.id,
+        replace: true,
+      });
     }
   }, [computers, lastHostId]);
 
   const pick = (id: string) => {
-    const computer = computers.find((c) => c.id === id);
-    if (computer) {
-      openComputer(computer);
-    }
+    reopened = true;
+    appNavigate(HOME, { hostId: id });
   };
 
   return (

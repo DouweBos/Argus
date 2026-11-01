@@ -16,6 +16,7 @@ import {
   Spinner,
 } from "@argus/peacock";
 import type { RemoteAgentStatus } from "../lib/protocol";
+import type { AgentRef } from "../routing/open";
 import { useAgentsStore } from "../stores/agents";
 import { useConnectionStore } from "../stores/connection";
 import { useProjectsStore } from "../stores/projects";
@@ -48,7 +49,7 @@ function toTildePath(absPath: string): string {
 function RecentAgents({
   onOpenAgent,
 }: {
-  onOpenAgent: (agentId: string, label: string) => void;
+  onOpenAgent: (agent: AgentRef) => void;
 }) {
   const recentAgents = useProjectsStore((s) => s.recentAgents);
   const recent = [...recentAgents]
@@ -76,7 +77,7 @@ function RecentAgents({
             role="button"
             tabIndex={0}
             style={{ cursor: "pointer" }}
-            onClick={() => onOpenAgent(a.agent_id, name)}
+            onClick={() => onOpenAgent(a)}
           />
         );
       })}
@@ -88,8 +89,8 @@ export function Projects({
   onOpen,
   onOpenAgent,
 }: {
-  onOpen: (repoRoot: string, name: string) => void;
-  onOpenAgent: (agentId: string, label: string) => void;
+  onOpen: (repoRoot: string) => void;
+  onOpenAgent: (agent: AgentRef) => void;
 }) {
   const connection = useConnectionStore((s) => s.connection);
   const projects = useProjectsStore((s) => s.projects);
@@ -149,7 +150,7 @@ export function Projects({
             <span className="aw-truncate">{toTildePath(p.repo_root)}</span>
           }
           endContent={<Icons.ChevronRightIcon size={13} />}
-          onHeaderClick={() => onOpen(p.repo_root, p.name)}
+          onHeaderClick={() => onOpen(p.repo_root)}
         />
       ))}
     </div>
@@ -162,7 +163,7 @@ export function Project({
   onOpenChanges,
 }: {
   repoRoot: string;
-  onOpenAgent: (agentId: string, label: string) => void;
+  onOpenAgent: (agent: AgentRef) => void;
   onOpenChanges: (sessionId: string, label: string) => void;
 }) {
   const connection = useConnectionStore((s) => s.connection);
@@ -184,12 +185,7 @@ export function Project({
   const spawn = useCallback(
     (sessionId: string) => {
       spawnAgent(sessionId)
-        .then((a) =>
-          onOpenAgent(
-            a.agent_id,
-            a.title?.trim() || `Agent ${a.agent_id.slice(0, 8)}`,
-          ),
-        )
+        .then((a) => onOpenAgent(a))
         .catch(() => {});
     },
     [spawnAgent, onOpenAgent],

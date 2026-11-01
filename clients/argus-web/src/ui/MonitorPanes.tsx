@@ -1,7 +1,8 @@
 /**
  * The pane bodies behind the monitor shell. A pane is a sticky top bar, a
  * scrolling body and (for an agent) a docked composer — the same three parts
- * whether it is the only pane on a phone or one of two on a tablet.
+ * whether it is the only pane on a phone or one of two on a tablet. Which
+ * screen each pane shows comes from the URL (`routing/`).
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -11,6 +12,13 @@ import {
   SidebarHeader,
   SidebarHeaderAction,
 } from "@argus/peacock";
+import { openAgent } from "../routing/open";
+import { appNavigate } from "../routing/router";
+import {
+  pathForScreen,
+  projectScreen,
+  type Screen,
+} from "../routing/screens";
 import { useAgentsStore } from "../stores/agents";
 import { useConnectionStore } from "../stores/connection";
 import { useDevicesStore } from "../stores/devices";
@@ -20,48 +28,14 @@ import { ChangesView } from "./ChangesView";
 import { ChatInput } from "./ChatInput";
 import { ConnectionBadge } from "./ConnectionBadge";
 import { DevicesView } from "./DevicesView";
-import { DeviceScreen } from "./DeviceScreen";
-import { Project, Projects } from "./ProjectViews";
+import { Projects } from "./ProjectViews";
+import { DeviceRoute, ProjectRoute, SessionRedirect } from "./ScreenRoutes";
+import { useScreenTitle } from "./screenTitle";
 import { Settings } from "./Settings";
 import { useScrollRestore } from "./useScrollRestore";
-import type { View } from "./useHistoryView";
 
-type Push = (view: View) => void;
-
-export function headingFor(view: View): string {
-  switch (view.name) {
-    case "projects":
-      return "Projects";
-    case "project":
-      return view.projectName;
-    case "settings":
-      return "Settings";
-    case "changes":
-      return `Changes · ${view.label}`;
-    case "devices":
-      return "Devices";
-    case "device":
-      return view.deviceName;
-    default:
-      return view.agentLabel;
-  }
-}
-
-/** Identity of the view for scroll memory — same screen, same key. */
-function viewKey(view: View): string {
-  switch (view.name) {
-    case "project":
-      return `project:${view.repoRoot}`;
-    case "agent":
-      return `agent:${view.agentId}`;
-    case "changes":
-      return `changes:${view.sessionId}`;
-    case "device":
-      return `device:${view.deviceId}`;
-    default:
-      return view.name;
-  }
-}
+/** Where master-pane navigation goes: the URL, or the pane alone while a detail is open. */
+type GoMaster = (screen: Screen) => void;
 
 function Pane({
   actions,
@@ -69,19 +43,18 @@ function Pane({
   children,
   dock,
   leading,
-  title,
-  view,
+  screen,
 }: {
   actions?: React.ReactNode;
   banner?: React.ReactNode;
   children: React.ReactNode;
   dock?: React.ReactNode;
   leading: React.ReactNode;
-  title: string;
-  view: View;
+  screen: Screen;
 }) {
   const mainRef = useRef<HTMLDivElement>(null);
-  useScrollRestore(mainRef, viewKey(view), view.name !== "agent");
+  const title = useScreenTitle(screen);
+  useScrollRestore(mainRef, pathForScreen(screen), screen.name !== "agent");
 
   return (
     <div className="aw-pane">
@@ -106,58 +79,62 @@ function Pane({
   );
 }
 
-function ViewBody({ push, view }: { push: Push; view: View }) {
-  switch (view.name) {
+function ScreenBody({
+  goMaster = appNavigate,
+  screen,
+}: {
+  goMaster?: GoMaster;
+  screen: Screen;
+}) {
+  switch (screen.name) {
     case "projects":
       return (
         <Projects
-          onOpen={(repoRoot, projectName) =>
-            push({ name: "project", repoRoot, projectName })
-          }
-          onOpenAgent={(agentId, agentLabel) =>
-            push({ name: "agent", agentId, agentLabel })
-          }
+          onOpen={(repoRoot) => goMaster(projectScreen(repoRoot))}
+          onOpenAgent={(agent) => openAgent(agent)}
         />
       );
     case "project":
       return (
-        <Project
-          repoRoot={view.repoRoot}
-          onOpenAgent={(agentId, agentLabel) =>
-            push({ name: "agent", agentId, agentLabel })
-          }
-          onOpenChanges={(sessionId, label) =>
-            push({ name: "changes", sessionId, label })
+        <ProjectRoute
+          projectKey={screen.projectKey}
+          onOpenAgent={(agent) => openAgent(agent)}
+          onOpenChanges={(sessionId) =>
+            appNavigate({ name: "changes", sessionId, mode: "branch" })
           }
         />
       );
+    case "session":
+      return <SessionRedirect sessionId={screen.sessionId} />;
     case "agent":
-      return <AgentTranscript agentId={view.agentId} />;
+      return <AgentTranscript agentId={screen.agentId} />;
     case "changes":
-      return <ChangesView sessionId={view.sessionId} />;
+      return (
+        <ChangesView
+          sessionId={screen.sessionId}
+          mode={screen.mode}
+          onModeChange={(mode) =>
+            appNavigate({ ...screen, mode }, { replace: true })
+          }
+        />
+      );
     case "devices":
       return (
         <DevicesView
           onOpen={(d) =>
-            push({
+            appNavigate({
               name: "device",
-              deviceId: d.id,
               platform: d.platform,
-              deviceName: d.name,
-              isTv: d.is_tv,
+              deviceKey: d.id,
             })
           }
         />
       );
     case "device":
       return (
-        <DeviceScreen
-          deviceId={view.deviceId}
-          platform={view.platform}
-          isTv={view.isTv}
-        />
+        <DeviceRoute platform={screen.platform} deviceKey={screen.deviceKey} />
       );
-    default:
+    case "settings":
       return <Settings />;
   }
 }
@@ -184,14 +161,14 @@ function RootLeading() {
 }
 
 /** Devices / refresh / settings — the actions that belong to the project list. */
-function RootActions({ push }: { push: Push }) {
+function RootActions() {
   const connection = useConnectionStore((s) => s.connection);
   const refreshProjects = useProjectsStore((s) => s.refreshProjects);
 
   return (
     <>
       <SidebarHeaderAction
-        onClick={() => push({ name: "devices" })}
+        onClick={() => appNavigate({ name: "devices" })}
         title="Devices"
         aria-label="Devices"
       >
@@ -206,7 +183,7 @@ function RootActions({ push }: { push: Push }) {
         <Icons.RefreshIcon size={14} />
       </SidebarHeaderAction>
       <SidebarHeaderAction
-        onClick={() => push({ name: "settings" })}
+        onClick={() => appNavigate({ name: "settings" })}
         title="Settings"
         aria-label="Settings"
       >
@@ -219,19 +196,16 @@ function RootActions({ push }: { push: Push }) {
 /** Jump to the agent's device and changes, or stop it outright. */
 function AgentActions({
   agentId,
-  agentLabel,
   onStopped,
-  push,
+  sessionId,
 }: {
   agentId: string;
-  agentLabel: string;
   onStopped: () => void;
-  push: Push;
+  sessionId: string;
 }) {
   const hasControl = useConnectionStore((s) => s.hasControl());
   const devices = useDevicesStore((s) => s.devices);
   const stopAgentProcess = useAgentsStore((s) => s.stopAgentProcess);
-  const sessionId = useAgentsStore((s) => s.statusByAgent[agentId]?.session_id);
   const [confirmingStop, setConfirmingStop] = useState(false);
 
   return (
@@ -239,15 +213,9 @@ function AgentActions({
       <SidebarHeaderAction
         onClick={() => {
           const only = devices.length === 1 ? devices[0] : null;
-          push(
+          appNavigate(
             only
-              ? {
-                  name: "device",
-                  deviceId: only.id,
-                  platform: only.platform,
-                  deviceName: only.name,
-                  isTv: only.is_tv,
-                }
+              ? { name: "device", platform: only.platform, deviceKey: only.id }
               : { name: "devices" },
           );
         }}
@@ -256,17 +224,13 @@ function AgentActions({
       >
         <Icons.SimulatorIcon size={14} />
       </SidebarHeaderAction>
-      {sessionId && (
-        <SidebarHeaderAction
-          onClick={() =>
-            push({ name: "changes", sessionId, label: agentLabel })
-          }
-          title="View changes"
-          aria-label="View changes"
-        >
-          <Icons.BranchIcon size={14} />
-        </SidebarHeaderAction>
-      )}
+      <SidebarHeaderAction
+        onClick={() => appNavigate({ name: "changes", sessionId, mode: "branch" })}
+        title="View changes"
+        aria-label="View changes"
+      >
+        <Icons.BranchIcon size={14} />
+      </SidebarHeaderAction>
       {hasControl && (
         <SidebarHeaderAction
           onClick={() => setConfirmingStop(true)}
@@ -322,53 +286,60 @@ function AgentDock({ agentId }: { agentId: string }) {
   );
 }
 
-/** Phone layout: whatever sits on top of the history stack, and nothing else. */
+function agentChrome(screen: Screen, onStopped: () => void) {
+  if (screen.name !== "agent") {
+    return { actions: null, dock: null };
+  }
+
+  return {
+    actions: (
+      <AgentActions
+        agentId={screen.agentId}
+        sessionId={screen.sessionId}
+        onStopped={onStopped}
+      />
+    ),
+    dock: <AgentDock agentId={screen.agentId} />,
+  };
+}
+
+/** Phone layout: the screen the URL names, and nothing else. */
 export function SinglePane({
   banner,
-  canGoBack,
   onBack,
-  push,
-  view,
+  screen,
 }: {
   banner: React.ReactNode;
-  canGoBack: boolean;
   onBack: () => void;
-  push: Push;
-  view: View;
+  screen: Screen;
 }) {
   const connection = useConnectionStore((s) => s.connection);
+  const atRoot = screen.name === "projects";
+  const agent = agentChrome(screen, onBack);
 
   return (
     <Pane
       banner={banner}
-      title={headingFor(view)}
-      view={view}
+      screen={screen}
       leading={
-        canGoBack ? (
+        atRoot ? (
+          <RootLeading />
+        ) : (
           <SidebarHeaderAction onClick={onBack} title="Back" aria-label="Back">
             <Icons.ChevronLeftIcon size={14} />
           </SidebarHeaderAction>
-        ) : (
-          <RootLeading />
         )
       }
       actions={
         <>
           <ConnectionBadge state={connection} />
-          {view.name === "agent" && (
-            <AgentActions
-              agentId={view.agentId}
-              agentLabel={view.agentLabel}
-              onStopped={onBack}
-              push={push}
-            />
-          )}
-          {!canGoBack && <RootActions push={push} />}
+          {agent.actions}
+          {atRoot && <RootActions />}
         </>
       }
-      dock={view.name === "agent" && <AgentDock agentId={view.agentId} />}
+      dock={agent.dock}
     >
-      <ViewBody push={push} view={view} />
+      <ScreenBody screen={screen} />
     </Pane>
   );
 }
@@ -376,28 +347,26 @@ export function SinglePane({
 /** Tablet left pane: the project list, or a project you drilled into. */
 export function MasterPane({
   banner,
-  push,
-  view,
+  goMaster,
+  screen,
 }: {
   banner: React.ReactNode;
-  push: Push;
-  view: View;
+  goMaster: GoMaster;
+  screen: Screen;
 }) {
   const connection = useConnectionStore((s) => s.connection);
-  const atRoot = view.name === "projects";
+  const atRoot = screen.name === "projects";
 
   return (
     <Pane
       banner={banner}
-      title={headingFor(view)}
-      view={view}
+      screen={screen}
       leading={
         atRoot ? (
           <RootLeading />
         ) : (
-          // Pushing rather than popping: the detail pane must stay put.
           <SidebarHeaderAction
-            onClick={() => push({ name: "projects" })}
+            onClick={() => goMaster({ name: "projects" })}
             title="All projects"
             aria-label="All projects"
           >
@@ -408,11 +377,11 @@ export function MasterPane({
       actions={
         <>
           <ConnectionBadge state={connection} />
-          {atRoot && <RootActions push={push} />}
+          {atRoot && <RootActions />}
         </>
       }
     >
-      <ViewBody push={push} view={view} />
+      <ScreenBody goMaster={goMaster} screen={screen} />
     </Pane>
   );
 }
@@ -420,28 +389,20 @@ export function MasterPane({
 /** Tablet right pane: the agent, device, diff or settings screen in focus. */
 export function DetailPane({
   onClose,
-  push,
-  view,
+  screen,
 }: {
   onClose: () => void;
-  push: Push;
-  view: View;
+  screen: Screen;
 }) {
+  const agent = agentChrome(screen, onClose);
+
   return (
     <Pane
-      title={headingFor(view)}
-      view={view}
-      leading={<PaneIcon view={view} />}
+      screen={screen}
+      leading={<PaneIcon screen={screen} />}
       actions={
         <>
-          {view.name === "agent" && (
-            <AgentActions
-              agentId={view.agentId}
-              agentLabel={view.agentLabel}
-              onStopped={onClose}
-              push={push}
-            />
-          )}
+          {agent.actions}
           <SidebarHeaderAction
             onClick={onClose}
             title="Close"
@@ -451,15 +412,15 @@ export function DetailPane({
           </SidebarHeaderAction>
         </>
       }
-      dock={view.name === "agent" && <AgentDock agentId={view.agentId} />}
+      dock={agent.dock}
     >
-      <ViewBody push={push} view={view} />
+      <ScreenBody screen={screen} />
     </Pane>
   );
 }
 
-function PaneIcon({ view }: { view: View }) {
-  switch (view.name) {
+function PaneIcon({ screen }: { screen: Screen }) {
+  switch (screen.name) {
     case "changes":
       return <Icons.BranchIcon size={14} />;
     case "devices":
@@ -471,4 +432,3 @@ function PaneIcon({ view }: { view: View }) {
       return <Icons.AgentIcon size={14} />;
   }
 }
-

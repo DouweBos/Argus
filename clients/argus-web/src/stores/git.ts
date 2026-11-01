@@ -3,9 +3,8 @@
 import { create } from "zustand";
 import type { RemoteGitStatus } from "../lib/protocol";
 import { request } from "../lib/request";
+import type { DiffMode } from "../routing/screens";
 import { currentTransport } from "./connection";
-
-export type DiffMode = "branch" | "working";
 
 interface GitState {
   /** Latest git status per session (badges + the changes header). */

@@ -10,6 +10,8 @@ import { accountSession } from "../account/accountStore";
 import type { AccountComputer } from "../account/directory";
 import type { AccountSession } from "../account/session";
 import { request } from "../lib/request";
+import { appNavigate } from "../routing/router";
+import { HOME } from "../routing/screens";
 import { useConnectionStore } from "../stores/connection";
 
 export async function syncHost(
@@ -46,9 +48,10 @@ export function openComputer(computer: AccountComputer): boolean {
       onReady: (transport) => {
         syncHost(session, transport).catch(() => undefined);
       },
+      // Dropping `?host=` is what closes it (`HostedApp`), so Back reopens it.
       leave: () => {
-        useConnectionStore.getState().closeHost();
         void session.rememberHost(null);
+        appNavigate(HOME, { hostId: null });
       },
     },
   });

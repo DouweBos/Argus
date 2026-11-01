@@ -15,22 +15,29 @@ import {
   Spinner,
   StatusDot,
 } from "@argus/peacock";
+import type { DiffMode as Mode } from "../routing/screens";
 import { useConnectionStore } from "../stores/connection";
 import { useGitStore } from "../stores/git";
-
-type Mode = "branch" | "working";
 
 const MODE_OPTIONS = [
   { value: "branch" as const, label: "Vs base branch" },
   { value: "working" as const, label: "Uncommitted" },
 ];
 
-export function ChangesView({ sessionId }: { sessionId: string }) {
+/** `mode` is the route's: `/git/branch` or `/git/working`. */
+export function ChangesView({
+  mode,
+  onModeChange,
+  sessionId,
+}: {
+  mode: Mode;
+  onModeChange: (mode: Mode) => void;
+  sessionId: string;
+}) {
   const connection = useConnectionStore((s) => s.connection);
   const status = useGitStore((s) => s.gitStatusBySession[sessionId]);
   const loadGitStatus = useGitStore((s) => s.loadGitStatus);
   const loadDiff = useGitStore((s) => s.loadDiff);
-  const [mode, setMode] = useState<Mode>("branch");
   const [diff, setDiff] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -71,7 +78,7 @@ export function ChangesView({ sessionId }: { sessionId: string }) {
           aria-label="Diff mode"
           value={mode}
           options={MODE_OPTIONS}
-          onChange={setMode}
+          onChange={onModeChange}
         />
       </div>
 

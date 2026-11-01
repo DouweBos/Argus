@@ -3,7 +3,8 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
-  // Relative base so the bundle works when served from the gateway root.
-  base: "./",
+  // Absolute: screens live at real paths (`/sessions/…`), and the gateway
+  // serves index.html for every one of them.
+  base: "/",
   build: { outDir: "dist" },
 });

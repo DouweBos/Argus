@@ -266,6 +266,40 @@ it can:
   are a side panel beside the chat (Details, Changes, Files, Terminals,
   Device), as on the Mac; it isn't part of the link.
 
+- **Web client** — the browser app the computer serves on its own address
+  (the network bundle) and the hosted app at `/argus/app/` use real paths on
+  the History API, read with the same codec as the desktop
+  (`@argus/client-core`), so `<web address>/sessions/abc/agents/def` opens
+  the same chat as `argus://sessions/abc/agents/def`. Back, forward, reload
+  and shared links all work; the computer and the hosted site serve
+  `index.html` for every path. What it shows today:
+
+  | URL                                    | Screen                                                                                                                                |
+  | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+  | `/`                                    | Projects and recent agents                                                                                                            |
+  | `/projects/:projectKey`                | One project's sessions and agents (web and iOS only). The key is a hash of the repo root, never the path, so no path reaches a server |
+  | `/sessions/:sessionId/agents/:agentId` | An agent's chat. Without `:agentId` (or `/sessions/:id`) it opens the session's newest agent                                          |
+  | `/sessions/:sessionId/git/branch`      | The session's changes against its base branch; any other `/git/*` sub-view opens this                                                 |
+  | `/sessions/:sessionId/git/working`     | The session's uncommitted changes                                                                                                     |
+  | `/devices`, `/devices/:platform/:key`  | Devices, and one device's live screen; an unknown device opens `/devices`                                                             |
+  | `/settings`                            | Settings (web and iOS only)                                                                                                           |
+
+  Any other route opens its nearest parent, as on iOS, which today is Home.
+  From tablet width the project list (or the project an agent belongs to)
+  stays beside the screen the URL names; browsing it while something is open
+  moves that pane only, and Close returns to it. Back from a screen a link
+  opened goes to its parent rather than out of the app.
+
+  In the hosted app `?host=<hostId>` names the account computer, survives
+  every navigation and is dropped by "Computers"; an id the account can't
+  reach shows as unavailable and never falls back to another computer. The
+  network bundle is always its own computer and ignores `?host=`. Secrets
+  stay in the fragment, which never reaches a server: huddle links
+  (`#/huddle/<token>`) and pairing codes (`#/pair/<code>`, read once and
+  removed from the address bar). A notification opened with no tab still
+  launches at `/?agent=<id>` (plus `&decide=&tool=` for Approve/Deny); the
+  client replays it and strips the parameters.
+
 ## Invariants
 
 1. **Every screen change pushes exactly one history entry.** If you find

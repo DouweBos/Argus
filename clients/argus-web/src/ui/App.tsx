@@ -49,9 +49,39 @@ export function App() {
 
 // --- Pairing ---------------------------------------------------------------
 
+/**
+ * A pairing code handed over in the link (`#/pair/<code>`, e.g. from a QR).
+ * Fragment only, so it never reaches a server; dropped from the address bar
+ * as soon as it is read.
+ */
+let launchCode: string | null = null;
+
+function takePairingCode(): string {
+  launchCode ??= readPairingCode();
+
+  return launchCode;
+}
+
+function readPairingCode(): string {
+  const match = /^#\/pair\/(.+)$/.exec(window.location.hash);
+  if (!match) {
+    return "";
+  }
+  window.history.replaceState(
+    window.history.state,
+    "",
+    `${window.location.pathname}${window.location.search}`,
+  );
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return "";
+  }
+}
+
 function Pair() {
   const pairComplete = useConnectionStore((s) => s.pairComplete);
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(takePairingCode);
   const [sas, setSas] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const clientRef = useRef<PairingClient | null>(null);

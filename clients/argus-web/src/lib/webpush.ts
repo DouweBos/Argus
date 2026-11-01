@@ -89,7 +89,9 @@ export async function ensureServiceWorker(): Promise<ServiceWorkerRegistration |
     return registration;
   }
   try {
-    registration = await navigator.serviceWorker.register("sw.js");
+    registration = await navigator.serviceWorker.register(
+      `${import.meta.env.BASE_URL}sw.js`,
+    );
 
     return registration;
   } catch {
