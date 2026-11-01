@@ -10,11 +10,17 @@ public struct SessionRow: View {
   let git: RemoteGitStatus?
   /// The phone also says which branch and how many agents, since it has no hover card.
   var detailed: Bool
+  /// On a selected iPad sidebar row, whose fill is the tint under white labels.
+  var selected: Bool
 
-  public init(session: RemoteSession, agents: [RemoteAgentStatus], git: RemoteGitStatus? = nil, detailed: Bool = false) {
+  public init(
+    session: RemoteSession, agents: [RemoteAgentStatus], git: RemoteGitStatus? = nil, detailed: Bool = false,
+    selected: Bool = false
+  ) {
     activity = SessionActivity(session: session, agents: agents)
     self.git = git
     self.detailed = detailed
+    self.selected = selected
   }
 
   private var session: RemoteSession { activity.session }
@@ -27,12 +33,12 @@ public struct SessionRow: View {
       VStack(alignment: .leading, spacing: detailed ? 2 : 1) {
         Text(activity.title)
           .font(Self.titleFont)
-          .foregroundStyle(theme.text)
+          .foregroundStyle(selected ? .white : theme.text)
           .lineLimit(1)
         if let detail {
           Text(detail)
             .font(Self.detailFont)
-            .foregroundStyle(session.status == .error ? theme.error : theme.textMuted)
+            .foregroundStyle(selected ? .white.opacity(0.75) : session.status == .error ? theme.error : theme.textMuted)
             .lineLimit(1)
         }
       }
@@ -58,7 +64,7 @@ public struct SessionRow: View {
         if let lastActive = activity.lastActive {
           Text(ChromeText.shortAge(lastActive))
             .font(Self.detailFont.monospacedDigit())
-            .foregroundStyle(theme.textMuted)
+            .foregroundStyle(selected ? .white.opacity(0.75) : theme.textMuted)
         }
       }
     }

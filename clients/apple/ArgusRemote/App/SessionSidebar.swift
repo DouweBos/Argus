@@ -44,6 +44,8 @@ struct SessionSidebar: View {
       }
     }
     .listStyle(.sidebar)
+    // The selection fill is the tint, under white labels: never the near-white muted accent.
+    .tint(theme.tint)
     // `recentAgents` spans every project, so only the sessions cost a fetch.
     .task(id: host.projects.map(\.repoRoot)) {
       for project in host.projects { await host.loadSessions(repoRoot: project.repoRoot) }
@@ -87,7 +89,9 @@ struct SessionSidebar: View {
   @ViewBuilder
   private func row(_ group: SessionGroup) -> some View {
     if let session = group.session {
-      SessionRow(session: session, agents: group.agents)
+      SessionRow(
+        session: session, agents: group.agents,
+        selected: router.sidebarSelection == .session(id: group.id, label: "", repoRoot: "", projectName: ""))
     } else {
       // Known only from its agents until the project's sessions load.
       Text(group.label).lineLimit(1).padding(.leading, 18)
