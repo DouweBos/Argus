@@ -25,7 +25,7 @@ function toCompact(
     id,
     label,
     value: `${percentLeft(w.used_percent)}% left`,
-    progress: percentLeft(w.used_percent) / 100,
+    progress: w.used_percent / 100,
     tone: limitTone(w),
     title: resetHint(w.resets_at, now) ?? undefined,
   };

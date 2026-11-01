@@ -8,19 +8,19 @@ struct UsageLimitFormatTests {
   private let now = Date(timeIntervalSince1970: 1_000_000)
   private func ms(in seconds: Double) -> Double { (now.timeIntervalSince1970 + seconds) * 1000 }
 
+  // The bar fills with what is used; a full bar means the limit is spent.
+  @Test func barFillsWithTheUsedShare() {
+    #expect(UsageLimitFormat.fraction(usedPercent: 0) == 0)
+    #expect(UsageLimitFormat.fraction(usedPercent: 53) == 0.53)
+    #expect(UsageLimitFormat.fraction(usedPercent: 120) == 1)
+  }
+
   @Test func percentLeftRoundsDownAndClamps() {
     #expect(UsageLimitFormat.percentLeft(usedPercent: 0) == 100)
     #expect(UsageLimitFormat.percentLeft(usedPercent: 0.4) == 99)
     #expect(UsageLimitFormat.percentLeft(usedPercent: 37) == 63)
     #expect(UsageLimitFormat.percentLeft(usedPercent: 120) == 0)
     #expect(UsageLimitFormat.percentLeft(usedPercent: -5) == 100)
-  }
-
-  @Test func fractionLeftMatchesPercentLeft() {
-    #expect(UsageLimitFormat.fractionLeft(usedPercent: 25) == 0.75)
-    #expect(UsageLimitFormat.fractionLeft(usedPercent: 0) == 1)
-    #expect(UsageLimitFormat.fractionLeft(usedPercent: 120) == 0)
-    #expect(UsageLimitFormat.fractionLeft(usedPercent: -5) == 1)
   }
 
   @Test func levelCrossesAtEightyAndNinetyFive() {
