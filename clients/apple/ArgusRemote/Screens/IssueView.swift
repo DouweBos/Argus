@@ -19,17 +19,7 @@ private struct IssueContent: View {
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
   @State private var model: LinearIssueDetailModel
-  /// The issue waiting on a project before its start sheet opens.
-  @State private var pending: HostStore.LinearIssue?
-  @State private var starting: Start?
-  /// Picked in the project sheet; its start sheet opens once that one is down.
-  @State private var queued: Start?
-
-  struct Start: Identifiable {
-    let issue: HostStore.LinearIssue
-    let project: RemoteProject
-    var id: String { issue.id }
-  }
+  @State private var starting: HostStore.LinearIssue?
 
   init(model: LinearIssueDetailModel) {
     _model = State(initialValue: model)
@@ -53,33 +43,30 @@ private struct IssueContent: View {
       // "Open session" needs every project's sessions, not just the ones opened.
       for project in host.projects { await host.loadSessions(repoRoot: project.repoRoot) }
     }
-    .sheet(item: $pending, onDismiss: { (starting, queued) = (queued, nil) }) { issue in
-      PickerSheet(
-        title: "Start agent in",
-        options: host.projects.map { .init(value: $0.repoRoot, label: $0.name) },
-        selected: []
-      ) { root in
-        queued = host.projects.first { $0.repoRoot == root }.map { Start(issue: issue, project: $0) }
-      }
-    }
-    .sheet(item: $starting) { start in
+    // The project is picked in the composer's footer.
+    .sheet(item: $starting) { issue in
       StartComposerSheet(
-        repoRoot: start.project.repoRoot, sessionId: nil, workspace: .worktree,
-        defaultMode: app.defaultPermissionMode, issues: [start.issue],
+        repoRoot: preselectedProject, sessionId: nil, workspace: .worktree,
+        defaultMode: app.defaultPermissionMode, issues: [issue], picksProject: true,
         onAffordance: { Telemetry.capture(.composerInput($0)) }
-      ) { _, sent in
+      ) { started, sent in
         Telemetry.capture(.agentStartSubmitted(sent, openedOn: sent.workspace))
-        Task { await host.loadSessions(repoRoot: start.project.repoRoot) }
+        guard case .session(let session) = started else { return }
+        app.preferences.set(session.repoRoot, for: PreferenceKey.issueStartProject)
+        Task { await host.loadSessions(repoRoot: session.repoRoot) }
       }
     }
   }
 
+  /// The only project, or the one the last issue went to while it's still open, as the Mac does.
+  private var preselectedProject: String? {
+    if host.projects.count == 1 { return host.projects.first?.repoRoot }
+    let last = app.preferences.string(PreferenceKey.issueStartProject)
+    return host.projects.first { $0.repoRoot == last }?.repoRoot
+  }
+
   private func start(_ issue: HostStore.LinearIssue) {
-    if host.projects.count == 1, let project = host.projects.first {
-      starting = Start(issue: issue, project: project)
-    } else {
-      pending = issue
-    }
+    starting = issue
   }
 
   /// Straight to its agent when one is live, otherwise the project it is in.

@@ -187,7 +187,8 @@ enum TelemetryEvent {
   case defaultChanged(setting: DefaultSetting, value: String)
   /// The start sheet sent its agent off. `workspace` is `current`, `worktree`
   /// or `existing`; `changedWorkspace` says it isn't the one the sheet opened on.
-  case agentStartSubmitted(workspace: String, changedWorkspace: Bool, hasImages: Bool, effortSet: Bool)
+  case agentStartSubmitted(
+    workspace: String, changedWorkspace: Bool, hasImages: Bool, effortSet: Bool, changedProject: Bool)
   /// The warnings list was opened; `count` is how many it held.
   case warningsOpened(count: Int)
   /// One notification was swiped away, or the whole list cleared.
@@ -378,8 +379,11 @@ enum TelemetryEvent {
       ["appearance": appearance]
     case .defaultChanged(let setting, let value):
       ["setting": setting.rawValue, "value": value]
-    case .agentStartSubmitted(let workspace, let changedWorkspace, let hasImages, let effortSet):
-      ["workspace": workspace, "changed_workspace": changedWorkspace, "has_images": hasImages, "effort_set": effortSet]
+    case .agentStartSubmitted(let workspace, let changedWorkspace, let hasImages, let effortSet, let changedProject):
+      [
+        "workspace": workspace, "changed_workspace": changedWorkspace, "has_images": hasImages,
+        "effort_set": effortSet, "changed_project": changedProject,
+      ]
     case .warningsOpened(let count):
       ["count": count]
     case .notificationsCleared(let scope):
@@ -445,6 +449,6 @@ enum TelemetryEvent {
   ) -> TelemetryEvent {
     .agentStartSubmitted(
       workspace: sent.workspace.rawValue, changedWorkspace: sent.workspace != opened, hasImages: sent.hasImages,
-      effortSet: sent.effortSet)
+      effortSet: sent.effortSet, changedProject: sent.changedProject)
   }
 }

@@ -20,6 +20,8 @@
       public let workspace: StartWorkspace.Kind
       public let hasImages: Bool
       public let effortSet: Bool
+      /// Started in another project than the composer opened on.
+      public let changedProject: Bool
     }
 
     @Environment(HostStore.self) private var host
@@ -29,6 +31,8 @@
     let workspace: StartWorkspace.Kind
     let defaultMode: RemotePermissionMode?
     let issues: [HostStore.LinearIssue]
+    /// Offers a project chip; only for a start that no project has opened yet.
+    let picksProject: Bool
     let onAffordance: ((ChatInputAffordance) -> Void)?
     let onStarted: (Started, Submission) -> Void
 
@@ -38,6 +42,7 @@
       workspace: StartWorkspace.Kind = .current,
       defaultMode: RemotePermissionMode? = nil,
       issues: [HostStore.LinearIssue] = [],
+      picksProject: Bool = false,
       onAffordance: ((ChatInputAffordance) -> Void)? = nil,
       onStarted: @escaping (Started, Submission) -> Void
     ) {
@@ -46,6 +51,7 @@
       self.workspace = workspace
       self.defaultMode = defaultMode
       self.issues = issues
+      self.picksProject = picksProject
       self.onAffordance = onAffordance
       self.onStarted = onStarted
     }
@@ -53,7 +59,7 @@
     public var body: some View {
       StartComposerScreen(
         host: host, repoRoot: repoRoot, sessionId: sessionId, workspace: workspace, defaultMode: defaultMode,
-        issues: issues, onAffordance: onAffordance, onStarted: onStarted)
+        issues: issues, picksProject: picksProject, onAffordance: onAffordance, onStarted: onStarted)
     }
   }
 
@@ -72,13 +78,14 @@
 
     init(
       host: HostStore, repoRoot: String?, sessionId: String?, workspace: StartWorkspace.Kind,
-      defaultMode: RemotePermissionMode?, issues: [HostStore.LinearIssue],
+      defaultMode: RemotePermissionMode?, issues: [HostStore.LinearIssue], picksProject: Bool,
       onAffordance: ((ChatInputAffordance) -> Void)?,
       onStarted: @escaping (StartComposerSheet.Started, StartComposerSheet.Submission) -> Void
     ) {
       let flow = PhoneAgentStart(
         host: host, repoRoot: repoRoot, sessionId: sessionId, workspace: workspace,
-        defaults: AgentStartDefaults(mode: defaultMode?.rawValue), issues: issues, onStarted: onStarted)
+        defaults: AgentStartDefaults(mode: defaultMode?.rawValue), issues: issues,
+        picksProject: picksProject && sessionId == nil, onStarted: onStarted)
       let mode = (defaultMode ?? .auto).rawValue
       let starter = ComposerStarter(defaultMode: mode) { [weak flow] in await flow?.start($0) ?? false }
       let controller = PastingTextController()
@@ -119,11 +126,13 @@
           }
         }
         .task {
-          if flow.repoRoot != nil { await host.loadIntegrations() }
           await host.loadRunners()
           if let sessionId = flow.sessionId, flow.repoRoot != nil {
             flow.branches = await host.listBranches(sessionId: sessionId)
           }
+        }
+        .task(id: flow.repoRoot) {
+          if flow.repoRoot != nil { await host.loadIntegrations() }
         }
         // Starting here takes the host's warm agent: keep one ready while this is open.
         .task(id: WarmTarget(workspace: flow.chosen, runner: composer.runner?.id)) {
@@ -133,8 +142,8 @@
             sessionId: flow.chosen == .current ? sessionId : coveredSession, runnerId: composer.runner?.id)
           await host.loadStartOptions(sessionId: sessionId, runnerId: composer.runner?.id)
         }
-        // Only a new worktree needs a base.
-        .task(id: flow.needsBases) {
+        // Only a new worktree needs a base, read again for another project.
+        .task(id: BasesTarget(needed: flow.needsBases, repoRoot: flow.repoRoot)) {
           guard let repoRoot = flow.repoRoot, flow.needsBases else { return }
           await flow.workspace.loadBases(repoRoot: repoRoot, store: host)
         }
@@ -182,6 +191,11 @@
           : "Each starts from its issue, in a worktree on Linear's branch name. Anything you add goes after it."
       }
       return flow.chosen == .worktree ? "The computer names the branch from what you write." : nil
+    }
+
+    private struct BasesTarget: Equatable {
+      let needed: Bool
+      let repoRoot: String?
     }
 
     private struct WarmTarget: Equatable {

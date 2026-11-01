@@ -13,7 +13,7 @@ public final class StartWorkspace {
 
   public var kind: Kind
   /// The new worktree's base, preselected as the desktop does.
-  public let bases = BaseBranchPicker()
+  public private(set) var bases = BaseBranchPicker()
   /// The branch an existing-branch start checks out; nil until picked.
   public var existingBranch: String?
 
@@ -22,6 +22,12 @@ public final class StartWorkspace {
   }
 
   public var base: String? { bases.base }
+
+  /// Another project: its bases and branches are read afresh.
+  public func resetBranches() {
+    bases = BaseBranchPicker()
+    existingBranch = nil
+  }
 
   /// What the base menu reads while it has no branch to name.
   public var baseTitle: String {

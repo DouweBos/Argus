@@ -9,6 +9,8 @@ public enum PreferenceKey {
   public static let pushEnabled = "push.enabled"
   public static let autoExpandImageReads = "transcript.autoExpandImageReads"
   public static let defaultPermissionMode = "agent.defaultPermissionMode"
+  /// The project the last Linear issue was started in.
+  public static let issueStartProject = "issue.startProject"
   public static let pushToken = "push.token"
   /// Join requests a wake-up push already announced, so each is shown once.
   public static let accountPromptedJoins = "account.promptedJoins"

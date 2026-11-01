@@ -8,7 +8,9 @@
   @MainActor
   @Observable
   final class PhoneAgentStart {
-    let repoRoot: String?
+    /// Pickable in the footer while there's no session to pin it.
+    private(set) var repoRoot: String?
+    let openedOnRepo: String?
     /// The session "current" means; also where the branch list is read from.
     let sessionId: String?
     let openedOn: StartWorkspace.Kind
@@ -25,11 +27,12 @@
 
     init(
       host: HostStore, repoRoot: String?, sessionId: String?, workspace: StartWorkspace.Kind,
-      defaults: AgentStartDefaults, issues: [HostStore.LinearIssue],
+      defaults: AgentStartDefaults, issues: [HostStore.LinearIssue], picksProject: Bool = false,
       onStarted: @escaping (StartComposerSheet.Started, StartComposerSheet.Submission) -> Void
     ) {
       self.host = host
       self.repoRoot = repoRoot
+      self.openedOnRepo = repoRoot
       self.sessionId = sessionId
       // With no session there's no "current"; with no project, nothing else.
       let kind: StartWorkspace.Kind = sessionId == nil ? .worktree : repoRoot == nil ? .current : workspace
@@ -37,7 +40,18 @@
       self.workspace = StartWorkspace(kind: kind)
       self.defaults = defaults
       self.issues = issues
+      self.picksProject = picksProject
       self.onStarted = onStarted
+    }
+
+    /// The caller asked for a project chip, and no session pins the start to one.
+    let picksProject: Bool
+
+    func pickProject(_ root: String) {
+      guard picksProject, root != repoRoot else { return }
+      repoRoot = root
+      workspace.resetBranches()
+      branches = []
     }
 
     /// Issues always start in worktrees of their own.
@@ -92,7 +106,7 @@
         started,
         .init(
           workspace: kind, hasImages: issues.isEmpty && !request.images.isEmpty,
-          effortSet: issues.isEmpty && request.effort != nil))
+          effortSet: issues.isEmpty && request.effort != nil, changedProject: repoRoot != openedOnRepo))
       finished = true
       return true
     }

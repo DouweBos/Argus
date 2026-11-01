@@ -2,9 +2,9 @@
   import ArgusCore
   import SwiftUI
 
-  /// The strip under a phone start composer, as the Mac's: where the agent
-  /// works and the branch it starts on, then the phone's runner and Linear
-  /// issue chips. Only what applies shows.
+  /// The strip under a phone start composer, as the Mac's: the project when
+  /// there's no session to pin it, where the agent works and the branch it
+  /// starts on, then the phone's runner and Linear issue chips. Only what applies shows.
   struct PhoneStartFooter: View {
     private enum Sheet: String, Identifiable {
       case base, existing, runner
@@ -22,6 +22,7 @@
       VStack(alignment: .leading, spacing: 6) {
         if !flow.issues.isEmpty { PickedIssueChips(issues: $flow.issues) }
         ChipFlowLayout(spacing: 6, lineSpacing: 6) {
+          if flow.picksProject, flow.repoRoot == nil || host.projects.count > 1 { projectMenu }
           if flow.issues.isEmpty, flow.options.count > 1 { workspaceMenu }
           branchChip
           if !host.runners.isEmpty {
@@ -36,6 +37,20 @@
       }
       .sheet(item: $picker) { picked($0) }
       .sheet(isPresented: $pickingIssues) { IssuePickerSheet(selection: $flow.issues) }
+    }
+
+    /// Unpicked reads "Pick a project" until a project is chosen.
+    private var projectMenu: some View {
+      let unpicked: [MenuChip<String>.Option] =
+        flow.repoRoot == nil ? [.init(value: "", label: "Pick a project")] : []
+      return MenuChip(
+        "Project", selection: projectRoot,
+        options: unpicked + host.projects.map { .init(value: $0.repoRoot, label: $0.name) },
+        icon: Icon.folder, tone: flow.repoRoot == nil ? .accent : nil)
+    }
+
+    private var projectRoot: Binding<String> {
+      Binding(get: { flow.repoRoot ?? "" }, set: { if !$0.isEmpty { flow.pickProject($0) } })
     }
 
     private var currentLabel: String {
