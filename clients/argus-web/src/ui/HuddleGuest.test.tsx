@@ -12,19 +12,31 @@ vi.mock("./useIsWide", () => ({ useIsWide: () => wide }));
 vi.mock("./AgentTranscript", () => ({ AgentTranscript: () => null }));
 vi.mock("./ChatInput", () => ({ ChatInput: () => null }));
 
-vi.mock("../lib/store", () => ({
-  useAppStore: (select: (s: unknown) => unknown) =>
-    select({
-      huddle,
-      joinHuddle,
-      connection: "ready",
-      statusByAgent: {},
-      devices: [],
-      loadAgentStatus: vi.fn(async () => {}),
-      refreshDevices: vi.fn(async () => {}),
-      sayInHuddle: vi.fn(),
-      leaveHuddle: vi.fn(),
-    }),
+/** One state object behind every store the guest view reads. */
+const fakeStore = () => ({
+  huddle,
+  joinHuddle,
+  connection: "ready",
+  statusByAgent: {},
+  devices: [],
+  loadAgentStatus: vi.fn(async () => {}),
+  refreshDevices: vi.fn(async () => {}),
+  sayInHuddle: vi.fn(),
+  leaveHuddle: vi.fn(),
+});
+const select = (pick: (s: unknown) => unknown) => pick(fakeStore());
+
+vi.mock("../stores/agents", () => ({
+  useAgentsStore: (pick: (s: unknown) => unknown) => select(pick),
+}));
+vi.mock("../stores/connection", () => ({
+  useConnectionStore: (pick: (s: unknown) => unknown) => select(pick),
+}));
+vi.mock("../stores/devices", () => ({
+  useDevicesStore: (pick: (s: unknown) => unknown) => select(pick),
+}));
+vi.mock("../stores/huddle", () => ({
+  useHuddleStore: (pick: (s: unknown) => unknown) => select(pick),
 }));
 
 describe("the huddle guest", () => {

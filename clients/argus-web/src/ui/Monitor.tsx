@@ -21,7 +21,10 @@ import {
   setNotificationDecider,
   startServiceWorkerRouting,
 } from "../lib/webpush";
-import { useAppStore } from "../lib/store";
+import { useConnectionStore } from "../stores/connection";
+import { useDevicesStore } from "../stores/devices";
+import { usePromptsStore } from "../stores/prompts";
+import { usePushStore } from "../stores/push";
 import { DetailPane, MasterPane, SinglePane } from "./MonitorPanes";
 import { loadSidebarWidth, saveSidebarWidth } from "./sidebarWidth";
 import { useHistoryView } from "./useHistoryView";
@@ -33,10 +36,10 @@ export function Monitor() {
   const { view, masterView, detailView, push, back, canGoBack } =
     useHistoryView();
   const isWide = useIsWide();
-  const connection = useAppStore((s) => s.connection);
-  const refreshDevices = useAppStore((s) => s.refreshDevices);
-  const pushEnabled = useAppStore((s) => s.pushEnabled);
-  const setPushEnabled = useAppStore((s) => s.setPushEnabled);
+  const connection = useConnectionStore((s) => s.connection);
+  const refreshDevices = useDevicesStore((s) => s.refreshDevices);
+  const pushEnabled = usePushStore((s) => s.pushEnabled);
+  const setPushEnabled = usePushStore((s) => s.setPushEnabled);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
 
@@ -65,7 +68,7 @@ export function Monitor() {
       push({ name: "agent", agentId, agentLabel }),
     );
     setNotificationDecider((agentId, toolUseId, decision) => {
-      void useAppStore.getState().decidePrompt(agentId, toolUseId, decision);
+      void usePromptsStore.getState().decidePrompt(agentId, toolUseId, decision);
     });
     const stopRouting = startServiceWorkerRouting();
 
@@ -108,7 +111,7 @@ export function Monitor() {
       window.location.pathname,
     );
     if ((decision === "allow" || decision === "deny") && toolUseId) {
-      void useAppStore.getState().decidePrompt(agentId, toolUseId, decision);
+      void usePromptsStore.getState().decidePrompt(agentId, toolUseId, decision);
 
       return;
     }

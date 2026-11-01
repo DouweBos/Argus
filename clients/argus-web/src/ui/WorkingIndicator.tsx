@@ -7,13 +7,15 @@
 import { useEffect, useState } from "react";
 import { StatusDot, ThinkingDots } from "@argus/peacock";
 import { deriveActivity, randomSpinnerVerb } from "../lib/activity";
-import { useAppStore } from "../lib/store";
+import { useAgentsStore } from "../stores/agents";
+import { usePromptsStore } from "../stores/prompts";
+import { useTranscriptsStore } from "../stores/transcripts";
 
 export function WorkingIndicator({ agentId }: { agentId: string }) {
-  const status = useAppStore((s) => s.statusByAgent[agentId]?.status);
-  const pendingTool = useAppStore((s) => s.pendingToolByAgent[agentId] ?? null);
-  const messages = useAppStore((s) => s.messagesByAgent[agentId]);
-  const prompts = useAppStore((s) => s.prompts);
+  const status = useAgentsStore((s) => s.statusByAgent[agentId]?.status);
+  const pendingTool = useTranscriptsStore((s) => s.pendingToolByAgent[agentId] ?? null);
+  const messages = useTranscriptsStore((s) => s.messagesByAgent[agentId]);
+  const prompts = usePromptsStore((s) => s.prompts);
 
   // A pending prompt this client can answer, or a tool call still awaiting one.
   const hasPendingPermission =

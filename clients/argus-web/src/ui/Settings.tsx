@@ -10,7 +10,8 @@ import {
   requestNotificationPermission,
 } from "../lib/notify";
 import { NameField, SignOutField } from "../hosted/AccountFields";
-import { useAppStore } from "../lib/store";
+import { useConnectionStore } from "../stores/connection";
+import { usePushStore } from "../stores/push";
 import { webPushSupported, type WebPushState } from "../lib/webpush";
 import {
   setThemePreference,
@@ -68,14 +69,14 @@ function AppearanceField({ theme }: { theme: ThemePreference }) {
 }
 
 export function Settings() {
-  const deviceName = useAppStore((s) => s.deviceName);
-  const setDeviceName = useAppStore((s) => s.setDeviceName);
-  const unpair = useAppStore((s) => s.unpair);
-  const pushEnabled = useAppStore((s) => s.pushEnabled);
-  const pushState = useAppStore((s) => s.pushState);
-  const setPushEnabled = useAppStore((s) => s.setPushEnabled);
+  const deviceName = useConnectionStore((s) => s.deviceName);
+  const setDeviceName = useConnectionStore((s) => s.setDeviceName);
+  const unpair = useConnectionStore((s) => s.unpair);
+  const pushEnabled = usePushStore((s) => s.pushEnabled);
+  const pushState = usePushStore((s) => s.pushState);
+  const setPushEnabled = usePushStore((s) => s.setPushEnabled);
   const theme = useThemePreference();
-  const account = useAppStore((s) => s.identity?.account);
+  const account = useConnectionStore((s) => s.identity?.account);
 
   const [name, setName] = useState(deviceName);
   const [saved, setSaved] = useState(false);

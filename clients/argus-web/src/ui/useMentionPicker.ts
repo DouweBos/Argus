@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MentionPickerItem } from "@argus/peacock";
-import { useAppStore } from "../lib/store";
+import { useFilesStore } from "../stores/files";
 
 // Re-export so callers keep importing the row shape from the hook they use.
 export type { MentionPickerItem };
@@ -93,8 +93,8 @@ function scoreMatch(candidate: string, lowerQuery: string): number {
 }
 
 export function useMentionPicker(sessionId: string | undefined) {
-  const listFiles = useAppStore((s) => s.listFiles);
-  const resolveMentionPath = useAppStore((s) => s.resolveMentionPath);
+  const listFiles = useFilesStore((s) => s.listFiles);
+  const resolveMentionPath = useFilesStore((s) => s.resolveMentionPath);
   const [sessionFiles, setSessionFiles] = useState<string[]>([]);
   const [mentionContext, setMentionContext] = useState<MentionContext | null>(
     null,

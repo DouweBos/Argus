@@ -11,7 +11,10 @@ import {
   SidebarHeader,
   SidebarHeaderAction,
 } from "@argus/peacock";
-import { useAppStore } from "../lib/store";
+import { useAgentsStore } from "../stores/agents";
+import { useConnectionStore } from "../stores/connection";
+import { useDevicesStore } from "../stores/devices";
+import { useProjectsStore } from "../stores/projects";
 import { AgentTranscript } from "./AgentTranscript";
 import { ChangesView } from "./ChangesView";
 import { ChatInput } from "./ChatInput";
@@ -164,7 +167,7 @@ function ViewBody({ push, view }: { push: Push; view: View }) {
  * from the hosted client, the way back to the account's computers.
  */
 function RootLeading() {
-  const account = useAppStore((s) => s.identity?.account);
+  const account = useConnectionStore((s) => s.identity?.account);
   if (!account) {
     return <Icons.ArgusLogo size={16} />;
   }
@@ -182,8 +185,8 @@ function RootLeading() {
 
 /** Devices / refresh / settings — the actions that belong to the project list. */
 function RootActions({ push }: { push: Push }) {
-  const connection = useAppStore((s) => s.connection);
-  const refreshProjects = useAppStore((s) => s.refreshProjects);
+  const connection = useConnectionStore((s) => s.connection);
+  const refreshProjects = useProjectsStore((s) => s.refreshProjects);
 
   return (
     <>
@@ -225,10 +228,10 @@ function AgentActions({
   onStopped: () => void;
   push: Push;
 }) {
-  const hasControl = useAppStore((s) => s.hasControl());
-  const devices = useAppStore((s) => s.devices);
-  const stopAgentProcess = useAppStore((s) => s.stopAgentProcess);
-  const sessionId = useAppStore((s) => s.statusByAgent[agentId]?.session_id);
+  const hasControl = useConnectionStore((s) => s.hasControl());
+  const devices = useDevicesStore((s) => s.devices);
+  const stopAgentProcess = useAgentsStore((s) => s.stopAgentProcess);
+  const sessionId = useAgentsStore((s) => s.statusByAgent[agentId]?.session_id);
   const [confirmingStop, setConfirmingStop] = useState(false);
 
   return (
@@ -298,9 +301,9 @@ function AgentActions({
 
 /** The control-only chat input, pinned below the transcript scroll area. */
 function AgentDock({ agentId }: { agentId: string }) {
-  const hasControl = useAppStore((s) => s.hasControl());
-  const sessionId = useAppStore((s) => s.statusByAgent[agentId]?.session_id);
-  const loadAgentStatus = useAppStore((s) => s.loadAgentStatus);
+  const hasControl = useConnectionStore((s) => s.hasControl());
+  const sessionId = useAgentsStore((s) => s.statusByAgent[agentId]?.session_id);
+  const loadAgentStatus = useAgentsStore((s) => s.loadAgentStatus);
 
   useEffect(() => {
     if (!sessionId) {
@@ -333,7 +336,7 @@ export function SinglePane({
   push: Push;
   view: View;
 }) {
-  const connection = useAppStore((s) => s.connection);
+  const connection = useConnectionStore((s) => s.connection);
 
   return (
     <Pane
@@ -380,7 +383,7 @@ export function MasterPane({
   push: Push;
   view: View;
 }) {
-  const connection = useAppStore((s) => s.connection);
+  const connection = useConnectionStore((s) => s.connection);
   const atRoot = view.name === "projects";
 
   return (

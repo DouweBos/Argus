@@ -34,7 +34,10 @@ import {
 
 import { readGuestLabel, rememberGuestLabel } from "../lib/huddleIdentity";
 import type { RemoteDevice } from "../lib/protocol";
-import { useAppStore } from "../lib/store";
+import { useAgentsStore } from "../stores/agents";
+import { useConnectionStore } from "../stores/connection";
+import { useDevicesStore } from "../stores/devices";
+import { useHuddleStore } from "../stores/huddle";
 import { AgentTranscript } from "./AgentTranscript";
 import { ChatInput } from "./ChatInput";
 import { ConnectionBadge } from "./ConnectionBadge";
@@ -49,8 +52,8 @@ import {
 import { useIsWide } from "./useIsWide";
 
 export function HuddleGuest({ token }: { token: string }) {
-  const huddle = useAppStore((s) => s.huddle);
-  const joinHuddle = useAppStore((s) => s.joinHuddle);
+  const huddle = useHuddleStore((s) => s.huddle);
+  const joinHuddle = useHuddleStore((s) => s.joinHuddle);
   // A reload of the same tab keeps the name and the key, so it rejoins without
   // asking the guest — or the host — anything a second time.
   const [label, setLabel] = useState(readGuestLabel);
@@ -90,13 +93,13 @@ function HuddleRoom({ view }: { view: HuddleView }) {
   const [pane, setPane] = useState<HuddlePane>("agent");
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const leaveHuddle = useAppStore((s) => s.leaveHuddle);
-  const connection = useAppStore((s) => s.connection);
-  const status = useAppStore((s) => s.statusByAgent[agentId]);
-  const loadAgentStatus = useAppStore((s) => s.loadAgentStatus);
-  const devices = useAppStore((s) => s.devices);
-  const refreshDevices = useAppStore((s) => s.refreshDevices);
-  const sayInHuddle = useAppStore((s) => s.sayInHuddle);
+  const leaveHuddle = useHuddleStore((s) => s.leaveHuddle);
+  const connection = useConnectionStore((s) => s.connection);
+  const status = useAgentsStore((s) => s.statusByAgent[agentId]);
+  const loadAgentStatus = useAgentsStore((s) => s.loadAgentStatus);
+  const devices = useDevicesStore((s) => s.devices);
+  const refreshDevices = useDevicesStore((s) => s.refreshDevices);
+  const sayInHuddle = useHuddleStore((s) => s.sayInHuddle);
   const hasDevice = panes.includes("device");
   // Wide enough for both at once: the device stops being a pane you switch to
   // and becomes a panel beside the conversation, the way the desktop shows it.
@@ -346,7 +349,7 @@ function DevicePane({ device }: { device: RemoteDevice | null }) {
  * nobody is asked to approve anyone again.
  */
 function HuddleSettingsDialog({ onClose }: { onClose: () => void }) {
-  const renameInHuddle = useAppStore((s) => s.renameInHuddle);
+  const renameInHuddle = useHuddleStore((s) => s.renameInHuddle);
   const [name, setName] = useState(readGuestLabel);
   const dirty = name.trim().length > 0 && name.trim() !== readGuestLabel();
   const save = () => {

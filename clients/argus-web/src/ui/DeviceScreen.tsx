@@ -17,7 +17,8 @@ import {
 import { H264CanvasDecoder } from "@argus/remote-client";
 import { toNativeKey } from "../lib/keymap";
 import type { RemoteDeviceOrientation, RemotePlatform } from "../lib/protocol";
-import { useAppStore } from "../lib/store";
+import { useConnectionStore } from "../stores/connection";
+import { useDevicesStore } from "../stores/devices";
 
 const PLACEHOLDER: Record<string, string> = {
   connecting: "Connecting to device…",
@@ -90,27 +91,27 @@ export function DeviceScreen({
   platform: RemotePlatform;
   isTv: boolean;
 }) {
-  const connection = useAppStore((s) => s.connection);
-  const hasControl = useAppStore((s) => s.hasControl());
-  const watchDevice = useAppStore((s) => s.watchDevice);
-  const unwatchDevice = useAppStore((s) => s.unwatchDevice);
-  const registerMediaSink = useAppStore((s) => s.registerMediaSink);
-  const deviceTouch = useAppStore((s) => s.deviceTouch);
-  const deviceButton = useAppStore((s) => s.deviceButton);
-  const deviceKeyboard = useAppStore((s) => s.deviceKeyboard);
-  const holder = useAppStore((s) => s.claimByDevice[deviceId] ?? null);
-  const loadDeviceState = useAppStore((s) => s.loadDeviceState);
-  const setDeviceOrientation = useAppStore((s) => s.setDeviceOrientation);
-  const setDeviceFold = useAppStore((s) => s.setDeviceFold);
-  const deviceState = useAppStore((s) => s.deviceStateById[deviceId] ?? null);
+  const connection = useConnectionStore((s) => s.connection);
+  const hasControl = useConnectionStore((s) => s.hasControl());
+  const watchDevice = useDevicesStore((s) => s.watchDevice);
+  const unwatchDevice = useDevicesStore((s) => s.unwatchDevice);
+  const registerMediaSink = useDevicesStore((s) => s.registerMediaSink);
+  const deviceTouch = useDevicesStore((s) => s.deviceTouch);
+  const deviceButton = useDevicesStore((s) => s.deviceButton);
+  const deviceKeyboard = useDevicesStore((s) => s.deviceKeyboard);
+  const holder = useDevicesStore((s) => s.claimByDevice[deviceId] ?? null);
+  const loadDeviceState = useDevicesStore((s) => s.loadDeviceState);
+  const setDeviceOrientation = useDevicesStore((s) => s.setDeviceOrientation);
+  const setDeviceFold = useDevicesStore((s) => s.setDeviceFold);
+  const deviceState = useDevicesStore((s) => s.deviceStateById[deviceId] ?? null);
   // The framebuffer is panel-native, so a device held sideways streams
   // sideways — present it the way it is actually being held.
   const rotation = deviceState?.display?.rotation ?? 0;
   const fold = deviceState?.fold ?? null;
-  const claimConnectionId = useAppStore((s) => s.claimConnectionId);
-  const loadClaim = useAppStore((s) => s.loadClaim);
-  const claimDevice = useAppStore((s) => s.claimDevice);
-  const releaseDevice = useAppStore((s) => s.releaseDevice);
+  const claimConnectionId = useDevicesStore((s) => s.claimConnectionId);
+  const loadClaim = useDevicesStore((s) => s.loadClaim);
+  const claimDevice = useDevicesStore((s) => s.claimDevice);
+  const releaseDevice = useDevicesStore((s) => s.releaseDevice);
   // Someone else is driving: their input wins until we take over, so say so
   // rather than letting taps be refused silently.
   const blocked = holder !== null && holder.connection_id !== claimConnectionId;

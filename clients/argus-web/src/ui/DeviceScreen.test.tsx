@@ -31,27 +31,32 @@ vi.mock("@argus/remote-client", () => ({
   },
 }));
 
-vi.mock("../lib/store", () => ({
-  useAppStore: (select: (s: unknown) => unknown) =>
-    select({
-      connection: "ready",
-      hasControl: () => true,
-      watchDevice: vi.fn().mockResolvedValue(1),
-      unwatchDevice: vi.fn().mockResolvedValue(undefined),
-      registerMediaSink: () => () => {},
-      deviceTouch: vi.fn(),
-      deviceButton,
-      deviceKeyboard: vi.fn(),
-      claimByDevice,
-      claimConnectionId,
-      loadClaim: vi.fn().mockResolvedValue(undefined),
-      claimDevice,
-      releaseDevice,
-      loadDeviceState,
-      setDeviceOrientation,
-      setDeviceFold,
-      deviceStateById: { "sim-1": deviceState },
-    }),
+/** One state object behind every store the screen reads. */
+const fakeStore = () => ({
+  connection: "ready",
+  hasControl: () => true,
+  watchDevice: vi.fn().mockResolvedValue(1),
+  unwatchDevice: vi.fn().mockResolvedValue(undefined),
+  registerMediaSink: () => () => {},
+  deviceTouch: vi.fn(),
+  deviceButton,
+  deviceKeyboard: vi.fn(),
+  claimByDevice,
+  claimConnectionId,
+  loadClaim: vi.fn().mockResolvedValue(undefined),
+  claimDevice,
+  releaseDevice,
+  loadDeviceState,
+  setDeviceOrientation,
+  setDeviceFold,
+  deviceStateById: { "sim-1": deviceState },
+});
+
+vi.mock("../stores/connection", () => ({
+  useConnectionStore: (select: (s: unknown) => unknown) => select(fakeStore()),
+}));
+vi.mock("../stores/devices", () => ({
+  useDevicesStore: (select: (s: unknown) => unknown) => select(fakeStore()),
 }));
 
 beforeEach(() => {

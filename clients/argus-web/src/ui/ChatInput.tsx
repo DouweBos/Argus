@@ -37,7 +37,10 @@ import type {
   RemotePermissionMode,
   RemoteSlashCommand,
 } from "../lib/protocol";
-import { useAppStore } from "../lib/store";
+import { useAgentsStore } from "../stores/agents";
+import { useHuddleStore } from "../stores/huddle";
+import { useProjectsStore } from "../stores/projects";
+import { useTranscriptsStore } from "../stores/transcripts";
 import { useMentionPicker } from "./useMentionPicker";
 
 /** The computer never lets a remote switch an agent into Trusted, so it isn't offered. */
@@ -92,8 +95,8 @@ function ContextMeterChip({
   modelValue: string | null;
   models: RemoteModelInfo[];
 }) {
-  const messages = useAppStore((s) => s.messagesByAgent[agentId]);
-  const reported = useAppStore((s) => s.statusByAgent[agentId]?.context_window);
+  const messages = useTranscriptsStore((s) => s.messagesByAgent[agentId]);
+  const reported = useAgentsStore((s) => s.statusByAgent[agentId]?.context_window);
   const contextTokens = useMemo(() => {
     if (!messages) {
       return 0;
@@ -132,23 +135,23 @@ export function ChatInput({
   agentId: string;
   sessionId?: string;
 }) {
-  const status = useAppStore((s) => s.statusByAgent[agentId]);
-  const caps = useAppStore((s) => s.capabilitiesByAgent[agentId]);
-  const effort = useAppStore((s) => s.effortByAgent[agentId] ?? null);
-  const followUps = useAppStore(
+  const status = useAgentsStore((s) => s.statusByAgent[agentId]);
+  const caps = useAgentsStore((s) => s.capabilitiesByAgent[agentId]);
+  const effort = useAgentsStore((s) => s.effortByAgent[agentId] ?? null);
+  const followUps = useTranscriptsStore(
     (s) => s.followUpsByAgent[agentId] ?? NO_FOLLOW_UPS,
   );
-  const loadCapabilities = useAppStore((s) => s.loadCapabilities);
-  const loadAgentStatus = useAppStore((s) => s.loadAgentStatus);
-  const sendMessage = useAppStore((s) => s.sendMessage);
-  const queueMessage = useAppStore((s) => s.queueMessage);
-  const interrupt = useAppStore((s) => s.interrupt);
-  const setModel = useAppStore((s) => s.setModel);
-  const setPermissionMode = useAppStore((s) => s.setPermissionMode);
-  const setEffort = useAppStore((s) => s.setEffort);
-  const projects = useAppStore((s) => s.projects);
-  const refreshProjects = useAppStore((s) => s.refreshProjects);
-  const setHuddleTyping = useAppStore((s) => s.setHuddleTyping);
+  const loadCapabilities = useAgentsStore((s) => s.loadCapabilities);
+  const loadAgentStatus = useAgentsStore((s) => s.loadAgentStatus);
+  const sendMessage = useTranscriptsStore((s) => s.sendMessage);
+  const queueMessage = useAgentsStore((s) => s.queueMessage);
+  const interrupt = useAgentsStore((s) => s.interrupt);
+  const setModel = useAgentsStore((s) => s.setModel);
+  const setPermissionMode = useAgentsStore((s) => s.setPermissionMode);
+  const setEffort = useAgentsStore((s) => s.setEffort);
+  const projects = useProjectsStore((s) => s.projects);
+  const refreshProjects = useProjectsStore((s) => s.refreshProjects);
+  const setHuddleTyping = useHuddleStore((s) => s.setHuddleTyping);
 
   // A no-op outside a huddle, so the composer reports either way and never has
   // to know which kind of connection it is sitting on.

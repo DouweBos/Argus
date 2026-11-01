@@ -39,7 +39,10 @@ import {
   buildLinkedProjectsPreamble,
   parseLinkedProjectsPreamble,
 } from "../lib/linkedProjects";
-import { imageKey, useAppStore } from "../lib/store";
+import { useAgentsStore } from "../stores/agents";
+import { useConnectionStore } from "../stores/connection";
+import { usePromptsStore } from "../stores/prompts";
+import { imageKey, useTranscriptsStore } from "../stores/transcripts";
 import { Mermaid } from "./Mermaid";
 import { WorkingIndicator } from "./WorkingIndicator";
 
@@ -185,10 +188,10 @@ const Message = memo(function Message({
   agentId: string;
   msg: RemoteMessage;
 }) {
-  const imageCache = useAppStore((s) => s.imageCache);
-  const prompts = useAppStore((s) => s.prompts);
-  const answered = useAppStore((s) => s.answered);
-  const respond = useAppStore((s) => s.respond);
+  const imageCache = useTranscriptsStore((s) => s.imageCache);
+  const prompts = usePromptsStore((s) => s.prompts);
+  const answered = usePromptsStore((s) => s.answered);
+  const respond = usePromptsStore((s) => s.respond);
 
   const resolveImageSrc = (block: ImageBlock) =>
     block.imageId ? imageCache[imageKey(agentId, block.imageId)] : undefined;
@@ -259,21 +262,21 @@ const Message = memo(function Message({
 });
 
 export function AgentTranscript({ agentId }: { agentId: string }) {
-  const connection = useAppStore((s) => s.connection);
-  const serverMessages = useAppStore((s) => s.messagesByAgent[agentId]);
-  const optimistic = useAppStore((s) => s.optimisticByAgent[agentId]);
-  const tasks = useAppStore((s) => s.tasksByAgent[agentId]);
-  const todos = useAppStore((s) => s.todosByAgent[agentId]);
-  const loadTranscript = useAppStore((s) => s.loadTranscript);
-  const loadQueue = useAppStore((s) => s.loadQueue);
-  const loadOlderMessages = useAppStore((s) => s.loadOlderMessages);
-  const loadImage = useAppStore((s) => s.loadImage);
-  const watchAgent = useAppStore((s) => s.watchAgent);
-  const loadAgentStatus = useAppStore((s) => s.loadAgentStatus);
-  const queued = useAppStore((s) => s.queuedByAgent[agentId]);
-  const hasControl = useAppStore((s) => s.hasControl());
-  const dismissLimitResume = useAppStore((s) => s.dismissLimitResume);
-  const limitResumeAt = useAppStore(
+  const connection = useConnectionStore((s) => s.connection);
+  const serverMessages = useTranscriptsStore((s) => s.messagesByAgent[agentId]);
+  const optimistic = useTranscriptsStore((s) => s.optimisticByAgent[agentId]);
+  const tasks = useTranscriptsStore((s) => s.tasksByAgent[agentId]);
+  const todos = useTranscriptsStore((s) => s.todosByAgent[agentId]);
+  const loadTranscript = useTranscriptsStore((s) => s.loadTranscript);
+  const loadQueue = useAgentsStore((s) => s.loadQueue);
+  const loadOlderMessages = useTranscriptsStore((s) => s.loadOlderMessages);
+  const loadImage = useTranscriptsStore((s) => s.loadImage);
+  const watchAgent = useAgentsStore((s) => s.watchAgent);
+  const loadAgentStatus = useAgentsStore((s) => s.loadAgentStatus);
+  const queued = useAgentsStore((s) => s.queuedByAgent[agentId]);
+  const hasControl = useConnectionStore((s) => s.hasControl());
+  const dismissLimitResume = useAgentsStore((s) => s.dismissLimitResume);
+  const limitResumeAt = useAgentsStore(
     (s) => s.statusByAgent[agentId]?.limit_resume_at ?? null,
   );
   const endRef = useRef<HTMLDivElement>(null);
@@ -353,7 +356,7 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
       if (
         scroller.scrollTop < 160 &&
         !loadingOlderRef.current &&
-        useAppStore.getState().prevBeforeByAgent[agentId] != null
+        useTranscriptsStore.getState().prevBeforeByAgent[agentId] != null
       ) {
         loadingOlderRef.current = true;
         preScrollHeightRef.current = scroller.scrollHeight;
@@ -507,9 +510,9 @@ function QueuedRow({
   onStartEdit: () => void;
   onStopEdit: () => void;
 }) {
-  const removeQueued = useAppStore((s) => s.removeQueued);
-  const updateQueued = useAppStore((s) => s.updateQueued);
-  const sendQueuedNow = useAppStore((s) => s.sendQueuedNow);
+  const removeQueued = useAgentsStore((s) => s.removeQueued);
+  const updateQueued = useAgentsStore((s) => s.updateQueued);
+  const sendQueuedNow = useAgentsStore((s) => s.sendQueuedNow);
 
   // `text` carries the linked-projects preamble; the editor only ever shows
   // what the user typed, and the preamble is rebuilt around whatever they save.

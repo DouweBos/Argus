@@ -16,7 +16,8 @@ import {
   Toggle,
 } from "@argus/peacock";
 import type { RemoteAgentStatus, RemoteSession } from "../lib/protocol";
-import { useAppStore } from "../lib/store";
+import { useGitStore } from "../stores/git";
+import { useProjectsStore } from "../stores/projects";
 import {
   agentAwaitingLabel,
   agentMetaLabel,
@@ -48,11 +49,11 @@ export function SessionGroup({
   onSpawn: (sessionId: string) => void;
   onChanged: () => void;
 }) {
-  const git = useAppStore((s) => s.gitStatusBySession[sessionId]);
-  const loadGitStatus = useAppStore((s) => s.loadGitStatus);
-  const deleteSession = useAppStore((s) => s.deleteSession);
-  const renameSession = useAppStore((s) => s.renameSession);
-  const renameSessionBranch = useAppStore((s) => s.renameSessionBranch);
+  const git = useGitStore((s) => s.gitStatusBySession[sessionId]);
+  const loadGitStatus = useGitStore((s) => s.loadGitStatus);
+  const deleteSession = useProjectsStore((s) => s.deleteSession);
+  const renameSession = useProjectsStore((s) => s.renameSession);
+  const renameSessionBranch = useProjectsStore((s) => s.renameSessionBranch);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [renaming, setRenaming] = useState<"branch" | "name" | null>(null);
   const [value, setValue] = useState("");
@@ -260,7 +261,7 @@ export function NewSessionForm({
   repoRoot: string;
   onCreated: () => void;
 }) {
-  const createSession = useAppStore((s) => s.createSession);
+  const createSession = useProjectsStore((s) => s.createSession);
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);

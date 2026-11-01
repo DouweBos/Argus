@@ -7,7 +7,8 @@
 import { useCallback } from "react";
 import { AgentRow, EmptyState, Icons, SidebarSection } from "@argus/peacock";
 import type { RemoteDevice, RemotePlatform } from "../lib/protocol";
-import { useAppStore } from "../lib/store";
+import { useConnectionStore } from "../stores/connection";
+import { useDevicesStore } from "../stores/devices";
 import { useLiveRefresh } from "./useLiveRefresh";
 
 export function DevicesView({
@@ -15,9 +16,9 @@ export function DevicesView({
 }: {
   onOpen: (device: RemoteDevice) => void;
 }) {
-  const connection = useAppStore((s) => s.connection);
-  const devices = useAppStore((s) => s.devices);
-  const refreshDevices = useAppStore((s) => s.refreshDevices);
+  const connection = useConnectionStore((s) => s.connection);
+  const devices = useDevicesStore((s) => s.devices);
+  const refreshDevices = useDevicesStore((s) => s.refreshDevices);
 
   const refresh = useCallback(() => {
     refreshDevices().catch(() => {});

@@ -11,13 +11,13 @@ import { PairingClient, parsePairingInput } from "@argus/remote-client";
 import { parseHuddleToken } from "../lib/huddleIdentity";
 import { defaultDeviceName, identityFromPairing } from "../lib/keystore";
 import { wsOrigin } from "../lib/origin";
-import { useAppStore } from "../lib/store";
+import { useConnectionStore } from "../stores/connection";
 import { HuddleGuest } from "./HuddleGuest";
 import { Monitor } from "./Monitor";
 
 export function App() {
-  const identity = useAppStore((s) => s.identity);
-  const init = useAppStore((s) => s.init);
+  const identity = useConnectionStore((s) => s.identity);
+  const init = useConnectionStore((s) => s.init);
   // Guest vs. paired mode is decided once — a live tab never switches between
   // them — but a second share link pasted into a guest tab is a new room.
   const [huddleToken, setHuddleToken] = useState(() =>
@@ -50,7 +50,7 @@ export function App() {
 // --- Pairing ---------------------------------------------------------------
 
 function Pair() {
-  const pairComplete = useAppStore((s) => s.pairComplete);
+  const pairComplete = useConnectionStore((s) => s.pairComplete);
   const [code, setCode] = useState("");
   const [sas, setSas] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

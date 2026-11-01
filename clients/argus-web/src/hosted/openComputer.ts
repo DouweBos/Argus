@@ -10,7 +10,7 @@ import { accountSession } from "../account/accountStore";
 import type { AccountComputer } from "../account/directory";
 import type { AccountSession } from "../account/session";
 import { request } from "../lib/request";
-import { useAppStore } from "../lib/store";
+import { useConnectionStore } from "../stores/connection";
 
 export async function syncHost(
   session: AccountSession,
@@ -31,7 +31,7 @@ export function openComputer(computer: AccountComputer): boolean {
     return false;
   }
   void session.rememberHost(computer.id);
-  useAppStore.getState().openAccountHost({
+  useConnectionStore.getState().openAccountHost({
     deviceId: `account:${computer.id}`,
     devPrivB64: "",
     devPubB64: credentials.devPubB64,
@@ -47,7 +47,7 @@ export function openComputer(computer: AccountComputer): boolean {
         syncHost(session, transport).catch(() => undefined);
       },
       leave: () => {
-        useAppStore.getState().closeHost();
+        useConnectionStore.getState().closeHost();
         void session.rememberHost(null);
       },
     },

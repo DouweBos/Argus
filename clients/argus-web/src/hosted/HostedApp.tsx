@@ -7,7 +7,7 @@
 import { useEffect } from "react";
 import { Banner, Button, Card, Spinner } from "@argus/peacock";
 import { useAccountStore } from "../account/accountStore";
-import { useAppStore } from "../lib/store";
+import { useConnectionStore } from "../stores/connection";
 import { Monitor } from "../ui/Monitor";
 import { ComputersScreen } from "./ComputersScreen";
 import { HostedFrame } from "./HostedFrame";
@@ -50,7 +50,7 @@ export function HostedApp() {
   const phase = useAccountStore((s) => s.phase);
   const error = useAccountStore((s) => s.error);
   const boot = useAccountStore((s) => s.boot);
-  const openHost = useAppStore((s) => s.identity?.account);
+  const openHost = useConnectionStore((s) => s.identity?.account);
 
   useEffect(() => {
     void boot();

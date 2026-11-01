@@ -14,7 +14,9 @@ import {
   Spinner,
 } from "@argus/peacock";
 import type { RemoteAgentStatus } from "../lib/protocol";
-import { useAppStore } from "../lib/store";
+import { useAgentsStore } from "../stores/agents";
+import { useConnectionStore } from "../stores/connection";
+import { useProjectsStore } from "../stores/projects";
 import {
   agentAwaitingLabel,
   agentMetaLabel,
@@ -46,7 +48,7 @@ function RecentAgents({
 }: {
   onOpenAgent: (agentId: string, label: string) => void;
 }) {
-  const recentAgents = useAppStore((s) => s.recentAgents);
+  const recentAgents = useProjectsStore((s) => s.recentAgents);
   const recent = [...recentAgents]
     .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0))
     .slice(0, 8);
@@ -87,10 +89,10 @@ export function Projects({
   onOpen: (repoRoot: string, name: string) => void;
   onOpenAgent: (agentId: string, label: string) => void;
 }) {
-  const connection = useAppStore((s) => s.connection);
-  const projects = useAppStore((s) => s.projects);
-  const refreshProjects = useAppStore((s) => s.refreshProjects);
-  const loadRecentAgents = useAppStore((s) => s.loadRecentAgents);
+  const connection = useConnectionStore((s) => s.connection);
+  const projects = useProjectsStore((s) => s.projects);
+  const refreshProjects = useProjectsStore((s) => s.refreshProjects);
+  const loadRecentAgents = useProjectsStore((s) => s.loadRecentAgents);
   const [loaded, setLoaded] = useState(false);
 
   const refresh = useCallback(() => {
@@ -146,14 +148,14 @@ export function Project({
   onOpenAgent: (agentId: string, label: string) => void;
   onOpenChanges: (sessionId: string, label: string) => void;
 }) {
-  const connection = useAppStore((s) => s.connection);
-  const agents = useAppStore((s) => s.agentsByRepo[repoRoot]);
-  const sessions = useAppStore((s) => s.sessionsByRepo[repoRoot]);
-  const loadAgents = useAppStore((s) => s.loadAgents);
-  const loadSessions = useAppStore((s) => s.loadSessions);
-  const loadRecentAgents = useAppStore((s) => s.loadRecentAgents);
-  const hasControl = useAppStore((s) => s.hasControl());
-  const spawnAgent = useAppStore((s) => s.spawnAgent);
+  const connection = useConnectionStore((s) => s.connection);
+  const agents = useProjectsStore((s) => s.agentsByRepo[repoRoot]);
+  const sessions = useProjectsStore((s) => s.sessionsByRepo[repoRoot]);
+  const loadAgents = useProjectsStore((s) => s.loadAgents);
+  const loadSessions = useProjectsStore((s) => s.loadSessions);
+  const loadRecentAgents = useProjectsStore((s) => s.loadRecentAgents);
+  const hasControl = useConnectionStore((s) => s.hasControl());
+  const spawnAgent = useAgentsStore((s) => s.spawnAgent);
 
   const refresh = useCallback(() => {
     loadAgents(repoRoot).catch(() => {});
