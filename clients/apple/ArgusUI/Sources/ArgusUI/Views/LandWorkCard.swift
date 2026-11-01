@@ -261,67 +261,6 @@ public struct LandWorkCard: View {
   }
 }
 
-/// Open a pull request for this session's branch. The computer works out the
-/// base and head from the session, so this only asks what to call it.
-public struct OpenPullRequestSheet: View {
-  @Environment(PullRequestsStore.self) private var store
-  @Environment(\.dismiss) private var dismiss
-
-  let sessionId: String
-  let defaultTitle: String
-  let onOpened: (String) -> Void
-
-  @State private var title = ""
-  @State private var summary = ""
-  @State private var draft = true
-  @State private var opening = false
-
-  public init(sessionId: String, defaultTitle: String, onOpened: @escaping (String) -> Void) {
-    self.sessionId = sessionId
-    self.defaultTitle = defaultTitle
-    self.onOpened = onOpened
-  }
-
-  public var body: some View {
-    NavigationStack {
-      Screen {
-        Field(label: "Pull request", caption: "Push the branch first — GitHub needs it.") {
-          ThemedTextField(placeholder: "Title", text: $title)
-          ThemedTextField(
-            placeholder: "Description", text: $summary, multiline: true, lines: 4...12)
-          Toggle("Open as a draft", isOn: $draft)
-            .font(.scaled(size: 14))
-            .toggleStyle(.argusSwitch)
-        }
-        Btn(label: opening ? "Opening…" : "Open pull request") { open() }
-          .disabled(opening || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-      }
-      .sheetTitle("New pull request")
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { dismiss() }
-        }
-      }
-      .task { if title.isEmpty { title = defaultTitle } }
-    }
-  }
-
-  private func open() {
-    opening = true
-    Task {
-      let url = await store.create(
-        sessionId: sessionId,
-        title: title.trimmingCharacters(in: .whitespacesAndNewlines),
-        body: summary, draft: draft)
-      opening = false
-      guard let url else { return }
-      onOpened(url)
-      dismiss()
-    }
-  }
-}
-
-
 /// Pick the branch a merge lands on. Only local branches: the computer can't
 /// fast-forward a remote-tracking ref like `origin/main`, which is exactly the
 /// state that used to make a merge fail halfway.

@@ -8,6 +8,7 @@ extension MacTelemetryEvent {
     case merge
     case comment
     case close
+    case fill
   }
 
   enum ProjectSource: String {

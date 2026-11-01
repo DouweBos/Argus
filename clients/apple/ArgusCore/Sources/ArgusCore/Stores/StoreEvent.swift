@@ -66,6 +66,8 @@ public enum StoreEvent: Sendable, Equatable {
     case open
     case merge
     case comment
+    /// Claude filled in a new PR's description.
+    case fill
   }
 
   /// What was done to a branch.

@@ -4019,6 +4019,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct GithubFillPullRequestParams: Codable, Sendable {
+      public var sessionId: String
+      public var title: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case title = "title"
+      }
+
+      public init(sessionId: String, title: String) {
+        self.sessionId = sessionId
+        self.title = title
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(title, forKey: .title)
+      }
+    }
+
+    public struct GithubFillPullRequestResult: Codable, Sendable {
+      public var body: String?
+
+      enum CodingKeys: String, CodingKey {
+        case body = "body"
+      }
+
+      public init(body: String? = nil) {
+        self.body = body
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(body, forKey: .body)
+      }
+    }
+
     public struct GithubMergePullRequestParamsStrategy: RawRepresentable, Codable, Hashable, Sendable {
       public var rawValue: String
       public init(rawValue: String) { self.rawValue = rawValue }
@@ -4112,6 +4150,40 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(pullRequest, forKey: .pullRequest)
+      }
+    }
+
+    public struct GithubPullRequestTemplateParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct GithubPullRequestTemplateResult: Codable, Sendable {
+      public var template: String?
+
+      enum CodingKeys: String, CodingKey {
+        case template = "template"
+      }
+
+      public init(template: String? = nil) {
+        self.template = template
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(template, forKey: .template)
       }
     }
 
@@ -7007,6 +7079,12 @@ extension ArgusProtocol {
       public static let name = "github.create_pull_request"
     }
 
+    public enum GithubFillPullRequest: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.GithubFillPullRequestParams
+      public typealias Result = ArgusProtocol.MethodsTypes.GithubFillPullRequestResult
+      public static let name = "github.fill_pull_request"
+    }
+
     public enum GithubMergePullRequest: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.GithubMergePullRequestParams
       public typealias Result = ArgusProtocol.MethodsTypes.GithubMergePullRequestResult
@@ -7017,6 +7095,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.GithubPullRequestParams
       public typealias Result = ArgusProtocol.MethodsTypes.GithubPullRequestResult
       public static let name = "github.pull_request"
+    }
+
+    public enum GithubPullRequestTemplate: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.GithubPullRequestTemplateParams
+      public typealias Result = ArgusProtocol.MethodsTypes.GithubPullRequestTemplateResult
+      public static let name = "github.pull_request_template"
     }
 
     public enum GithubPullRequests: RemoteCommand {

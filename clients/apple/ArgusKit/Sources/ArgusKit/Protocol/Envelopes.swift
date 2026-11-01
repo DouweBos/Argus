@@ -102,6 +102,8 @@ public enum RemoteMethod: String, Codable, Sendable {
   case githubCreatePullRequest = "github.create_pull_request"
   case githubMergePullRequest = "github.merge_pull_request"
   case githubCommentPullRequest = "github.comment_pull_request"
+  case githubPullRequestTemplate = "github.pull_request_template"
+  case githubFillPullRequest = "github.fill_pull_request"
 
   case permissionRespond = "permission.respond"
 

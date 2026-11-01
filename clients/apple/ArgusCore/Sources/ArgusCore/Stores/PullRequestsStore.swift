@@ -98,6 +98,39 @@ public final class PullRequestsStore {
     }
   }
 
+  /// The repo's PR template for a session, nil when it has none.
+  public func template(sessionId: String) async -> String? {
+    guard let backend = host.backend else { return nil }
+    struct Params: Encodable { let session_id: String }
+    struct Result: Decodable { let template: String? }
+    // Optional: a computer without the method, or no template, starts blank.
+    return try? await backend.request(
+      .githubPullRequestTemplate, Params(session_id: sessionId), as: Result.self
+    ).template
+  }
+
+  /// Claude's description from the session's commits and diff; nil when it
+  /// couldn't. Throws for the sheet to show, not the list's banner.
+  public func fill(sessionId: String, title: String) async throws -> String? {
+    guard let backend = host.backend else { return nil }
+    struct Params: Encodable {
+      let session_id: String
+      let title: String
+    }
+    struct Result: Decodable { let body: String? }
+    do {
+      let body = try await backend.request(
+        .githubFillPullRequest, Params(session_id: sessionId, title: title), as: Result.self
+      ).body
+      host.hooks.track(.pullRequestActed(action: .fill))
+
+      return body
+    } catch {
+      if !HostStore.isCancellation(error) { host.hooks.errorReported(error, "pull_requests") }
+      throw error
+    }
+  }
+
   @discardableResult
   public func merge(repo: String, number: Int, strategy: RemoteMergeStrategy) async -> Bool {
     guard let backend = host.backend else { return false }

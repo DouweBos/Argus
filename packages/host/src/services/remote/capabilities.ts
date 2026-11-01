@@ -261,7 +261,9 @@ import {
 import {
   commentOnRemotePullRequest,
   createRemotePullRequest,
+  fillRemotePullRequest,
   mergeRemotePullRequest,
+  remotePullRequestTemplate,
   remotePullRequest,
   remotePullRequests,
 } from "./githubRemote";
@@ -2244,6 +2246,18 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         draft: draft ?? true,
       }),
     );
+  },
+  "github.pull_request_template": async (params) => {
+    const { session_id } = parse("github.pull_request_template", params);
+    requireSession(session_id);
+
+    return remotePullRequestTemplate(session_id);
+  },
+  "github.fill_pull_request": async (params) => {
+    const { session_id, title } = parse("github.fill_pull_request", params);
+    requireSession(session_id);
+
+    return await control(() => fillRemotePullRequest(session_id, title));
   },
   "github.merge_pull_request": async (params) => {
     const { repo, number, strategy } = parse(

@@ -20,6 +20,7 @@ const WRITES = [
   "sessions.stash_apply",
   "sessions.stash_drop",
   "github.create_pull_request",
+  "github.fill_pull_request",
   "github.merge_pull_request",
   "github.comment_pull_request",
 ] as const satisfies readonly RemoteMethod[];
@@ -30,6 +31,7 @@ const READS = [
   "sessions.tags",
   "github.pull_requests",
   "github.pull_request",
+  "github.pull_request_template",
 ] as const satisfies readonly RemoteMethod[];
 
 describe("landing work over the wire", () => {
@@ -58,6 +60,7 @@ describe("landing work over the wire", () => {
     expect(METHOD_SCOPE["sessions.merge_blockers"].kind).toBe("session");
     expect(METHOD_SCOPE["github.pull_requests"].kind).toBe("denied");
     expect(METHOD_SCOPE["github.pull_request"].kind).toBe("denied");
+    expect(METHOD_SCOPE["github.pull_request_template"].kind).toBe("denied");
     expect(METHOD_SCOPE["sessions.stashes"].kind).toBe("denied");
     expect(METHOD_SCOPE["sessions.tags"].kind).toBe("denied");
   });

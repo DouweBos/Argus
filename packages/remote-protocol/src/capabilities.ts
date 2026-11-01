@@ -333,6 +333,9 @@ export const REMOTE_METHODS = {
   "github.pull_requests": "monitor",
   "github.pull_request": "monitor",
   "github.create_pull_request": "control",
+  "github.pull_request_template": "monitor",
+  /** Runs Claude on the computer's account. */
+  "github.fill_pull_request": "control",
   "github.merge_pull_request": "control",
   "github.comment_pull_request": "control",
   /** The inbox. Reading it is monitor; deciding is not — accepting one spins

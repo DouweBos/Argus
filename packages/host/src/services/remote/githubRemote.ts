@@ -22,6 +22,8 @@ import { appState } from "../../state";
 import { ghPrComment, ghPrCreate, ghPrMerge } from "../github/prActions";
 import { getPullRequestDetail } from "../github/prDetail";
 import { listInterestingPullRequests } from "../github/pullRequests";
+import { autofillPullRequestBody } from "../session/prAutofill";
+import { readPullRequestTemplate } from "../session/pullRequest";
 
 function toRemotePullRequest(pr: InterestingPullRequest): RemotePullRequest {
   return {
@@ -138,6 +140,37 @@ export async function createRemotePullRequest(params: {
     head: session.branch,
     draft: params.draft,
   });
+}
+
+function sessionFor(sessionId: string) {
+  const session = appState.sessions.get(sessionId);
+  if (!session) {
+    throw `Session not found: ${sessionId}`;
+  }
+
+  return session;
+}
+
+export function remotePullRequestTemplate(sessionId: string): {
+  template: string | null;
+} {
+  return { template: readPullRequestTemplate(sessionFor(sessionId).repo_root) };
+}
+
+/** The same one-shot the desktop's "Fill in with Claude" runs. */
+export async function fillRemotePullRequest(
+  sessionId: string,
+  title: string,
+): Promise<{ body: string | null }> {
+  const session = sessionFor(sessionId);
+
+  return {
+    body: await autofillPullRequestBody({
+      sessionId,
+      title,
+      baseBranch: session.base_branch ?? "main",
+    }),
+  };
 }
 
 export async function mergeRemotePullRequest(

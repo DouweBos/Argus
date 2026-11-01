@@ -244,6 +244,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "github.pull_requests": DENIED,
   "github.pull_request": DENIED,
   "github.create_pull_request": DENIED,
+  "github.pull_request_template": DENIED,
+  "github.fill_pull_request": DENIED,
   "github.merge_pull_request": DENIED,
   "github.comment_pull_request": DENIED,
   "proposals.list": DENIED,

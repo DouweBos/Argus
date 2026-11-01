@@ -666,6 +666,13 @@ export const MethodParams = {
     body: z.string(),
     draft: z.boolean().optional(),
   }),
+  /** The session's repo template, to start a new PR's description from. */
+  "github.pull_request_template": z.object({ session_id: z.string() }),
+  /** Claude fills the description from the session's commits and diff. */
+  "github.fill_pull_request": z.object({
+    session_id: z.string(),
+    title: z.string().trim().min(1),
+  }),
   "github.merge_pull_request": z.object({
     repo: z.string(),
     number: z.number().int().positive(),
@@ -1038,6 +1045,10 @@ export const MethodResult = {
     number: z.number(),
     url: z.string(),
   }),
+  /** Null when the repo has no template. */
+  "github.pull_request_template": z.object({ template: z.string().nullable() }),
+  /** Null when Claude couldn't fill it. */
+  "github.fill_pull_request": z.object({ body: z.string().nullable() }),
   "github.merge_pull_request": z.object({ accepted: z.boolean() }),
   "github.comment_pull_request": z.object({ accepted: z.boolean() }),
   "proposals.list": z.object({ proposals: z.array(RemoteProposal) }),
