@@ -148,9 +148,12 @@ public struct RemoteRunner: Codable, Hashable, Sendable, Identifiable {
   public var defaultModel: String?
   /// Empty for runners that only learn their models from a live handshake.
   public var models: [Model]
+  /// What the runner's CLI last reported, kept by the host; nil from older hosts.
+  public var reportedModels: [RemoteModelInfo]?
 
   enum CodingKeys: String, CodingKey {
     case id, models
+    case reportedModels = "reported_models"
     case displayName = "display_name"
     case isCustom = "is_custom"
     case defaultModel = "default_model"

@@ -749,6 +749,11 @@ export const RemoteRunner = z.object({
   is_custom: z.boolean(),
   default_model: z.string().nullable(),
   models: z.array(RemoteRunnerModel),
+  /**
+   * What the runner's CLI last reported in its handshake, kept by the host
+   * across restarts — a start's model and effort before any agent has run.
+   */
+  reported_models: z.array(RemoteModelInfo).optional(),
 });
 export type RemoteRunner = z.infer<typeof RemoteRunner>;
 

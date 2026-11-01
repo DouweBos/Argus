@@ -7,13 +7,19 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { rememberStartOptions, resetStartOptions } from "../agent/startOptions";
 import {
   createRun,
   getAutomationRun,
   resetAutomationCache,
   updateRun,
 } from "../automation/manager";
-import { markRemoteRunRead, toRemoteAutomationRun } from "./automationsRemote";
+import { listRunners } from "../llm/registry";
+import {
+  markRemoteRunRead,
+  remoteRunners,
+  toRemoteAutomationRun,
+} from "./automationsRemote";
 
 let home: string;
 let previousHome: string | undefined;
@@ -101,5 +107,37 @@ describe("the run a phone sees", () => {
 
   it("says nothing about a run it does not have", () => {
     expect(markRemoteRunRead("no-such-run")).toBeNull();
+  });
+});
+
+describe("the runners a phone sees", () => {
+  afterEach(() => resetStartOptions());
+
+  it("carries the models a runner last reported, for a start before any agent", () => {
+    const runner = listRunners()[0];
+    expect(runner).toBeDefined();
+    rememberStartOptions(runner.id, {
+      commands: [],
+      models: [
+        {
+          value: "haiku",
+          displayName: "Haiku",
+          description: "",
+          supportedEffortLevels: ["low", "high"],
+          extra: "dropped",
+        },
+      ],
+    });
+
+    const listed = remoteRunners().runners.find((r) => r.id === runner.id);
+
+    expect(listed?.reported_models).toEqual([
+      {
+        value: "haiku",
+        displayName: "Haiku",
+        description: "",
+        supportedEffortLevels: ["low", "high"],
+      },
+    ]);
   });
 });

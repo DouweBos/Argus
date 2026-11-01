@@ -28,6 +28,7 @@ import type {
   RemoteSignalSource,
 } from "@argus/remote-protocol";
 import path from "node:path";
+import { lastKnownModels } from "../agent/startOptions";
 import { draftAutomation } from "../automation/authoring";
 import { submitRunFeedback } from "../automation/feedback";
 import { normalizeGuardrails } from "../automation/guardrails";
@@ -181,6 +182,15 @@ export function remoteRunners(): { runners: RemoteRunner[] } {
         value: model.value,
         display_name: model.displayName,
         description: model.description ?? null,
+      })),
+      reported_models: lastKnownModels(runner.id).map((m) => ({
+        value: m.value,
+        displayName: m.displayName,
+        description: m.description,
+        supportsEffort: m.supportsEffort,
+        supportedEffortLevels: m.supportedEffortLevels,
+        supportsFastMode: m.supportsFastMode,
+        resolvedModel: m.resolvedModel,
       })),
     })),
   };

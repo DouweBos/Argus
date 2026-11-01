@@ -60,6 +60,13 @@ extension HostStore {
     runners = result.runners
   }
 
+  /// What a runner's CLI last reported, as the host kept it: a start's models
+  /// and effort before any agent has run. Nil is the default runner.
+  public func lastKnownModels(runnerId: String?) -> [RemoteModelInfo] {
+    let id = runnerId ?? "claude-code"
+    return runners.first { $0.id == id }?.reportedModels ?? []
+  }
+
   /// Backstop for a change nothing announced (a dropped event, an older
   /// computer): refetch the projects and every session list already held.
   public func refreshHeldLists() async {

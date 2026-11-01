@@ -11,10 +11,12 @@ extension StartAgentSheet {
     selectedRunner?.displayName ?? runner ?? "default"
   }
 
-  /// The models a Claude Code start offers: the host's start options, else what a live agent reported.
+  /// The models a Claude Code start offers: the host's start options, else what a
+  /// live agent reported, else what the runner last reported to the host.
   private var reportedModels: [RemoteModelInfo] {
     let started = sessionId.flatMap { host.startOptionsBySession[$0]?.models } ?? []
-    return started.isEmpty ? models : started
+    if !started.isEmpty { return started }
+    return models.isEmpty ? host.lastKnownModels(runnerId: runner) : models
   }
 
   /// A custom runner declares its own models; the gateway it points at would

@@ -15051,6 +15051,7 @@ extension ArgusProtocol {
     public var isCustom: Bool
     public var defaultModel: String?
     public var models: [RemoteRunnerModel]
+    public var reportedModels: [RemoteModelInfo]?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -15058,14 +15059,16 @@ extension ArgusProtocol {
       case isCustom = "is_custom"
       case defaultModel = "default_model"
       case models = "models"
+      case reportedModels = "reported_models"
     }
 
-    public init(id: String, displayName: String, isCustom: Bool, defaultModel: String? = nil, models: [RemoteRunnerModel]) {
+    public init(id: String, displayName: String, isCustom: Bool, defaultModel: String? = nil, models: [RemoteRunnerModel], reportedModels: [RemoteModelInfo]? = nil) {
       self.id = id
       self.displayName = displayName
       self.isCustom = isCustom
       self.defaultModel = defaultModel
       self.models = models
+      self.reportedModels = reportedModels
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -15075,6 +15078,7 @@ extension ArgusProtocol {
       try c.encode(isCustom, forKey: .isCustom)
       try c.encode(defaultModel, forKey: .defaultModel)
       try c.encode(models, forKey: .models)
+      try c.encodeIfPresent(reportedModels, forKey: .reportedModels)
     }
   }
 

@@ -6,6 +6,7 @@ import { appState } from "../../state";
 import { clearSpares, fillSpare } from "./spares";
 import {
   getStartOptions,
+  lastKnownModels,
   rememberStartOptions,
   resetStartOptions,
 } from "./startOptions";
@@ -77,6 +78,19 @@ describe("getStartOptions", () => {
     await filled;
 
     expect((await pending).slashCommands.map((c) => c.name)).toEqual(["warm"]);
+  });
+
+  it("remembers the last-known list across a host restart", async () => {
+    rememberStartOptions("claude-code", caps("claude"));
+    resetStartOptions(false);
+
+    const options = await getStartOptions("s1");
+
+    expect(options.models.map((m) => m.value)).toEqual(["claude-model"]);
+    expect(lastKnownModels("claude-code").map((m) => m.value)).toEqual([
+      "claude-model",
+    ]);
+    expect(lastKnownModels("custom:apex")).toEqual([]);
   });
 
   it("is empty for a runner nobody has run yet", async () => {
