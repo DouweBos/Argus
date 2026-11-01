@@ -633,7 +633,7 @@ async function finalizeSession(
     let preGeneratedTitle: string | null = null;
     if (useExistingBranch !== true) {
       if (!branch.trim() && description.trim()) {
-        const generated = await generateBranchAndTitle(description, repoRoot);
+        const generated = await generateBranchAndTitle(description);
         if (generated) {
           branchInput = generated.branch;
           preGeneratedTitle = generated.title;
@@ -804,7 +804,6 @@ async function finalizeSession(
       generateSessionTitle({
         branch: ws.branch,
         description: ws.description,
-        repoRoot,
       })
         .then((title) => {
           if (!title) {

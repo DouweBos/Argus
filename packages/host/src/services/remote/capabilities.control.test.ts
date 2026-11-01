@@ -711,6 +711,24 @@ describe("sessions.create with a prompt", () => {
     expect(vi.mocked(startAgent).mock.calls[0]?.[0]).toBe("s2");
   });
 
+  it("names the session from the prompt when the description is empty", async () => {
+    const { createSession } = vi.mocked(await import("../session/manager"));
+    createSession.mockResolvedValueOnce({ id: "s5", status: "ready" } as never);
+
+    await dispatch(
+      "sessions.create",
+      {
+        repo_root: "/repo",
+        branch: "",
+        description: "",
+        prompt: "reply with just hi",
+      },
+      makeCtx(["monitor", "control"]),
+    );
+
+    expect(createSession.mock.calls.at(-1)?.[2]).toBe("reply with just hi");
+  });
+
   it("starts that agent on the model, mode and runner the phone picked", async () => {
     const { createSession } = vi.mocked(await import("../session/manager"));
     createSession.mockResolvedValueOnce({

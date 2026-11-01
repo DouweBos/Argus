@@ -1480,7 +1480,8 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       createSession(
         repo_root,
         branch,
-        description,
+        // Named from the prompt when the client left the description out.
+        description.trim() || prompt?.trim() || "",
         use_existing_branch,
         base_branch,
       ),
