@@ -246,6 +246,10 @@ final class AppStore {
   /// Back in the foreground: the network may well have changed while away.
   func recheckRoutes() {
     routes.recheck()
+    // A socket that died while suspended still reads as ready until something fails on it.
+    if let gateway = host.backend as? GatewayBackend {
+      Task { await gateway.transport.checkAlive() }
+    }
   }
 
   /// A route won a preflight: a better one under a live connection, or any

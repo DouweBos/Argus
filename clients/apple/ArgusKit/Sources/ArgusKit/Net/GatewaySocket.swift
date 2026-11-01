@@ -6,6 +6,9 @@ import Foundation
 /// 30 s, reset on a successful open) because the phone loses the network
 /// constantly and every drop would otherwise need the UI to intervene.
 /// Text frames are ignored — everything real is binary.
+///
+/// Pings while open: an idle socket is what NATs and tunnels drop first, and a
+/// ping nobody answers is how a dead one is noticed rather than waited on.
 public actor GatewaySocket {
   public enum Event: Sendable {
     case open
@@ -21,14 +24,22 @@ public actor GatewaySocket {
   private var backoff: Duration = .seconds(1)
   private var receiveLoop: Task<Void, Never>?
   private var reconnectTask: Task<Void, Never>?
+  private var keepalive: Task<Void, Never>?
+  private let pingInterval: Duration
+  private let pongTimeout: Duration
 
   private static let maxBackoff: Duration = .seconds(30)
   /// `MAX_PAYLOAD` in the host's `localGatewayServer.ts`.
   private static let maxMessageSize = 16 * 1024 * 1024
 
-  public init(url: URL, session: URLSession = .shared) {
+  public init(
+    url: URL, session: URLSession = .shared,
+    pingInterval: Duration = .seconds(25), pongTimeout: Duration = .seconds(15)
+  ) {
     self.url = url
     self.session = session
+    self.pingInterval = pingInterval
+    self.pongTimeout = pongTimeout
   }
 
   /// Begin connecting. The returned stream lives across reconnects, emitting
@@ -47,6 +58,8 @@ public actor GatewaySocket {
     reconnectTask = nil
     receiveLoop?.cancel()
     receiveLoop = nil
+    keepalive?.cancel()
+    keepalive = nil
     task?.cancel(with: .goingAway, reason: nil)
     task = nil
     continuation?.finish()
@@ -58,10 +71,15 @@ public actor GatewaySocket {
     do {
       try await task.send(.data(data))
     } catch {
-      // A failed send means the socket is already gone; the receive loop will
-      // notice and drive the reconnect. Nothing useful to do here.
-      handleClose()
+      drop(task)
     }
+  }
+
+  /// Ping now rather than at the next interval — the app is back in the
+  /// foreground and the socket may have died while it was suspended.
+  public func checkAlive() async {
+    guard let task else { return }
+    await ping(task)
   }
 
   private func open() {
@@ -80,6 +98,32 @@ public actor GatewaySocket {
     receiveLoop = Task { [weak self] in
       await self?.receive(on: task)
     }
+    keepalive = Task { [weak self, pingInterval] in
+      while !Task.isCancelled {
+        try? await Task.sleep(for: pingInterval)
+        guard !Task.isCancelled, let self, await self.ping(task) else { return }
+      }
+    }
+  }
+
+  /// Whether `task` answered in time; one that didn't is dropped.
+  @discardableResult
+  private func ping(_ task: URLSessionWebSocketTask) async -> Bool {
+    let answered = await Self.pong(task, within: pongTimeout)
+    if !answered { drop(task) }
+    return answered
+  }
+
+  private static func pong(_ task: URLSessionWebSocketTask, within timeout: Duration) async -> Bool {
+    let once = Once()
+    return await withCheckedContinuation { continuation in
+      once.arm(continuation)
+      task.sendPing { error in once.resume(error == nil) }
+      Task {
+        try? await Task.sleep(for: timeout)
+        once.resume(false)
+      }
+    }
   }
 
   private func receive(on task: URLSessionWebSocketTask) async {
@@ -91,16 +135,29 @@ public actor GatewaySocket {
         }
         // Text frames are never part of this protocol; drop them silently.
       } catch {
-        handleClose()
+        drop(task)
         return
       }
     }
+  }
+
+  /// `dead` failed. Only the current socket drives a reconnect: a stale one
+  /// failing late must not tear down the connection that replaced it.
+  private func drop(_ dead: URLSessionWebSocketTask) {
+    guard dead === task else {
+      dead.cancel(with: .goingAway, reason: nil)
+      return
+    }
+    handleClose()
   }
 
   private func handleClose() {
     guard !closedByUs else { return }
     receiveLoop?.cancel()
     receiveLoop = nil
+    keepalive?.cancel()
+    keepalive = nil
+    task?.cancel(with: .goingAway, reason: nil)
     task = nil
     continuation?.yield(.closed)
     scheduleReconnect()
@@ -120,5 +177,22 @@ public actor GatewaySocket {
   private func clearReconnectAndOpen() {
     reconnectTask = nil
     open()
+  }
+}
+
+/// Resumes a continuation once: a pong and its deadline race to answer.
+private final class Once: @unchecked Sendable {
+  private let lock = NSLock()
+  private var continuation: CheckedContinuation<Bool, Never>?
+
+  func arm(_ continuation: CheckedContinuation<Bool, Never>) {
+    lock.withLock { self.continuation = continuation }
+  }
+
+  func resume(_ value: Bool) {
+    lock.withLock {
+      continuation?.resume(returning: value)
+      continuation = nil
+    }
   }
 }

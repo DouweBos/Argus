@@ -123,6 +123,11 @@ public actor Transport {
     return stream
   }
 
+  /// Ping the socket now; a dead one goes offline and reconnects.
+  public func checkAlive() async {
+    await socket.checkAlive()
+  }
+
   public func disconnect() async {
     pump?.cancel()
     pump = nil
