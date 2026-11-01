@@ -47,19 +47,38 @@ struct FileLinkHandling: ViewModifier {
   @Environment(\.openURL) private var openURL
 
   func body(content: Content) -> some View {
-    if let openFileLink {
-      content.environment(
-        \.openURL,
-        OpenURLAction { url in
-          if let ref = FileLinks.fileRef(from: url) {
-            openFileLink(ref)
-          } else {
-            openURL(url)
-          }
-          return .handled
-        })
+    content
+      .environment(\.openURL, OpenURLAction { url in
+        open(url)
+        return .handled
+      })
+      #if DEBUG
+        .onAppear { DevLinkTap.open = open }
+      #endif
+  }
+
+  private func open(_ url: URL) {
+    if let openFileLink, let ref = FileLinks.fileRef(from: url) {
+      openFileLink(ref)
     } else {
-      content
+      openURL(url)
     }
   }
 }
+
+#if DEBUG
+  /// Where a link tap in rendered text lands, for the dev driver: a gesture on
+  /// text is out of reach of the accessibility API that drives everything else.
+  @MainActor
+  public enum DevLinkTap {
+    static var open: ((URL) -> Void)?
+
+    /// Opens what a link reading `label` points at, as tapping it would. False when nothing is on screen to take it.
+    public static func tap(label: String) -> Bool {
+      let linked = AttributedString(label).linkified(files: true, mentions: label.hasPrefix("@"))
+      guard let open, let url = linked.runs.lazy.compactMap(\.link).first ?? URL(string: label) else { return false }
+      open(url)
+      return true
+    }
+  }
+#endif

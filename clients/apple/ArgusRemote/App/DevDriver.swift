@@ -1,5 +1,6 @@
 #if DEBUG
   import ArgusCore
+  import ArgusUI
   import SwiftUI
   import UIKit
 
@@ -12,7 +13,10 @@
   /// or the older `name:arg` with a `section`), `back`, `tree`, `press` (accessibility
   /// label, optional `index`), `type` (`text`, into the first text field or view; `clear` empties it first),
   /// `dismiss` (the keyboard), `sidebar` (select a session row: `id`, `label`, `repoRoot`, `projectName`),
-  /// `traits` (`sizeClass`, `orientation`).
+  /// `traits` (`sizeClass`, `orientation`),
+  /// `actions` (an element's long-press and swipe actions by `label` or `contains`; `name` performs one),
+  /// `links` (a text's links; `link` taps one by index), `scroll` (`to`: `top`/`bottom`, reports the offset),
+  /// `pasteImage` (a test image into the composer, as a paste).
   @MainActor
   final class DevDriver {
     private let dir: URL
@@ -222,6 +226,14 @@
           scene.requestGeometryUpdate(.iOS(interfaceOrientations: mask))
         }
         return ["ok": true]
+      case "actions":
+        return customActions(command)
+      case "links":
+        return links(command)
+      case "scroll":
+        return scroll(command)
+      case "pasteImage":
+        return pasteImage()
       default:
         return ["ok": false, "error": "unknown op"]
       }
@@ -276,6 +288,122 @@
       } else if let view = object as? UIView {
         for sub in view.subviews { walk(sub, into: &found, depth: depth + 1) }
       }
+    }
+
+    /// The element a command names: `label` exactly, or the first label holding `contains`; `index` among those.
+    private func target(_ command: [String: Any]) -> NSObject? {
+      let all = elements()
+      let matches =
+        if let needle = command["contains"] as? String {
+          all.filter { $0.label.contains(needle) }
+        } else {
+          all.filter { $0.label == command["label"] as? String ?? "" }
+        }
+      let index = command["index"] as? Int ?? 0
+      return matches.indices.contains(index) ? matches[index].element : nil
+    }
+
+    /// Long-press menus and swipe actions, as VoiceOver reaches them: the custom
+    /// actions on the element or a container above it. Lists them, or performs `name`.
+    private func customActions(_ command: [String: Any]) -> [String: Any] {
+      guard let element = target(command) else { return ["ok": false, "error": "no element"] }
+      var actions: [UIAccessibilityCustomAction] = []
+      var current: NSObject? = element
+      for _ in 0..<8 {
+        guard let object = current else { break }
+        actions += object.accessibilityCustomActions ?? []
+        current = (object as? UIView)?.superview ?? container(of: object)
+      }
+      guard let name = command["name"] as? String else { return ["ok": true, "actions": actions.map(\.name)] }
+      guard let action = actions.first(where: { $0.name == name }) else {
+        return ["ok": false, "error": "no action \(name)", "actions": actions.map(\.name)]
+      }
+      if let handler = action.actionHandler { return ["ok": handler(action)] }
+      if let target = action.target as? NSObject, target.responds(to: action.selector) {
+        target.perform(action.selector, with: action)
+        return ["ok": true]
+      }
+      return ["ok": false, "error": "action has no handler"]
+    }
+
+    /// What holds a non-view element; SwiftUI's elements answer it without being `UIAccessibilityElement`s.
+    private func container(of object: NSObject) -> NSObject? {
+      let selector = NSSelectorFromString("accessibilityContainer")
+      guard object.responds(to: selector) else { return nil }
+      return object.perform(selector)?.takeUnretainedValue() as? NSObject
+    }
+
+    /// The links in a text element, through VoiceOver's links rotor. Lists them, or activates `link` (an index).
+    private func links(_ command: [String: Any]) -> [String: Any] {
+      guard let element = target(command) else { return ["ok": false, "error": "no element"] }
+      guard let rotor = (element.accessibilityCustomRotors ?? []).first(where: { $0.systemRotorType == .link }) else {
+        return ["ok": false, "error": "no links rotor", "rotors": (element.accessibilityCustomRotors ?? []).map(\.name)]
+      }
+      var found: [NSObject] = []
+      var item: UIAccessibilityCustomRotorItemResult?
+      for _ in 0..<50 {
+        let predicate = UIAccessibilityCustomRotorSearchPredicate()
+        predicate.searchDirection = .next
+        if let item { predicate.currentItem = item }
+        guard let next = rotor.itemSearchBlock(predicate), let element = next.targetElement as? NSObject,
+          !found.contains(where: { $0 === element })
+        else { break }
+        found.append(element)
+        item = next
+      }
+      guard let pick = command["link"] as? Int else {
+        return ["ok": true, "links": found.map { $0.accessibilityLabel ?? "" }]
+      }
+      guard found.indices.contains(pick) else { return ["ok": false, "error": "no link \(pick)", "count": found.count] }
+      // SwiftUI's link elements don't activate; land where the tap would.
+      let label = found[pick].accessibilityLabel ?? ""
+      return ["ok": DevLinkTap.tap(label: label), "link": label]
+    }
+
+    /// Scrolls the screen's tallest scroll view to `to` (`top` or `bottom`) and
+    /// reports where it ended up; without `to`, only reports.
+    private func scroll(_ command: [String: Any]) -> [String: Any] {
+      guard let window else { return ["ok": false] }
+      var views: [UIScrollView] = []
+      var stack: [UIView] = [window]
+      while let view = stack.popLast() {
+        if let scroll = view as? UIScrollView, !view.isHidden, !(view is UITextView),
+          scroll.contentSize.height > scroll.contentSize.width / 4
+        {
+          views.append(scroll)
+        }
+        stack.append(contentsOf: view.subviews)
+      }
+      guard let view = views.max(by: { $0.bounds.height < $1.bounds.height }) else {
+        return ["ok": false, "error": "no scroll view"]
+      }
+      let inset = view.adjustedContentInset
+      switch command["to"] as? String {
+      case "top": view.setContentOffset(CGPoint(x: 0, y: -inset.top), animated: true)
+      case "bottom":
+        let maxY = max(view.contentSize.height + inset.bottom - view.bounds.height, -inset.top)
+        view.setContentOffset(CGPoint(x: 0, y: maxY), animated: true)
+      default: break
+      }
+      return [
+        "ok": true, "offset": view.contentOffset.y, "height": view.bounds.height,
+        "content": view.contentSize.height, "insetTop": inset.top, "insetBottom": inset.bottom,
+      ]
+    }
+
+    /// An image into the composer the way a paste lands, since the photo picker runs out of process.
+    private func pasteImage() -> [String: Any] {
+      guard let field = textInputs().first(where: { $0 is UITextView }) as? UITextView else {
+        return ["ok": false, "error": "no composer"]
+      }
+      let image = UIGraphicsImageRenderer(size: CGSize(width: 64, height: 64)).image { context in
+        UIColor.systemTeal.setFill()
+        context.fill(CGRect(x: 0, y: 0, width: 64, height: 64))
+      }
+      UIPasteboard.general.image = image
+      field.becomeFirstResponder()
+      field.paste(nil)
+      return ["ok": true]
     }
 
     /// An alert's action, run the way a tap would: dismiss, then its handler.
