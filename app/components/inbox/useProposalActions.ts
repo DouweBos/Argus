@@ -8,8 +8,8 @@
 import type { Proposal } from "../../lib/types";
 import type { ProposalCardAction } from "@argus/peacock";
 import { useState } from "react";
+import { proposalPrimary, proposalStartState } from "@argus/client-core";
 import { openExternalUrl, performProposalCleanup } from "../../lib/ipc";
-import { PROPOSAL_START_STAGE_LABELS } from "../../lib/proposals";
 import {
   acceptProposal,
   dismissProposal,
@@ -59,18 +59,11 @@ export function useProposalActions(): ProposalActions {
     }
   };
 
-  const startState = (proposal: Proposal) => {
-    if (proposal.start_stage) {
-      return { progress: PROPOSAL_START_STAGE_LABELS[proposal.start_stage] };
-    }
-    if (startingId === proposal.id) {
-      return { progress: "Starting…" };
-    }
-    // The host's reason is already trimmed to the part that matters.
-    const detail = proposal.start_error ?? refusals[proposal.id];
-
-    return detail ? { error: { title: "Couldn't start.", detail } } : {};
-  };
+  const startState = (proposal: Proposal) =>
+    proposalStartState(proposal, {
+      refusal: refusals[proposal.id],
+      requesting: startingId === proposal.id,
+    });
 
   // Deleting is the backend's to do and the inbox's to reflect: the card goes
   // when `proposals:changed` says it went, not when the button was pressed.
@@ -123,44 +116,33 @@ export function useProposalActions(): ProposalActions {
   const primaryAction = (
     proposal: Proposal,
   ): ProposalCardAction | undefined => {
-    const cta = proposal.cta;
-    if (!cta) {
-      return undefined;
-    }
-    if (cta.kind === "start_session") {
-      const failed = proposal.start_error ?? refusals[proposal.id];
-
-      return {
-        kind: "start",
-        label: failed ? "Try again" : cta.label,
-        onClick: () => {
-          start(proposal).catch(() => undefined);
-        },
-      };
-    }
-    if (cta.kind === "delete_branch" || cta.kind === "delete_session") {
-      return {
-        kind: "destroy",
-        label: cta.label,
-        confirm:
-          cta.kind === "delete_branch"
-            ? `${cta.force ? "git branch -D" : "git branch -d"} ${cta.branch ?? ""} — commits only on this branch are gone for good.`
-            : "The worktree and anything uncommitted in it are deleted. The branch is left alone.",
-        onClick: () => cleanup(proposal),
-      };
-    }
-    const url = cta.url;
-
-    return url
-      ? {
+    const primary = proposalPrimary(
+      proposal.cta,
+      Boolean(proposal.start_error ?? refusals[proposal.id]),
+    );
+    switch (primary?.kind) {
+      case "start":
+        return {
+          kind: "start",
+          label: primary.label,
+          onClick: () => {
+            start(proposal).catch(() => undefined);
+          },
+        };
+      case "destroy":
+        return { ...primary, onClick: () => cleanup(proposal) };
+      case "open":
+        return {
           kind: "open",
-          label: cta.label,
+          label: primary.label,
           // Client-side by design, same as the source link on the card.
           onClick: () => {
-            openExternalUrl(url).catch(() => undefined);
+            openExternalUrl(primary.url).catch(() => undefined);
           },
-        }
-      : undefined;
+        };
+      default:
+        return undefined;
+    }
   };
 
   return {

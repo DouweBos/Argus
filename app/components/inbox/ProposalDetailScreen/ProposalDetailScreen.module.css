@@ -3,25 +3,4 @@
   min-height: 0;
   padding: 24px 32px;
   overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.head {
-  display: flex;
-  align-items: center;
-  margin-left: -8px;
-}
-
-.provenance {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
-.label {
-  font-size: 11px;
-  color: var(--text-muted);
 }

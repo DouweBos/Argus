@@ -1,5 +1,6 @@
 export * from "./automations/cron";
 export * from "./automations/cronLabel";
+export * from "./automations/draft";
 export * from "./automations/format";
 export * from "./automations/reportPreview";
 export * from "./baseBranch";

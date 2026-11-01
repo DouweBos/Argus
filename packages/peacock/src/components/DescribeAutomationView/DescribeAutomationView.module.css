@@ -1,0 +1,65 @@
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.description {
+  min-height: 72px;
+  line-height: 1.55;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.hint {
+  font: var(--type-caption);
+  color: var(--text-muted);
+}
+
+.draft {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.notes {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.schedule {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.scheduleHeadline {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.scheduleCron {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.playbook {
+  min-height: 220px;
+  line-height: 1.55;
+}
+
+.error {
+  font: var(--type-caption);
+  color: var(--error);
+}

@@ -3,6 +3,8 @@ import {
   Button,
   EmptyState,
   Icons,
+  RunFeedbackDialog,
+  RunFeedbackLog,
   SectionPanel,
   StatCell,
   StatsStrip,
@@ -20,18 +22,18 @@ import {
   markRunRead,
   openAutomation,
   openQuickRuns,
+  sendAutomationRunFeedback,
   useAutomationRun,
 } from "../../../stores/automationStore";
 import { selectSession, useSessions } from "../../../stores/sessionStore";
+import { Markdown } from "../../shared/Markdown";
 import {
   CancelRunButton,
   DeleteRunButton,
   RunStatusBadge,
 } from "../RunControls";
-import { RunFeedbackDialog } from "../RunFeedbackDialog";
 import { SaveQuickRunButton } from "../SaveQuickRunButton";
 import styles from "./AutomationRunScreen.module.css";
-import { RunFeedbackLog } from "./RunFeedbackLog";
 import { RunReport } from "./RunReport";
 import { useReportRefResolvers } from "./reportRefs";
 
@@ -165,14 +167,21 @@ export function AutomationRunScreen() {
 
       {feedback.length > 0 && (
         <SectionPanel title="Feedback">
-          <RunFeedbackLog notes={feedback} />
+          <RunFeedbackLog
+            notes={feedback}
+            renderMarkdown={(text, className) => (
+              <Markdown className={className} text={text} />
+            )}
+          />
         </SectionPanel>
       )}
 
       {feedbackOpen && (
         <RunFeedbackDialog
-          runId={run.id}
           onClose={() => setFeedbackOpen(false)}
+          onSend={(note, allowClearing) =>
+            sendAutomationRunFeedback({ runId: run.id, note, allowClearing })
+          }
         />
       )}
     </div>

@@ -12,6 +12,7 @@ import {
   CronSchedulePreview,
   FormField,
   Input,
+  RevisePlaybookDialog,
   SectionPanel,
   SegmentedControl,
   TextArea,
@@ -23,7 +24,7 @@ import {
   localTimezone,
   nextFireTimes,
 } from "../../../lib/automations";
-import { listSignalSources } from "../../../lib/ipc";
+import { listSignalSources, revisePlaybook } from "../../../lib/ipc";
 import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
 import { saveAutomation } from "../../../stores/automationStore";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
@@ -33,7 +34,6 @@ import {
   useDefaultLlm,
 } from "../../../stores/settingsStore";
 import { ModelPicker, type RunnerSelection } from "../../agent/ModelPicker";
-import { RevisePlaybookDialog } from "../RevisePlaybookDialog";
 import styles from "./AutomationEditor.module.css";
 import { AutonomyFields } from "./AutonomyFields";
 
@@ -435,10 +435,15 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
 
         {revising && (
           <RevisePlaybookDialog
-            playbook={draft.playbook}
-            name={draft.name}
             onApply={(playbook) => patch("playbook", playbook)}
             onClose={() => setRevising(false)}
+            onRevise={(instruction) =>
+              revisePlaybook({
+                playbook: draft.playbook,
+                instruction,
+                name: draft.name,
+              }).then((r) => r.playbook)
+            }
           />
         )}
 

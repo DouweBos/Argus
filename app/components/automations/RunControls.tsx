@@ -4,10 +4,8 @@
  * `automation_run:changed` and re-renders whatever is on screen.
  */
 
-import type { AutomationRunStatus } from "../../lib/types";
 import { useState } from "react";
-import { Badge, Button, DestructiveConfirm } from "@argus/peacock";
-import { runStatusTone } from "../../lib/automations";
+import { Button, DestructiveConfirm } from "@argus/peacock";
 import {
   cancelAutomationRun,
   deleteAutomationRun,
@@ -15,9 +13,7 @@ import {
   useHasActiveRun,
 } from "../../stores/automationStore";
 
-export function RunStatusBadge({ status }: { status: AutomationRunStatus }) {
-  return <Badge tone={runStatusTone(status)}>{status}</Badge>;
-}
+export { RunStatusBadge } from "@argus/peacock";
 
 interface TriggerButtonProps {
   automationId: string;

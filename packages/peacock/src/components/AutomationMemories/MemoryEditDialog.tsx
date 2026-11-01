@@ -1,44 +1,51 @@
-import type {
-  AutomationMemory,
-  AutomationMemoryType,
-} from "../../../lib/types";
+import { describeError } from "@argus/client-core";
+import type { RemoteAutomationMemory } from "@argus/remote-protocol";
 import { useState } from "react";
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  FormField,
-  Input,
-  SegmentedControl,
-  TextArea,
-} from "@argus/peacock";
-import { saveAutomationMemory } from "../../../lib/ipc";
+import { Button } from "../Button/Button";
+import { Dialog } from "../Dialog/Dialog";
+import { DialogBody } from "../Dialog/DialogBody";
+import { DialogFooter } from "../Dialog/DialogFooter";
+import { FormField } from "../FormField/FormField";
+import { Input, TextArea } from "../Input/Input";
+import { SegmentedControl } from "../SegmentedControl/SegmentedControl";
 import styles from "./AutomationMemories.module.css";
 
 const TITLE_ID = "memory-edit-title";
 
-const TYPE_OPTIONS: { label: string; value: AutomationMemoryType }[] = [
+type MemoryType = RemoteAutomationMemory["type"];
+
+const TYPE_OPTIONS: { label: string; value: MemoryType }[] = [
   { label: "Project", value: "project" },
   { label: "Feedback", value: "feedback" },
   { label: "User", value: "user" },
   { label: "Reference", value: "reference" },
 ];
 
-/** Create a memory, or edit one a run wrote. Saves straight to the host. */
+/** What a save sends: the memory, and the name it had when it was opened. */
+export interface MemoryDraft {
+  name: string;
+  type: MemoryType;
+  description: string;
+  body: string;
+  /** Set when editing, so a changed name renames rather than copies. */
+  previous_name: string | null;
+}
+
+export interface MemoryEditDialogProps {
+  /** Null adds one. */
+  memory: RemoteAutomationMemory | null;
+  onClose: () => void;
+  onSave: (memory: MemoryDraft) => Promise<unknown>;
+}
+
+/** Create a memory, or edit one a run wrote. */
 export function MemoryEditDialog({
-  automationId,
   memory,
   onClose,
-}: {
-  automationId: string;
-  memory: AutomationMemory | null;
-  onClose: () => void;
-}) {
+  onSave,
+}: MemoryEditDialogProps) {
   const [name, setName] = useState(memory?.name ?? "");
-  const [type, setType] = useState<AutomationMemoryType>(
-    memory?.type ?? "project",
-  );
+  const [type, setType] = useState<MemoryType>(memory?.type ?? "project");
   const [description, setDescription] = useState(memory?.description ?? "");
   const [body, setBody] = useState(memory?.body ?? "");
   const [saving, setSaving] = useState(false);
@@ -48,7 +55,7 @@ export function MemoryEditDialog({
     setSaving(true);
     setError(null);
     try {
-      await saveAutomationMemory(automationId, {
+      await onSave({
         name: name.trim(),
         type,
         description,
@@ -57,8 +64,7 @@ export function MemoryEditDialog({
       });
       onClose();
     } catch (e) {
-      setError(typeof e === "string" ? e : String(e));
-    } finally {
+      setError(describeError(e));
       setSaving(false);
     }
   };
@@ -70,20 +76,20 @@ export function MemoryEditDialog({
 
   return (
     <Dialog
+      size="medium"
       title={memory ? "Edit memory" : "Add memory"}
       titleId={TITLE_ID}
-      size="medium"
       onClose={onClose}
     >
       <DialogBody>
         <FormField
-          label="Name"
           helper="Lowercase kebab-case; also the file name."
+          label="Name"
         >
           <Input
             autoFocus={!memory}
-            value={name}
             placeholder="session-merge-flow"
+            value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </FormField>
@@ -95,15 +101,15 @@ export function MemoryEditDialog({
           />
         </FormField>
         <FormField
-          label="Description"
           helper="One line, shown in the index every run reads."
+          label="Description"
         >
           <Input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
         </FormField>
-        <FormField label="Memory" helper="Markdown.">
+        <FormField helper="Markdown." label="Memory">
           <TextArea
             mono
             className={styles.body}

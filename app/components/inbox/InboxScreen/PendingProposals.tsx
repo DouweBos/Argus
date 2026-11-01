@@ -9,7 +9,6 @@ import {
 import { openRunFor, useAutomations } from "../../../stores/automationStore";
 import { renderProposalMarkdown } from "../proposalMarkdown";
 import { useProposalActions } from "../useProposalActions";
-import styles from "./InboxScreen.module.css";
 
 export function PendingProposals({ proposals }: { proposals: Proposal[] }) {
   const automations = useAutomations();
@@ -24,7 +23,7 @@ export function PendingProposals({ proposals }: { proposals: Proposal[] }) {
   } = useProposalActions();
 
   return (
-    <div className={styles.cards}>
+    <>
       {proposals.map((proposal) => {
         const project = proposalProjectName(proposal.repo_root);
         const automation = automations.find(
@@ -78,6 +77,6 @@ export function PendingProposals({ proposals }: { proposals: Proposal[] }) {
           />
         );
       })}
-    </div>
+    </>
   );
 }

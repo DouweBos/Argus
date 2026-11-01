@@ -1,0 +1,33 @@
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.view > * {
+  flex-shrink: 0;
+}
+
+.intro {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 2px 2px;
+}
+
+.playbook {
+  min-height: 180px;
+  line-height: 1.55;
+}
+
+.error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--error);
+}

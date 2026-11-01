@@ -1,0 +1,12 @@
+.anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.title {
+  color: var(--text-muted);
+}
+
+.disabled {
+  opacity: 0.5;
+}
