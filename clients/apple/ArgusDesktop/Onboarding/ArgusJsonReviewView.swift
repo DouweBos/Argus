@@ -91,7 +91,7 @@ struct ArgusJsonReviewView: View {
       .foregroundStyle(theme.textSecondary)
       .fixedSize(horizontal: false, vertical: true)
       if !generator.signals.isEmpty {
-        FlowRow(spacing: 6) {
+        FlowRow(spacing: 6, packed: true) {
           ForEach(Array(generator.signals.enumerated()), id: \.offset) { _, signal in
             Badge(label: signal.label, tone: .accent).fixedSize().help(signal.detail ?? signal.kind.rawValue)
           }

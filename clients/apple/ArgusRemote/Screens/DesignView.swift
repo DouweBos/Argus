@@ -57,7 +57,7 @@ struct SessionReferenceLinks: View {
   var body: some View {
     let designs = session.designRefs ?? []
     if SessionReferences.any(in: session) {
-      FlowRow(spacing: 6, rowSpacing: 6) {
+      FlowRow(spacing: 6, rowSpacing: 6, packed: true) {
         if let issue = session.linkedIssue {
           Chip(label: "\(issue.identifier) \(issue.title)", icon: Icon.issue) {
             router.push(.issue(ref: issue.identifier))

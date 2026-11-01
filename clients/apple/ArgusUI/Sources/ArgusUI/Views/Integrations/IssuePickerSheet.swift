@@ -124,7 +124,7 @@ public struct PickedIssueChips: View {
   }
 
   public var body: some View {
-    FlowRow(spacing: 6, rowSpacing: 6) {
+    FlowRow(spacing: 6, rowSpacing: 6, packed: true) {
       ForEach(issues) { issue in
         Chip(label: "\(issue.identifier) \(issue.title)", icon: Icon.close, tone: .accent) {
           issues.removeAll { $0.id == issue.id }

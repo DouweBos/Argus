@@ -234,7 +234,7 @@ public struct ProposalCard: View {
       } else {
         Text(content.title).font(.scaled(.headline)).textSelection(.enabled)
       }
-      FlowRow(spacing: 6, rowSpacing: 6) {
+      FlowRow(spacing: 6, rowSpacing: 6, packed: true) {
         if let action = content.action { Badge(label: action.label, tone: action.tone) }
         Badge(
           label: "\(Int((content.confidence * 100).rounded()))% sure",

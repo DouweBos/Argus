@@ -646,13 +646,18 @@ public struct Loading: View {
 /// An `HStack` of buttons does the opposite: it squeezes every label until the
 /// text wraps mid-word, which is how "Mark as done" became three lines on a
 /// phone.
+///
+/// `packed` is for badges and chips: each keeps its own width from the leading
+/// edge, rather than being spread into columns across a wide card.
 public struct FlowRow: SwiftUI.Layout {
   public var spacing: CGFloat = 8
   public var rowSpacing: CGFloat = 8
+  public var packed = false
 
-  public init(spacing: CGFloat = 8, rowSpacing: CGFloat = 8) {
+  public init(spacing: CGFloat = 8, rowSpacing: CGFloat = 8, packed: Bool = false) {
     self.spacing = spacing
     self.rowSpacing = rowSpacing
+    self.packed = packed
   }
 
   public func sizeThatFits(proposal: ProposedViewSize, subviews: LayoutSubviews, cache: inout ()) -> CGSize {
@@ -684,14 +689,21 @@ public struct FlowRow: SwiftUI.Layout {
     }
   }
 
+  private func cellWidths(_ row: [Int], subviews: LayoutSubviews, in width: CGFloat) -> [CGFloat] {
+    Self.cellWidths(
+      ideals: row.map { subviews[$0].sizeThatFits(.unspecified).width }, in: width,
+      spacing: spacing, packed: packed)
+  }
+
   /// Equal columns, unless one would truncate a wider label the row has room
   /// for — then each gets its ideal width plus an equal share of the rest.
-  private func cellWidths(_ row: [Int], subviews: LayoutSubviews, in width: CGFloat) -> [CGFloat] {
-    let available = width - spacing * CGFloat(row.count - 1)
-    let equal = available / CGFloat(row.count)
-    let ideals = row.map { subviews[$0].sizeThatFits(.unspecified).width }
+  /// Packed, each just gets its ideal width.
+  static func cellWidths(ideals: [CGFloat], in width: CGFloat, spacing: CGFloat, packed: Bool) -> [CGFloat] {
+    let available = width - spacing * CGFloat(ideals.count - 1)
+    if packed { return ideals.map { min($0, available) } }
+    let equal = available / CGFloat(ideals.count)
     guard ideals.contains(where: { $0 > equal }) else { return ideals.map { _ in equal } }
-    let spare = max(0, available - ideals.reduce(0, +)) / CGFloat(row.count)
+    let spare = max(0, available - ideals.reduce(0, +)) / CGFloat(ideals.count)
     return ideals.map { min($0 + spare, available) }
   }
 
