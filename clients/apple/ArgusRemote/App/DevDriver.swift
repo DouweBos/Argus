@@ -172,6 +172,7 @@
         }
         if pressAlertAction(label) { return ["ok": true, "via": "alert"] }
         let element = matches[index].element
+        if pressSegment(element, label: label) { return ["ok": true, "via": "segment"] }
         if element.accessibilityActivate() { return ["ok": true] }
         if let item = barButtonItem(label: label) {
           if let action = item.primaryAction {
@@ -404,6 +405,24 @@
       field.becomeFirstResponder()
       field.paste(nil)
       return ["ok": true]
+    }
+
+    /// A segment of a segmented control, picked the way a tap would: its segments
+    /// don't answer activate, and the control's touch-up doesn't pick one.
+    private func pressSegment(_ element: NSObject, label: String) -> Bool {
+      var current: NSObject? = element
+      for _ in 0..<8 {
+        guard let object = current else { return false }
+        if let control = object as? UISegmentedControl {
+          guard let index = (0..<control.numberOfSegments).first(where: { control.titleForSegment(at: $0) == label })
+          else { return false }
+          control.selectedSegmentIndex = index
+          control.sendActions(for: .valueChanged)
+          return true
+        }
+        current = (object as? UIView)?.superview ?? container(of: object)
+      }
+      return false
     }
 
     /// An alert's action, run the way a tap would: dismiss, then its handler.
