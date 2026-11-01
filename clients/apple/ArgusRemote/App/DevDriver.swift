@@ -11,7 +11,7 @@
   /// (`code`), `route` (`path`: an `argus://` path like `/sessions/<id>/agents`,
   /// or the older `name:arg` with a `section`), `back`, `tree`, `press` (accessibility
   /// label, optional `index`), `type` (`text`, into the first text field or view; `clear` empties it first),
-  /// `dismiss` (the keyboard).
+  /// `dismiss` (the keyboard), `sidebar` (select a session row: `id`, `label`, `repoRoot`, `projectName`).
   @MainActor
   final class DevDriver {
     private let dir: URL
@@ -141,6 +141,10 @@
         return [
           "ok": true, "connection": "\(app.host.connection)",
           "hosts": app.hosts.count, "error": app.host.lastError ?? "",
+          "section": router.section.rawValue,
+          "sidebar": router.sidebarSelection.map { "\($0)" } ?? "",
+          "project": router.detailProject?.name ?? "",
+          "stack": (router.isSplit ? router.detailStack : router.path(for: router.section)).map(\.pattern),
         ]
       case "tree":
         return [
@@ -189,6 +193,13 @@
           while input.hasText { input.deleteBackward() }
         }
         (field as? UIKeyInput)?.insertText(text)
+        return ["ok": true]
+      case "sidebar":
+        // What tapping an iPad sidebar session row does.
+        router.apply(
+          .session(
+            id: command["id"] as? String ?? "", label: command["label"] as? String ?? "",
+            repoRoot: command["repoRoot"] as? String ?? "", projectName: command["projectName"] as? String ?? ""))
         return ["ok": true]
       case "dismiss":
         window?.endEditing(true)
