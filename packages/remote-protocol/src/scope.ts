@@ -115,6 +115,9 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "agents.set_claude_account": agent(),
   "agents.set_permission_mode": agent(),
   "agents.set_effort": agent(),
+  // Scoped to its agent; the handler still refuses any scoped guest — what the
+  // host brings back on its next start is the owner's call.
+  "agents.set_pinned": agent(),
   "agents.queue_list": agent(),
   "agents.queue_add": agent(),
   "agents.queue_remove": agent(),

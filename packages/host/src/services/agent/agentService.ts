@@ -89,6 +89,7 @@ import {
 } from "./limitResume";
 import { clearQueue } from "./messageQueue";
 import { resultSubtype } from "./models";
+import { adoptPinOnResume, isPinned, refreshPin } from "./pins/pins";
 import {
   buildRuntimeSection,
   conductorGuideEnabled,
@@ -353,6 +354,9 @@ export async function startAgent(
     });
   }
 
+  if (resumeSessionId && !reuseAgentId) {
+    adoptPinOnResume(agentId, resumeSessionId);
+  }
   emitAgentStatus(agentId, agentSession.status);
   info(`[agent:${agentId}] started for session ${sessionId}`);
 
@@ -376,6 +380,7 @@ function agentInfoOf(agent: AgentSession): AgentInfo {
     capabilities: agent.handle.initializeResponse(),
     model: agent.model,
     runner_id: agent.runner.id,
+    pinned: isPinned(agent.agentId),
   };
 }
 
@@ -1330,6 +1335,7 @@ export async function stopAgent(agentId: string): Promise<void> {
     throw `No agent found: ${agentId}`;
   }
 
+  refreshPin(session);
   session.status = "stopped";
 
   await session.handle.kill();
@@ -1360,6 +1366,9 @@ export async function destroyAllAgents(): Promise<void> {
   const sessions = Array.from(appState.agents.values());
   if (sessions.length === 0) {
     return;
+  }
+  for (const s of sessions) {
+    refreshPin(s);
   }
   info("destroyAllAgents: killing %d agent(s)", sessions.length);
   await Promise.all(
@@ -1719,6 +1728,7 @@ export async function setAgentModel(
   await session.handle.setModel(model);
 
   session.model = model;
+  refreshPin(session);
 
   emitHostEvent(`agent:model-changed:${agentId}`, model);
   info(`[agent:${agentId}] model changed to ${model}`);
@@ -1755,6 +1765,7 @@ export async function setAgentPermissionMode(
   }
 
   session.permissionMode = mode;
+  refreshPin(session);
 
   emitHostEvent(`agent:permission-mode-changed:${agentId}`, mode);
   info(`[agent:${agentId}] permission mode changed to ${mode}`);
@@ -1778,6 +1789,7 @@ export async function setAgentEffort(
 
   await session.handle.setEffort(level);
   session.effort = level;
+  refreshPin(session);
 
   emitHostEvent(`agent:effort-changed:${agentId}`, level);
   info(`[agent:${agentId}] effort changed to ${level ?? "(default)"}`);
@@ -1799,6 +1811,7 @@ export function listAgents(sessionId: string): AgentInfo[] {
         created_at: session.createdAt,
         model: session.model,
         runner_id: session.runner.id,
+        pinned: isPinned(session.agentId),
       });
     }
   }
@@ -1932,6 +1945,9 @@ function emitAgentStatus(agentId: string, status: AgentStatusValue): void {
   const session = appState.agents.get(agentId);
   if (session?.suppressStatus) {
     return;
+  }
+  if (session) {
+    refreshPin(session);
   }
   emitHostEvent(`agent:status:${agentId}`, status);
 }

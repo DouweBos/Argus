@@ -89,6 +89,20 @@ export const AGENT_COMMANDS = {
     params: AgentId.extend({ mode: z.string() }),
     result: Void,
   },
+  /**
+   * Pin a chat so the host resumes it on its next start, or unpin it. Names a
+   * live agent by `agentId`, or a saved chat by `repoRoot` + `historyId`.
+   */
+  agent_set_pinned: {
+    tier: "admin",
+    params: z.object({
+      agentId: z.string().optional(),
+      repoRoot: z.string().optional(),
+      historyId: z.string().optional(),
+      pinned: z.boolean(),
+    }),
+    result: z.object({ pinned: z.boolean() }),
+  },
   /** `null` falls back to the model's default effort. */
   set_agent_effort: {
     tier: "admin",

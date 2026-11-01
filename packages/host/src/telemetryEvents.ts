@@ -112,6 +112,20 @@ export interface EventMap {
     turns_completed: number;
   };
   agent_interrupted: undefined;
+  agent_pinned: {
+    action: "pin" | "unpin";
+    /** A live agent, or a saved chat whose agent is gone. */
+    target: "agent" | "saved_chat";
+    /** The desktop's IPC, or a gateway client (phone, Mac app, web). */
+    via: "ipc" | "remote";
+  };
+  agents_auto_resumed: {
+    pinned_count: number;
+    resumed_count: number;
+    /** Unpinned because their session or worktree was gone. */
+    missing_count: number;
+    failed_count: number;
+  };
   agent_restored: {
     is_fresh_start: boolean;
     keep_turn_number: number;

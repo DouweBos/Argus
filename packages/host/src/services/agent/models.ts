@@ -216,4 +216,6 @@ export interface AgentInfo {
    * switchable per agent until its first prompt.
    */
   runner_id: string;
+  /** Resumed automatically when the host restarts. */
+  pinned?: boolean;
 }

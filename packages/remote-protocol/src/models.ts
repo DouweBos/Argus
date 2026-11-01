@@ -90,6 +90,8 @@ export const RemoteAgentStatus = z.object({
   runner_session_id: z.string().optional(),
   /** The runner it runs on, so a resume picks the same one. */
   runner_id: z.string().optional(),
+  /** Resumed automatically when the host restarts. Absent on older hosts. */
+  pinned: z.boolean().optional(),
 });
 export type RemoteAgentStatus = z.infer<typeof RemoteAgentStatus>;
 
@@ -116,6 +118,8 @@ export const RemoteStoppedAgent = z.object({
   /** Permission mode and effort it last ran with, so a resume keeps them. Absent on older records. */
   permission_mode: z.string().optional(),
   effort: z.string().optional(),
+  /** Pinned: the host resumes it on its next start. Absent on older hosts. */
+  pinned: z.boolean().optional(),
 });
 export type RemoteStoppedAgent = z.infer<typeof RemoteStoppedAgent>;
 

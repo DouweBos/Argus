@@ -52,6 +52,11 @@ import {
   removeQueuedMessage,
   updateQueuedMessage,
 } from "../services/agent/messageQueue";
+import {
+  pinForHistory,
+  setAgentPinned,
+  setHistoryPinned,
+} from "../services/agent/pins/pins";
 import { getStartOptions } from "../services/agent/startOptions";
 import { setViewingSession } from "../services/agent/warmPolicy";
 import { defineTypedCommand } from "../services/command/registry";
@@ -92,6 +97,15 @@ export function registerAgentCommands(): void {
   defineTypedCommand("set_agent_permission_mode", (p) =>
     setAgentPermissionMode(p.agentId, p.mode),
   );
+  defineTypedCommand("agent_set_pinned", (p) => {
+    if (p.agentId) {
+      return setAgentPinned(p.agentId, p.pinned, "ipc");
+    }
+    if (p.repoRoot && p.historyId) {
+      return setHistoryPinned(p.repoRoot, p.historyId, p.pinned, "ipc");
+    }
+    throw "agent_set_pinned needs an agentId, or a repoRoot and historyId";
+  });
   defineTypedCommand("set_agent_effort", (p) =>
     setAgentEffort(p.agentId, p.level ?? null),
   );
@@ -121,7 +135,11 @@ export function registerAgentCommands(): void {
     }
     saveConversation(p.repoRoot, p.conversation);
   });
-  defineTypedCommand("list_chat_history", (p) => loadHistoryIndex(p.repoRoot));
+  defineTypedCommand("list_chat_history", (p) =>
+    loadHistoryIndex(p.repoRoot).map((e) =>
+      pinForHistory(e) ? { ...e, pinned: true } : e,
+    ),
+  );
   defineTypedCommand("import_cli_chats", () => importAllCliChats("manual"));
   defineTypedCommand("search_chat_history", (p) =>
     searchChatHistory(p.repoRoot, p.query),

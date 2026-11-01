@@ -15,6 +15,7 @@ import {
   startHostConversations,
   stopHostConversations,
 } from "./services/agent/conversation/hostDriver";
+import { startPinnedChats } from "./services/agent/pins/resume";
 import { reapOrphanedAgentProcesses } from "./services/agent/reapOrphans";
 import { startWarmPolicy, stopWarmPolicy } from "./services/agent/warmPolicy";
 import { initAutomations } from "./services/automation/manager";
@@ -207,6 +208,8 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   // Until a UI claims them, the host folds agent conversations itself.
   startHostConversations();
   startWarmPolicy({ spawn: spawnSpare });
+  // Pinned chats come back idle once the MCP server is listening.
+  startPinnedChats();
 
   setWebClientDir(options.webClientDir ?? null);
   const remoteReady = (

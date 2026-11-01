@@ -247,6 +247,52 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AgentSetPinnedParams: Codable, Sendable {
+      public var agentId: String?
+      public var repoRoot: String?
+      public var historyId: String?
+      public var pinned: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agentId"
+        case repoRoot = "repoRoot"
+        case historyId = "historyId"
+        case pinned = "pinned"
+      }
+
+      public init(agentId: String? = nil, repoRoot: String? = nil, historyId: String? = nil, pinned: Bool) {
+        self.agentId = agentId
+        self.repoRoot = repoRoot
+        self.historyId = historyId
+        self.pinned = pinned
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(agentId, forKey: .agentId)
+        try c.encodeIfPresent(repoRoot, forKey: .repoRoot)
+        try c.encodeIfPresent(historyId, forKey: .historyId)
+        try c.encode(pinned, forKey: .pinned)
+      }
+    }
+
+    public struct AgentSetPinnedResult: Codable, Sendable {
+      public var pinned: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case pinned = "pinned"
+      }
+
+      public init(pinned: Bool) {
+        self.pinned = pinned
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(pinned, forKey: .pinned)
+      }
+    }
+
     public struct AndroidButtonParams: Codable, Sendable {
       public var serial: String
       public var button: String
@@ -9882,6 +9928,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.AgentForkPointParams
       public typealias Result = ArgusProtocol.AgentForkPoint
       public static let name = "agent_fork_point"
+      public static let tier = "admin"
+    }
+
+    public enum AgentSetPinned: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.AgentSetPinnedParams
+      public typealias Result = ArgusProtocol.CommandsTypes.AgentSetPinnedResult
+      public static let name = "agent_set_pinned"
       public static let tier = "admin"
     }
 

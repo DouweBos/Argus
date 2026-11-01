@@ -158,6 +158,8 @@ export const REMOTE_METHODS = {
   "agents.set_claude_account": "control",
   "agents.set_permission_mode": "control",
   "agents.set_effort": "control",
+  /** Pin a chat so the host resumes it on restart: it spawns, so control. */
+  "agents.set_pinned": "control",
   /** Spawn a new agent inside an existing session. */
   "agents.spawn": "control",
   /** Messages waiting for a busy agent. The queue is the desktop's, shared by

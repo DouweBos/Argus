@@ -253,6 +253,12 @@ automation is refused `create_session` and `spawn_agent`.
   mid-conversation.
 - Persisted history — long-running conversations are saved to disk and
   can be resumed across app restarts.
+- Pinned chats — pin a chat from its tab's menu (or a saved chat) and
+  Argus resumes it on its own whenever the host restarts: same session,
+  conversation, runner, model, permission mode and effort, under the same
+  tab, idle until you send something. Stopping or closing a pinned chat
+  keeps it pinned; unpin it to stop it coming back. A pinned chat whose
+  session or worktree is gone is unpinned, with a notification.
 
 ---
 

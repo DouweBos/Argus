@@ -84,6 +84,8 @@ export const AgentInfo = z.object({
   model: z.string().nullable(),
   /** Agent that spawned this one (null for user-initiated agents). */
   parent_agent_id: z.string().nullable(),
+  /** Resumed automatically when the host restarts. Absent on older hosts. */
+  pinned: z.boolean().optional(),
   /**
    * Runner this agent is bound to. Inherited from the session at spawn, then
    * switchable per agent until its first prompt.
@@ -151,6 +153,8 @@ export const ChatHistoryEntry = z.object({
   parentAgentId: z.string().optional(),
   /** Permission mode it last ran with, so a resume keeps it — absent on older records. */
   permissionMode: z.string().optional(),
+  /** Pinned: resumed automatically when the host restarts. */
+  pinned: z.boolean().optional(),
   /**
    * Runner that produced the conversation — absent on older records. Resuming
    * re-binds the new agent to it.

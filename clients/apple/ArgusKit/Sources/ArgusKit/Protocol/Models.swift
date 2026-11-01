@@ -164,8 +164,11 @@ public struct RemoteAgentStatus: Codable, Hashable, Sendable, Identifiable {
   /// What a resume picks up, once the runner has reported a session; nil from older hosts.
   public var runnerSessionId: String?
   public var runnerId: String?
+  /// The host resumes it on its next start; nil from older hosts.
+  public var pinned: Bool?
 
   public var id: String { agentId }
+  public var isPinned: Bool { pinned == true }
 
   enum CodingKeys: String, CodingKey {
     case agentId = "agent_id"
@@ -184,6 +187,7 @@ public struct RemoteAgentStatus: Codable, Hashable, Sendable, Identifiable {
     case effort
     case runnerSessionId = "runner_session_id"
     case runnerId = "runner_id"
+    case pinned
   }
 }
 
@@ -206,9 +210,12 @@ public struct RemoteStoppedAgent: Codable, Hashable, Sendable, Identifiable {
   /// The mode and effort it last ran with, so a resume keeps them. Nil on older records.
   public var permissionMode: String?
   public var effort: String?
+  /// The host resumes it on its next start; nil from older hosts.
+  public var pinned: Bool?
 
   public var id: String { historyId }
   public var isImported: Bool { importedFrom != nil }
+  public var isPinned: Bool { pinned == true }
 
   enum CodingKeys: String, CodingKey {
     case historyId = "history_id"
@@ -221,6 +228,7 @@ public struct RemoteStoppedAgent: Codable, Hashable, Sendable, Identifiable {
     case runnerId = "runner_id"
     case permissionMode = "permission_mode"
     case effort
+    case pinned
   }
 }
 

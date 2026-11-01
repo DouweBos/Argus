@@ -1020,6 +1020,7 @@ extension ArgusProtocol {
     public var createdAt: Double
     public var model: String?
     public var parentAgentId: String?
+    public var pinned: Bool?
     public var runnerId: String
     public var sessionId: String
     public var status: AgentStatusValue
@@ -1030,17 +1031,19 @@ extension ArgusProtocol {
       case createdAt = "created_at"
       case model = "model"
       case parentAgentId = "parent_agent_id"
+      case pinned = "pinned"
       case runnerId = "runner_id"
       case sessionId = "session_id"
       case status = "status"
     }
 
-    public init(agentId: String, capabilities: AgentCapabilities? = nil, createdAt: Double, model: String? = nil, parentAgentId: String? = nil, runnerId: String, sessionId: String, status: AgentStatusValue) {
+    public init(agentId: String, capabilities: AgentCapabilities? = nil, createdAt: Double, model: String? = nil, parentAgentId: String? = nil, pinned: Bool? = nil, runnerId: String, sessionId: String, status: AgentStatusValue) {
       self.agentId = agentId
       self.capabilities = capabilities
       self.createdAt = createdAt
       self.model = model
       self.parentAgentId = parentAgentId
+      self.pinned = pinned
       self.runnerId = runnerId
       self.sessionId = sessionId
       self.status = status
@@ -1053,6 +1056,7 @@ extension ArgusProtocol {
       try c.encode(createdAt, forKey: .createdAt)
       try c.encode(model, forKey: .model)
       try c.encode(parentAgentId, forKey: .parentAgentId)
+      try c.encodeIfPresent(pinned, forKey: .pinned)
       try c.encode(runnerId, forKey: .runnerId)
       try c.encode(sessionId, forKey: .sessionId)
       try c.encode(status, forKey: .status)
@@ -3073,6 +3077,7 @@ extension ArgusProtocol {
     public var model: String?
     public var parentAgentId: String?
     public var permissionMode: String?
+    public var pinned: Bool?
     public var runnerId: String?
     public var sessionBranch: String
     public var sessionDescription: String
@@ -3093,6 +3098,7 @@ extension ArgusProtocol {
       case model = "model"
       case parentAgentId = "parentAgentId"
       case permissionMode = "permissionMode"
+      case pinned = "pinned"
       case runnerId = "runnerId"
       case sessionBranch = "sessionBranch"
       case sessionDescription = "sessionDescription"
@@ -3102,7 +3108,7 @@ extension ArgusProtocol {
       case totalDuration = "totalDuration"
     }
 
-    public init(agentId: String? = nil, argusSessionId: String? = nil, createdAt: Double, effort: String? = nil, endedAt: Double, id: String, importedFrom: ChatHistoryEntryImportedFrom? = nil, messageCount: Double, model: String? = nil, parentAgentId: String? = nil, permissionMode: String? = nil, runnerId: String? = nil, sessionBranch: String, sessionDescription: String, sessionId: String, title: String, totalCost: Double? = nil, totalDuration: Double? = nil) {
+    public init(agentId: String? = nil, argusSessionId: String? = nil, createdAt: Double, effort: String? = nil, endedAt: Double, id: String, importedFrom: ChatHistoryEntryImportedFrom? = nil, messageCount: Double, model: String? = nil, parentAgentId: String? = nil, permissionMode: String? = nil, pinned: Bool? = nil, runnerId: String? = nil, sessionBranch: String, sessionDescription: String, sessionId: String, title: String, totalCost: Double? = nil, totalDuration: Double? = nil) {
       self.agentId = agentId
       self.argusSessionId = argusSessionId
       self.createdAt = createdAt
@@ -3114,6 +3120,7 @@ extension ArgusProtocol {
       self.model = model
       self.parentAgentId = parentAgentId
       self.permissionMode = permissionMode
+      self.pinned = pinned
       self.runnerId = runnerId
       self.sessionBranch = sessionBranch
       self.sessionDescription = sessionDescription
@@ -3136,6 +3143,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(model, forKey: .model)
       try c.encodeIfPresent(parentAgentId, forKey: .parentAgentId)
       try c.encodeIfPresent(permissionMode, forKey: .permissionMode)
+      try c.encodeIfPresent(pinned, forKey: .pinned)
       try c.encodeIfPresent(runnerId, forKey: .runnerId)
       try c.encode(sessionBranch, forKey: .sessionBranch)
       try c.encode(sessionDescription, forKey: .sessionDescription)
@@ -12815,6 +12823,7 @@ extension ArgusProtocol {
     public var effort: String?
     public var runnerSessionId: String?
     public var runnerId: String?
+    public var pinned: Bool?
 
     enum CodingKeys: String, CodingKey {
       case agentId = "agent_id"
@@ -12835,9 +12844,10 @@ extension ArgusProtocol {
       case effort = "effort"
       case runnerSessionId = "runner_session_id"
       case runnerId = "runner_id"
+      case pinned = "pinned"
     }
 
-    public init(agentId: String, sessionId: String, sessionLabel: String? = nil, projectName: String? = nil, title: String? = nil, status: RemoteAgentStatusStatus, model: String? = nil, contextWindow: Double? = nil, permissionMode: String? = nil, parentAgentId: String? = nil, createdAt: Double? = nil, lastActivityAt: Double? = nil, awaiting: RemoteAgentStatusAwaiting? = nil, limitResumeAt: Double? = nil, limitStalled: Bool? = nil, effort: String? = nil, runnerSessionId: String? = nil, runnerId: String? = nil) {
+    public init(agentId: String, sessionId: String, sessionLabel: String? = nil, projectName: String? = nil, title: String? = nil, status: RemoteAgentStatusStatus, model: String? = nil, contextWindow: Double? = nil, permissionMode: String? = nil, parentAgentId: String? = nil, createdAt: Double? = nil, lastActivityAt: Double? = nil, awaiting: RemoteAgentStatusAwaiting? = nil, limitResumeAt: Double? = nil, limitStalled: Bool? = nil, effort: String? = nil, runnerSessionId: String? = nil, runnerId: String? = nil, pinned: Bool? = nil) {
       self.agentId = agentId
       self.sessionId = sessionId
       self.sessionLabel = sessionLabel
@@ -12856,6 +12866,7 @@ extension ArgusProtocol {
       self.effort = effort
       self.runnerSessionId = runnerSessionId
       self.runnerId = runnerId
+      self.pinned = pinned
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -12878,6 +12889,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(effort, forKey: .effort)
       try c.encodeIfPresent(runnerSessionId, forKey: .runnerSessionId)
       try c.encodeIfPresent(runnerId, forKey: .runnerId)
+      try c.encodeIfPresent(pinned, forKey: .pinned)
     }
   }
 
@@ -15424,6 +15436,7 @@ extension ArgusProtocol {
     public var runnerId: String?
     public var permissionMode: String?
     public var effort: String?
+    public var pinned: Bool?
 
     enum CodingKeys: String, CodingKey {
       case historyId = "history_id"
@@ -15439,9 +15452,10 @@ extension ArgusProtocol {
       case runnerId = "runner_id"
       case permissionMode = "permission_mode"
       case effort = "effort"
+      case pinned = "pinned"
     }
 
-    public init(historyId: String, runnerSessionId: String, title: String, branch: String, description: String? = nil, model: String? = nil, messageCount: Int, startedAt: Double, endedAt: Double, importedFrom: RemoteStoppedAgentImportedFrom? = nil, runnerId: String? = nil, permissionMode: String? = nil, effort: String? = nil) {
+    public init(historyId: String, runnerSessionId: String, title: String, branch: String, description: String? = nil, model: String? = nil, messageCount: Int, startedAt: Double, endedAt: Double, importedFrom: RemoteStoppedAgentImportedFrom? = nil, runnerId: String? = nil, permissionMode: String? = nil, effort: String? = nil, pinned: Bool? = nil) {
       self.historyId = historyId
       self.runnerSessionId = runnerSessionId
       self.title = title
@@ -15455,6 +15469,7 @@ extension ArgusProtocol {
       self.runnerId = runnerId
       self.permissionMode = permissionMode
       self.effort = effort
+      self.pinned = pinned
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -15472,6 +15487,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(runnerId, forKey: .runnerId)
       try c.encodeIfPresent(permissionMode, forKey: .permissionMode)
       try c.encodeIfPresent(effort, forKey: .effort)
+      try c.encodeIfPresent(pinned, forKey: .pinned)
     }
   }
 
@@ -16524,6 +16540,7 @@ extension ArgusProtocol {
     public var model: String?
     public var parentAgentId: String?
     public var permissionMode: String?
+    public var pinned: Bool?
     public var runnerId: String?
     public var sessionBranch: String
     public var sessionDescription: String
@@ -16545,6 +16562,7 @@ extension ArgusProtocol {
       case model = "model"
       case parentAgentId = "parentAgentId"
       case permissionMode = "permissionMode"
+      case pinned = "pinned"
       case runnerId = "runnerId"
       case sessionBranch = "sessionBranch"
       case sessionDescription = "sessionDescription"
@@ -16555,7 +16573,7 @@ extension ArgusProtocol {
       case messages = "messages"
     }
 
-    public init(agentId: String? = nil, argusSessionId: String? = nil, createdAt: Double, effort: String? = nil, endedAt: Double, id: String, importedFrom: SavedConversationImportedFrom? = nil, messageCount: Double, model: String? = nil, parentAgentId: String? = nil, permissionMode: String? = nil, runnerId: String? = nil, sessionBranch: String, sessionDescription: String, sessionId: String, title: String, totalCost: Double? = nil, totalDuration: Double? = nil, messages: [JSONValue]) {
+    public init(agentId: String? = nil, argusSessionId: String? = nil, createdAt: Double, effort: String? = nil, endedAt: Double, id: String, importedFrom: SavedConversationImportedFrom? = nil, messageCount: Double, model: String? = nil, parentAgentId: String? = nil, permissionMode: String? = nil, pinned: Bool? = nil, runnerId: String? = nil, sessionBranch: String, sessionDescription: String, sessionId: String, title: String, totalCost: Double? = nil, totalDuration: Double? = nil, messages: [JSONValue]) {
       self.agentId = agentId
       self.argusSessionId = argusSessionId
       self.createdAt = createdAt
@@ -16567,6 +16585,7 @@ extension ArgusProtocol {
       self.model = model
       self.parentAgentId = parentAgentId
       self.permissionMode = permissionMode
+      self.pinned = pinned
       self.runnerId = runnerId
       self.sessionBranch = sessionBranch
       self.sessionDescription = sessionDescription
@@ -16590,6 +16609,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(model, forKey: .model)
       try c.encodeIfPresent(parentAgentId, forKey: .parentAgentId)
       try c.encodeIfPresent(permissionMode, forKey: .permissionMode)
+      try c.encodeIfPresent(pinned, forKey: .pinned)
       try c.encodeIfPresent(runnerId, forKey: .runnerId)
       try c.encode(sessionBranch, forKey: .sessionBranch)
       try c.encode(sessionDescription, forKey: .sessionDescription)

@@ -166,6 +166,14 @@ vi.mock("../integrations/issueStart", () => ({
   })),
 }));
 vi.mock("../agent/warmPolicy", () => ({ setViewingSession: vi.fn() }));
+vi.mock("../agent/pins/pins", () => ({
+  isPinned: () => false,
+  pinForHistory: () => undefined,
+  setAgentPinned: vi.fn((_id: string, pinned: boolean) => ({ pinned })),
+  setHistoryPinned: vi.fn((_r: string, _h: string, pinned: boolean) => ({
+    pinned,
+  })),
+}));
 vi.mock("../agent/startOptions", () => ({
   getStartOptions: vi.fn(async () => ({
     slashCommands: [{ name: "review", description: "", argumentHint: "" }],
@@ -195,6 +203,9 @@ const { rewindAgent } = vi.mocked(
 );
 const { forkChatAt } = vi.mocked(await import("../agent/conversation/forkAt"));
 const { deleteHistoryEntry } = vi.mocked(await import("../agent/chatHistory"));
+const { setAgentPinned, setHistoryPinned } = vi.mocked(
+  await import("../agent/pins/pins"),
+);
 
 /** Every `startAgent` override past the session id, left unset. */
 const SPAWN_DEFAULTS = Array<undefined>(9).fill(undefined);
@@ -221,6 +232,7 @@ const CONTROL_METHODS = [
   "agents.set_model",
   "agents.set_permission_mode",
   "agents.set_effort",
+  "agents.set_pinned",
   "agents.spawn",
   "sessions.create",
   "sessions.delete",
@@ -493,6 +505,34 @@ describe("control capability gating", () => {
       ctx,
     );
     expect(deleteHistoryEntry).toHaveBeenCalledWith("/repo", "h1");
+  });
+
+  it("pins an agent or a saved chat for a control device", async () => {
+    const ctx = makeCtx(["monitor", "control"]);
+    const res = MethodResult["agents.set_pinned"].parse(
+      await dispatch(
+        "agents.set_pinned",
+        { agent_id: "a1", pinned: true },
+        ctx,
+      ),
+    );
+    expect(res.pinned).toBe(true);
+    expect(setAgentPinned).toHaveBeenCalledWith("a1", true, "remote");
+
+    await dispatch(
+      "agents.set_pinned",
+      { repo_root: "/repo", history_id: "h1", pinned: false },
+      ctx,
+    );
+    expect(setHistoryPinned).toHaveBeenCalledWith(
+      "/repo",
+      "h1",
+      false,
+      "remote",
+    );
+    await expect(
+      dispatch("agents.set_pinned", { pinned: true }, ctx),
+    ).rejects.toThrow(/needs an agent_id/);
   });
 
   it("allows a control device to stop an agent", async () => {

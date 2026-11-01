@@ -44,6 +44,8 @@ export interface ChatHistoryEntry {
   totalDuration?: number;
   /** Set when the chat was read in from another app's history, not run here. */
   importedFrom?: "claude_code";
+  /** Derived from the pins when listed; never stored. */
+  pinned?: boolean;
   messageCount: number;
   createdAt: number;
   endedAt: number;

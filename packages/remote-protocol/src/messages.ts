@@ -263,6 +263,16 @@ export const MethodParams = {
     /** null clears back to the model default. */
     level: z.string().nullable(),
   }),
+  /**
+   * Pin a chat so the host resumes it on its next start, or unpin it. Names a
+   * live agent by `agent_id`, or a saved chat by `repo_root` + `history_id`.
+   */
+  "agents.set_pinned": z.object({
+    agent_id: z.string().optional(),
+    repo_root: z.string().optional(),
+    history_id: z.string().optional(),
+    pinned: z.boolean(),
+  }),
   "agents.spawn": z.object({
     session_id: z.string(),
     model: z.string().optional(),
@@ -871,6 +881,7 @@ export const MethodResult = {
   "agents.set_claude_account": z.object({ accepted: z.boolean() }),
   "agents.set_permission_mode": z.object({ accepted: z.boolean() }),
   "agents.set_effort": z.object({ accepted: z.boolean() }),
+  "agents.set_pinned": z.object({ pinned: z.boolean() }),
   "agents.spawn": z.object({ agent: RemoteAgentStatus }),
   "agents.queue_list": z.object({
     messages: z.array(RemoteQueuedMessage),

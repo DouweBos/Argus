@@ -1287,6 +1287,21 @@ export const setAgentEffort = (
   level: string | null,
 ): Promise<void> => invoke("set_agent_effort", { agentId, level });
 
+/** Pin a live agent so the host resumes it on its next start. */
+export const setAgentPinned = (
+  agentId: string,
+  pinned: boolean,
+): Promise<{ pinned: boolean }> =>
+  invoke("agent_set_pinned", { agentId, pinned });
+
+/** Pin a saved chat whose agent is gone; it comes back on the next start. */
+export const setChatHistoryPinned = (
+  repoRoot: string,
+  historyId: string,
+  pinned: boolean,
+): Promise<{ pinned: boolean }> =>
+  invoke("agent_set_pinned", { repoRoot, historyId, pinned });
+
 export const setViewingSession = (
   sessionId: string | null,
   viewerId: string,

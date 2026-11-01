@@ -1055,6 +1055,52 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AgentsSetPinnedParams: Codable, Sendable {
+      public var agentId: String?
+      public var repoRoot: String?
+      public var historyId: String?
+      public var pinned: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case repoRoot = "repo_root"
+        case historyId = "history_id"
+        case pinned = "pinned"
+      }
+
+      public init(agentId: String? = nil, repoRoot: String? = nil, historyId: String? = nil, pinned: Bool) {
+        self.agentId = agentId
+        self.repoRoot = repoRoot
+        self.historyId = historyId
+        self.pinned = pinned
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(agentId, forKey: .agentId)
+        try c.encodeIfPresent(repoRoot, forKey: .repoRoot)
+        try c.encodeIfPresent(historyId, forKey: .historyId)
+        try c.encode(pinned, forKey: .pinned)
+      }
+    }
+
+    public struct AgentsSetPinnedResult: Codable, Sendable {
+      public var pinned: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case pinned = "pinned"
+      }
+
+      public init(pinned: Bool) {
+        self.pinned = pinned
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(pinned, forKey: .pinned)
+      }
+    }
+
     public struct AgentsSpawnParams: Codable, Sendable {
       public var sessionId: String
       public var model: String?
@@ -6735,6 +6781,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AgentsSetPermissionModeParams
       public typealias Result = ArgusProtocol.MethodsTypes.AgentsSetPermissionModeResult
       public static let name = "agents.set_permission_mode"
+    }
+
+    public enum AgentsSetPinned: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsSetPinnedParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsSetPinnedResult
+      public static let name = "agents.set_pinned"
     }
 
     public enum AgentsSpawn: RemoteCommand {

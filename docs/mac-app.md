@@ -21,7 +21,7 @@ lives in the repository (`plan/swiftui-parity.md`).
   that, its machine, opening it in your editor, its run command and huddle,
   its branch, pushing it, how much it has changed, and **Recent Chats**: a
   dialog that searches the session's past chats (imported ones too), opens,
-  resumes or deletes them, or clears them all. The chevron folds the card
+  resumes, pins or deletes them, or clears them all. The chevron folds the card
   down to its switcher, which then sits in the view's top bar; each view
   remembers its own choice. Agent starts with the card open, Code and Git
   with it folded, so their tab bars stay clear. While it's folded, the run

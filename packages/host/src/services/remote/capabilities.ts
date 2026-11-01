@@ -79,6 +79,12 @@ import {
   removeQueuedMessage,
   updateQueuedMessage,
 } from "../agent/messageQueue";
+import {
+  isPinned,
+  pinForHistory,
+  setAgentPinned,
+  setHistoryPinned,
+} from "../agent/pins/pins";
 import { getStartOptions } from "../agent/startOptions";
 import { setViewingSession } from "../agent/warmPolicy";
 import { saveAppSettings } from "../appSettings/store";
@@ -655,6 +661,7 @@ export function toRemoteAgentStatus(a: AgentSession): RemoteAgentStatus {
     ...(a.effort ? { effort: a.effort } : {}),
     ...(runnerSessionId ? { runner_session_id: runnerSessionId } : {}),
     runner_id: a.runner.id,
+    pinned: isPinned(a.agentId),
   };
 }
 
@@ -1054,6 +1061,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         ...(e.runnerId ? { runner_id: e.runnerId } : {}),
         ...(e.permissionMode ? { permission_mode: e.permissionMode } : {}),
         ...(e.effort ? { effort: e.effort } : {}),
+        ...(pinForHistory(e) ? { pinned: true } : {}),
       }),
     );
 
@@ -1338,6 +1346,30 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     await control(() => setAgentEffort(agent_id, level));
 
     return { accepted: true };
+  },
+
+  "agents.set_pinned": async (params, ctx) => {
+    const { agent_id, repo_root, history_id, pinned } = parse(
+      "agents.set_pinned",
+      params,
+    );
+    if (ctx.scope) {
+      throw new GatewayError("capability_denied", "agents.set_pinned");
+    }
+    if (agent_id) {
+      return control(() => setAgentPinned(agent_id, pinned, "remote"));
+    }
+    if (repo_root && history_id) {
+      requireKnownHistoryRoot(repo_root);
+
+      return control(() =>
+        setHistoryPinned(repo_root, history_id, pinned, "remote"),
+      );
+    }
+    throw new GatewayError(
+      "bad_request",
+      "agents.set_pinned needs an agent_id, or a repo_root and history_id",
+    );
   },
 
   "agents.spawn": async (params) => {
