@@ -57,7 +57,7 @@ export function Monitor() {
   const showingAgent = view.name === "agent" || detailView?.name === "agent";
   useEffect(() => {
     if (connection === "ready" && showingAgent) {
-      void refreshDevices().catch(() => {});
+      void refreshDevices({ background: true }).catch(() => {});
     }
   }, [connection, refreshDevices, showingAgent]);
 

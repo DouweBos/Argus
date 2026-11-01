@@ -104,10 +104,34 @@ export class RemoteError extends Error {
   }
 }
 
+export interface KeepaliveOptions {
+  /** A cheap method every host answers; any reply, even an error, is a pong. */
+  method: string;
+  /** Between pings while the channel is up. */
+  intervalMs?: number;
+  /** How long a ping may go unanswered before the socket is given up on. */
+  timeoutMs?: number;
+}
+
 export interface TransportOptions {
   /** How long a request waits for its response before rejecting. */
   requestTimeoutMs?: number;
+  /**
+   * Ping over the encrypted channel. Browsers can't send WebSocket ping
+   * frames, and an idle socket is what NATs and tunnels drop first; a ping
+   * nobody answers is how a dead one is noticed rather than waited on.
+   */
+  keepalive?: KeepaliveOptions;
 }
+
+export interface RequestOptions {
+  /** Overrides the transport's `requestTimeoutMs` for this one call. */
+  timeoutMs?: number;
+}
+
+/** The phone's `GatewaySocket` cadence: 25 s between pings, 15 s to answer. */
+export const KEEPALIVE_INTERVAL_MS = 25_000;
+export const KEEPALIVE_TIMEOUT_MS = 15_000;
 
 export class Transport {
   private readonly socket: GatewaySocket;
@@ -124,6 +148,9 @@ export class Transport {
   private readonly pending = new Map<string, (res: ResponseEnvelope) => void>();
   /** Agent ids to resubscribe after a reconnect — the host forgets them. */
   private readonly subscriptions = new Set<string>();
+  private readonly keepalive: Required<KeepaliveOptions> | null;
+  private keepaliveTimer: ReturnType<typeof setInterval> | null = null;
+  private pinging = false;
 
   constructor(
     private readonly credentials: HostCredentials,
@@ -131,6 +158,13 @@ export class Transport {
     options: TransportOptions = {},
   ) {
     this.timeoutMs = options.requestTimeoutMs ?? 15_000;
+    this.keepalive = options.keepalive
+      ? {
+          method: options.keepalive.method,
+          intervalMs: options.keepalive.intervalMs ?? KEEPALIVE_INTERVAL_MS,
+          timeoutMs: options.keepalive.timeoutMs ?? KEEPALIVE_TIMEOUT_MS,
+        }
+      : null;
     this.socket = new GatewaySocket(`${credentials.url}/device`, {
       onOpen: () => this.startHandshake(),
       onFrame: (bytes) => this.onFrame(bytes),
@@ -156,7 +190,61 @@ export class Transport {
     return this.session !== null;
   }
 
+  /**
+   * Ping now rather than at the next interval, or redial now rather than at
+   * the end of a backoff: the tab is visible again, or the network is back,
+   * and the socket may have died meanwhile.
+   */
+  checkAlive(): void {
+    if (this.session) {
+      this.ping().catch(() => {});
+    } else {
+      this.socket.reconnectNow();
+    }
+  }
+
+  private async ping(): Promise<void> {
+    const keepalive = this.keepalive;
+    if (!keepalive || this.pinging || !this.session) {
+      return;
+    }
+    this.pinging = true;
+    const generation = this.generation;
+    try {
+      await this.request(
+        keepalive.method,
+        {},
+        { timeoutMs: keepalive.timeoutMs },
+      );
+    } catch (err) {
+      // Anything the host answered proves the channel; only silence doesn't.
+      const silent = err instanceof RemoteError && err.code === "timeout";
+      if (silent && generation === this.generation) {
+        this.socket.drop();
+      }
+    } finally {
+      this.pinging = false;
+    }
+  }
+
+  private startKeepalive(): void {
+    this.stopKeepalive();
+    if (this.keepalive) {
+      this.keepaliveTimer = setInterval(() => {
+        this.ping().catch(() => {});
+      }, this.keepalive.intervalMs);
+    }
+  }
+
+  private stopKeepalive(): void {
+    if (this.keepaliveTimer) {
+      clearInterval(this.keepaliveTimer);
+      this.keepaliveTimer = null;
+    }
+  }
+
   private reset(): void {
+    this.stopKeepalive();
     this.generation += 1;
     this.inbox = Promise.resolve();
     this.hs = null;
@@ -254,6 +342,7 @@ export class Transport {
         for (const agentId of this.subscriptions) {
           this.emitSubscribe(agentId, true);
         }
+        this.startKeepalive();
         this.handlers.onState("ready");
       } catch {
         this.reset();
@@ -309,7 +398,11 @@ export class Transport {
     }
   }
 
-  request<T = unknown>(method: string, params: unknown): Promise<T> {
+  request<T = unknown>(
+    method: string,
+    params: unknown,
+    options: RequestOptions = {},
+  ): Promise<T> {
     if (!this.session) {
       return Promise.reject(new RemoteError("offline", "not connected"));
     }
@@ -326,7 +419,7 @@ export class Transport {
       const timer = setTimeout(() => {
         this.pending.delete(id);
         reject(new RemoteError("timeout", `${method} timed out`));
-      }, this.timeoutMs);
+      }, options.timeoutMs ?? this.timeoutMs);
       this.pending.set(id, (res) => {
         clearTimeout(timer);
         if (res.error) {

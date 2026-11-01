@@ -14,8 +14,10 @@ import {
   receiveCapabilities,
   receiveQueue,
   resetAgents,
+  resyncAgentStatuses,
+  resyncQueues,
 } from "./agents";
-import { installConnectionHooks } from "./connection";
+import { installConnectionHooks, watchLiveness } from "./connection";
 import { receiveClaim, receiveDeviceState, resetDevices } from "./devices";
 import { resetGit } from "./git";
 import { receiveHuddleChat, receiveHuddleState } from "./huddle";
@@ -31,6 +33,7 @@ import {
   receiveDelta,
   refreshUnlessFollowing,
   resetTranscripts,
+  resyncTranscripts,
 } from "./transcripts";
 
 type Handler = (event: EventEnvelope) => void;
@@ -97,6 +100,18 @@ export function resetHostStores(): void {
 
 let installed = false;
 
+/**
+ * A fresh channel, after a drop or a host restart: whatever happened while
+ * we were away arrived on nobody's socket. The transport resubscribes the
+ * agents we follow; this refetches what they would have told us. Lists
+ * reload themselves, since their screens poll on `ready`.
+ */
+export function resyncAfterReconnect(): void {
+  resyncTranscripts();
+  resyncQueues();
+  resyncAgentStatuses();
+}
+
 /** Wire the domain stores to the connection. Call once, before `init()`. */
 export function installHostSync(): void {
   if (installed) {
@@ -110,9 +125,11 @@ export function installHostSync(): void {
         registerPushOn(transport);
       }
       flushPendingDecisions(transport).catch(() => {});
+      resyncAfterReconnect();
     },
     notReady: pushWentOffline,
     reset: resetHostStores,
     unpairing: unregisterPush,
   });
+  watchLiveness();
 }

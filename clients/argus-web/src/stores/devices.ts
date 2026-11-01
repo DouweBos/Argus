@@ -4,6 +4,12 @@
  */
 
 import { create } from "zustand";
+import {
+  describeError,
+  INITIAL_LOAD,
+  isQuietError,
+  type LoadState,
+} from "@argus/client-core";
 import type { MediaMessage } from "@argus/remote-client";
 import type {
   RemoteDevice,
@@ -20,8 +26,8 @@ import { currentTransport, media } from "./connection";
 interface DevicesState {
   /** Connected simulators/emulators (from devices.list). */
   devices: RemoteDevice[];
-  /** A `devices.list` has answered for this host. */
-  devicesLoaded: boolean;
+  /** How the last `devices.list` went, for the list's `LoadPhase`. */
+  devicesLoad: LoadState;
   /** Who holds input per device, so a locked-out client says so rather than
    *  tapping at a picture that never answers. */
   claimByDevice: Record<string, RemoteDeviceClaim | null>;
@@ -30,7 +36,8 @@ interface DevicesState {
   /** How each watched device is being held, so the stream is presented upright. */
   deviceStateById: Record<string, RemoteDeviceState | null>;
 
-  refreshDevices: () => Promise<void>;
+  /** `background` for polls and resumes: a dropped connection stays quiet. */
+  refreshDevices: (options?: { background?: boolean }) => Promise<void>;
   /** Start streaming a device's screen; returns the binary-frame stream id. */
   watchDevice: (deviceId: string, platform: RemotePlatform) => Promise<number>;
   unwatchDevice: (deviceId: string) => Promise<void>;
@@ -106,21 +113,24 @@ function setDeviceState(deviceId: string, state: RemoteDeviceState | null) {
 
 export const useDevicesStore = create<DevicesState>()((set) => ({
   devices: [],
-  devicesLoaded: false,
+  devicesLoad: INITIAL_LOAD,
   claimByDevice: {},
   claimConnectionId: null,
   deviceStateById: {},
 
-  refreshDevices: async () => {
+  refreshDevices: async (options) => {
     const t = currentTransport();
     if (!t) {
       return;
     }
     try {
       const { devices } = await request(t, "devices.list", {});
-      set({ devices, devicesLoaded: true });
-    } catch {
-      // The toolchain may be missing; leave any prior list in place.
+      set({ devices, devicesLoad: { loaded: true, error: null } });
+    } catch (err) {
+      // The toolchain may be missing; any prior list stays on screen.
+      if (!isQuietError(err, options?.background ?? false)) {
+        set({ devicesLoad: { loaded: true, error: describeError(err) } });
+      }
     }
   },
 
@@ -307,5 +317,5 @@ export function receiveDeviceState(state: RemoteDeviceState): void {
 
 /** A new host: its devices aren't the last one's. */
 export function resetDevices(): void {
-  useDevicesStore.setState({ devices: [], devicesLoaded: false });
+  useDevicesStore.setState({ devices: [], devicesLoad: INITIAL_LOAD });
 }

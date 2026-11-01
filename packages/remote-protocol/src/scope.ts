@@ -62,6 +62,7 @@ const DENIED: ScopeRule = { kind: "denied" };
  */
 export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "host.endpoints": OPEN,
+  "host.ping": OPEN,
   "account.status": OPEN,
   "account.request_link": OPEN,
   // A huddle guest isn't on the account; nothing it could hand over applies.

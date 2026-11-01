@@ -5,6 +5,12 @@
  */
 
 import { create } from "zustand";
+import {
+  describeError,
+  INITIAL_LOAD,
+  isQuietError,
+  type LoadState,
+} from "@argus/client-core";
 import type {
   RemoteAgentStatus,
   RemoteProject,
@@ -12,6 +18,11 @@ import type {
 } from "../lib/protocol";
 import { request } from "../lib/request";
 import { currentTransport } from "./connection";
+
+/** A poll, a tab resume or a reconnect reload, rather than something the user asked for. */
+export interface RefreshOptions {
+  background?: boolean;
+}
 
 export interface CreateSessionParams {
   repoRoot: string;
@@ -23,14 +34,14 @@ export interface CreateSessionParams {
 
 interface ProjectsState {
   projects: RemoteProject[];
-  /** A `projects.list` has answered for this host. */
-  projectsLoaded: boolean;
+  /** How the last `projects.list` went, for the list's `LoadPhase`. */
+  projectsLoad: LoadState;
   sessionsByRepo: Record<string, RemoteSession[]>;
   agentsByRepo: Record<string, RemoteAgentStatus[]>;
   /** All agents across every project, for the home "Recent agents" section. */
   recentAgents: RemoteAgentStatus[];
 
-  refreshProjects: () => Promise<void>;
+  refreshProjects: (options?: RefreshOptions) => Promise<void>;
   loadRecentAgents: () => Promise<void>;
   loadSessions: (repoRoot: string) => Promise<void>;
   loadAgents: (repoRoot: string) => Promise<void>;
@@ -50,7 +61,7 @@ interface ProjectsState {
 
 const EMPTY = {
   projects: [],
-  projectsLoaded: false,
+  projectsLoad: INITIAL_LOAD,
   sessionsByRepo: {},
   agentsByRepo: {},
   recentAgents: [],
@@ -59,13 +70,21 @@ const EMPTY = {
 export const useProjectsStore = create<ProjectsState>()((set, get) => ({
   ...EMPTY,
 
-  refreshProjects: async () => {
+  refreshProjects: async (options) => {
     const t = currentTransport();
     if (!t) {
       return;
     }
-    const { projects } = await request(t, "projects.list", {});
-    set({ projects, projectsLoaded: true });
+    try {
+      const { projects } = await request(t, "projects.list", {});
+      set({ projects, projectsLoad: { loaded: true, error: null } });
+    } catch (err) {
+      // The connection badge already says it's down; the next `ready` retries.
+      if (!isQuietError(err, options?.background ?? false)) {
+        set({ projectsLoad: { loaded: true, error: describeError(err) } });
+      }
+      throw err;
+    }
   },
 
   loadRecentAgents: async () => {

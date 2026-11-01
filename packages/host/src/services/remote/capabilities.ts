@@ -887,6 +887,8 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "host.endpoints": async () => {
     return { endpoints: getEndpoints() };
   },
+  // Keepalive for clients that can't send WebSocket pings (browsers).
+  "host.ping": async () => ({}),
 
   "account.status": async () => remoteAccountStatus(),
   // Only raises the console's own link prompt; the host still has to confirm.

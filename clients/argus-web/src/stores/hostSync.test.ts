@@ -4,7 +4,11 @@ import type { Transport } from "@argus/remote-client";
 import type { RemoteAgentStatus, RemoteMessage } from "../lib/protocol";
 import { useAgentsStore } from "./agents";
 import { useConnectionStore } from "./connection";
-import { resetHostStores, routeEvent } from "./hostSync";
+import {
+  resetHostStores,
+  resyncAfterReconnect,
+  routeEvent,
+} from "./hostSync";
 import { useProjectsStore } from "./projects";
 import { usePromptsStore } from "./prompts";
 import { useTranscriptsStore } from "./transcripts";
@@ -197,5 +201,80 @@ describe("a host switch", () => {
     expect(useProjectsStore.getState().projects).toEqual([]);
     expect(useAgentsStore.getState().statusByAgent).toEqual({});
     expect(useTranscriptsStore.getState().messagesByAgent).toEqual({});
+  });
+});
+
+describe("a reconnect", () => {
+  it("refetches the transcripts, queues and statuses on screen", async () => {
+    vi.useFakeTimers();
+    const { calls } = fakeTransport({
+      "agents.transcript": () => page([msg("m1")], 1),
+      "agents.queue_list": () => ({ messages: [] }),
+      "agents.status": () => ({ agent: agent("a1", "running") }),
+    });
+    useTranscriptsStore.setState({ messagesByAgent: { a1: [] } });
+    useAgentsStore.setState({
+      queuedByAgent: { a1: [] },
+      statusByAgent: { a1: agent("a1") },
+    });
+
+    resyncAfterReconnect();
+    await vi.advanceTimersByTimeAsync(400);
+
+    expect(calls.map(([m]) => m).sort()).toEqual([
+      "agents.queue_list",
+      "agents.status",
+      "agents.transcript",
+    ]);
+    expect(useAgentsStore.getState().statusByAgent.a1.status).toBe("running");
+  });
+});
+
+describe("background refreshes", () => {
+  const offline = () => {
+    throw Object.assign(new Error("not connected"), { code: "offline" });
+  };
+
+  it("say nothing when only the connection failed", async () => {
+    fakeTransport({ "projects.list": offline });
+
+    await useProjectsStore
+      .getState()
+      .refreshProjects({ background: true })
+      .catch(() => {});
+
+    expect(useProjectsStore.getState().projectsLoad.error).toBeNull();
+  });
+
+  it("still report it when the user asked", async () => {
+    fakeTransport({ "projects.list": offline });
+
+    await useProjectsStore
+      .getState()
+      .refreshProjects()
+      .catch(() => {});
+
+    expect(useProjectsStore.getState().projectsLoad.error).toBe(
+      "Not connected to a computer.",
+    );
+  });
+
+  it("report a failure that isn't the connection's", async () => {
+    fakeTransport({
+      "projects.list": () => {
+        throw Object.assign(new Error("Project store is locked"), {
+          code: "internal",
+        });
+      },
+    });
+
+    await useProjectsStore
+      .getState()
+      .refreshProjects({ background: true })
+      .catch(() => {});
+
+    expect(useProjectsStore.getState().projectsLoad.error).toBe(
+      "Project store is locked",
+    );
   });
 });

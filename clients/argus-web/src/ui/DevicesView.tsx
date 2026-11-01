@@ -21,7 +21,7 @@ export function DevicesView({
   const refreshDevices = useDevicesStore((s) => s.refreshDevices);
 
   const refresh = useCallback(() => {
-    refreshDevices().catch(() => {});
+    refreshDevices({ background: true }).catch(() => {});
   }, [refreshDevices]);
   useLiveRefresh(connection === "ready", refresh);
 

@@ -28,6 +28,7 @@ import {
   connectionHooks,
   currentTransport,
   media,
+  TRANSPORT_OPTIONS,
   useConnectionStore,
 } from "./connection";
 
@@ -107,6 +108,7 @@ function connectGuest(
       onEvent: (event) => connectionHooks().event(event),
       onMedia: (bytes) => media.push(bytes),
     },
+    TRANSPORT_OPTIONS,
   );
   transport.connect();
 

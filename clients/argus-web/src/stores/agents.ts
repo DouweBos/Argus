@@ -254,6 +254,14 @@ export function receiveCapabilities(
   }));
 }
 
+/** Statuses on screen, refetched after a reconnect missed their `agent.status`. */
+export function resyncAgentStatuses(): void {
+  const { statusByAgent, loadAgentStatus } = useAgentsStore.getState();
+  for (const agentId of Object.keys(statusByAgent)) {
+    void loadAgentStatus(agentId);
+  }
+}
+
 /** Queues on screen, refetched after a reconnect missed their `agent.queue`. */
 export function resyncQueues(): void {
   const { queuedByAgent, loadQueue } = useAgentsStore.getState();

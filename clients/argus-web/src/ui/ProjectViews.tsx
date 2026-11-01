@@ -3,9 +3,11 @@
  * App.tsx to keep each file under the size guideline.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
+import { loadPhase } from "@argus/client-core";
 import {
   AgentRow,
+  Banner,
   EmptyState,
   Icons,
   projectAccent,
@@ -93,20 +95,34 @@ export function Projects({
   const projects = useProjectsStore((s) => s.projects);
   const refreshProjects = useProjectsStore((s) => s.refreshProjects);
   const loadRecentAgents = useProjectsStore((s) => s.loadRecentAgents);
-  const [loaded, setLoaded] = useState(false);
+  const load = useProjectsStore((s) => s.projectsLoad);
 
   const refresh = useCallback(() => {
-    refreshProjects()
-      .catch(() => {})
-      .finally(() => setLoaded(true));
+    refreshProjects({ background: true }).catch(() => {});
     loadRecentAgents().catch(() => {});
   }, [refreshProjects, loadRecentAgents]);
   useLiveRefresh(connection === "ready", refresh);
 
-  if (connection !== "ready" && !loaded) {
-    return <Loading label="Connecting to Argus…" />;
+  const phase = loadPhase(load, projects.length === 0);
+  if (phase.kind === "loading") {
+    return (
+      <Loading
+        label={
+          connection === "ready" ? "Loading projects…" : "Connecting to Argus…"
+        }
+      />
+    );
   }
-  if (projects.length === 0) {
+  if (phase.kind === "failed") {
+    return (
+      <EmptyState
+        icon={<Icons.FolderIcon size={22} />}
+        title="Couldn't load projects"
+        body={phase.error}
+      />
+    );
+  }
+  if (phase.kind === "empty") {
     return (
       <EmptyState
         icon={<Icons.FolderIcon size={22} />}
@@ -118,6 +134,7 @@ export function Projects({
 
   return (
     <div className="aw-sidebar">
+      {load.error && <Banner tone="warning">{load.error}</Banner>}
       <RecentAgents onOpenAgent={onOpenAgent} />
       <SidebarSection count={projects.length}>Projects</SidebarSection>
       {projects.map((p) => (

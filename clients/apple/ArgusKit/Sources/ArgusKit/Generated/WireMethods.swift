@@ -4328,6 +4328,26 @@ extension ArgusProtocol {
       }
     }
 
+    public struct HostPingParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct HostPingResult: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
     public struct IntegrationsListParams: Codable, Sendable {
 
       public init() {
@@ -7255,6 +7275,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.HostEndpointsParams
       public typealias Result = ArgusProtocol.MethodsTypes.HostEndpointsResult
       public static let name = "host.endpoints"
+    }
+
+    public enum HostPing: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.HostPingParams
+      public typealias Result = ArgusProtocol.MethodsTypes.HostPingResult
+      public static let name = "host.ping"
     }
 
     public enum IntegrationsList: RemoteCommand {

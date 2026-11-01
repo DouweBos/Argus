@@ -126,7 +126,7 @@ function HuddleRoom({ view }: { view: HuddleView }) {
   // onto another simulator mid-huddle, and the list has to follow.
   useEffect(() => {
     if (connection === "ready" && hasDevice) {
-      refreshDevices().catch(() => {});
+      refreshDevices({ background: true }).catch(() => {});
     }
   }, [connection, hasDevice, view.deviceKey, refreshDevices]);
 

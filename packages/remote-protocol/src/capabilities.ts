@@ -357,6 +357,9 @@ export const REMOTE_METHODS = {
   "proposals.request_revision": "control",
   /** Every address this desktop is reachable on, so a client can pick one. */
   "host.endpoints": "monitor",
+  /** An app-level ping: browsers can't send WebSocket ping frames, so a web
+   *  client proves the channel alive with a request any host answers. */
+  "host.ping": "monitor",
   /** Whether this computer is on an account (hashed id only), so a paired
    *  phone can offer "Add to your account". */
   "account.status": "monitor",

@@ -131,6 +131,7 @@ export type AutomationInput = z.infer<typeof AutomationInput>;
 
 export const MethodParams = {
   "host.endpoints": z.object({}),
+  "host.ping": z.object({}),
   "account.status": z.object({}),
   "account.request_link": z.object({}),
   /** Entries of the caller's verified log past the host's head, in order. */
@@ -764,6 +765,7 @@ export const MethodParams = {
 
 export const MethodResult = {
   "host.endpoints": z.object({ endpoints: z.array(RemoteEndpoint) }),
+  "host.ping": z.object({}),
   "account.status": z.object({
     linked: z.boolean(),
     /** sha256 hex of the account id — enough to compare, nothing to look up. */

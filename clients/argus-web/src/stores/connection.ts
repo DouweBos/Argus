@@ -11,7 +11,9 @@ import {
   Transport,
   type ConnectionState,
   type EventEnvelope,
+  type TransportOptions,
 } from "@argus/remote-client";
+import type { GatewayMethod } from "@argus/remote-protocol";
 import {
   clearIdentity,
   credentialsFor,
@@ -53,6 +55,11 @@ export function installConnectionHooks(next: ConnectionHooks): void {
 export function connectionHooks(): ConnectionHooks {
   return hooks;
 }
+
+/** Pings over the Noise channel: a browser can't send WebSocket ping frames. */
+export const TRANSPORT_OPTIONS: TransportOptions = {
+  keepalive: { method: "host.ping" satisfies GatewayMethod },
+};
 
 /** Binary media routing, kept out of reactive state: hot path, no re-render. */
 export const media = new MediaRouter();
@@ -115,7 +122,7 @@ export const useConnectionStore = create<ConnectionState_>()((set, get) => {
       },
       onEvent: (event) => hooks.event(event),
       onMedia: (bytes) => media.push(bytes),
-    });
+    }, TRANSPORT_OPTIONS);
     transport.connect();
 
     return transport;
@@ -202,6 +209,26 @@ export const useConnectionStore = create<ConnectionState_>()((set, get) => {
     },
   };
 });
+
+/**
+ * Check the socket the moment the tab is visible again or the network is
+ * back: it may have died while the tab slept, and a backoff may be counting
+ * down. Returns the cleanup.
+ */
+export function watchLiveness(): () => void {
+  const check = () => {
+    if (document.visibilityState === "visible") {
+      currentTransport()?.checkAlive();
+    }
+  };
+  document.addEventListener("visibilitychange", check);
+  window.addEventListener("online", check);
+
+  return () => {
+    document.removeEventListener("visibilitychange", check);
+    window.removeEventListener("online", check);
+  };
+}
 
 /** The live transport, or null when there is no host. */
 export function currentTransport(): Transport | null {
