@@ -171,6 +171,16 @@ public struct ProposalCard: View {
       }
     }
 
+    /// The phone sheet's confirm: one word, so it and the title share the nav bar.
+    var confirm: String {
+      switch self {
+      case .startNote: "Start"
+      case .revise: "Send"
+      case .resolve: "Done"
+      case .dismiss: "Dismiss"
+      }
+    }
+
     /// A revision is the one note that says nothing without its text.
     var needsText: Bool { self == .revise }
   }
@@ -414,7 +424,7 @@ public struct ProposalCard: View {
         .toolbar {
           ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
           ToolbarItem(placement: .confirmationAction) {
-            Button(mode.submit, action: onSubmit).disabled(mode.needsText && blank)
+            Button(mode.confirm, action: onSubmit).disabled(mode.needsText && blank)
           }
         }
       }
