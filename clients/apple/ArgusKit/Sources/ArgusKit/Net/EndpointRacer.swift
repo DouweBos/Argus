@@ -131,12 +131,6 @@ public enum EndpointRacer {
   /// Resolve once this candidate either completes a handshake or gives up.
   private static func probe(_ transport: Transport, index: Int) async -> Outcome {
     let stream = await transport.start()
-    let deadline = Task {
-      try? await Task.sleep(for: probeTimeout)
-      return Outcome.failed(index)
-    }
-    defer { deadline.cancel() }
-
     return await withTaskGroup(of: Outcome.self) { group in
       group.addTask {
         for await event in stream {
@@ -149,7 +143,12 @@ public enum EndpointRacer {
         }
         return .failed(index)
       }
-      group.addTask { await deadline.value }
+      // A child, not a detached task: awaiting a detached one's value ignores
+      // the group's cancel and held every connect for the full timeout.
+      group.addTask {
+        try? await Task.sleep(for: probeTimeout)
+        return .failed(index)
+      }
       let first = await group.next() ?? .failed(index)
       group.cancelAll()
       return first
