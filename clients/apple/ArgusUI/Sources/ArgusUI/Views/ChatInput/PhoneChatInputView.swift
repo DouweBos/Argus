@@ -67,12 +67,13 @@
         picker = .model
       }
       .sheet(item: $picker) { PhoneComposerPickerSheet(composer: composer, which: $0) }
-      .phoneImageAttach(isPresented: $showingAttachMenu) { composer.attach($0, via: .imageAttach) }
     }
 
     private var inputRow: some View {
       HStack(alignment: .bottom, spacing: 6) {
         IconBtn(systemName: Icon.plus, label: "Attach") { showingAttachMenu = true }
+          // On the button, so the menu's popover points at it rather than the composer's middle.
+          .phoneImageAttach(isPresented: $showingAttachMenu) { composer.attach($0, via: .imageAttach) }
 
         ZStack(alignment: .topLeading) {
           PastingTextView(

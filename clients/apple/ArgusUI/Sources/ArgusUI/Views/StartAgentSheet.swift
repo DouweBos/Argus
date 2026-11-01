@@ -133,9 +133,6 @@ public struct StartAgentSheet: View {
         }
       }
       .sheet(item: $picker) { which in picked(which) }
-      #if os(iOS)
-        .phoneImageAttach(isPresented: $showingAttachMenu) { images += $0 }
-      #endif
       .background {
         Color.clear.sheet(isPresented: $pickingIssues) { IssuePickerSheet(selection: $issues) }
       }
@@ -251,6 +248,7 @@ public struct StartAgentSheet: View {
   private var attachButtons: some View {
     #if os(iOS)
       Btn(label: "Attach image", tone: .secondary, small: true, icon: Icon.image) { showingAttachMenu = true }
+        .phoneImageAttach(isPresented: $showingAttachMenu) { images += $0 }
     #endif
     if !linkableProjects.isEmpty {
       Btn(
