@@ -45,6 +45,11 @@ export type RemoteMethod =
   | "agents.queue_remove"
   | "agents.queue_update"
   | "agents.queue_send_now"
+  | "agents.rewind"
+  | "agents.fork"
+  | "agents.history_search"
+  | "agents.history_delete"
+  | "projects.base_branches"
   | "sessions.create"
   | "sessions.delete"
   | "sessions.rename"
@@ -400,6 +405,22 @@ export interface RemotePermissionRequest {
   tool_name: string;
   tool_input: Record<string, unknown>;
 }
+
+export interface PermissionRespondParams {
+  agent_id: string;
+  tool_use_id: string;
+  decision: "allow" | "deny";
+  message?: string;
+  /** With an allow: keep allowing this kind of call for the session. */
+  always_allow?: boolean;
+}
+
+export interface PermissionRespondResult {
+  accepted: boolean;
+  /** The rule an `always_allow` added. Absent from hosts that predate it. */
+  allow_rule?: string;
+}
+
 /** A quick-action button on a notification, chosen by the desktop. */
 export interface RemoteNotificationAction {
   id: "approve" | "deny";

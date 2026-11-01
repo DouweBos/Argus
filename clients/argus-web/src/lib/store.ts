@@ -52,6 +52,8 @@ import type {
   EventEnvelope,
   HuddleChatPayload,
   HuddleStatePayload,
+  PermissionRespondParams,
+  PermissionRespondResult,
   RemoteDeviceClaim,
   RemoteDeviceClaimState,
   RemoteDeviceOrientation,
@@ -610,11 +612,14 @@ export const useAppStore = create<AppState>((set, get) => {
     try {
       for (let attempt = 0; attempt < 5; attempt += 1) {
         try {
-          await transport.request("permission.respond", {
-            agent_id: decision.agentId,
-            tool_use_id: decision.toolUseId,
-            decision: decision.decision,
-          });
+          await transport.request<PermissionRespondResult>(
+            "permission.respond",
+            {
+              agent_id: decision.agentId,
+              tool_use_id: decision.toolUseId,
+              decision: decision.decision,
+            } satisfies PermissionRespondParams,
+          );
 
           return true;
         } catch {
@@ -1145,12 +1150,12 @@ export const useAppStore = create<AppState>((set, get) => {
       if (!t) {
         return;
       }
-      await t.request("permission.respond", {
+      await t.request<PermissionRespondResult>("permission.respond", {
         agent_id: agentId,
         tool_use_id: toolUseId,
         decision,
         ...(message ? { message } : {}),
-      });
+      } satisfies PermissionRespondParams);
       set((s) => {
         const key = `${agentId}:${toolUseId}`;
         const nextPrompts = { ...s.prompts };
