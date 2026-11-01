@@ -51,13 +51,12 @@ struct SessionSidebar: View {
       for project in host.projects { await host.loadSessions(repoRoot: project.repoRoot) }
     }
     .sheet(item: $newSessionProject) { project in
-      StartAgentSheet(
+      StartComposerSheet(
         repoRoot: project.repoRoot,
         sessionId: host.sessionsByRepo[project.repoRoot]?.first { $0.kind == .projectRoot }?.id,
-        currentLabel: "Current checkout",
         workspace: .worktree,
-        models: host.knownModels(repoRoot: project.repoRoot),
-        defaultMode: app.defaultPermissionMode
+        defaultMode: app.defaultPermissionMode,
+        onAffordance: { Telemetry.capture(.composerInput($0)) }
       ) { started, sent in
         Telemetry.capture(.agentStartSubmitted(sent, openedOn: .worktree))
         let (id, label): (String, String) =

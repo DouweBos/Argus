@@ -3,10 +3,13 @@
   import SwiftUI
 
   /// The phone chat input: menus and suggestions over the attachments, the
-  /// chip row of pickers, then the field with attach and send or queue.
+  /// chip row of pickers, then the field with attach and send or queue. With a
+  /// starter it's a start composer, and a `composerFooter` sits under the field.
   struct PhoneChatInputView: View {
     @Environment(\.theme) private var theme
     @Environment(HostStore.self) private var host
+    @Environment(\.composerRedirect) private var redirect
+    @Environment(\.composerFooter) private var footer
 
     @State private var composer: ComposerModel
     @State private var controller: PastingTextController
@@ -20,6 +23,12 @@
       let composer = ComposerModel(
         agentId: agentId, sessionId: sessionId, host: host, style: .phone, editor: controller)
       composer.onAffordance = onAffordance
+      _controller = State(initialValue: controller)
+      _composer = State(initialValue: composer)
+    }
+
+    /// Over a composer the caller holds, as a start composer does to set its runner.
+    init(composer: ComposerModel, controller: PastingTextController) {
       _controller = State(initialValue: controller)
       _composer = State(initialValue: composer)
     }
@@ -48,6 +57,7 @@
 
         PhoneComposerChips(composer: composer, picker: $picker)
         inputRow
+        if let footer { footer }
       }
       .padding(theme.space)
       // The bar's own colour runs to the bottom edge, so it fills the
@@ -71,14 +81,17 @@
 
     private var inputRow: some View {
       HStack(alignment: .bottom, spacing: 6) {
-        IconBtn(systemName: Icon.plus, label: "Attach") { showingAttachMenu = true }
-          // On the button, so the menu's popover points at it rather than the composer's middle.
-          .phoneImageAttach(isPresented: $showingAttachMenu) { composer.attach($0, via: .imageAttach) }
+        if composer.offersImagesAndEffort {
+          IconBtn(systemName: Icon.plus, label: "Attach") { showingAttachMenu = true }
+            // On the button, so the menu's popover points at it rather than the composer's middle.
+            .phoneImageAttach(isPresented: $showingAttachMenu) { composer.attach($0, via: .imageAttach) }
+        }
 
         ZStack(alignment: .topLeading) {
           PastingTextView(
             text: $composer.text, caret: $composer.caret, height: $inputHeight, controller: controller,
             onPasteImages: { pasted in
+              guard composer.offersImagesAndEffort else { return }
               composer.attach(pasted.compactMap(ImageAttachments.pending(image:)), via: .imagePaste)
             })
           if let ghost = placeholder {
@@ -99,10 +112,15 @@
             IconBtn(systemName: Icon.send, label: "Queue message", tint: theme.accent) { composer.submit() }
           }
           IconBtn(systemName: Icon.stop, label: "Interrupt", tint: theme.error) { composer.interrupt() }
+        } else if composer.starting {
+          ProgressView().frame(width: IconBtn.side, height: IconBtn.side).accessibilityLabel("Starting")
         } else {
-          IconBtn(systemName: Icon.send, label: "Send", tint: theme.accent) { composer.submit() }
-            .disabled(!composer.hasContent)
-            .opacity(composer.hasContent ? 1 : 0.4)
+          let canSend = composer.isEnabled && composer.canSend(redirect: redirect)
+          IconBtn(
+            systemName: Icon.send, label: composer.starter == nil ? "Send" : "Start agent", tint: theme.accent
+          ) { composer.submit(redirect: redirect) }
+          .disabled(!canSend)
+          .opacity(canSend ? 1 : 0.4)
         }
       }
     }
@@ -113,7 +131,10 @@
 
     /// "Message" while empty; otherwise a command's argument hint or the rest of a follow-up, as ghost text.
     private var placeholder: Text? {
-      if composer.text.isEmpty { return Text("Message").foregroundStyle(theme.textMuted) }
+      if composer.text.isEmpty {
+        let ghost = (redirect ?? composer.starter)?.placeholder ?? "Message"
+        return Text(ghost).foregroundStyle(theme.textMuted)
+      }
       guard let hint = composer.argumentHint else { return nil }
       return Text("\(Text(composer.text).foregroundStyle(.clear))\(Text(hint).foregroundStyle(theme.textMuted))")
     }

@@ -19,6 +19,7 @@ public protocol ComposerHost: AnyObject {
   func claudeAccountId(forSessionId id: String) -> String?
   func repoRoot(forSessionId id: String) -> String?
   func visibleMessages(for key: String) -> [RemoteMessage]
+  func lastKnownModels(runnerId: String?) -> [RemoteModelInfo]
 
   func sendMessage(
     agentId: String, message: String, images: [RemoteImageAttachment], displayText: String?, isRetry: Bool

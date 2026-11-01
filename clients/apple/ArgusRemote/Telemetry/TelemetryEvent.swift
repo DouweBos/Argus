@@ -435,9 +435,9 @@ enum TelemetryEvent {
     }
   }
 
-  /// The start sheet's send, against the workspace it opened on.
+  /// The start composer's send, against the workspace it opened on.
   static func agentStartSubmitted(
-    _ sent: StartAgentSheet.Submission, openedOn opened: StartAgentSheet.Workspace
+    _ sent: StartComposerSheet.Submission, openedOn opened: StartWorkspace.Kind
   ) -> TelemetryEvent {
     .agentStartSubmitted(
       workspace: sent.workspace.rawValue, changedWorkspace: sent.workspace != opened, hasImages: sent.hasImages,

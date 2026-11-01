@@ -63,9 +63,10 @@ private struct IssueContent: View {
       }
     }
     .sheet(item: $starting) { start in
-      StartAgentSheet(
-        repoRoot: start.project.repoRoot, sessionId: nil, workspace: .worktree, models: [],
-        defaultMode: app.defaultPermissionMode, issues: [start.issue]
+      StartComposerSheet(
+        repoRoot: start.project.repoRoot, sessionId: nil, workspace: .worktree,
+        defaultMode: app.defaultPermissionMode, issues: [start.issue],
+        onAffordance: { Telemetry.capture(.composerInput($0)) }
       ) { _, sent in
         Telemetry.capture(.agentStartSubmitted(sent, openedOn: sent.workspace))
         Task { await host.loadSessions(repoRoot: start.project.repoRoot) }

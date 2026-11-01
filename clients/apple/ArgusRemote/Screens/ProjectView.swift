@@ -159,10 +159,9 @@ struct ProjectView: View {
 
   /// A new worktree, branched from the project root — able to switch to the root itself.
   private var startSheet: some View {
-    StartAgentSheet(
-      repoRoot: repoRoot, sessionId: branchSessionId,
-      currentLabel: "Current checkout",
-      workspace: .worktree, models: host.knownModels(repoRoot: repoRoot), defaultMode: app.defaultPermissionMode
+    StartComposerSheet(
+      repoRoot: repoRoot, sessionId: branchSessionId, workspace: .worktree, defaultMode: app.defaultPermissionMode,
+      onAffordance: { Telemetry.capture(.composerInput($0)) }
     ) { started, sent in
       Telemetry.capture(.agentStartSubmitted(sent, openedOn: .worktree))
       router.push(Route(started))

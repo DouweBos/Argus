@@ -51,7 +51,7 @@ struct AgentView: View {
         stoppedFooter
       } else if host.hasControl {
         ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
-          Telemetry.capture(affordance == .followUp ? .followUpUsed : .inputUsed(affordance: affordance.rawValue))
+          Telemetry.capture(.composerInput(affordance))
         }
       }
     }
@@ -163,5 +163,12 @@ extension HostStore {
   /// Shut down, or stopped on its own: it can't take new messages.
   func isGone(_ agentId: String) -> Bool {
     goneAgents.contains(agentId) || statusByAgent[agentId]?.status == .stopped
+  }
+}
+
+extension TelemetryEvent {
+  /// A composer's input affordance, a chat's or a start's.
+  static func composerInput(_ affordance: ChatInputAffordance) -> TelemetryEvent {
+    affordance == .followUp ? .followUpUsed : .inputUsed(affordance: affordance.rawValue)
   }
 }

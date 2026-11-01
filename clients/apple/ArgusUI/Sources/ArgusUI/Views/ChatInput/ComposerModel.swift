@@ -55,6 +55,10 @@ public final class ComposerModel {
   var draftMode: RemotePermissionMode?
   var draftModel: String?
   var draftEffort: String?
+  /// A start composer's runner; nil is the computer's default.
+  public internal(set) var runner: RemoteRunner?
+  /// A start that can't carry images or effort (one per Linear issue) hides both.
+  public var offersImagesAndEffort = true
   public internal(set) var starting = false
 
   public init(
@@ -98,8 +102,9 @@ public final class ComposerModel {
   func sendTarget(redirect: ComposerStarter?) -> ComposerStarter? { redirect ?? starter }
 
   public func canSend(redirect: ComposerStarter? = nil) -> Bool {
-    guard hasContent else { return false }
-    return sendTarget(redirect: redirect)?.needsText != true || !trimmedText.isEmpty
+    let target = sendTarget(redirect: redirect)
+    guard target?.ready != false, hasContent || target?.needsContent == false else { return false }
+    return target?.needsText != true || !trimmedText.isEmpty
   }
 
   /// Replies suggested once the last turn ended, while the agent waits.

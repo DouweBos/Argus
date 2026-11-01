@@ -762,6 +762,13 @@ public struct RemoteModelInfo: Codable, Hashable, Sendable, Identifiable {
   public var resolvedModel: String?
 
   public var id: String { value }
+
+  /// A model only named, as a custom runner declares it: no effort, no fast mode.
+  public init(value: String, displayName: String, description: String = "") {
+    self.value = value
+    self.displayName = displayName
+    self.description = description
+  }
 }
 
 public struct RemoteSlashCommand: Codable, Hashable, Sendable, Identifiable {

@@ -152,6 +152,46 @@ struct ComposerModelTests {
     #expect(!composer.canSend(redirect: redirect))
   }
 
+  @Test("a redirect that isn't ready won't start; one that needs no content starts empty")
+  func redirectReadiness() async {
+    var started: [ComposerStart] = []
+    let starter = ComposerStarter(defaultMode: "auto") { _ in true }
+    let composer = model(status: nil, starter: starter)
+    composer.text = "fix it"
+    #expect(!composer.canSend(redirect: ComposerStarter(defaultMode: "auto", ready: false) { _ in true }))
+    composer.text = ""
+    let issues = ComposerStarter(defaultMode: "auto", needsContent: false) { request in
+      started.append(request)
+      return true
+    }
+    #expect(composer.canSend(redirect: issues))
+    composer.submit(redirect: issues)
+    await settle()
+    #expect(started.map(\.message) == [""])
+  }
+
+  @Test("a runner's declared models replace the reported ones, hide effort, and ride the start")
+  func runner() async {
+    var started: [ComposerStart] = []
+    let starter = ComposerStarter(defaultMode: "auto") { request in
+      started.append(request)
+      return true
+    }
+    let composer = model(status: nil, starter: starter)
+    let json = #"{"id":"gw","display_name":"Gateway","is_custom":true,"models":[{"value":"m1","display_name":"M1"}]}"#
+    let gateway = try? JSONDecoder().decode(RemoteRunner.self, from: Data(json.utf8))
+    composer.setModel("opus")
+    composer.setRunner(gateway)
+    #expect(composer.models.map(\.value) == ["m1"])
+    #expect(composer.modelLabel == "Default")
+    #expect(composer.effortLevels.isEmpty)
+    composer.text = "go"
+    composer.submit()
+    await settle()
+    #expect(started.first?.runnerId == "gw")
+    #expect(started.first?.model == nil)
+  }
+
   @Test("an @ at the caret opens the menu; picking a file inserts it through the editor")
   func mention() async {
     let editor = FakeEditor()
@@ -267,6 +307,7 @@ final class FakeComposerHost: ComposerHost {
   func claudeAccountId(forSessionId id: String) -> String? { nil }
   func repoRoot(forSessionId id: String) -> String? { nil }
   func visibleMessages(for key: String) -> [RemoteMessage] { [] }
+  func lastKnownModels(runnerId: String?) -> [RemoteModelInfo] { [] }
 
   func sendMessage(
     agentId: String, message: String, images: [RemoteImageAttachment], displayText: String?, isRetry: Bool

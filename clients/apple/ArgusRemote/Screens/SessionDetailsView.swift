@@ -314,7 +314,7 @@ struct McpServersScreen: View {
   }
 }
 
-/// The start sheet on "this session", able to switch to a new worktree.
+/// The start composer on "this session", able to switch to a new worktree.
 struct StartInSessionSheet: View {
   @Environment(AppStore.self) private var app
   @Environment(HostStore.self) private var host
@@ -323,11 +323,10 @@ struct StartInSessionSheet: View {
   let started: (RemoteAgentStatus) -> Void
 
   var body: some View {
-    StartAgentSheet(
+    StartComposerSheet(
       repoRoot: session.isOutsideProjects ? nil : session.repoRoot, sessionId: session.id,
-      currentLabel: session.kind == .projectRoot ? "Current checkout" : "This session",
-      workspace: .current, models: host.knownModels(repoRoot: session.repoRoot),
-      defaultMode: app.defaultPermissionMode
+      workspace: .current, defaultMode: app.defaultPermissionMode,
+      onAffordance: { Telemetry.capture(.composerInput($0)) }
     ) { outcome, sent in
       Telemetry.capture(.agentStartSubmitted(sent, openedOn: .current))
       // A new worktree is another session; open it rather than a tab here.
@@ -337,17 +336,5 @@ struct StartInSessionSheet: View {
         router.push(Route(outcome))
       }
     }
-  }
-}
-
-extension HostStore {
-  /// Models are reported per agent, so a new agent is offered whatever any
-  /// agent last reported — this project's first, and otherwise whichever
-  /// agent has reported at all. Falling back keeps the very first agent in a
-  /// project from being the one spawn that cannot pick a model.
-  func knownModels(repoRoot: String) -> [RemoteModelInfo] {
-    let mine = (agentsByRepo[repoRoot] ?? []).compactMap { capabilitiesByAgent[$0.agentId] }
-      .first { !$0.models.isEmpty }?.models
-    return mine ?? capabilitiesByAgent.values.first { !$0.models.isEmpty }?.models ?? []
   }
 }

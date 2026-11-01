@@ -5,7 +5,7 @@ import Foundation
 /// Sending, queueing and starting, the draft's load and save, and attachments.
 extension ComposerModel {
   public func submit(redirect: ComposerStarter? = nil) {
-    guard isEnabled, hasContent else { return }
+    guard isEnabled, hasContent || sendTarget(redirect: redirect)?.needsContent == false else { return }
     let typed = trimmedText
 
     // Handled here rather than sent to the CLI, as on the desktop.
@@ -26,8 +26,8 @@ extension ComposerModel {
       return
     }
 
-    let display = typed.isEmpty ? "(see attached images)" : typed
-    let body = LinkedProjects.buildPreamble(paths: linkedProjects, message: display)
+    let display = typed.isEmpty && !images.isEmpty ? "(see attached images)" : typed
+    let body = display.isEmpty ? "" : LinkedProjects.buildPreamble(paths: linkedProjects, message: display)
     let attachments = images.map(\.attachment)
     if let target = sendTarget(redirect: redirect) {
       guard canSend(redirect: redirect) else { return }
@@ -55,10 +55,11 @@ extension ComposerModel {
     // Redirected from a live agent, the new one takes this one's settings.
     let live = starter == nil
     let request = ComposerStart(
-      message: body, displayText: display, images: attachments,
+      message: body, displayText: display, images: offersImagesAndEffort ? attachments : [],
       permissionMode: draftMode ?? (live ? permissionMode : nil),
       model: draftModel ?? (live ? status?.model : nil),
-      effort: draftEffort ?? (live ? host.effortByAgent[agentId] : nil))
+      effort: offersImagesAndEffort ? draftEffort ?? (live ? host.effortByAgent[agentId] : nil) : nil,
+      runnerId: runner?.id)
     Task {
       let started = await target.start(request)
       starting = false

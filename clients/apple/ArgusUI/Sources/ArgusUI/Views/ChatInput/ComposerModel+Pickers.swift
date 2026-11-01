@@ -13,10 +13,26 @@ extension ComposerModel {
     return ComposerPermissionMode.canonical(status?.permissionMode)
   }
 
-  /// This agent's models; with no agent yet (or none reported), any agent's on the computer.
+  /// This agent's models; with no agent yet (or none reported), what the runner last
+  /// reported, else any agent's on the computer. A custom runner's declared models
+  /// replace them: its gateway would reject the ids a Claude Code handshake reported.
   public var models: [RemoteModelInfo] {
-    ComposerOptions.models(own: capabilities.models, byAgent: host.capabilitiesByAgent)
+    if starter != nil {
+      if let declared = runner?.models, !declared.isEmpty {
+        return declared.map {
+          RemoteModelInfo(value: $0.value, displayName: $0.displayName, description: $0.description ?? "")
+        }
+      }
+      if capabilities.models.isEmpty {
+        let reported = host.lastKnownModels(runnerId: runner?.id)
+        if !reported.isEmpty { return reported }
+      }
+    }
+    return ComposerOptions.models(own: capabilities.models, byAgent: host.capabilitiesByAgent)
   }
+
+  /// A runner's declared models name no default of their own, so none is presumed.
+  private var declaresModels: Bool { !(runner?.models.isEmpty ?? true) }
 
   /// The model picked for the agent; nil is the CLI default.
   public var pickedModel: String? {
@@ -24,10 +40,15 @@ extension ComposerModel {
     return status?.model
   }
 
-  public var modelLabel: String { ModelName.label(for: pickedModel, in: models) ?? "Model" }
+  public var modelLabel: String {
+    if pickedModel == nil, declaresModels { return "Default" }
+    return ModelName.label(for: pickedModel, in: models) ?? "Model"
+  }
 
+  /// A custom runner's models say nothing about effort, so it offers none.
   public var effortLevels: [String] {
-    ComposerEffort.levels(for: ComposerOptions.current(pickedModel, in: models))
+    guard offersImagesAndEffort, !declaresModels else { return [] }
+    return ComposerEffort.levels(for: ComposerOptions.current(pickedModel, in: models))
   }
 
   public var effort: String? { starter != nil ? draftEffort : host.effortByAgent[agentId] }
@@ -64,6 +85,14 @@ extension ComposerModel {
     } else {
       Task { await host.setModel(agentId: agentId, model: value) }
     }
+  }
+
+  /// Model ids don't carry across runners, so a switch drops the model and its effort.
+  public func setRunner(_ value: RemoteRunner?) {
+    guard value?.id != runner?.id else { return }
+    runner = value
+    draftModel = nil
+    draftEffort = nil
   }
 
   public func setEffort(_ level: String?) {

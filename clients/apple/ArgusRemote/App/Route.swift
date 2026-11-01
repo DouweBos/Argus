@@ -461,9 +461,9 @@ final class Router {
 }
 
 extension Route {
-  /// What a start sheet lands on: the agent, or a new worktree's session,
+  /// What a start composer lands on: the agent, or a new worktree's session,
   /// whose agent joins as a tab once setup finishes.
-  init(_ started: StartAgentSheet.Started) {
+  init(_ started: StartComposerSheet.Started) {
     switch started {
     case .agent(let agent):
       self = .agent(id: agent.agentId, label: Labels.agentName(agent))
