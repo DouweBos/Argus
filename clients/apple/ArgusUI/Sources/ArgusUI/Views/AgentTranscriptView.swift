@@ -124,7 +124,7 @@ public struct AgentTranscriptView: View {
         }
       }
       .overlay(alignment: .bottomTrailing) {
-        if !atBottom {
+        if overflows, !atBottom {
           Button {
             withAnimation { proxy.scrollTo(Self.bottomAnchor, anchor: .bottom) }
           } label: {
@@ -144,9 +144,9 @@ public struct AgentTranscriptView: View {
       // `.immediately` rather than `.interactively`: the latter only gives way
       // when the drag reaches the keyboard, so an upward flick would keep it.
       .scrollDismissesKeyboard(.immediately)
+      // The visible rect, not offset + container: the bars' insets read a chat at its end as short of it.
       .onScrollGeometryChange(for: Bool.self) { geometry in
-        geometry.contentOffset.y + geometry.containerSize.height
-          >= geometry.contentSize.height - 60
+        geometry.visibleRect.maxY >= geometry.contentSize.height - 60
       } action: { _, isAtBottom in
         atBottom = isAtBottom
       }
