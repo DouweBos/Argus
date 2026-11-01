@@ -199,12 +199,25 @@ function emitDevicesChanged(): void {
 }
 
 let cached: RemoteState | null = null;
+/**
+ * The first load, shared: the gateway and the account both ask at boot, and two
+ * fresh keys would leave the gateway answering with one while pairing hands out the other.
+ */
+let loading: Promise<RemoteState> | null = null;
 
 /** Load-or-create the desktop identity, generating keys on first launch. */
 async function ensureState(): Promise<RemoteState> {
   if (cached) {
     return cached;
   }
+  loading ??= loadState().finally(() => {
+    loading = null;
+  });
+
+  return loading;
+}
+
+async function loadState(): Promise<RemoteState> {
   const existing = await readState();
   if (existing) {
     cached = existing;

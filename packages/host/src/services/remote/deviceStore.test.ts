@@ -62,4 +62,30 @@ describe("remote device store", () => {
     expect(identity).toBeTruthy();
     expect(fs.existsSync(path.join(home, "remote-devices.json"))).toBe(true);
   });
+
+  // The gateway, pairing and the account all ask at boot: two keys would pin
+  // the phone to one while the gateway answers with the other.
+  it("hands every concurrent first caller the same identity", async () => {
+    setHostPlatform(nodeHostPlatform());
+    const { getDesktopIdentity, getHostKey, saveDevice } =
+      await import("./deviceStore");
+    const [a, b] = await Promise.all([getDesktopIdentity(), getHostKey()]);
+    expect(Buffer.from(a.pub).toString("base64url")).toBe(b);
+
+    await saveDevice({
+      device_id: "d1",
+      dev_static_pub: "k",
+      label: "phone",
+      capabilities: [],
+      created_at: 0,
+      last_seen: null,
+    });
+    vi.resetModules();
+    const reloaded = await import("./deviceStore");
+    const again = await reloaded.getDesktopIdentity();
+    expect(Buffer.from(again.pub).toString("base64url")).toBe(b);
+    expect((await reloaded.listDevices()).map((d) => d.device_id)).toEqual([
+      "d1",
+    ]);
+  });
 });
