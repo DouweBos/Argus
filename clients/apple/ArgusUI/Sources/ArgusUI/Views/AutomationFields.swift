@@ -7,11 +7,6 @@ import SwiftUI
 /// A quick run is a playbook run once, so it hides the trigger and the enabled
 /// switch — everything else is the same form, because it is the same spec.
 public struct AutomationFields: View {
-  private enum Sheet: String, Identifiable {
-    case projects, sources, autonomy, runner, model
-    var id: String { rawValue }
-  }
-
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
 
@@ -21,7 +16,6 @@ public struct AutomationFields: View {
   /// Empty on a host too old to answer `automations.runners`.
   var runners: [RemoteRunner] = []
 
-  @State private var sheet: Sheet?
   @State private var revising = false
 
   public init(
@@ -56,7 +50,6 @@ public struct AutomationFields: View {
           .toggleStyle(.argusSwitch)
       }
     }
-    .sheet(item: $sheet) { which in sheetContent(which) }
   }
 
   private var trigger: some View {
@@ -102,32 +95,56 @@ public struct AutomationFields: View {
 
   private var scope: some View {
     Field(label: "Scope", caption: "Repos the run may read, and what feeds it work.") {
-      Btn(label: projectsLabel, tone: .secondary, small: true) { sheet = .projects }
-      Btn(label: sourcesLabel, tone: .secondary, small: true) { sheet = .sources }
+      SubLabel("Projects")
+      ToggleList(
+        options: Self.projectOptions(host.projects, picked: draft.repoRoots),
+        selection: $draft.repoRoots,
+        emptyMessage: "This computer has no projects registered.")
+      SubLabel("Signal sources")
+      ToggleList(
+        options: sources.map {
+          .init(id: $0.id, label: $0.label, hint: $0.available ? nil : "not configured")
+        },
+        selection: $draft.sourceIds,
+        emptyMessage: "This computer reported no signal sources.")
     }
   }
 
   private var behaviour: some View {
     Field(
       label: "BEHAVIOUR",
-      caption: "Autonomy is a ceiling request — the computer takes the lowest of this, "
+      caption: draft.autonomy?.caption
+        ?? "Autonomy is a ceiling request — the computer takes the lowest of this, "
         + "its own default and the project's cap."
     ) {
-      Btn(
-        label: "Autonomy: \(draft.autonomy?.label ?? "inherit")", tone: .secondary, small: true
-      ) { sheet = .autonomy }
-      if !runners.isEmpty {
-        Btn(label: "Runner: \(runnerLabel)", tone: .secondary, small: true) { sheet = .runner }
+      ChipFlowLayout(spacing: 6, lineSpacing: 6) {
+        MenuChip(
+          "Autonomy", selection: autonomyBinding,
+          options: [.init(value: "", label: "Inherit", hint: "Use the computer's default")]
+            + RemoteAutonomy.allRungs.map { .init(value: $0.rawValue, label: $0.label, hint: $0.caption) },
+          showsTitle: true)
+        if !runners.isEmpty {
+          MenuChip(
+            "Runner", selection: runnerBinding,
+            options: [.init(value: "", label: "Default", hint: "Use the computer's default")]
+              + runners.map { .init(value: $0.id, label: $0.displayName, hint: $0.isCustom ? "Custom" : nil) },
+            icon: Icon.terminal, showsTitle: true)
+        }
+        if !declaredModels.isEmpty {
+          MenuChip(
+            "Model", selection: modelBinding,
+            options: [.init(value: "", label: "Default", hint: "Use the runner's default")]
+              + declaredModels.map { .init(value: $0.value, label: $0.displayName, hint: $0.description) },
+            showsTitle: true)
+        }
       }
-      // A runner that declares its models gets a picker; Claude Code only
+      .frame(maxWidth: .infinity, alignment: .leading)
+      // A runner that declares its models gets a menu; Claude Code only
       // learns its list from a live handshake, so there it stays free text.
       if declaredModels.isEmpty {
         ThemedTextField(
           placeholder: "Model — blank uses the default",
-          text: Binding(get: { draft.model ?? "" }, set: { draft.model = $0.isEmpty ? nil : $0 }),
-          mono: true, input: .code)
-      } else {
-        Btn(label: "Model: \(modelLabel)", tone: .secondary, small: true) { sheet = .model }
+          text: modelBinding, mono: true, input: .code)
       }
       GuardrailFields(guardrails: $draft.guardrails)
     }
@@ -163,69 +180,14 @@ public struct AutomationFields: View {
     }
   }
 
-  @ViewBuilder
-  private func sheetContent(_ which: Sheet) -> some View {
-    switch which {
-    case .projects:
-      PickerSheet(
-        title: "Projects",
-        options: host.projects.map { .init(value: $0.repoRoot, label: $0.name, hint: $0.repoRoot) },
-        selected: Set(draft.repoRoots),
-        multi: true,
-        emptyMessage: "This computer has no projects registered."
-      ) { value in
-        toggle(value, in: \.repoRoots)
+  /// The computer's projects, plus any the draft still names that it no longer
+  /// lists — so one can be switched off rather than silently kept.
+  public static func projectOptions(_ projects: [RemoteProject], picked: [String]) -> [ToggleList.Option] {
+    let known = Set(projects.map(\.repoRoot))
+    return projects.map { .init(id: $0.repoRoot, label: $0.name) }
+      + picked.filter { !known.contains($0) }.map {
+        .init(id: $0, label: ($0 as NSString).lastPathComponent, hint: "not open on this computer")
       }
-    case .sources:
-      PickerSheet(
-        title: "Signal sources",
-        options: sources.map {
-          .init(
-            value: $0.id, label: $0.label,
-            hint: $0.available ? $0.mode.rawValue : "\($0.mode.rawValue) · not configured")
-        },
-        selected: Set(draft.sourceIds),
-        multi: true,
-        emptyMessage: "This computer reported no signal sources."
-      ) { value in
-        toggle(value, in: \.sourceIds)
-      }
-    case .autonomy:
-      PickerSheet(
-        title: "Autonomy",
-        options: [.init(value: "inherit", label: "Inherit", hint: "Use the computer's default")]
-          + RemoteAutonomy.allRungs.map {
-            .init(value: $0.rawValue, label: $0.label, hint: $0.caption)
-          },
-        selected: [draft.autonomy?.rawValue ?? "inherit"]
-      ) { value in
-        draft.autonomy = RemoteAutonomy(rawValue: value)
-      }
-    case .runner:
-      PickerSheet(
-        title: "Runner",
-        options: [.init(value: "", label: "Default", hint: "Use the computer's default")]
-          + runners.map {
-            .init(value: $0.id, label: $0.displayName, hint: $0.isCustom ? "custom" : nil)
-          },
-        selected: [draft.runner ?? ""]
-      ) { value in
-        draft.runner = value.isEmpty ? nil : value
-        // Model ids don't carry across runners, so a switch drops the model.
-        draft.model = nil
-      }
-    case .model:
-      PickerSheet(
-        title: "Model",
-        options: [.init(value: "", label: "Default", hint: "Use the runner's default")]
-          + declaredModels.map {
-            .init(value: $0.value, label: $0.displayName, hint: $0.description)
-          },
-        selected: [draft.model ?? ""]
-      ) { value in
-        draft.model = value.isEmpty ? nil : value
-      }
-    }
   }
 
   private var selectedRunner: RemoteRunner? {
@@ -234,37 +196,34 @@ public struct AutomationFields: View {
 
   private var declaredModels: [RemoteRunner.Model] { selectedRunner?.models ?? [] }
 
-  private var runnerLabel: String {
-    selectedRunner?.displayName ?? draft.runner ?? "default"
+  private var autonomyBinding: Binding<String> {
+    Binding(get: { draft.autonomy?.rawValue ?? "" }, set: { draft.autonomy = RemoteAutonomy(rawValue: $0) })
   }
 
-  private var modelLabel: String {
-    guard let model = draft.model else { return "default" }
-
-    return declaredModels.first { $0.value == model }?.displayName ?? model
+  /// Model ids don't carry across runners, so a switch drops the model.
+  private var runnerBinding: Binding<String> {
+    Binding(
+      get: { draft.runner ?? "" },
+      set: { id in
+        guard id != (draft.runner ?? "") else { return }
+        draft.runner = id.isEmpty ? nil : id
+        draft.model = nil
+      })
   }
 
-  private func toggle(_ value: String, in path: WritableKeyPath<RemoteAutomationDetail, [String]>) {
-    if let index = draft[keyPath: path].firstIndex(of: value) {
-      draft[keyPath: path].remove(at: index)
-    } else {
-      draft[keyPath: path].append(value)
-    }
+  private var modelBinding: Binding<String> {
+    Binding(get: { draft.model ?? "" }, set: { draft.model = $0.isEmpty ? nil : $0 })
   }
+}
 
-  private var projectsLabel: String {
-    guard !draft.repoRoots.isEmpty else { return "Projects: none" }
-    let names = draft.repoRoots.map { ($0 as NSString).lastPathComponent }
+/// A sub-heading inside a `Field`, for a field that holds two lists.
+private struct SubLabel: View {
+  @Environment(\.theme) private var theme
+  let text: String
 
-    return "Projects: \(names.joined(separator: ", "))"
-  }
+  init(_ text: String) { self.text = text }
 
-  private var sourcesLabel: String {
-    guard !draft.sourceIds.isEmpty else { return "Signal sources: none" }
-    let labels = draft.sourceIds.map { id in
-      sources.first { $0.id == id }?.label ?? id
-    }
-
-    return "Sources: \(labels.joined(separator: ", "))"
+  var body: some View {
+    Text(text).font(.scaled(size: 13, weight: .medium)).foregroundStyle(theme.textSecondary)
   }
 }
