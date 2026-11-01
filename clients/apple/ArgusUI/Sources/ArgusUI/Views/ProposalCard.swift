@@ -110,7 +110,7 @@ public struct ProposalCardActions {
 
 /// One proposal and everything you can do with it — start it (with or
 /// without a note), ask for a better one, mark it done, dismiss it, follow its
-/// CTA. The note is asked for inline on a Mac and in a sheet on a phone.
+/// CTA. The note is asked for inline, in place of the card's footer.
 public struct ProposalCard: View {
   @Environment(\.theme) private var theme
   @Environment(\.openURL) private var openURL
@@ -129,6 +129,7 @@ public struct ProposalCard: View {
   @State private var compose: Compose?
   @State private var text = ""
   @State private var confirmingCleanup = false
+  @FocusState private var composing: Bool
 
   public init(
     content: ProposalCardContent, decided: String? = nil, busy: Bool, starting: Bool,
@@ -175,7 +176,7 @@ public struct ProposalCard: View {
       }
     }
 
-    /// The phone sheet's confirm: one word, so it and the title share the nav bar.
+    /// The phone's confirm: one word, so it fits beside the field.
     var confirm: String {
       switch self {
       case .startNote: "Start"
@@ -210,11 +211,7 @@ public struct ProposalCard: View {
       } else if let startFailure {
         Banner(text: startFailure, tone: .danger, title: "Couldn't start").textSelection(.enabled)
       }
-      #if os(macOS)
-        if let compose { composer(compose) } else { footer }
-      #else
-        footer
-      #endif
+      if let compose { composer(compose) } else { footer }
     }
     .opacity(busy ? 0.5 : 1)
     .alert(cleanupTitle, isPresented: $confirmingCleanup) {
@@ -223,11 +220,6 @@ public struct ProposalCard: View {
     } message: {
       Text(cleanupWarning)
     }
-    #if os(iOS)
-      .sheet(item: $compose) { mode in
-        ComposeSheet(mode: mode, text: $text) { submit(mode) }
-      }
-    #endif
   }
 
   private var header: some View {
@@ -305,22 +297,6 @@ public struct ProposalCard: View {
       Button("Dismiss…") { begin(.dismiss) }
     }
 
-    @FocusState private var composing: Bool
-
-    private func composer(_ mode: Compose) -> some View {
-      HStack(spacing: 8) {
-        TextField(mode.placeholder, text: $text, axis: .vertical)
-          .textFieldStyle(.roundedBorder)
-          .lineLimit(1...4)
-          .focused($composing)
-          .onAppear { composing = true }
-          .onSubmit { submit(mode) }
-        Button(mode.submit) { submit(mode) }
-          .buttonStyle(.borderedProminent)
-          .disabled(mode.needsText && text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        Button("Cancel") { compose = nil }
-      }
-    }
   #else
     /// The CTA, done and dismiss as buttons; the two that need a note behind a
     /// menu, since five labelled buttons don't fit a phone's width. The menu
@@ -369,6 +345,51 @@ public struct ProposalCard: View {
     }
   #endif
 
+  private var blank: Bool { text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+  /// The note, in place of the footer; the field and its buttons share a row so
+  /// scrolling the focused field above the keyboard brings them along.
+  private func composer(_ mode: Compose) -> some View {
+    #if os(macOS)
+      HStack(spacing: 8) {
+        TextField(mode.placeholder, text: $text, axis: .vertical)
+          .textFieldStyle(.roundedBorder)
+          .lineLimit(1...4)
+          .focused($composing)
+          .onAppear { composing = true }
+          .onSubmit { submit(mode) }
+        Button(mode.submit) { submit(mode) }
+          .buttonStyle(.borderedProminent)
+          .disabled(mode.needsText && blank)
+        Button("Cancel") { compose = nil }
+      }
+    #else
+      VStack(alignment: .leading, spacing: 6) {
+        MutedText(mode.title)
+        HStack(alignment: .bottom, spacing: 8) {
+          ThemedTextField(placeholder: mode.placeholder, text: $text, multiline: true, lines: 1...4)
+            .focused($composing)
+            .onAppear { composing = true }
+          Btn(label: mode.confirm, small: true, hugs: true) { submit(mode) }
+            .fixedSize()
+            .disabled(mode.needsText && blank)
+          Button {
+            composing = false
+            compose = nil
+          } label: {
+            Image(systemName: Icon.close)
+              .font(.scaled(size: 13, weight: .semibold))
+              .foregroundStyle(theme.textSecondary)
+              .frame(width: 32, height: 32)
+              .contentShape(.rect)
+          }
+          .buttonStyle(.argusPlain)
+          .accessibilityLabel("Cancel")
+        }
+      }
+    #endif
+  }
+
   private func begin(_ mode: Compose) {
     text = ""
     compose = mode
@@ -407,40 +428,6 @@ public struct ProposalCard: View {
     return "\(force ? "git branch -D" : "git branch -d") \(branch ?? "") — commits only on this branch are gone for good."
   }
 }
-
-#if os(iOS)
-  /// The note behind a decision, asked for in a sheet so the keyboard has room.
-  private struct ComposeSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    let mode: ProposalCard.Compose
-    @Binding var text: String
-    let onSubmit: () -> Void
-
-    private var blank: Bool { text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-
-    var body: some View {
-      NavigationStack {
-        Screen {
-          ThemedTextField(placeholder: mode.placeholder, text: $text, multiline: true, lines: 3...10)
-          if mode == .revise {
-            MutedText("The automation reworks it on its next run, which replaces this one.")
-          } else if mode == .startNote {
-            MutedText("Added to the agent's brief.")
-          }
-        }
-        .navigationTitle(mode.title)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-          ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-          ToolbarItem(placement: .confirmationAction) {
-            Button(mode.confirm, action: onSubmit).disabled(mode.needsText && blank)
-          }
-        }
-      }
-      .presentationDetents([.medium, .large])
-    }
-  }
-#endif
 
 /// A start from this phone that finished after the request answered: the
 /// agent is running, so offer the way to it instead of just vanishing.
