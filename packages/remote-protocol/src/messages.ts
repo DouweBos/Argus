@@ -552,6 +552,10 @@ export const MethodParams = {
     limit: z.number().int().positive().max(100).optional(),
   }),
   "automations.run": z.object({ run_id: z.string() }),
+  /** Ad-hoc runs only, newest first — the Quick Run screen's history. */
+  "automations.scratch_runs": z.object({
+    limit: z.number().int().positive().max(100).optional(),
+  }),
   "automations.get": z.object({ automation_id: z.string() }),
   "automations.sources": z.object({}),
   "automations.runners": z.object({}),
@@ -973,6 +977,7 @@ export const MethodResult = {
   "devices.keyboard": z.object({ accepted: z.boolean() }),
   "automations.list": z.object({ automations: z.array(RemoteAutomation) }),
   "automations.runs": z.object({ runs: z.array(RemoteAutomationRun) }),
+  "automations.scratch_runs": z.object({ runs: z.array(RemoteAutomationRun) }),
   "automations.run": z.object({
     run: RemoteAutomationRun,
     /** Structured blocks when the run emitted them, else null. */

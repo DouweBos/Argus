@@ -12,11 +12,29 @@ extension AutomationsStore {
       try await backend.request(.automationsDeleteRun, Params(run_id: id), as: IgnoredResult.self)
       host.hooks.track(.runActed(action: .delete))
       runs.removeAll { $0.id == id }
+      quickRuns?.removeAll { $0.id == id }
       detailByRun.removeValue(forKey: id)
       return true
     } catch {
       gatewayFailed("Couldn't delete that run", error)
       return false
+    }
+  }
+
+  /// The Quick Run screen's history. A computer too old to list them alone
+  /// leaves the quick runs among the recent ones.
+  public func loadQuickRunsOverGateway() async {
+    guard let backend = host.backend else { return }
+    struct Params: Encodable { let limit: Int }
+    struct Result: Decodable { let runs: [RemoteAutomationRun] }
+    do {
+      quickRuns = try await backend.request(
+        .automationsScratchRuns, Params(limit: 40), as: Result.self
+      ).runs
+    } catch {
+      guard !HostStore.isCancellation(error) else { return }
+      if runs.isEmpty { await refresh() }
+      quickRuns = runs.filter(\.isQuick)
     }
   }
 

@@ -55,6 +55,37 @@ struct PhoneGatewayStoresTests {
     #expect(store.calibrationById["a1"]?.acceptanceRate == 0.5)
   }
 
+  private static func run(_ id: String, quick: Bool) -> String {
+    #"{"id":"\#(id)","automation_id":"a1","automation_name":"A","is_quick":\#(quick),"#
+      + #""status":"succeeded","trigger_reason":"manual","started_at":1,"unread_report":false}"#
+  }
+
+  @Test func readsQuickRunHistory() async {
+    let backend = RecordingBackend(kind: .gateway)
+    backend.reply("automations.scratch_runs", #"{"runs":[\#(Self.run("q1", quick: true))]}"#)
+    let host = HostStore()
+    await host.attach(backend)
+    let store = AutomationsStore(host: host)
+
+    await store.loadQuickRunsOverGateway()
+
+    #expect(store.quickRuns?.map(\.id) == ["q1"])
+  }
+
+  @Test func anOlderComputerFallsBackToTheRecentQuickRuns() async {
+    let backend = RecordingBackend(kind: .gateway)
+    backend.fail("automations.scratch_runs")
+    backend.reply(
+      "automations.runs", #"{"runs":[\#(Self.run("r1", quick: false)),\#(Self.run("q1", quick: true))]}"#)
+    let host = HostStore()
+    await host.attach(backend)
+    let store = AutomationsStore(host: host)
+
+    await store.loadQuickRunsOverGateway()
+
+    #expect(store.quickRuns?.map(\.id) == ["q1"])
+  }
+
   @Test func clearingTheAutonomyCapSendsNull() async {
     let backend = RecordingBackend(kind: .gateway)
     backend.reply("automations.set_default_autonomy", #"{"autonomy":null}"#)

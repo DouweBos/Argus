@@ -220,6 +220,7 @@ import {
   remoteAutomationRuns,
   remoteAutomations,
   remoteRunners,
+  remoteScratchRuns,
   remoteSignalSources,
   saveRemoteScratchRun,
   startRemoteScratchRun,
@@ -2012,6 +2013,8 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "automations.list": async () => remoteAutomations(),
   "automations.runs": async (params) =>
     remoteAutomationRuns(parse("automations.runs", params)),
+  "automations.scratch_runs": async (params) =>
+    remoteScratchRuns(parse("automations.scratch_runs", params)),
   "automations.run": async (params) => {
     const { run_id } = parse("automations.run", params);
     const detail = remoteAutomationRun(run_id);

@@ -17,6 +17,8 @@ public final class AutomationsStore {
   public internal(set) var runners: [RemoteRunner] = []
   /// Newest first, across every automation.
   public internal(set) var runs: [RemoteAutomationRun] = []
+  /// Ad-hoc runs only, newest first; nil until the Quick Run screen asks.
+  public internal(set) var quickRuns: [RemoteAutomationRun]?
   public internal(set) var detailByRun: [String: RemoteAutomationRunDetail] = [:]
   public internal(set) var triggering: Set<String> = []
   /// Each automation's track record, keyed by automation id. Catalog-only.
@@ -38,6 +40,7 @@ public final class AutomationsStore {
     sources = []
     runners = []
     runs = []
+    quickRuns = nil
     detailByRun = [:]
     triggering = []
     calibrationById = [:]
@@ -390,6 +393,7 @@ public final class AutomationsStore {
       ).run
       host.hooks.track(.runActed(action: .startScratch))
       runs.insert(run, at: 0)
+      quickRuns?.insert(run, at: 0)
       await refresh()
 
       return run.id
@@ -473,6 +477,7 @@ public final class AutomationsStore {
       _ = try await backend.request(ArgusProtocol.Commands.AutomationRunDelete.self, .init(runId: id))
       host.hooks.track(.runActed(action: .delete))
       runs.removeAll { $0.id == id }
+      quickRuns?.removeAll { $0.id == id }
       detailByRun.removeValue(forKey: id)
       return true
     } catch {

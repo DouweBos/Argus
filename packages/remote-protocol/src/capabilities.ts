@@ -281,6 +281,8 @@ export const REMOTE_METHODS = {
   "automations.runs": "monitor",
   /** One run with its report — the list omits it because reports are large. */
   "automations.run": "monitor",
+  /** Ad-hoc runs only — the Quick Run screen's history. */
+  "automations.scratch_runs": "monitor",
   /** The editor's reads. Writing one is control: a playbook is code. */
   "automations.get": "monitor",
   "automations.sources": "monitor",

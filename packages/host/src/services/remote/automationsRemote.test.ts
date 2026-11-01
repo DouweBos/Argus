@@ -8,6 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { rememberStartOptions, resetStartOptions } from "../agent/startOptions";
+import { DEFAULT_GUARDRAILS } from "../automation/guardrails";
 import {
   createRun,
   getAutomationRun,
@@ -18,6 +19,7 @@ import { listRunners } from "../llm/registry";
 import {
   markRemoteRunRead,
   remoteRunners,
+  remoteScratchRuns,
   toRemoteAutomationRun,
 } from "./automationsRemote";
 
@@ -107,6 +109,25 @@ describe("the run a phone sees", () => {
 
   it("says nothing about a run it does not have", () => {
     expect(markRemoteRunRead("no-such-run")).toBeNull();
+  });
+
+  it("lists only ad-hoc runs as quick-run history, capped by the limit", () => {
+    createRun("a1", "succeeded", "schedule 09:00");
+    const spec = {
+      name: "Sweep",
+      playbook: "Look around.",
+      scope: { repo_roots: [] },
+      source_ids: [],
+      model: null,
+      guardrails: DEFAULT_GUARDRAILS,
+    };
+    const first = createRun("scratch-1", "succeeded", "manual", null, spec);
+    const second = createRun("scratch-2", "succeeded", "manual", null, spec);
+
+    const ids = remoteScratchRuns({}).runs.map((r) => r.id);
+
+    expect(new Set(ids)).toEqual(new Set([first.id, second.id]));
+    expect(remoteScratchRuns({ limit: 1 }).runs).toHaveLength(1);
   });
 });
 

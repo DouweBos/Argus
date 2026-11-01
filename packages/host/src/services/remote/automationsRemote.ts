@@ -40,6 +40,7 @@ import {
   hasActiveRun,
   listAutomationRuns,
   listAutomations,
+  listScratchRuns,
   hasUnreadReport,
   markRunReportRead,
   requireAutomation,
@@ -333,6 +334,15 @@ export function remoteAutomationRuns(params: {
   const runs = [...listAutomationRuns(params.automation_id)]
     .sort((a, b) => b.started_at - a.started_at)
     .slice(0, params.limit ?? DEFAULT_RUN_LIMIT);
+
+  return { runs: runs.map(toRemoteAutomationRun) };
+}
+
+/** Ad-hoc runs only, newest first, so a busy schedule can't push them out of the head. */
+export function remoteScratchRuns(params: { limit?: number }): {
+  runs: RemoteAutomationRun[];
+} {
+  const runs = listScratchRuns().slice(0, params.limit ?? DEFAULT_RUN_LIMIT);
 
   return { runs: runs.map(toRemoteAutomationRun) };
 }

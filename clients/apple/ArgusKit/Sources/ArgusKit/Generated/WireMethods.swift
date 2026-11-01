@@ -2270,6 +2270,40 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AutomationsScratchRunsParams: Codable, Sendable {
+      public var limit: Int?
+
+      enum CodingKeys: String, CodingKey {
+        case limit = "limit"
+      }
+
+      public init(limit: Int? = nil) {
+        self.limit = limit
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(limit, forKey: .limit)
+      }
+    }
+
+    public struct AutomationsScratchRunsResult: Codable, Sendable {
+      public var runs: [RemoteAutomationRun]
+
+      enum CodingKeys: String, CodingKey {
+        case runs = "runs"
+      }
+
+      public init(runs: [RemoteAutomationRun]) {
+        self.runs = runs
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(runs, forKey: .runs)
+      }
+    }
+
     public struct AutomationsSetDefaultAutonomyParamsAutonomy: RawRepresentable, Codable, Hashable, Sendable {
       public var rawValue: String
       public init(rawValue: String) { self.rawValue = rawValue }
@@ -6825,6 +6859,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AutomationsSaveScratchRunParams
       public typealias Result = ArgusProtocol.MethodsTypes.AutomationsSaveScratchRunResult
       public static let name = "automations.save_scratch_run"
+    }
+
+    public enum AutomationsScratchRuns: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsScratchRunsParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsScratchRunsResult
+      public static let name = "automations.scratch_runs"
     }
 
     public enum AutomationsSetDefaultAutonomy: RemoteCommand {

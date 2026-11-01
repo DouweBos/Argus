@@ -1,55 +1,89 @@
 import ArgusUI
 import SwiftUI
 
-/// Run a playbook once, with nothing saved behind it.
+/// Run a playbook once against the projects you pick, with nothing saved
+/// behind it — and the quick runs so far, underneath. The Mac's Quick Run.
 ///
-/// The same spec an automation carries — scope, sources, autonomy, guardrails
-/// — minus the clock. The computer models it as a synthetic automation, so the
-/// ladder and the spend ceilings apply exactly as they do to a scheduled run.
+/// Autonomy isn't offered: an ad-hoc run inherits the computer's default,
+/// floored by each project, and its spend ceilings apply as to any run.
 struct QuickRunView: View {
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
   @Environment(AutomationsStore.self) private var store
-  @Environment(\.dismiss) private var dismiss
 
-  @State private var draft = RemoteAutomationDetail(name: "Quick run", triggerKind: .manual)
+  @State private var name = ""
+  @State private var playbook = ""
+  @State private var repoRoots: [String] = []
   @State private var starting = false
 
   private var canRun: Bool {
-    !draft.playbook.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !starting
+    host.hasControl && !playbook.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !starting
   }
+
+  private var runs: [RemoteAutomationRun] { store.quickRuns ?? [] }
 
   var body: some View {
     Screen {
       if let error = store.error {
         Banner(text: error, tone: .danger)
       }
-      AutomationFields(draft: $draft, showsSchedule: false, sources: store.sources)
-      Btn(label: starting ? "Starting…" : "Run now", icon: Icon.play) { run() }
-        .disabled(!canRun)
-      MutedText(
-        "Nothing is saved. If it turns out to be worth keeping, the run itself "
-          + "can be promoted to an automation.")
+      Field(
+        label: "What should it do?",
+        caption: "Nothing is saved — but you can turn a run into an automation afterwards. The run "
+          + "reads the projects at their paths and never writes to them."
+      ) {
+        ThemedTextField(placeholder: "Quick run", text: $name, input: .name)
+        ThemedTextField(
+          placeholder: "Summarise what landed on each project this week.", text: $playbook,
+          multiline: true, lines: 6...24, mono: true)
+      }
+      Field(label: "Projects") {
+        ToggleList(
+          options: AutomationFields.projectOptions(host.projects, picked: repoRoots),
+          selection: $repoRoots,
+          emptyMessage: "This computer has no projects registered.")
+      }
+      if host.hasControl {
+        Btn(label: starting ? "Starting…" : "Run once", icon: Icon.play) { run() }
+          .disabled(!canRun)
+      }
+      history
     }
     .navigationTitle("Quick Run")
     .navigationBarTitleDisplayMode(.inline)
-    .task { await store.loadSources() }
+    .task { await store.loadQuickRunsOverGateway() }
+    .refreshable { await store.loadQuickRunsOverGateway() }
+    .liveRefresh(enabled: host.connection == .ready) { await store.loadQuickRunsOverGateway() }
+  }
+
+  @ViewBuilder
+  private var history: some View {
+    SectionHeader(title: "Quick runs", count: runs.count)
+    if store.quickRuns == nil {
+      Loading(label: "Reading quick runs…")
+    } else if runs.isEmpty {
+      MutedText("Nothing yet. A quick run is kept and swept like any other run.")
+    }
+    ForEach(runs) { run in
+      NavigationLink(value: Route.run(id: run.id, label: run.automationName)) {
+        RunRow(run: run, showName: true)
+      }
+    }
   }
 
   private func run() {
     starting = true
+    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    let label = trimmed.isEmpty ? "Quick run" : trimmed
     Task {
       let runId = await store.runScratch(
-        name: draft.name.trimmingCharacters(in: .whitespacesAndNewlines),
-        playbook: draft.playbook,
-        repoRoots: draft.repoRoots,
-        sourceIds: draft.sourceIds,
-        model: draft.model,
-        guardrails: draft.guardrails)
+        name: label, playbook: playbook, repoRoots: repoRoots,
+        sourceIds: [], model: nil, guardrails: RemoteAutomationGuardrails())
       starting = false
       guard let runId else { return }
+      playbook = ""
       // Straight to the run: watching it is the point of pressing the button.
-      router.push(.run(id: runId, label: draft.name))
+      router.push(.run(id: runId, label: label))
     }
   }
 }

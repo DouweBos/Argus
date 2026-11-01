@@ -259,9 +259,11 @@ describe("the typed automations methods", () => {
       expect.arrayContaining([
         "automations.run_scratch",
         "automations.save_scratch_run",
+        "automations.scratch_runs",
       ]),
     );
     const tier = (m: RemoteMethod) => REMOTE_METHODS[m];
+    expect(tier("automations.scratch_runs")).toBe("monitor");
     // An ad-hoc run is an agent on the host, same as any other run.
     expect(tier("automations.run_scratch")).toBe("control");
     expect(tier("automations.save_scratch_run")).toBe("control");
