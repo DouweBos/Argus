@@ -33,6 +33,18 @@ public actor Transport {
   private static let tagMedia: UInt8 = 0x01
 
   public static let requestTimeout: Duration = .seconds(15)
+  /// Plan limits spawn the Claude CLI per account, each probe allowed 20 s on the host.
+  static let longRequests: [String: Duration] = [
+    RemoteMethod.usageLimits.rawValue: .seconds(30),
+    ArgusProtocol.Commands.GetClaudeUsageLimits.name: .seconds(30),
+  ]
+  /// The longest any request waits, so a connection being retired outlives its calls.
+  public static let longestRequestTimeout: Duration = longRequests.values.max() ?? requestTimeout
+
+  /// How long `method` gets to answer, at least `requested`.
+  public static func timeout(for method: String, requested: Duration = requestTimeout) -> Duration {
+    max(requested, longRequests[method] ?? requested)
+  }
 
   public let url: String
   private let identity: DeviceIdentity
@@ -265,6 +277,7 @@ public actor Transport {
   ) async throws -> ResponseEnvelope {
     guard session != nil else { throw TransportError.notReady }
     let json = try ProtocolCodec.decoder.decode(JSONValue.self, from: ProtocolCodec.encoder.encode(params))
+    let timeout = Self.timeout(for: method, requested: timeout)
 
     let response = try await withThrowingTaskGroup(of: ResponseEnvelope.self) { group in
       group.addTask { [weak self] in

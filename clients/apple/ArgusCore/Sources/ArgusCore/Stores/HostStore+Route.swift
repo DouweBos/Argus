@@ -10,9 +10,11 @@ extension HostStore {
 
   /// Move to a better route without dropping the computer's data: the new
   /// backend is adopted first, then everything a fresh connection loses is
-  /// re-read, and only then is the old one closed. It stays open a moment so
-  /// requests already in flight on it can still answer.
-  public func swapBackend(_ next: any HostBackend, drain: Duration = .seconds(10)) async {
+  /// re-read, and only then is the old one closed. It stays open as long as
+  /// any request may take, so ones already in flight on it can still answer.
+  public func swapBackend(_ next: any HostBackend, drain: Duration = Transport.longestRequestTimeout)
+    async
+  {
     let previous = backend
     await attach(next)
     resyncTranscripts()
