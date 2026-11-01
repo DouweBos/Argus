@@ -210,7 +210,7 @@ public final class InboxStore {
   }
 
   private func fail(_ summary: String, _ error: Error) {
-    guard !HostStore.isCancellation(error) else { return }
+    guard !HostStore.isQuiet(error) else { return }
     self.error = "\(summary) — \(HostStore.describe(error))"
     host.hooks.errorReported(error, "proposals")
   }

@@ -54,7 +54,7 @@ struct FileDiffView: View {
       file = DiffParser.parse(diff).first { $0.displayPath == path }
       failure = nil
       loaded = true
-    } catch where !HostStore.isCancellation(error) {
+    } catch where !HostStore.isQuiet(error) {
       failure = HostStore.describe(error)
     } catch {}
   }

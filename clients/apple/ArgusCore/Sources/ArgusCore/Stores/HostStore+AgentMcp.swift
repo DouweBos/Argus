@@ -13,6 +13,8 @@ extension HostStore {
       mcpServersByAgent[agentId] = AgentMcpServers(result)
       mcpServersErrorByAgent[agentId] = nil
     } catch {
+      // A poll that lost its connection keeps what it had and retries on reconnect.
+      guard !Self.isQuiet(error) else { return }
       mcpServersErrorByAgent[agentId] = Self.describe(error)
       hooks.errorReported(error, "mcp_status")
     }

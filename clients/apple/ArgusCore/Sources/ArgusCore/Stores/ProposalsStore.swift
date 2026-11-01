@@ -126,7 +126,7 @@ public final class ProposalsStore {
       error = nil
     } catch {
       // A screen left mid-load answered nothing; settling would read as "none".
-      if HostStore.isCancellation(error) { return }
+      if HostStore.isQuiet(error) { return }
       fail("Couldn't read the inbox", error)
       loaded = true
       return
@@ -279,7 +279,7 @@ public final class ProposalsStore {
   /// Show it, and send it — a failure the user sees is one worth knowing
   /// about, scrubbed of anything from their work.
   private func fail(_ summary: String, _ error: Error) {
-    guard !HostStore.isCancellation(error) else { return }
+    guard !HostStore.isQuiet(error) else { return }
     self.error = "\(summary) — \(HostStore.describe(error))"
     report(error)
   }

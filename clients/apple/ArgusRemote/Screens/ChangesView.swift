@@ -107,7 +107,7 @@ struct ChangesView: View {
       guard asked == mode else { return }
       diff = loaded
       failure = nil
-    } catch where !HostStore.isCancellation(error) {
+    } catch where !HostStore.isQuiet(error) {
       if asked == mode { failure = HostStore.describe(error) }
     } catch {}
   }

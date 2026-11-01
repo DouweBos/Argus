@@ -189,9 +189,12 @@ public final class HostStore {
     // A new connection numbers its events from scratch.
     queueSeq = [:]
     let stream = await backend.events()
+    // Event-driven reloads are background refreshes, and the tasks they start inherit it.
     pump = Task { [weak self] in
-      for await event in stream {
-        await self?.handle(event)
+      await BackgroundRefresh.run {
+        for await event in stream {
+          await self?.handle(event)
+        }
       }
     }
     followAgents()
@@ -524,7 +527,7 @@ public final class HostStore {
   // MARK: Error surface
 
   public func report(_ error: Error, scope: String = "app") {
-    guard !Self.isCancellation(error) else { return }
+    guard !Self.isQuiet(error) else { return }
     lastError = Self.describe(error)
     hooks.errorReported(error, scope)
   }

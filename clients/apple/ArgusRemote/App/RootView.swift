@@ -79,7 +79,9 @@ struct RootView: View {
       if phase == .active {
         app.recheckRoutes()
         Task { await app.account.refresh() }
-        Task { await app.host.refreshHeldLists() }
+        if app.host.connection == .ready {
+          Task { await BackgroundRefresh.run { await app.host.refreshHeldLists() } }
+        }
       }
     }
     .task { await bootstrap() }
@@ -122,7 +124,7 @@ struct RootView: View {
     // Whether Linear is connected decides if Issues is listed at all.
     .task(id: app.host.connection == .ready) {
       guard app.host.connection == .ready else { return }
-      await app.host.loadIntegrations()
+      await BackgroundRefresh.run { await app.host.loadIntegrations() }
     }
   }
 

@@ -16,6 +16,8 @@ extension HostStore {
         as: ArgusProtocol.ClaudeUsageLimits.self)
       usageLimitsError = nil
     } catch {
+      // A poll that lost its connection keeps what it had and retries on reconnect.
+      guard !Self.isQuiet(error) else { return }
       usageLimitsError = Self.describe(error)
       hooks.errorReported(error, "usage_limits")
     }

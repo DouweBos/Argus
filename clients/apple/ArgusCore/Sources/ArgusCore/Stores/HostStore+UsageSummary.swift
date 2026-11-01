@@ -17,6 +17,10 @@ extension HostStore {
       usageSummaryError = nil
     } catch {
       guard usageSummaryLoadingRange == range else { return }
+      if Self.isQuiet(error) {
+        usageSummaryLoadingRange = nil
+        return
+      }
       usageSummaryError = Self.describe(error)
       hooks.errorReported(error, "usage_summary")
     }

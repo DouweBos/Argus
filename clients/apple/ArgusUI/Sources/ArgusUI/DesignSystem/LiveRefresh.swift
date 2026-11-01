@@ -1,10 +1,12 @@
+import ArgusCore
 import SwiftUI
 
 /// Poll while a screen is on-screen, and re-fetch the moment the app comes
 /// back to the foreground.
 ///
 /// Lists have no push channel — the gateway only pushes agent events,
-/// permissions and notifications — so everything else is polled.
+/// permissions and notifications — so everything else is polled. Runs as a
+/// `BackgroundRefresh`, so a poll that hits a dropped connection stays quiet.
 public struct LiveRefresh: ViewModifier {
   @Environment(\.scenePhase) private var scenePhase
   public let enabled: Bool
@@ -21,16 +23,16 @@ public struct LiveRefresh: ViewModifier {
     content
       .task(id: enabled) {
         guard enabled else { return }
-        await action()
+        await BackgroundRefresh.run(action)
         while !Task.isCancelled {
           try? await Task.sleep(for: interval)
           guard !Task.isCancelled else { return }
-          await action()
+          await BackgroundRefresh.run(action)
         }
       }
       .onChange(of: scenePhase) { _, phase in
         guard phase == .active, enabled else { return }
-        Task { await action() }
+        Task { await BackgroundRefresh.run(action) }
       }
   }
 }
@@ -54,11 +56,11 @@ public struct ResumeTask: ViewModifier {
     content
       .onChange(of: scenePhase) { previous, phase in
         guard phase == .active, previous != .active, enabled, connected else { return }
-        Task { await action() }
+        Task { await BackgroundRefresh.run(action) }
       }
       .onChange(of: connected) { _, isConnected in
         guard isConnected, enabled else { return }
-        Task { await action() }
+        Task { await BackgroundRefresh.run(action) }
       }
   }
 }

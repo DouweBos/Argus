@@ -40,7 +40,7 @@ public struct HostStoreHooks: Sendable {
   ) {
     self.track = track
     self.errorReported = { error, scope in
-      guard !HostStore.isCancellation(error) else { return }
+      guard !HostStore.isQuiet(error) else { return }
       errorReported(error, scope)
     }
     self.notify = notify

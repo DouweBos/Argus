@@ -38,7 +38,7 @@ public final class PullRequestsStore {
       error = nil
     } catch {
       // A screen left mid-load answered nothing; settling would read as "none".
-      if HostStore.isCancellation(error) { return }
+      if HostStore.isQuiet(error) { return }
       // `gh` missing or unauthenticated is the usual cause, and it is worth
       // saying so rather than showing an empty list.
       fail("Couldn't read pull requests", error)
@@ -126,7 +126,7 @@ public final class PullRequestsStore {
 
       return body
     } catch {
-      if !HostStore.isCancellation(error) { host.hooks.errorReported(error, "pull_requests") }
+      if !HostStore.isQuiet(error) { host.hooks.errorReported(error, "pull_requests") }
       throw error
     }
   }
@@ -182,7 +182,7 @@ public final class PullRequestsStore {
   /// Show it, and send it — a failure the user sees is one worth knowing
   /// about, scrubbed of anything from their work.
   private func fail(_ summary: String, _ error: Error) {
-    guard !HostStore.isCancellation(error) else { return }
+    guard !HostStore.isQuiet(error) else { return }
     self.error = "\(summary) — \(HostStore.describe(error))"
     host.hooks.errorReported(error, "pull_requests")
   }

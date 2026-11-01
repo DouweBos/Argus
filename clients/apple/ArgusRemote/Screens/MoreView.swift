@@ -27,7 +27,7 @@ struct MoreView: View {
     .navigationTitle("More")
     .task(id: host.connection) {
       guard host.connection == .ready, !pullRequests.loaded else { return }
-      await pullRequests.refresh()
+      await BackgroundRefresh.run { await pullRequests.refresh() }
     }
   }
 

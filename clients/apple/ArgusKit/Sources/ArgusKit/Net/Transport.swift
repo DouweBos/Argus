@@ -24,6 +24,15 @@ public actor Transport {
     case gateway(GatewayErrorPayload)
     /// The host has no such method: it runs an older Argus than this client.
     case unsupported(method: String, hostVersion: String?)
+
+    /// The connection failed, not the request: it was down, dropped mid-call
+    /// or never answered. A retry on the next connection is the remedy.
+    public var isTransient: Bool {
+      switch self {
+      case .notReady, .timedOut: true
+      case .badIdentity, .gateway, .unsupported: false
+      }
+    }
   }
 
   /// Plaintext tags distinguishing JSON envelopes from binary media frames.

@@ -32,7 +32,7 @@ extension AutomationsStore {
         .automationsScratchRuns, Params(limit: 40), as: Result.self
       ).runs
     } catch {
-      guard !HostStore.isCancellation(error) else { return }
+      guard !HostStore.isQuiet(error) else { return }
       if runs.isEmpty { await refresh() }
       quickRuns = runs.filter(\.isQuick)
     }
@@ -113,7 +113,7 @@ extension AutomationsStore {
   }
 
   private func gatewayFailed(_ summary: String, _ error: Error) {
-    guard !HostStore.isCancellation(error) else { return }
+    guard !HostStore.isQuiet(error) else { return }
     self.error = "\(summary) — \(HostStore.describe(error))"
     host.hooks.errorReported(error, "automations")
   }
