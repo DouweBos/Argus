@@ -61,7 +61,7 @@ export function AccountLimits({
               aside={paceLabel(w.pace)}
               hint={resetHint(w.resets_at, now)}
               label={w.label}
-              progress={w.used_percent / 100}
+              progress={percentLeft(w.used_percent) / 100}
               size="lg"
               tone={limitTone(w)}
               value={`${percentLeft(w.used_percent)}% left`}
