@@ -92,6 +92,12 @@ public struct MarkdownView: View {
       return Text(source).foregroundColor(theme.text)
     }
     attributed = attributed.linkified(files: openFileLink != nil, mentions: mentions)
+    // On the runs themselves: the text colour below would otherwise paint links like the rest.
+    // Underlined too, since Muted's accent is the text colour.
+    for run in attributed.runs where run.link != nil {
+      attributed[run.range].foregroundColor = theme.accent
+      attributed[run.range].underlineStyle = .single
+    }
     return Text(attributed).foregroundColor(theme.text)
   }
 }
