@@ -89,6 +89,19 @@ function Pair() {
 
   useEffect(() => () => clientRef.current?.cancel(), []);
 
+  // A pairing link opened in a tab already showing this screen.
+  useEffect(() => {
+    const onHashChange = () => {
+      const next = readPairingCode();
+      if (next) {
+        setCode(next);
+      }
+    };
+    window.addEventListener("hashchange", onHashChange);
+
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
   const begin = () => {
     setError(null);
     try {

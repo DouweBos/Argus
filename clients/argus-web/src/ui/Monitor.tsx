@@ -22,14 +22,23 @@ import {
   startServiceWorkerRouting,
 } from "../lib/webpush";
 import { openAgentById } from "../routing/open";
-import { appNavigate, navigateBack, stripQuery } from "../routing/router";
+import {
+  appNavigate,
+  appPath,
+  navigateBack,
+  stripQuery,
+} from "../routing/router";
 import { paneFor, screenPattern, type Screen } from "../routing/screens";
 import { useAppLocation } from "../routing/useAppLocation";
 import { useConnectionStore } from "../stores/connection";
 import { useDevicesStore } from "../stores/devices";
 import { usePromptsStore } from "../stores/prompts";
 import { usePushStore } from "../stores/push";
-import { reportLaunchLink, reportNotificationOpen } from "../telemetry/links";
+import {
+  isFallback,
+  reportLaunchLink,
+  reportNotificationOpen,
+} from "../telemetry/links";
 import { captureScreen } from "../telemetry/telemetry";
 import { DetailPane, MasterPane, SinglePane } from "./MonitorPanes";
 import { parentOf, useMasterScreen } from "./panes";
@@ -63,6 +72,12 @@ export function Monitor() {
   const pattern = screenPattern(screen);
   useEffect(() => captureScreen(pattern), [pattern]);
   useEffect(() => reportLaunchLink(), []);
+  // A route this client doesn't have opens its parent; say so in the URL too.
+  useEffect(() => {
+    if (isFallback(appPath())) {
+      appNavigate(screen, { replace: true });
+    }
+  }, [screen]);
 
   useViewportInset();
   useKeyboardShortcuts({
