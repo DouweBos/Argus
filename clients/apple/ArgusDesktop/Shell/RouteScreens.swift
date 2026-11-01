@@ -7,7 +7,7 @@ struct RouteScreen: View {
 
   static func handles(_ route: DesktopRoute) -> Bool {
     switch route {
-    case .automations, .quickRun, .automation, .inbox, .proposal, .notifications, .usage, .issues, .design: true
+    case .automations, .quickRun, .describeAutomation, .automation, .inbox, .proposal, .notifications, .usage, .issues, .design: true
     default: false
     }
   }
@@ -15,6 +15,7 @@ struct RouteScreen: View {
   var body: some View {
     switch route {
     case .automations: AutomationsScreen()
+    case .describeAutomation: AutomationsScreen(describing: true)
     case .quickRun(let runId): QuickRunScreen(runId: runId)
     case .automation(let id, let runId): AutomationScreen(automationId: id, runId: runId).id(id)
     case .inbox: InboxScreen()

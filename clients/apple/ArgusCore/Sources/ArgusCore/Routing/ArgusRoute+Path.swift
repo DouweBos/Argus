@@ -41,6 +41,7 @@ extension ArgusRoute {
       self = .pullRequest(repo: "\(parts[1])/\(parts[2])", number: number)
     case ("automations", 1): self = .automations
     case ("automations", 2) where parts[1] == "quick": self = .quickRun(runId: nil)
+    case ("automations", 2) where parts[1] == "describe": self = .describeAutomation
     case ("automations", 4) where parts[1] == "quick" && parts[2] == "runs":
       self = .quickRun(runId: parts[3])
     case ("automations", 2): self = .automation(id: parts[1], runId: nil)
@@ -91,6 +92,7 @@ extension ArgusRoute {
     case .design(let url, let sessionId): "/design" + Self.query([("url", url), ("session", sessionId)])
     case .automations: "/automations"
     case .quickRun(let runId): runId.map { "/automations/quick/runs/\(Self.encode($0))" } ?? "/automations/quick"
+    case .describeAutomation: "/automations/describe"
     case .automation(let id, let runId):
       "/automations/\(Self.encode(id))" + (runId.map { "/runs/\(Self.encode($0))" } ?? "")
     case .session(let id, let agentId):

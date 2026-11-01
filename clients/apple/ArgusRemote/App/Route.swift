@@ -111,7 +111,7 @@ enum Route: Hashable {
     case .mcpServers: "/agents/:agentId/mcp"
     case .commit: "/sessions/:sessionId/git/commits/:hash"
     case .automationEditor(let id, _): id == nil ? "/automations/new" : "/automations/:automationId/edit"
-    case .describeAutomation: "/automations/describe"
+    case .describeAutomation: ArgusRoute.describeAutomation.pattern
     case .pair: "/pair"
     case .settings: "/settings"
     case .settingsPage(let page): "/settings/\(page.rawValue.replacingOccurrences(of: "_", with: "-"))"

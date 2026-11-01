@@ -50,6 +50,7 @@ extension PhoneDestination {
       return PhoneDestination(section: .home, route: .design(url: url, sessionId: sessionId))
     case .automations: return PhoneDestination(section: .automations)
     case .quickRun(nil): return PhoneDestination(section: .automations, route: .quickRun)
+    case .describeAutomation: return PhoneDestination(section: .automations, route: .describeAutomation)
     case .quickRun(let runId?), .automation(_, let runId?):
       return PhoneDestination(section: .automations, route: .run(id: runId, label: "Run"))
     case .automation(let id, nil):

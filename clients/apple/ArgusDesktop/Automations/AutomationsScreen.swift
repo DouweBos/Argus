@@ -8,8 +8,12 @@ struct AutomationsScreen: View {
   @Environment(DesktopModel.self) private var model
   @Environment(AutomationsStore.self) private var store
   @State private var selection: String?
-  @State private var describing = false
+  @State private var describing: Bool
   @State private var creating = false
+
+  init(describing: Bool = false) {
+    _describing = State(initialValue: describing)
+  }
 
   private var quickRuns: Int { store.runs.count { $0.isQuick } }
 
@@ -35,6 +39,10 @@ struct AutomationsScreen: View {
     .navigationSubtitle(AutomationText.plural(store.automations.count, "automation"))
     .toolbar { toolbar }
     .sheet(isPresented: $describing) { DescribeAutomationSheet() }
+    // Closing the sheet a link opened leaves its route, so the link works again.
+    .onChange(of: describing) { _, open in
+      if !open, model.route == .describeAutomation { model.navigate(.automations) }
+    }
     .task { await store.refresh() }
   }
 

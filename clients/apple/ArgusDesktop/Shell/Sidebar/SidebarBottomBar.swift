@@ -24,7 +24,7 @@ struct SidebarDestination {
     .init(title: "Runtimes", symbol: Icon.runtimes, shortcut: "⌥⌘3", route: .runtimes) { $0 == .runtimes },
     .init(title: "Automations", symbol: Icon.automations, shortcut: nil, route: .automations) {
       switch $0 {
-      case .automations, .automation, .quickRun: true
+      case .automations, .automation, .quickRun, .describeAutomation: true
       default: false
       }
     },
