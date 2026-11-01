@@ -68,9 +68,11 @@ struct InboxView: View {
           StartedProposalCard(
             proposal: proposal,
             onOpen: { openStarted(proposal) },
-            onClose: { proposals.closeStarted(id: proposal.id) })
+            onClose: { proposals.closeStarted(id: proposal.id) }
+          )
+          .cardRow()
         }
-        ForEach(items.pending) { card($0) }
+        ForEach(items.pending) { card($0).cardRow() }
       }
     }
     if !items.reports.isEmpty {
@@ -206,5 +208,14 @@ private struct InboxProposalRow: View {
       Spacer(minLength: 6)
       Badge(label: badge)
     }
+  }
+}
+
+extension View {
+  /// A card as the whole list row: without this it sits framed inside a cell.
+  fileprivate func cardRow() -> some View {
+    listRowBackground(Color.clear)
+      .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+      .listRowSeparator(.hidden)
   }
 }

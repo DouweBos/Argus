@@ -251,7 +251,7 @@ public struct ProposalCard: View {
     #else
       VStack(alignment: .leading, spacing: 10) {
         if deciding { phoneDecisions }
-        HStack(spacing: 14) { links }
+        HStack(spacing: 14) { links }.font(.scaled(.subheadline).weight(.medium))
       }
     #endif
   }
