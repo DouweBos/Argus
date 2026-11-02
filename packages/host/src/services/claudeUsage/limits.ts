@@ -234,10 +234,13 @@ export function noteUsageRateLimitLine(accountId: string, line: string): void {
 }
 
 /** One account's plan limits through the same cache and probe as the usage view. */
-export function getAccountLimits(id: string): Promise<ClaudeAccountLimits> {
+export function getAccountLimits(
+  id: string,
+  refresh = false,
+): Promise<ClaudeAccountLimits> {
   return limitsFor(
     listClaudeAccounts().find((a) => a.id === id),
     id,
-    false,
+    refresh,
   );
 }

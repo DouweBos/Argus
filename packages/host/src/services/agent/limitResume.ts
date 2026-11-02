@@ -37,6 +37,8 @@ interface LimitState {
   dismissed: boolean;
   dueAt: number | null;
   timer: NodeJS.Timeout | null;
+  /** Ends the stall once the reported reset passes, even with no turn since. */
+  expiry: NodeJS.Timeout | null;
   send: ((message: string) => void) | null;
 }
 
@@ -53,6 +55,7 @@ function stateFor(agentId: string): LimitState {
       dismissed: false,
       dueAt: null,
       timer: null,
+      expiry: null,
       send: null,
     };
     states.set(agentId, state);
@@ -114,6 +117,10 @@ export function isLimitStalled(agentId: string): boolean {
 }
 
 function setStalled(agentId: string, state: LimitState, stalled: boolean) {
+  if (!stalled && state.expiry) {
+    clearTimeout(state.expiry);
+    state.expiry = null;
+  }
   if (state.stalled !== stalled) {
     state.stalled = stalled;
     emitHostEvent(`agent:limit-stall:${agentId}`, stalled);
@@ -133,6 +140,7 @@ export function onTurnResult(
     if (state) {
       state.attempts = 0;
       state.dismissed = false;
+      state.resetsAt = null;
       setStalled(agentId, state, false);
     }
 
@@ -141,9 +149,40 @@ export function onTurnResult(
   state.limitHit = false;
   const started = !state.stalled;
   setStalled(agentId, state, true);
+  armExpiry(agentId, state);
   scheduleContinue(agentId, state, send);
 
   return started;
+}
+
+function armExpiry(agentId: string, state: LimitState): void {
+  if (state.expiry) {
+    clearTimeout(state.expiry);
+    state.expiry = null;
+  }
+  const at = state.resetsAt;
+  if (at === null || at <= Date.now()) {
+    return;
+  }
+  const check = () => {
+    state.expiry = null;
+    if (Date.now() < at) {
+      state.expiry = setTimeout(check, Math.min(at - Date.now(), POLL_MS));
+      state.expiry.unref?.();
+
+      return;
+    }
+    setStalled(agentId, state, false);
+  };
+  check();
+}
+
+/** The account's plan has room again, so the stall is over without a turn. */
+export function endLimitStall(agentId: string): void {
+  const state = states.get(agentId);
+  if (state) {
+    setStalled(agentId, state, false);
+  }
 }
 
 function scheduleContinue(
@@ -281,6 +320,9 @@ export function forgetLimitResume(agentId: string): void {
   const state = states.get(agentId);
   if (state?.timer) {
     clearTimeout(state.timer);
+  }
+  if (state?.expiry) {
+    clearTimeout(state.expiry);
   }
   states.delete(agentId);
   if (state?.dueAt != null) {

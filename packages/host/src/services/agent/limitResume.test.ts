@@ -17,6 +17,7 @@ const { appState } = await import("../../state");
 const {
   cancelLimitResume,
   dismissLimitResume,
+  endLimitStall,
   forgetLimitResume,
   isLimitStalled,
   limitResumeAt,
@@ -180,6 +181,25 @@ describe("auto-continue after a plan limit", () => {
     onTurnResult("a1", vi.fn());
     expect(isLimitStalled("a1")).toBe(false);
     expect(stalls()).toEqual([true, false]);
+  });
+
+  it("ends the stall once the reported reset passes", () => {
+    project.enabled = false;
+    hitLimit(30 * 60_000);
+    onTurnResult("a1", vi.fn());
+
+    vi.advanceTimersByTime(30 * 60_000 - 1_000);
+    expect(isLimitStalled("a1")).toBe(true);
+    vi.advanceTimersByTime(1_000);
+    expect(isLimitStalled("a1")).toBe(false);
+    expect(emitted).toContainEqual(["agent:limit-stall:a1", false]);
+  });
+
+  it("ends the stall when told the plan has room again", () => {
+    noteLimitHit("a1");
+    onTurnResult("a1", vi.fn());
+    endLimitStall("a1");
+    expect(isLimitStalled("a1")).toBe(false);
   });
 
   it("ends the stall when the agent is forgotten", () => {

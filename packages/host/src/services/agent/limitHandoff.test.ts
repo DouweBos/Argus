@@ -8,6 +8,7 @@ const h = vi.hoisted(() => ({
   limits: new Map<string, ClaudeAccountLimits>(),
   stalled: true,
   capture: vi.fn(),
+  endStall: vi.fn(),
 }));
 
 vi.mock("../claudeAuth/accounts", () => ({
@@ -23,6 +24,7 @@ vi.mock("../claudeUsage/limits", () => ({
 vi.mock("../telemetry/telemetry", () => ({ capture: h.capture }));
 vi.mock("./limitResume", () => ({
   isLimitStalled: () => h.stalled,
+  endLimitStall: h.endStall,
 }));
 
 const { appState } = await import("../../state");
@@ -72,6 +74,7 @@ describe("limit handoff", () => {
     h.limits.clear();
     h.stalled = true;
     h.capture.mockClear();
+    h.endStall.mockClear();
   });
 
   it("offers nothing with a single account", async () => {
@@ -123,6 +126,22 @@ describe("limit handoff", () => {
     h.accounts = [account("personal"), account("work")];
     h.stalled = false;
     await expect(limitHandoffAccounts("a1")).resolves.toEqual([]);
+  });
+
+  it("ends a stale stall when the chat's own plan has room again", async () => {
+    h.accounts = [account("personal"), account("work")];
+    h.limits.set("personal", limits("personal", [40]));
+    h.limits.set("work", limits("work", [10]));
+    await expect(limitHandoffAccounts("a1")).resolves.toEqual([]);
+    expect(h.endStall).toHaveBeenCalledWith("a1");
+  });
+
+  it("keeps offering while the chat's own plan is spent", async () => {
+    h.accounts = [account("personal"), account("work")];
+    h.limits.set("personal", limits("personal", [100]));
+    h.limits.set("work", limits("work", [10]));
+    await expect(limitHandoffAccounts("a1")).resolves.toHaveLength(1);
+    expect(h.endStall).not.toHaveBeenCalled();
   });
 
   it("counts an offer only when there is somewhere to go", () => {

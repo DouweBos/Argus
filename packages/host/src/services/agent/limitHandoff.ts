@@ -17,7 +17,7 @@ import {
 } from "../claudeAuth/accounts";
 import { getAccountLimits } from "../claudeUsage/limits";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
-import { isLimitStalled } from "./limitResume";
+import { endLimitStall, isLimitStalled } from "./limitResume";
 
 /** How long the card waits on a usage probe before showing the account without numbers. */
 const USAGE_WAIT_MS = 4_000;
@@ -75,6 +75,7 @@ function isSpent(window: UsageLimitWindow | null, now: number): boolean {
 async function limitsWithin(
   id: string,
   ms: number,
+  refresh = false,
 ): Promise<ClaudeAccountLimits | null> {
   let timer: NodeJS.Timeout | undefined;
   const timeout = new Promise<null>((resolve) => {
@@ -82,12 +83,24 @@ async function limitsWithin(
   });
   try {
     return await Promise.race([
-      getAccountLimits(id).catch(() => null),
+      getAccountLimits(id, refresh).catch(() => null),
       timeout,
     ]);
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** The agent's own plan reads as having room again, so the stall is stale. */
+async function ownPlanRecovered(agentId: string, now: number) {
+  const current = currentAccountId(agentId);
+  if (current === null) {
+    return false;
+  }
+  // A cached reading may predate the refusal.
+  const limits = await limitsWithin(current, USAGE_WAIT_MS, true);
+
+  return limits?.status === "ok" && !isSpent(tightestWindow(limits), now);
 }
 
 /** The card's rows: empty unless the agent is stalled on a limit. */
@@ -98,22 +111,33 @@ export async function limitHandoffAccounts(
     return [];
   }
   const candidates = handoffCandidates(agentId);
+  if (candidates.length === 0) {
+    return [];
+  }
   const now = Date.now();
-  const rows = await Promise.all(
-    candidates.map(async (a) => {
-      const label = a.label || a.email || "Claude";
-      const usage = tightestWindow(await limitsWithin(a.id, USAGE_WAIT_MS));
+  const [recovered, rows] = await Promise.all([
+    ownPlanRecovered(agentId, now),
+    Promise.all(
+      candidates.map(async (a) => {
+        const label = a.label || a.email || "Claude";
+        const usage = tightestWindow(await limitsWithin(a.id, USAGE_WAIT_MS));
 
-      return {
-        account_id: a.id,
-        label,
-        detail:
-          (a.email && a.email !== label ? a.email : a.subscription_type) ??
-          null,
-        usage,
-      };
-    }),
-  );
+        return {
+          account_id: a.id,
+          label,
+          detail:
+            (a.email && a.email !== label ? a.email : a.subscription_type) ??
+            null,
+          usage,
+        };
+      }),
+    ),
+  ]);
+  if (recovered) {
+    endLimitStall(agentId);
+
+    return [];
+  }
 
   return rows.filter((r) => !isSpent(r.usage, now));
 }
