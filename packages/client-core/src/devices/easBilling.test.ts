@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { easHostIdOf, easStartMessage, isBillableEasStart } from "./easBilling";
+import {
+  easHostIdOf,
+  easStartMessage,
+  isBillableEasStart,
+  isEasDevice,
+} from "./easBilling";
+
+describe("isEasDevice", () => {
+  it("matches any eas: id", () => {
+    expect(isEasDevice("eas:eh0123abcd:1")).toBe(true);
+    expect(isEasDevice("A1B2-C3D4")).toBe(false);
+  });
+});
 
 describe("isBillableEasStart", () => {
   it("is a billable start only for a stopped EAS slot", () => {

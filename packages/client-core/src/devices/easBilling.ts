@@ -28,3 +28,14 @@ export function easStartMessage(
 
   return `It costs money: the session is billed to your Expo account ${until}. It can take a few minutes to start.`;
 }
+
+/** Any device an EAS Simulator session runs, as iOS's `DeviceView.isEas`. */
+export function isEasDevice(deviceId: string): boolean {
+  return deviceId.startsWith("eas:");
+}
+
+export const EAS_STARTING_NOTE =
+  "Starting. The device shows up under Devices once it's ready.";
+export const EAS_END_TITLE = "End this EAS Simulator session?";
+export const EAS_END_CONFIRM = "End session";
+export const EAS_END_MESSAGE = "The cloud device goes away and stops billing.";

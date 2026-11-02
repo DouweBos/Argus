@@ -1,13 +1,13 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ConfirmDialog } from "@argus/peacock";
 import {
   EAS_START_CONFIRM,
   EAS_START_TITLE,
   easHostIdOf,
   easStartMessage,
   isBillableEasStart,
-} from "../../lib/easBilling";
+} from "@argus/client-core";
+import { ConfirmDialog } from "@argus/peacock";
 import { listEasDeviceHosts } from "../../lib/ipc";
 import { capture } from "../../lib/telemetry";
 
