@@ -34,6 +34,24 @@ public enum AgentOrder {
     return byCreation(tabs)
   }
 
+  /// `agents` in a dragged `order`: the ones it names first, in its order, then the rest
+  /// (agents opened since) as they came.
+  public static func arranged(_ agents: [RemoteAgentStatus], by order: [String]?) -> [RemoteAgentStatus] {
+    guard let order, !order.isEmpty else { return agents }
+    let rank = Dictionary(order.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+    let placed = agents.compactMap { agent in rank[agent.agentId].map { (agent, $0) } }
+      .sorted { $0.1 < $1.1 }.map(\.0)
+    return placed + agents.filter { rank[$0.agentId] == nil }
+  }
+
+  /// `ids` with `id` dropped into `target`'s slot; nil when that changes nothing.
+  public static func moved(_ id: String, to target: String, in ids: [String]) -> [String]? {
+    guard id != target, let from = ids.firstIndex(of: id), let to = ids.firstIndex(of: target) else { return nil }
+    var next = ids
+    next.insert(next.remove(at: from), at: to)
+    return next
+  }
+
   /// The tab that takes over when `closing` closes: the one before it, else the one after.
   public static func neighbour(of closing: String, in ids: [String]) -> String? {
     guard let index = ids.firstIndex(of: closing) else { return ids.first }

@@ -25,6 +25,7 @@ final class DesktopModel {
   let palette = CommandPaletteModel()
   /// Each session's side panel: terminals, device, browser, files, diff and pull request tabs.
   let panels = SidePanelModel()
+  let agentTabOrder = AgentTabOrder()
   /// Widths the session toolbar lays its items out by.
   let toolbarLayout = ToolbarLayout()
   /// Each session's open files in the code view.
@@ -206,6 +207,7 @@ final class DesktopModel {
     let supplied = await HostPreferences.shared.attach(.local(local), supply: !isAttached)
     runtime.reloadPersisted()
     panels.reloadPersisted()
+    agentTabOrder.reloadPersisted()
     HomeRecents.shared.reload()
     _ = store.observeIpc { [weak self] channel, args, _ in
       guard channel == "prefs:changed", let change = args.first else { return }
@@ -350,6 +352,7 @@ final class DesktopModel {
     await HostPreferences.shared.hostChanged(settings: keys("settings"), uiState: keys("ui_state"))
     runtime.reloadPersisted()
     panels.reloadPersisted()
+    agentTabOrder.reloadPersisted()
     HomeRecents.shared.reload()
   }
 

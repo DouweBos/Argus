@@ -78,6 +78,24 @@ struct AgentOrderTests {
     #expect(AgentOrder.cycled(ids, from: "a", by: -1) == "c")
   }
 
+  @Test("a dragged order goes first, agents opened since follow in creation order")
+  func arranged() {
+    let agents = [agent("a", created: 1), agent("b", created: 2), agent("c", created: 3), agent("d", created: 4)]
+    let ids = { (order: [String]?) in AgentOrder.arranged(agents, by: order).map(\.agentId) }
+    #expect(ids(nil) == ["a", "b", "c", "d"])
+    #expect(ids(["c", "a", "b"]) == ["c", "a", "b", "d"])
+    #expect(ids(["gone", "b", "a"]) == ["b", "a", "c", "d"])
+  }
+
+  @Test("a dropped tab takes its target's slot, either way")
+  func moved() {
+    let ids = ["a", "b", "c", "d"]
+    #expect(AgentOrder.moved("a", to: "c", in: ids) == ["b", "c", "a", "d"])
+    #expect(AgentOrder.moved("d", to: "b", in: ids) == ["a", "d", "b", "c"])
+    #expect(AgentOrder.moved("a", to: "a", in: ids) == nil)
+    #expect(AgentOrder.moved("gone", to: "a", in: ids) == nil)
+  }
+
   @Test("nothing to switch to with one agent, or none in front")
   func nothingToCycle() {
     #expect(AgentOrder.cycled(["a"], from: "a", by: 1) == nil)

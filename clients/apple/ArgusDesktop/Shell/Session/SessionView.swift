@@ -95,6 +95,7 @@ struct SessionView: View {
         start: startAgent, close: closeAgent,
         closeMany: { model.closeAgents($0, inSession: sessionId) },
         rename: { model.renameAgent($0, to: $1) },
+        move: { model.moveAgent($0, to: $1, inSession: sessionId) },
         revealInFinder: { model.revealSessionInFinder(sessionId) })
       .padding(.trailing, SessionContextCardOverlay.barReserve)
       Group {
@@ -131,6 +132,8 @@ struct AgentTabBar: View {
   let close: (String) -> Void
   var closeMany: ([String]) -> Void = { _ in }
   var rename: (String, String) -> Void = { _, _ in }
+  /// Drag reordering: the first agent takes the second's slot.
+  var move: (String, String) -> Void = { _, _ in }
   var revealInFinder: () -> Void = {}
   @State private var renaming: RemoteAgentStatus?
   @State private var newTitle = ""
@@ -147,6 +150,14 @@ struct AgentTabBar: View {
               select: { select(agent.agentId) }, close: { close(agent.agentId) }
             )
             .contextMenu { menu(for: agent) }
+            .draggable(agent.agentId)
+            .dropDestination(for: String.self) { ids, _ in
+              guard let id = ids.first, id != agent.agentId, agents.contains(where: { $0.agentId == id }) else {
+                return false
+              }
+              move(id, agent.agentId)
+              return true
+            }
           }
         }
       }

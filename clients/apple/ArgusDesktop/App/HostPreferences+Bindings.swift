@@ -97,6 +97,18 @@ extension HostPreferences {
             home.set(text, forKey: SidePanelModel.key)
           }
         }),
+      // The Mac's alone: each session's agent tabs as dragged.
+      Binding(
+        slot: .uiState("mac.agent_tab_order"),
+        read: {
+          home.string(forKey: AgentTabOrder.key).flatMap { $0.data(using: .utf8) }
+            .flatMap { try? JSONDecoder().decode(JSONValue.self, from: $0) }
+        },
+        write: { value in
+          if let data = try? JSONEncoder().encode(value), let text = String(data: data, encoding: .utf8) {
+            home.set(text, forKey: AgentTabOrder.key)
+          }
+        }),
       Binding(
         slot: .uiState("runtime.browser_preset"),
         read: { home.string(forKey: RuntimeModel.Keys.browserPreset).map(JSONValue.string) },

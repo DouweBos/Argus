@@ -144,6 +144,22 @@ struct HostPreferencesTests {
     #expect(stored == .object(["s1": .object(["open": .bool(false), "tabs": .array([.object(["kind": .string("device")])])])]))
   }
 
+  @Test func keepsAgentTabOrderOnTheHost() async {
+    let f = Fixture()
+    defer { f.cleanUp() }
+    let host = FakeHost()
+    host.ui["mac.agent_tab_order"] = #"{"s1":["b","a"]}"#
+    await f.sync.attach(host.io)
+    let order = AgentTabOrder(defaults: f.home)
+    #expect(order.order("s1") == ["b", "a"])
+
+    order.set(["a", "b"], session: "s1")
+    f.sync.localChanged()
+    await f.sync.flush()
+    let stored = host.ui["mac.agent_tab_order"].flatMap(HostPreferences.decode)
+    #expect(stored == .object(["s1": .array([.string("a"), .string("b")])]))
+  }
+
   @Test func leavesAnElectronOnlyPickAlone() async {
     let f = Fixture()
     defer { f.cleanUp() }

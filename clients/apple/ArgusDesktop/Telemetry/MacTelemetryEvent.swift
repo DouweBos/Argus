@@ -268,6 +268,8 @@ enum MacTelemetryEvent {
   case issueSearched(results: String)
   /// An agent tab's context menu item was used; `action` names it.
   case agentTabMenuUsed(action: String)
+  /// An agent tab was dragged to a new place in its session's tab bar.
+  case agentTabReordered
   /// The plan-limits strip on Home opened Usage; `level` is the most severe limit shown.
   case homeUsageOpened(level: String)
   /// A deep link or launch route was opened; `screen` is its route pattern.
@@ -392,6 +394,7 @@ enum MacTelemetryEvent {
     case .issueSearched: "mac_issue_searched"
     case .homeUsageOpened: "mac_home_usage_opened"
     case .agentTabMenuUsed: "mac_agent_tab_menu_used"
+    case .agentTabReordered: "mac_agent_tab_reordered"
     case .homeCardActed: "mac_home_card_acted"
     case .hostFolderPicked: "mac_host_folder_picked"
     case .tabUsed: "mac_tab_used"
@@ -509,6 +512,8 @@ enum MacTelemetryEvent {
       ["level": level]
     case .agentTabMenuUsed(let action):
       ["action": action]
+    case .agentTabReordered:
+      [:]
     case .homeCardActed(let card, let action):
       ["card": card.rawValue, "action": action.rawValue]
     case .hostFolderPicked(let stage):

@@ -6,10 +6,18 @@ import Foundation
 /// A session's agents and what the Agent menu, the palette and the tab bar do
 /// with them.
 extension DesktopModel {
-  /// The host's agents in a session, oldest first, each with the latest
-  /// status (and title) it announced laid over the listed one.
+  /// The host's agents in a session in tab order (as dragged, else oldest
+  /// first), each with the latest status (and title) it announced laid over.
   func agents(inSession id: String) -> [RemoteAgentStatus] {
-    session(id).map(store.agents(inSession:)) ?? []
+    AgentOrder.arranged(session(id).map(store.agents(inSession:)) ?? [], by: agentTabOrder.order(id))
+  }
+
+  /// A dragged tab dropped on another takes its slot.
+  func moveAgent(_ agentId: String, to target: String, inSession sessionId: String) {
+    guard let ids = AgentOrder.moved(agentId, to: target, in: agents(inSession: sessionId).map(\.agentId))
+    else { return }
+    agentTabOrder.set(ids, session: sessionId)
+    MacTelemetry.capture(.agentTabReordered)
   }
 
   /// The routed agent, else the first — a session always shows something.

@@ -630,6 +630,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_session_hover_card_shown` | The pointer rested on a sidebar session long enough to open its git and activity card | `has_changes` (bool) — its diff wasn't empty |
 | `mac_issue_property_menu_opened` | An issue page's status or priority menu was opened (picking a value is `linear_issue_updated`) | `property` (`status`, `priority`), `via` (`click`, `shortcut` the page's S / P keys) |
 | `mac_agent_tab_menu_used` | An item in an agent tab's right-click menu was used | `action` (`rename`, `copy_id`, `pin`, `unpin`, `stop`, `reveal`, `close`, `close_others`, `close_left`, `close_right`, `close_idle`, `close_all`) |
+| `mac_agent_tab_reordered` | An agent tab was dragged to a new place in its session's tab bar | — |
 | `mac_home_usage_opened` | The plan-limits strip on Home was clicked to open Usage | `level` (`normal`, `warning`, `critical`) — the most severe limit shown |
 | `mac_issue_searched` | A workspace issue search settled on the Issues screen, once per term (never the term) | `result_bucket` (`0`, `1-9`, `10-99`, `100+`) |
 | `mac_navigated_history` | Back or Forward went through the window tab's history | `direction` (`back`, `forward`), `via` (`button` the toolbar chevrons, `shortcut` ⌘[ / ⌘] or the code view's ⌃- / ⌃⇧-, `menu` the Go menu clicked, `palette`, `mouse` the side buttons) |
