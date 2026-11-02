@@ -154,10 +154,6 @@ export const ArgusConfig = z.object({
   single_runtime: z.boolean().nullish(),
   /** Send "continue" to an agent stalled on a plan limit once it resets. */
   auto_continue_on_limit: z.boolean().nullish(),
-  /** Project-level MCP servers, in `.mcp.json` `mcpServers` shape. */
-  mcp_servers: z
-    .record(z.string(), z.record(z.string(), z.unknown()))
-    .nullish(),
   /** Glob-driven release-note patterns surfaced on the session home screen. */
   release_note_patterns: z.array(ReleaseNotePatternConfig),
   /** Deep links surfaced as a dropdown on the runtime toolbar's "Link" button. */

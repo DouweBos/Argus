@@ -307,8 +307,11 @@ Each entry has a **Name** and a JSON config matching the standard
 ```
 
 Use this for servers _you_ want available. For servers the whole team
-should get, use the project-level `mcp_servers` in
-[`.argus.json`](./project-settings.md).
+should get, check a `.mcp.json` into the repo.
+
+Merge order (later wins): enabled Claude plugins, `~/.claude.json`, the
+worktree's `.mcp.json`, these app-level servers, and finally Argus's
+built-in MCP server.
 
 ---
 

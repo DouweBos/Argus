@@ -64,10 +64,6 @@ final class ProjectSettingsModel {
 
   /// Writes `.argus.json` and the branch prefix; true when the sheet can close.
   func save(_ backend: HostRouter) async -> Bool {
-    guard draft.isValid else {
-      error = draft.validationErrors.joined(separator: "\n")
-      return false
-    }
     saving = true
     error = nil
     defer { saving = false }

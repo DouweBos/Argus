@@ -64,7 +64,7 @@ public enum ConfigJSON {
       "related_projects", "browser_url", "browser_presets", "simulator_deeplinks",
       "save_chat_history", "auto_continue_on_limit", "protected_branches",
       "pull_request_template", "default_base_branch", "single_runtime", "min_argus_version",
-      "mcp_servers", "auto_fetch_minutes", "release_note_patterns", "llm", "tools", "automations",
+      "auto_fetch_minutes", "release_note_patterns", "llm", "tools", "automations",
     ],
     "setup": ["copy", "symlink", "commands"],
     "setup.copy.[]": ["path", "exclude"],

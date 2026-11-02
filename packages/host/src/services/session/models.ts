@@ -341,13 +341,6 @@ export interface ArgusConfig {
    */
   auto_continue_on_limit?: boolean | null;
   /**
-   * Project-level MCP servers, merged into every agent spawned for this
-   * project. Shape matches Claude Code's `.mcp.json` `mcpServers` map. Use
-   * `.mcp.json` for the standard discovery path; this field is for teams who
-   * want the entries co-located with the rest of `.argus.json`.
-   */
-  mcp_servers?: Record<string, Record<string, unknown>> | null;
-  /**
    * Glob-driven release-note patterns surfaced on the session home screen.
    * An alternative to `@changesets/cli` for projects that keep release
    * notes as plain text / structured files (e.g. one `.txt` per ticket).
@@ -473,7 +466,6 @@ export function defaultArgusConfig(): ArgusConfig {
     default_base_branch: null,
     single_runtime: false,
     auto_continue_on_limit: false,
-    mcp_servers: null,
     min_argus_version: null,
     release_note_patterns: [],
     simulator_deeplinks: [],

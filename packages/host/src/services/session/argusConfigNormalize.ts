@@ -378,27 +378,6 @@ export function normalizeMinArgusVersion(
 }
 
 /**
- * Normalise the `mcp_servers` field — must be a `{ [name]: object }` map.
- * Filters out non-object entries; returns null when absent so merge logic
- * can distinguish "unset" from "explicitly empty".
- */
-export function normalizeMcpServers(
-  raw: unknown,
-): Record<string, Record<string, unknown>> | null {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return null;
-  }
-  const out: Record<string, Record<string, unknown>> = {};
-  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      out[key] = value as Record<string, unknown>;
-    }
-  }
-
-  return Object.keys(out).length > 0 ? out : null;
-}
-
-/**
  * Normalise `auto_fetch_minutes` — must be a positive integer when present.
  * Zero, negative values, and non-numbers are treated as "disabled" (null).
  */

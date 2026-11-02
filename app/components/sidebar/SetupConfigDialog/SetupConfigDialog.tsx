@@ -35,14 +35,6 @@ import {
 } from "../../../lib/ipc";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { dialogStyles as styles } from "../../shared/Dialog";
-import {
-  InheritedMcpList,
-  McpServersField,
-  entriesToMap,
-  entriesValid,
-  mapToEntries,
-  type McpEntry,
-} from "../../shared/McpServersField";
 import { WorktreeLocationField } from "../../shared/WorktreeLocationField";
 import { GlobPathInput } from "./GlobPathInput";
 import { ProjectAutomationsField } from "./ProjectAutomationsField";
@@ -1782,7 +1774,6 @@ export function SetupConfigDialog({
   const [pullRequestTemplate, setPullRequestTemplate] = useState("");
   const [defaultBaseBranch, setDefaultBaseBranch] = useState("");
   const [minArgusVersion, setMinArgusVersion] = useState("");
-  const [mcpEntries, setMcpEntries] = useState<McpEntry[]>([]);
   const [llmRunner, setLlmRunner] = useState("");
   const [llmModel, setLlmModel] = useState("");
   const [disabledTools, setDisabledTools] = useState<string[]>([]);
@@ -1903,9 +1894,6 @@ export function SetupConfigDialog({
         }
         if (config.min_argus_version) {
           setMinArgusVersion(config.min_argus_version);
-        }
-        if (config.mcp_servers) {
-          setMcpEntries(mapToEntries(config.mcp_servers));
         }
         if (config.llm) {
           if (config.llm.runner) {
@@ -2091,10 +2079,6 @@ export function SetupConfigDialog({
     if (minVersion) {
       config.min_argus_version = minVersion;
     }
-    const mcpServers = entriesToMap(mcpEntries);
-    if (Object.keys(mcpServers).length > 0) {
-      config.mcp_servers = mcpServers;
-    }
     const releasePatterns = entriesToPatternConfig(releaseNotesList.items);
     if (releasePatterns.length > 0) {
       config.release_note_patterns = releasePatterns;
@@ -2164,7 +2148,6 @@ export function SetupConfigDialog({
       pullRequestTemplate,
       defaultBaseBranch,
       minArgusVersion,
-      mcpEntries,
       releaseNotesList.items,
       deeplinkList.items,
       relatedProjectList.items,
@@ -2547,28 +2530,6 @@ export function SetupConfigDialog({
           ),
         },
         {
-          id: "mcp",
-          label: "MCP servers",
-          description: "Project-level servers",
-          icon: <Icons.GearIcon size={12} />,
-          render: () => (
-            <SettingsScreenDetail>
-              <SettingsScreenDetailHeader
-                description="MCP servers shared with the team via .argus.json. Merged on top of plugin servers, ~/.claude.json, .mcp.json, and your personal app-level servers."
-                title="Project MCP servers"
-              />
-              <SettingsScreenDetailBody>
-                <InheritedMcpList worktreePath={repoRoot} />
-                <McpServersField
-                  emptyLabel="No project MCP servers"
-                  entries={mcpEntries}
-                  onChange={setMcpEntries}
-                />
-              </SettingsScreenDetailBody>
-            </SettingsScreenDetail>
-          ),
-        },
-        {
           id: "automations",
           label: "Automations",
           description: "Autonomy ceiling for this repo",
@@ -2713,9 +2674,7 @@ export function SetupConfigDialog({
           Cancel
         </Button>
         <Button
-          disabled={
-            isSaving || isLoading || !repoRoot || !entriesValid(mcpEntries)
-          }
+          disabled={isSaving || isLoading || !repoRoot}
           type="button"
           variant="primary"
           onClick={handleSave}

@@ -458,7 +458,7 @@ async function testStdio(
 
 /**
  * Run a connectivity probe against an MCP server config. Same shape as the
- * entries inside `mcpServers` in `.mcp.json` / `.argus.json` / app settings.
+ * entries inside `mcpServers` in `.mcp.json` / app settings.
  */
 export async function testMcpServer(
   config: Record<string, unknown>,

@@ -14,7 +14,6 @@ import os from "node:os";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
 import { loadAppMcpServers } from "../appSettings/store";
-import { loadArgusConfig } from "../session/argusConfig";
 import { getActiveAccessToken } from "./oauth";
 
 type McpServerConfig = Record<string, unknown>;
@@ -116,21 +115,6 @@ function collectFromWorktree(worktreePath: string): McpServers {
   );
 
   return extractMcpServers(data);
-}
-
-/** Project-level `mcp_servers` declared inside the worktree's `.argus.json`. */
-function collectFromArgusConfig(worktreePath: string): McpServers {
-  try {
-    const config = loadArgusConfig(worktreePath);
-
-    return (config.mcp_servers as McpServers | null) ?? {};
-  } catch (err) {
-    warn(
-      `[mcp] failed to read .argus.json mcp_servers: ${(err as Error).message}`,
-    );
-
-    return {};
-  }
 }
 
 /**
@@ -261,8 +245,7 @@ async function injectStoredTokens(servers: McpServers): Promise<McpServers> {
  * Build the merged `mcpServers` map for a spawned agent.
  *
  * Precedence (later wins): plugins < user ~/.claude.json < worktree .mcp.json
- * < app settings (~/.argus/app-settings.json) < project .argus.json mcp_servers
- * < explicit overrides (e.g. the Argus MCP server itself).
+ * < app settings (~/.argus/app-settings.json) < explicit overrides (e.g. the Argus MCP server itself).
  *
  * Async because we transparently inject any OAuth bearer tokens the user
  * has stored via the Argus auth flow.
@@ -276,7 +259,6 @@ export async function buildMergedMcpServers(
     ...collectFromUserClaudeJson(worktreePath),
     ...collectFromWorktree(worktreePath),
     ...loadAppMcpServers(),
-    ...collectFromArgusConfig(worktreePath),
     ...overrides,
   };
 

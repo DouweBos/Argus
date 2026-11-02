@@ -2,68 +2,6 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-struct McpServersSection: View {
-  @Binding var draft: ArgusConfigDraft
-  @Environment(DesktopModel.self) private var model
-  @Environment(\.theme) private var theme
-  @State private var inherited: [ArgusProtocol.InheritedMcpServer]?
-
-  var body: some View {
-    SectionIntro(
-      title: "Project MCP servers",
-      text: "MCP servers shared with the team via .argus.json. Merged on top of plugin servers, ~/.claude.json, .mcp.json, and your personal app-level servers."
-    )
-    if let inherited, !inherited.isEmpty {
-      Section("Inherited") {
-        ForEach(inherited, id: \.name) { server in
-          InheritedMcpRow(server: server, backend: model.backend)
-        }
-      }
-    }
-    ForEach($draft.mcpServers) { $server in
-      Section {
-        TextField("Name", text: $server.name, prompt: Text("filesystem"))
-        TextEditor(text: $server.json)
-          .font(.system(.callout, design: .monospaced))
-          .frame(minHeight: 90)
-        if let error = server.error {
-          Text(error).font(.scaled(.caption)).foregroundStyle(theme.error)
-        }
-        ProjectMcpProbe(server: server, backend: model.backend)
-      } header: {
-        HStack {
-          Text(server.name.isEmpty ? "New server" : server.name)
-          Spacer()
-          RemoveButton { draft.mcpServers.removeAll { $0.id == server.id } }
-        }
-      }
-    }
-    Section {
-      if draft.mcpServers.isEmpty { Text("No project MCP servers").foregroundStyle(theme.textMuted) }
-      AddButton("Add server") { draft.mcpServers.append(.init()) }
-    } footer: {
-      Text(#"Each config is .mcp.json-style: { "command", "args", "env" } or { "url", "headers" }."#)
-    }
-    .task {
-      guard let backend = model.backend, let repo = model.projectSettingsRepo else { return }
-      inherited = try? await backend.request(
-        ArgusProtocol.Commands.ListInheritedMcpServers.self, .init(worktreePath: repo))
-    }
-  }
-}
-
-/// Test and tools for a project server, as the desktop dialog offers per entry.
-private struct ProjectMcpProbe: View {
-  let server: ArgusConfigDraft.McpServer
-  let backend: HostRouter?
-  @State private var probe = McpProbe()
-
-  var body: some View {
-    let entry = McpServerEntry(name: server.name, json: server.json)
-    McpProbeControls(backend: backend, probe: probe, config: entry.config, url: entry.url)
-  }
-}
-
 struct ProjectAutomationsSection: View {
   @Binding var draft: ArgusConfigDraft
 

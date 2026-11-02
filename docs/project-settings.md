@@ -43,7 +43,6 @@ Two ways to change project settings:
 | `single_runtime`                                                     | yes (Run commands)       |
 | `save_chat_history`, `auto_continue_on_limit`                        | yes (Agent)              |
 | `protected_branches`, `pull_request_template`, `default_base_branch` | yes (Branch protection)  |
-| `mcp_servers`                                                        | yes (MCP servers)        |
 | `release_note_patterns`                                              | yes (Release notes)      |
 | `simulator_deeplinks`                                                | yes (Deep links)         |
 | `auto_fetch_minutes`                                                 | yes (Git settings panel) |
@@ -72,7 +71,6 @@ Two ways to change project settings:
   "default_base_branch": "staging",
   "single_runtime":     false,
   "min_argus_version":  "0.10.0",
-  "mcp_servers":        { "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"] } },
   "auto_fetch_minutes": 15,
   "llm":                { "runner": "claude-code", "model": "claude-opus-4-7" },
   "automations":        { "autonomy_ceiling": "draft", "disabled": [...], "path_denylist": [...] }
@@ -461,34 +459,6 @@ and is written back to `.argus.json`.
 > Note: `suppress_lfs_warning` is the personal counterpart that lives
 > in `~/.argus/user-project-settings.json`. It hides the git-lfs
 > banners without touching the repo.
-
----
-
-## `mcp_servers` — extra MCP servers for every agent
-
-Map of server name → `.mcp.json`-style config, merged into every agent
-spawned for this project. Use this when your team needs a shared MCP
-server but you'd rather keep the entry next to the rest of your project
-config than maintain a separate `.mcp.json`.
-
-```jsonc
-"mcp_servers": {
-  "filesystem": {
-    "command": "npx",
-    "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
-  },
-  "remote": {
-    "url": "https://example.com/mcp",
-    "headers": { "Authorization": "Bearer ..." }
-  }
-}
-```
-
-Merge order (later wins): enabled Claude plugins, `~/.claude.json`, the
-worktree's `.mcp.json`, your personal `~/.argus/app-settings.json`,
-`mcp_servers` from this file, and finally Argus's built-in MCP server.
-Use the project-level entry for things the team should share; use the
-**app-level** field (Settings → MCP servers) for personal servers.
 
 ---
 

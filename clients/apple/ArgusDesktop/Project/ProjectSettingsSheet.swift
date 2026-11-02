@@ -69,7 +69,7 @@ struct ProjectSettingsSheet: View {
         Text(HostScopedPath.path(repoRoot)).font(.scaled(.caption)).foregroundStyle(theme.textMuted).lineLimit(1).truncationMode(.middle)
       }
       Spacer()
-      if let error = settings.error ?? settings.draft.validationErrors.first {
+      if let error = settings.error {
         Text(error).font(.scaled(.caption)).foregroundStyle(theme.error).lineLimit(2)
       }
       Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
@@ -79,7 +79,7 @@ struct ProjectSettingsSheet: View {
       }
       .buttonStyle(.borderedProminent)
       .keyboardShortcut(.defaultAction)
-      .disabled(!settings.loaded || settings.saving || !settings.draft.isValid)
+      .disabled(!settings.loaded || settings.saving)
     }
     .padding(14)
   }
@@ -88,7 +88,7 @@ struct ProjectSettingsSheet: View {
 enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
   case setup, workspaceEnv
   case run, terminals, browser, deeplinks
-  case branchProtection, releaseNotes, agent, llm, relatedProjects, mcp, automations, tools
+  case branchProtection, releaseNotes, agent, llm, relatedProjects, automations, tools
   case branchPrefix, worktreeLocation
   case preview
 
@@ -107,7 +107,6 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
     case .agent: "Agent"
     case .llm: "LLM"
     case .relatedProjects: "Related projects"
-    case .mcp: "MCP servers"
     case .automations: "Automations"
     case .tools: "Tools"
     case .branchPrefix: "Branch prefix"
@@ -129,7 +128,6 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
     case .agent: "sparkles"
     case .llm: "cpu"
     case .relatedProjects: "square.stack.3d.up"
-    case .mcp: "server.rack"
     case .automations: "clock.arrow.circlepath"
     case .tools: "wrench.and.screwdriver"
     case .branchPrefix: "arrow.triangle.branch"
@@ -141,7 +139,7 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
   static let groups: [(title: String, sections: [ProjectSettingsSection])] = [
     ("Workspace", [.setup, .workspaceEnv]),
     ("Runtime", [.run, .terminals, .browser, .deeplinks]),
-    ("Workflow", [.branchProtection, .releaseNotes, .agent, .llm, .relatedProjects, .mcp, .automations, .tools]),
+    ("Workflow", [.branchProtection, .releaseNotes, .agent, .llm, .relatedProjects, .automations, .tools]),
     ("Personal", [.branchPrefix, .worktreeLocation]),
     ("Reference", [.preview]),
   ]
@@ -166,7 +164,6 @@ private struct ProjectSettingsDetail: View {
       case .agent: AgentSection(draft: $settings.draft)
       case .llm: LLMSection(draft: $settings.draft)
       case .relatedProjects: RelatedProjectsSection(draft: $settings.draft)
-      case .mcp: McpServersSection(draft: $settings.draft)
       case .automations: ProjectAutomationsSection(draft: $settings.draft)
       case .tools: ProjectToolsSection(draft: $settings.draft)
       case .branchPrefix: BranchPrefixSection(settings: settings)

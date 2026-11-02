@@ -37,7 +37,6 @@ public struct ArgusConfigDraft: Equatable, Sendable {
   public var llmRunner = ""
   public var llmModel = ""
   public var relatedProjects: [RelatedProject] = []
-  public var mcpServers: [McpServer] = []
   public var disabledTools: [String] = []
   public var autonomyCeiling: String?
   public var automationPathDenylist = ""
@@ -140,24 +139,6 @@ public struct ArgusConfigDraft: Equatable, Sendable {
     }
   }
 
-  public struct McpServer: Identifiable, Equatable, Sendable {
-    public let id = UUID()
-    public var name = ""
-    public var json = "{\n  \"command\": \"\"\n}"
-    public init(name: String = "", json: String = "{\n  \"command\": \"\"\n}") {
-      self.name = name
-      self.json = json
-    }
-
-    /// Why this entry can't be saved, as the desktop words it.
-    public var error: String? {
-      if name.trimmingCharacters(in: .whitespaces).isEmpty { return "Name is required." }
-      guard let parsed = try? ConfigJSON.parse(json) else { return "Invalid JSON." }
-      guard case .object = parsed else { return "Config must be a JSON object." }
-      return nil
-    }
-  }
-
   public struct ReleasePattern: Identifiable, Equatable, Sendable {
     public static let formats = ["changesets", "regex", "json", "yaml", "xml"]
     public let id = UUID()
@@ -208,18 +189,6 @@ public struct ArgusConfigDraft: Equatable, Sendable {
       "Tail device logs, memory, and other conductor probes from the Debug panel."
     ),
   ]
-
-  // MARK: Validation
-
-  /// What blocks a save. The desktop only refuses invalid MCP entries; an
-  /// auto-fetch interval can't go negative from a picker, so there's nothing else.
-  public var validationErrors: [String] {
-    mcpServers.compactMap { server in
-      server.error.map { "MCP server \(server.name.isEmpty ? "(unnamed)" : server.name): \($0)" }
-    }
-  }
-
-  public var isValid: Bool { validationErrors.isEmpty }
 
   /// Other run commands this one may depend on, by title.
   public func requirableTitles(for command: RunCommand) -> [String] {

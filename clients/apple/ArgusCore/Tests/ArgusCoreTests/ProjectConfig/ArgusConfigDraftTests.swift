@@ -42,7 +42,6 @@ struct ArgusConfigDraftTests {
         "default_base_branch": "staging",
         "single_runtime": true,
         "min_argus_version": "0.10.0",
-        "mcp_servers": { "fs": { "command": "npx", "args": ["-y"] } },
         "auto_fetch_minutes": 15,
         "release_note_patterns": [{ "glob": "notes/*.txt", "format": "regex",
                                     "labels": [{ "name": "type", "selector": "^T:(.+)$", "tone": "accent" }] }],
@@ -98,18 +97,6 @@ struct ArgusConfigDraftTests {
     let draft = ArgusConfigDraft(raw: try raw(#"{ "release_note_patterns": [".changeset/*.md"] }"#))
     #expect(draft.releaseNotes.first?.glob == ".changeset/*.md")
     #expect(draft.releaseNotes.first?.format == "changesets")
-  }
-
-  @Test func refusesInvalidMcpEntries() {
-    var draft = ArgusConfigDraft()
-    draft.mcpServers = [.init(name: "", json: "{}")]
-    #expect(!draft.isValid)
-    draft.mcpServers = [.init(name: "a", json: "[1]")]
-    #expect(draft.mcpServers[0].error == "Config must be a JSON object.")
-    draft.mcpServers = [.init(name: "a", json: "{ nope")]
-    #expect(draft.mcpServers[0].error == "Invalid JSON.")
-    draft.mcpServers = [.init(name: "a", json: #"{"url":"https://x"}"#)]
-    #expect(draft.isValid)
   }
 
   @Test func writesDocumentedKeyOrderWithIntegers() {

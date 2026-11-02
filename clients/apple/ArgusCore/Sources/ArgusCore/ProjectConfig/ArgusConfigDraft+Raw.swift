@@ -9,12 +9,12 @@ extension ArgusConfigDraft {
     "setup", "terminals", "run", "workspace_env", "related_projects",
     "browser_url", "browser_presets", "simulator_deeplinks", "save_chat_history",
     "auto_continue_on_limit", "protected_branches", "pull_request_template", "default_base_branch",
-    "single_runtime", "min_argus_version", "mcp_servers", "auto_fetch_minutes",
+    "single_runtime", "min_argus_version", "auto_fetch_minutes",
     "release_note_patterns", "llm", "tools", "automations",
   ]
 
   /// Settings Argus no longer reads; saving drops them, as the desktop dialog does.
-  static let retiredKeys: Set<String> = ["platforms", "agent_prompt"]
+  static let retiredKeys: Set<String> = ["platforms", "agent_prompt", "mcp_servers"]
 
   public init(raw: [String: JSONValue]) {
     self.init()
@@ -67,9 +67,6 @@ extension ArgusConfigDraft {
     relatedProjects = Self.objects(raw["related_projects"]).map {
       RelatedProject(path: $0["path"]?.stringValue ?? "", description: $0["description"]?.stringValue ?? "")
     }
-    mcpServers = (raw["mcp_servers"]?.objectValue ?? [:]).sorted { $0.key < $1.key }.map {
-      McpServer(name: $0.key, json: ConfigJSON.string($0.value))
-    }
     disabledTools = Self.strings(raw["tools"]?["disabled"])
     let automations = raw["automations"]?.objectValue ?? [:]
     autonomyCeiling = automations["autonomy_ceiling"]?.stringValue.flatMap {
@@ -117,11 +114,6 @@ extension ArgusConfigDraft {
     var version = minArgusVersion.trimmingCharacters(in: .whitespaces)
     if version.first == "v" || version.first == "V" { version.removeFirst() }
     set("min_argus_version", version.isEmpty ? nil : .string(version))
-    var servers: [String: JSONValue] = [:]
-    for server in mcpServers where server.error == nil {
-      servers[server.name.trimmingCharacters(in: .whitespaces)] = try? ConfigJSON.parse(server.json)
-    }
-    set("mcp_servers", servers.isEmpty ? nil : .object(servers))
     set("auto_fetch_minutes", autoFetchMinutes > 0 ? .number(Double(autoFetchMinutes)) : nil)
     set("release_note_patterns", Self.nonEmpty(releaseNotes.compactMap(Self.patternValue)))
 
