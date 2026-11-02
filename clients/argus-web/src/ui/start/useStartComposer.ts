@@ -3,6 +3,7 @@
  * told, and what it runs on. Loads what the pickers offer as they're needed.
  */
 
+import { IMAGES_ONLY_PROMPT } from "@argus/remote-protocol";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   buildLinkedProjectsPreamble,
@@ -94,9 +95,9 @@ export function useStartComposer(
     workspace,
     message: buildLinkedProjectsPreamble(
       linked,
-      text || (images.length > 0 ? "(see attached images)" : ""),
+      text || (images.length > 0 ? IMAGES_ONLY_PROMPT : ""),
     ),
-    displayText: text || (images.length > 0 ? "(see attached images)" : ""),
+    displayText: text || (images.length > 0 ? IMAGES_ONLY_PROMPT : ""),
     images: images.map((i) => i.attachment),
     model,
     permissionMode: mode,

@@ -4,6 +4,7 @@
  */
 
 import type { ImageAttachment, AgentConversation } from "./types";
+import { IMAGES_ONLY_PROMPT } from "@argus/remote-protocol";
 import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
 import { generateChatTitle } from "../../llm/titleGenerator";
@@ -167,7 +168,8 @@ export function maybeGenerateTitle(
     return;
   }
   const text = firstMessage.trim();
-  if (!text) {
+  // Left untitled so the first message with words names it.
+  if (!text || text === IMAGES_ONLY_PROMPT) {
     return;
   }
   entry.titleRequested = true;

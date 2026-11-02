@@ -14,6 +14,7 @@ import {
   ImageAttachmentStrip,
   ProgressBar,
 } from "@argus/peacock";
+import { IMAGES_ONLY_PROMPT } from "@argus/remote-protocol";
 import { useCombinedRef } from "../../../hooks/useCombinedRef";
 import { resolveDroppedFilePaths } from "../../../lib/droppedFiles";
 import {
@@ -398,7 +399,7 @@ export function ChatInput({
         ? pendingImages.map((p) => p.attachment)
         : undefined;
 
-    const baseMessage = value || "(see attached images)";
+    const baseMessage = value || IMAGES_ONLY_PROMPT;
     const messageWithContext = buildLinkedProjectsPreamble(
       linkedProjects,
       baseMessage,

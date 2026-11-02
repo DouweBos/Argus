@@ -1,4 +1,5 @@
 import type { Session } from "./types";
+import { IMAGES_ONLY_PROMPT } from "@argus/remote-protocol";
 import { setLinkedProjects } from "../stores/conversationStore";
 import { pushError } from "../stores/notificationsStore";
 import {
@@ -48,7 +49,7 @@ async function dispatchPrompt(
     }
     const message = buildLinkedProjectsPreamble(
       linkedProjects ?? [],
-      prompt || "(see attached images)",
+      prompt || IMAGES_ONLY_PROMPT,
     );
     // The transcript (and the title made from it) shows what the user typed.
     await sendUserMessageToAgent(

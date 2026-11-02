@@ -8,6 +8,9 @@ import type { DesignRef } from "./models/integrations";
 
 const ISSUE_ONLY_PROMPT = "Work on this issue.";
 
+/** What a message with only images says; nothing to title a chat from. */
+export const IMAGES_ONLY_PROMPT = "(see attached images)";
+
 /** Where a session's design references live in its worktree (kept out of git). */
 export const DESIGN_DIR = ".argus/design";
 

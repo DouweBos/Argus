@@ -1,7 +1,7 @@
 import type { ImageAttachment } from "./ipc";
 import type { CanonicalPermissionMode } from "./permissionModes";
 import type { DesignRef, LinearIssueContext, LinkedIssue } from "./types";
-import { startPrompt } from "@argus/remote-protocol";
+import { IMAGES_ONLY_PROMPT, startPrompt } from "@argus/remote-protocol";
 import { setLinkedProjects } from "../stores/conversationStore";
 import {
   getSessionState,
@@ -92,8 +92,7 @@ export async function startInSession(
   if (designs.length > 0) {
     await setSessionDesignRefs(sessionId, designs);
   }
-  const text =
-    startPromptFor(issues, designs, prompt) || "(see attached images)";
+  const text = startPromptFor(issues, designs, prompt) || IMAGES_ONLY_PROMPT;
   const message = buildLinkedProjectsPreamble(linkedProjects, text);
   // The transcript (and the title made from it) shows what the user typed.
   await sendUserMessageToAgent(

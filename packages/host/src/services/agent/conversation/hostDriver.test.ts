@@ -166,6 +166,26 @@ describe("host conversation driver", () => {
     expect(snapshot()?.title).toBe("Fix the login");
   });
 
+  it("titles a chat from its first message with words, not an image-only one", async () => {
+    addAgent();
+    started();
+    emitHostEvent(`agent:remote-message:${AGENT}`, {
+      message: "(see attached images)",
+      author: null,
+    });
+    line(INIT);
+    line(reply("Done."));
+    await vi.advanceTimersByTimeAsync(100);
+    expect(snapshot()?.title).toBeUndefined();
+
+    emitHostEvent(`agent:remote-message:${AGENT}`, {
+      message: "fix the login",
+      author: null,
+    });
+    await vi.advanceTimersByTimeAsync(100);
+    expect(snapshot()?.title).toBe("Fix the login");
+  });
+
   function finishTurn(text: string): void {
     line(INIT);
     line(reply(text));
