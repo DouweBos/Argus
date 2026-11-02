@@ -69,7 +69,17 @@ export function loadArgusConfig(repoRoot: string): ArgusConfig {
     }
   }
 
-  return config;
+  return applyDefaults(config);
+}
+
+/** Defaults go on after the merge, so a local file that omits a key doesn't override the team's value. */
+function applyDefaults(config: ArgusConfig): ArgusConfig {
+  return {
+    ...config,
+    save_chat_history: config.save_chat_history ?? true,
+    single_runtime: config.single_runtime ?? false,
+    auto_continue_on_limit: config.auto_continue_on_limit ?? false,
+  };
 }
 
 /**
@@ -100,11 +110,11 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
     save_chat_history:
       parsed.save_chat_history != null
         ? Boolean(parsed.save_chat_history)
-        : true,
+        : null,
     protected_branches: normalizeProtectedBranches(parsed.protected_branches),
     default_base_branch: normalizeDefaultBaseBranch(parsed.default_base_branch),
     single_runtime:
-      parsed.single_runtime != null ? Boolean(parsed.single_runtime) : false,
+      parsed.single_runtime != null ? Boolean(parsed.single_runtime) : null,
     auto_continue_on_limit:
       parsed.auto_continue_on_limit != null
         ? Boolean(parsed.auto_continue_on_limit)
@@ -189,9 +199,9 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
         : base.protected_branches,
     default_base_branch:
       local.default_base_branch ?? base.default_base_branch ?? null,
-    single_runtime: local.single_runtime ?? base.single_runtime ?? false,
+    single_runtime: local.single_runtime ?? base.single_runtime,
     auto_continue_on_limit:
-      local.auto_continue_on_limit ?? base.auto_continue_on_limit ?? false,
+      local.auto_continue_on_limit ?? base.auto_continue_on_limit,
     mcp_servers:
       local.mcp_servers || base.mcp_servers
         ? { ...(base.mcp_servers ?? {}), ...(local.mcp_servers ?? {}) }

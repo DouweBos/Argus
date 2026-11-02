@@ -140,6 +140,47 @@ describe("loadArgusConfig", () => {
     expect(config.terminals).toHaveLength(2);
   });
 
+  it("keeps team booleans a local file leaves unset", () => {
+    mockExistsSync.mockReturnValue(true);
+    mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) =>
+      String(p).includes("local")
+        ? JSON.stringify({ browser_url: "http://localhost:3000" })
+        : JSON.stringify({
+            single_runtime: true,
+            save_chat_history: false,
+            auto_continue_on_limit: true,
+          }),
+    );
+
+    const config = loadArgusConfig("/repo");
+    expect(config.single_runtime).toBe(true);
+    expect(config.save_chat_history).toBe(false);
+    expect(config.auto_continue_on_limit).toBe(true);
+  });
+
+  it("lets a local file override team booleans it sets", () => {
+    mockExistsSync.mockReturnValue(true);
+    mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) =>
+      String(p).includes("local")
+        ? JSON.stringify({ single_runtime: false, save_chat_history: true })
+        : JSON.stringify({ single_runtime: true, save_chat_history: false }),
+    );
+
+    const config = loadArgusConfig("/repo");
+    expect(config.single_runtime).toBe(false);
+    expect(config.save_chat_history).toBe(true);
+  });
+
+  it("defaults unset booleans after merging", () => {
+    mockExistsSync.mockReturnValue(true);
+    mockReadFileSync.mockReturnValue(JSON.stringify({}));
+
+    const config = loadArgusConfig("/repo");
+    expect(config.single_runtime).toBe(false);
+    expect(config.save_chat_history).toBe(true);
+    expect(config.auto_continue_on_limit).toBe(false);
+  });
+
   it("local workspace_env overrides base", () => {
     mockExistsSync.mockReturnValue(true);
     mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) => {
