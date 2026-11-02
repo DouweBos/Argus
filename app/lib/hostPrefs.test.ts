@@ -72,13 +72,13 @@ describe("host prefs", () => {
     storage.set("argus:theme", "dark");
     storage.set(
       "argus:settings",
-      JSON.stringify({ huddleDisplayName: "Ada", diffView: "unified" }),
+      JSON.stringify({ huddleDisplayName: "Ada", telemetryMode: "presence" }),
     );
     const { io } = fakeHost(
       {
         theme: "light",
         huddle_display_name: "Grace",
-        git_diff_layout: "split",
+        telemetry_mode: "full",
       },
       { "devices.tile_size": "300" },
     );
@@ -88,7 +88,7 @@ describe("host prefs", () => {
     expect(storage.get("argus:theme")).toBe("light");
     expect(JSON.parse(storage.get("argus:settings")!)).toEqual({
       huddleDisplayName: "Grace",
-      diffView: "split",
+      telemetryMode: "full",
     });
     expect(storage.get("argus:devices:gridTileSize")).toBe("300");
   });

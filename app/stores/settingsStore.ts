@@ -48,8 +48,6 @@ export interface CustomEditor {
   name: string;
 }
 
-export type WorkingCopyView = "flat" | "tree";
-export type DiffViewMode = "split" | "unified";
 export type CommitSigningFormat = "gpg" | "ssh";
 
 /**
@@ -89,8 +87,6 @@ interface SettingsState {
   /** App-level default LLM runner + model used when project/session don't specify one. */
   defaultLlm: DefaultLlm;
   defaultPermissionMode: PermissionMode;
-  diffView: DiffViewMode;
-  diffWhitespace: boolean;
   /** Phase 3 K4 — collapse the git source sidebar (Working Copy / Branch / …). */
   gitSidebarCollapsed: boolean;
   /**
@@ -116,8 +112,6 @@ interface SettingsState {
   /** Where a prompt typed on a project's home starts: a fresh worktree, or the checkout itself. */
   startWorkspace: StartWorkspace;
   telemetryMode: TelemetryMode;
-  /** Working-copy file list — flat list or tree by path (Phase 2 W2). */
-  workingCopyView: WorkingCopyView;
 }
 
 const STORAGE_KEY = "argus:settings";
@@ -309,9 +303,6 @@ function load(): SettingsState {
                 ),
               )
             : {},
-        workingCopyView: parsed.workingCopyView === "tree" ? "tree" : "flat",
-        diffView: parsed.diffView === "split" ? "split" : "unified",
-        diffWhitespace: parsed.diffWhitespace === true,
         gitSidebarCollapsed: parsed.gitSidebarCollapsed === true,
         gitSidebarWidth:
           typeof parsed.gitSidebarWidth === "number" &&
@@ -347,9 +338,6 @@ function load(): SettingsState {
     defaultLlm: { runner: DEFAULT_LLM_RUNNER, model: null },
     telemetryMode: "presence",
     confirmPreferences: {},
-    workingCopyView: "flat",
-    diffView: "unified",
-    diffWhitespace: false,
     gitSidebarCollapsed: false,
     gitSidebarWidth: 0.18,
     gitSidebarSectionsCollapsed: {},
@@ -467,30 +455,6 @@ export const setConfirmPreference = (key: string, skip: boolean): void => {
   store.setState((s) => ({
     confirmPreferences: { ...s.confirmPreferences, [key]: skip },
   }));
-  persist(store.getState());
-};
-
-// Phase 2 W2 / W7 / W10 — git view preferences.
-
-export const useWorkingCopyView = (): WorkingCopyView =>
-  store((s) => s.workingCopyView);
-
-export const setWorkingCopyView = (view: WorkingCopyView): void => {
-  store.setState({ workingCopyView: view });
-  persist(store.getState());
-};
-
-export const useDiffView = (): DiffViewMode => store((s) => s.diffView);
-
-export const setDiffView = (mode: DiffViewMode): void => {
-  store.setState({ diffView: mode });
-  persist(store.getState());
-};
-
-export const useDiffWhitespace = (): boolean => store((s) => s.diffWhitespace);
-
-export const setDiffWhitespace = (on: boolean): void => {
-  store.setState({ diffWhitespace: on });
   persist(store.getState());
 };
 

@@ -34,26 +34,18 @@ import {
   setDefaultLlmRunner,
   setDefaultPermissionMode,
   setStartWorkspace,
-  setDiffView,
-  setDiffWhitespace,
   setTelemetryModeSetting,
-  setWorkingCopyView,
   updateCustomEditor,
   useCustomEditors,
   useDefaultLlm,
   useDefaultPermissionMode,
   useStartWorkspace,
-  useDiffView,
-  useDiffWhitespace,
   useSettingsDialogOpen,
   useSettingsDialogRequest,
   useSettingsInitialSection,
   useTelemetryMode,
-  useWorkingCopyView,
-  type DiffViewMode,
   type PermissionMode,
   type TelemetryMode,
-  type WorkingCopyView,
   type StartWorkspace,
 } from "../../../stores/settingsStore";
 import {
@@ -861,25 +853,11 @@ function CustomEditorRow({ id, name, command }: CustomEditorRowProps) {
 
 const GIT_IDENTITY_PREREQ: PrereqId[] = ["git_identity"];
 
-const WORKING_COPY_VIEWS: { label: string; value: WorkingCopyView }[] = [
-  { label: "Flat list", value: "flat" },
-  { label: "Tree", value: "tree" },
-];
-
-const DIFF_VIEWS: { label: string; value: DiffViewMode }[] = [
-  { label: "Unified", value: "unified" },
-  { label: "Side-by-side", value: "split" },
-];
-
 function GitSection() {
-  const workingCopyView = useWorkingCopyView();
-  const diffView = useDiffView();
-  const diffWhitespace = useDiffWhitespace();
-
   return (
     <SettingsScreenDetail>
       <SettingsScreenDetailHeader
-        description="Defaults for the git panel — working copy view and diff display. The toolbar in each panel can still override these per session."
+        description="Who the commits Argus makes are authored as."
         title="Git"
       />
       <SettingsScreenDetailBody>
@@ -888,45 +866,6 @@ function GitSection() {
           caption="The name and email every commit Argus makes is authored with."
         >
           <PrereqList ids={GIT_IDENTITY_PREREQ} />
-        </SettingsScreenField>
-
-        <SettingsScreenField label="Working copy view">
-          <div className={styles.segmented}>
-            {WORKING_COPY_VIEWS.map((v) => (
-              <button
-                key={v.value}
-                className={`${styles.segment} ${workingCopyView === v.value ? styles.segmentActive : ""}`}
-                type="button"
-                onClick={() => setWorkingCopyView(v.value)}
-              >
-                {v.label}
-              </button>
-            ))}
-          </div>
-        </SettingsScreenField>
-
-        <SettingsScreenField label="Diff layout">
-          <div className={styles.segmented}>
-            {DIFF_VIEWS.map((v) => (
-              <button
-                key={v.value}
-                className={`${styles.segment} ${diffView === v.value ? styles.segmentActive : ""}`}
-                type="button"
-                onClick={() => setDiffView(v.value)}
-              >
-                {v.label}
-              </button>
-            ))}
-          </div>
-        </SettingsScreenField>
-
-        <SettingsScreenField
-          label="Ignore whitespace in diffs"
-          caption="Hide pure-whitespace changes when comparing files."
-        >
-          <Toggle checked={diffWhitespace} onChange={setDiffWhitespace}>
-            {diffWhitespace ? "On" : "Off"}
-          </Toggle>
         </SettingsScreenField>
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>

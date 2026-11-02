@@ -14,7 +14,7 @@
 
 /* Two columns:
    - centerCol owns the inline branch header, commit composer, and file list
-   - diffDetail owns the diff toolbar + per-file diff view */
+   - diffDetail owns the per-file diff view */
 .workingCopyLayout {
   flex: 1;
   display: grid;

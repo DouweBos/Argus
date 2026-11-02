@@ -458,15 +458,17 @@ For the full per-event catalogue and exhaustive property list, see
 
 ## Git
 
-Defaults for the git panel. Each setting also has an inline toggle in
-the relevant toolbar — use the dialog when you want to set the
-default for every project on this machine.
+Both apps show **Git identity**: the name and email every commit Argus makes
+is authored with.
 
-| Setting                        | Default   | Description                                                            |
-| ------------------------------ | --------- | ---------------------------------------------------------------------- |
-| **Working copy view**          | `flat`    | `flat` shows changed files as a list; `tree` groups them by directory. |
-| **Diff layout**                | `unified` | `unified` stacks removed/added lines; `split` shows them side-by-side. |
-| **Ignore whitespace in diffs** | `false`   | Hide pure-whitespace changes when comparing files.                     |
+The Mac app also keeps defaults for its git panel. The panel's own toggles
+change only the repository on screen.
+
+| Setting (Mac app only)         | Default | Description                                                                                               |
+| ------------------------------ | ------- | --------------------------------------------------------------------------------------------------------- |
+| **Changes list**               | List    | `List` shows changed files flat; `Tree` groups them by directory; `All files` also lists unchanged files. |
+| **Diff layout**                | Unified | Unified in one column, or split side by side.                                                             |
+| **Ignore whitespace in diffs** | Off     | Hide pure-whitespace changes when comparing files.                                                        |
 
 The pull dialog starts on the repository's own `pull.rebase` / `pull.ff`
 git config (set it in the Mac app's Git settings), and merges when neither is

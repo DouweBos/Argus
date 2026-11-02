@@ -46,7 +46,6 @@ import { useGitShortcuts } from "../GitView/useGitShortcuts";
 import styles from "./DiffViewer.module.css";
 import { DiscardConfirmDialog } from "./DiscardConfirmDialog";
 import { LfsBanners } from "./LfsBanners";
-import { DiffToolbar } from "./panes/DiffToolbar";
 import { UnifiedFileList } from "./panes/UnifiedFileList";
 import { buildFileContextMenu } from "./panes/buildFileContextMenu";
 
@@ -548,7 +547,6 @@ export function DiffViewer({
           />
         </div>
         <div className={styles.diffDetail}>
-          <DiffToolbar />
           <div className={styles.diffBody}>{diffDetailContent}</div>
         </div>
       </WorkingCopyDropZone>

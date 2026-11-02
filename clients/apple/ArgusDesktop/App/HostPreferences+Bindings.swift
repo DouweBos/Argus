@@ -2,9 +2,8 @@ import ArgusCore
 import ArgusKit
 import Foundation
 
-/// Where each value lives here and on the host. The host's names and values
-/// are the Electron app's (`app/lib/hostPrefBindings.ts`); the two lists must
-/// agree.
+/// Where each value lives here and on the host. A key the Electron app keeps
+/// too (`app/lib/hostPrefBindings.ts`) must mean the same in both.
 extension HostPreferences {
   static func desktopBindings(
     prefs: AppPreferences = .shared,

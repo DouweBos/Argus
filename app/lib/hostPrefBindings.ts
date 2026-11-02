@@ -30,7 +30,6 @@ function oneOf<T extends string>(values: readonly T[]): (v: unknown) => v is T {
 }
 
 const isString = (v: unknown): v is string => typeof v === "string";
-const isBool = (v: unknown): v is boolean => typeof v === "boolean";
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 const isStringMap = (v: unknown): v is Record<string, string> =>
@@ -203,9 +202,6 @@ export const PREF_BINDINGS: PrefBinding[] = [
       (v.runner === null || isString(v.runner)) &&
       (v.model === null || isString(v.model)),
   ),
-  settingsField("workingCopyView", "git_file_view", oneOf(["flat", "tree"])),
-  settingsField("diffView", "git_diff_layout", oneOf(["split", "unified"])),
-  settingsField("diffWhitespace", "git_ignore_whitespace", isBool),
   plain(
     "argus:platform",
     { uiState: "runtime.platform" },
