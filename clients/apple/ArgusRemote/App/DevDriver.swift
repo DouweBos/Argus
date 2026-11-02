@@ -152,7 +152,7 @@
           "stack": (router.isSplit ? router.detailStack : router.path(for: router.section)).map(\.pattern),
           "panel": router.panelOpen ? router.panelTab.rawValue : "",
           "panelStack": router.panelPaths.values.flatMap { $0.map(\.pattern) },
-          "focusedAgents": router.focusedAgents,
+          "focusedAgents": router.focusedAgents.byKey,
         ]
       case "tree":
         return [

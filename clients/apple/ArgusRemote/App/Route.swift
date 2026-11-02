@@ -240,7 +240,9 @@ enum SidebarItem: Hashable {
 final class Router {
   var section: AppSection = .home
   /// One stack per section, used on a phone and in the middle column.
-  var paths: [AppSection: [Route]] = [:]
+  var paths: [AppSection: [Route]] = [:] {
+    didSet { for (section, stack) in paths { focusOpened(from: oldValue[section] ?? [], to: stack) } }
+  }
 
   /// True wherever there is room for a sidebar beside the content.
   var isSplit = false
@@ -259,7 +261,11 @@ final class Router {
   /// One array, not a root plus a stack: swapping the root view changes its
   /// identity, which re-creates the `NavigationStack` and throws away a path
   /// set in the same update — so seeding a path underneath never arrived.
-  var detailStack: [Route] = []
+  var detailStack: [Route] = [] {
+    didSet { focusOpened(from: oldValue, to: detailStack) }
+  }
+  /// Set while a rotation moves the stacks, which reopens nothing.
+  @ObservationIgnored private var adopting = false
   /// Pushed by the detail root once its new root is up: a task queued beside
   /// the root change still ran before it, and the push was lost.
   var pendingDetail: Route?
@@ -281,9 +287,17 @@ final class Router {
     default: return false
     }
   }
-  /// The agent tab in front on each session screen, keyed by session (or by
-  /// agent, before its session is known); kept for the same reason.
-  var focusedAgents: [String: String] = [:]
+  /// The agent tab in front on each session screen; kept for the same reason.
+  var focusedAgents = AgentFocus()
+
+  /// An agent opened from anywhere (a list, a link, a notification) goes in
+  /// front of its session's tabs, over the tab that session last showed.
+  private func focusOpened(from old: [Route], to new: [Route]) {
+    guard !adopting else { return }
+    for case .agent(let id, _) in AgentFocus.opened(from: old, to: new) {
+      focusedAgents.request(agentId: id, sessionId: sessionOfAgent(id))
+    }
+  }
 
   /// What the sidebar highlights, read off the route: the session open in the
   /// detail column (or about to be), else the section.
@@ -313,7 +327,22 @@ final class Router {
       paths[section, default: []].append(route)
       return
     }
+    // The split view pops a push that moves the sidebar's selection; land it once the selection has.
+    if let item = sessionItem(route), item != sidebarSelection {
+      detailStack = []
+      pendingDetail = route
+      return
+    }
     detailStack.append(route)
+  }
+
+  /// What the detail column's stack writes back: a link's push goes through `push`.
+  func setDetailStack(_ stack: [Route]) {
+    if stack.count == detailStack.count + 1, stack.dropLast().elementsEqual(detailStack), let route = stack.last {
+      push(route)
+    } else {
+      detailStack = stack
+    }
   }
 
   /// Open a section at its root. On a phone one without a tab opens inside
@@ -377,6 +406,8 @@ final class Router {
   /// section on the way to an iPad, and goes back under More on the way back.
   func adopt(split: Bool) {
     guard split != isSplit else { return }
+    adopting = true
+    defer { adopting = false }
     if split {
       var stack = paths[section] ?? []
       paths[section] = []
@@ -449,12 +480,13 @@ final class Router {
     detailStack = []
   }
 
-  /// True when that agent is already the top of the current stack, so a
-  /// repeated notification doesn't stack a second copy of it.
-  func isShowingAgent(_ agentId: String) -> Bool {
+  /// True when that agent's screen is already the top of the current stack, so a
+  /// repeated notification doesn't stack a second copy of it; brings its tab to the front.
+  func showAgentIfOpen(_ agentId: String) -> Bool {
     let top = isSplit ? detailStack.last : paths[section]?.last
-    if case .agent(let id, _) = top { return id == agentId }
-    return false
+    guard case .agent(let id, _) = top, id == agentId else { return false }
+    focusedAgents.request(agentId: agentId, sessionId: sessionOfAgent(agentId))
+    return true
   }
 }
 

@@ -193,9 +193,9 @@ struct SessionSidePanel: View {
     switch tab {
     case .details:
       SessionDetailsView(
-        session: session, agentId: router.focusedAgents[session.id],
+        session: session, agentId: router.focusedAgents[session: session.id],
         open: open,
-        started: { router.focusedAgents[session.id] = $0.agentId },
+        started: { router.focusedAgents[session: session.id] = $0.agentId },
         deleted: { router.pop() })
     case .changes:
       ChangesView(sessionId: session.id, label: label)

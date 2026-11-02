@@ -103,7 +103,7 @@ final class NotificationRouter: NSObject {
 
   private func open(_ route: ArgusRoute, on hostId: String?, hints: RouteHints, via: TelemetryEvent.LinkSource) {
     guard let app, let router else { return }
-    if let agentId = route.agentId, router.isShowingAgent(agentId) { return }
+    if let agentId = route.agentId, router.showAgentIfOpen(agentId) { return }
     Task {
       if let hostId, hostId != app.activeHostId { await app.selectHost(hostId) }
       let destination = await PhoneDestination.resolve(route, host: app.host, hints: hints)
@@ -118,7 +118,7 @@ final class NotificationRouter: NSObject {
       return
     }
     // Repeated alerts for the same agent shouldn't stack copies of its screen.
-    guard !router.isShowingAgent(agentId) else { return }
+    guard !router.showAgentIfOpen(agentId) else { return }
 
     Task {
       // The alert may be from a computer we aren't currently connected to —

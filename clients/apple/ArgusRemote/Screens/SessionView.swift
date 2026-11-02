@@ -15,12 +15,12 @@ struct SessionView: View {
   /// The agent to put in front first.
   var agentId: String?
 
-  /// The tab picked; on the router so a rotation or resize, which rebuilds this screen, keeps it.
+  /// The tab picked, or the agent this screen was opened on; on the router so a
+  /// rotation or resize, which rebuilds this screen, keeps it.
   private var focused: String? {
-    get { router.focusedAgents[focusKey] }
-    nonmutating set { router.focusedAgents[focusKey] = newValue }
+    get { router.focusedAgents.front(sessionId: resolvedSessionId, agentId: agentId) }
+    nonmutating set { router.focusedAgents.pick(newValue, sessionId: resolvedSessionId, agentId: agentId) }
   }
-  private var focusKey: String { resolvedSessionId ?? agentId ?? label }
   @State private var showingDetails = false
   @State private var width: CGFloat = 0
   /// What the chat keeps when the side panel is open beside it.
@@ -101,9 +101,8 @@ struct SessionView: View {
     // A sheet on a phone; on iPad the details are the side panel's first tab.
     .sheet(isPresented: $showingDetails) { details }
     // Pinned once shown, so the panel's MCP row and a rebuilt screen agree on the agent in front.
-    .onChange(of: focusedAgentId, initial: true) { _, id in
-      if let sid = resolvedSessionId, router.focusedAgents[sid] != id { router.focusedAgents[sid] = id }
-    }
+    .onChange(of: focusedAgentId, initial: true) { pinFocus() }
+    .onChange(of: resolvedSessionId) { pinFocus() }
     .onChange(of: agents.map(\.agentId), initial: true) { _, ids in
       let new = ids.filter { !shown.contains($0) && !closed.contains($0) }
       if !new.isEmpty { shown += new }
@@ -280,6 +279,14 @@ struct SessionView: View {
   }
 
   // MARK: Actions
+
+  /// Files the agent in front under its session, once that is known.
+  private func pinFocus() {
+    guard let sid = resolvedSessionId else { return }
+    var next = router.focusedAgents
+    next.pick(focusedAgentId, sessionId: sid, agentId: agentId)
+    if next != router.focusedAgents { router.focusedAgents = next }
+  }
 
   private func togglePanel() {
     router.panelOpen.toggle()

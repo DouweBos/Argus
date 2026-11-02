@@ -173,7 +173,7 @@ struct RootView: View {
         .navigationTitle("Argus")
         .navigationSplitViewColumnWidth(min: 240, ideal: Self.sidebarWidth, max: 380)
     } detail: {
-      NavigationStack(path: $router.detailStack) {
+      NavigationStack(path: Binding(get: { router.detailStack }, set: { router.setDetailStack($0) })) {
         DetailRoot()
           .navigationDestination(for: Route.self) { destination($0) }
       }

@@ -108,7 +108,7 @@ struct AgentView: View {
   /// A new agent in this session opens as its tab here, as on the Mac; one elsewhere is pushed.
   private func open(_ agent: RemoteAgentStatus, label: String) {
     if let sessionId, agent.sessionId == sessionId {
-      router.focusedAgents[sessionId] = agent.agentId
+      router.focusedAgents[session: sessionId] = agent.agentId
     } else {
       router.push(.agent(id: agent.agentId, label: label))
     }
