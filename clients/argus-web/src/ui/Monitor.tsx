@@ -1,16 +1,16 @@
 /**
- * The paired-device shell. The URL names one screen. Narrow screens show just
- * that; from tablet width up the master and detail panes sit side by side, so
- * an agent opens next to its project rather than over it.
+ * The paired-device shell, laid out as Argus for Mac: sidebar, toolbar, the
+ * screen the URL names, and the side panel. Narrow windows turn the sidebar
+ * into a drawer and the panel into a sheet.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  AppShell,
   Banner,
-  EmptyState,
+  FlatIconButton,
   Icons,
   ShortcutCheatsheet,
-  SplitShell,
 } from "@argus/peacock";
 import {
   notificationsSupported,
@@ -29,7 +29,7 @@ import {
   stripQuery,
 } from "../routing/router";
 import {
-  paneFor,
+  pathForScreen,
   screenPattern,
   type Screen,
   sessionOfScreen,
@@ -45,35 +45,44 @@ import {
   reportLaunchLink,
   reportNotificationOpen,
 } from "../telemetry/links";
-import { captureScreen } from "../telemetry/telemetry";
-import { DetailPane, MasterPane, SinglePane } from "./MonitorPanes";
-import { QuickOpenPalette } from "./SessionToolActions";
-import { parentOf, useMasterScreen } from "./panes";
+import { capture, captureScreen } from "../telemetry/telemetry";
+import { AgentActions, AgentDock, ScreenBody } from "./MonitorPanes";
+import { QuickOpenPalette, SessionToolActions } from "./SessionToolActions";
+import { parentOf } from "./panes";
+import { SessionHeader } from "./shell/SessionHeader";
+import { loadPanelWidth, savePanelWidth, useShellPrefs } from "./shell/shellPrefs";
+import { WebSidebar } from "./shell/WebSidebar";
+import { WebSidePanel } from "./shell/WebSidePanel";
+import { WebToolbar } from "./shell/WebToolbar";
+import "./shell/shell.css";
 import { TelemetryConsent } from "./TelemetryConsent";
 import { loadSidebarWidth, saveSidebarWidth } from "./sidebarWidth";
-import { useIsWide } from "./useIsWide";
+import { useIsDesktop } from "./useIsWide";
+import { useScrollRestore } from "./useScrollRestore";
 import { useKeyboardShortcuts, WEB_SHORTCUTS } from "./useKeyboardShortcuts";
 import { useViewportInset } from "./useViewportInset";
 
 export function Monitor() {
   const { screen } = useAppLocation();
-  const isWide = useIsWide();
+  const isDesktop = useIsDesktop();
   const connection = useConnectionStore((s) => s.connection);
   const refreshDevices = useDevicesStore((s) => s.refreshDevices);
   const pushEnabled = usePushStore((s) => s.pushEnabled);
   const setPushEnabled = usePushStore((s) => s.setPushEnabled);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const master = useMasterScreen(screen);
-  const detail = paneFor(screen) === "detail" ? screen : null;
-  // Browsing the master pane while a detail is open moves the pane alone:
-  // the URL keeps naming what is open on the right.
-  const [masterOverride, setMasterOverride] = useState<Screen | null>(null);
-  useEffect(() => setMasterOverride(null), [screen]);
-  const goMaster = useCallback(
-    (next: Screen) => (detail ? setMasterOverride(next) : appNavigate(next)),
-    [detail],
+  const panelOpen = useShellPrefs((s) => s.panel.open);
+  const panelTab = useShellPrefs((s) => s.panel.tab);
+  const setPanelOpen = useShellPrefs((s) => s.setPanelOpen);
+  const sidebarShown = isDesktop ? !sidebarCollapsed : drawerOpen;
+  const toggleSidebar = useCallback(
+    () =>
+      isDesktop ? setSidebarCollapsed((c) => !c) : setDrawerOpen((o) => !o),
+    [isDesktop],
   );
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  useEffect(() => setDrawerOpen(false), [screen]);
   const back = useCallback(() => navigateBack(parentOf(screen)), [screen]);
 
   // The host keeps a warm agent in the session on screen.
@@ -107,9 +116,7 @@ export function Monitor() {
   useKeyboardShortcuts({
     back,
     onShowShortcuts: () => setShowShortcuts(true),
-    onToggleSidebar: isWide
-      ? () => setSidebarCollapsed((c) => !c)
-      : undefined,
+    onToggleSidebar: toggleSidebar,
     onQuickOpen: toolSession ? () => setQuickOpen(true) : undefined,
     onSearchFiles: toolSession
       ? () => appNavigate({ name: "search", sessionId: toolSession })
@@ -194,52 +201,60 @@ export function Monitor() {
 
   const onResize = useCallback((w: number) => saveSidebarWidth(w), []);
 
-  if (!isWide) {
-    return (
-      <div className="aw-shell">
-        <SinglePane banner={offlineBanner} onBack={back} screen={screen} />
-        {palette}
-        <TelemetryConsent />
-        <ShortcutCheatsheet
-          open={showShortcuts}
-          scope="session"
-          shortcuts={WEB_SHORTCUTS}
-          onClose={() => setShowShortcuts(false)}
-        />
-      </div>
-    );
-  }
+  const onPanelResize = useCallback((w: number) => savePanelWidth(w), []);
+  const panelShown = panelOpen;
+  const togglePanel = () => {
+    capture("web_side_panel_toggled", { open: !panelShown, tab: panelTab });
+    setPanelOpen(!panelShown);
+  };
+  const agentId = screen.name === "agent" ? screen.agentId : null;
 
   return (
-    <div className="aw-shell aw-shell-wide">
-      <SplitShell
-        collapsed={sidebarCollapsed}
+    <div className="aw-window">
+      <AppShell
+        defaultPanelWidth={loadPanelWidth()}
         defaultSidebarWidth={loadSidebarWidth()}
-        maxSidebarWidth={520}
-        minSidebarWidth={240}
-        onSidebarResize={onResize}
-        sidebar={
-          <MasterPane
-            banner={offlineBanner}
-            goMaster={goMaster}
-            screen={masterOverride ?? master}
+        panel={panelShown ? <WebSidePanel sessionId={toolSession} /> : null}
+        panelMode={isDesktop ? "docked" : "overlay"}
+        sidebar={<WebSidebar screen={screen} onNavigate={closeDrawer} />}
+        sidebarMode={isDesktop ? "docked" : "overlay"}
+        sidebarOpen={sidebarShown}
+        toolbar={
+          <WebToolbar
+            leading={
+              <FlatIconButton
+                icon={<Icons.LeftSidebarIcon size={15} />}
+                label={sidebarShown ? "Hide sidebar" : "Show sidebar"}
+                onClick={toggleSidebar}
+              />
+            }
+            screen={screen}
+            trailing={
+              <>
+                <SessionToolActions screen={screen} />
+                {agentId && (
+                  <AgentActions agentId={agentId} onStopped={back} />
+                )}
+                <FlatIconButton
+                  icon={<Icons.RightSidebarIcon size={15} />}
+                  label={panelShown ? "Hide side panel" : "Show side panel"}
+                  selected={panelShown}
+                  onClick={togglePanel}
+                />
+              </>
+            }
           />
         }
+        onPanelDismiss={() => setPanelOpen(false)}
+        onPanelResize={onPanelResize}
+        onSidebarDismiss={closeDrawer}
+        onSidebarResize={onResize}
       >
-        {detail ? (
-          <DetailPane onClose={() => appNavigate(master)} screen={detail} />
-        ) : (
-          <div className="aw-pane">
-            <div className="aw-main aw-empty-detail">
-              <EmptyState
-                icon={<Icons.ArgusLogo size={28} />}
-                title="Nothing open"
-                body="Pick an agent or a device from the list to bring it up here."
-              />
-            </div>
-          </div>
-        )}
-      </SplitShell>
+        {offlineBanner && <div className="aw-window-banner">{offlineBanner}</div>}
+        {toolSession && <SessionHeader screen={screen} sessionId={toolSession} />}
+        <ScreenFrame screen={screen} />
+        {agentId && <AgentDock agentId={agentId} />}
+      </AppShell>
       {palette}
       <TelemetryConsent />
       <ShortcutCheatsheet
@@ -248,6 +263,22 @@ export function Monitor() {
         shortcuts={WEB_SHORTCUTS}
         onClose={() => setShowShortcuts(false)}
       />
+    </div>
+  );
+}
+
+/** The centre's scrolling body; it remembers where each screen was scrolled to. */
+function ScreenFrame({ screen }: { screen: Screen }) {
+  const mainRef = useRef<HTMLDivElement>(null);
+  useScrollRestore(mainRef, pathForScreen(screen), screen.name !== "agent");
+
+  return (
+    <div
+      className="aw-main"
+      data-screen={screen.name}
+      ref={mainRef}
+    >
+      <ScreenBody screen={screen} />
     </div>
   );
 }

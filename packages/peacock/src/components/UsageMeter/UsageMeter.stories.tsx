@@ -57,6 +57,17 @@ export const Large: Story = {
   },
 };
 
+/** Home's plan-limit line, as Argus for Mac draws it. */
+export const Row: Story = {
+  args: {
+    size: "row",
+    label: "Session",
+    value: "93% left",
+    progress: 0.07,
+    hint: "resets in 4h 27m",
+  },
+};
+
 export const LargeAheadOfPace: Story = {
   args: {
     size: "lg",

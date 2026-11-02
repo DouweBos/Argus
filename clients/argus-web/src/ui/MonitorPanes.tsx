@@ -1,33 +1,16 @@
 /**
- * The pane bodies behind the monitor shell. A pane is a sticky top bar, a
- * scrolling body and (for an agent) a docked composer — the same three parts
- * whether it is the only pane on a phone or one of two on a tablet. Which
- * screen each pane shows comes from the URL (`routing/`).
+ * What fills the window's centre: the screen the URL names, the agent's
+ * toolbar actions and its docked composer. The chrome around them (sidebar,
+ * toolbar, side panel) is `Monitor` and `shell/`.
  */
 
-import { useEffect, useRef, useState } from "react";
-import {
-  ConfirmDialog,
-  Icons,
-  SidebarHeader,
-  SidebarHeaderAction,
-} from "@argus/peacock";
+import { useEffect, useState } from "react";
+import { ConfirmDialog, FlatIconButton, Icons } from "@argus/peacock";
 import { openAgent } from "../routing/open";
 import { appNavigate } from "../routing/router";
-import {
-  pathForScreen,
-  projectScreen,
-  type Screen,
-} from "../routing/screens";
+import { projectScreen, type Screen } from "../routing/screens";
 import { useAgentsStore } from "../stores/agents";
 import { useConnectionStore } from "../stores/connection";
-import { useDevicesStore } from "../stores/devices";
-import {
-  useNotificationsStore,
-  useUnseenNotifications,
-} from "../stores/notifications";
-import { linearConnected, useIntegrationsStore } from "../stores/integrations";
-import { useProjectsStore } from "../stores/projects";
 import { AgentTranscript } from "./transcript/AgentTranscript";
 import { AutomationScreen } from "./automations/AutomationScreen";
 import { AutomationsScreen } from "./automations/AutomationsScreen";
@@ -36,87 +19,30 @@ import { InboxScreen } from "./automations/InboxScreen";
 import { ProposalScreen } from "./automations/ProposalScreen";
 import { QuickRunScreen } from "./automations/QuickRunScreen";
 import { RunScreen } from "./automations/RunScreen";
-import { useInboxBadge } from "./automations/useInbox";
 import { ChangesView } from "./ChangesView";
 import { ChatInput } from "./ChatInput";
-import { ConnectionBadge } from "./ConnectionBadge";
 import { LazyIssuesScreen } from "./issues/LazyIssuesScreen";
 import { LazyDesignScreen } from "./design/LazyDesignScreen";
 import { DevicesView } from "./DevicesView";
-import { McpServersDialog } from "./McpServersDialog";
 import { Projects } from "./ProjectViews";
 import { DeviceRoute, ProjectRoute, SessionRedirect } from "./ScreenRoutes";
-import { useScreenTitle } from "./screenTitle";
 import { NotificationsView } from "./NotificationsView";
 import {
   LazyBrowserScreen,
   LazySessionTool,
   LazyShipScreen,
-  SessionToolActions,
 } from "./SessionToolActions";
 import { Settings, SettingsPageScreen } from "./Settings";
 import { UsageView } from "./UsageView";
 import { SavedChat } from "./start/SavedChat";
 import { SessionHome } from "./start/SessionHome";
-import { useScrollRestore } from "./useScrollRestore";
 
-/** Where master-pane navigation goes: the URL, or the pane alone while a detail is open. */
-type GoMaster = (screen: Screen) => void;
-
-function Pane({
-  actions,
-  banner,
-  children,
-  dock,
-  leading,
-  screen,
-}: {
-  actions?: React.ReactNode;
-  banner?: React.ReactNode;
-  children: React.ReactNode;
-  dock?: React.ReactNode;
-  leading: React.ReactNode;
-  screen: Screen;
-}) {
-  const mainRef = useRef<HTMLDivElement>(null);
-  const title = useScreenTitle(screen);
-  useScrollRestore(mainRef, pathForScreen(screen), screen.name !== "agent");
-
-  return (
-    <div className="aw-pane">
-      <SidebarHeader
-        className="aw-topbar"
-        brand={
-          <>
-            {leading}
-            <span className="aw-topbar-title" title={title}>
-              {title}
-            </span>
-          </>
-        }
-        actions={actions}
-      />
-      <div className="aw-main" ref={mainRef}>
-        {banner}
-        {children}
-      </div>
-      {dock}
-    </div>
-  );
-}
-
-function ScreenBody({
-  goMaster = appNavigate,
-  screen,
-}: {
-  goMaster?: GoMaster;
-  screen: Screen;
-}) {
+export function ScreenBody({ screen }: { screen: Screen }) {
   switch (screen.name) {
     case "projects":
       return (
         <Projects
-          onOpen={(repoRoot) => goMaster(projectScreen(repoRoot))}
+          onOpen={(repoRoot) => appNavigate(projectScreen(repoRoot))}
           onOpenAgent={(agent) => openAgent(agent)}
         />
       );
@@ -223,223 +149,29 @@ function ScreenBody({
   }
 }
 
+
 /**
- * The top-left of the root list: the logo, or for an account computer opened
- * from the hosted client, the way back to the account's computers.
+ * Stop the agent outright. Its devices, changes, MCP servers, pin and recent
+ * chats live in the session's context card and tabs.
  */
-function RootLeading() {
-  const account = useConnectionStore((s) => s.identity?.account);
-  if (!account) {
-    return <Icons.ArgusLogo size={16} />;
-  }
-
-  return (
-    <SidebarHeaderAction
-      onClick={account.leave}
-      title="Computers"
-      aria-label="Computers"
-    >
-      <Icons.ChevronLeftIcon size={14} />
-    </SidebarHeaderAction>
-  );
-}
-
-/** Devices / refresh / settings — the actions that belong to the project list. */
-function RootActions() {
-  const connection = useConnectionStore((s) => s.connection);
-  const refreshProjects = useProjectsStore((s) => s.refreshProjects);
-  const waiting = useInboxBadge();
-  const warnings = useNotificationsStore((s) => s.entries.length);
-  const unseen = useUnseenNotifications();
-  const showsIssues = useIntegrationsStore((s) =>
-    linearConnected(s.integrations),
-  );
-  const refreshIntegrations = useIntegrationsStore(
-    (s) => s.refreshIntegrations,
-  );
-
-  useEffect(() => {
-    if (connection === "ready") {
-      refreshIntegrations({ background: true }).catch(() => {});
-    }
-  }, [connection, refreshIntegrations]);
-
-  return (
-    <>
-      {showsIssues && (
-        <SidebarHeaderAction
-          onClick={() =>
-            appNavigate({
-              name: "issues",
-              scope: "assigned",
-              query: null,
-              issueRef: null,
-            })
-          }
-          title="Issues"
-          aria-label="Issues"
-        >
-          <Icons.LinearIcon size={14} />
-        </SidebarHeaderAction>
-      )}
-      <SidebarHeaderAction
-        className="aw-badged"
-        onClick={() => appNavigate({ name: "inbox" })}
-        title={waiting > 0 ? `Inbox — ${waiting} waiting` : "Inbox"}
-        aria-label={waiting > 0 ? `Inbox, ${waiting} waiting` : "Inbox"}
-      >
-        <Icons.EnvelopeIcon size={14} />
-        {waiting > 0 && <span className="aw-badge-count">{waiting}</span>}
-      </SidebarHeaderAction>
-      <SidebarHeaderAction
-        onClick={() => appNavigate({ name: "automations" })}
-        title="Automations"
-        aria-label="Automations"
-      >
-        <Icons.ClockIcon size={14} />
-      </SidebarHeaderAction>
-      <SidebarHeaderAction
-        onClick={() => appNavigate({ name: "pullRequests" })}
-        title="Pull requests"
-        aria-label="Pull requests"
-      >
-        <Icons.PullRequestIcon size={14} />
-      </SidebarHeaderAction>
-      <SidebarHeaderAction
-        onClick={() => appNavigate({ name: "devices" })}
-        title="Devices"
-        aria-label="Devices"
-      >
-        <Icons.SimulatorIcon size={14} />
-      </SidebarHeaderAction>
-      {warnings > 0 && (
-        <SidebarHeaderAction
-          className="aw-badged"
-          onClick={() => appNavigate({ name: "notifications" })}
-          title={unseen > 0 ? `Warnings & errors — ${unseen} new` : "Warnings & errors"}
-          aria-label={unseen > 0 ? `Warnings and errors, ${unseen} new` : "Warnings and errors"}
-        >
-          <Icons.WarningIcon size={14} />
-          {unseen > 0 && <span className="aw-badge-count">{unseen}</span>}
-        </SidebarHeaderAction>
-      )}
-      <SidebarHeaderAction
-        onClick={() => refreshProjects().catch(() => {})}
-        title="Refresh"
-        aria-label="Refresh"
-        disabled={connection !== "ready"}
-      >
-        <Icons.RefreshIcon size={14} />
-      </SidebarHeaderAction>
-      <SidebarHeaderAction
-        onClick={() => appNavigate({ name: "settings" })}
-        title="Settings"
-        aria-label="Settings"
-      >
-        <Icons.GearIcon size={14} />
-      </SidebarHeaderAction>
-    </>
-  );
-}
-
-/** Pin the agent so the computer resumes it on restart, or unpin it. */
-function PinAction({ agentId }: { agentId: string }) {
-  const status = useAgentsStore((s) => s.statusByAgent[agentId]);
-  const setPinned = useAgentsStore((s) => s.setPinned);
-  if (!status) {
-    return null;
-  }
-  const pinned = status.pinned === true;
-  // Pinning needs the agent live; unpinning works on one already stopped.
-  if (!pinned && (status.status === "stopped" || status.status === "error")) {
-    return null;
-  }
-  const label = pinned
-    ? "Unpin: stop resuming it when the computer restarts"
-    : "Pin: resume it when the computer restarts";
-
-  return (
-    <SidebarHeaderAction
-      aria-label={label}
-      aria-pressed={pinned}
-      className={pinned ? "aw-action-on" : undefined}
-      title={label}
-      onClick={() => {
-        setPinned(agentId, !pinned).catch(() => {});
-      }}
-    >
-      <Icons.PinIcon size={14} />
-    </SidebarHeaderAction>
-  );
-}
-
-/** Jump to the agent's device and changes, or stop it outright. */
-function AgentActions({
+export function AgentActions({
   agentId,
   onStopped,
-  sessionId,
 }: {
   agentId: string;
   onStopped: () => void;
-  sessionId: string;
 }) {
   const hasControl = useConnectionStore((s) => s.hasControl());
-  const devices = useDevicesStore((s) => s.devices);
   const stopAgentProcess = useAgentsStore((s) => s.stopAgentProcess);
   const [confirmingStop, setConfirmingStop] = useState(false);
-  const [showingMcp, setShowingMcp] = useState(false);
 
   return (
     <>
-      <SidebarHeaderAction
-        onClick={() => appNavigate({ name: "sessionHome", sessionId })}
-        title="New agent and recent chats"
-        aria-label="New agent and recent chats"
-      >
-        <Icons.HistoryIcon size={14} />
-      </SidebarHeaderAction>
-      {hasControl && <PinAction agentId={agentId} />}
-      <SidebarHeaderAction
-        onClick={() => setShowingMcp(true)}
-        title="MCP servers"
-        aria-label="MCP servers"
-      >
-        <Icons.SlidersIcon size={14} />
-      </SidebarHeaderAction>
-      <SidebarHeaderAction
-        onClick={() => {
-          const only = devices.length === 1 ? devices[0] : null;
-          appNavigate(
-            only
-              ? { name: "device", platform: only.platform, deviceKey: only.id }
-              : { name: "devices" },
-          );
-        }}
-        title="Devices"
-        aria-label="Devices"
-      >
-        <Icons.SimulatorIcon size={14} />
-      </SidebarHeaderAction>
-      <SidebarHeaderAction
-        onClick={() => appNavigate({ name: "changes", sessionId, mode: "branch" })}
-        title="View changes"
-        aria-label="View changes"
-      >
-        <Icons.BranchIcon size={14} />
-      </SidebarHeaderAction>
       {hasControl && (
-        <SidebarHeaderAction
+        <FlatIconButton
+          icon={<Icons.StopIcon size={13} />}
+          label="Stop agent"
           onClick={() => setConfirmingStop(true)}
-          title="Stop agent"
-          aria-label="Stop agent"
-        >
-          <Icons.StopIcon size={14} />
-        </SidebarHeaderAction>
-      )}
-      {showingMcp && (
-        <McpServersDialog
-          agentId={agentId}
-          onClose={() => setShowingMcp(false)}
         />
       )}
       {confirmingStop && (
@@ -466,7 +198,7 @@ function AgentActions({
 }
 
 /** The control-only chat input, pinned below the transcript scroll area. */
-function AgentDock({ agentId }: { agentId: string }) {
+export function AgentDock({ agentId }: { agentId: string }) {
   const hasControl = useConnectionStore((s) => s.hasControl());
   const sessionId = useAgentsStore((s) => s.statusByAgent[agentId]?.session_id);
   const loadAgentStatus = useAgentsStore((s) => s.loadAgentStatus);
@@ -486,193 +218,4 @@ function AgentDock({ agentId }: { agentId: string }) {
       <ChatInput agentId={agentId} sessionId={sessionId} />
     </div>
   );
-}
-
-function agentChrome(screen: Screen, onStopped: () => void) {
-  if (screen.name !== "agent") {
-    return { actions: <SessionToolActions screen={screen} />, dock: null };
-  }
-
-  return {
-    actions: (
-      <>
-        <SessionToolActions screen={screen} />
-        <AgentActions
-          agentId={screen.agentId}
-          sessionId={screen.sessionId}
-          onStopped={onStopped}
-        />
-      </>
-    ),
-    dock: <AgentDock agentId={screen.agentId} />,
-  };
-}
-
-/** Phone layout: the screen the URL names, and nothing else. */
-export function SinglePane({
-  banner,
-  onBack,
-  screen,
-}: {
-  banner: React.ReactNode;
-  onBack: () => void;
-  screen: Screen;
-}) {
-  const connection = useConnectionStore((s) => s.connection);
-  const atRoot = screen.name === "projects";
-  const agent = agentChrome(screen, onBack);
-
-  return (
-    <Pane
-      banner={banner}
-      screen={screen}
-      leading={
-        atRoot ? (
-          <RootLeading />
-        ) : (
-          <SidebarHeaderAction onClick={onBack} title="Back" aria-label="Back">
-            <Icons.ChevronLeftIcon size={14} />
-          </SidebarHeaderAction>
-        )
-      }
-      actions={
-        <>
-          <ConnectionBadge state={connection} />
-          {agent.actions}
-          {atRoot && <RootActions />}
-        </>
-      }
-      dock={agent.dock}
-    >
-      <ScreenBody screen={screen} />
-    </Pane>
-  );
-}
-
-/** Tablet left pane: the project list, or a project you drilled into. */
-export function MasterPane({
-  banner,
-  goMaster,
-  screen,
-}: {
-  banner: React.ReactNode;
-  goMaster: GoMaster;
-  screen: Screen;
-}) {
-  const connection = useConnectionStore((s) => s.connection);
-  const atRoot = screen.name === "projects";
-
-  return (
-    <Pane
-      banner={banner}
-      screen={screen}
-      leading={
-        atRoot ? (
-          <RootLeading />
-        ) : (
-          <SidebarHeaderAction
-            onClick={() => goMaster({ name: "projects" })}
-            title="All projects"
-            aria-label="All projects"
-          >
-            <Icons.ChevronLeftIcon size={14} />
-          </SidebarHeaderAction>
-        )
-      }
-      actions={
-        <>
-          <ConnectionBadge state={connection} />
-          {atRoot && <RootActions />}
-        </>
-      }
-    >
-      <ScreenBody goMaster={goMaster} screen={screen} />
-    </Pane>
-  );
-}
-
-/** Tablet right pane: the agent, device, diff or settings screen in focus. */
-export function DetailPane({
-  onClose,
-  screen,
-}: {
-  onClose: () => void;
-  screen: Screen;
-}) {
-  const agent = agentChrome(screen, onClose);
-
-  return (
-    <Pane
-      screen={screen}
-      leading={<PaneIcon screen={screen} />}
-      actions={
-        <>
-          {agent.actions}
-          <SidebarHeaderAction
-            onClick={onClose}
-            title="Close"
-            aria-label="Close"
-          >
-            <Icons.CloseIcon size={14} />
-          </SidebarHeaderAction>
-        </>
-      }
-      dock={agent.dock}
-    >
-      <ScreenBody screen={screen} />
-    </Pane>
-  );
-}
-
-function PaneIcon({ screen }: { screen: Screen }) {
-  switch (screen.name) {
-    case "changes":
-    case "fileDiff":
-    case "branches":
-    case "branch":
-    case "compare":
-    case "stashes":
-    case "commit":
-      return <Icons.BranchIcon size={14} />;
-    case "pullRequests":
-    case "pullRequest":
-      return <Icons.PullRequestIcon size={14} />;
-    case "files":
-    case "file":
-      return <Icons.CodeIcon size={14} />;
-    case "search":
-      return <Icons.SearchIcon size={14} />;
-    case "terminals":
-      return <Icons.TerminalIcon size={14} />;
-    case "browser":
-      return <Icons.WebIcon size={14} />;
-    case "devices":
-    case "device":
-      return <Icons.SimulatorIcon size={14} />;
-    case "settings":
-    case "settingsPage":
-      return <Icons.GearIcon size={14} />;
-    case "usage":
-      return <Icons.GaugeIcon size={14} />;
-    case "notifications":
-      return <Icons.WarningIcon size={14} />;
-    case "design":
-      return <Icons.FigmaIcon size={14} />;
-    case "issues":
-      return <Icons.LinearIcon size={14} />;
-    case "chat":
-      return <Icons.HistoryIcon size={14} />;
-    case "inbox":
-    case "proposal":
-      return <Icons.EnvelopeIcon size={14} />;
-    case "automations":
-    case "automation":
-    case "automationRun":
-    case "quickRun":
-    case "quickRunDetail":
-    case "describe":
-      return <Icons.ClockIcon size={14} />;
-    default:
-      return <Icons.AgentIcon size={14} />;
-  }
 }

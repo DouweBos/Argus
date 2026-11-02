@@ -4,7 +4,7 @@
  */
 
 const KEY = "argus.web.sidebarWidth";
-const DEFAULT = 320;
+const DEFAULT = 272;
 const DEVICE_KEY = "argus.web.huddleDeviceWidth";
 const DEVICE_DEFAULT = 420;
 const CHAT_KEY = "argus.web.huddleChatWidth";

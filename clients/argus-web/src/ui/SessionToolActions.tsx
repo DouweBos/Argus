@@ -3,7 +3,7 @@
  * on first use, and the Cmd/Ctrl+P palette over them.
  */
 
-import { Icons, SidebarHeaderAction, Spinner } from "@argus/peacock";
+import { FlatIconButton, Icons, Spinner } from "@argus/peacock";
 import { lazy, Suspense } from "react";
 import { appNavigate } from "../routing/router";
 import type { Screen } from "../routing/screens";
@@ -82,13 +82,7 @@ function Action({
   to: Screen;
 }) {
   return (
-    <SidebarHeaderAction
-      onClick={() => appNavigate(to)}
-      title={label}
-      aria-label={label}
-    >
-      {icon}
-    </SidebarHeaderAction>
+    <FlatIconButton icon={icon} label={label} onClick={() => appNavigate(to)} />
   );
 }
 

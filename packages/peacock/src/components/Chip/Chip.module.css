@@ -46,6 +46,34 @@
   color: var(--text-muted);
 }
 
+.bare,
+.bare:hover,
+.bare.interactive:hover {
+  border-color: transparent;
+}
+
+.bare {
+  gap: 5px;
+  padding: 3px 6px;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  font: 400 13px/1.2 var(--font-ui);
+  color: var(--text-secondary);
+}
+
+.bare:hover {
+  background: var(--chrome-hover);
+  color: var(--text-primary);
+}
+
+.bare.muted {
+  color: var(--text-muted);
+}
+
+.chevron {
+  opacity: 0.7;
+}
+
 .close {
   display: inline-flex;
   margin-left: 2px;

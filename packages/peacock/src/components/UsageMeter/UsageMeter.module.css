@@ -78,6 +78,35 @@
 .warning .aside {
   color: var(--warning);
 }
+
+/* Mac Home's line: sentence-case label, the reset beside it, a thicker bar. */
+.rowSize {
+  gap: 6px;
+  padding: 0;
+}
+
+.rowSize .label {
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-secondary);
+}
+
+.inlineHint {
+  color: var(--text-muted);
+}
+
+.rowSize .value {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.rowSize .track {
+  height: 5px;
+  background: var(--chrome-selection);
+}
 .danger .aside {
   color: var(--error);
 }

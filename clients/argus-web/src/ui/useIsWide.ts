@@ -25,3 +25,28 @@ export function useIsWide(): boolean {
     () => false,
   );
 }
+
+/**
+ * Room for the Mac's window: a docked sidebar and side panel beside the
+ * centre. Below it the sidebar is a drawer and the panel a sheet.
+ */
+export const DESKTOP_QUERY = "(min-width: 1100px)";
+
+const desktop =
+  typeof window !== "undefined" && window.matchMedia
+    ? window.matchMedia(DESKTOP_QUERY)
+    : null;
+
+function subscribeDesktop(onChange: () => void): () => void {
+  desktop?.addEventListener("change", onChange);
+
+  return () => desktop?.removeEventListener("change", onChange);
+}
+
+export function useIsDesktop(): boolean {
+  return useSyncExternalStore(
+    subscribeDesktop,
+    () => desktop?.matches ?? false,
+    () => false,
+  );
+}

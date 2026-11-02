@@ -3,23 +3,28 @@
  * App.tsx to keep each file under the size guideline.
  */
 
-import { useCallback } from "react";
-import { loadPhase } from "@argus/client-core";
+import { useCallback, useEffect } from "react";
+import { loadPhase, shortAge, usageAccountViews } from "@argus/client-core";
 import {
   AgentRow,
   Banner,
   EmptyState,
+  HomeLink,
+  HomeNote,
+  HomeOverview,
+  HomeSection,
   Icons,
-  projectAccent,
-  SidebarRepoGroup,
-  SidebarSection,
+  ProjectTile,
+  ProjectTileGrid,
   Spinner,
+  UsageMeter,
 } from "@argus/peacock";
-import type { RemoteAgentStatus } from "../lib/protocol";
+import type { RemoteAgentStatus, RemoteProject } from "../lib/protocol";
 import type { AgentRef } from "../routing/open";
 import { appNavigate } from "../routing/router";
 import { useConnectionStore } from "../stores/connection";
 import { useProjectsStore } from "../stores/projects";
+import { useUsageStore } from "../stores/usage";
 import {
   agentAwaitingLabel,
   agentMetaLabel,
@@ -36,13 +41,6 @@ function Loading({ label }: { label: string }) {
     </div>
   );
 }
-
-function toTildePath(absPath: string): string {
-  const match = absPath.match(/^(\/(?:Users|home)\/[^/]+)/);
-
-  return match ? absPath.replace(match[1], "~") : absPath;
-}
-
 
 /** Most-recently-active agents across all projects — a quick jump back to what
  *  you're driving. Shown on Home and inside a project's session view. */
@@ -61,8 +59,7 @@ function RecentAgents({
   }
 
   return (
-    <div className="aw-group">
-      <SidebarSection count={recent.length}>Recent agents</SidebarSection>
+    <HomeSection className="aw-recent-agents" title="Recent agents">
       {recent.map((a) => {
         const name = a.title?.trim() || `Agent ${a.agent_id.slice(0, 8)}`;
 
@@ -74,17 +71,102 @@ function RecentAgents({
             meta={
               agentAwaitingLabel(a) ?? a.session_label ?? agentMetaLabel(a.status)
             }
+            className="aw-clickable"
             role="button"
             tabIndex={0}
-            style={{ cursor: "pointer" }}
             onClick={() => onOpenAgent(a)}
           />
         );
       })}
-    </div>
+    </HomeSection>
   );
 }
 
+/** A project's tile on Home: what's in it and how long since it moved. */
+function HomeProjectTile({
+  project,
+  onOpen,
+}: {
+  project: RemoteProject;
+  onOpen: (repoRoot: string) => void;
+}) {
+  const sessions = useProjectsStore((s) => s.sessionsByRepo[project.repo_root]);
+  const agents = useProjectsStore((s) => s.agentsByRepo[project.repo_root]);
+  const hasControl = useConnectionStore((s) => s.hasControl());
+  const worktrees = (sessions ?? []).filter((s) => s.kind === "worktree").length;
+  const live = agents ?? [];
+  const busy = live.some((a) => a.status === "running");
+  const waiting = live.some((a) => a.awaiting);
+  const times = live
+    .map((a) => a.last_activity_at ?? a.created_at)
+    .filter((t): t is number => typeof t === "number");
+  const plural = (n: number, word: string) =>
+    `${n} ${word}${n === 1 ? "" : "s"}`;
+
+  return (
+    <ProjectTile
+      age={times.length > 0 ? `${shortAge(Math.max(...times))} ago` : undefined}
+      busy={busy}
+      name={project.name}
+      projectKey={project.repo_root}
+      status={waiting ? "warning" : busy ? "accent" : "idle"}
+      summary={`${plural(worktrees, "session")} · ${plural(live.length, "agent")}`}
+      onNewSession={hasControl ? () => onOpen(project.repo_root) : undefined}
+      onOpen={() => onOpen(project.repo_root)}
+    />
+  );
+}
+
+/** Plan limits for the signed-in account, when Claude reports them. */
+function HomeLimits() {
+  const connection = useConnectionStore((s) => s.connection);
+  const limits = useUsageStore((s) => s.limits);
+  const limitsAt = useUsageStore((s) => s.limitsAt);
+  const loadLimits = useUsageStore((s) => s.loadLimits);
+  useEffect(() => {
+    if (connection === "ready") {
+      loadLimits({ background: true }).catch(() => {});
+    }
+  }, [connection, loadLimits]);
+  const windows = limits
+    ? (usageAccountViews(limits, limitsAt).find((a) => a.state === "ok")
+        ?.windows ?? [])
+    : [];
+  if (windows.length === 0) {
+    return null;
+  }
+
+  return (
+    <HomeSection
+      actions={
+        <HomeLink
+          onClick={() =>
+            appNavigate({ name: "usage", tab: "limits", range: "30d" })
+          }
+        >
+          View usage
+        </HomeLink>
+      }
+      title="Plan limits"
+    >
+      <div className="aw-home-limits">
+        {windows.map((w) => (
+          <UsageMeter
+            key={w.id}
+            hint={w.hint?.replace(/^Resets/, "resets") ?? undefined}
+            label={w.label}
+            progress={w.progress}
+            size="row"
+            tone={w.tone}
+            value={w.value}
+          />
+        ))}
+      </div>
+    </HomeSection>
+  );
+}
+
+/** Home, as on the Mac: plan limits, the projects, and what ran lately. */
 export function Projects({
   onOpen,
   onOpenAgent,
@@ -114,46 +196,29 @@ export function Projects({
       />
     );
   }
-  if (phase.kind === "failed") {
-    return (
-      <EmptyState
-        icon={<Icons.FolderIcon size={22} />}
-        title="Couldn't load projects"
-        body={phase.error}
-      />
-    );
-  }
-  if (phase.kind === "empty") {
-    return (
-      <EmptyState
-        icon={<Icons.FolderIcon size={22} />}
-        title="No projects open"
-        body="Open a repository in Argus on your computer and it'll show up here."
-      />
-    );
-  }
 
   return (
-    <div className="aw-sidebar">
+    <HomeOverview icon={<Icons.ArgusLogo size={16} />} title="Argus">
       {load.error && <Banner tone="warning">{load.error}</Banner>}
+      <HomeLimits />
+      <HomeSection title="Projects">
+        {phase.kind === "failed" ? (
+          <HomeNote>Couldn't load projects: {phase.error}</HomeNote>
+        ) : phase.kind === "empty" ? (
+          <HomeNote>
+            No projects open. Open a repository in Argus on your computer and
+            it'll show up here.
+          </HomeNote>
+        ) : (
+          <ProjectTileGrid>
+            {projects.map((p) => (
+              <HomeProjectTile key={p.repo_root} project={p} onOpen={onOpen} />
+            ))}
+          </ProjectTileGrid>
+        )}
+      </HomeSection>
       <RecentAgents onOpenAgent={onOpenAgent} />
-      <SidebarSection count={projects.length}>Projects</SidebarSection>
-      {projects.map((p) => (
-        <SidebarRepoGroup
-          key={p.repo_root}
-          name={p.name}
-          title={p.repo_root}
-          color={projectAccent(p.repo_root)}
-          hideChevron
-          leading={<Icons.FolderIcon size={11} />}
-          subtitle={
-            <span className="aw-truncate">{toTildePath(p.repo_root)}</span>
-          }
-          endContent={<Icons.ChevronRightIcon size={13} />}
-          onHeaderClick={() => onOpen(p.repo_root)}
-        />
-      ))}
-    </div>
+    </HomeOverview>
   );
 }
 

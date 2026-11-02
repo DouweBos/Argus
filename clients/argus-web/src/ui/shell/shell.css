@@ -1,0 +1,184 @@
+/* The paired window: Peacock's AppShell fills the viewport; these rules only
+   lay out what the web client composes inside it. */
+
+.aw-window {
+  --aw-gutter-left: 28px;
+  --aw-gutter-right: 28px;
+  /* The reading column the Mac keeps transcripts and lists to. */
+  --aw-column: 820px;
+
+  height: 100dvh;
+  padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
+}
+
+@media (max-width: 700px) {
+  .aw-window {
+    --aw-gutter-left: 14px;
+    --aw-gutter-right: 14px;
+  }
+}
+
+.aw-window-banner {
+  padding: 0 var(--aw-gutter-right) 8px var(--aw-gutter-left);
+}
+
+/* Centre body: one scroller, its content kept to a readable column. */
+.aw-window .aw-main {
+  padding: 4px max(var(--aw-gutter-right), calc((100% - var(--aw-column)) / 2))
+    24px max(var(--aw-gutter-left), calc((100% - var(--aw-column)) / 2));
+}
+
+/* Screens that lay themselves out edge to edge (git, files, devices…). */
+.aw-window .aw-main:is(
+    [data-screen="changes"],
+    [data-screen="fileDiff"],
+    [data-screen="file"],
+    [data-screen="files"],
+    [data-screen="search"],
+    [data-screen="terminals"],
+    [data-screen="browser"],
+    [data-screen="device"],
+    [data-screen="design"],
+    [data-screen="issues"],
+    [data-screen="automations"],
+    [data-screen="branches"],
+    [data-screen="branch"],
+    [data-screen="compare"],
+    [data-screen="stashes"],
+    [data-screen="commit"],
+    [data-screen="pullRequests"],
+    [data-screen="pullRequest"],
+    [data-screen="usage"]
+  ) {
+  --aw-gutter-left: 16px;
+  --aw-gutter-right: 16px;
+
+  padding: 0 16px 16px;
+}
+
+/* ─── Session header: agent tabs, and the context card hanging from the right ─── */
+
+.aw-session-header {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  flex: none;
+  align-items: center;
+  min-height: 40px;
+  padding-right: 252px;
+}
+
+.aw-session-header > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.aw-session-header-spacer {
+  height: 40px;
+}
+
+.aw-session-card {
+  position: absolute;
+  top: 3px;
+  right: 8px;
+}
+
+/* The reading column steps clear of an open card when there's room to. */
+@media (min-width: 1100px) {
+  .aw-session-header:has(.aw-session-card > :not([data-collapsed]))
+    ~ :is(.aw-main, .aw-chat-dock) {
+    padding-right: max(
+      260px,
+      calc((100% - var(--aw-column)) / 2)
+    );
+  }
+}
+
+@media (max-width: 700px) {
+  /* No room to hang the card beside the tabs: it takes its own row. */
+  .aw-session-header {
+    flex-wrap: wrap;
+    padding-right: 0;
+  }
+
+  .aw-session-card {
+    position: relative;
+    top: 0;
+    right: 0;
+    order: -1;
+    width: 100%;
+    padding: 4px 8px 0;
+  }
+
+  .aw-session-card > * {
+    width: 100%;
+  }
+
+  .aw-session-header-spacer {
+    display: none;
+  }
+}
+
+/* ─── The composer: a floating box in the reading column, no bar behind it ─── */
+
+.aw-window .aw-chat-dock {
+  margin: 0;
+  padding: 6px
+    max(var(--aw-gutter-right), calc((100% - var(--aw-column)) / 2))
+    calc(14px + var(--aw-keyboard-inset, 0px) + env(safe-area-inset-bottom, 0px))
+    max(var(--aw-gutter-left), calc((100% - var(--aw-column)) / 2));
+  border-top: none;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* ─── Side panel tabs ─── */
+
+.aw-panel-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 10px 12px;
+  overflow-y: auto;
+}
+
+.aw-panel-fill {
+  padding: 0;
+  overflow: hidden;
+}
+
+.aw-panel-back {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-secondary);
+  font: var(--type-ui);
+}
+
+.aw-panel-back:hover {
+  background: var(--chrome-hover);
+  color: var(--text-primary);
+}
+
+.aw-home-limits {
+  display: grid;
+  gap: 12px;
+  max-width: 400px;
+}
+
+.aw-clickable {
+  cursor: pointer;
+}
+
+.aw-sidebar-empty {
+  margin: 0;
+  padding: 0 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+}

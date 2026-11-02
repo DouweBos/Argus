@@ -542,9 +542,10 @@ export function ChatInput({
       {(models.length > 0 || modelValue) && (
         <div className="aw-picker-anchor" ref={modelChipRef}>
           <Chip
-            mono
-            muted
+            bare
             interactive
+            menu
+            leading={<Icons.SparklesIcon size={12} />}
             title="Switch model"
             onClick={() => setOpenPicker((p) => (p === "model" ? null : "model"))}
           >
@@ -576,7 +577,10 @@ export function ChatInput({
       )}
       <div className="aw-picker-anchor" ref={modeChipRef}>
         <Chip
+          bare
           interactive
+          menu
+          leading={<Icons.LockIcon size={11} />}
           muted={mode === "auto"}
           title="Switch permission mode (Shift+Tab to cycle)"
           onClick={() => setOpenPicker((p) => (p === "mode" ? null : "mode"))}
@@ -605,7 +609,10 @@ export function ChatInput({
       {effortLevels.length > 0 && (
         <div className="aw-picker-anchor" ref={effortChipRef}>
           <Chip
+            bare
             interactive
+            menu
+            leading={<Icons.ClockIcon size={12} />}
             muted={!effort}
             title="Switch reasoning effort"
             onClick={() =>
@@ -639,10 +646,11 @@ export function ChatInput({
       <AccountChip agentId={agentId} sessionId={sessionId} />
       <div className="aw-picker-anchor" ref={projectChipRef}>
         <Chip
+          bare
           interactive
           muted={linked.length === 0}
           title="Link other projects"
-          leading={<Icons.FolderIcon size={11} />}
+          leading={<Icons.LinkIcon size={12} />}
           onClick={() => {
             refreshProjects().catch(() => {});
             setOpenPicker((p) => (p === "project" ? null : "project"));
@@ -756,8 +764,8 @@ export function ChatInput({
         className="aw-chat-textarea"
         placeholder={
           sendsOnEnter
-            ? "Message the agent… (Enter to send, / for commands, @ for files)"
-            : "Message the agent… (⌘/Ctrl+Enter to send, / for commands, @ for files)"
+            ? "Ask anything, @ for files, / for commands"
+            : "Ask anything, @ for files, / for commands (⌘/Ctrl+Enter to send)"
         }
         rows={1}
         onInput={handleInput}

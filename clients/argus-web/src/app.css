@@ -13,7 +13,7 @@ body {
   margin: 0;
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: var(--font-sans, system-ui, sans-serif);
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
   /* No grey tap flash, and don't let the page itself scroll/select as chrome. */
   -webkit-tap-highlight-color: transparent;
@@ -22,6 +22,12 @@ body {
 
 /* Baseline button reset the Peacock chat kit assumes (desktop provides it
    globally) — without it, unstyled kit buttons render a UA border. */
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
 button {
   font-family: inherit;
   font-size: inherit;

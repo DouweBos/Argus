@@ -3,8 +3,11 @@ import styles from "./UsageMeter.module.css";
 
 export type UsageTone = "accent" | "danger" | "warning";
 
-/** `sm` fits a status strip; `lg` is a card on a full screen. */
-export type UsageMeterSize = "lg" | "sm";
+/**
+ * `sm` fits a status strip; `lg` is a card on a full screen; `row` is the
+ * Mac Home's line: "Session · resets in 4h", the value, a bar beneath.
+ */
+export type UsageMeterSize = "lg" | "row" | "sm";
 
 export interface UsageMeterProps extends HTMLAttributes<HTMLDivElement> {
   label: ReactNode;
@@ -38,7 +41,13 @@ export function UsageMeter({
     warning: styles.warning,
   };
   const toneClass = toneClassMap[tone];
-  const sizeClass = size === "lg" ? styles.lg : "";
+  const sizeClasses: Record<UsageMeterSize, string> = {
+    lg: styles.lg,
+    row: styles.rowSize,
+    sm: "",
+  };
+  const sizeClass = sizeClasses[size];
+  const inlineHint = size === "row";
 
   return (
     <div
@@ -48,7 +57,12 @@ export function UsageMeter({
       {...rest}
     >
       <div className={styles.row}>
-        <span className={styles.label}>{label}</span>
+        <span className={styles.label}>
+          {label}
+          {inlineHint && hint != null && (
+            <span className={styles.inlineHint}> · {hint}</span>
+          )}
+        </span>
         <span className={styles.value}>{value}</span>
       </div>
       {pct != null && (
@@ -62,7 +76,7 @@ export function UsageMeter({
           <div className={styles.fill} style={{ width: `${pct}%` }} />
         </div>
       )}
-      {(hint != null || aside != null) && (
+      {!inlineHint && (hint != null || aside != null) && (
         <div className={styles.footer}>
           <span className={styles.hint}>{hint}</span>
           {aside != null && <span className={styles.aside}>{aside}</span>}

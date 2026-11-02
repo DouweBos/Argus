@@ -38,6 +38,20 @@ export type ProposalAction =
   | "request_revision"
   | "resolve";
 
+/** A view the session context card switched to, its fold, or a row used. */
+export type ContextCardAction =
+  | "agent"
+  | "branch"
+  | "changes"
+  | "code"
+  | "collapse"
+  | "design"
+  | "expand"
+  | "git"
+  | "linked_issue"
+  | "push"
+  | "recent_chats";
+
 /** What was done to a run. */
 export type RunAction =
   | "cancel"
@@ -149,6 +163,12 @@ export interface EventMap {
   };
   web_branch_acted: { action: BranchActedAction };
   web_pull_request_acted: { action: "comment" | "fill" | "merge" | "open" };
+  web_context_card_used: { action: ContextCardAction };
+  web_sidebar_filtered: undefined;
+  web_side_panel_toggled: {
+    open: boolean;
+    tab: "changes" | "device" | "terminal";
+  };
   telemetry_enabled: undefined;
   telemetry_disabled: undefined;
 }

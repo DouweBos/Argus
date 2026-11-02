@@ -1,5 +1,5 @@
 import type { HTMLAttributes, MouseEventHandler, ReactNode } from "react";
-import { CloseIcon } from "../../icons/Icons";
+import { ChevronDownIcon, CloseIcon } from "../../icons/Icons";
 import styles from "./Chip.module.css";
 
 export interface ChipProps extends HTMLAttributes<HTMLSpanElement> {
@@ -10,6 +10,10 @@ export interface ChipProps extends HTMLAttributes<HTMLSpanElement> {
   /** Strong active/checked state for togglable chips. */
   selected?: boolean;
   onDismiss?: MouseEventHandler<HTMLButtonElement>;
+  /** No pill around it, as the Mac composer's chips sit in a row. */
+  bare?: boolean;
+  /** Opens a menu: a small chevron after the label. */
+  menu?: boolean;
 }
 
 export function Chip({
@@ -19,6 +23,8 @@ export function Chip({
   interactive,
   selected,
   onDismiss,
+  bare,
+  menu,
   className,
   children,
   ...rest
@@ -29,6 +35,7 @@ export function Chip({
     muted ? styles.muted : "",
     interactive || rest.onClick ? styles.interactive : "",
     selected ? styles.selected : "",
+    bare ? styles.bare : "",
     className ?? "",
   ]
     .filter(Boolean)
@@ -42,6 +49,7 @@ export function Chip({
     >
       {leading}
       {children}
+      {menu && <ChevronDownIcon className={styles.chevron} size={9} />}
       {onDismiss && (
         <button
           type="button"
