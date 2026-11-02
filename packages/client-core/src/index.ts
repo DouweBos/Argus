@@ -42,3 +42,8 @@ export * from "./telemetry/scrub";
 export * from "./usage/summaryMetric";
 export * from "./usage/usageFormat";
 export * from "./usage/usageViews";
+export * from "./git/branches";
+export * from "./git/commitMessage";
+export * from "./git/landWork";
+export * from "./pullRequests/bucket";
+export * from "./pullRequests/labels";
