@@ -26,9 +26,10 @@ import {
   TreeNode,
   type SettingsDialogGroup,
 } from "@argus/peacock";
+import { applyDialogEdits } from "../../../lib/argusConfigFile";
 import {
   getUserProjectSettings,
-  readArgusConfig,
+  readExistingArgusJson,
   getWorktreeStorage,
   setUserProjectSettings,
   writeArgusConfig,
@@ -1795,6 +1796,10 @@ export function SetupConfigDialog({
   const [automationWorktreeDefaultBase, setAutomationWorktreeDefaultBase] =
     useState("");
   const [initialBranchPrefix, setInitialBranchPrefix] = useState("");
+  // The file as written (no `.argus.local.json`), so a save keeps what the dialog doesn't edit.
+  const [rawConfig, setRawConfig] = useState<Record<string, unknown> | null>(
+    null,
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1815,10 +1820,15 @@ export function SetupConfigDialog({
     let cancelled = false;
     (async () => {
       try {
-        const config = await readArgusConfig(repoRoot);
+        const raw = await readExistingArgusJson(repoRoot);
         if (cancelled) {
           return;
         }
+        setRawConfig(raw);
+        const config = (raw ?? {}) as Partial<ArgusConfig> & {
+          workspace_port_env?: ArgusConfig["workspace_env"];
+        };
+        const workspaceEnv = config.workspace_env ?? config.workspace_port_env;
         if (config.setup?.copy?.length) {
           const { paths, excludes } = splitSetupEntries(config.setup.copy);
           copyExcludesRef.current = excludes;
@@ -1866,9 +1876,9 @@ export function SetupConfigDialog({
         if (config.browser_url) {
           setBrowserUrl(config.browser_url);
         }
-        if (config.workspace_env?.length) {
+        if (workspaceEnv?.length) {
           setEnvs(
-            config.workspace_env.map((we: WorkspaceEnvConfig) => ({
+            workspaceEnv.map((we: WorkspaceEnvConfig) => ({
               name: we.name ?? "",
               base_value: we.base_value != null ? String(we.base_value) : "",
               range: we.range != null ? String(we.range) : "",
@@ -2143,10 +2153,11 @@ export function SetupConfigDialog({
   };
 
   const previewJson = useMemo(
-    () => JSON.stringify(buildConfig(), null, 2),
+    () => JSON.stringify(applyDialogEdits(rawConfig, buildConfig()), null, 2),
     // buildConfig closes over every piece of state — recompute on any change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
+      rawConfig,
       copyList.items,
       symlinkList.items,
       commandList.items,

@@ -109,21 +109,26 @@ export function entriesToPatternConfig(
     }));
 }
 
-/** Convert a backend pattern back into the dialog's editable shape. */
+/** Convert saved patterns into the dialog's editable shape; a bare glob is a changesets pattern. */
 export function patternsToEntries(
-  patterns: ReleaseNotePatternConfig[] | undefined,
+  patterns: (ReleaseNotePatternConfig | string)[] | undefined,
 ): ReleaseNotePatternEntry[] {
   if (!patterns?.length) {
     return [];
   }
 
-  return patterns.map((p) => ({
-    glob: p.glob ?? "",
-    format: p.format ?? "changesets",
-    labels: (p.labels ?? []).map((l) => ({
-      name: l.name ?? "",
-      selector: l.selector ?? "",
-      tone: l.tone ?? "",
-    })),
-  }));
+  return patterns.map((entry) => {
+    const p: Partial<ReleaseNotePatternConfig> =
+      typeof entry === "string" ? { glob: entry } : entry;
+
+    return {
+      glob: p.glob ?? "",
+      format: p.format ?? "changesets",
+      labels: (p.labels ?? []).map((l) => ({
+        name: l.name ?? "",
+        selector: l.selector ?? "",
+        tone: l.tone ?? "",
+      })),
+    };
+  });
 }

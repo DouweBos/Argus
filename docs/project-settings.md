@@ -26,7 +26,9 @@ Two ways to change project settings:
    repo row context menu → _Project settings_. Sections cover Setup,
    Platforms, Workspace env, Run commands, Terminals, Browser, Branch
    protection, and Agent, plus a JSON-preview tab for the exact
-   payload that will be saved. Reads and writes `.argus.json` directly.
+   payload that will be saved. Reads and writes `.argus.json` directly;
+   saving changes only the fields the dialog edits, so other keys and
+   `.argus.local.json` overrides stay where they are.
 2. **Hand-edit `.argus.json`** at the repo root. The dialog re-reads
    on next open, so the two stay in sync.
 
