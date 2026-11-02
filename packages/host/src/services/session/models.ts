@@ -358,7 +358,7 @@ export interface ArgusConfig {
    * userToggle AND !projectDisabled. A project can mask tools off (e.g. a
    * server-only repo turning off device-* tools) but cannot force a tool
    * on if the user has it off. List the tool id strings; unknown ids are
-   * ignored. Set/parsed in `electron/services/session/setup.ts`.
+   * ignored. Parsed in `argusConfigNormalize.ts`.
    */
   tools?: { disabled?: string[] } | null;
   /**
