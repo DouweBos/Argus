@@ -23,8 +23,9 @@ import { resetDeviceHosts } from "./deviceHosts";
 import { receiveClaim, receiveDeviceState, resetDevices } from "./devices";
 import { resetFiles } from "./files";
 import { receiveFileSearch, resetFileSearch } from "./fileSearch";
-import { resetGit } from "./git";
 import { resetIntegrations } from "./integrations";
+import { resetIssues } from "./issues";
+import { resetGit } from "./git";
 import {
   receiveTerminalData,
   receiveTerminalExit,
@@ -165,6 +166,7 @@ export function resetHostStores(): void {
   resetSettings();
   resetDeviceHosts();
   resetIntegrations();
+  resetIssues();
 }
 
 let installed = false;

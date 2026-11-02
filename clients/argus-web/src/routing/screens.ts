@@ -13,7 +13,9 @@
 import {
   designPathname,
   type DesignTab,
+  type IssueScope,
   parseRoute,
+  routePattern,
   routeToPath,
   type UsageRange,
   type UsageTab,
@@ -91,6 +93,13 @@ export type Screen =
       sessionId: string | null;
       tab: DesignTab;
       compare: boolean;
+    }
+  /** Linear issues of a scope, or a search; `issueRef` opens one over the list. */
+  | {
+      name: "issues";
+      scope: IssueScope;
+      query: string | null;
+      issueRef: string | null;
     };
 
 export type Pane = "detail" | "master";
@@ -268,6 +277,13 @@ export function screenFromPath(path: string): Screen {
       };
     case "notifications":
       return { name: "notifications" };
+    case "issues":
+      return {
+        name: "issues",
+        scope: route.issueScope,
+        query: route.issueQuery,
+        issueRef: route.issueRef,
+      };
     case "session": {
       const sessionId = decode(route.sessionId ?? "");
       if (route.panel === "git") {
@@ -346,6 +362,13 @@ export function pathForScreen(screen: Screen): string {
       return "/devices";
     case "device":
       return `/devices/${screen.platform}/${encodeURIComponent(screen.deviceKey)}`;
+    case "issues":
+      return routeToPath({
+        view: "issues",
+        issueScope: screen.scope,
+        issueRef: screen.issueRef,
+        issueQuery: screen.query,
+      });
     case "session":
       return routeToPath({
         view: "session",
@@ -456,6 +479,8 @@ export function screenPattern(screen: Screen): string {
       return "/automations/quick/runs/:runId";
     case "describe":
       return "/automations/describe";
+    case "issues":
+      return routePattern(pathForScreen(screen).split("?")[0]);
   }
 }
 

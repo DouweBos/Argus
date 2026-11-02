@@ -67,6 +67,8 @@ export function parentOf(screen: Screen): Screen {
       return { name: "files", sessionId: screen.sessionId };
     case "fileDiff":
       return { name: "changes", sessionId: screen.sessionId, mode: screen.mode };
+    case "issues":
+      return screen.issueRef ? { ...screen, issueRef: null } : HOME;
     case "design":
       return screen.sessionId
         ? { name: "sessionHome", sessionId: screen.sessionId }

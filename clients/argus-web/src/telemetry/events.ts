@@ -116,6 +116,16 @@ export interface EventMap {
   web_design_opened: { source: DesignOpenSource | "link" };
   web_eas_session_start_prompted: { outcome: "cancelled" | "confirmed" };
   web_browser_viewed: { streaming: boolean };
+  web_issue_searched: { results_bucket: "0" | "1-5" | "6-20" | "21+" };
+  web_issue_filter_changed: {
+    action: "add" | "clear" | "flip" | "remove";
+    field: string;
+  };
+  web_issue_start_submitted: {
+    issue_count: number;
+    changed_project: boolean;
+    has_prompt: boolean;
+  };
   telemetry_enabled: undefined;
   telemetry_disabled: undefined;
 }

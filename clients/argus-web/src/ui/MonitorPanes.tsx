@@ -26,6 +26,7 @@ import {
   useNotificationsStore,
   useUnseenNotifications,
 } from "../stores/notifications";
+import { linearConnected, useIntegrationsStore } from "../stores/integrations";
 import { useProjectsStore } from "../stores/projects";
 import { AgentTranscript } from "./transcript/AgentTranscript";
 import { AutomationScreen } from "./automations/AutomationScreen";
@@ -39,6 +40,7 @@ import { useInboxBadge } from "./automations/useInbox";
 import { ChangesView } from "./ChangesView";
 import { ChatInput } from "./ChatInput";
 import { ConnectionBadge } from "./ConnectionBadge";
+import { LazyIssuesScreen } from "./issues/LazyIssuesScreen";
 import { LazyDesignScreen } from "./design/LazyDesignScreen";
 import { DevicesView } from "./DevicesView";
 import { McpServersDialog } from "./McpServersDialog";
@@ -173,6 +175,8 @@ function ScreenBody({
       return <NotificationsView />;
     case "design":
       return <LazyDesignScreen screen={screen} />;
+    case "issues":
+      return <LazyIssuesScreen screen={screen} />;
     case "files":
     case "file":
     case "search":
@@ -238,9 +242,37 @@ function RootActions() {
   const waiting = useInboxBadge();
   const warnings = useNotificationsStore((s) => s.entries.length);
   const unseen = useUnseenNotifications();
+  const showsIssues = useIntegrationsStore((s) =>
+    linearConnected(s.integrations),
+  );
+  const refreshIntegrations = useIntegrationsStore(
+    (s) => s.refreshIntegrations,
+  );
+
+  useEffect(() => {
+    if (connection === "ready") {
+      refreshIntegrations({ background: true }).catch(() => {});
+    }
+  }, [connection, refreshIntegrations]);
 
   return (
     <>
+      {showsIssues && (
+        <SidebarHeaderAction
+          onClick={() =>
+            appNavigate({
+              name: "issues",
+              scope: "assigned",
+              query: null,
+              issueRef: null,
+            })
+          }
+          title="Issues"
+          aria-label="Issues"
+        >
+          <Icons.LinearIcon size={14} />
+        </SidebarHeaderAction>
+      )}
       <SidebarHeaderAction
         className="aw-badged"
         onClick={() => appNavigate({ name: "inbox" })}
@@ -602,6 +634,8 @@ function PaneIcon({ screen }: { screen: Screen }) {
       return <Icons.WarningIcon size={14} />;
     case "design":
       return <Icons.FigmaIcon size={14} />;
+    case "issues":
+      return <Icons.LinearIcon size={14} />;
     case "chat":
       return <Icons.HistoryIcon size={14} />;
     case "inbox":

@@ -1,4 +1,3 @@
-import type { IssueFilter } from "@argus/client-core";
 import type { IssueScope } from "../lib/router";
 import type {
   LinearIssue,
@@ -6,6 +5,7 @@ import type {
   LinearIssueScope,
   LinearWorkflowState,
 } from "../lib/types";
+import type { IssueFilter } from "@argus/client-core";
 import { useEffect } from "react";
 import { create } from "zustand";
 import { useIpcEvent } from "../hooks/useIpcEvent";

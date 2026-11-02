@@ -274,3 +274,35 @@ describe("design screen", () => {
     expect(paneFor(screen)).toBe("detail");
   });
 });
+
+describe("issues screen", () => {
+  it("reads scopes, an open issue and a search", () => {
+    expect(screenFromPath("/issues")).toEqual({
+      name: "issues",
+      scope: "assigned",
+      query: null,
+      issueRef: null,
+    });
+    expect(screenFromPath("/issues/created/ENG-12")).toMatchObject({
+      scope: "created",
+      issueRef: "ENG-12",
+    });
+    expect(screenFromPath("/issues/search?q=login")).toMatchObject({
+      scope: "search",
+      query: "login",
+    });
+  });
+
+  it("round-trips and names patterns, never the issue", () => {
+    for (const path of [
+      "/issues",
+      "/issues/subscribed/ENG-3",
+      "/issues/search/ENG-4?q=sign%20in",
+    ]) {
+      const screen = screenFromPath(path);
+      expect(pathForScreen(screen)).toBe(path);
+      expect(screenPattern(screen)).not.toContain("ENG");
+    }
+    expect(paneFor(screenFromPath("/issues"))).toBe("detail");
+  });
+});

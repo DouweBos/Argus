@@ -73,6 +73,8 @@ export function useScreenTitle(screen: Screen): string {
       return "Notifications";
     case "design":
       return frameName ?? "Design";
+    case "issues":
+      return screen.issueRef ?? "Issues";
     case "devices":
       return "Devices";
     case "device":

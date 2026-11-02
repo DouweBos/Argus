@@ -9,11 +9,14 @@ import { create } from "zustand";
 import {
   baseBranchOptions,
   hostStartsWorktree,
+  type IssueStartDraft,
+  issueSessionParams,
   pickDefaultBaseBranch,
   spawnParams,
   type StartDraft,
   worktreeParams,
 } from "@argus/client-core";
+import type { LinearIssue } from "@argus/remote-protocol";
 import type {
   RemoteAgentCapabilities,
   RemoteAgentStatus,
@@ -216,6 +219,33 @@ export const useStartStore = create<StartState>()((set, get) => ({
     return { kind: "session", session };
   },
 }));
+
+/**
+ * One worktree per issue on Linear's branch name, each with an agent the
+ * computer starts on the issue once setup finishes. The host captures
+ * `session_started_from_issue`.
+ */
+export async function startFromIssues(
+  issues: Pick<LinearIssue, "branchName" | "identifier">[],
+  repoRoot: string,
+  draft: IssueStartDraft,
+): Promise<RemoteSession[]> {
+  const started: RemoteSession[] = [];
+  for (const issue of issues) {
+    const { session } = await request(
+      connected(),
+      "sessions.create",
+      issueSessionParams(issue, draft, repoRoot),
+    );
+    started.push(session);
+  }
+  useProjectsStore
+    .getState()
+    .loadSessions(repoRoot)
+    .catch(() => {});
+
+  return started;
+}
 
 export function resetStart(): void {
   useStartStore.setState(EMPTY);
