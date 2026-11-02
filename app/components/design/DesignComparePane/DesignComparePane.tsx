@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { formatDiffering } from "@argus/client-core";
 import { Badge, Button, Icons, ImageDiff, Spinner } from "@argus/peacock";
 import styles from "./DesignComparePane.module.css";
-import { formatDiffering, useDesignComparison } from "./useDesignComparison";
+import { useDesignComparison } from "./useDesignComparison";
 
 interface DesignComparePaneProps {
   deviceKey: string | null;

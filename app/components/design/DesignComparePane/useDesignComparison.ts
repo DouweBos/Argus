@@ -49,10 +49,3 @@ export function useDesignComparison(
     loading: !!deviceKey && current === null,
   };
 }
-
-/** `4.2%` — the share of pixels that differ noticeably. */
-export function formatDiffering(fraction: number): string {
-  const pct = fraction * 100;
-
-  return `${pct < 10 ? pct.toFixed(1) : Math.round(pct)}%`;
-}

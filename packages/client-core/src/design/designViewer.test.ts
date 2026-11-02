@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   designChangedSince,
+  designSubtitle,
   figmaFrameKey,
+  formatDiffering,
   isFigmaUrl,
   sessionRefFor,
 } from "./designViewer";
@@ -47,5 +49,26 @@ describe("designChangedSince", () => {
     expect(designChangedSince(ref, "101")).toBe(true);
     expect(designChangedSince({ ...ref, version: null }, "101")).toBe(false);
     expect(designChangedSince(null, "101")).toBe(false);
+  });
+});
+
+describe("formatDiffering", () => {
+  it("keeps one decimal below ten percent", () => {
+    expect(formatDiffering(0.042)).toBe("4.2%");
+    expect(formatDiffering(0)).toBe("0.0%");
+    expect(formatDiffering(0.256)).toBe("26%");
+  });
+});
+
+describe("designSubtitle", () => {
+  it("names the file and when it was edited", () => {
+    const subtitle = designSubtitle({
+      file: {
+        name: "App",
+        version: "1",
+        lastModified: Date.UTC(2026, 2, 4, 12),
+      },
+    } as Parameters<typeof designSubtitle>[0]);
+    expect(subtitle).toMatch(/^App · Edited .*2026$/);
   });
 });

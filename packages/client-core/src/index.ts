@@ -5,6 +5,7 @@ export * from "./automations/format";
 export * from "./automations/reportPreview";
 export * from "./baseBranch";
 export * from "./chatHistory";
+export * from "./design/designViewer";
 export * from "./errors";
 export * from "./files/codeLanguage";
 export * from "./files/fileSearch";
