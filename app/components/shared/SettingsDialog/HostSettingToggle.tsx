@@ -4,10 +4,7 @@ import { useEffect, useState } from "react";
 import { SettingsScreenField, Toggle } from "@argus/peacock";
 import { getAppSettings, setAppSettings } from "../../../lib/ipc";
 
-type DefaultOnSetting =
-  | "conductor_guide"
-  | "follow_up_suggestions"
-  | "save_chat_history";
+type DefaultOnSetting = "follow_up_suggestions" | "save_chat_history";
 
 interface HostSettingToggleProps {
   caption: string;

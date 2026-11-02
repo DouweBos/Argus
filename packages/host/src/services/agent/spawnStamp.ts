@@ -3,21 +3,23 @@ import { createHash } from "node:crypto";
 import { getMcpPort } from "../mcp/server";
 import { buildMergedMcpServers } from "../mcp/userConfig";
 import { loadArgusConfig } from "../session/argusConfig";
-import { conductorGuideEnabled } from "./runtimePrompt";
+import { deviceControlEnabled } from "./runtimePrompt";
 
 /**
  * A hash of the config a spawn reads besides runner and account — the
- * project's browser URL, the conductor-guide setting, and
- * every MCP server — so a spare spawned before any of it changed is never
+ * project's browser URL, whether device control is on (it gates the
+ * conductor guide), and every MCP server — so a spare spawned before any of it changed is never
  * handed out.
  */
 export async function spawnConfigStamp(
   session: Session & { path: string },
 ): Promise<string> {
   let config: Record<string, unknown> = {};
+  let projectTools: { disabled?: string[] } | null = null;
   try {
-    const { browser_url } = loadArgusConfig(session.repo_root);
+    const { browser_url, tools } = loadArgusConfig(session.repo_root);
     config = { browser_url };
+    projectTools = tools ?? null;
   } catch {
     // Missing or invalid — the spawn falls back the same way.
   }
@@ -29,7 +31,7 @@ export async function spawnConfigStamp(
         config,
         mcp,
         mcpPort: getMcpPort(),
-        conductorGuide: conductorGuideEnabled(),
+        deviceControl: deviceControlEnabled(projectTools),
       }),
     )
     .digest("hex");

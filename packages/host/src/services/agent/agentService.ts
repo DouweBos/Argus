@@ -92,7 +92,7 @@ import { resultSubtype } from "./models";
 import { adoptPinOnResume, isPinned, refreshPin } from "./pins/pins";
 import {
   buildRuntimeSection,
-  conductorGuideEnabled,
+  deviceControlEnabled,
   resolveRuntimePlatforms,
 } from "./runtimePrompt";
 import { clearSpares, hasSpare, killSpare, takeSpare } from "./spares";
@@ -625,14 +625,17 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   // Combine prompts: kind-specific → project context → runtime →
   // caller-provided.
   let browserUrl: string | null = null;
+  let projectTools: { disabled?: string[] } | null = null;
   try {
-    browserUrl = loadArgusConfig(argusSession.repo_root).browser_url ?? null;
+    const config = loadArgusConfig(argusSession.repo_root);
+    browserUrl = config.browser_url ?? null;
+    projectTools = config.tools ?? null;
   } catch {
     // Config missing or invalid — non-fatal.
   }
   const iosReservation = appState.simulatorReservations.get(agentId) ?? null;
   const browserSession = appState.browserSessions.get(sessionId) ?? null;
-  const runtimeSection = conductorGuideEnabled()
+  const runtimeSection = deviceControlEnabled(projectTools)
     ? buildRuntimeSection({
         platforms: resolveRuntimePlatforms({
           override: platformsOverride,

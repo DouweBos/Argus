@@ -10,8 +10,8 @@ import type {
   SimulatorReservation,
 } from "../../state";
 import type { RuntimePlatform } from "../session/models";
-import { loadAppSettings } from "../appSettings/store";
 import { detectPlatforms } from "../onboarding/argusJson";
+import { toolEnabled } from "../tools/state";
 
 export interface RuntimeContext {
   platforms: ReadonlySet<RuntimePlatform>;
@@ -32,9 +32,14 @@ export const CONDUCTOR_GUIDE = [
   "- The devices below are the user's live views. Don't erase, delete or shut them down, don't use `--clear-state` / `--clear-keychain` on them unless asked, and never touch another agent's device. For destructive experiments, boot your own with `conductor start-device` and stop it when you're done.",
 ].join("\n");
 
-/** Whether app settings let agents get the conductor guide. Defaults to on. */
-export function conductorGuideEnabled(): boolean {
-  return loadAppSettings().conductor_guide !== false;
+/** The guide ships unless device control is off in Tools, app-wide or for this project. */
+export function deviceControlEnabled(
+  projectTools: { disabled?: string[] } | null | undefined,
+): boolean {
+  return (
+    toolEnabled("device-control") &&
+    !(projectTools?.disabled ?? []).includes("device-control")
+  );
 }
 
 /**

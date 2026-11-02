@@ -5,15 +5,15 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const settings = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
-vi.mock("../appSettings/store", () => ({
-  loadAppSettings: () => settings.value,
+const tools = vi.hoisted(() => ({ deviceControl: true }));
+vi.mock("../tools/state", () => ({
+  toolEnabled: () => tools.deviceControl,
 }));
 
 const {
   CONDUCTOR_GUIDE,
   buildRuntimeSection,
-  conductorGuideEnabled,
+  deviceControlEnabled,
   resolveRuntimePlatforms,
 } = await import("./runtimePrompt");
 
@@ -43,7 +43,7 @@ function repoWith(files: Record<string, string>): string {
 }
 
 function cleanUp() {
-  settings.value = {};
+  tools.deviceControl = true;
   for (const dir of tmpDirs.splice(0)) {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -157,12 +157,14 @@ describe("resolveRuntimePlatforms", () => {
   });
 });
 
-describe("conductorGuideEnabled", () => {
+describe("deviceControlEnabled", () => {
   afterEach(cleanUp);
 
-  it("defaults on and follows the app setting", () => {
-    expect(conductorGuideEnabled()).toBe(true);
-    settings.value = { conductor_guide: false };
-    expect(conductorGuideEnabled()).toBe(false);
+  it("is on unless the tool is off app-wide or for the project", () => {
+    expect(deviceControlEnabled(null)).toBe(true);
+    expect(deviceControlEnabled({ disabled: ["device-recording"] })).toBe(true);
+    expect(deviceControlEnabled({ disabled: ["device-control"] })).toBe(false);
+    tools.deviceControl = false;
+    expect(deviceControlEnabled(null)).toBe(false);
   });
 });

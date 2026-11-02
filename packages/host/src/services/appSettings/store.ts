@@ -63,11 +63,6 @@ export interface AppSettings {
    */
   follow_up_suggestions?: boolean;
   /**
-   * Teach agents, and every subagent they spawn, to drive devices with
-   * `conductor` in projects with a runtime. Defaults to true.
-   */
-  conductor_guide?: boolean;
-  /**
    * How many warm agents the host keeps for the sessions clients show, so a
    * start there skips the CLI's spawn. Each is a live `claude` plus its MCP
    * servers. 0 turns warming off; defaults to 1.

@@ -490,13 +490,6 @@ function PermissionsSection() {
         >
           Suggest replies
         </HostSettingToggle>
-        <HostSettingToggle
-          setting="conductor_guide"
-          label="Device guide"
-          caption="In projects with simulators, emulators or a browser, tell agents and every subagent they spawn to drive devices with conductor. Applies to agents started after the change."
-        >
-          Teach agents to use conductor
-        </HostSettingToggle>
         <WarmAgentsSetting />
         <SettingsScreenField
           label="Start new agents in"
