@@ -1,16 +1,28 @@
-import type { DesignTab } from "../../../lib/routerDesign";
-import type { FigmaFrameDetails } from "../../../lib/types";
-import { DesignLayerList, SegmentedControl } from "@argus/peacock";
-import { figmaFrameKey, updateDesignViewer } from "../../../lib/designViewer";
+import type { FigmaFrameDetails } from "@argus/remote-protocol";
+import { DesignLayerList } from "../DesignLayerList/DesignLayerList";
+import { SegmentedControl } from "../SegmentedControl/SegmentedControl";
 import styles from "./DesignViewer.module.css";
 
-interface DesignSidePanelProps {
+/** Side-panel tab of the design viewer. */
+export type DesignViewerTab = "comments" | "layers" | "pages";
+
+export interface DesignSidePanelProps {
   details: FigmaFrameDetails;
-  tab: DesignTab;
+  /** True for the page-list frame that is the one on screen. */
+  isCurrentFrame: (url: string) => boolean;
+  onOpenFrame: (url: string) => void;
+  onTabChange: (tab: DesignViewerTab) => void;
+  tab: DesignViewerTab;
 }
 
 /** Layers, designer comments, and the file's other frames. */
-export function DesignSidePanel({ details, tab }: DesignSidePanelProps) {
+export function DesignSidePanel({
+  details,
+  isCurrentFrame,
+  onOpenFrame,
+  onTabChange,
+  tab,
+}: DesignSidePanelProps) {
   const tabs = [
     { value: "layers" as const, label: `Layers ${details.layers.length}` },
     {
@@ -22,12 +34,12 @@ export function DesignSidePanel({ details, tab }: DesignSidePanelProps) {
 
   return (
     <aside className={styles.side}>
-      <SegmentedControl<DesignTab>
+      <SegmentedControl<DesignViewerTab>
         aria-label="Frame details"
         className={styles.tabs}
         options={tabs}
         value={tab}
-        onChange={(next) => updateDesignViewer({ tab: next })}
+        onChange={onTabChange}
       />
       <div className={styles.sideBody}>
         {tab === "layers" &&
@@ -37,7 +49,13 @@ export function DesignSidePanel({ details, tab }: DesignSidePanelProps) {
             <p className={styles.muted}>No layers.</p>
           ))}
         {tab === "comments" && <Comments details={details} />}
-        {tab === "pages" && <Pages details={details} />}
+        {tab === "pages" && (
+          <Pages
+            details={details}
+            isCurrentFrame={isCurrentFrame}
+            onOpenFrame={onOpenFrame}
+          />
+        )}
       </div>
     </aside>
   );
@@ -60,9 +78,11 @@ function Comments({ details }: { details: FigmaFrameDetails }) {
   );
 }
 
-function Pages({ details }: { details: FigmaFrameDetails }) {
-  const current = `${details.ref.fileKey}:${details.ref.nodeId ?? ""}`;
-
+function Pages({
+  details,
+  isCurrentFrame,
+  onOpenFrame,
+}: Pick<DesignSidePanelProps, "details" | "isCurrentFrame" | "onOpenFrame">) {
   return (
     <>
       {details.pages.map((page) => (
@@ -72,7 +92,7 @@ function Pages({ details }: { details: FigmaFrameDetails }) {
             <p className={styles.muted}>No frames.</p>
           )}
           {page.frames.map((frame) => {
-            const active = figmaFrameKey(frame.url) === current;
+            const active = isCurrentFrame(frame.url);
 
             return (
               <button
@@ -80,7 +100,7 @@ function Pages({ details }: { details: FigmaFrameDetails }) {
                 type="button"
                 className={`${styles.frameLink} ${active ? styles.frameLinkActive : ""}`}
                 aria-current={active ? "page" : undefined}
-                onClick={() => updateDesignViewer({ url: frame.url })}
+                onClick={() => onOpenFrame(frame.url)}
               >
                 {frame.name}
               </button>

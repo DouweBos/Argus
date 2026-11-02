@@ -1,34 +1,23 @@
 import type { DesignTab } from "../../../lib/routerDesign";
-import type { FigmaFrameDetails } from "../../../lib/types";
+import { currentFrameKey, designSubtitle } from "@argus/client-core";
 import {
-  Banner,
-  Button,
+  DesignViewer as Viewer,
   EmptyState,
   GridScreen,
   Icons,
-  SegmentedControl,
-  Spinner,
-  ZoomPanImage,
 } from "@argus/peacock";
 import {
   designChangedSince,
+  figmaFrameKey,
   sessionRefFor,
   updateDesignViewer,
 } from "../../../lib/designViewer";
 import { openExternalUrl } from "../../../lib/ipc";
-import { formatIssueDate } from "@argus/client-core";
 import { useCurrentRoute } from "../../../lib/routeHooks";
 import { useSessions } from "../../../stores/sessionStore";
 import { useSessionDesignDevice } from "../../../stores/simulatorStore";
 import { DesignComparePane } from "../DesignComparePane";
-import { DesignSidePanel } from "./DesignSidePanel";
-import styles from "./DesignViewer.module.css";
 import { useFrameDetails } from "./useFrameDetails";
-
-const MODES = [
-  { value: "frame" as const, label: "Frame" },
-  { value: "compare" as const, label: "Compare with simulator" },
-];
 
 /** A Figma frame in full — zoomable, with its layers, comments and file — and, from a session, against its device. */
 export function DesignViewerScreen() {
@@ -71,78 +60,37 @@ function DesignViewer({ compare, sessionId, tab, url }: DesignViewerProps) {
   const captured = details
     ? sessionRefFor(session?.design_refs, details.ref)
     : null;
-  const changed = details
-    ? designChangedSince(captured, details.file.version)
-    : false;
+  const current = details ? currentFrameKey(details) : null;
 
   return (
-    <GridScreen className={styles.screen}>
-      <GridScreen.Header
-        title={details?.frame.name ?? "Design"}
-        subtitle={details ? subtitle(details) : "Figma"}
-        actions={
-          <div className={styles.actions}>
-            {session && (
-              <SegmentedControl
-                aria-label="View"
-                options={MODES}
-                value={compare ? "compare" : "frame"}
-                onChange={(mode) =>
-                  updateDesignViewer({ compare: mode === "compare" })
-                }
-              />
-            )}
-            <Button
-              variant="secondary"
-              size="sm"
-              leading={<Icons.ArrowUpRightIcon size={11} />}
-              onClick={() => openExternalUrl(url).catch(() => {})}
-            >
-              Open in Figma
-            </Button>
-          </div>
-        }
-      />
-      {changed && (
-        <Banner tone="warning" leading={<Icons.WarningIcon size={12} />}>
-          Design changed since this session started.
-        </Banner>
-      )}
-      {!details && error && (
-        <EmptyState
-          icon={<Icons.WarningIcon size={20} />}
-          title="Couldn't load the design"
-          body={error}
-        />
-      )}
-      {!details && !error && (
-        <EmptyState icon={<Spinner size="md" />} title="Loading design" />
-      )}
-      {details && (
-        <div className={styles.body}>
-          <div className={styles.stage}>
-            {compare && session ? (
-              <DesignComparePane
-                deviceKey={device.deviceKey}
-                platform={device.platform}
-                url={url}
-              />
-            ) : (
-              <ZoomPanImage
-                alt={details.frame.name}
-                src={`data:image/png;base64,${details.frame.image}`}
-                width={details.frame.width}
-                height={details.frame.height}
-              />
-            )}
-          </div>
-          <DesignSidePanel details={details} tab={tab} />
-        </div>
-      )}
-    </GridScreen>
+    <Viewer
+      changed={
+        details ? designChangedSince(captured, details.file.version) : false
+      }
+      compare={
+        session && (
+          <DesignComparePane
+            deviceKey={device.deviceKey}
+            platform={device.platform}
+            url={url}
+          />
+        )
+      }
+      compareLabel="Compare with simulator"
+      details={details}
+      error={error}
+      isCurrentFrame={(frameUrl) => figmaFrameKey(frameUrl) === current}
+      mode={compare && session ? "compare" : "frame"}
+      onModeChange={
+        session
+          ? (mode) => updateDesignViewer({ compare: mode === "compare" })
+          : undefined
+      }
+      onOpenFrame={(frameUrl) => updateDesignViewer({ url: frameUrl })}
+      onOpenInFigma={() => openExternalUrl(url).catch(() => {})}
+      onTabChange={(next) => updateDesignViewer({ tab: next })}
+      subtitle={details ? designSubtitle(details) : undefined}
+      tab={tab}
+    />
   );
-}
-
-function subtitle(details: FigmaFrameDetails): string {
-  return `${details.file.name} · Edited ${formatIssueDate(details.file.lastModified)}`;
 }
