@@ -40,7 +40,6 @@ struct ArgusConfigDraftTests {
         "protected_branches": ["main"],
         "default_base_branch": "staging",
         "single_runtime": true,
-        "min_argus_version": "0.10.0",
         "auto_fetch_minutes": 15,
         "release_note_patterns": [{ "glob": "notes/*.txt", "format": "regex",
                                     "labels": [{ "name": "type", "selector": "^T:(.+)$", "tone": "accent" }] }],
@@ -65,7 +64,6 @@ struct ArgusConfigDraftTests {
     draft.workspaceEnv = [.init(name: " PORT ", baseValue: "nope")]
     draft.browserPresets = [.init(key: "p")]
     draft.run = [.init(title: "Dev", command: ""), .init(title: " Up ", command: " go ")]
-    draft.minArgusVersion = "v1.2.3"
     draft.deeplinks = [.init(label: "Empty", children: []), .init(label: "", url: "x://")]
     draft.saveChatHistory = true
     let out = draft.applied(to: [:])
@@ -74,7 +72,6 @@ struct ArgusConfigDraftTests {
     #expect(out["browser_presets"]?.arrayValue?.first?["height"] == .number(667))
     #expect(out["run"]?.arrayValue?.count == 1)
     #expect(out["run"]?.arrayValue?.first?["title"] == .string("Up"))
-    #expect(out["min_argus_version"] == .string("1.2.3"))
     #expect(out["simulator_deeplinks"] == nil)
     #expect(out["save_chat_history"] == nil)
     #expect(out["setup"] == .object([:]))

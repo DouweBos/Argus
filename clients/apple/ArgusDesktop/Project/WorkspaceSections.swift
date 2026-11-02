@@ -16,11 +16,6 @@ struct SetupSection: View {
       emptyLabel: "No symlink patterns")
     StringListEditor(
       label: "Commands", items: $draft.commands, placeholder: "npm install", emptyLabel: "No setup commands")
-    Section {
-      TextField("Minimum Argus version", text: $draft.minArgusVersion, prompt: Text("0.10.0"))
-    } footer: {
-      Text("Optional semver string. The project home screen warns teammates running an older Argus build.")
-    }
   }
 }
 

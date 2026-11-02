@@ -9,12 +9,14 @@ extension ArgusConfigDraft {
     "setup", "terminals", "run", "workspace_env", "related_projects",
     "browser_url", "browser_presets", "simulator_deeplinks", "save_chat_history",
     "auto_continue_on_limit", "protected_branches", "default_base_branch",
-    "single_runtime", "min_argus_version", "auto_fetch_minutes",
+    "single_runtime", "auto_fetch_minutes",
     "release_note_patterns", "llm", "tools", "automations",
   ]
 
   /// Settings Argus no longer reads; saving drops them, as the desktop dialog does.
-  static let retiredKeys: Set<String> = ["platforms", "agent_prompt", "mcp_servers", "pull_request_template"]
+  static let retiredKeys: Set<String> = [
+    "platforms", "agent_prompt", "mcp_servers", "pull_request_template", "min_argus_version",
+  ]
 
   public init(raw: [String: JSONValue]) {
     self.init()
@@ -22,7 +24,6 @@ extension ArgusConfigDraft {
     (copy, copyExcludes) = Self.setupEntries(setup["copy"])
     (symlink, symlinkExcludes) = Self.setupEntries(setup["symlink"])
     commands = Self.strings(setup["commands"]).map { ListItem($0) }
-    minArgusVersion = raw["min_argus_version"]?.stringValue ?? ""
 
     workspaceEnv = Self.objects(raw["workspace_env"]).map {
       EnvVar(
@@ -109,9 +110,6 @@ extension ArgusConfigDraft {
     set("protected_branches", Self.nonEmpty(protectedBranches.map(\.value).filter { !$0.isEmpty }.map(JSONValue.string)))
     set("default_base_branch", Self.trimmed(defaultBaseBranch))
     set("single_runtime", singleRuntime ? .bool(true) : nil)
-    var version = minArgusVersion.trimmingCharacters(in: .whitespaces)
-    if version.first == "v" || version.first == "V" { version.removeFirst() }
-    set("min_argus_version", version.isEmpty ? nil : .string(version))
     set("auto_fetch_minutes", autoFetchMinutes > 0 ? .number(Double(autoFetchMinutes)) : nil)
     set("release_note_patterns", Self.nonEmpty(releaseNotes.compactMap(Self.patternValue)))
 

@@ -1736,7 +1736,6 @@ export function SetupConfigDialog({
   const [singleRuntime, setSingleRuntime] = useState(false);
   const [autoContinueOnLimit, setAutoContinueOnLimit] = useState(false);
   const [defaultBaseBranch, setDefaultBaseBranch] = useState("");
-  const [minArgusVersion, setMinArgusVersion] = useState("");
   const [llmRunner, setLlmRunner] = useState("");
   const [llmModel, setLlmModel] = useState("");
   const [disabledTools, setDisabledTools] = useState<string[]>([]);
@@ -1851,9 +1850,6 @@ export function SetupConfigDialog({
         }
         if (config.default_base_branch) {
           setDefaultBaseBranch(config.default_base_branch);
-        }
-        if (config.min_argus_version) {
-          setMinArgusVersion(config.min_argus_version);
         }
         if (config.llm) {
           if (config.llm.runner) {
@@ -2031,10 +2027,6 @@ export function SetupConfigDialog({
     if (defaultBase) {
       config.default_base_branch = defaultBase;
     }
-    const minVersion = minArgusVersion.trim().replace(/^v/i, "");
-    if (minVersion) {
-      config.min_argus_version = minVersion;
-    }
     const releasePatterns = entriesToPatternConfig(releaseNotesList.items);
     if (releasePatterns.length > 0) {
       config.release_note_patterns = releasePatterns;
@@ -2102,7 +2094,6 @@ export function SetupConfigDialog({
       singleRuntime,
       autoContinueOnLimit,
       defaultBaseBranch,
-      minArgusVersion,
       releaseNotesList.items,
       deeplinkList.items,
       relatedProjectList.items,
@@ -2171,25 +2162,6 @@ export function SetupConfigDialog({
                   list={commandList}
                   placeholder="npm install"
                 />
-                <div className={styles.field}>
-                  <label
-                    className={sectionStyles.fieldLabel}
-                    htmlFor="setup-min-argus-version"
-                  >
-                    Minimum Argus version
-                  </label>
-                  <Input
-                    id="setup-min-argus-version"
-                    placeholder="0.10.0"
-                    type="text"
-                    value={minArgusVersion}
-                    onChange={(e) => setMinArgusVersion(e.target.value)}
-                  />
-                  <p className={styles.helpText}>
-                    Optional semver string. The project home screen warns
-                    teammates running an older Argus build.
-                  </p>
-                </div>
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>
           ),

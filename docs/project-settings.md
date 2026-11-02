@@ -35,7 +35,6 @@ Two ways to change project settings:
 | Field                                         | Editable in dialog?      |
 | --------------------------------------------- | ------------------------ |
 | `setup.copy` / `symlink` / `commands`         | yes (Setup)              |
-| `min_argus_version`                           | yes (Setup)              |
 | `terminals`                                   | yes (Terminals)          |
 | `run`                                         | yes (Run commands)       |
 | `workspace_env`                               | yes (Workspace env)      |
@@ -69,7 +68,6 @@ Two ways to change project settings:
   "protected_branches": ["main", "master"],
   "default_base_branch": "staging",
   "single_runtime":     false,
-  "min_argus_version":  "0.10.0",
   "auto_fetch_minutes": 15,
   "llm":                { "runner": "claude-code", "model": "claude-opus-4-7" },
   "automations":        { "autonomy_ceiling": "draft", "disabled": [...], "path_denylist": [...] }
@@ -303,20 +301,6 @@ The branch must exist locally to be picked. When unset (or missing
 locally), Argus walks a built-in fallback chain — `staging` → `develop`
 → `dev` → `main` → `master` — and finally falls back to the first local
 branch.
-
----
-
-## `min_argus_version` — warn teammates on older Argus builds
-
-Semver string (e.g. `"0.10.0"`). When set, the project home screen
-shows a warning banner if the running Argus version is lower. Useful
-when your `.argus.json` relies on a config key, MCP server, or run
-command behaviour added in a specific Argus release. Pre-release and
-build suffixes are not supported.
-
-```jsonc
-"min_argus_version": "0.10.0"
-```
 
 ---
 

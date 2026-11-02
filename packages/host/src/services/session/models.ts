@@ -285,12 +285,6 @@ export interface LlmConfig {
 
 /** Parsed representation of `.argus.json` found at the repo root. */
 export interface ArgusConfig {
-  /**
-   * Minimum Argus app version required to work with this project. Format is
-   * a semver string (e.g. "0.10.0"). When set, the project home screen
-   * surfaces a warning banner if the user's running app version is lower.
-   */
-  min_argus_version?: string | null;
   /** Setup instructions run once when a new session is created. */
   setup: SetupConfig;
   /** Terminals to auto-open when a session is selected. */
@@ -458,7 +452,6 @@ export function defaultArgusConfig(): ArgusConfig {
     default_base_branch: null,
     single_runtime: false,
     auto_continue_on_limit: false,
-    min_argus_version: null,
     release_note_patterns: [],
     simulator_deeplinks: [],
     auto_fetch_minutes: null,

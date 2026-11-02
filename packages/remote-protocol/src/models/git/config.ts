@@ -126,8 +126,6 @@ export type ProjectAutomationConfig = z.infer<typeof ProjectAutomationConfig>;
 
 /** A project's `.argus.json`, normalized. */
 export const ArgusConfig = z.object({
-  /** Minimum Argus app version required to work with this project (semver). */
-  min_argus_version: z.string().nullish(),
   /** Setup instructions run once when a new session is created. */
   setup: ArgusSetupConfig,
   /** Terminals to auto-open when a session is selected. */

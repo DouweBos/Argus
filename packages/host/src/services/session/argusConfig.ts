@@ -13,7 +13,6 @@ import {
   normalizeBrowserPresets,
   normalizeDefaultBaseBranch,
   normalizeLlmConfig,
-  normalizeMinArgusVersion,
   normalizeProjectAutomations,
   normalizeProtectedBranches,
   normalizeRelatedProjects,
@@ -117,10 +116,6 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
       parsed.auto_continue_on_limit != null
         ? Boolean(parsed.auto_continue_on_limit)
         : null,
-    min_argus_version: normalizeMinArgusVersion(
-      parsed.min_argus_version,
-      repoRoot,
-    ),
     release_note_patterns: normalizeReleaseNotePatterns(
       parsed.release_note_patterns,
       repoRoot,
@@ -198,8 +193,6 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
     single_runtime: local.single_runtime ?? base.single_runtime,
     auto_continue_on_limit:
       local.auto_continue_on_limit ?? base.auto_continue_on_limit,
-    min_argus_version:
-      local.min_argus_version ?? base.min_argus_version ?? null,
     release_note_patterns: dedupReleaseNotePatterns(
       base.release_note_patterns,
       local.release_note_patterns,

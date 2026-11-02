@@ -355,29 +355,6 @@ export function normalizeReleaseNoteTone(
 }
 
 /**
- * Normalise `min_argus_version` — must be a semver string of `MAJOR.MINOR.PATCH`
- * digits (with an optional leading `v`). Pre-release / build suffixes are
- * rejected to keep the comparator simple. Returns null when absent.
- */
-export function normalizeMinArgusVersion(
-  raw: unknown,
-  repoRoot: string,
-): string | null {
-  if (raw == null || raw === "") {
-    return null;
-  }
-  if (typeof raw !== "string") {
-    throw `min_argus_version in ${repoRoot}/.argus.json must be a semver string like "0.10.0".`;
-  }
-  const trimmed = raw.trim().replace(/^v/i, "");
-  if (!/^\d+\.\d+\.\d+$/.test(trimmed)) {
-    throw `min_argus_version in ${repoRoot}/.argus.json must be a semver string like "0.10.0" (got "${raw}").`;
-  }
-
-  return trimmed;
-}
-
-/**
  * Normalise `auto_fetch_minutes` — must be a positive integer when present.
  * Zero, negative values, and non-numbers are treated as "disabled" (null).
  */

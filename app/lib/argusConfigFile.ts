@@ -21,7 +21,6 @@ export const DIALOG_OWNED_KEYS: ReadonlySet<string> = new Set([
   "protected_branches",
   "default_base_branch",
   "single_runtime",
-  "min_argus_version",
   "release_note_patterns",
   "llm",
   "tools",
@@ -42,6 +41,7 @@ export const RETIRED_KEYS: ReadonlySet<string> = new Set([
   "agent_prompt",
   "mcp_servers",
   "pull_request_template",
+  "min_argus_version",
 ]);
 
 function isObject(value: unknown): value is RawConfig {

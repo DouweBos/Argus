@@ -1761,7 +1761,6 @@ extension ArgusProtocol {
   }
 
   public struct ArgusConfig: Codable, Sendable {
-    public var minArgusVersion: String?
     public var setup: ArgusSetupConfig
     public var terminals: [ArgusTerminalConfig]
     public var workspaceEnv: [WorkspaceEnvConfig]
@@ -1782,7 +1781,6 @@ extension ArgusProtocol {
     public var automations: ProjectAutomationConfig?
 
     enum CodingKeys: String, CodingKey {
-      case minArgusVersion = "min_argus_version"
       case setup = "setup"
       case terminals = "terminals"
       case workspaceEnv = "workspace_env"
@@ -1803,8 +1801,7 @@ extension ArgusProtocol {
       case automations = "automations"
     }
 
-    public init(minArgusVersion: String? = nil, setup: ArgusSetupConfig, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], saveChatHistory: Bool? = nil, protectedBranches: [String], defaultBaseBranch: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
-      self.minArgusVersion = minArgusVersion
+    public init(setup: ArgusSetupConfig, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], saveChatHistory: Bool? = nil, protectedBranches: [String], defaultBaseBranch: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
       self.setup = setup
       self.terminals = terminals
       self.workspaceEnv = workspaceEnv
@@ -1827,7 +1824,6 @@ extension ArgusProtocol {
 
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encodeIfPresent(minArgusVersion, forKey: .minArgusVersion)
       try c.encode(setup, forKey: .setup)
       try c.encode(terminals, forKey: .terminals)
       try c.encode(workspaceEnv, forKey: .workspaceEnv)

@@ -12,7 +12,6 @@ public struct ArgusConfigDraft: Equatable, Sendable {
   public var copy: [ListItem] = []
   public var symlink: [ListItem] = []
   public var commands: [ListItem] = []
-  public var minArgusVersion = ""
   /// `{ path, exclude }` entries: the form edits the path, the excludes ride along.
   var copyExcludes: [String: JSONValue] = [:]
   var symlinkExcludes: [String: JSONValue] = [:]
