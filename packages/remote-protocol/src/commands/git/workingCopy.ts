@@ -5,7 +5,6 @@ import { SessionFilePath, SessionId } from "./shared";
 
 const DiffView = SessionId.extend({
   ignoreWhitespace: z.boolean().optional(),
-  wordDiff: z.boolean().optional(),
 });
 const SessionPatch = SessionId.extend({ patch: z.string() });
 

@@ -2682,25 +2682,21 @@ extension ArgusProtocol {
     public struct GetSessionBranchDiffParams: Codable, Sendable {
       public var id: String
       public var ignoreWhitespace: Bool?
-      public var wordDiff: Bool?
 
       enum CodingKeys: String, CodingKey {
         case id = "id"
         case ignoreWhitespace = "ignoreWhitespace"
-        case wordDiff = "wordDiff"
       }
 
-      public init(id: String, ignoreWhitespace: Bool? = nil, wordDiff: Bool? = nil) {
+      public init(id: String, ignoreWhitespace: Bool? = nil) {
         self.id = id
         self.ignoreWhitespace = ignoreWhitespace
-        self.wordDiff = wordDiff
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(id, forKey: .id)
         try c.encodeIfPresent(ignoreWhitespace, forKey: .ignoreWhitespace)
-        try c.encodeIfPresent(wordDiff, forKey: .wordDiff)
       }
     }
 
@@ -2826,25 +2822,21 @@ extension ArgusProtocol {
     public struct GetSessionStagedDiffParams: Codable, Sendable {
       public var id: String
       public var ignoreWhitespace: Bool?
-      public var wordDiff: Bool?
 
       enum CodingKeys: String, CodingKey {
         case id = "id"
         case ignoreWhitespace = "ignoreWhitespace"
-        case wordDiff = "wordDiff"
       }
 
-      public init(id: String, ignoreWhitespace: Bool? = nil, wordDiff: Bool? = nil) {
+      public init(id: String, ignoreWhitespace: Bool? = nil) {
         self.id = id
         self.ignoreWhitespace = ignoreWhitespace
-        self.wordDiff = wordDiff
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(id, forKey: .id)
         try c.encodeIfPresent(ignoreWhitespace, forKey: .ignoreWhitespace)
-        try c.encodeIfPresent(wordDiff, forKey: .wordDiff)
       }
     }
 

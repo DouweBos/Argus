@@ -40,7 +40,6 @@ import {
   setDefaultPullStrategy,
   setDiffView,
   setDiffWhitespace,
-  setDiffWordDiff,
   setTelemetryModeSetting,
   setWorkingCopyView,
   updateCustomEditor,
@@ -53,7 +52,6 @@ import {
   useDefaultPullStrategy,
   useDiffView,
   useDiffWhitespace,
-  useDiffWordDiff,
   useSettingsDialogOpen,
   useSettingsDialogRequest,
   useSettingsInitialSection,
@@ -924,7 +922,6 @@ function GitSection() {
   const workingCopyView = useWorkingCopyView();
   const diffView = useDiffView();
   const diffWhitespace = useDiffWhitespace();
-  const diffWordDiff = useDiffWordDiff();
   const conventionalCommits = useConventionalCommitsPicker();
   const pullStrategy = useDefaultPullStrategy();
 
@@ -978,15 +975,6 @@ function GitSection() {
         >
           <Toggle checked={diffWhitespace} onChange={setDiffWhitespace}>
             {diffWhitespace ? "On" : "Off"}
-          </Toggle>
-        </SettingsScreenField>
-
-        <SettingsScreenField
-          label="Highlight word-level changes"
-          caption="Inline word-diff inside changed lines."
-        >
-          <Toggle checked={diffWordDiff} onChange={setDiffWordDiff}>
-            {diffWordDiff ? "On" : "Off"}
           </Toggle>
         </SettingsScreenField>
 

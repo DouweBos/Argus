@@ -97,7 +97,6 @@ interface SettingsState {
   defaultPullStrategy: "ff-only" | "merge" | "rebase";
   diffView: DiffViewMode;
   diffWhitespace: boolean;
-  diffWordDiff: boolean;
   /** Phase 3 K4 — collapse the git source sidebar (Working Copy / Branch / …). */
   gitSidebarCollapsed: boolean;
   /**
@@ -321,7 +320,6 @@ function load(): SettingsState {
         workingCopyView: parsed.workingCopyView === "tree" ? "tree" : "flat",
         diffView: parsed.diffView === "split" ? "split" : "unified",
         diffWhitespace: parsed.diffWhitespace === true,
-        diffWordDiff: parsed.diffWordDiff === true,
         conventionalCommitsPicker: parsed.conventionalCommitsPicker === true,
         gitSidebarCollapsed: parsed.gitSidebarCollapsed === true,
         gitSidebarWidth:
@@ -367,7 +365,6 @@ function load(): SettingsState {
     workingCopyView: "flat",
     diffView: "unified",
     diffWhitespace: false,
-    diffWordDiff: false,
     conventionalCommitsPicker: false,
     gitSidebarCollapsed: false,
     gitSidebarWidth: 0.18,
@@ -520,13 +517,6 @@ export const useDiffWhitespace = (): boolean => store((s) => s.diffWhitespace);
 
 export const setDiffWhitespace = (on: boolean): void => {
   store.setState({ diffWhitespace: on });
-  persist(store.getState());
-};
-
-export const useDiffWordDiff = (): boolean => store((s) => s.diffWordDiff);
-
-export const setDiffWordDiff = (on: boolean): void => {
-  store.setState({ diffWordDiff: on });
   persist(store.getState());
 };
 

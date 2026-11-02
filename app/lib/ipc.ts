@@ -821,7 +821,6 @@ export const getSessionFullDiff = (id: string): Promise<string> =>
 
 export interface DiffViewOpts {
   ignoreWhitespace?: boolean;
-  wordDiff?: boolean;
 }
 
 export const getSessionBranchDiff = (

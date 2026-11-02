@@ -236,19 +236,10 @@ export async function getSessionStagedDiff(
 /** Optional flags for diff fetches. */
 export interface DiffOpts {
   ignoreWhitespace?: boolean;
-  wordDiff?: boolean;
 }
 
 function diffFlags(opts?: DiffOpts): string[] {
-  const args: string[] = [];
-  if (opts?.ignoreWhitespace) {
-    args.push("-w");
-  }
-  if (opts?.wordDiff) {
-    args.push("--word-diff=plain");
-  }
-
-  return args;
+  return opts?.ignoreWhitespace ? ["-w"] : [];
 }
 
 /**
