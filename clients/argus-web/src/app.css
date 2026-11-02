@@ -160,7 +160,8 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-top: 24px;
+  padding-top: max(24px, 12vh);
+  padding-bottom: 4px;
 }
 
 .aw-title {
@@ -174,12 +175,18 @@ button {
 
 .aw-hero .aw-title {
   font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .aw-muted {
   color: var(--text-secondary);
   font-size: 13px;
   margin: 0;
+}
+
+.aw-hero + .aw-muted {
+  margin-bottom: 14px;
 }
 
 .aw-inline {
@@ -258,8 +265,8 @@ button {
 .aw-session-home {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding-top: 8px;
+  gap: 18px;
+  padding-top: min(16vh, 160px);
 }
 
 /* A session's Figma frames, above its start composer. */

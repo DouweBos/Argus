@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   chatsInSession,
   describeError,
+  sessionTitle,
   historyEntry,
   historyMatch,
 } from "@argus/client-core";
@@ -18,6 +19,7 @@ import {
   Icons,
   SectionPanel,
   Spinner,
+  StartHeading,
 } from "@argus/peacock";
 import type { RemoteAgentStatus, RemoteSession } from "../../lib/protocol";
 import { openAgent } from "../../routing/open";
@@ -159,6 +161,7 @@ export function SessionHome({ sessionId }: { sessionId: string }) {
     repoRoot ? s.sessionsByRepo[repoRoot] : undefined,
   );
   const loadAgents = useProjectsStore((s) => s.loadAgents);
+  const projects = useProjectsStore((s) => s.projects);
   const connection = useConnectionStore((s) => s.connection);
 
   // A worktree's first agent starts once its setup ends, with no event this tab follows.
@@ -194,6 +197,7 @@ export function SessionHome({ sessionId }: { sessionId: string }) {
       />
     );
   }
+  const projectName = projects.find((p) => p.repo_root === session.repo_root)?.name;
   const projectRootBranch =
     sessions?.find((s) => s.kind === "project_root")?.branch ?? null;
 
@@ -206,6 +210,12 @@ export function SessionHome({ sessionId }: { sessionId: string }) {
         <Banner tone="error">{session.setup_error}</Banner>
       )}
       <SessionDesignChips session={session} />
+      {hasControl && session.status === "ready" && (
+        <StartHeading
+          project={projectName}
+          subtitle={sessionTitle(session)}
+        />
+      )}
       {hasControl && session.status === "ready" && (
         <WebStartComposer
           key={session.id}
