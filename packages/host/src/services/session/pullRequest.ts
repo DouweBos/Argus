@@ -40,44 +40,13 @@ const PR_TEMPLATE_DIR_LOCATIONS: string[] = [
 
 /**
  * Resolve the textual content of the pull-request template for `repoRoot`,
- * if any. Honors the same `.argus.json` `pull_request_template` override as
- * {@link pickPullRequestTemplate} and falls back to the standard GitHub
- * locations (single-file templates and the first template in a directory,
- * alphabetically).
+ * if any, from the standard GitHub locations (single-file templates and the
+ * first template in a directory, alphabetically).
  *
- * Returns `null` when no template is found or the override points at a file
- * that doesn't exist on disk — callers should treat that as "no prefill".
+ * Returns `null` when no template is found — callers should treat that as
+ * "no prefill".
  */
 export function readPullRequestTemplate(repoRoot: string): string | null {
-  let override: string | null = null;
-  try {
-    const raw = fs.readFileSync(path.join(repoRoot, ".argus.json"), "utf8");
-    const cfg = JSON.parse(raw) as { pull_request_template?: unknown };
-    if (
-      typeof cfg.pull_request_template === "string" &&
-      cfg.pull_request_template.trim().length > 0
-    ) {
-      override = cfg.pull_request_template.trim();
-    }
-  } catch {
-    // ignore
-  }
-
-  if (override) {
-    for (const dir of PR_TEMPLATE_DIR_LOCATIONS) {
-      const full = path.join(repoRoot, dir, override);
-      if (fs.existsSync(full) && fs.statSync(full).isFile()) {
-        return fs.readFileSync(full, "utf8");
-      }
-    }
-    const direct = path.join(repoRoot, override);
-    if (fs.existsSync(direct) && fs.statSync(direct).isFile()) {
-      return fs.readFileSync(direct, "utf8");
-    }
-
-    return null;
-  }
-
   for (const file of PR_TEMPLATE_FILE_LOCATIONS) {
     const full = path.join(repoRoot, file);
     if (fs.existsSync(full) && fs.statSync(full).isFile()) {
@@ -111,25 +80,8 @@ export function readPullRequestTemplate(repoRoot: string): string | null {
  *
  * When the repo has a multi-template directory, returns the first filename
  * alphabetically so the compare URL always links to a concrete template.
- * The default can be overridden via `.argus.json`'s `pull_request_template`
- * field.
  */
 export function pickPullRequestTemplate(repoRoot: string): string | null {
-  // Allow projects to pin a specific template name via `.argus.json`. Useful
-  // when a repo has many templates and a particular one is right for
-  // Argus-authored PRs. Read the file directly to avoid pulling in the
-  // heavier `setup.ts` (and its Electron dependencies) from this module.
-  try {
-    const raw = fs.readFileSync(path.join(repoRoot, ".argus.json"), "utf8");
-    const cfg = JSON.parse(raw) as { pull_request_template?: unknown };
-    const override = cfg.pull_request_template;
-    if (typeof override === "string" && override.trim().length > 0) {
-      return override.trim();
-    }
-  } catch {
-    // No config or parse error — fall through to filesystem discovery.
-  }
-
   for (const dir of PR_TEMPLATE_DIR_LOCATIONS) {
     const full = `${repoRoot}/${dir}`;
     if (!fs.existsSync(full) || !fs.statSync(full).isDirectory()) {

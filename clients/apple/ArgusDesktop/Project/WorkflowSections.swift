@@ -29,13 +29,6 @@ struct BranchProtectionSection: View {
     } footer: {
       Text("Runs git fetch --prune in the background at this interval for every active session in the project.")
     }
-    Section("Advanced") {
-      TextField("Preferred PR template filename", text: $draft.pullRequestTemplate, prompt: Text("feature.md"))
-      Text(
-        "Only relevant when the repo has multiple PR templates under .github/PULL_REQUEST_TEMPLATE/. For the common single-template case GitHub auto-applies the file and this field does nothing."
-      )
-      .font(.scaled(.caption)).foregroundStyle(.secondary)
-    }
   }
 
   /// The panel's choices, plus a hand-edited value so it isn't silently changed.

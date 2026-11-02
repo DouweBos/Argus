@@ -32,23 +32,23 @@ Two ways to change project settings:
 2. **Hand-edit `.argus.json`** at the repo root. The dialog re-reads
    on next open, so the two stay in sync.
 
-| Field                                                                | Editable in dialog?      |
-| -------------------------------------------------------------------- | ------------------------ |
-| `setup.copy` / `symlink` / `commands`                                | yes (Setup)              |
-| `min_argus_version`                                                  | yes (Setup)              |
-| `terminals`                                                          | yes (Terminals)          |
-| `run`                                                                | yes (Run commands)       |
-| `workspace_env`                                                      | yes (Workspace env)      |
-| `browser_url`, `browser_presets`                                     | yes (Browser)            |
-| `single_runtime`                                                     | yes (Run commands)       |
-| `save_chat_history`, `auto_continue_on_limit`                        | yes (Agent)              |
-| `protected_branches`, `pull_request_template`, `default_base_branch` | yes (Branch protection)  |
-| `release_note_patterns`                                              | yes (Release notes)      |
-| `simulator_deeplinks`                                                | yes (Deep links)         |
-| `auto_fetch_minutes`                                                 | yes (Git settings panel) |
-| `llm`                                                                | yes (LLM)                |
-| `related_projects`                                                   | yes (Related projects)   |
-| `automations`                                                        | yes (Automations)        |
+| Field                                         | Editable in dialog?      |
+| --------------------------------------------- | ------------------------ |
+| `setup.copy` / `symlink` / `commands`         | yes (Setup)              |
+| `min_argus_version`                           | yes (Setup)              |
+| `terminals`                                   | yes (Terminals)          |
+| `run`                                         | yes (Run commands)       |
+| `workspace_env`                               | yes (Workspace env)      |
+| `browser_url`, `browser_presets`              | yes (Browser)            |
+| `single_runtime`                              | yes (Run commands)       |
+| `save_chat_history`, `auto_continue_on_limit` | yes (Agent)              |
+| `protected_branches`, `default_base_branch`   | yes (Branch protection)  |
+| `release_note_patterns`                       | yes (Release notes)      |
+| `simulator_deeplinks`                         | yes (Deep links)         |
+| `auto_fetch_minutes`                          | yes (Git settings panel) |
+| `llm`                                         | yes (LLM)                |
+| `related_projects`                            | yes (Related projects)   |
+| `automations`                                 | yes (Automations)        |
 
 ---
 
@@ -67,7 +67,6 @@ Two ways to change project settings:
   "save_chat_history":  true,
   "auto_continue_on_limit": false,
   "protected_branches": ["main", "master"],
-  "pull_request_template": "feature.md",
   "default_base_branch": "staging",
   "single_runtime":     false,
   "min_argus_version":  "0.10.0",
@@ -304,15 +303,6 @@ The branch must exist locally to be picked. When unset (or missing
 locally), Argus walks a built-in fallback chain — `staging` → `develop`
 → `dev` → `main` → `master` — and finally falls back to the first local
 branch.
-
----
-
-## `pull_request_template` — preferred PR template filename
-
-If the repo has multiple PR templates under
-`.github/PULL_REQUEST_TEMPLATE/`, GitHub requires an explicit
-`?template=` query parameter. Set this to the filename Argus should
-prefer (e.g. `"feature.md"`).
 
 ---
 

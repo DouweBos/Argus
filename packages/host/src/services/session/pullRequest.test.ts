@@ -108,7 +108,7 @@ describe("pickPullRequestTemplate", () => {
     expect(pickPullRequestTemplate(repoRoot)).toBe("bug.md");
   });
 
-  it("honors `.argus.json` pull_request_template override", () => {
+  it("ignores a leftover `.argus.json` pull_request_template", () => {
     write(".github/PULL_REQUEST_TEMPLATE/bug.md", "bug");
     write(".github/PULL_REQUEST_TEMPLATE/feature.md", "feature");
     write(
@@ -116,24 +116,7 @@ describe("pickPullRequestTemplate", () => {
       JSON.stringify({ pull_request_template: "feature.md" }),
     );
 
-    expect(pickPullRequestTemplate(repoRoot)).toBe("feature.md");
-  });
-
-  it("override wins even when no templates exist on disk (user knows what they want)", () => {
-    write(
-      ".argus.json",
-      JSON.stringify({ pull_request_template: "custom.md" }),
-    );
-
-    expect(pickPullRequestTemplate(repoRoot)).toBe("custom.md");
-  });
-
-  it("ignores blank override strings", () => {
-    write(".github/PULL_REQUEST_TEMPLATE/a.md", "a");
-    write(".github/PULL_REQUEST_TEMPLATE/b.md", "b");
-    write(".argus.json", JSON.stringify({ pull_request_template: "   " }));
-
-    expect(pickPullRequestTemplate(repoRoot)).toBe("a.md");
+    expect(pickPullRequestTemplate(repoRoot)).toBe("bug.md");
   });
 
   it("ignores non-markdown files in the template directory", () => {

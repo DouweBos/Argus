@@ -1706,42 +1706,6 @@ function RelatedProjectField({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Collapsible disclosure                                             */
-/* ------------------------------------------------------------------ */
-
-interface CollapsibleProps {
-  children: React.ReactNode;
-  label: string;
-}
-
-function Collapsible({ label, children }: CollapsibleProps) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className={sectionStyles.collapsible}>
-      <button
-        aria-expanded={open}
-        className={sectionStyles.collapsibleTrigger}
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-      >
-        <Icons.ChevronRightIcon
-          className={[
-            sectionStyles.collapsibleChevron,
-            open ? sectionStyles.collapsibleChevronOpen : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-          size={10}
-        />
-        {label}
-      </button>
-      {open && <div className={sectionStyles.collapsibleBody}>{children}</div>}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /*  Main dialog                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -1771,7 +1735,6 @@ export function SetupConfigDialog({
   const [saveChatHistory, setSaveChatHistory] = useState(true);
   const [singleRuntime, setSingleRuntime] = useState(false);
   const [autoContinueOnLimit, setAutoContinueOnLimit] = useState(false);
-  const [pullRequestTemplate, setPullRequestTemplate] = useState("");
   const [defaultBaseBranch, setDefaultBaseBranch] = useState("");
   const [minArgusVersion, setMinArgusVersion] = useState("");
   const [llmRunner, setLlmRunner] = useState("");
@@ -1885,9 +1848,6 @@ export function SetupConfigDialog({
         }
         if (config.protected_branches?.length) {
           setProtectedBranches(config.protected_branches);
-        }
-        if (config.pull_request_template) {
-          setPullRequestTemplate(config.pull_request_template);
         }
         if (config.default_base_branch) {
           setDefaultBaseBranch(config.default_base_branch);
@@ -2067,10 +2027,6 @@ export function SetupConfigDialog({
     if (protectedBranches.length) {
       config.protected_branches = protectedBranches;
     }
-    const prTemplate = pullRequestTemplate.trim();
-    if (prTemplate) {
-      config.pull_request_template = prTemplate;
-    }
     const defaultBase = defaultBaseBranch.trim();
     if (defaultBase) {
       config.default_base_branch = defaultBase;
@@ -2145,7 +2101,6 @@ export function SetupConfigDialog({
       saveChatHistory,
       singleRuntime,
       autoContinueOnLimit,
-      pullRequestTemplate,
       defaultBaseBranch,
       minArgusVersion,
       releaseNotesList.items,
@@ -2398,30 +2353,6 @@ export function SetupConfigDialog({
                     then <code>master</code>.
                   </p>
                 </div>
-
-                <Collapsible label="Advanced">
-                  <div className={styles.field}>
-                    <label
-                      className={sectionStyles.fieldLabel}
-                      htmlFor="setup-pr-template"
-                    >
-                      Preferred PR template filename
-                    </label>
-                    <Input
-                      id="setup-pr-template"
-                      placeholder="feature.md"
-                      type="text"
-                      value={pullRequestTemplate}
-                      onChange={(e) => setPullRequestTemplate(e.target.value)}
-                    />
-                    <p className={styles.helpText}>
-                      Only relevant when the repo has multiple PR templates
-                      under <code>.github/PULL_REQUEST_TEMPLATE/</code>. For the
-                      common single-template case GitHub auto-applies the file
-                      and this field does nothing.
-                    </p>
-                  </div>
-                </Collapsible>
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>
           ),

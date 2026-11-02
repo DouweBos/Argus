@@ -29,7 +29,6 @@ public struct ArgusConfigDraft: Equatable, Sendable {
   // Workflow
   public var protectedBranches: [ListItem] = []
   public var defaultBaseBranch = ""
-  public var pullRequestTemplate = ""
   public var autoFetchMinutes = 0
   public var releaseNotes: [ReleasePattern] = []
   public var saveChatHistory = true

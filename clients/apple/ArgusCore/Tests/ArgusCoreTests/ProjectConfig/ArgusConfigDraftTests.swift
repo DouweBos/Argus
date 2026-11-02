@@ -38,7 +38,6 @@ struct ArgusConfigDraftTests {
         "save_chat_history": false,
         "auto_continue_on_limit": true,
         "protected_branches": ["main"],
-        "pull_request_template": "feature.md",
         "default_base_branch": "staging",
         "single_runtime": true,
         "min_argus_version": "0.10.0",

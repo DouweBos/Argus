@@ -148,8 +148,6 @@ export const ArgusConfig = z.object({
   protected_branches: z.array(z.string()),
   /** Preferred default source branch for new sessions. */
   default_base_branch: z.string().nullish(),
-  /** Filename of the preferred pull-request template. */
-  pull_request_template: z.string().nullish(),
   /** Only one runtime may be active across all of this project's sessions. */
   single_runtime: z.boolean().nullish(),
   /** Send "continue" to an agent stalled on a plan limit once it resets. */

@@ -8,13 +8,13 @@ extension ArgusConfigDraft {
   static let ownedKeys: Set<String> = [
     "setup", "terminals", "run", "workspace_env", "related_projects",
     "browser_url", "browser_presets", "simulator_deeplinks", "save_chat_history",
-    "auto_continue_on_limit", "protected_branches", "pull_request_template", "default_base_branch",
+    "auto_continue_on_limit", "protected_branches", "default_base_branch",
     "single_runtime", "min_argus_version", "auto_fetch_minutes",
     "release_note_patterns", "llm", "tools", "automations",
   ]
 
   /// Settings Argus no longer reads; saving drops them, as the desktop dialog does.
-  static let retiredKeys: Set<String> = ["platforms", "agent_prompt", "mcp_servers"]
+  static let retiredKeys: Set<String> = ["platforms", "agent_prompt", "mcp_servers", "pull_request_template"]
 
   public init(raw: [String: JSONValue]) {
     self.init()
@@ -56,7 +56,6 @@ extension ArgusConfigDraft {
 
     protectedBranches = Self.strings(raw["protected_branches"]).map { ListItem($0) }
     defaultBaseBranch = raw["default_base_branch"]?.stringValue ?? ""
-    pullRequestTemplate = raw["pull_request_template"]?.stringValue ?? ""
     autoFetchMinutes = max(0, raw["auto_fetch_minutes"]?.intValue ?? 0)
     releaseNotes = (raw["release_note_patterns"]?.arrayValue ?? []).compactMap(Self.releasePattern)
     saveChatHistory = raw["save_chat_history"]?.boolValue != false
@@ -108,7 +107,6 @@ extension ArgusConfigDraft {
     set("save_chat_history", saveChatHistory ? nil : .bool(false))
     set("auto_continue_on_limit", autoContinueOnLimit ? .bool(true) : nil)
     set("protected_branches", Self.nonEmpty(protectedBranches.map(\.value).filter { !$0.isEmpty }.map(JSONValue.string)))
-    set("pull_request_template", Self.trimmed(pullRequestTemplate))
     set("default_base_branch", Self.trimmed(defaultBaseBranch))
     set("single_runtime", singleRuntime ? .bool(true) : nil)
     var version = minArgusVersion.trimmingCharacters(in: .whitespaces)

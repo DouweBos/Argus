@@ -1772,7 +1772,6 @@ extension ArgusProtocol {
     public var saveChatHistory: Bool?
     public var protectedBranches: [String]
     public var defaultBaseBranch: String?
-    public var pullRequestTemplate: String?
     public var singleRuntime: Bool?
     public var autoContinueOnLimit: Bool?
     public var releaseNotePatterns: [ReleaseNotePatternConfig]
@@ -1794,7 +1793,6 @@ extension ArgusProtocol {
       case saveChatHistory = "save_chat_history"
       case protectedBranches = "protected_branches"
       case defaultBaseBranch = "default_base_branch"
-      case pullRequestTemplate = "pull_request_template"
       case singleRuntime = "single_runtime"
       case autoContinueOnLimit = "auto_continue_on_limit"
       case releaseNotePatterns = "release_note_patterns"
@@ -1805,7 +1803,7 @@ extension ArgusProtocol {
       case automations = "automations"
     }
 
-    public init(minArgusVersion: String? = nil, setup: ArgusSetupConfig, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], saveChatHistory: Bool? = nil, protectedBranches: [String], defaultBaseBranch: String? = nil, pullRequestTemplate: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
+    public init(minArgusVersion: String? = nil, setup: ArgusSetupConfig, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], saveChatHistory: Bool? = nil, protectedBranches: [String], defaultBaseBranch: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
       self.minArgusVersion = minArgusVersion
       self.setup = setup
       self.terminals = terminals
@@ -1817,7 +1815,6 @@ extension ArgusProtocol {
       self.saveChatHistory = saveChatHistory
       self.protectedBranches = protectedBranches
       self.defaultBaseBranch = defaultBaseBranch
-      self.pullRequestTemplate = pullRequestTemplate
       self.singleRuntime = singleRuntime
       self.autoContinueOnLimit = autoContinueOnLimit
       self.releaseNotePatterns = releaseNotePatterns
@@ -1841,7 +1838,6 @@ extension ArgusProtocol {
       try c.encodeIfPresent(saveChatHistory, forKey: .saveChatHistory)
       try c.encode(protectedBranches, forKey: .protectedBranches)
       try c.encodeIfPresent(defaultBaseBranch, forKey: .defaultBaseBranch)
-      try c.encodeIfPresent(pullRequestTemplate, forKey: .pullRequestTemplate)
       try c.encodeIfPresent(singleRuntime, forKey: .singleRuntime)
       try c.encodeIfPresent(autoContinueOnLimit, forKey: .autoContinueOnLimit)
       try c.encode(releaseNotePatterns, forKey: .releaseNotePatterns)
