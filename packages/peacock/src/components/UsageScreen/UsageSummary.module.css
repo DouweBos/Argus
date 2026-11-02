@@ -88,3 +88,10 @@
 .breakdown .note {
   padding-top: 8px;
 }
+
+@media (max-width: 600px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr) 64px 48px 52px;
+    gap: 8px;
+  }
+}

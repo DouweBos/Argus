@@ -3,6 +3,7 @@ import type { PrereqId } from "../../../lib/types";
 import { useEffect, useState } from "react";
 import {
   Button,
+  ColorSchemePicker,
   ColorThemePicker,
   Icons,
   Input,
@@ -49,10 +50,8 @@ import {
   type StartWorkspace,
 } from "../../../stores/settingsStore";
 import {
-  THEME_PREFERENCE_LABELS,
   setThemePreference,
   useThemePreference,
-  type ThemePreference,
 } from "../../../stores/themeStore";
 import {
   UI_SCALE_LABELS,
@@ -84,8 +83,6 @@ import { WarmAgentsSetting } from "./WarmAgentsSetting";
 import { WorktreesSection } from "./WorktreesSection";
 
 const MODES: PermissionMode[] = ["auto", "ask", "plan", "review", "trusted"];
-
-const THEMES: ThemePreference[] = ["system", "light", "dark"];
 
 export function SettingsDialog() {
   const open = useSettingsDialogOpen();
@@ -255,18 +252,7 @@ function AppearanceSection() {
       />
       <SettingsScreenDetailBody>
         <SettingsScreenField label="Theme">
-          <div className={styles.segmented}>
-            {THEMES.map((t) => (
-              <button
-                key={t}
-                className={`${styles.segment} ${theme === t ? styles.segmentActive : ""}`}
-                type="button"
-                onClick={() => setThemePreference(t)}
-              >
-                {THEME_PREFERENCE_LABELS[t]}
-              </button>
-            ))}
-          </div>
+          <ColorSchemePicker value={theme} onChange={setThemePreference} />
         </SettingsScreenField>
         <SettingsScreenField
           label="Colour theme"

@@ -4,7 +4,7 @@ import {
   percentLeft,
   resetHint,
   type UsageLimitTone,
-} from "./usageFormat";
+} from "@argus/client-core";
 
 export interface CompactLimit {
   id: string;

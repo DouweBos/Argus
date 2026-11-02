@@ -1,0 +1,151 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px 8px 10px;
+  background: var(--surface-1);
+  border: 1px solid var(--surface-4);
+  border-radius: var(--border-radius-medium);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.card:hover {
+  background: var(--surface-3);
+  border-color: var(--surface-7);
+}
+
+.selected,
+.selected:hover {
+  border-color: var(--accent);
+  background: var(--accent-overlay-sm);
+  color: var(--text-primary);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.preview {
+  position: relative;
+  display: block;
+  height: 72px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.preview[data-scheme="light"],
+.half[data-scheme="light"] {
+  --sketch-bg: var(--scheme-preview-light-bg);
+  --sketch-sidebar: var(--scheme-preview-light-sidebar);
+  --sketch-surface: var(--scheme-preview-light-surface);
+  --sketch-line: var(--scheme-preview-light-line);
+  --sketch-line-strong: var(--scheme-preview-light-line-strong);
+}
+
+.preview[data-scheme="dark"],
+.half[data-scheme="dark"] {
+  --sketch-bg: var(--scheme-preview-dark-bg);
+  --sketch-sidebar: var(--scheme-preview-dark-sidebar);
+  --sketch-surface: var(--scheme-preview-dark-surface);
+  --sketch-line: var(--scheme-preview-dark-line);
+  --sketch-line-strong: var(--scheme-preview-dark-line-strong);
+}
+
+.half {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+/* The left half in light, the right in dark. */
+.half[data-scheme="light"] {
+  clip-path: inset(0 50% 0 0);
+}
+
+.window {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background: var(--sketch-bg);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 28%;
+  padding: 8px 6px;
+  background: var(--sketch-sidebar);
+  border-right: 1px solid var(--sketch-line);
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 8px;
+}
+
+.line {
+  display: block;
+  width: 80%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--sketch-line);
+}
+
+.strong {
+  background: var(--sketch-line-strong);
+}
+
+.wide {
+  width: 70%;
+}
+
+.mid {
+  width: 50%;
+}
+
+.composer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  height: 16px;
+  margin-top: auto;
+  padding: 0 6px;
+  border: 1px solid var(--sketch-line-strong);
+  border-radius: 5px;
+  background: var(--sketch-surface);
+}
+
+.dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+}

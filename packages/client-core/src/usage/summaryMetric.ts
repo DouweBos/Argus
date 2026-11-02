@@ -1,10 +1,7 @@
-import type { ClaudeUsageSummary, UsageModelRow } from "../../lib/types";
-import {
-  formatTokens,
-  formatUsd,
-  formatUsdCompact,
-} from "../../lib/usageFormat";
+import type { ClaudeUsageSummary, UsageModelRow } from "@argus/remote-protocol";
+import { formatTokens, formatUsd, formatUsdCompact } from "./usageFormat";
 
+/** The cost and tokens tabs of the usage screen. */
 export type SummaryMetric = "cost" | "tokens";
 
 export interface SummaryPart {

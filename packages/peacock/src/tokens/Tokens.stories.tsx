@@ -278,6 +278,19 @@ export const Colors: Story = {
         </div>
       </section>
       <section>
+        <h3 className="eyebrow">Scheme previews (ColorSchemePicker)</h3>
+        <div style={row}>
+          {SCHEME_PREVIEW_TOKENS.map((name) => (
+            <Token
+              key={name}
+              name={`--scheme-preview-${name}`}
+              value="fixed in both schemes"
+              preview={<div style={swatch(`var(--scheme-preview-${name})`)} />}
+            />
+          ))}
+        </div>
+      </section>
+      <section>
         <h3 className="eyebrow">Terminal (TerminalView)</h3>
         <div style={row}>
           {TERMINAL_TOKENS.map((name) => (
@@ -307,6 +320,12 @@ const SYNTAX_TOKENS = [
   "addition",
   "deletion",
 ];
+
+const SCHEME_PREVIEW_TOKENS = ["light", "dark"].flatMap((scheme) =>
+  ["bg", "sidebar", "surface", "line", "line-strong"].map(
+    (part) => `${scheme}-${part}`,
+  ),
+);
 
 const TERMINAL_TOKENS = [
   "bg",

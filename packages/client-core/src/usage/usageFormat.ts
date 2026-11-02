@@ -2,7 +2,7 @@
  * Pure formatting for the usage screen: plan limits, tokens and cost.
  */
 
-import type { UsageLimitWindow, UsagePace } from "./types";
+import type { UsageLimitWindow, UsagePace } from "@argus/remote-protocol";
 
 export type UsageLimitTone = "accent" | "danger" | "warning";
 

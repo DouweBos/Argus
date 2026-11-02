@@ -66,3 +66,15 @@
   background: var(--surface-5);
   color: var(--text-primary);
 }
+
+.count {
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+@media (max-width: 600px) {
+  .screen {
+    padding: 16px;
+  }
+}

@@ -1,4 +1,4 @@
-import type { UsageLimitWindow } from "./types";
+import type { UsageLimitWindow } from "@argus/remote-protocol";
 import { describe, expect, it } from "vitest";
 import {
   bucketLabel,
