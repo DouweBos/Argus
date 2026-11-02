@@ -14,6 +14,7 @@ import {
   type StartWorkspace,
   workspaceOptions,
 } from "@argus/client-core";
+import { defaultPermissionMode } from "../../lib/agentDefaults";
 import { filesToPendingImages, type PendingImage } from "../../lib/images";
 import type {
   RemotePermissionMode,
@@ -48,7 +49,9 @@ export function useStartComposer(
   const [prompt, setPrompt] = useState("");
   const [images, setImages] = useState<PendingImage[]>([]);
   const [model, setModel] = useState<string | null>(null);
-  const [mode, setMode] = useState<RemotePermissionMode | null>(null);
+  const [mode, setMode] = useState<RemotePermissionMode | null>(
+    defaultPermissionMode,
+  );
   const [effort, setEffort] = useState<string | null>(null);
   const [runnerId, setRunnerId] = useState<string | null>(null);
   const [linked, setLinked] = useState<string[]>([]);

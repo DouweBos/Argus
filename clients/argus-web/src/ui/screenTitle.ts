@@ -7,6 +7,7 @@
 import { fileNameOf } from "@argus/client-core";
 import type { RemoteAgentStatus } from "../lib/protocol";
 import { projectKey, type Screen } from "../routing/screens";
+import { SETTINGS_PAGE_TITLES } from "./settings/pages";
 import { useAgentsStore } from "../stores/agents";
 import { useChatsStore } from "../stores/chats";
 import { useAutomationsStore } from "../stores/automations";
@@ -60,6 +61,12 @@ export function useScreenTitle(screen: Screen): string {
       );
     case "settings":
       return "Settings";
+    case "settingsPage":
+      return SETTINGS_PAGE_TITLES[screen.page];
+    case "usage":
+      return "Usage";
+    case "notifications":
+      return "Notifications";
     case "devices":
       return "Devices";
     case "device":

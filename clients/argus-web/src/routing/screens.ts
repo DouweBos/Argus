@@ -10,10 +10,37 @@
  * hosted app's paths reach its server on every reload.
  */
 
-import { parseRoute, routeToPath } from "@argus/client-core";
+import {
+  parseRoute,
+  routeToPath,
+  type UsageRange,
+  type UsageTab,
+} from "@argus/client-core";
 import type { RemotePlatform } from "../lib/protocol";
 
 export type DiffMode = "branch" | "working";
+
+/**
+ * Settings pages, as the phone names them: this browser's first, then the
+ * connected computer's. `/settings/:page`.
+ */
+export const SETTINGS_PAGES = [
+  "name",
+  "appearance",
+  "alerts",
+  "privacy",
+  "connection",
+  "agents",
+  "automations",
+  "claude-accounts",
+  "device-hosts",
+] as const;
+
+export type SettingsPage = (typeof SETTINGS_PAGES)[number];
+
+function isSettingsPage(value: string): value is SettingsPage {
+  return (SETTINGS_PAGES as readonly string[]).includes(value);
+}
 
 export type Screen =
   | { name: "projects" }
@@ -47,7 +74,12 @@ export type Screen =
   | { name: "quickRun" }
   | { name: "quickRunDetail"; runId: string }
   /** Web and iOS only: on the Mac this is Automations with a sheet. */
-  | { name: "describe" };
+  | { name: "describe" }
+  | { name: "settingsPage"; page: SettingsPage }
+  /** Plan limits, or cost or tokens over `range`: `/usage[/:tab]?range=`. */
+  | { name: "usage"; tab: UsageTab; range: UsageRange }
+  /** This visit's warnings and errors. */
+  | { name: "notifications" };
 
 export type Pane = "detail" | "master";
 
@@ -158,8 +190,12 @@ export function screenFromPath(path: string): Screen {
   if (parts[0] === "sessions" && parts[2] === "chats" && parts.length === 4) {
     return { name: "chat", sessionId: parts[1], historyId: parts[3] };
   }
-  if (parts[0] === "settings" && parts.length === 1) {
-    return { name: "settings" };
+  if (parts[0] === "settings") {
+    const page = parts[1];
+
+    return page && parts.length === 2 && isSettingsPage(page)
+      ? { name: "settingsPage", page }
+      : { name: "settings" };
   }
   if (parts[0] === "automations" && parts[1] === "describe") {
     return { name: "describe" };
@@ -198,6 +234,14 @@ export function screenFromPath(path: string): Screen {
       return route.automationId
         ? { name: "automation", automationId: route.automationId }
         : { name: "automations" };
+    case "usage":
+      return {
+        name: "usage",
+        tab: route.usageTab ?? "limits",
+        range: route.usageRange ?? "30d",
+      };
+    case "notifications":
+      return { name: "notifications" };
     case "session": {
       const sessionId = decode(route.sessionId ?? "");
       if (route.panel === "git") {
@@ -253,6 +297,16 @@ export function pathForScreen(screen: Screen): string {
       return `/projects/${encodeURIComponent(screen.projectKey)}`;
     case "settings":
       return "/settings";
+    case "settingsPage":
+      return `/settings/${screen.page}`;
+    case "usage":
+      return routeToPath({
+        view: "usage",
+        usageTab: screen.tab,
+        usageRange: screen.range,
+      });
+    case "notifications":
+      return "/notifications";
     case "devices":
       return "/devices";
     case "device":
@@ -316,6 +370,12 @@ export function screenPattern(screen: Screen): string {
       return "/projects/:projectKey";
     case "settings":
       return "/settings";
+    case "settingsPage":
+      return `/settings/${screen.page}`;
+    case "usage":
+      return screen.tab === "limits" ? "/usage" : `/usage/${screen.tab}`;
+    case "notifications":
+      return "/notifications";
     case "devices":
       return "/devices";
     case "device":

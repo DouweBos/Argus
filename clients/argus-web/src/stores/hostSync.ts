@@ -33,6 +33,14 @@ import { receiveHuddleChat, receiveHuddleState } from "./huddle";
 import { resetAgentExtras, useAgentExtrasStore } from "./agentExtras";
 import { resetChats, resyncStoppedChats } from "./chats";
 import {
+  receiveClaudeAccounts,
+  receiveClaudeLogin,
+  resetClaudeAccounts,
+} from "./claudeAccounts";
+import { installNotifications } from "./notifications";
+import { resetSettings } from "./settings";
+import { resetUsage } from "./usage";
+import {
   receiveListedAgentStatus,
   receiveProjectsChanged,
   receiveSessionsChanged,
@@ -124,6 +132,10 @@ const HANDLERS: Partial<Record<RemoteEventType, Handler>> = {
     receiveTerminalExit(terminal_id, exit_code, ev.seq);
   },
   "files.search": (ev) => receiveFileSearch(payload<"files.search">(ev)),
+  "claude_accounts.changed": (ev) =>
+    receiveClaudeAccounts(payload<"claude_accounts.changed">(ev)),
+  "claude_accounts.login": (ev) =>
+    receiveClaudeLogin(payload<"claude_accounts.login">(ev)),
 };
 
 export function routeEvent(event: EventEnvelope): void {
@@ -146,6 +158,9 @@ export function resetHostStores(): void {
   resetDevices();
   resetProposals();
   resetAutomations();
+  resetUsage();
+  resetClaudeAccounts();
+  resetSettings();
 }
 
 let installed = false;
@@ -170,6 +185,7 @@ export function installHostSync(): void {
     return;
   }
   installed = true;
+  installNotifications();
   installConnectionHooks({
     event: routeEvent,
     ready: (transport, identity) => {

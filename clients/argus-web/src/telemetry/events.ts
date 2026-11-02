@@ -56,6 +56,13 @@ export type AutomationAction =
   | "revise_playbook"
   | "save";
 
+export type ClaudeAccountAction =
+  | "add"
+  | "reauth"
+  | "remove"
+  | "rename"
+  | "select";
+
 export interface EventMap {
   web_launched: { build: WebBuild; paired: boolean };
   web_paired: { has_control: boolean };
@@ -91,6 +98,18 @@ export interface EventMap {
   web_run_acted: { action: RunAction };
   web_automation_edited: { action: AutomationAction };
   web_memory_edited: { action: "delete" | "save" };
+  web_app_error: { scope: string; message: string };
+  web_host_feature_unsupported: { method: string };
+  web_notifications_opened: { count: number };
+  web_notifications_cleared: { scope: "all" | "one" };
+  web_claude_account_changed: { action: ClaudeAccountAction };
+  web_claude_sign_in_code_submitted: { success: boolean };
+  web_default_changed: {
+    setting: "autonomy" | "permission_mode";
+    value: string;
+  };
+  web_appearance_changed: { appearance: "dark" | "light" | "system" };
+  web_color_theme_changed: { theme: string };
   telemetry_enabled: undefined;
   telemetry_disabled: undefined;
 }

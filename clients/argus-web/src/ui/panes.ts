@@ -58,6 +58,8 @@ export function parentOf(screen: Screen): Screen {
   switch (screen.name) {
     case "device":
       return { name: "devices" };
+    case "settingsPage":
+      return { name: "settings" };
     case "chat":
       return { name: "sessionHome", sessionId: screen.sessionId };
     case "file":

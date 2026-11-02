@@ -12,6 +12,7 @@
  * - Off entirely when the build has no key.
  */
 
+import { scrubMessage, scrubStack } from "@argus/client-core";
 import type { EventMap, EventName, WebBuild } from "./events";
 
 export type TelemetryMode = "full" | "presence";
@@ -119,6 +120,7 @@ export function startTelemetry(which: WebBuild, paired: boolean): void {
     source: "heartbeat",
   });
   capture("web_launched", { build: which, paired });
+  watchCrashes();
 }
 
 export function setTelemetryMode(next: TelemetryMode): void {
@@ -157,4 +159,39 @@ export function captureScreen(pattern: string): void {
     return;
   }
   send("$screen", { ...baseProps(), $screen_name: pattern });
+}
+
+/**
+ * A crash: an error nothing caught. Full mode only, since a stack can still
+ * say more than a count does; message and stack go through the scrubbers.
+ */
+export function captureException(error: unknown, source: string): void {
+  if (mode !== "full") {
+    return;
+  }
+  const err = error instanceof Error ? error : new Error(String(error));
+  send("$exception", {
+    ...baseProps(),
+    $exception_type: err.name || "Error",
+    $exception_message: scrubMessage(err.message),
+    $exception_level: "error",
+    $exception_stack_trace_raw: err.stack ? scrubStack(err.stack) : undefined,
+    source,
+  });
+}
+
+let crashesWatched = false;
+
+/** Uncaught errors and unhandled rejections become `$exception`. Once per page. */
+export function watchCrashes(): void {
+  if (crashesWatched || typeof window === "undefined") {
+    return;
+  }
+  crashesWatched = true;
+  window.addEventListener("error", (event) => {
+    captureException(event.error ?? event.message, "window.onerror");
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    captureException(event.reason, "unhandledrejection");
+  });
 }
