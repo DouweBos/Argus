@@ -15,6 +15,8 @@
   background: transparent;
   border: none;
   padding: 0;
+  /* Unpadded, a clip would shave the eyebrow's first glyph. */
+  overflow: visible;
 }
 
 .head {
