@@ -284,6 +284,28 @@ describe("admin passthrough guards", () => {
     expect(res).toEqual({ entries: [], resolvedPath: "" });
   });
 
+  it("lets the app on this machine browse the whole disk", async () => {
+    const ctx = { ...makeCtx(["monitor", "control", "admin"]), console: true };
+
+    const raw = await dispatch(
+      "resolve_mention_path",
+      { id: "s1", query: "/etc/" },
+      ctx,
+    );
+    expect(raw).toEqual({
+      entries: [{ name: "unconfined", is_dir: false }],
+      resolvedPath: "/etc",
+    });
+
+    vi.mocked(resolveMentionPath).mockClear();
+    await dispatch(
+      "sessions.resolve_mention_path",
+      { session_id: "s1", query: "/Users/" },
+      ctx,
+    );
+    expect(resolveMentionPath).toHaveBeenCalledWith("s1", "/Users/", undefined);
+  });
+
   it("arbitrates raw HID between two admin devices", async () => {
     const first = makeCtx(["monitor", "admin"]);
     const second = { ...makeCtx(["monitor", "admin"]), connectionId: "conn-2" };

@@ -1581,15 +1581,17 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return cancelSessionSearch(session_id, search_id);
   },
 
-  "sessions.resolve_mention_path": async (params) => {
+  "sessions.resolve_mention_path": async (params, ctx) => {
     const { session_id, query } = parse(
       "sessions.resolve_mention_path",
       params,
     );
     // Confine browsing to the session worktree plus registered projects so a
     // remote can @-mention a backend file in another project, but not read
-    // arbitrary paths like `~/.ssh` or `/etc`.
-    const projectRoots = collectAllProjects().map((p) => p.path);
+    // arbitrary paths like `~/.ssh` or `/etc`. The app on this machine browses the whole disk.
+    const projectRoots = ctx.console
+      ? undefined
+      : collectAllProjects().map((p) => p.path);
     const { entries, resolvedPath } = await control(() =>
       resolveMentionPath(session_id, query, projectRoots),
     );
@@ -2880,7 +2882,7 @@ async function dispatchAdmin(
   }
 
   // The host's own picker browses the whole disk; a paired device must not.
-  if (command === "resolve_mention_path") {
+  if (command === "resolve_mention_path" && !ctx.console) {
     const roots = collectAllProjects().map((p) => p.path);
 
     return control(() =>
