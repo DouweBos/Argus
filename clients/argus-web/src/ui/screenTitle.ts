@@ -131,5 +131,19 @@ export function useScreenTitle(screen: Screen): string {
       return "Quick Run";
     case "describe":
       return "Describe an Automation";
+    case "branches":
+      return withSession("Branches", screen.sessionId);
+    case "branch":
+      return screen.ref;
+    case "compare":
+      return `${screen.left} ↔ ${screen.right}`;
+    case "stashes":
+      return withSession("Stashes & Tags", screen.sessionId);
+    case "commit":
+      return screen.hash.slice(0, 8);
+    case "pullRequests":
+      return "Pull Requests";
+    case "pullRequest":
+      return `${screen.repo} #${screen.number}`;
   }
 }

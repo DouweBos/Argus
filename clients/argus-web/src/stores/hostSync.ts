@@ -25,7 +25,9 @@ import { resetFiles } from "./files";
 import { receiveFileSearch, resetFileSearch } from "./fileSearch";
 import { resetIntegrations } from "./integrations";
 import { resetIssues } from "./issues";
+import { resetBranches } from "./branches";
 import { resetGit } from "./git";
+import { resetPullRequests } from "./pullRequests";
 import {
   receiveTerminalData,
   receiveTerminalExit,
@@ -167,6 +169,8 @@ export function resetHostStores(): void {
   resetDeviceHosts();
   resetIntegrations();
   resetIssues();
+  resetBranches();
+  resetPullRequests();
 }
 
 let installed = false;

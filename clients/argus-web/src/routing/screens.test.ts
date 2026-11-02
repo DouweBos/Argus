@@ -59,7 +59,6 @@ describe("screenFromPath", () => {
   });
 
   it.each([
-    "/pull-requests/o/r/1",
     "/devices/web/tab-1",
   ])("opens the nearest screen it has for %s", (path) => {
     const screen = screenFromPath(path);
@@ -68,7 +67,7 @@ describe("screenFromPath", () => {
   });
 
   it("opens a git sub-view it doesn't have on the branch diff", () => {
-    expect(screenFromPath("/sessions/s1/git/stashes")).toEqual({
+    expect(screenFromPath("/sessions/s1/git/reflog")).toEqual({
       name: "changes",
       sessionId: "s1",
       mode: "branch",
@@ -304,5 +303,50 @@ describe("issues screen", () => {
       expect(screenPattern(screen)).not.toContain("ENG");
     }
     expect(paneFor(screenFromPath("/issues"))).toBe("detail");
+  });
+});
+
+describe("shipping screens", () => {
+  it.each([
+    ["/sessions/s1/git/branches", { name: "branches", sessionId: "s1" }],
+    [
+      "/sessions/s1/git/branches/feature%2Fx",
+      { name: "branch", sessionId: "s1", ref: "feature/x" },
+    ],
+    [
+      "/sessions/s1/git/compare?left=main&right=origin%2Fx",
+      { name: "compare", sessionId: "s1", left: "main", right: "origin/x" },
+    ],
+    ["/sessions/s1/git/stashes", { name: "stashes", sessionId: "s1" }],
+    [
+      "/sessions/s1/git/history?commit=abc1234",
+      { name: "commit", sessionId: "s1", hash: "abc1234" },
+    ],
+    ["/pull-requests", { name: "pullRequests" }],
+    [
+      "/pull-requests/o/r/12",
+      { name: "pullRequest", owner: "o", repo: "r", number: 12 },
+    ],
+  ])("round-trips %s", (path, screen) => {
+    expect(screenFromPath(path)).toEqual(screen);
+    expect(pathForScreen(screen as Screen)).toBe(path);
+  });
+
+  it("falls back for a compare missing a side and a bad hash", () => {
+    expect(screenFromPath("/sessions/s1/git/compare?left=main").name).toBe(
+      "branches",
+    );
+    expect(screenFromPath("/sessions/s1/git/history?commit=nope!").name).toBe(
+      "changes",
+    );
+  });
+
+  it("names patterns, never branches, hashes or repos", () => {
+    expect(
+      screenPattern({ name: "branch", sessionId: "s1", ref: "secret" }),
+    ).toBe("/sessions/:sessionId/git/branches/:branchName");
+    expect(
+      screenPattern({ name: "pullRequest", owner: "o", repo: "r", number: 1 }),
+    ).toBe("/pull-requests/:owner/:repo/:number");
   });
 });

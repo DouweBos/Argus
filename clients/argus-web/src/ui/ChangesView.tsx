@@ -2,10 +2,10 @@
  * Read-only changes review for a session — git status summary plus the diff of
  * what the agent changed, rendered with Peacock's diff primitives. A toggle
  * switches between the branch diff (everything vs the base branch) and the
- * working diff (uncommitted vs HEAD). Monitor-scoped; no staging/commit.
+ * working diff (uncommitted vs HEAD); with control, the land-work card below.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import {
   Button,
   EmptyState,
@@ -21,6 +21,10 @@ import type { DiffMode as Mode } from "../routing/screens";
 import { useConnectionStore } from "../stores/connection";
 import { useGitStore } from "../stores/git";
 import { ViewFileButton } from "./FileDiffView";
+
+const LandWork = lazy(() =>
+  import("./ship/LandWork").then((m) => ({ default: m.LandWork })),
+);
 
 const MODE_OPTIONS = [
   { value: "branch" as const, label: "Vs base branch" },
@@ -68,6 +72,7 @@ export function ChangesView({
   sessionId: string;
 }) {
   const connection = useConnectionStore((s) => s.connection);
+  const hasControl = useConnectionStore((s) => s.hasControl());
   const status = useGitStore((s) => s.gitStatusBySession[sessionId]);
   const loadGitStatus = useGitStore((s) => s.loadGitStatus);
   const loadDiff = useGitStore((s) => s.loadDiff);
@@ -165,6 +170,12 @@ export function ChangesView({
             />
           ))}
         </div>
+      )}
+
+      {hasControl && (
+        <Suspense fallback={null}>
+          <LandWork sessionId={sessionId} files={files} onChanged={refresh} />
+        </Suspense>
       )}
     </div>
   );

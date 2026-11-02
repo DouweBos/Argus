@@ -21,6 +21,13 @@ import {
   type UsageTab,
 } from "@argus/client-core";
 import type { RemotePlatform } from "../lib/protocol";
+import {
+  isShipScreen,
+  shipPath,
+  shipPattern,
+  type ShipScreen,
+  shipScreenFromParts,
+} from "./shipScreens";
 
 export type DiffMode = "branch" | "working";
 
@@ -100,7 +107,8 @@ export type Screen =
       scope: IssueScope;
       query: string | null;
       issueRef: string | null;
-    };
+    }
+  | ShipScreen;
 
 export type Pane = "detail" | "master";
 
@@ -208,6 +216,10 @@ export function screenFromPath(path: string): Screen {
   if (tool) {
     return tool;
   }
+  const ship = shipScreenFromParts(parts, queryOf(path));
+  if (ship) {
+    return ship;
+  }
   if (parts[0] === "projects" && parts.length === 2) {
     return { name: "project", projectKey: parts[1] };
   }
@@ -314,6 +326,9 @@ function sessionBase(sessionId: string): string {
 
 /** The path a screen lives at, with only the query the screen itself needs. */
 export function pathForScreen(screen: Screen): string {
+  if (isShipScreen(screen)) {
+    return shipPath(screen);
+  }
   switch (screen.name) {
     case "files":
       return `${sessionBase(screen.sessionId)}/code/quick-open`;
@@ -421,6 +436,9 @@ export function pathForScreen(screen: Screen): string {
  * patterns for the same screens, so one screen reads the same from either.
  */
 export function screenPattern(screen: Screen): string {
+  if (isShipScreen(screen)) {
+    return shipPattern(screen);
+  }
   switch (screen.name) {
     case "projects":
       return "/";

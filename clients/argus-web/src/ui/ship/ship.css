@@ -1,0 +1,104 @@
+/* The shipping screens: branches, stashes, commits, pull requests. */
+
+.aw-ship {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 12px;
+}
+
+.aw-ship-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aw-ship-bar > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.aw-ship-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aw-ship-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.aw-ship-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.aw-ship-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.aw-ship-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.aw-ship-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.aw-ship-subject {
+  font: var(--type-h2);
+  color: var(--text-primary);
+}
+
+.aw-ship-body,
+.aw-ship-output {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.aw-ship-output {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.aw-ship-error {
+  color: var(--error);
+}
+
+.aw-ship-busy {
+  opacity: 0.5;
+}
+
+.aw-ship-title {
+  margin: 0;
+  font: var(--type-h1);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* The pane already pads; the grid screen shouldn't pad again. */
+.aw-ship-grid {
+  padding: 0;
+  gap: 12px;
+}
+
+.aw-ship-compare {
+  min-height: 320px;
+}

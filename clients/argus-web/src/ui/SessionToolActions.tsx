@@ -7,6 +7,7 @@ import { Icons, SidebarHeaderAction, Spinner } from "@argus/peacock";
 import { lazy, Suspense } from "react";
 import { appNavigate } from "../routing/router";
 import type { Screen } from "../routing/screens";
+import type { ShipScreen } from "../routing/shipScreens";
 import type { ToolScreen } from "./SessionTools";
 
 const SessionToolBody = lazy(() => import("./SessionTools"));
@@ -20,6 +21,16 @@ function Loading() {
     <div className="aw-center">
       <Spinner />
     </div>
+  );
+}
+
+const ShipScreenBody = lazy(() => import("./ship/ShipScreens"));
+
+export function LazyShipScreen({ screen }: { screen: ShipScreen }) {
+  return (
+    <Suspense fallback={<Loading />}>
+      <ShipScreenBody screen={screen} />
+    </Suspense>
   );
 }
 
@@ -115,6 +126,29 @@ export function SessionToolActions({ screen }: { screen: Screen }) {
           icon={<Icons.SearchIcon size={14} />}
           label="Search in files"
           to={{ name: "search", sessionId: screen.sessionId }}
+        />
+      );
+    case "changes":
+      return (
+        <>
+          <Action
+            icon={<Icons.BranchIcon size={14} />}
+            label="Branches"
+            to={{ name: "branches", sessionId: screen.sessionId }}
+          />
+          <Action
+            icon={<Icons.StashIcon size={14} />}
+            label="Stashes & tags"
+            to={{ name: "stashes", sessionId: screen.sessionId }}
+          />
+        </>
+      );
+    case "branches":
+      return (
+        <Action
+          icon={<Icons.StashIcon size={14} />}
+          label="Stashes & tags"
+          to={{ name: "stashes", sessionId: screen.sessionId }}
         />
       );
     default:

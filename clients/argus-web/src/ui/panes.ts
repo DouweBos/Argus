@@ -11,6 +11,7 @@ import {
   type Screen,
   sessionOfScreen,
 } from "../routing/screens";
+import { isShipScreen, shipParent } from "../routing/shipScreens";
 import { useProjectsStore } from "../stores/projects";
 
 /** The master screen last on screen, for detail screens that belong to no project. */
@@ -55,6 +56,9 @@ export function useMasterScreen(screen: Screen): Screen {
 
 /** Where Back goes when there is no in-app history (a deep link opened the tab). */
 export function parentOf(screen: Screen): Screen {
+  if (isShipScreen(screen)) {
+    return shipParent(screen) ?? HOME;
+  }
   switch (screen.name) {
     case "device":
       return { name: "devices" };

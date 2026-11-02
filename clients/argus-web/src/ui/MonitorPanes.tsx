@@ -51,6 +51,7 @@ import { NotificationsView } from "./NotificationsView";
 import {
   LazyBrowserScreen,
   LazySessionTool,
+  LazyShipScreen,
   SessionToolActions,
 } from "./SessionToolActions";
 import { Settings, SettingsPageScreen } from "./Settings";
@@ -211,6 +212,14 @@ function ScreenBody({
       return <DescribeScreen />;
     case "browser":
       return <LazyBrowserScreen sessionId={screen.sessionId} />;
+    case "branches":
+    case "branch":
+    case "compare":
+    case "stashes":
+    case "commit":
+    case "pullRequests":
+    case "pullRequest":
+      return <LazyShipScreen screen={screen} />;
   }
 }
 
@@ -288,6 +297,13 @@ function RootActions() {
         aria-label="Automations"
       >
         <Icons.ClockIcon size={14} />
+      </SidebarHeaderAction>
+      <SidebarHeaderAction
+        onClick={() => appNavigate({ name: "pullRequests" })}
+        title="Pull requests"
+        aria-label="Pull requests"
+      >
+        <Icons.PullRequestIcon size={14} />
       </SidebarHeaderAction>
       <SidebarHeaderAction
         onClick={() => appNavigate({ name: "devices" })}
@@ -612,7 +628,15 @@ function PaneIcon({ screen }: { screen: Screen }) {
   switch (screen.name) {
     case "changes":
     case "fileDiff":
+    case "branches":
+    case "branch":
+    case "compare":
+    case "stashes":
+    case "commit":
       return <Icons.BranchIcon size={14} />;
+    case "pullRequests":
+    case "pullRequest":
+      return <Icons.PullRequestIcon size={14} />;
     case "files":
     case "file":
       return <Icons.CodeIcon size={14} />;

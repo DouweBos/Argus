@@ -12,7 +12,7 @@ import { Card } from "../Card/Card";
 import { Chip } from "../Chip/Chip";
 import styles from "./LandWorkCard.module.css";
 
-export type LandWorkBusy = "commit" | "merge" | "push" | null;
+export type LandWorkBusy = "base" | "commit" | "merge" | "push" | null;
 
 export interface LandWorkCardProps {
   branch: string;

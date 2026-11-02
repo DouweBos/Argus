@@ -65,6 +65,21 @@ export type ClaudeAccountAction =
   | "remove"
   | "rename"
   | "select";
+/** A move on a branch, a stash or the session's base branch. */
+export type BranchActedAction =
+  | "checkout"
+  | "create"
+  | "delete"
+  | "merge"
+  | "pin"
+  | "pull"
+  | "push"
+  | "rebase"
+  | "rename"
+  | "set_base"
+  | "stash_apply"
+  | "stash_drop"
+  | "stash_pop";
 
 export interface EventMap {
   web_launched: { build: WebBuild; paired: boolean };
@@ -126,6 +141,14 @@ export interface EventMap {
     changed_project: boolean;
     has_prompt: boolean;
   };
+  web_work_landed: { action: "amend" | "commit" | "push"; success: boolean };
+  web_commit_composed: {
+    has_description: boolean;
+    sign_off: boolean;
+    signed: boolean;
+  };
+  web_branch_acted: { action: BranchActedAction };
+  web_pull_request_acted: { action: "comment" | "fill" | "merge" | "open" };
   telemetry_enabled: undefined;
   telemetry_disabled: undefined;
 }
