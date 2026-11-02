@@ -255,6 +255,14 @@ button {
   padding-top: 8px;
 }
 
+/* A session's Figma frames, above its start composer. */
+.aw-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 12px;
+}
+
 /* A saved chat's Resume / Pin, above the transcript. */
 .aw-chat-actions {
   display: flex;

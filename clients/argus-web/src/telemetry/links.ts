@@ -45,11 +45,15 @@ export function reportLaunchLink(): void {
   if (pathname === "/" || pathname === "") {
     return;
   }
+  const screen = screenFromPath(path);
   capture("web_link_opened", {
-    screen: screenPattern(screenFromPath(path)),
+    screen: screenPattern(screen),
     via: "link",
     fallback: isFallback(path),
   });
+  if (screen.name === "design") {
+    capture("web_design_opened", { source: "link" });
+  }
 }
 
 /** A notification in a running tab was clicked through to its agent. */

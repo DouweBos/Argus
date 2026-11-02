@@ -39,6 +39,7 @@ import { useInboxBadge } from "./automations/useInbox";
 import { ChangesView } from "./ChangesView";
 import { ChatInput } from "./ChatInput";
 import { ConnectionBadge } from "./ConnectionBadge";
+import { LazyDesignScreen } from "./design/LazyDesignScreen";
 import { DevicesView } from "./DevicesView";
 import { McpServersDialog } from "./McpServersDialog";
 import { Projects } from "./ProjectViews";
@@ -166,6 +167,8 @@ function ScreenBody({
       return <UsageView range={screen.range} tab={screen.tab} />;
     case "notifications":
       return <NotificationsView />;
+    case "design":
+      return <LazyDesignScreen screen={screen} />;
     case "files":
     case "file":
     case "search":
@@ -589,6 +592,8 @@ function PaneIcon({ screen }: { screen: Screen }) {
       return <Icons.GaugeIcon size={14} />;
     case "notifications":
       return <Icons.WarningIcon size={14} />;
+    case "design":
+      return <Icons.FigmaIcon size={14} />;
     case "chat":
       return <Icons.HistoryIcon size={14} />;
     case "inbox":

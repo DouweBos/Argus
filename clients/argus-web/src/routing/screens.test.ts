@@ -242,3 +242,33 @@ describe("paneFor", () => {
     expect(paneFor({ name: "automations" })).toBe("detail");
   });
 });
+
+describe("design screen", () => {
+  const url = "https://www.figma.com/design/AbC/App?node-id=1-2";
+  const encoded = encodeURIComponent(url);
+
+  it("reads a frame opened from a session", () => {
+    expect(
+      screenFromPath(`/design?url=${encoded}&session=s1&tab=pages&compare=1`),
+    ).toEqual({
+      name: "design",
+      url,
+      sessionId: "s1",
+      tab: "pages",
+      compare: true,
+    });
+  });
+
+  it("opens Home with no frame named", () => {
+    expect(screenFromPath("/design")).toEqual(HOME);
+  });
+
+  it("round-trips and stays out of telemetry", () => {
+    const path = `/design?url=${encoded}&session=s1&compare=1&tab=comments`;
+    const screen = screenFromPath(path);
+
+    expect(screenFromPath(pathForScreen(screen))).toEqual(screen);
+    expect(screenPattern(screen)).toBe("/design");
+    expect(paneFor(screen)).toBe("detail");
+  });
+});

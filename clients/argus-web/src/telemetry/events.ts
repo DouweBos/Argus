@@ -26,6 +26,9 @@ export type FileViewSource = "changes" | "link" | "quick_open" | "search";
 /** The palette (Cmd/Ctrl+P) or the session's Files screen. */
 export type QuickOpenVia = "screen" | "shortcut";
 
+/** Where the design viewer was opened from; `link` is a URL straight to it. */
+export type DesignOpenSource = "issue" | "session";
+
 export type TerminalKind = "run" | "setup" | "shell";
 /** How an inbox proposal was answered. */
 export type ProposalAction =
@@ -110,6 +113,7 @@ export interface EventMap {
   };
   web_appearance_changed: { appearance: "dark" | "light" | "system" };
   web_color_theme_changed: { theme: string };
+  web_design_opened: { source: DesignOpenSource | "link" };
   telemetry_enabled: undefined;
   telemetry_disabled: undefined;
 }

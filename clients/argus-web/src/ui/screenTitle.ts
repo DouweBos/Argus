@@ -11,6 +11,7 @@ import { SETTINGS_PAGE_TITLES } from "./settings/pages";
 import { useAgentsStore } from "../stores/agents";
 import { useChatsStore } from "../stores/chats";
 import { useAutomationsStore } from "../stores/automations";
+import { useDesignStore } from "../stores/design";
 import { useDevicesStore } from "../stores/devices";
 import { useProjectsStore } from "../stores/projects";
 import { useProposalsStore } from "../stores/proposals";
@@ -29,6 +30,9 @@ export function useScreenTitle(screen: Screen): string {
   const statusByAgent = useAgentsStore((s) => s.statusByAgent);
   const devices = useDevicesStore((s) => s.devices);
   const stoppedByRepo = useChatsStore((s) => s.stoppedByRepo);
+  const frameName = useDesignStore((s) =>
+    screen.name === "design" ? s.frames[screen.url]?.details?.frame.name : null,
+  );
   const sessionLabel = (sessionId: string) => {
     const session = Object.values(sessionsByRepo)
       .flat()
@@ -67,6 +71,8 @@ export function useScreenTitle(screen: Screen): string {
       return "Usage";
     case "notifications":
       return "Notifications";
+    case "design":
+      return frameName ?? "Design";
     case "devices":
       return "Devices";
     case "device":

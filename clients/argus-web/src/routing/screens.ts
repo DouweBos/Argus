@@ -11,6 +11,8 @@
  */
 
 import {
+  designPathname,
+  type DesignTab,
   parseRoute,
   routeToPath,
   type UsageRange,
@@ -79,7 +81,15 @@ export type Screen =
   /** Plan limits, or cost or tokens over `range`: `/usage[/:tab]?range=`. */
   | { name: "usage"; tab: UsageTab; range: UsageRange }
   /** This visit's warnings and errors. */
-  | { name: "notifications" };
+  | { name: "notifications" }
+  /** A Figma frame; `sessionId` when opened from a session, to compare against its device. */
+  | {
+      name: "design";
+      url: string;
+      sessionId: string | null;
+      tab: DesignTab;
+      compare: boolean;
+    };
 
 export type Pane = "detail" | "master";
 
@@ -211,6 +221,17 @@ export function screenFromPath(path: string): Screen {
   }
   const route = parseRoute(path);
   switch (route.view) {
+    case "design":
+      // With no frame named there is nothing to show; Home is its parent.
+      return route.designUrl
+        ? {
+            name: "design",
+            url: route.designUrl,
+            sessionId: route.designSessionId,
+            tab: route.designTab,
+            compare: route.designCompare,
+          }
+        : HOME;
     case "devices":
       return { name: "devices" };
     case "inbox":
@@ -307,6 +328,13 @@ export function pathForScreen(screen: Screen): string {
       });
     case "notifications":
       return "/notifications";
+    case "design":
+      return designPathname({
+        designUrl: screen.url,
+        designSessionId: screen.sessionId,
+        designTab: screen.tab,
+        designCompare: screen.compare,
+      });
     case "devices":
       return "/devices";
     case "device":
@@ -376,6 +404,8 @@ export function screenPattern(screen: Screen): string {
       return screen.tab === "limits" ? "/usage" : `/usage/${screen.tab}`;
     case "notifications":
       return "/notifications";
+    case "design":
+      return "/design";
     case "devices":
       return "/devices";
     case "device":

@@ -4,6 +4,8 @@
  */
 
 import type { RemoteAgentStatus } from "../lib/protocol";
+import type { DesignOpenSource } from "../telemetry/events";
+import { capture } from "../telemetry/telemetry";
 import { useAgentsStore } from "../stores/agents";
 import { useProjectsStore } from "../stores/projects";
 import { appNavigate, type NavigateOptions } from "./router";
@@ -55,4 +57,20 @@ export function repoOfSession(sessionId: string): string | null {
   }
 
   return null;
+}
+
+/** Open a Figma link in the design viewer, against the session's device when one is named. */
+export function openDesign(
+  url: string,
+  {
+    sessionId = null,
+    source,
+  }: { sessionId?: string | null; source: DesignOpenSource },
+  options?: NavigateOptions,
+): void {
+  capture("web_design_opened", { source });
+  appNavigate(
+    { name: "design", url, sessionId, tab: "layers", compare: false },
+    options,
+  );
 }

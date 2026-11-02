@@ -27,6 +27,7 @@ import { useConnectionStore } from "../../stores/connection";
 import { useProjectsStore } from "../../stores/projects";
 import { capture } from "../../telemetry/telemetry";
 import { agentAwaitingLabel, agentMetaLabel, mapAgentStatus } from "../agentStatus";
+import { SessionDesignChips } from "../design/SessionDesignChips";
 import { agentLabel } from "../screenTitle";
 import { useLiveRefresh } from "../useLiveRefresh";
 import { useHeldSession } from "./useHeldSession";
@@ -204,6 +205,7 @@ export function SessionHome({ sessionId }: { sessionId: string }) {
       {session.status === "error" && session.setup_error && (
         <Banner tone="error">{session.setup_error}</Banner>
       )}
+      <SessionDesignChips session={session} />
       {hasControl && session.status === "ready" && (
         <WebStartComposer
           key={session.id}

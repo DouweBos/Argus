@@ -298,6 +298,7 @@ it can:
   | `/automations/:id/runs/:runId`          | One run: its report, feedback and the agent that did it                                                                                                                                      |
   | `/automations/quick[/runs/:runId]`      | Quick Run and one quick run                                                                                                                                                                  |
   | `/automations/describe`                 | Describe an automation (web and iOS)                                                                                                                                                         |
+  | `/design`                               | `?url=` a Figma frame, its layers, comments and pages (`&tab=`); `&session=` adds comparing it with a device (`&compare=1`)                                                                  |
 
   Any other route opens its nearest parent, as on iOS, which today is Home.
   From tablet width the project list (or the project an agent belongs to)
