@@ -114,6 +114,8 @@ export interface EventMap {
   web_appearance_changed: { appearance: "dark" | "light" | "system" };
   web_color_theme_changed: { theme: string };
   web_design_opened: { source: DesignOpenSource | "link" };
+  web_eas_session_start_prompted: { outcome: "cancelled" | "confirmed" };
+  web_browser_viewed: { streaming: boolean };
   telemetry_enabled: undefined;
   telemetry_disabled: undefined;
 }

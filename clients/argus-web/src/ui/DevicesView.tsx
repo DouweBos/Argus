@@ -9,6 +9,7 @@ import { AgentRow, EmptyState, Icons, SidebarSection } from "@argus/peacock";
 import type { RemoteDevice, RemotePlatform } from "../lib/protocol";
 import { useConnectionStore } from "../stores/connection";
 import { useDevicesStore } from "../stores/devices";
+import { DeviceHostsSection } from "./DeviceHostsSection";
 import { useLiveRefresh } from "./useLiveRefresh";
 
 export function DevicesView({
@@ -27,11 +28,16 @@ export function DevicesView({
 
   if (devices.length === 0) {
     return (
-      <EmptyState
-        icon={<Icons.SimulatorIcon size={22} />}
-        title="No devices running"
-        body="Boot a simulator or emulator in Argus on your computer and it'll show up here."
-      />
+      <>
+        <EmptyState
+          icon={<Icons.SimulatorIcon size={22} />}
+          title="No devices running"
+          body="Boot a simulator or emulator in Argus on your computer and it'll show up here."
+        />
+        <div className="aw-sidebar">
+          <DeviceHostsSection />
+        </div>
+      </>
     );
   }
 
@@ -51,6 +57,7 @@ export function DevicesView({
           onClick={() => onOpen(d)}
         />
       ))}
+      <DeviceHostsSection />
     </div>
   );
 }

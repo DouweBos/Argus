@@ -45,8 +45,12 @@ import { McpServersDialog } from "./McpServersDialog";
 import { Projects } from "./ProjectViews";
 import { DeviceRoute, ProjectRoute, SessionRedirect } from "./ScreenRoutes";
 import { useScreenTitle } from "./screenTitle";
-import { LazySessionTool, SessionToolActions } from "./SessionToolActions";
 import { NotificationsView } from "./NotificationsView";
+import {
+  LazyBrowserScreen,
+  LazySessionTool,
+  SessionToolActions,
+} from "./SessionToolActions";
 import { Settings, SettingsPageScreen } from "./Settings";
 import { UsageView } from "./UsageView";
 import { SavedChat } from "./start/SavedChat";
@@ -201,6 +205,8 @@ function ScreenBody({
       return <RunScreen parent={{ name: "quickRun" }} runId={screen.runId} />;
     case "describe":
       return <DescribeScreen />;
+    case "browser":
+      return <LazyBrowserScreen sessionId={screen.sessionId} />;
   }
 }
 
@@ -582,6 +588,8 @@ function PaneIcon({ screen }: { screen: Screen }) {
       return <Icons.SearchIcon size={14} />;
     case "terminals":
       return <Icons.TerminalIcon size={14} />;
+    case "browser":
+      return <Icons.WebIcon size={14} />;
     case "devices":
     case "device":
       return <Icons.SimulatorIcon size={14} />;

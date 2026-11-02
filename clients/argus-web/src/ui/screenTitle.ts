@@ -97,6 +97,8 @@ export function useScreenTitle(screen: Screen): string {
       return withSession("Search", screen.sessionId);
     case "terminals":
       return withSession("Terminals", screen.sessionId);
+    case "browser":
+      return withSession("Browser", screen.sessionId);
     case "file":
     case "fileDiff":
       return fileNameOf(screen.path);

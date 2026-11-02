@@ -299,6 +299,7 @@ it can:
   | `/automations/quick[/runs/:runId]`      | Quick Run and one quick run                                                                                                                                                                  |
   | `/automations/describe`                 | Describe an automation (web and iOS)                                                                                                                                                         |
   | `/design`                               | `?url=` a Figma frame, its layers, comments and pages (`&tab=`); `&session=` adds comparing it with a device (`&compare=1`)                                                                  |
+  | `/sessions/:sessionId/browser`          | The session's embedded browser, view-only and live (web only)                                                                                                                                |
 
   Any other route opens its nearest parent, as on iOS, which today is Home.
   From tablet width the project list (or the project an agent belongs to)

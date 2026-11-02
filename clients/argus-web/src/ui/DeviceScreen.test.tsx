@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteDeviceState } from "../lib/protocol";
 import { DeviceScreen } from "./DeviceScreen";
@@ -57,6 +57,11 @@ vi.mock("../stores/connection", () => ({
 }));
 vi.mock("../stores/devices", () => ({
   useDevicesStore: (select: (s: unknown) => unknown) => select(fakeStore()),
+}));
+const stopEasSession = vi.fn().mockResolvedValue(undefined);
+vi.mock("../stores/deviceHosts", () => ({
+  useDeviceHostsStore: (select: (s: unknown) => unknown) =>
+    select({ stopEasSession }),
 }));
 
 beforeEach(() => {
@@ -191,5 +196,27 @@ describe("the device claim bar", () => {
     fireEvent.click(screen.getAllByText("Take control")[0]!);
 
     expect(claimDevice).toHaveBeenCalledWith("sim-1", true);
+  });
+});
+
+describe("an EAS Simulator device", () => {
+  it("ends its session after asking, instead of rotating", async () => {
+    render(<DeviceScreen deviceId="eas:eh1:1" platform="ios" isTv={false} />);
+
+    expect(screen.queryByLabelText("Rotate device")).toBeNull();
+    fireEvent.click(screen.getByLabelText("End session"));
+    expect(stopEasSession).not.toHaveBeenCalled();
+
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "End session" }));
+    await vi.waitFor(() =>
+      expect(stopEasSession).toHaveBeenCalledWith("eas:eh1:1"),
+    );
+  });
+
+  it("offers no end on any other device", () => {
+    renderScreen();
+
+    expect(screen.queryByLabelText("End session")).toBeNull();
   });
 });

@@ -65,6 +65,8 @@ export type Screen =
   | { name: "search"; sessionId: string }
   /** The session's terminals, one of them in front when the URL names it. */
   | { name: "terminals"; sessionId: string; terminalId: string | null }
+  /** The session's embedded browser, view-only; web only. */
+  | { name: "browser"; sessionId: string }
   | { name: "devices" }
   | { name: "device"; platform: RemotePlatform; deviceKey: string }
   | { name: "settings" }
@@ -169,6 +171,9 @@ function sessionToolScreen(parts: string[], path: string): Screen | null {
 
     // `/code` with no file, and `/code/quick-open`: the file list.
     return { name: "files", sessionId };
+  }
+  if (parts[2] === "browser" && parts.length === 3) {
+    return { name: "browser", sessionId };
   }
   if (parts[2] === "terminals") {
     return { name: "terminals", sessionId, terminalId: parts[3] ?? null };
@@ -310,6 +315,8 @@ export function pathForScreen(screen: Screen): string {
       return screen.terminalId
         ? `${sessionBase(screen.sessionId)}/terminals/${encodeURIComponent(screen.terminalId)}`
         : `${sessionBase(screen.sessionId)}/terminals`;
+    case "browser":
+      return `${sessionBase(screen.sessionId)}/browser`;
     case "fileDiff":
       return `${sessionBase(screen.sessionId)}/git/${screen.mode}/diff?${new URLSearchParams({ path: screen.path }).toString()}`;
     case "projects":
@@ -427,6 +434,8 @@ export function screenPattern(screen: Screen): string {
       return "/sessions/:sessionId/code";
     case "search":
       return "/sessions/:sessionId/code/search";
+    case "browser":
+      return "/sessions/:sessionId/browser";
     case "terminals":
       return screen.terminalId
         ? "/terminals/:terminalId"

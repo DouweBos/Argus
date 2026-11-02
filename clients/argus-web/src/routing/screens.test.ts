@@ -128,6 +128,7 @@ describe("pathForScreen", () => {
     "/sessions/s1/code?path=src%2Fapp.ts&line=12",
     "/sessions/s1/terminals",
     "/sessions/s1/terminals/t1",
+    "/sessions/s1/browser",
     "/sessions/s1/git/working/diff?path=src%2Fapp.ts",
     "/inbox",
     "/inbox/proposals/p1",
@@ -154,6 +155,7 @@ describe("session tool screens", () => {
       { name: "file", sessionId: "s1", path: "src/a.ts", line: null },
     ],
     ["/sessions/s1/code", { name: "files", sessionId: "s1" }],
+    ["/sessions/s1/browser", { name: "browser", sessionId: "s1" }],
     ["/sessions/s1/code/search?host=h", { name: "search", sessionId: "s1" }],
     [
       "/sessions/s1/terminals/t%3A1",

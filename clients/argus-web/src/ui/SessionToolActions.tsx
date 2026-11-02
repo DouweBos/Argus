@@ -1,5 +1,5 @@
 /**
- * Top-bar ways into a session's files and terminals, the tool screens loaded
+ * Top-bar ways into a session's files, terminals and browser, the tool screens loaded
  * on first use, and the Cmd/Ctrl+P palette over them.
  */
 
@@ -10,6 +10,7 @@ import type { Screen } from "../routing/screens";
 import type { ToolScreen } from "./SessionTools";
 
 const SessionToolBody = lazy(() => import("./SessionTools"));
+const BrowserScreen = lazy(() => import("./BrowserScreen"));
 const QuickOpen = lazy(() =>
   import("./QuickOpen").then((m) => ({ default: m.QuickOpen })),
 );
@@ -26,6 +27,14 @@ export function LazySessionTool({ screen }: { screen: ToolScreen }) {
   return (
     <Suspense fallback={<Loading />}>
       <SessionToolBody screen={screen} />
+    </Suspense>
+  );
+}
+
+export function LazyBrowserScreen({ sessionId }: { sessionId: string }) {
+  return (
+    <Suspense fallback={<Loading />}>
+      <BrowserScreen sessionId={sessionId} />
     </Suspense>
   );
 }
@@ -91,6 +100,11 @@ export function SessionToolActions({ screen }: { screen: Screen }) {
               sessionId: screen.sessionId,
               terminalId: null,
             }}
+          />
+          <Action
+            icon={<Icons.WebIcon size={14} />}
+            label="Browser"
+            to={{ name: "browser", sessionId: screen.sessionId }}
           />
         </>
       );

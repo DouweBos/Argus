@@ -14,11 +14,13 @@ import {
   DeviceStage,
   Icons,
 } from "@argus/peacock";
+import { isEasDevice } from "@argus/client-core";
 import { H264CanvasDecoder } from "@argus/remote-client";
 import { toNativeKey } from "../lib/keymap";
 import type { RemoteDeviceOrientation, RemotePlatform } from "../lib/protocol";
 import { useConnectionStore } from "../stores/connection";
 import { useDevicesStore } from "../stores/devices";
+import { EasEndSession } from "./EasEndSession";
 
 const PLACEHOLDER: Record<string, string> = {
   connecting: "Connecting to device…",
@@ -356,19 +358,24 @@ export function DeviceScreen({
       ? IOS_BUTTONS
       : ANDROID_BUTTONS;
 
+  // An EAS Simulator device ends its session here instead of rotating.
+  const eas = isEasDevice(deviceId);
+
   // Rotating and folding are iOS-only: an Android emulator rotates its own
   // framebuffer and no simulator but the Duo has a hinge.
   const poseButtons = platform === "ios" && !isTv && (
     <>
-      <Button
-        variant="ghost"
-        aria-label="Rotate device"
-        title="Rotate device"
-        disabled={blocked}
-        onClick={onRotate}
-      >
-        <Icons.RotateDeviceIcon size={16} />
-      </Button>
+      {!eas && (
+        <Button
+          variant="ghost"
+          aria-label="Rotate device"
+          title="Rotate device"
+          disabled={blocked}
+          onClick={onRotate}
+        >
+          <Icons.RotateDeviceIcon size={16} />
+        </Button>
+      )}
       {fold && (
         <Button
           variant="ghost"
@@ -467,6 +474,7 @@ export function DeviceScreen({
               {b.icon}
             </Button>
           ))}
+          {eas && <EasEndSession deviceId={deviceId} />}
           {poseButtons}
         </div>
       )}

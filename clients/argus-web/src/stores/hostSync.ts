@@ -19,10 +19,12 @@ import {
 } from "./agents";
 import { resetAutomations } from "./automations";
 import { installConnectionHooks, watchLiveness } from "./connection";
+import { resetDeviceHosts } from "./deviceHosts";
 import { receiveClaim, receiveDeviceState, resetDevices } from "./devices";
 import { resetFiles } from "./files";
 import { receiveFileSearch, resetFileSearch } from "./fileSearch";
 import { resetGit } from "./git";
+import { resetIntegrations } from "./integrations";
 import {
   receiveTerminalData,
   receiveTerminalExit,
@@ -161,6 +163,8 @@ export function resetHostStores(): void {
   resetUsage();
   resetClaudeAccounts();
   resetSettings();
+  resetDeviceHosts();
+  resetIntegrations();
 }
 
 let installed = false;

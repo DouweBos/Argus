@@ -7,7 +7,6 @@
 import { useEffect } from "react";
 import { AUTONOMY_CAPTIONS, AUTONOMY_LABELS, AUTONOMY_LEVELS } from "@argus/client-core";
 import {
-  Badge,
   Banner,
   Button,
   EmptyState,
@@ -25,6 +24,8 @@ import type { RemotePermissionMode } from "../../lib/protocol";
 import { useConnectionStore } from "../../stores/connection";
 import { useSettingsStore } from "../../stores/settings";
 import { capture } from "../../telemetry/telemetry";
+import { DeviceHostsSection } from "../DeviceHostsSection";
+import { IntegrationsField } from "../IntegrationsField";
 import { ConnectionBadge } from "../ConnectionBadge";
 
 const MODE_LABELS: Record<RemotePermissionMode, string> = {
@@ -69,6 +70,7 @@ export function ConnectionPage() {
       <SettingsScreenField label="Access">
         <span className="aw-muted">{grantLabel(capabilities)}</span>
       </SettingsScreenField>
+      <IntegrationsField />
       {account ? (
         <SettingsScreenField label="Computer">
           <Button variant="secondary" onClick={account.leave}>
@@ -188,59 +190,12 @@ export function AutomationsPage() {
   );
 }
 
-const HOST_STATUS: Record<string, string> = {
-  connected: "Connected",
-  unreachable: "Unreachable",
-  unknown: "Not checked yet",
-};
 
+/** The computer's device hosts; an EAS host can start a billed session from here. */
 export function DeviceHostsPage() {
-  const connection = useConnectionStore((s) => s.connection);
-  const hosts = useSettingsStore((s) => s.deviceHosts);
-  const load = useSettingsStore((s) => s.loadDeviceHosts);
-
-  useEffect(() => {
-    if (connection === "ready") {
-      load().catch(() => {});
-    }
-  }, [connection, load]);
-
-  if (hosts === null) {
-    return (
-      <div className="aw-center">
-        <Spinner />
-      </div>
-    );
-  }
-
   return (
     <div className="aw-settings">
-      <SettingsScreenField
-        label="Device hosts"
-        caption="Other Macs this computer streams simulators from over SSH, and EAS Simulator hosts in Expo's cloud. Add or remove them in Argus on the computer."
-      >
-        {hosts.length === 0 ? (
-          <span className="aw-muted">None set up.</span>
-        ) : (
-          <div className="aw-settings-list">
-            {hosts.map((h) => (
-              <div className="aw-settings-inline" key={h.id}>
-                <span>{h.label}</span>
-                {h.kind === "eas" && (
-                  <Badge tone="neutral">
-                    {`EAS · ${String(h.running_sessions ?? 0)} of ${String(h.max_sessions ?? 0)} running`}
-                  </Badge>
-                )}
-                <Badge
-                  tone={h.status === "unreachable" ? "warning" : "neutral"}
-                >
-                  {HOST_STATUS[h.status] ?? h.status}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        )}
-      </SettingsScreenField>
+      <DeviceHostsSection />
     </div>
   );
 }

@@ -76,7 +76,8 @@ export function parentOf(screen: Screen): Screen {
     case "sessionHome":
     case "changes":
     case "files":
-    case "terminals": {
+    case "terminals":
+    case "browser": {
       const repoRoot = repoOfSession(screen.sessionId);
 
       return repoRoot ? projectScreen(repoRoot) : HOME;
