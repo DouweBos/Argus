@@ -73,8 +73,8 @@ struct HostPreferencesTests {
     #expect(f.home.string(forKey: GitPreferences.diffLayoutKey) == "inline")
     #expect(f.home.dictionary(forKey: RuntimeModel.Keys.ios) as? [String: String] == ["s1": "UDID"])
     #expect(HomeRecents.entries(from: f.home.array(forKey: HomeRecents.openedKey) ?? []) == [.init(path: "/a", lastOpened: 5)])
-    // Theme, colour theme, display size, permission mode and model always have a value here.
-    #expect(supplied == 2)
+    // Theme, colour theme, display size and permission mode always have a value here.
+    #expect(supplied == 1)
     #expect(host.settings["default_permission_mode"] == .string("auto"))
   }
 
