@@ -188,11 +188,12 @@ button {
   gap: 6px;
 }
 
-/* Header actions centre a 14px glyph in a 24px box, so their content sits 5px
-   from the button edge. The dot matches that with margin rather than a wrapper
-   element, which would claim a slot of its own. */
-.aw-header-dot {
-  margin: 0 5px;
+/* The connection state: as wide as what it says, never the row. */
+.aw-connection-badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
 }
 
 .aw-card {
