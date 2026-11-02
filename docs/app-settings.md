@@ -74,13 +74,16 @@ files across accounts.
 | **Warm agents**                       | 1            | How many agents Argus keeps started for the sessions you are looking at — on the desktop, the Mac app or your phone — so starting one there is instant. Off starts every agent from scratch; 2 keeps one ready in each of the two sessions you looked at last. Each warm agent is a running Claude Code process with its MCP servers, so it uses memory while it waits; one nobody has looked at for five minutes is stopped. |
 | **Chat history**                      | On           | Keeps each agent's chat in its project's **Chat history** once it has messages, so you can search, read and resume it after the agent is gone. Off stops saving new chats there and stops importing Claude Code chats (manual **Import now** included); chats already saved stay.                                                                                                                                             |
 | **Import Claude Code chats**          | On           | Chats you ran with the `claude` CLI in a project's folder — in a terminal or another app — show up in that project's chat history, marked Imported, and can be resumed. Checked at launch, when a project is added and every 10 minutes; covers the last 30 days. **Import now** runs it straight away.                                                                                                                       |
-| **Start new agents in**               | New worktree | Whether a prompt on a project's home runs in a fresh worktree or in the project's checkout. Each prompt can switch it.                                                                                                                                                                                                                                                                                                        |
+| **Start new agents in**               | New worktree | Electron app only. Whether a prompt on a project's home runs in a fresh worktree or in the project's checkout. Each prompt can switch it.                                                                                                                                                                                                                                                                                     |
 | **Automations**                       | On           | Whether automations start agents on their own schedule. Turning it off leaves the manual Run button working.                                                                                                                                                                                                                                                                                                                  |
 | **Default autonomy**                  | No cap       | App-wide ceiling on how far any automation may go, and the level used by automations that set none.                                                                                                                                                                                                                                                                                                                           |
 | **Concurrent automation sessions**    | 3            | How many sessions automations may have open at once, across all of them.                                                                                                                                                                                                                                                                                                                                                      |
 | **Daily automation budget**           | 0            | Spend automations may reach in a day, in USD. 0 means no budget.                                                                                                                                                                                                                                                                                                                                                              |
 | **Extra commands for read-only runs** | none         | Shell commands a read-only automation may run beyond the built-in reads.                                                                                                                                                                                                                                                                                                                                                      |
 | **Extra tools for read-only runs**    | none         | Tools a read-only automation may call beyond the built-in reads.                                                                                                                                                                                                                                                                                                                                                              |
+
+The default model for new agents is set under [LLM](#llm), next to the runner
+it belongs to.
 
 A session counts against the concurrency limit from the moment an automation
 creates it until it is merged or deleted — not until its agent stops. A branch
@@ -470,12 +473,12 @@ change only the repository on screen.
 | **Diff layout**                | Unified | Unified in one column, or split side by side.                                                             |
 | **Ignore whitespace in diffs** | Off     | Hide pure-whitespace changes when comparing files.                                                        |
 
-The pull dialog starts on the repository's own `pull.rebase` / `pull.ff`
-git config (set it in the Mac app's Git settings), and merges when neither is
-set.
+The Electron app's pull dialog starts on the repository's own `pull.rebase` /
+`pull.ff` git config (the Mac app edits it under the git panel's settings), and
+merges when neither is set.
 
-A few git-panel preferences are intentionally _not_ in this dialog
-because they're pure layout state: the source-sidebar collapsed state
+A few git-panel preferences are intentionally _not_ in Settings because
+they're pure layout state: the source-sidebar collapsed state
 and width, which sub-sections are collapsed, and the
 "don't-ask-again" map for confirm dialogs. Those persist
 automatically as you use the panel.

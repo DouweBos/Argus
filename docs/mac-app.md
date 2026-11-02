@@ -361,10 +361,8 @@ won't start until they're moved: quit Argus for Mac, open the Electron app
 once, quit it, and open Argus for Mac again (**Check Again** on the card
 confirms it).
 
-What doesn't carry over: window tabs and panel sizes, a few Electron-only
-git toggles (word diff, the conventional-commit picker, ignored and
-unchanged files, the default pull strategy, "don't ask again" choices), and
-the other computers you paired the Electron app with under Settings →
+What doesn't carry over: window tabs and panel sizes, the Electron app's
+"don't ask again" choices, and the other computers you paired the Electron app with under Settings →
 Hosts — pair those again in Argus for Mac.
 
 Encrypted files (`remote-devices.json`, `mcp-tokens.json`) are sealed with a

@@ -208,19 +208,18 @@ opens the same dialog scoped to refs only.
 
 ## Project settings (git)
 
-Project-scope **Settings** view exposes git-related project config:
+The project's git **Settings** view holds:
 
-- **Default branch** — what's pinned to the top of the branches list
-  and used as the merge target for sessions.
-- **Pull strategy** — default for the toolbar pull button.
-- **LFS warning thresholds** — file size / extension globs that
-  surface the LFS warning in the working copy.
-- **Credential helper status** — whether `git config credential.helper`
-  is set, with a one-click link to docs if not.
+- **Branch prefix** — prepended to branches you create through Argus.
+- **Auto-fetch** — how often `git fetch --prune` runs in the background,
+  shared with the team through `.argus.json`.
+- **Suppress LFS banners** — hides the git-lfs warnings above the working copy.
+- **Archived branches** — branches you've hidden from the branch list.
 
-Per-developer git preferences (e.g. default pull strategy override) are
-stored in `~/.argus/user-project-settings.json` instead — see
-[`app-settings.md`](app-settings.md).
+Everything but auto-fetch is personal, stored in
+`~/.argus/user-project-settings.json` — see
+[`app-settings.md`](app-settings.md). Pulls follow the repository's own
+`pull.rebase` / `pull.ff` git config.
 
 ---
 
