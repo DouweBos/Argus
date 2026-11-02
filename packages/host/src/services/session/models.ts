@@ -299,8 +299,6 @@ export interface ArgusConfig {
   browser_url?: string | null;
   /** Custom browser device presets for the web browser panel. */
   browser_presets: BrowserPresetConfig[];
-  /** Whether to save chat history when agents stop. Defaults to true. */
-  save_chat_history?: boolean | null;
   /**
    * Branches that must be updated through a pull request instead of a direct
    * merge (e.g. `["main", "master"]`). Workspaces whose base branch is
@@ -447,7 +445,6 @@ export function defaultArgusConfig(): ArgusConfig {
     related_projects: [],
     browser_url: null,
     browser_presets: [],
-    save_chat_history: true,
     protected_branches: [],
     default_base_branch: null,
     single_runtime: false,

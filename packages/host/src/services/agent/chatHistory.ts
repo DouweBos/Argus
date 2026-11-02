@@ -11,7 +11,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
-import { loadArgusConfig } from "../session/argusConfig";
+import { loadAppSettings } from "../appSettings/store";
 import { CHAT_HISTORY_DIR, sidecarPath } from "../session/sidecars";
 
 const INDEX_FILENAME = "index.json";
@@ -113,9 +113,13 @@ function saveIndex(repoRoot: string, entries: ChatHistoryEntry[]): void {
   }
 }
 
+/** Whether finished chats join project history; the `save_chat_history` app setting, on by default. */
+export function chatHistoryEnabled(): boolean {
+  return loadAppSettings().save_chat_history !== false;
+}
+
 /**
- * Save a conversation to disk. Checks the project's `save_chat_history`
- * setting (defaults to true). Upserts by sessionId — if a conversation with
+ * Save a conversation to disk, unless {@link chatHistoryEnabled} is off. Upserts by sessionId — if a conversation with
  * the same sessionId already exists, its file is overwritten and the index
  * entry is updated in place (preserving the original id and createdAt). This
  * lets callers save incrementally during an ongoing chat without creating
@@ -125,14 +129,8 @@ export function saveConversation(
   repoRoot: string,
   conversation: SavedConversation,
 ): void {
-  // Check project setting
-  try {
-    const config = loadArgusConfig(repoRoot);
-    if (config.save_chat_history === false) {
-      return;
-    }
-  } catch {
-    // Can't read config — default to saving
+  if (!chatHistoryEnabled()) {
+    return;
   }
 
   const entries = loadHistoryIndex(repoRoot);

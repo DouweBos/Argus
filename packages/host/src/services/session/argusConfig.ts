@@ -74,7 +74,6 @@ export function loadArgusConfig(repoRoot: string): ArgusConfig {
 function applyDefaults(config: ArgusConfig): ArgusConfig {
   return {
     ...config,
-    save_chat_history: config.save_chat_history ?? true,
     single_runtime: config.single_runtime ?? false,
     auto_continue_on_limit: config.auto_continue_on_limit ?? false,
   };
@@ -104,10 +103,6 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
     related_projects: normalizeRelatedProjects(parsed.related_projects),
     browser_url: (parsed.browser_url as string) ?? null,
     browser_presets: normalizeBrowserPresets(parsed.browser_presets),
-    save_chat_history:
-      parsed.save_chat_history != null
-        ? Boolean(parsed.save_chat_history)
-        : null,
     protected_branches: normalizeProtectedBranches(parsed.protected_branches),
     default_base_branch: normalizeDefaultBaseBranch(parsed.default_base_branch),
     single_runtime:
@@ -183,7 +178,6 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
       base.browser_presets,
       local.browser_presets,
     ),
-    save_chat_history: local.save_chat_history ?? base.save_chat_history,
     protected_branches:
       local.protected_branches.length > 0
         ? local.protected_branches

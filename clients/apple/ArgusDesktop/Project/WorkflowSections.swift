@@ -47,7 +47,6 @@ struct AgentSection: View {
       text: "Agent-level options for this project."
     )
     Section {
-      Toggle("Save chat history when agents stop", isOn: $draft.saveChatHistory)
       Toggle("Continue agents automatically when a usage limit resets", isOn: $draft.autoContinueOnLimit)
     }
   }

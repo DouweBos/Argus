@@ -32,22 +32,22 @@ Two ways to change project settings:
 2. **Hand-edit `.argus.json`** at the repo root. The dialog re-reads
    on next open, so the two stay in sync.
 
-| Field                                         | Editable in dialog?      |
-| --------------------------------------------- | ------------------------ |
-| `setup.copy` / `symlink` / `commands`         | yes (Setup)              |
-| `terminals`                                   | yes (Terminals)          |
-| `run`                                         | yes (Run commands)       |
-| `workspace_env`                               | yes (Workspace env)      |
-| `browser_url`, `browser_presets`              | yes (Browser)            |
-| `single_runtime`                              | yes (Run commands)       |
-| `save_chat_history`, `auto_continue_on_limit` | yes (Agent)              |
-| `protected_branches`, `default_base_branch`   | yes (Branch protection)  |
-| `release_note_patterns`                       | yes (Release notes)      |
-| `simulator_deeplinks`                         | yes (Deep links)         |
-| `auto_fetch_minutes`                          | yes (Git settings panel) |
-| `llm`                                         | yes (LLM)                |
-| `related_projects`                            | yes (Related projects)   |
-| `automations`                                 | yes (Automations)        |
+| Field                                       | Editable in dialog?      |
+| ------------------------------------------- | ------------------------ |
+| `setup.copy` / `symlink` / `commands`       | yes (Setup)              |
+| `terminals`                                 | yes (Terminals)          |
+| `run`                                       | yes (Run commands)       |
+| `workspace_env`                             | yes (Workspace env)      |
+| `browser_url`, `browser_presets`            | yes (Browser)            |
+| `single_runtime`                            | yes (Run commands)       |
+| `auto_continue_on_limit`                    | yes (Agent)              |
+| `protected_branches`, `default_base_branch` | yes (Branch protection)  |
+| `release_note_patterns`                     | yes (Release notes)      |
+| `simulator_deeplinks`                       | yes (Deep links)         |
+| `auto_fetch_minutes`                        | yes (Git settings panel) |
+| `llm`                                       | yes (LLM)                |
+| `related_projects`                          | yes (Related projects)   |
+| `automations`                               | yes (Automations)        |
 
 ---
 
@@ -63,7 +63,6 @@ Two ways to change project settings:
   "browser_url":        "http://localhost:3000",
   "browser_presets":    [{ "id": "...", "label": "...", "width": 390, "height": 844, "user_agent": "..." }],
   "simulator_deeplinks": [{ "label": "Profile", "url": "myapp://profile/123" }],
-  "save_chat_history":  true,
   "auto_continue_on_limit": false,
   "protected_branches": ["main", "master"],
   "default_base_branch": "staging",
@@ -258,18 +257,6 @@ can be organised hierarchically.
 
 Works for iOS simulators and Android emulators alike — any device
 `conductor open-link` recognises.
-
----
-
-## `save_chat_history` — persist chat after agent stops
-
-When `true` (default), the chat history of stopped agents is preserved
-and visible in the agent tab. When `false`, stopped agents start fresh
-on next interaction.
-
-```jsonc
-"save_chat_history": true
-```
 
 ---
 

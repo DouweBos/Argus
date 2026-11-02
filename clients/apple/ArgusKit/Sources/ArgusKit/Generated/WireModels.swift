@@ -1608,6 +1608,7 @@ extension ArgusProtocol {
     public var theme: AppSettingsTheme?
     public var colorTheme: ColorTheme?
     public var importCliChats: Bool?
+    public var saveChatHistory: Bool?
     public var uiScale: AppSettingsUiScale?
     public var defaultPermissionMode: AppSettingsDefaultPermissionMode?
     public var defaultModel: String?
@@ -1648,6 +1649,7 @@ extension ArgusProtocol {
       case theme = "theme"
       case colorTheme = "color_theme"
       case importCliChats = "import_cli_chats"
+      case saveChatHistory = "save_chat_history"
       case uiScale = "ui_scale"
       case defaultPermissionMode = "default_permission_mode"
       case defaultModel = "default_model"
@@ -1659,7 +1661,7 @@ extension ArgusProtocol {
       case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, conductorGuide: Bool? = nil, warmAgents: Int? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, defaultModel: String? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, conductorGuide: Bool? = nil, warmAgents: Int? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, defaultModel: String? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
       self.defaultLlm = defaultLlm
@@ -1689,6 +1691,7 @@ extension ArgusProtocol {
       self.theme = theme
       self.colorTheme = colorTheme
       self.importCliChats = importCliChats
+      self.saveChatHistory = saveChatHistory
       self.uiScale = uiScale
       self.defaultPermissionMode = defaultPermissionMode
       self.defaultModel = defaultModel
@@ -1731,6 +1734,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(theme, forKey: .theme)
       try c.encodeIfPresent(colorTheme, forKey: .colorTheme)
       try c.encodeIfPresent(importCliChats, forKey: .importCliChats)
+      try c.encodeIfPresent(saveChatHistory, forKey: .saveChatHistory)
       try c.encodeIfPresent(uiScale, forKey: .uiScale)
       try c.encodeIfPresent(defaultPermissionMode, forKey: .defaultPermissionMode)
       try c.encodeIfPresent(defaultModel, forKey: .defaultModel)
@@ -1768,7 +1772,6 @@ extension ArgusProtocol {
     public var relatedProjects: [RelatedProject]?
     public var browserUrl: String?
     public var browserPresets: [BrowserPresetConfig]
-    public var saveChatHistory: Bool?
     public var protectedBranches: [String]
     public var defaultBaseBranch: String?
     public var singleRuntime: Bool?
@@ -1788,7 +1791,6 @@ extension ArgusProtocol {
       case relatedProjects = "related_projects"
       case browserUrl = "browser_url"
       case browserPresets = "browser_presets"
-      case saveChatHistory = "save_chat_history"
       case protectedBranches = "protected_branches"
       case defaultBaseBranch = "default_base_branch"
       case singleRuntime = "single_runtime"
@@ -1801,7 +1803,7 @@ extension ArgusProtocol {
       case automations = "automations"
     }
 
-    public init(setup: ArgusSetupConfig, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], saveChatHistory: Bool? = nil, protectedBranches: [String], defaultBaseBranch: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
+    public init(setup: ArgusSetupConfig, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], protectedBranches: [String], defaultBaseBranch: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
       self.setup = setup
       self.terminals = terminals
       self.workspaceEnv = workspaceEnv
@@ -1809,7 +1811,6 @@ extension ArgusProtocol {
       self.relatedProjects = relatedProjects
       self.browserUrl = browserUrl
       self.browserPresets = browserPresets
-      self.saveChatHistory = saveChatHistory
       self.protectedBranches = protectedBranches
       self.defaultBaseBranch = defaultBaseBranch
       self.singleRuntime = singleRuntime
@@ -1831,7 +1832,6 @@ extension ArgusProtocol {
       try c.encodeIfPresent(relatedProjects, forKey: .relatedProjects)
       try c.encodeIfPresent(browserUrl, forKey: .browserUrl)
       try c.encode(browserPresets, forKey: .browserPresets)
-      try c.encodeIfPresent(saveChatHistory, forKey: .saveChatHistory)
       try c.encode(protectedBranches, forKey: .protectedBranches)
       try c.encodeIfPresent(defaultBaseBranch, forKey: .defaultBaseBranch)
       try c.encodeIfPresent(singleRuntime, forKey: .singleRuntime)

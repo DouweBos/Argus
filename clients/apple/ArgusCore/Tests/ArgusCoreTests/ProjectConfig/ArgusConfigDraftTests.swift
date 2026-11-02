@@ -35,7 +35,6 @@ struct ArgusConfigDraftTests {
         "browser_presets": [{ "id": "kiosk", "label": "Kiosk", "width": 1920, "height": 1080 }],
         "simulator_deeplinks": [{ "label": "P", "url": "app://p" },
                                 { "label": "F", "children": [{ "label": "C", "url": "app://c" }] }],
-        "save_chat_history": false,
         "auto_continue_on_limit": true,
         "protected_branches": ["main"],
         "default_base_branch": "staging",
@@ -65,7 +64,6 @@ struct ArgusConfigDraftTests {
     draft.browserPresets = [.init(key: "p")]
     draft.run = [.init(title: "Dev", command: ""), .init(title: " Up ", command: " go ")]
     draft.deeplinks = [.init(label: "Empty", children: []), .init(label: "", url: "x://")]
-    draft.saveChatHistory = true
     let out = draft.applied(to: [:])
     #expect(out["workspace_env"] == .array([.object(["name": .string("PORT"), "base_value": .number(8081)])]))
     #expect(out["browser_presets"]?.arrayValue?.first?["width"] == .number(375))
@@ -73,7 +71,6 @@ struct ArgusConfigDraftTests {
     #expect(out["run"]?.arrayValue?.count == 1)
     #expect(out["run"]?.arrayValue?.first?["title"] == .string("Up"))
     #expect(out["simulator_deeplinks"] == nil)
-    #expect(out["save_chat_history"] == nil)
     #expect(out["setup"] == .object([:]))
   }
 

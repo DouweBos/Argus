@@ -12,6 +12,7 @@ import path from "node:path";
 import { info, warn } from "@argus/host/logger";
 import { appState } from "../../state";
 import {
+  chatHistoryEnabled,
   importConversations,
   loadHistoryIndex,
   removeImportedEntries,
@@ -19,7 +20,6 @@ import {
 import { liveMeta } from "../agent/conversation/live";
 import { loadAppSettings } from "../appSettings/store";
 import { claudeProjectSlug } from "../llm/runners/claudeCode/transcriptFork";
-import { loadArgusConfig } from "../session/argusConfig";
 import { capture } from "../telemetry/telemetry";
 import { isCliSessionId, readCliSession } from "./cliSession";
 import { isArgusHelperPrompt } from "./helperPrompts";
@@ -72,12 +72,8 @@ export async function importCliChats(
   now = Date.now(),
 ): Promise<ProjectImport> {
   const none = { imported: 0, skipped: 0, removed: 0 };
-  try {
-    if (loadArgusConfig(repoRoot).save_chat_history === false) {
-      return none;
-    }
-  } catch {
-    // No readable config: the default keeps history.
+  if (!chatHistoryEnabled()) {
+    return none;
   }
   const dir = path.join(
     os.homedir(),

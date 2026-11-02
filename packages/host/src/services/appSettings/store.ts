@@ -147,6 +147,8 @@ export interface AppSettings {
     | "rose";
   /** Pull chats run with the plain Claude Code CLI into project history. On by default. */
   import_cli_chats?: boolean;
+  /** Keep finished agent chats in each project's chat history. On by default. */
+  save_chat_history?: boolean;
   /** Display size. */
   ui_scale?: "default" | "large" | "larger" | "small" | "smaller";
   /** Permission mode for agents started without one. */

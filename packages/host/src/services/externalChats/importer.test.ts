@@ -198,4 +198,35 @@ describe("importCliChats", () => {
     expect(left).toEqual(expect.arrayContaining([ids.terminal, ids.native]));
     expect(loadConversation(repo, `cli-${oneShot}`)).toBeNull();
   });
+
+  it("saves and imports nothing while chat history is off", async () => {
+    const { importCliChats } = await import("./importer");
+    const { loadHistoryIndex, saveConversation } =
+      await import("../agent/chatHistory");
+    const { saveAppSettings } = await import("../appSettings/store");
+    const fresh = "88888888-8888-4888-8888-888888888888";
+    fs.writeFileSync(path.join(claudeDir, `${fresh}.jsonl`), transcript(fresh));
+    const before = loadHistoryIndex(repo).length;
+
+    saveAppSettings({ save_chat_history: false });
+    try {
+      saveConversation(repo, {
+        id: "off",
+        sessionId: "99999999-9999-4999-8999-999999999999",
+        title: "Not kept",
+        sessionBranch: "main",
+        sessionDescription: "",
+        messageCount: 0,
+        createdAt: 1,
+        endedAt: 2,
+        messages: [],
+      });
+      await expect(
+        importCliChats(repo, Date.parse("2026-10-26T00:00:00Z")),
+      ).resolves.toEqual({ imported: 0, skipped: 0, removed: 0 });
+      expect(loadHistoryIndex(repo)).toHaveLength(before);
+    } finally {
+      saveAppSettings({ save_chat_history: true });
+    }
+  });
 });

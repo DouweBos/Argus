@@ -147,14 +147,12 @@ describe("loadArgusConfig", () => {
         ? JSON.stringify({ browser_url: "http://localhost:3000" })
         : JSON.stringify({
             single_runtime: true,
-            save_chat_history: false,
             auto_continue_on_limit: true,
           }),
     );
 
     const config = loadArgusConfig("/repo");
     expect(config.single_runtime).toBe(true);
-    expect(config.save_chat_history).toBe(false);
     expect(config.auto_continue_on_limit).toBe(true);
   });
 
@@ -162,13 +160,19 @@ describe("loadArgusConfig", () => {
     mockExistsSync.mockReturnValue(true);
     mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) =>
       String(p).includes("local")
-        ? JSON.stringify({ single_runtime: false, save_chat_history: true })
-        : JSON.stringify({ single_runtime: true, save_chat_history: false }),
+        ? JSON.stringify({
+            single_runtime: false,
+            auto_continue_on_limit: true,
+          })
+        : JSON.stringify({
+            single_runtime: true,
+            auto_continue_on_limit: false,
+          }),
     );
 
     const config = loadArgusConfig("/repo");
     expect(config.single_runtime).toBe(false);
-    expect(config.save_chat_history).toBe(true);
+    expect(config.auto_continue_on_limit).toBe(true);
   });
 
   it("defaults unset booleans after merging", () => {
@@ -177,7 +181,6 @@ describe("loadArgusConfig", () => {
 
     const config = loadArgusConfig("/repo");
     expect(config.single_runtime).toBe(false);
-    expect(config.save_chat_history).toBe(true);
     expect(config.auto_continue_on_limit).toBe(false);
   });
 

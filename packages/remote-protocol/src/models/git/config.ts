@@ -140,8 +140,6 @@ export const ArgusConfig = z.object({
   browser_url: z.string().nullish(),
   /** Custom browser device presets for the web browser panel. */
   browser_presets: z.array(BrowserPresetConfig),
-  /** Whether to save chat history when agents stop. Defaults to true. */
-  save_chat_history: z.boolean().nullish(),
   /** Branches updated through a pull request instead of a direct merge. */
   protected_branches: z.array(z.string()),
   /** Preferred default source branch for new sessions. */

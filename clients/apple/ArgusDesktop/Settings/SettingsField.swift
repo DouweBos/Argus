@@ -23,6 +23,7 @@ enum SettingsField: String {
   case concurrency
   case dailyBudget = "daily_budget"
   case importCliChats = "import_cli_chats"
+  case saveChatHistory = "save_chat_history"
   case allowedCommands = "allowed_commands"
   case allowedTools = "allowed_tools"
   case refusalAllowed = "refusal_allowed"
@@ -59,7 +60,7 @@ enum SettingsField: String {
     case .accountSelected, .accountAdded, .accountRemoved, .accountRenamed, .accountReauth:
       .accounts
     case .defaultModel, .permissionMode, .automationsEnabled, .followUpSuggestions, .conductorGuide, .warmAgents, .defaultAutonomy,
-      .concurrency, .dailyBudget, .importCliChats, .allowedCommands, .allowedTools, .refusalAllowed,
+      .concurrency, .dailyBudget, .importCliChats, .saveChatHistory, .allowedCommands, .allowedTools, .refusalAllowed,
       .refusalDismissed:
       .agents
     case .runner, .llmModel, .customRunnerSaved, .customRunnerDeleted: .llm

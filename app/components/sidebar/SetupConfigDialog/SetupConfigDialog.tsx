@@ -1732,7 +1732,6 @@ export function SetupConfigDialog({
   const protectedBranchList = useListState([]);
   const releaseNotesList = useReleaseNotesListState([]);
   const [browserUrl, setBrowserUrl] = useState("");
-  const [saveChatHistory, setSaveChatHistory] = useState(true);
   const [singleRuntime, setSingleRuntime] = useState(false);
   const [autoContinueOnLimit, setAutoContinueOnLimit] = useState(false);
   const [defaultBaseBranch, setDefaultBaseBranch] = useState("");
@@ -1811,9 +1810,6 @@ export function SetupConfigDialog({
               requires: Array.isArray(r.requires) ? [...r.requires] : [],
             })),
           );
-        }
-        if (config.save_chat_history != null) {
-          setSaveChatHistory(config.save_chat_history !== false);
         }
         if (config.single_runtime) {
           setSingleRuntime(true);
@@ -1972,9 +1968,6 @@ export function SetupConfigDialog({
       config.run = runs;
     }
 
-    if (!saveChatHistory) {
-      config.save_chat_history = false;
-    }
     const browserUrlVal = browserUrl.trim();
     if (browserUrlVal) {
       config.browser_url = browserUrlVal;
@@ -2090,7 +2083,6 @@ export function SetupConfigDialog({
       browserPresetList.items,
       protectedBranchList.items,
       browserUrl,
-      saveChatHistory,
       singleRuntime,
       autoContinueOnLimit,
       defaultBaseBranch,
@@ -2352,7 +2344,7 @@ export function SetupConfigDialog({
         {
           id: "agent",
           label: "Agent",
-          description: "History & limits",
+          description: "Usage limits",
           icon: <Icons.AgentIcon size={12} />,
           render: () => (
             <SettingsScreenDetail>
@@ -2361,14 +2353,6 @@ export function SetupConfigDialog({
                 title="Agent"
               />
               <SettingsScreenDetailBody>
-                <label className={sectionStyles.agentCheckboxRow}>
-                  <input
-                    checked={saveChatHistory}
-                    type="checkbox"
-                    onChange={(e) => setSaveChatHistory(e.target.checked)}
-                  />
-                  Save chat history when agents stop
-                </label>
                 <label className={sectionStyles.agentCheckboxRow}>
                   <input
                     checked={autoContinueOnLimit}

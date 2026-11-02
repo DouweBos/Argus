@@ -16,7 +16,6 @@ export const DIALOG_OWNED_KEYS: ReadonlySet<string> = new Set([
   "browser_url",
   "browser_presets",
   "simulator_deeplinks",
-  "save_chat_history",
   "auto_continue_on_limit",
   "protected_branches",
   "default_base_branch",
@@ -42,6 +41,7 @@ export const RETIRED_KEYS: ReadonlySet<string> = new Set([
   "mcp_servers",
   "pull_request_template",
   "min_argus_version",
+  "save_chat_history",
 ]);
 
 function isObject(value: unknown): value is RawConfig {

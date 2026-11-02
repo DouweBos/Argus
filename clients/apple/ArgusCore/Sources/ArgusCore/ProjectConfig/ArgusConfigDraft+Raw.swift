@@ -7,7 +7,7 @@ extension ArgusConfigDraft {
   /// Every key the draft owns. Anything else in the file is left untouched.
   static let ownedKeys: Set<String> = [
     "setup", "terminals", "run", "workspace_env", "related_projects",
-    "browser_url", "browser_presets", "simulator_deeplinks", "save_chat_history",
+    "browser_url", "browser_presets", "simulator_deeplinks",
     "auto_continue_on_limit", "protected_branches", "default_base_branch",
     "single_runtime", "auto_fetch_minutes",
     "release_note_patterns", "llm", "tools", "automations",
@@ -16,6 +16,7 @@ extension ArgusConfigDraft {
   /// Settings Argus no longer reads; saving drops them, as the desktop dialog does.
   static let retiredKeys: Set<String> = [
     "platforms", "agent_prompt", "mcp_servers", "pull_request_template", "min_argus_version",
+    "save_chat_history",
   ]
 
   public init(raw: [String: JSONValue]) {
@@ -59,7 +60,6 @@ extension ArgusConfigDraft {
     defaultBaseBranch = raw["default_base_branch"]?.stringValue ?? ""
     autoFetchMinutes = max(0, raw["auto_fetch_minutes"]?.intValue ?? 0)
     releaseNotes = (raw["release_note_patterns"]?.arrayValue ?? []).compactMap(Self.releasePattern)
-    saveChatHistory = raw["save_chat_history"]?.boolValue != false
     autoContinueOnLimit = raw["auto_continue_on_limit"]?.boolValue ?? false
     let llm = raw["llm"]?.objectValue ?? [:]
     llmRunner = llm["runner"]?.stringValue ?? ""
@@ -105,7 +105,6 @@ extension ArgusConfigDraft {
     set("browser_url", Self.trimmed(browserUrl))
     set("browser_presets", Self.nonEmpty(browserPresets.compactMap(Self.presetValue)))
     set("simulator_deeplinks", Self.nonEmpty(Self.deeplinkValues(deeplinks)))
-    set("save_chat_history", saveChatHistory ? nil : .bool(false))
     set("auto_continue_on_limit", autoContinueOnLimit ? .bool(true) : nil)
     set("protected_branches", Self.nonEmpty(protectedBranches.map(\.value).filter { !$0.isEmpty }.map(JSONValue.string)))
     set("default_base_branch", Self.trimmed(defaultBaseBranch))

@@ -515,6 +515,13 @@ function PermissionsSection() {
             ))}
           </div>
         </SettingsScreenField>
+        <HostSettingToggle
+          setting="save_chat_history"
+          label="Chat history"
+          caption="Keep each agent's chat in its project's chat history, so you can search, read and resume it after the agent is gone. Off stops saving new chats and importing Claude Code chats; chats already saved stay."
+        >
+          Save agent chats to project history
+        </HostSettingToggle>
         <ImportCliChatsField />
         <AutomationsToggle />
         <AutomationDefaults />

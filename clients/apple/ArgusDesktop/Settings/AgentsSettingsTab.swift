@@ -81,6 +81,20 @@ struct AgentsSettingsTab: View {
         }
       }
 
+      Section("Chat history") {
+        if let settings = host.settings {
+          VStack(alignment: .leading, spacing: 4) {
+            Toggle("Save agent chats to project history", isOn: saveChatHistory(settings))
+            SettingsCaption(
+              "Keep each agent's chat in its project's chat history, so you can search, read and resume it "
+                + "after the agent is gone. Off stops saving new chats and importing Claude Code chats; "
+                + "chats already saved stay.")
+          }
+        } else {
+          SettingsLoading()
+        }
+      }
+
       ImportCliChatsSection()
 
       SettingsGroup("Automations") {
@@ -150,6 +164,18 @@ struct AgentsSettingsTab: View {
         Task {
           await host.save(.followUpSuggestions, ["follow_up_suggestions": .bool(next)]) {
             $0.followUpSuggestions = next
+          }
+        }
+      })
+  }
+
+  private func saveChatHistory(_ settings: ArgusProtocol.AppSettings) -> Binding<Bool> {
+    Binding(
+      get: { settings.saveChatHistory != false },
+      set: { next in
+        Task {
+          await host.save(.saveChatHistory, ["save_chat_history": .bool(next)]) {
+            $0.saveChatHistory = next
           }
         }
       })
