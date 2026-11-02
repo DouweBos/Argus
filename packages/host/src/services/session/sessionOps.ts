@@ -1429,16 +1429,38 @@ export async function pushSessionBranch(id: string): Promise<{
   // auto-detected by GitHub from `?expand=1` alone.
   const template = pickPullRequestTemplate(ws.repo_root);
   // Nothing to open a pull request from on a branch like `main`.
-  const prUrl = isBranchProtected(ws.repo_root, ws.branch)
-    ? null
-    : buildPullRequestUrl(
-        remoteUrl,
-        ws.branch,
-        ws.base_branch ?? null,
-        template,
-      );
+  const prUrl =
+    isBranchProtected(ws.repo_root, ws.branch) ||
+    ws.branch === ws.base_branch ||
+    (await isRemoteDefaultBranch(ws.repo_root, remoteName, ws.branch))
+      ? null
+      : buildPullRequestUrl(
+          remoteUrl,
+          ws.branch,
+          ws.base_branch ?? null,
+          template,
+        );
 
   return { branch: ws.branch, prUrl, remoteName };
+}
+
+/** True when `branch` is what `<remote>/HEAD` points at, e.g. `origin/main`. */
+async function isRemoteDefaultBranch(
+  repoRoot: string,
+  remoteName: string,
+  branch: string,
+): Promise<boolean> {
+  try {
+    const head = await git(repoRoot, [
+      "symbolic-ref",
+      "--short",
+      `refs/remotes/${remoteName}/HEAD`,
+    ]);
+
+    return head.trim() === `${remoteName}/${branch}`;
+  } catch {
+    return false;
+  }
 }
 
 // Re-exported so existing imports keep working — see `./pullRequest.ts`.
