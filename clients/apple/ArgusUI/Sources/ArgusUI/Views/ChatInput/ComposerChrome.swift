@@ -76,14 +76,20 @@
       Button(action: action) {
         Image(systemName: kind == .send ? "arrow.up" : "stop.fill")
           .font(.scaled(size: kind == .send ? 12 : 9, weight: .bold))
-          .foregroundStyle(kind == .send ? theme.onAccent : theme.text)
+          .foregroundStyle(foreground)
           .frame(width: TextScale.shared(26), height: TextScale.shared(26))
-          .background(kind == .send ? theme.accent : theme.bgHover, in: Circle())
-          .opacity(isEnabled ? 1 : 0.35)
+          .background(kind == .send && isEnabled ? theme.accent : theme.bgHover, in: Circle())
+          .overlay(Circle().strokeBorder(isEnabled ? .clear : theme.border, lineWidth: 1))
           .contentShape(Circle())
       }
       .buttonStyle(.argusPlain)
       .accessibilityLabel(label)
+    }
+
+    /// Disabled drops to a solid muted fill; fading the accent left it unreadable on dark backgrounds.
+    private var foreground: Color {
+      guard isEnabled else { return theme.textMuted }
+      return kind == .send ? theme.onAccent : theme.text
     }
   }
 #endif
