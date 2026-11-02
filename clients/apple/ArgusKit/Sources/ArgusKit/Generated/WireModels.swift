@@ -1766,7 +1766,6 @@ extension ArgusProtocol {
     public var terminals: [ArgusTerminalConfig]
     public var workspaceEnv: [WorkspaceEnvConfig]
     public var run: [ArgusRunCommand]
-    public var agentPrompt: String?
     public var relatedProjects: [RelatedProject]?
     public var browserUrl: String?
     public var browserPresets: [BrowserPresetConfig]
@@ -1790,7 +1789,6 @@ extension ArgusProtocol {
       case terminals = "terminals"
       case workspaceEnv = "workspace_env"
       case run = "run"
-      case agentPrompt = "agent_prompt"
       case relatedProjects = "related_projects"
       case browserUrl = "browser_url"
       case browserPresets = "browser_presets"
@@ -1809,13 +1807,12 @@ extension ArgusProtocol {
       case automations = "automations"
     }
 
-    public init(minArgusVersion: String? = nil, setup: ArgusSetupConfig, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], agentPrompt: String? = nil, relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], saveChatHistory: Bool? = nil, protectedBranches: [String], defaultBaseBranch: String? = nil, pullRequestTemplate: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, mcpServers: [String: [String: JSONValue]]? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
+    public init(minArgusVersion: String? = nil, setup: ArgusSetupConfig, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], saveChatHistory: Bool? = nil, protectedBranches: [String], defaultBaseBranch: String? = nil, pullRequestTemplate: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, mcpServers: [String: [String: JSONValue]]? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
       self.minArgusVersion = minArgusVersion
       self.setup = setup
       self.terminals = terminals
       self.workspaceEnv = workspaceEnv
       self.run = run
-      self.agentPrompt = agentPrompt
       self.relatedProjects = relatedProjects
       self.browserUrl = browserUrl
       self.browserPresets = browserPresets
@@ -1841,7 +1838,6 @@ extension ArgusProtocol {
       try c.encode(terminals, forKey: .terminals)
       try c.encode(workspaceEnv, forKey: .workspaceEnv)
       try c.encode(run, forKey: .run)
-      try c.encodeIfPresent(agentPrompt, forKey: .agentPrompt)
       try c.encodeIfPresent(relatedProjects, forKey: .relatedProjects)
       try c.encodeIfPresent(browserUrl, forKey: .browserUrl)
       try c.encode(browserPresets, forKey: .browserPresets)

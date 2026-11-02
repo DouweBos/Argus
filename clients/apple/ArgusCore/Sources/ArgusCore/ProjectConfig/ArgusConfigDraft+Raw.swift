@@ -6,7 +6,7 @@ import Foundation
 extension ArgusConfigDraft {
   /// Every key the draft owns. Anything else in the file is left untouched.
   static let ownedKeys: Set<String> = [
-    "setup", "terminals", "run", "workspace_env", "agent_prompt", "related_projects",
+    "setup", "terminals", "run", "workspace_env", "related_projects",
     "browser_url", "browser_presets", "simulator_deeplinks", "save_chat_history",
     "auto_continue_on_limit", "protected_branches", "pull_request_template", "default_base_branch",
     "single_runtime", "min_argus_version", "mcp_servers", "auto_fetch_minutes",
@@ -14,7 +14,7 @@ extension ArgusConfigDraft {
   ]
 
   /// Settings Argus no longer reads; saving drops them, as the desktop dialog does.
-  static let retiredKeys: Set<String> = ["platforms"]
+  static let retiredKeys: Set<String> = ["platforms", "agent_prompt"]
 
   public init(raw: [String: JSONValue]) {
     self.init()
@@ -59,7 +59,6 @@ extension ArgusConfigDraft {
     pullRequestTemplate = raw["pull_request_template"]?.stringValue ?? ""
     autoFetchMinutes = max(0, raw["auto_fetch_minutes"]?.intValue ?? 0)
     releaseNotes = (raw["release_note_patterns"]?.arrayValue ?? []).compactMap(Self.releasePattern)
-    agentPrompt = raw["agent_prompt"]?.stringValue ?? ""
     saveChatHistory = raw["save_chat_history"]?.boolValue != false
     autoContinueOnLimit = raw["auto_continue_on_limit"]?.boolValue ?? false
     let llm = raw["llm"]?.objectValue ?? [:]
@@ -98,7 +97,6 @@ extension ArgusConfigDraft {
     }))
     set("run", Self.nonEmpty(run.compactMap(Self.runValue)))
     set("workspace_env", Self.nonEmpty(workspaceEnv.compactMap(Self.envValue)))
-    set("agent_prompt", Self.trimmed(agentPrompt))
     set("related_projects", Self.nonEmpty(relatedProjects.compactMap { project in
       let path = project.path.trimmingCharacters(in: .whitespaces)
       guard !path.isEmpty else { return nil }

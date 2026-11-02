@@ -32,7 +32,6 @@ public struct ArgusConfigDraft: Equatable, Sendable {
   public var pullRequestTemplate = ""
   public var autoFetchMinutes = 0
   public var releaseNotes: [ReleasePattern] = []
-  public var agentPrompt = ""
   public var saveChatHistory = true
   public var autoContinueOnLimit = false
   public var llmRunner = ""

@@ -41,7 +41,7 @@ Two ways to change project settings:
 | `workspace_env`                                                      | yes (Workspace env)      |
 | `browser_url`, `browser_presets`                                     | yes (Browser)            |
 | `single_runtime`                                                     | yes (Run commands)       |
-| `agent_prompt`, `save_chat_history`, `auto_continue_on_limit`        | yes (Agent)              |
+| `save_chat_history`, `auto_continue_on_limit`                        | yes (Agent)              |
 | `protected_branches`, `pull_request_template`, `default_base_branch` | yes (Branch protection)  |
 | `mcp_servers`                                                        | yes (MCP servers)        |
 | `release_note_patterns`                                              | yes (Release notes)      |
@@ -61,7 +61,6 @@ Two ways to change project settings:
   "terminals":          [{ "name": "...", "dir": "..." }],
   "run":                [{ "title": "...", "command": "...", "restartOnRerun": true }],
   "workspace_env":      [{ "name": "...", "base_value": 0, "range": 100, "strategy": "sequential" }],
-  "agent_prompt":       "Extra system prompt appended to every agent.",
   "related_projects":   [{ "path": "../other-repo", "description": "..." }],
   "browser_url":        "http://localhost:3000",
   "browser_presets":    [{ "id": "...", "label": "...", "width": 390, "height": 844, "user_agent": "..." }],
@@ -169,18 +168,6 @@ in particular.
 | `base_value` | `number`                 | required | Starting integer; final value is `base_value + offset`.                                                                             |
 | `range`      | `number`                 | required | Modulus for the `hash` strategy.                                                                                                    |
 | `strategy`   | `"sequential" \| "hash"` | required | `sequential` — assigned at session creation from a counter. `hash` — derived deterministically from the branch name modulo `range`. |
-
----
-
-## `agent_prompt` — extra agent system prompt
-
-Free-form string appended to the Claude system prompt every agent in
-the project receives. Use it for project-specific conventions ("Use
-React Query for all server state", "Never edit `dist/`", ...).
-
-```jsonc
-"agent_prompt": "All new screens must register a route in app/lib/router.tsx."
-```
 
 ---
 

@@ -299,8 +299,6 @@ export interface ArgusConfig {
   workspace_env: WorkspaceEnvConfig[];
   /** Ordered list of run commands shown in the app's run menu. */
   run: RunCommand[];
-  /** Optional prompt appended to the Claude agent's system prompt. */
-  agent_prompt?: string | null;
   /** Related projects that agents can create worktrees in and work on. */
   related_projects?: RelatedProject[];
   /** Default URL to load in the embedded web browser (e.g. "http://localhost:3000"). */
@@ -467,7 +465,6 @@ export function defaultArgusConfig(): ArgusConfig {
     terminals: [],
     workspace_env: [],
     run: [],
-    agent_prompt: null,
     related_projects: [],
     browser_url: null,
     browser_presets: [],

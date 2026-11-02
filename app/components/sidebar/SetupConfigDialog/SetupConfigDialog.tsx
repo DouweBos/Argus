@@ -22,7 +22,6 @@ import {
   SettingsScreenDetailBody,
   SettingsScreenDetailHeader,
   SettingsScreenField,
-  TextArea,
   TreeNode,
   type SettingsDialogGroup,
 } from "@argus/peacock";
@@ -1777,7 +1776,6 @@ export function SetupConfigDialog({
   const protectedBranchList = useListState([]);
   const releaseNotesList = useReleaseNotesListState([]);
   const [browserUrl, setBrowserUrl] = useState("");
-  const [agentPrompt, setAgentPrompt] = useState("");
   const [saveChatHistory, setSaveChatHistory] = useState(true);
   const [singleRuntime, setSingleRuntime] = useState(false);
   const [autoContinueOnLimit, setAutoContinueOnLimit] = useState(false);
@@ -1860,9 +1858,6 @@ export function SetupConfigDialog({
               requires: Array.isArray(r.requires) ? [...r.requires] : [],
             })),
           );
-        }
-        if (config.agent_prompt) {
-          setAgentPrompt(config.agent_prompt);
         }
         if (config.save_chat_history != null) {
           setSaveChatHistory(config.save_chat_history !== false);
@@ -2033,10 +2028,6 @@ export function SetupConfigDialog({
       config.run = runs;
     }
 
-    const agentPromptVal = agentPrompt.trim();
-    if (agentPromptVal) {
-      config.agent_prompt = agentPromptVal;
-    }
     if (!saveChatHistory) {
       config.save_chat_history = false;
     }
@@ -2167,7 +2158,6 @@ export function SetupConfigDialog({
       browserPresetList.items,
       protectedBranchList.items,
       browserUrl,
-      agentPrompt,
       saveChatHistory,
       singleRuntime,
       autoContinueOnLimit,
@@ -2476,31 +2466,15 @@ export function SetupConfigDialog({
         {
           id: "agent",
           label: "Agent",
-          description: "Prompt & history",
+          description: "History & limits",
           icon: <Icons.AgentIcon size={12} />,
           render: () => (
             <SettingsScreenDetail>
               <SettingsScreenDetailHeader
-                description="Additional instructions appended to every agent's system prompt, plus history and other agent-level options."
+                description="Agent-level options for this project."
                 title="Agent"
               />
               <SettingsScreenDetailBody>
-                <div className={styles.field}>
-                  <label
-                    className={sectionStyles.fieldLabel}
-                    htmlFor="setup-agent-prompt"
-                  >
-                    System prompt addition
-                  </label>
-                  <TextArea
-                    id="setup-agent-prompt"
-                    placeholder="Extra instructions appended to every agent's system prompt in this project..."
-                    rows={6}
-                    style={{ resize: "vertical", fontFamily: "inherit" }}
-                    value={agentPrompt}
-                    onChange={(e) => setAgentPrompt(e.target.value)}
-                  />
-                </div>
                 <label className={sectionStyles.agentCheckboxRow}>
                   <input
                     checked={saveChatHistory}

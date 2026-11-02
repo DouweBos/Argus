@@ -12,12 +12,12 @@ struct ArgusConfigDraftTests {
   @Test func keepsKeysItDoesNotOwn() throws {
     let file = try raw(#"{ "future_key": { "a": 1 }, "setup": { "copy": ["x"], "later": true } }"#)
     var draft = ArgusConfigDraft(raw: file)
-    draft.agentPrompt = "Be nice"
+    draft.browserUrl = "http://localhost:5173"
     let out = draft.applied(to: file)
     #expect(out["future_key"] == file["future_key"])
     #expect(out["setup"]?["later"] == .bool(true))
     #expect(out["setup"]?["copy"] == .array([.string("x")]))
-    #expect(out["agent_prompt"] == .string("Be nice"))
+    #expect(out["browser_url"] == .string("http://localhost:5173"))
   }
 
   @Test func roundTripsEveryOwnedField() throws {
@@ -30,7 +30,6 @@ struct ArgusConfigDraftTests {
         "run": [{ "title": "Dev", "command": "pnpm dev", "restartOnRerun": true, "requires": ["Api"] },
                 { "title": "Api", "command": "pnpm api", "cwd": "api", "restartOnRerun": false }],
         "workspace_env": [{ "name": "PORT", "base_value": 1420, "range": 100, "strategy": "sequential" }],
-        "agent_prompt": "Hi",
         "related_projects": [{ "path": "../x", "description": "X" }],
         "browser_url": "http://localhost:3000",
         "browser_presets": [{ "id": "kiosk", "label": "Kiosk", "width": 1920, "height": 1080 }],
@@ -56,11 +55,11 @@ struct ArgusConfigDraftTests {
     #expect(draft.applied(to: file) == file)
   }
 
-  @Test func dropsTheRetiredPlatformsKey() throws {
-    let file = try raw(#"{ "platforms": ["ios"], "custom": 1 }"#)
+  @Test func dropsRetiredKeys() throws {
+    var file = try raw(#"{ "custom": 1 }"#)
+    for key in ArgusConfigDraft.retiredKeys { file[key] = .string("old") }
     let out = ArgusConfigDraft(raw: file).applied(to: file)
-    #expect(out["platforms"] == nil)
-    #expect(out["custom"] == .number(1))
+    #expect(out == ["custom": .number(1), "setup": .object([:])])
   }
 
   @Test func appliesTheDesktopsDefaultsAndTrimming() {

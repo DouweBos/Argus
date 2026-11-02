@@ -622,14 +622,11 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   env.MCP_TOOL_TIMEOUT = "86400000";
   env.MCP_TIMEOUT = env.MCP_TIMEOUT ?? "30000";
 
-  // Combine prompts: kind-specific → project context → project-level →
-  // runtime → caller-provided.
-  let projectPrompt: string | null = null;
+  // Combine prompts: kind-specific → project context → runtime →
+  // caller-provided.
   let browserUrl: string | null = null;
   try {
-    const config = loadArgusConfig(argusSession.repo_root);
-    projectPrompt = config.agent_prompt ?? null;
-    browserUrl = config.browser_url ?? null;
+    browserUrl = loadArgusConfig(argusSession.repo_root).browser_url ?? null;
   } catch {
     // Config missing or invalid — non-fatal.
   }
@@ -655,7 +652,6 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   const combinedPrompt = [
     systemPrompt,
     projectContext,
-    projectPrompt,
     runtimeSection,
     appendSystemPrompt,
   ]

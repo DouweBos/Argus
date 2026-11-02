@@ -51,19 +51,8 @@ struct AgentSection: View {
   var body: some View {
     SectionIntro(
       title: "Agent",
-      text: "Additional instructions appended to every agent's system prompt, plus history and other agent-level options."
+      text: "Agent-level options for this project."
     )
-    Section("System prompt addition") {
-      TextEditor(text: $draft.agentPrompt)
-        .font(.scaled(.body))
-        .frame(minHeight: 120)
-        .overlay(alignment: .topLeading) {
-          if draft.agentPrompt.isEmpty {
-            Text("Extra instructions appended to every agent's system prompt in this project...")
-              .foregroundStyle(.tertiary).padding(.top, 1).padding(.leading, 5).allowsHitTesting(false)
-          }
-        }
-    }
     Section {
       Toggle("Save chat history when agents stop", isOn: $draft.saveChatHistory)
       Toggle("Continue agents automatically when a usage limit resets", isOn: $draft.autoContinueOnLimit)

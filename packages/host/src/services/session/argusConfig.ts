@@ -103,7 +103,6 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
       parsed.workspace_env ?? parsed.workspace_port_env,
     ),
     run,
-    agent_prompt: (parsed.agent_prompt as string) ?? null,
     related_projects: normalizeRelatedProjects(parsed.related_projects),
     browser_url: (parsed.browser_url as string) ?? null,
     browser_presets: normalizeBrowserPresets(parsed.browser_presets),
@@ -182,7 +181,6 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
     workspace_env:
       local.workspace_env.length > 0 ? local.workspace_env : base.workspace_env,
     run: local.run.length > 0 ? local.run : base.run,
-    agent_prompt: local.agent_prompt ?? base.agent_prompt,
     related_projects: dedupRelatedProjects(
       base.related_projects ?? [],
       local.related_projects ?? [],

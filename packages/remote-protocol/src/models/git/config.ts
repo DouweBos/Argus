@@ -136,8 +136,6 @@ export const ArgusConfig = z.object({
   workspace_env: z.array(WorkspaceEnvConfig),
   /** Ordered list of run commands shown in the app's run menu. */
   run: z.array(ArgusRunCommand),
-  /** Optional prompt appended to the Claude agent's system prompt. */
-  agent_prompt: z.string().nullish(),
   /** Related projects that agents can create worktrees in and work on. */
   related_projects: z.array(RelatedProject).optional(),
   /** Default URL to load in the embedded web browser. */

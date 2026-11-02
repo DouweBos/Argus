@@ -12,7 +12,6 @@ export const DIALOG_OWNED_KEYS: ReadonlySet<string> = new Set([
   "run",
   "workspace_env",
   "workspace_port_env",
-  "agent_prompt",
   "related_projects",
   "browser_url",
   "browser_presets",
@@ -40,7 +39,10 @@ const NESTED_OWNED_KEYS: Readonly<Record<string, readonly string[]>> = {
 };
 
 /** Settings Argus no longer reads; saving drops them. */
-export const RETIRED_KEYS: ReadonlySet<string> = new Set(["platforms"]);
+export const RETIRED_KEYS: ReadonlySet<string> = new Set([
+  "platforms",
+  "agent_prompt",
+]);
 
 function isObject(value: unknown): value is RawConfig {
   return typeof value === "object" && value !== null && !Array.isArray(value);
