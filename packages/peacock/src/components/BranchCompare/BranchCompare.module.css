@@ -64,15 +64,17 @@
 
 .body {
   display: flex;
+  flex-wrap: wrap;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 
+/* Side by side when there is room, stacked on a phone. */
 .column {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 1 1 280px;
   min-width: 0;
   border-right: 1px solid var(--border-subtle);
   overflow: hidden;
@@ -115,46 +117,6 @@
   font-size: 12px;
   color: var(--text-muted);
   text-align: center;
-}
-
-/* ── Commit row ─────────────────────────────────────────────────────────── */
-
-.commitRow {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--border-subtle);
-  cursor: default;
-}
-
-.commitRow:last-child {
-  border-bottom: none;
-}
-
-.commitRow:hover {
-  background: var(--bg-hover);
-}
-
-.commitSubject {
-  font-size: 12px;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.commitMeta {
-  display: flex;
-  gap: 8px;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.commitHash {
-  font-family: var(--font-mono, monospace);
-  font-size: 10px;
-  color: var(--text-muted);
 }
 
 /* ── Loading / error states ─────────────────────────────────────────────── */

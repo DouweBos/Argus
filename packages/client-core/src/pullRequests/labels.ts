@@ -4,8 +4,10 @@
  * client says the same thing about the same PR.
  */
 
-/** A tone any client maps onto its own badge palette. */
-export type PrTone = "accent" | "error" | "muted" | "success" | "warning";
+/** A tone every client has; the names match Peacock badge tones. */
+export type PrTone = "accent" | "error" | "neutral" | "success" | "warning";
+
+export type PrCheckTone = Exclude<PrTone, "accent">;
 
 export function reasonLabel(reason: string): string {
   switch (reason) {
@@ -29,7 +31,7 @@ export function reasonTone(reason: string): PrTone {
     return "accent";
   }
 
-  return reason === "reviewer" || reason === "team" ? "success" : "muted";
+  return reason === "reviewer" || reason === "team" ? "success" : "neutral";
 }
 
 export function reviewDecisionLabel(
@@ -84,7 +86,7 @@ export function prStateLabel(pr: PrStateInput): {
   }
 
   return pr.isDraft
-    ? { label: "Draft", tone: "muted" }
+    ? { label: "Draft", tone: "neutral" }
     : { label: "Open", tone: "success" };
 }
 
@@ -92,7 +94,7 @@ export function prStateLabel(pr: PrStateInput): {
 export function checkTone(
   conclusion: string | null | undefined,
   status: string | null | undefined,
-): PrTone {
+): PrCheckTone {
   switch (conclusion?.toLowerCase()) {
     case "success":
     case "neutral":
@@ -105,9 +107,9 @@ export function checkTone(
       return "error";
     case "cancelled":
     case "stale":
-      return "muted";
+      return "neutral";
     default:
-      return status?.toLowerCase() === "completed" ? "muted" : "warning";
+      return status?.toLowerCase() === "completed" ? "neutral" : "warning";
   }
 }
 
@@ -117,7 +119,7 @@ export interface ChecksSummary {
   pending: number;
   /** "All checks have passed", "2 checks failing", … */
   title: string;
-  tone: PrTone;
+  tone: "error" | "success" | "warning";
   total: number;
 }
 

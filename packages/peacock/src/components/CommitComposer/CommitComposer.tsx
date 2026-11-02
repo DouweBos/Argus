@@ -9,8 +9,6 @@
  *  squash!  → same as fixup!
  */
 
-import type { DiffFile } from "../../../../lib/diffParser";
-import type { GhIssue, GitCommit } from "../../../../lib/ipc";
 import {
   type ChangeEvent,
   type KeyboardEvent,
@@ -23,6 +21,24 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import styles from "./CommitComposer.module.css";
+
+/** A changed file, for the backslash trigger. */
+export interface CommitComposerFile {
+  newPath: string;
+  oldPath: string;
+}
+
+/** A recent commit, for `c:`, `fixup!` and `squash!`. */
+export interface CommitComposerCommit {
+  abbreviatedHash: string;
+  subject: string;
+}
+
+/** A GitHub issue, for `#`. */
+export interface CommitComposerIssue {
+  number: number;
+  title: string;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -69,9 +85,9 @@ export interface CommitComposerProps {
   /** Forward ref for the body textarea. */
   bodyRef?: RefObject<HTMLTextAreaElement | null>;
   /** Working-copy files (for the `\` trigger). */
-  diffFiles?: DiffFile[];
+  diffFiles?: CommitComposerFile[];
   /** GitHub issues for the `#` trigger. */
-  ghIssues?: GhIssue[];
+  ghIssues?: CommitComposerIssue[];
   /** Called when body changes. */
   onBodyChange: (value: string) => void;
   /** Called when subject changes. */
@@ -81,7 +97,7 @@ export interface CommitComposerProps {
   /** Called when the subject input receives focus. */
   onSubjectFocus?: () => void;
   /** Recent commits for c: / fixup! / squash! triggers. */
-  recentCommits?: GitCommit[];
+  recentCommits?: CommitComposerCommit[];
   /** If true, the body textarea is rendered. */
   showBody?: boolean;
   /** The commit subject line value. */
@@ -91,6 +107,9 @@ export interface CommitComposerProps {
   subjectRef?: RefObject<HTMLInputElement | null>;
   /** Visual state: warn if >50, error if >72. */
   subjectWarn?: boolean;
+  subjectPlaceholder?: string;
+  bodyPlaceholder?: string;
+  disabled?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -112,6 +131,9 @@ export function CommitComposer({
   showBody = false,
   onSubjectEnter,
   onSubjectFocus,
+  subjectPlaceholder = "Commit Subject",
+  bodyPlaceholder = "Detailed description (wrap at column 72)",
+  disabled = false,
 }: CommitComposerProps) {
   const internalSubjectRef = useRef<HTMLInputElement>(null);
   const internalBodyRef = useRef<HTMLTextAreaElement>(null);
@@ -126,15 +148,6 @@ export function CommitComposer({
     y: 0,
   });
   const [activeIndex, setActiveIndex] = useState(0);
-
-  // Reset active index when popover items change.
-  useEffect(() => {
-    /* eslint-disable-next-line react-hooks/set-state-in-effect --
-       Resetting cursor position when the item list changes is intentional
-       and doesn't cause cascading renders since `items.length` is stable
-       within a single render cycle. */
-    setActiveIndex(0);
-  }, [popover?.items.length]);
 
   // Close popover on outside click.
   useEffect(() => {
@@ -384,6 +397,7 @@ export function CommitComposer({
       const cursor = e.target.selectionStart ?? value.length;
       const trigger = detectTrigger(value, cursor, e.target);
       setPopover(trigger);
+      setActiveIndex(0);
       if (trigger) {
         setPopoverPos(getCaretCoords(e.target));
       }
@@ -441,6 +455,7 @@ export function CommitComposer({
       const cursor = e.target.selectionStart ?? value.length;
       const trigger = detectTrigger(value, cursor, e.target);
       setPopover(trigger);
+      setActiveIndex(0);
       if (trigger) {
         setPopoverPos(getCaretCoords(e.target));
       }
@@ -498,7 +513,8 @@ export function CommitComposer({
       <input
         ref={subjectInputRef}
         className={subjectClasses}
-        placeholder="Commit Subject"
+        placeholder={subjectPlaceholder}
+        disabled={disabled}
         type="text"
         value={subject}
         onChange={handleSubjectChange}
@@ -510,7 +526,8 @@ export function CommitComposer({
         <textarea
           ref={bodyTextareaRef}
           className={styles.bodyTextarea}
-          placeholder="Detailed description (wrap at column 72)"
+          placeholder={bodyPlaceholder}
+          disabled={disabled}
           rows={3}
           value={body}
           onChange={handleBodyChange}

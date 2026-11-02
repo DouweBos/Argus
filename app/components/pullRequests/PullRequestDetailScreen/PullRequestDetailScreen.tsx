@@ -4,24 +4,38 @@ import type {
   PullRequestDetail,
 } from "../../../lib/types";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Badge,
+  checksSummary,
+  checkTone,
+  prMergeStrategyLabel,
+  prStateLabel,
+  relativeTime,
+  reviewStateLabel,
+} from "@argus/client-core";
+import {
   Button,
   Card,
-  Chip,
   DestructiveConfirm,
   Dialog,
   DialogBody,
   DialogFooter,
-  DiffStat,
   EmptyState,
   FileDiffCard,
   GridScreen,
   Icons,
+  type PullRequestCheck as PullRequestCheckView,
+  PullRequestCheckIcon,
+  PullRequestCheckList,
+  PullRequestChecksSummary,
+  PullRequestCommentBox,
+  PullRequestEmptyLine,
+  PullRequestHeader,
+  PullRequestSectionLink,
+  PullRequestTabs,
+  PullRequestTimeline,
   SegmentedControl,
   Spinner,
-  TextArea,
   parseDiff,
 } from "@argus/peacock";
 import {
@@ -53,121 +67,13 @@ import {
 import { Markdown } from "../../shared/Markdown";
 import styles from "./PullRequestDetailScreen.module.css";
 
-function relativeTime(iso: string): string {
-  if (!iso) {
-    return "";
-  }
-  const then = new Date(iso).getTime();
-  const now = Date.now();
-  const sec = Math.max(0, Math.round((now - then) / 1000));
-  if (sec < 60) {
-    return "just now";
-  }
-  const min = Math.round(sec / 60);
-  if (min < 60) {
-    return `${min} min ago`;
-  }
-  const hr = Math.round(min / 60);
-  if (hr < 24) {
-    return `${hr}h ago`;
-  }
-  const days = Math.round(hr / 24);
-  if (days < 30) {
-    return `${days}d ago`;
-  }
-  const months = Math.round(days / 30);
-  if (months < 12) {
-    return `${months}mo ago`;
-  }
-
-  return `${Math.round(months / 12)}y ago`;
-}
-
-function stateBadge(detail: PullRequestDetail): ReactNode {
-  if (detail.merged) {
-    return (
-      <Badge tone="accent" size="tag">
-        Merged
-      </Badge>
-    );
-  }
-  if (detail.state === "CLOSED") {
-    return (
-      <Badge tone="error" size="tag">
-        Closed
-      </Badge>
-    );
-  }
-  if (detail.isDraft) {
-    return (
-      <Badge tone="neutral" size="tag">
-        Draft
-      </Badge>
-    );
-  }
-
-  return (
-    <Badge tone="success" size="tag">
-      Open
-    </Badge>
-  );
-}
-
-function CheckBadge({ check }: { check: PullRequestCheck }) {
-  const conclusion = check.conclusion;
-  const status = check.status;
-  if (conclusion === "success") {
-    return (
-      <span className={`${styles.checkIcon} ${styles.checkSuccess}`}>
-        <Icons.CheckIcon size={10} />
-      </span>
-    );
-  }
-  if (
-    conclusion === "failure" ||
-    conclusion === "cancelled" ||
-    conclusion === "timed_out" ||
-    conclusion === "startup_failure"
-  ) {
-    return (
-      <span className={`${styles.checkIcon} ${styles.checkFailure}`}>
-        <Icons.CloseIcon size={10} />
-      </span>
-    );
-  }
-  if (
-    !conclusion &&
-    (status === "in_progress" || status === "pending" || status === "queued")
-  ) {
-    return (
-      <span className={`${styles.checkIcon} ${styles.checkPending}`}>
-        <Icons.ClockIcon size={10} />
-      </span>
-    );
-  }
-
-  return (
-    <span className={`${styles.checkIcon} ${styles.checkNeutral}`}>
-      <Icons.MinusIcon size={10} />
-    </span>
-  );
-}
-
-function reviewStateLabel(state: string | undefined): string {
-  if (!state) {
-    return "Commented";
-  }
-  if (state === "APPROVED") {
-    return "Approved";
-  }
-  if (state === "CHANGES_REQUESTED") {
-    return "Requested changes";
-  }
-  if (state === "DISMISSED") {
-    return "Review dismissed";
-  }
-
-  return "Reviewed";
+function checkView(check: PullRequestCheck): PullRequestCheckView {
+  return {
+    name: check.name,
+    tone: checkTone(check.conclusion, check.status),
+    description: check.description,
+    url: check.detailsUrl,
+  };
 }
 
 export function PullRequestDetailScreen() {
@@ -396,28 +302,20 @@ export function PullRequestDetailScreen() {
         size="full"
       >
         {detail && (
-          <header className={styles.header}>
-            <div className={styles.headerTop}>
-              <div className={styles.titleBlock}>
-                <div className={styles.subLine}>
-                  {stateBadge(detail)}
-                  {detail.authorAvatarUrl && (
-                    <img
-                      alt=""
-                      className={styles.subAvatar}
-                      src={detail.authorAvatarUrl}
-                    />
-                  )}
-                  <span>
-                    {detail.author ?? "unknown"} wants to merge{" "}
-                    <code>{detail.headRefName}</code> into{" "}
-                    <code>{detail.baseRefName}</code>
-                  </span>
-                  <span>·</span>
-                  <span>updated {relativeTime(detail.updatedAt)}</span>
-                </div>
-              </div>
-              <div className={styles.actionRow}>
+          <PullRequestHeader
+            state={prStateLabel(detail)}
+            author={detail.author}
+            avatarUrl={detail.authorAvatarUrl}
+            headRef={detail.headRefName}
+            baseRef={detail.baseRefName}
+            updated={relativeTime(detail.updatedAt)}
+            commits={detail.commits}
+            changedFiles={detail.changedFiles}
+            additions={detail.additions}
+            deletions={detail.deletions}
+            labels={detail.labels}
+            actions={
+              <>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -481,33 +379,9 @@ export function PullRequestDetailScreen() {
                     {starting ? "Starting…" : "New session"}
                   </Button>
                 )}
-              </div>
-            </div>
-            <div className={styles.stats}>
-              <span className={styles.statItem}>
-                <Icons.BranchIcon size={12} />
-                <strong>{detail.commits}</strong> commit
-                {detail.commits === 1 ? "" : "s"}
-              </span>
-              <span className={styles.statItem}>
-                <Icons.FileIcon size={12} />
-                <strong>{detail.changedFiles}</strong> file
-                {detail.changedFiles === 1 ? "" : "s"} changed
-              </span>
-              <span className={styles.statItem}>
-                <DiffStat added={detail.additions} removed={detail.deletions} />
-              </span>
-              {detail.labels.length > 0 && (
-                <span className={styles.labels}>
-                  {detail.labels.map((name) => (
-                    <Chip key={name} muted>
-                      {name}
-                    </Chip>
-                  ))}
-                </span>
-              )}
-            </div>
-          </header>
+              </>
+            }
+          />
         )}
 
         <DialogBody>{content}</DialogBody>
@@ -520,17 +394,6 @@ type DetailTab = "checks" | "commits" | "conversation" | "files";
 
 function countChecksPassed(checks: PullRequestCheck[]): number {
   return checks.filter((c) => c.conclusion === "success").length;
-}
-
-function mergeBtnLabel(strategy: MergeStrategy): string {
-  if (strategy === "squash") {
-    return "Squash and merge";
-  }
-  if (strategy === "rebase") {
-    return "Rebase and merge";
-  }
-
-  return "Create a merge commit";
 }
 
 const MERGE_STRATEGY_OPTIONS: {
@@ -579,7 +442,7 @@ function MergeConfirmDialog({
           onClick={onConfirm}
           leading={<Icons.MergeIcon size={12} />}
         >
-          {mergeBtnLabel(strategy)}
+          {prMergeStrategyLabel(strategy)}
         </Button>
       </DialogFooter>
     </Dialog>
@@ -642,24 +505,7 @@ function DetailBody({
 
   return (
     <>
-      <div
-        className={styles.tabs}
-        role="tablist"
-        aria-label="Pull request sections"
-      >
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.id}
-            className={`${styles.tab} ${tab === t.id ? styles.tabActive : ""}`}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <PullRequestTabs tabs={tabs} value={tab} onChange={setTab} />
 
       {tab === "conversation" && (
         <ConversationTab
@@ -679,76 +525,9 @@ function DetailBody({
 
 function viewOnGitHub(url: string, onOpenUrl: (url: string) => void) {
   return (
-    <button
-      type="button"
-      className={styles.sectionLink}
-      onClick={() => onOpenUrl(url)}
-    >
-      View on GitHub <Icons.PopoutIcon size={10} />
-    </button>
-  );
-}
-
-function CommentComposer({
-  owner,
-  repo,
-  number,
-  onPosted,
-}: {
-  number: number;
-  onPosted: () => void;
-  owner: string;
-  repo: string;
-}) {
-  const [body, setBody] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const handleSubmit = useCallback(async () => {
-    const trimmed = body.trim();
-    if (!trimmed) {
-      return;
-    }
-    setSubmitting(true);
-    setError(null);
-    try {
-      await ghPrComment({ owner, repo, number, body: trimmed });
-      setBody("");
-      onPosted();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setSubmitting(false);
-      textareaRef.current?.focus();
-    }
-  }, [body, owner, repo, number, onPosted]);
-
-  return (
-    <div className={styles.composerWrap}>
-      <TextArea
-        ref={textareaRef}
-        className={styles.composerTextarea}
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        placeholder="Leave a comment…"
-        rows={3}
-        disabled={submitting}
-      />
-      {error && <p className={styles.composerError}>{error}</p>}
-      <div className={styles.composerFooter}>
-        <Button
-          variant="primary"
-          size="sm"
-          disabled={submitting || !body.trim()}
-          onClick={() => {
-            handleSubmit().catch(() => {});
-          }}
-        >
-          {submitting ? "Posting…" : "Comment"}
-        </Button>
-      </div>
-    </div>
+    <PullRequestSectionLink onClick={() => onOpenUrl(url)}>
+      View on GitHub
+    </PullRequestSectionLink>
   );
 }
 
@@ -782,80 +561,38 @@ function ConversationTab({
         count={detail.comments.length}
         actions={viewOnGitHub(detail.url, onOpenUrl)}
       >
-        {detail.comments.length === 0 ? (
-          <p className={styles.emptyLine}>No comments yet.</p>
-        ) : (
-          <ol className={styles.timeline}>
-            {detail.comments.map((c) => (
-              <li key={c.id} className={styles.timelineItem}>
-                <div className={styles.timelineAvatar}>
-                  {c.authorAvatarUrl ? (
-                    <img alt="" src={c.authorAvatarUrl} />
-                  ) : (
-                    <Icons.AgentIcon size={14} />
-                  )}
-                </div>
-                <Card className={styles.commentRow}>
-                  <div className={styles.commentHead}>
-                    <span className={styles.commentAuthor}>
-                      {c.author ?? "unknown"}
-                    </span>
-                    {c.kind === "review" && (
-                      <Badge tone="accent" size="tag">
-                        {reviewStateLabel(c.reviewState)}
-                      </Badge>
-                    )}
-                    <span>· {relativeTime(c.createdAt)}</span>
-                    <button
-                      type="button"
-                      className={styles.sectionLink}
-                      onClick={() => onOpenUrl(c.url)}
-                    >
-                      <Icons.PopoutIcon size={10} />
-                    </button>
-                  </div>
-                  {c.body.trim() && (
-                    <RichBody bodyHtml={c.bodyHtml} fallback={c.body} />
-                  )}
-                  {c.inlineComments && c.inlineComments.length > 0 && (
-                    <ul className={styles.inlineThread}>
-                      {c.inlineComments.map((ic) => (
-                        <li key={ic.id} className={styles.inlineItem}>
-                          <div className={styles.inlineHead}>
-                            <span>{relativeTime(ic.createdAt)}</span>
-                            <button
-                              type="button"
-                              className={styles.sectionLink}
-                              onClick={() => onOpenUrl(ic.url)}
-                              title="View inline comment on GitHub"
-                              aria-label="View inline comment on GitHub"
-                            >
-                              <Icons.PopoutIcon size={10} />
-                            </button>
-                          </div>
-                          <RichBody bodyHtml={ic.bodyHtml} fallback={ic.body} />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </Card>
-              </li>
-            ))}
-          </ol>
-        )}
+        <PullRequestTimeline
+          onOpenUrl={onOpenUrl}
+          entries={detail.comments.map((c) => ({
+            id: c.id,
+            author: c.author,
+            avatarUrl: c.authorAvatarUrl,
+            review:
+              c.kind === "review" ? reviewStateLabel(c.reviewState) : null,
+            age: relativeTime(c.createdAt),
+            url: c.url,
+            body: c.body.trim() ? (
+              <RichBody bodyHtml={c.bodyHtml} fallback={c.body} />
+            ) : null,
+            inline: c.inlineComments?.map((ic) => ({
+              id: ic.id,
+              age: relativeTime(ic.createdAt),
+              url: ic.url,
+              body: <RichBody bodyHtml={ic.bodyHtml} fallback={ic.body} />,
+            })),
+          }))}
+        />
       </GridScreen.Section>
 
-      <div className={styles.checksSummaryWrap}>
-        <ChecksSummary detail={detail} onOpenUrl={onOpenUrl} />
-      </div>
+      <ChecksSummary detail={detail} onOpenUrl={onOpenUrl} />
 
       {owner && repo && !detail.merged && detail.state === "OPEN" && (
         <GridScreen.Section title="Add a comment">
-          <CommentComposer
-            owner={owner}
-            repo={repo}
-            number={detail.number}
-            onPosted={onCommentPosted}
+          <PullRequestCommentBox
+            onSubmit={async (body) => {
+              await ghPrComment({ owner, repo, number: detail.number, body });
+              onCommentPosted();
+            }}
           />
         </GridScreen.Section>
       )}
@@ -870,76 +607,18 @@ function ChecksSummary({
   detail: PullRequestDetail;
   onOpenUrl: (url: string) => void;
 }) {
-  if (detail.checks.length === 0) {
+  const summary = checksSummary(detail.checks);
+  if (!summary) {
     return null;
-  }
-  const passed = countChecksPassed(detail.checks);
-  const failed = detail.checks.filter(
-    (c) =>
-      c.conclusion === "failure" ||
-      c.conclusion === "cancelled" ||
-      c.conclusion === "timed_out" ||
-      c.conclusion === "startup_failure",
-  ).length;
-  const pending = detail.checks.filter(
-    (c) =>
-      !c.conclusion &&
-      (c.status === "in_progress" ||
-        c.status === "pending" ||
-        c.status === "queued"),
-  ).length;
-
-  let summaryTitle: string;
-  let tone: "error" | "success" | "warning";
-  if (failed > 0) {
-    summaryTitle = `${failed} check${failed === 1 ? "" : "s"} failing`;
-    tone = "error";
-  } else if (pending > 0) {
-    summaryTitle = `${pending} check${pending === 1 ? "" : "s"} in progress`;
-    tone = "warning";
-  } else {
-    summaryTitle = "All checks have passed";
-    tone = "success";
   }
 
   return (
-    <Card className={`${styles.checksSummary} ${styles[`summary_${tone}`]}`}>
-      <div className={styles.checksSummaryHead}>
-        <span className={styles.checksSummaryTitle}>{summaryTitle}</span>
-        <span className={styles.checksSummarySub}>
-          {passed} passing · {failed} failing · {pending} pending ·{" "}
-          {detail.checks.length} total
-        </span>
-        <button
-          type="button"
-          className={styles.sectionLink}
-          onClick={() => onOpenUrl(`${detail.url}/checks`)}
-        >
-          Details <Icons.PopoutIcon size={10} />
-        </button>
-      </div>
-      <div className={styles.checksSummaryRows}>
-        {detail.checks.slice(0, 6).map((check, i) => (
-          <div
-            key={`${check.name}-${i}`}
-            className={styles.checkRow}
-            onClick={() => {
-              if (check.detailsUrl) {
-                onOpenUrl(check.detailsUrl);
-              }
-            }}
-          >
-            <CheckBadge check={check} />
-            <span className={styles.checkName}>{check.name}</span>
-          </div>
-        ))}
-        {detail.checks.length > 6 && (
-          <p className={styles.emptyLine}>
-            + {detail.checks.length - 6} more — see the Checks tab.
-          </p>
-        )}
-      </div>
-    </Card>
+    <PullRequestChecksSummary
+      checks={detail.checks.map(checkView)}
+      summary={summary}
+      onOpenDetails={() => onOpenUrl(`${detail.url}/checks`)}
+      onOpenUrl={onOpenUrl}
+    />
   );
 }
 
@@ -953,7 +632,7 @@ function CommitsTab({
   if (detail.commitList.length === 0) {
     return (
       <GridScreen.Section title="Commits" count={detail.commits}>
-        <p className={styles.emptyLine}>No commits listed.</p>
+        <PullRequestEmptyLine>No commits listed.</PullRequestEmptyLine>
       </GridScreen.Section>
     );
   }
@@ -987,26 +666,14 @@ function CommitRow({
   const firstLine = commit.message.split("\n")[0] ?? commit.message;
   let rollupIcon: ReactNode = null;
   if (commit.statusRollup === "success") {
-    rollupIcon = (
-      <span className={`${styles.checkIcon} ${styles.checkSuccess}`}>
-        <Icons.CheckIcon size={10} />
-      </span>
-    );
+    rollupIcon = <PullRequestCheckIcon tone="success" />;
   } else if (
     commit.statusRollup === "failure" ||
     commit.statusRollup === "error"
   ) {
-    rollupIcon = (
-      <span className={`${styles.checkIcon} ${styles.checkFailure}`}>
-        <Icons.CloseIcon size={10} />
-      </span>
-    );
+    rollupIcon = <PullRequestCheckIcon tone="error" />;
   } else if (commit.statusRollup === "pending") {
-    rollupIcon = (
-      <span className={`${styles.checkIcon} ${styles.checkPending}`}>
-        <Icons.ClockIcon size={10} />
-      </span>
-    );
+    rollupIcon = <PullRequestCheckIcon tone="warning" />;
   }
 
   return (
@@ -1043,30 +710,10 @@ function ChecksTab({
       count={detail.checks.length}
       actions={viewOnGitHub(`${detail.url}/checks`, onOpenUrl)}
     >
-      {detail.checks.length === 0 ? (
-        <p className={styles.emptyLine}>No checks reported.</p>
-      ) : (
-        <GridScreen.Grid>
-          {detail.checks.map((check, i) => (
-            <div
-              key={`${check.name}-${i}`}
-              className={styles.checkRow}
-              onClick={() => {
-                if (check.detailsUrl) {
-                  onOpenUrl(check.detailsUrl);
-                }
-              }}
-            >
-              <CheckBadge check={check} />
-              <span className={styles.checkName}>{check.name}</span>
-              {check.description && (
-                <span className={styles.checkDesc}>{check.description}</span>
-              )}
-              {check.detailsUrl && <Icons.PopoutIcon size={10} />}
-            </div>
-          ))}
-        </GridScreen.Grid>
-      )}
+      <PullRequestCheckList
+        checks={detail.checks.map(checkView)}
+        onOpenUrl={onOpenUrl}
+      />
     </GridScreen.Section>
   );
 }
@@ -1140,15 +787,10 @@ function FilesTab({
             key={file.newPath || file.oldPath}
             file={file}
             headerActions={
-              <button
-                type="button"
-                className={styles.sectionLink}
+              <PullRequestSectionLink
+                label="View on GitHub"
                 onClick={() => onOpenUrl(`${detail.url}/files`)}
-                title="View on GitHub"
-                aria-label="View on GitHub"
-              >
-                <Icons.PopoutIcon size={10} />
-              </button>
+              />
             }
           />
         ))}

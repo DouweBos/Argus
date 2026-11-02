@@ -1,6 +1,11 @@
 import type { DiffFile } from "../../../lib/diffParser";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button, GitErrorBanner, type GitErrorKind } from "@argus/peacock";
+import {
+  Button,
+  CommitComposer,
+  GitErrorBanner,
+  type GitErrorKind,
+} from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { GitError } from "../../../lib/gitError";
 import {
@@ -22,7 +27,6 @@ import { md5Hex } from "../../../lib/md5";
 import { useFocusCommitRequests } from "../../../stores/gitUiStore";
 import { showSettingsDialog } from "../../../stores/settingsStore";
 import { useGitShortcuts } from "../GitView/useGitShortcuts";
-import { CommitComposer } from "./CommitComposer";
 import styles from "./CommitPanel.module.css";
 
 /** In-memory cache for GitHub issues per repo root. Expires after 5 min. */

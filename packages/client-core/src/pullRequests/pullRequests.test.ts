@@ -94,9 +94,9 @@ describe("pull request labels", () => {
     expect(checkTone("SUCCESS", null)).toBe("success");
     expect(checkTone("skipped", "completed")).toBe("success");
     expect(checkTone("failure", "completed")).toBe("error");
-    expect(checkTone("cancelled", "completed")).toBe("muted");
+    expect(checkTone("cancelled", "completed")).toBe("neutral");
     expect(checkTone(null, "in_progress")).toBe("warning");
-    expect(checkTone(null, "COMPLETED")).toBe("muted");
+    expect(checkTone(null, "COMPLETED")).toBe("neutral");
   });
 
   it("summarises checks, failures first", () => {

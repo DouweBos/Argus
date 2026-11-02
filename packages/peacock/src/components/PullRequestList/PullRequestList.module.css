@@ -171,3 +171,16 @@
 .quietBlock:focus-within {
   opacity: 1;
 }
+
+/* A phone: the row actions drop under it. */
+@media (max-width: 520px) {
+  .row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .rowActions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}
