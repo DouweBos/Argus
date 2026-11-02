@@ -27,7 +27,7 @@ struct ChangesListView: View {
           .padding(.horizontal, 8)
           .padding(.vertical, 6)
       }
-      if vm.lfs.status.isMissing {
+      if vm.lfs.status.isMissing, !workspace.suppressLfsWarning {
         Text(LFSStatus.missingMessage)
           .font(.scaled(size: 11))
           .foregroundStyle(theme.textSecondary)

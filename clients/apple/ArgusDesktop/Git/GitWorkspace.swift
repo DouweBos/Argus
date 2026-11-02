@@ -50,6 +50,8 @@ final class GitWorkspace {
   private(set) var hostBusy: String?
   /// The sidebar's Tags section, collapsed by default as on the desktop.
   var tagsExpanded = false
+  /// The repository's "Hide LFS banners", from `user-project-settings.json`.
+  var suppressLfsWarning = false
   /// Bumped by every refresh, so a view can key work on it.
   private(set) var generation = 0
 
@@ -108,6 +110,7 @@ final class GitWorkspace {
   /// On screen: watch the worktree and its git state (a linked worktree
   /// ignores its siblings) and refresh.
   func start() async {
+    Task { await loadSuppressLfsWarning() }
     if isRemote {
       // The worktree is on another disk; the host's broadcasts say when it moved.
       guard !remoteActive else { return }
@@ -121,6 +124,14 @@ final class GitWorkspace {
     self.watcher = watcher
     await watcher.start()
     await refreshAll()
+  }
+
+  private func loadSuppressLfsWarning() async {
+    guard
+      let settings = try? await host.backend?.request(
+        ArgusProtocol.Commands.GetUserProjectSettings.self, .init(repoRoot: repoRoot))
+    else { return }
+    suppressLfsWarning = settings.suppressLfsWarning == true
   }
 
   /// The first read, before the panel is ever shown; later ones come from `start`.

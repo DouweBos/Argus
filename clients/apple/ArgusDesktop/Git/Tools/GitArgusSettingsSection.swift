@@ -87,6 +87,7 @@ struct GitArgusSettingsSection: View {
     case .success(let next):
       settings = next
       prefixDraft = next.branchPrefix ?? ""
+      workspace.suppressLfsWarning = next.suppressLfsWarning == true
     case .failure(let failure):
       error = failure.message
     }
@@ -109,6 +110,7 @@ struct GitArgusSettingsSection: View {
       case .success(let next):
         settings = next
         prefixDraft = next.branchPrefix ?? ""
+        workspace.suppressLfsWarning = next.suppressLfsWarning == true
         error = nil
         workspace.track(.config, success: true)
       case .failure(let failure):
