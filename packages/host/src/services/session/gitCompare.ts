@@ -137,6 +137,12 @@ export async function gitCompareBranches(
   const cleaned = revListRaw
     .split("\n")
     .map((line) => {
+      // `rev-list --pretty` prints the side as `commit <hash` / `commit >hash`.
+      // The hash is the format's first field, so the header only says the side.
+      const header = /^commit ([<>])[0-9a-f]+$/.exec(line);
+      if (header) {
+        return header[1] === "<" ? "__LEFT__" : "__RIGHT__";
+      }
       if (line.startsWith("< ") || line.startsWith("> ")) {
         // Header line: capture direction then discard the hash — the hash is
         // repeated in the first field of our format string.

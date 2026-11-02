@@ -3,7 +3,8 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { mergeWouldConflict } from "./gitCompare";
+import { appState } from "../../state";
+import { gitCompareBranches, mergeWouldConflict } from "./gitCompare";
 
 describe("mergeWouldConflict", () => {
   let repo: string;
@@ -43,5 +44,29 @@ describe("mergeWouldConflict", () => {
     await expect(mergeWouldConflict(repo, "left", "clean")).resolves.toBe(
       false,
     );
+  });
+
+  it("lists the commits only each side has", async () => {
+    appState.sessions.set("cmp", {
+      id: "cmp",
+      kind: "project_root",
+      branch: "main",
+      repo_root: repo,
+      path: repo,
+      description: "",
+      status: "ready",
+      env_index: null,
+      base_branch: null,
+    });
+    const result = await gitCompareBranches("cmp", {
+      left: "left",
+      right: "clean",
+    });
+    appState.sessions.delete("cmp");
+
+    expect(result.leftOnly.map((c) => c.subject)).toEqual(["left"]);
+    expect(result.rightOnly.map((c) => c.subject)).toEqual(["clean"]);
+    expect(result.leftOnly[0].hash).toMatch(/^[0-9a-f]{40}$/);
+    expect(result.wouldConflict).toBe(false);
   });
 });
