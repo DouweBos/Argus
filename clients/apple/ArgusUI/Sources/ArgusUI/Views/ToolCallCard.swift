@@ -338,6 +338,10 @@ public struct TranscriptImage: View {
     self.maxHeight = maxHeight
   }
 
+  private static func aspect(_ image: PlatformImage) -> CGFloat {
+    image.size.height > 0 ? image.size.width / image.size.height : 1
+  }
+
   public var body: some View {
     Group {
       if let image = dataURI.flatMap(PlatformImage.fromDataURI) {
@@ -347,10 +351,12 @@ public struct TranscriptImage: View {
             agentKey: agentKey, imageIds: group,
             at: group.firstIndex(of: imageId) ?? 0)
         } label: {
+          // Capped in width too, so it measures as wide as it draws: a bare
+          // max height reports the full width offered with the image centred in it.
           Image(platformImage: image)
             .resizable()
             .scaledToFit()
-            .frame(maxHeight: maxHeight)
+            .frame(maxWidth: maxHeight * Self.aspect(image), maxHeight: maxHeight)
             .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
         }
         .buttonStyle(.argusPlain)

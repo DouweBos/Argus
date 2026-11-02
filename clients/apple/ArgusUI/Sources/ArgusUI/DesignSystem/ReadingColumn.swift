@@ -81,7 +81,7 @@ public struct TrailingFractionLayout: SwiftUI.Layout {
     let size = subview.sizeThatFits(child)
     subview.place(
       at: CGPoint(x: bounds.maxX - min(size.width, bounds.width), y: bounds.minY), anchor: .topLeading,
-      proposal: ProposedViewSize(width: min(size.width, bounds.width), height: size.height))
+      proposal: ProposedViewSize(width: min(size.width, bounds.width), height: nil))
   }
 
   private func childProposal(_ proposal: ProposedViewSize) -> ProposedViewSize {
