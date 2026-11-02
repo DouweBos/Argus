@@ -204,6 +204,7 @@ struct DeleteSessionSheet: View {
           onDeleted()
           dismiss()
         }
+        .buttonStyle(.borderedProminent)
         .keyboardShortcut(.defaultAction)
       }
     }

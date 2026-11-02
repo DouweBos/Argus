@@ -172,7 +172,7 @@ private struct ChooseFolderStyle: PrimitiveButtonStyle {
     if prominent {
       Button(configuration).buttonStyle(.borderedProminent)
     } else {
-      Button(configuration).buttonStyle(.bordered)
+      Button(configuration).buttonStyle(.bordered).tint(nil)
     }
   }
 }

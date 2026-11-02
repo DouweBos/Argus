@@ -101,6 +101,7 @@ struct ForkMessageSheet: View {
         Spacer()
         Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
         Button(target == .session ? "Fork into New Session" : "Fork into New Agent") { submit() }
+          .buttonStyle(.borderedProminent)
           .keyboardShortcut(.defaultAction)
           .disabled(working || (target == .session && summary.trimmingCharacters(in: .whitespaces).isEmpty))
       }

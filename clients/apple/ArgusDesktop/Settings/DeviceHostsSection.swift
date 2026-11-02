@@ -139,7 +139,7 @@ private struct AddDeviceHostForm: View {
       }
       HStack {
         Button("Test Connection", action: test)
-        Button("Add Host", action: add).keyboardShortcut(.defaultAction)
+        Button("Add Host", action: add).buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
         if busy { ProgressView().controlSize(.small) }
       }
       .disabled(busy || target.trimmingCharacters(in: .whitespaces).isEmpty)

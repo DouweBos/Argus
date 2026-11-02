@@ -181,6 +181,8 @@ private struct Themed: ViewModifier {
     content
       .environment(\.theme, theme)
       .tint(theme.tint)
+      // Explicit `.borderedProminent` keeps the tint; every other button draws a label-coloured title.
+      .buttonStyle(.argusAutomatic)
       .dynamicTypeSize(prefs.dynamicTypeSize)
       .controlSize(prefs.controlSize)
       .font(prefs.bodyFont)

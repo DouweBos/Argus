@@ -136,7 +136,7 @@ struct CodeCompareSheet: View {
         Spacer()
         Button("Close", action: close).keyboardShortcut(.cancelAction)
         Button("Reload", action: reload)
-        Button("Keep Mine", action: keepMine).keyboardShortcut(.defaultAction)
+        Button("Keep Mine", action: keepMine).buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
       }
       .padding(12)
     }

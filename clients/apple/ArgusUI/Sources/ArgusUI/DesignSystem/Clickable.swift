@@ -40,6 +40,21 @@ public struct ArgusBorderlessButtonStyle: PrimitiveButtonStyle {
 }
 
 #if os(macOS)
+  /// The system's automatic style, untinted: macOS draws a tinted bordered button's label in the tint,
+  /// which the muted theme's grey turns into a disabled look. Window roots set it as the default, so a
+  /// default-action button needs an explicit `.borderedProminent` to keep the theme's tint.
+  public struct ArgusAutomaticButtonStyle: PrimitiveButtonStyle {
+    public init() {}
+
+    public func makeBody(configuration: Configuration) -> some View {
+      Button(configuration).buttonStyle(.automatic).tint(nil)
+    }
+  }
+
+  extension PrimitiveButtonStyle where Self == ArgusAutomaticButtonStyle {
+    public static var argusAutomatic: ArgusAutomaticButtonStyle { ArgusAutomaticButtonStyle() }
+  }
+
   extension PrimitiveButtonStyle where Self == ArgusPlainButtonStyle {
     public static var argusPlain: ArgusPlainButtonStyle { ArgusPlainButtonStyle() }
   }
