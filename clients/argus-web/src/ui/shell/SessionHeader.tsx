@@ -3,11 +3,17 @@
  * agent screens) and the context card at the far end, as on the Mac.
  */
 
-import { AgentTabStrip, type AgentTab } from "@argus/peacock";
+import {
+  AgentTabStrip,
+  type AgentTab,
+  ChromeTabs,
+  Icons,
+} from "@argus/peacock";
 import type { RemoteAgentStatus, RemoteSession } from "../../lib/protocol";
 import { appNavigate } from "../../routing/router";
 import type { Screen } from "../../routing/screens";
 import { useConnectionStore } from "../../stores/connection";
+import { useGitStore } from "../../stores/git";
 import { useProjectsStore } from "../../stores/projects";
 import { agentLabel } from "../screenTitle";
 import { panelOfScreen, SessionContextCard } from "./SessionContextCard";
@@ -60,6 +66,64 @@ function tabOf(agent: RemoteAgentStatus): AgentTab {
   };
 }
 
+type GitView = "branches" | "changes" | "stashes";
+
+/** The git panel's views, as the Mac's tab strip lists them. */
+function GitTabs({ screen, sessionId }: { screen: Screen; sessionId: string }) {
+  const dirty = useGitStore((s) => s.gitStatusBySession[sessionId]?.dirty_count);
+  const selected: GitView =
+    screen.name === "stashes"
+      ? "stashes"
+      : screen.name === "changes" || screen.name === "fileDiff"
+        ? "changes"
+        : "branches";
+
+  return (
+    <div className="aw-session-tabs">
+      <ChromeTabs<GitView>
+        aria-label="Git"
+        selectedId={selected}
+        tabs={[
+          {
+            id: "changes",
+            title: "Changes",
+            icon: <Icons.GitChangesIcon size={13} />,
+            count: dirty,
+          },
+          { id: "branches", title: "Branches", icon: <Icons.BranchIcon size={12} /> },
+          { id: "stashes", title: "Stashes & Tags", icon: <Icons.StashIcon size={13} /> },
+        ]}
+        onSelect={(view) =>
+          appNavigate(
+            view === "changes"
+              ? { name: "changes", sessionId, mode: "working" }
+              : { name: view, sessionId },
+          )
+        }
+      />
+    </div>
+  );
+}
+
+type CodeView = "files" | "search";
+
+/** The code panel's views: the file list, and search across it. */
+function CodeTabs({ screen, sessionId }: { screen: Screen; sessionId: string }) {
+  return (
+    <div className="aw-session-tabs">
+      <ChromeTabs<CodeView>
+        aria-label="Code"
+        selectedId={screen.name === "search" ? "search" : "files"}
+        tabs={[
+          { id: "files", title: "Files", icon: <Icons.FileIcon size={12} /> },
+          { id: "search", title: "Search", icon: <Icons.SearchIcon size={12} /> },
+        ]}
+        onSelect={(view) => appNavigate({ name: view, sessionId })}
+      />
+    </div>
+  );
+}
+
 export function SessionHeader({
   screen,
   sessionId,
@@ -95,6 +159,10 @@ export function SessionHeader({
             appNavigate({ name: "agent", sessionId, agentId: id })
           }
         />
+      ) : panel === "git" ? (
+        <GitTabs screen={screen} sessionId={sessionId} />
+      ) : panel === "code" ? (
+        <CodeTabs screen={screen} sessionId={sessionId} />
       ) : (
         <div className="aw-session-header-spacer" />
       )}

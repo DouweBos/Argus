@@ -109,6 +109,7 @@ export * from "./components/AppShell/AppShell";
 export * from "./components/HomeOverview/HomeOverview";
 export * from "./components/SettingsGroup/SettingsGroup";
 export * from "./components/StartHeading/StartHeading";
+export * from "./components/ChromeTabs/ChromeTabs";
 export * from "./components/AppSidebar/AppSidebar";
 export * from "./components/AppSidebar/AppSidebarRows";
 export * from "./components/AppToolbar/AppToolbar";

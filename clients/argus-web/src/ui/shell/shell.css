@@ -77,6 +77,13 @@
   height: 40px;
 }
 
+.aw-session-tabs {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 10px;
+}
+
 .aw-session-card {
   position: absolute;
   top: 3px;

@@ -122,29 +122,6 @@ export function SessionToolActions({ screen }: { screen: Screen }) {
           to={{ name: "search", sessionId: screen.sessionId }}
         />
       );
-    case "changes":
-      return (
-        <>
-          <Action
-            icon={<Icons.BranchIcon size={14} />}
-            label="Branches"
-            to={{ name: "branches", sessionId: screen.sessionId }}
-          />
-          <Action
-            icon={<Icons.StashIcon size={14} />}
-            label="Stashes & tags"
-            to={{ name: "stashes", sessionId: screen.sessionId }}
-          />
-        </>
-      );
-    case "branches":
-      return (
-        <Action
-          icon={<Icons.StashIcon size={14} />}
-          label="Stashes & tags"
-          to={{ name: "stashes", sessionId: screen.sessionId }}
-        />
-      );
     default:
       return null;
   }

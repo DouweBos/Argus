@@ -16,48 +16,6 @@
   border-bottom: 1px solid var(--chrome-hairline);
 }
 
-.tabs {
-  display: flex;
-  flex: 1;
-  gap: 2px;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.tab {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 6px;
-  height: 26px;
-  padding: 0 10px;
-  border: none;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--text-secondary);
-  font: 500 12px/1 var(--font-ui);
-  cursor: pointer;
-}
-
-.tab:hover {
-  background: var(--chrome-hover);
-  color: var(--text-primary);
-}
-
-.tab[data-selected] {
-  background: var(--chrome-selection);
-  color: var(--text-primary);
-}
-
-.tabTitle {
-  white-space: nowrap;
-}
-
 .body {
   position: relative;
   display: flex;

@@ -1,13 +1,10 @@
 import type { ReactNode } from "react";
 import { CloseIcon } from "../../icons/Icons";
+import { ChromeTabs, type ChromeTab } from "../ChromeTabs/ChromeTabs";
 import { FlatIconButton } from "../FlatIconButton/FlatIconButton";
 import styles from "./SidePanel.module.css";
 
-export interface SidePanelTab<ID extends string> {
-  id: ID;
-  title: string;
-  icon: ReactNode;
-}
+export type SidePanelTab<ID extends string> = ChromeTab<ID>;
 
 export interface SidePanelProps<ID extends string> {
   tabs: SidePanelTab<ID>[];
@@ -29,27 +26,12 @@ export function SidePanel<ID extends string>({
   return (
     <div className={styles.panel}>
       <div className={styles.strip}>
-        <div className={styles.tabs} role="tablist">
-          {tabs.map((tab) => {
-            const on = tab.id === selectedId;
-
-            return (
-              <button
-                key={tab.id}
-                aria-selected={on}
-                className={styles.tab}
-                data-selected={on || undefined}
-                role="tab"
-                title={tab.title}
-                type="button"
-                onClick={() => onSelect(tab.id)}
-              >
-                {tab.icon}
-                <span className={styles.tabTitle}>{tab.title}</span>
-              </button>
-            );
-          })}
-        </div>
+        <ChromeTabs<ID>
+          aria-label="Side panel"
+          selectedId={selectedId}
+          tabs={tabs}
+          onSelect={onSelect}
+        />
         {onClose && (
           <FlatIconButton
             icon={<CloseIcon size={11} />}
