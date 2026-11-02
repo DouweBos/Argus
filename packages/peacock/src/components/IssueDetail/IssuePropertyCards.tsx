@@ -1,13 +1,17 @@
-import type { LinearIssueDetail } from "../../../lib/types";
-import { Avatar, IssueStatusIcon } from "@argus/peacock";
-import { shortDuration, timeInStatus } from "@argus/remote-protocol";
-import { ago, lastChange } from "../../../lib/issueActivity";
+import type { LinearHistoryEvent } from "@argus/remote-protocol";
+import { Avatar } from "../Avatar/Avatar";
+import { IssueStatusIcon } from "../IssueStatusIcon/IssueStatusIcon";
 import styles from "./IssuePropertyCards.module.css";
 
-/** Linear's "Time in status": every status the issue sat in, and for how long. */
-export function TimeInStatusCard({ issue }: { issue: LinearIssueDetail }) {
-  const stints = timeInStatus(issue.statusHistory ?? []);
+/** One status the issue sat in, and for how long ("5d"). */
+export interface IssueStatusStint {
+  duration: string;
+  name: string;
+  type: string;
+}
 
+/** Linear's "Time in status": every status the issue sat in, and for how long. */
+export function TimeInStatusCard({ stints }: { stints: IssueStatusStint[] }) {
   return (
     <>
       <span className={styles.title}>Time in status</span>
@@ -18,7 +22,7 @@ export function TimeInStatusCard({ issue }: { issue: LinearIssueDetail }) {
           <div key={s.name} className={styles.row}>
             <IssueStatusIcon type={s.type} />
             <span className={styles.name}>{s.name}</span>
-            <span className={styles.muted}>{shortDuration(s.duration)}</span>
+            <span className={styles.muted}>{s.duration}</span>
           </div>
         ))
       )}
@@ -28,16 +32,14 @@ export function TimeInStatusCard({ issue }: { issue: LinearIssueDetail }) {
 
 /** Who last changed a property, and when. */
 export function LastChangeCard({
-  issue,
-  kind,
+  ago,
+  change,
   title,
 }: {
-  issue: LinearIssueDetail;
-  kind: "priority";
+  ago: (epochMs: number) => string;
+  change: LinearHistoryEvent | null;
   title: string;
 }) {
-  const change = lastChange(issue, kind);
-
   return (
     <>
       <span className={styles.title}>{title}</span>

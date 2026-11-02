@@ -1,36 +1,38 @@
-import type { LinearIssue } from "../../../lib/types";
 import { useState } from "react";
-import { Button, TextArea } from "@argus/peacock";
-import { postLinearComment } from "../../../stores/linearIssuesStore";
+import { Button } from "../Button/Button";
+import { TextArea } from "../Input/Input";
 import styles from "./IssueDetail.module.css";
 
-interface CommentComposerProps {
-  issue: LinearIssue;
-  /** Replies in this comment's thread; omit for a new comment. */
-  parentId?: string | null;
+export interface CommentComposerProps {
+  /** Posts the trimmed text; rejects with the reason it didn't go. */
+  onPost: (body: string) => Promise<void>;
   placeholder: string;
+  /** "Reply" in a thread, "Comment" otherwise. */
+  sendLabel?: string;
+}
+
+function message(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }
 
 /** A comment box that posts as you; ⌘↩ sends. */
 export function CommentComposer({
-  issue,
-  parentId = null,
+  onPost,
   placeholder,
+  sendLabel = "Comment",
 }: CommentComposerProps) {
   const [draft, setDraft] = useState("");
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const sendLabel = parentId ? "Reply" : "Comment";
-
   const post = async () => {
     setPosting(true);
     setError(null);
     try {
-      await postLinearComment(issue, draft.trim(), parentId);
+      await onPost(draft.trim());
       setDraft("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(message(err));
     } finally {
       setPosting(false);
     }

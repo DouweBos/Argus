@@ -1,27 +1,27 @@
+import type { LinearMedia as Media } from "@argus/client-core";
 import { useEffect, useState } from "react";
-import { InlineVideo } from "@argus/peacock";
+import { IssueMediaEmbed } from "@argus/peacock";
 import { linearMedia } from "../../../lib/ipc";
-import styles from "./IssueDetail.module.css";
 
-/** The host's signed-in copy of a Linear upload, as a URL this window can load. */
-function useLinearMedia(url: string): {
+interface Loaded {
   error: string | null;
   src: string | null;
-} {
-  const [state, setState] = useState<{
-    error: string | null;
-    src: string | null;
-    url: string;
-  } | null>(null);
+  url: string;
+}
+
+/** A Linear upload through the host's signed-in copy, as a URL this window can load. */
+export function LinearMedia({ media }: { media: Media }) {
+  const { url } = media;
+  const [state, setState] = useState<Loaded | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     linearMedia(url).then(
-      (media) =>
+      (file) =>
         !cancelled &&
         setState({
           url,
-          src: `argus-file://local${encodeURI(media.path)}`,
+          src: `argus-file://local${encodeURI(file.path)}`,
           error: null,
         }),
       (err: unknown) =>
@@ -37,20 +37,15 @@ function useLinearMedia(url: string): {
       cancelled = true;
     };
   }, [url]);
+  const current = state?.url === url ? state : null;
 
-  return state?.url === url ? state : { src: null, error: null };
-}
-
-export function LinearVideo({ label, url }: { label: string; url: string }) {
-  const { src, error } = useLinearMedia(url);
-
-  return <InlineVideo error={error} label={label} src={src} />;
-}
-
-export function LinearImage({ label, url }: { label: string; url: string }) {
-  const { src } = useLinearMedia(url);
-
-  return src ? (
-    <img alt={label} className={styles.embedImage} src={src} />
-  ) : null;
+  return (
+    <IssueMediaEmbed
+      error={current?.error}
+      kind={media.kind}
+      label={media.label}
+      src={current?.src ?? null}
+      url={url}
+    />
+  );
 }

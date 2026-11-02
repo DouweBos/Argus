@@ -1,74 +1,70 @@
-import { useEffect, useState } from "react";
-import { Button, EmptyState, Icons, Spinner } from "@argus/peacock";
-import { openExternalUrl } from "../../../lib/ipc";
+import type { LinearIssue } from "@argus/remote-protocol";
+import { type ReactNode, useEffect } from "react";
 import {
-  loadLinearIssueDetail,
-  useLinearIssueDetail,
-} from "../../../stores/linearIssuesStore";
-import { IssueActivitySection } from "./IssueActivitySection";
-import { IssueBody } from "./IssueBody";
+  ArrowUpRightIcon,
+  BranchIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  ChevronUpIcon,
+  CopyIcon,
+  LinkIcon,
+  WarningIcon,
+} from "../../icons/Icons";
+import { Button } from "../Button/Button";
+import { EmptyState } from "../EmptyState/EmptyState";
+import { Spinner } from "../Spinner/Spinner";
 import styles from "./IssueDetail.module.css";
-import { IssueProperties } from "./IssueProperties";
+
+export interface IssueDetailPageProps {
+  /** The properties sidebar, once the issue is loaded. */
+  aside?: ReactNode;
+  /** The body and activity, once the issue is loaded. */
+  children?: ReactNode;
+  error: string | null;
+  issue: Pick<
+    LinearIssue,
+    "branchName" | "identifier" | "title" | "url"
+  > | null;
+  issueRef: string;
+  /** "Assigned to me": the list it was opened from, for the breadcrumb. */
+  listTitle: string;
+  onClose: () => void;
+  onOpen: (identifier: string) => void;
+  onOpenExternal: (url: string) => void;
+  /** The list's order, for previous/next. */
+  order: string[];
+}
 
 function copyText(text: string): void {
   navigator.clipboard.writeText(text).catch(() => {});
 }
 
-interface IssueDetailPageProps {
-  issueRef: string;
-  /** "My issues" — the list it was opened from, for the breadcrumb. */
-  listTitle: string;
-  onClose: () => void;
-  onOpen: (identifier: string) => void;
-  /** Null when there's no project to start an agent in. */
-  onStart: ((identifier: string) => void) | null;
-  /** The list's order, for previous/next. */
-  order: string[];
+function typing(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    !!target.closest("input, textarea, [contenteditable]")
+  );
 }
 
 /** The whole ticket as a page, the way Linear shows it. */
 export function IssueDetailPage({
+  aside,
+  children,
+  error,
+  issue,
   issueRef,
   listTitle,
   onClose,
   onOpen,
-  onStart,
+  onOpenExternal,
   order,
 }: IssueDetailPageProps) {
-  const issue = useLinearIssueDetail(issueRef);
-  // Keyed by issue, so moving to the next one drops the last one's error.
-  const [failure, setFailure] = useState<{
-    message: string;
-    ref: string;
-  } | null>(null);
-  const error = failure?.ref === issueRef ? failure.message : null;
   const index = order.indexOf(issueRef);
-
-  useEffect(() => {
-    let cancelled = false;
-    loadLinearIssueDetail(issueRef).then(
-      (found) => {
-        if (!cancelled && !found) {
-          setFailure({
-            ref: issueRef,
-            message: `Linear has no issue ${issueRef}.`,
-          });
-        }
-      },
-      (err: unknown) =>
-        !cancelled && setFailure({ ref: issueRef, message: String(err) }),
-    );
-
-    return () => {
-      cancelled = true;
-    };
-  }, [issueRef]);
 
   // j/k walk the list like Linear's arrows; Escape goes back to it.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target?.closest("input, textarea, [contenteditable]")) {
+      if (typing(e.target) || e.metaKey || e.ctrlKey || e.altKey) {
         return;
       }
       if (e.key === "Escape") {
@@ -90,14 +86,14 @@ export function IssueDetailPage({
         <button className={styles.crumb} type="button" onClick={onClose}>
           {listTitle}
         </button>
-        <Icons.ChevronRightIcon size={8} />
+        <ChevronRightIcon size={8} />
         <span className={styles.crumbCurrent}>
           <span className={styles.mono}>{issueRef}</span>
           {issue && <span className={styles.rowTitle}>{issue.title}</span>}
         </span>
         <span className={styles.topBarSpacer} />
         {issue && (
-          <>
+          <span className={styles.copyActions}>
             <Button
               variant="ghost"
               size="sm"
@@ -105,7 +101,7 @@ export function IssueDetailPage({
               aria-label="Copy link"
               onClick={() => copyText(issue.url)}
             >
-              <Icons.LinkIcon size={12} />
+              <LinkIcon size={12} />
             </Button>
             <Button
               variant="ghost"
@@ -114,7 +110,7 @@ export function IssueDetailPage({
               aria-label="Copy ID"
               onClick={() => copyText(issue.identifier)}
             >
-              <Icons.CopyIcon size={12} />
+              <CopyIcon size={12} />
             </Button>
             <Button
               variant="ghost"
@@ -123,18 +119,18 @@ export function IssueDetailPage({
               aria-label="Copy branch name"
               onClick={() => copyText(issue.branchName)}
             >
-              <Icons.BranchIcon size={12} />
+              <BranchIcon size={12} />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               title="Open in Linear"
               aria-label="Open in Linear"
-              onClick={() => openExternalUrl(issue.url).catch(() => {})}
+              onClick={() => onOpenExternal(issue.url)}
             >
-              <Icons.ArrowUpRightIcon size={12} />
+              <ArrowUpRightIcon size={12} />
             </Button>
-          </>
+          </span>
         )}
         {index >= 0 && (
           <span className={styles.nav}>
@@ -149,7 +145,7 @@ export function IssueDetailPage({
               disabled={index >= order.length - 1}
               onClick={() => onOpen(order[index + 1])}
             >
-              <Icons.ChevronDownIcon size={10} />
+              <ChevronDownIcon size={10} />
             </Button>
             <Button
               variant="ghost"
@@ -159,7 +155,7 @@ export function IssueDetailPage({
               disabled={index <= 0}
               onClick={() => onOpen(order[index - 1])}
             >
-              <Icons.ChevronUpIcon size={10} />
+              <ChevronUpIcon size={10} />
             </Button>
           </span>
         )}
@@ -167,7 +163,7 @@ export function IssueDetailPage({
 
       {!issue && error && (
         <EmptyState
-          icon={<Icons.WarningIcon size={20} />}
+          icon={<WarningIcon size={20} />}
           title="Couldn't load the issue"
           body={error}
         />
@@ -177,11 +173,8 @@ export function IssueDetailPage({
       )}
       {issue && (
         <div className={styles.layout}>
-          <main className={styles.main}>
-            <IssueBody issue={issue} />
-            <IssueActivitySection issue={issue} />
-          </main>
-          <IssueProperties issue={issue} onStart={onStart} />
+          <main className={styles.main}>{children}</main>
+          {aside}
         </div>
       )}
     </div>

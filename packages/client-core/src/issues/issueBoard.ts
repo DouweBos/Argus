@@ -3,7 +3,15 @@
  * a swimlane per priority, and which Argus session (if any) is on an issue.
  */
 
-import type { LinearIssue, LinearWorkflowState, Session } from "./types";
+import type { LinearIssue, LinearWorkflowState } from "@argus/remote-protocol";
+import { estimateName } from "@argus/remote-protocol/linearLabels";
+
+/** What a session needs to say it is on an issue; desktop and gateway sessions both fit. */
+export interface IssueSessionLike {
+  branch: string;
+  kind: string;
+  linked_issue?: { identifier: string } | null;
+}
 
 /** Linear's state categories in the order work flows through them. */
 const TYPE_ORDER = [
@@ -102,10 +110,10 @@ export function byPriority(a: LinearIssue, b: LinearIssue): number {
 }
 
 /** The session already working on the issue, if any. */
-export function sessionForIssue(
+export function sessionForIssue<S extends IssueSessionLike>(
   issue: Pick<LinearIssue, "branchName" | "identifier">,
-  sessions: Session[],
-): Session | null {
+  sessions: readonly S[],
+): S | null {
   return (
     sessions.find(
       (s) =>
@@ -142,3 +150,61 @@ const MONTH = new Intl.DateTimeFormat(undefined, {
 export function formatIssueMonth(epochMs: number): string {
   return MONTH.format(new Date(epochMs));
 }
+
+/** A swimlane: one priority with how many issues it holds. */
+export interface BoardLane {
+  count: number;
+  priority: number;
+}
+
+/** A lane per priority that has issues, most urgent first. */
+export function boardLanes(issues: readonly LinearIssue[]): BoardLane[] {
+  return PRIORITY_ORDER.map((priority) => ({
+    priority,
+    count: issues.filter((i) => i.priority === priority).length,
+  })).filter((lane) => lane.count > 0);
+}
+
+/** One board cell: the column's issues in the lane, most urgent then newest first. */
+export function boardCell(
+  column: Pick<BoardColumn, "issues">,
+  priority: number,
+): LinearIssue[] {
+  return column.issues.filter((i) => i.priority === priority).sort(byPriority);
+}
+
+/** The order the list reads in: a status at a time, most urgent first. */
+export function listOrder(issues: LinearIssue[]): LinearIssue[] {
+  return boardColumns(issues).flatMap((c) => [...c.issues].sort(byPriority));
+}
+
+/** What an issue card shows, in Peacock `IssueCard`'s shape. */
+export function issueCardData(issue: LinearIssue, onIt: boolean) {
+  return {
+    assignee: issue.assignee
+      ? { name: issue.assignee, avatarUrl: issue.assigneeAvatarUrl }
+      : null,
+    badge: onIt ? "Agent on it" : undefined,
+    // Linear names cycles "Cycle 59"; their `number` counts differently.
+    cycle: cycleLabel(issue.cycle)?.replace(/^Cycle /, "") ?? null,
+    estimate:
+      issue.estimate == null
+        ? null
+        : estimateName(issue.estimate, issue.estimateType),
+    footnote: `Created ${formatIssueMonth(issue.createdAt)}`,
+    identifier: issue.identifier,
+    labels: issue.labels.map((name) => ({
+      name,
+      color: issue.labelColors?.find((l) => l.name === name)?.color,
+    })),
+    parent: issue.parent?.identifier ?? null,
+    priority: issue.priority,
+    project: issue.project?.name ?? null,
+    pullRequestCount: issue.pullRequestCount,
+    statusColor: issue.state.color,
+    statusType: issue.state.type,
+    title: issue.title,
+  };
+}
+
+export type IssueCardData = ReturnType<typeof issueCardData>;

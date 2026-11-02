@@ -16,7 +16,7 @@ import {
   updateDesignViewer,
 } from "../../../lib/designViewer";
 import { openExternalUrl } from "../../../lib/ipc";
-import { formatIssueDate } from "../../../lib/issueBoard";
+import { formatIssueDate } from "@argus/client-core";
 import { useCurrentRoute } from "../../../lib/routeHooks";
 import { useSessions } from "../../../stores/sessionStore";
 import { useSessionDesignDevice } from "../../../stores/simulatorStore";

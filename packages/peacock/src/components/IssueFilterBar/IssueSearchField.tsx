@@ -1,17 +1,27 @@
 import { useEffect, useRef, useState } from "react";
-import { Icons, Input } from "@argus/peacock";
-import { appNavigate } from "../../../lib/router";
-import styles from "./IssuesScreen.module.css";
+import { SearchIcon } from "../../icons/Icons";
+import { Input } from "../Input/Input";
+import styles from "./IssueFilterBar.module.css";
 
 const DEBOUNCE_MS = 300;
 
-interface IssueSearchFieldProps {
-  /** The searched term in the URL, null when not searching. */
+export interface IssueSearchFieldProps {
+  /**
+   * The settled term (trimmed; "" when cleared). `replace` is true when it
+   * refines a search already under way, so it can replace that history entry.
+   */
+  onSearch: (term: string, replace: boolean) => void;
+  placeholder?: string;
+  /** The searched term, null when not searching. */
   query: string | null;
 }
 
-/** Searches every issue in the workspace; the term lives in `/issues/search?q=`. */
-export function IssueSearchField({ query }: IssueSearchFieldProps) {
+/** Searches every issue in the workspace, once typing settles. */
+export function IssueSearchField({
+  onSearch,
+  placeholder = "Search all issues…",
+  query,
+}: IssueSearchFieldProps) {
   const [text, setText] = useState(query ?? "");
   const searching = useRef(query !== null);
   const timer = useRef<number | null>(null);
@@ -28,33 +38,21 @@ export function IssueSearchField({ query }: IssueSearchFieldProps) {
   const settle = (value: string) => {
     const term = value.trim();
     if (term) {
-      // The first term is a navigation; refining it replaces that entry.
-      appNavigate(
-        {
-          view: "issues",
-          issueScope: "search",
-          issueRef: null,
-          issueQuery: term,
-        },
-        { replace: searching.current },
-      );
+      onSearch(term, searching.current);
       searching.current = true;
     } else if (searching.current) {
-      appNavigate(
-        { view: "issues", issueScope: "assigned", issueRef: null },
-        { replace: true },
-      );
+      onSearch("", true);
       searching.current = false;
     }
   };
 
   return (
     <label className={styles.search}>
-      <Icons.SearchIcon size={12} />
+      <SearchIcon size={12} />
       <Input
         bare
         aria-label="Search all issues"
-        placeholder="Search all issues…"
+        placeholder={placeholder}
         type="search"
         value={text}
         onChange={(e) => {

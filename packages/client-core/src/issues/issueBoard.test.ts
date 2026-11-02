@@ -1,9 +1,12 @@
-import type { LinearIssue } from "./types";
+import type { LinearIssue } from "@argus/remote-protocol";
 import { describe, expect, it } from "vitest";
 import {
+  boardCell,
   boardColumns,
+  boardLanes,
   byPriority,
   cycleLabel,
+  issueCardData,
   isColumnHidden,
   sessionForIssue,
 } from "./issueBoard";
@@ -108,7 +111,7 @@ describe("sessionForIssue", () => {
       branch: "eng-2",
       linked_issue: null,
     };
-    const sessions = [linked, byBranch] as never;
+    const sessions = [linked, byBranch];
     expect(
       sessionForIssue({ identifier: "ENG-1", branchName: "nope" }, sessions)
         ?.id,
@@ -158,5 +161,44 @@ describe("isColumnHidden", () => {
         { todo: true },
       ),
     ).toBe(true);
+  });
+});
+
+describe("boardLanes and boardCell", () => {
+  it("lanes only priorities with issues, urgent first and none last", () => {
+    const issues = [
+      issue({ identifier: "A", priority: 0 }),
+      issue({ identifier: "B", priority: 3, updatedAt: 1 }),
+      issue({ identifier: "C", priority: 3, updatedAt: 2 }),
+      issue({ identifier: "D", priority: 1 }),
+    ];
+    expect(boardLanes(issues)).toEqual([
+      { priority: 1, count: 1 },
+      { priority: 3, count: 2 },
+      { priority: 0, count: 1 },
+    ]);
+    const [todo] = boardColumns(issues);
+    expect(boardCell(todo, 3).map((i) => i.identifier)).toEqual(["C", "B"]);
+  });
+});
+
+describe("issueCardData", () => {
+  it("shortens cycles, names estimates and badges an issue with an agent", () => {
+    const card = issueCardData(
+      issue({
+        estimate: 3,
+        estimateType: "tShirt",
+        cycle: { id: "c", number: 7, name: null, isActive: true },
+        parent: { identifier: "ENG-0", title: "p" },
+      }),
+      true,
+    );
+    expect(card).toMatchObject({
+      badge: "Agent on it",
+      cycle: "7",
+      estimate: "M",
+      parent: "ENG-0",
+    });
+    expect(issueCardData(issue({}), false).badge).toBeUndefined();
   });
 });

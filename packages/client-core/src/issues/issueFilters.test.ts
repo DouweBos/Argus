@@ -1,6 +1,15 @@
-import type { LinearIssue } from "./types";
+import type { LinearIssue } from "@argus/remote-protocol";
 import { describe, expect, it } from "vitest";
-import { applyFilters, filterOptions, optionLabel } from "./issueFilters";
+import {
+  applyFilters,
+  filterOperator,
+  filterOptions,
+  filterSummary,
+  flipFilter,
+  optionLabel,
+  toggleFilterValue,
+  updateIssueFilter,
+} from "./issueFilters";
 
 const NOW = Date.parse("2026-10-29T12:00:00Z");
 const DAY = 24 * 60 * 60 * 1000;
@@ -99,5 +108,38 @@ describe("filterOptions", () => {
 
   it("names the empty option after the field", () => {
     expect(optionLabel("labels", "__none__")).toBe("No labels");
+  });
+});
+
+describe("updateIssueFilter", () => {
+  it("adds new filters last, keeps changed ones in place, and reports the change", () => {
+    let row = toggleFilterValue([], "priority", "1");
+    expect(row.change).toBe("add");
+    row = toggleFilterValue(row.filters, "labels", "bug");
+    row = toggleFilterValue(row.filters, "priority", "2");
+    expect(row.change).toBeNull();
+    expect(row.filters.map((f) => f.field)).toEqual(["priority", "labels"]);
+    row = flipFilter(row.filters, "priority");
+    expect(row.change).toBe("flip");
+    expect(filterOperator(row.filters[0])).toBe("is not");
+    row = updateIssueFilter(row.filters, "labels", () => null);
+    expect(row.change).toBe("remove");
+    expect(row.filters.map((f) => f.field)).toEqual(["priority"]);
+  });
+
+  it("summarises chips", () => {
+    expect(
+      filterSummary({ field: "priority", negate: false, values: ["1", "2"] }),
+    ).toBe("Urgent, High");
+    expect(
+      filterSummary({
+        field: "priority",
+        negate: false,
+        values: ["1", "2", "3"],
+      }),
+    ).toBe("3 priority");
+    expect(
+      filterOperator({ field: "content", negate: true, values: ["x"] }),
+    ).toBe("doesn't contain");
   });
 });

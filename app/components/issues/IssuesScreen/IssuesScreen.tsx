@@ -1,17 +1,21 @@
 import type { IssueScope } from "../../../lib/router";
-import type { LinearIssue } from "../../../lib/types";
 import { type ReactNode, useState } from "react";
+import {
+  applyFilters,
+  ISSUE_SCOPE_TITLES,
+  issueOrder,
+  issuesEmptyText,
+} from "@argus/client-core";
 import {
   Button,
   EmptyState,
   GridScreen,
   Icons,
+  IssueSearchField,
   SegmentedControl,
   Select,
   Spinner,
 } from "@argus/peacock";
-import { issueOrder } from "../../../lib/issueActivity";
-import { applyFilters } from "../../../lib/issueFilters";
 import { useCurrentRoute } from "../../../lib/routeHooks";
 import { appNavigate } from "../../../lib/router";
 import {
@@ -24,11 +28,9 @@ import {
 import { useSessionProjects } from "../../../stores/sessionStore";
 import { showSettingsDialog } from "../../../stores/settingsStore";
 import { openStartDraft } from "../../../stores/startDraftStore";
-import { IssueDetailPage } from "../IssueDetail/IssueDetailPage";
-import { IssueFilterBar } from "./IssueFilterBar";
-import { IssueSearchField } from "./IssueSearchField";
-import { IssuesBoardView } from "./IssuesBoardView";
-import { IssuesListView } from "./IssuesListView";
+import { IssueDetail } from "../IssueDetail/IssueDetail";
+import { IssuesBoard, IssuesList } from "./IssuesBoard";
+import { IssuesFilterRow } from "./IssuesFilterRow";
 import styles from "./IssuesScreen.module.css";
 import { useIssueResults } from "./useIssueResults";
 
@@ -37,13 +39,6 @@ const SCOPES = [
   { value: "created" as const, label: "Created" },
   { value: "subscribed" as const, label: "Subscribed" },
 ];
-
-const SCOPE_TITLES: Record<IssueScope, string> = {
-  assigned: "Assigned to me",
-  created: "Created by me",
-  search: "Search",
-  subscribed: "Subscribed",
-};
 
 const LAYOUTS = [
   { value: "board" as const, label: "Board" },
@@ -76,11 +71,11 @@ export function IssuesScreen() {
   const [pickedRoot, setPickedRoot] = useState<string | null>(null);
   const repoRoot = pickedRoot ?? projects[0]?.repoRoot ?? null;
 
-  const open = (issue: LinearIssue) =>
+  const open = (identifier: string) =>
     appNavigate({
       view: "issues",
       issueScope,
-      issueRef: issue.identifier,
+      issueRef: identifier,
       issueQuery,
     });
   const start = repoRoot
@@ -126,29 +121,26 @@ export function IssuesScreen() {
       />
     );
   } else if (data.length === 0) {
+    const empty = issuesEmptyText(issueScope, issueQuery, filters.length > 0);
     content = (
       <EmptyState
         icon={<Icons.CheckIcon size={20} />}
-        title={searching ? "No issues match" : "No open issues here"}
-        body={emptyBody(searching, issueQuery, filters.length > 0)}
+        title={empty.title}
+        body={empty.body}
       />
     );
   } else if (layout === "board") {
-    content = (
-      <IssuesBoardView issues={data} selected={issueRef} onOpen={open} />
-    );
+    content = <IssuesBoard issues={data} selected={issueRef} onOpen={open} />;
   } else {
-    content = (
-      <IssuesListView issues={data} selected={issueRef} onOpen={open} />
-    );
+    content = <IssuesList issues={data} selected={issueRef} onOpen={open} />;
   }
 
   // An open issue takes the whole screen, the way Linear opens one.
   if (issueRef && connected) {
     return (
-      <IssueDetailPage
+      <IssueDetail
         issueRef={issueRef}
-        listTitle={SCOPE_TITLES[issueScope]}
+        listTitle={ISSUE_SCOPE_TITLES[issueScope]}
         order={issueOrder(data ?? [])}
         onClose={() =>
           appNavigate({
@@ -226,6 +218,23 @@ export function IssuesScreen() {
             <IssueSearchField
               key={searching ? "search" : "scope"}
               query={issueQuery}
+              onSearch={(term, replace) =>
+                appNavigate(
+                  term
+                    ? {
+                        view: "issues",
+                        issueScope: "search",
+                        issueRef: null,
+                        issueQuery: term,
+                      }
+                    : {
+                        view: "issues",
+                        issueScope: "assigned",
+                        issueRef: null,
+                      },
+                  { replace },
+                )
+              }
             />
             <SegmentedControl<IssuesLayout>
               aria-label="Layout"
@@ -237,25 +246,9 @@ export function IssuesScreen() {
         </div>
       )}
       {connected && allIssues && (
-        <IssueFilterBar issues={allIssues} scope={issueScope} />
+        <IssuesFilterRow issues={allIssues} scope={issueScope} />
       )}
       {content}
     </GridScreen>
   );
-}
-
-function emptyBody(
-  searching: boolean,
-  query: string | null,
-  filtered: boolean,
-): string {
-  if (searching) {
-    return query
-      ? `Nothing in Linear matches “${query}”${filtered ? " with these filters" : ""}.`
-      : "Type to search every issue in the workspace.";
-  }
-
-  return filtered
-    ? "No open issues match these filters."
-    : "Open issues in this view show up here.";
 }

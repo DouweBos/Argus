@@ -1,13 +1,8 @@
-import type { LinearIssueDetail } from "../../../lib/types";
-import { Icons, IssueStatusIcon, Markdown } from "@argus/peacock";
-import { figmaLinkHandler, isFigmaUrl } from "../../../lib/designViewer";
-import { openExternalUrl } from "../../../lib/ipc";
-import { ago } from "../../../lib/issueActivity";
-import { appNavigate } from "../../../lib/router";
+import type { LinearIssueDetail } from "@argus/remote-protocol";
+import { FigmaIcon, LinkIcon } from "../../icons/Icons";
+import { IssueStatusIcon } from "../IssueStatusIcon/IssueStatusIcon";
+import { Markdown, type MarkdownProps } from "../Markdown/Markdown";
 import styles from "./IssueDetail.module.css";
-import { renderLinearEmbed } from "./linearEmbed";
-
-const openFigmaLink = figmaLinkHandler("issue");
 
 const RELATION_TITLES: Record<string, string> = {
   blocks: "Blocks",
@@ -18,16 +13,32 @@ const RELATION_TITLES: Record<string, string> = {
   similar: "Similar",
 };
 
-function openIssue(identifier: string) {
-  appNavigate({ view: "issues", issueRef: identifier });
+/** How the issue's text renders links and uploads, shared with its comments. */
+export interface IssueTextProps {
+  /** A link in the text was clicked; true when it was handled. */
+  onLinkClick?: MarkdownProps["onLinkClick"];
+  /** Inline players and images for uploads; null leaves a link. */
+  renderEmbed?: MarkdownProps["renderEmbed"];
+}
+
+export interface IssueBodyProps extends IssueTextProps {
+  /** "5w ago". */
+  ago: (epochMs: number) => string;
+  /** Resources that open in the design viewer get its glyph. */
+  isDesignUrl?: (url: string) => boolean;
+  issue: LinearIssueDetail;
+  onOpenIssue: (identifier: string) => void;
+  onOpenResource: (url: string) => void;
 }
 
 function IssueLink({
   identifier,
+  onOpen,
   title,
   type,
 }: {
   identifier: string;
+  onOpen: (identifier: string) => void;
   title: string;
   type: string;
 }) {
@@ -35,7 +46,7 @@ function IssueLink({
     <button
       className={styles.issueRow}
       type="button"
-      onClick={() => openIssue(identifier)}
+      onClick={() => onOpen(identifier)}
     >
       <IssueStatusIcon type={type} />
       <span className={styles.mono}>{identifier}</span>
@@ -45,28 +56,37 @@ function IssueLink({
 }
 
 /** Title, description, sub-issues, relations and linked resources. */
-export function IssueBody({ issue }: { issue: LinearIssueDetail }) {
+export function IssueBody({
+  ago,
+  isDesignUrl,
+  issue,
+  onLinkClick,
+  onOpenIssue,
+  onOpenResource,
+  renderEmbed,
+}: IssueBodyProps) {
   const relations = issue.relations ?? [];
   const relationGroups = [...new Set(relations.map((r) => r.type))];
+  const parent = issue.parent;
 
   return (
     <>
-      {issue.parent && (
+      {parent && (
         <button
           className={styles.parent}
           type="button"
-          onClick={() => issue.parent && openIssue(issue.parent.identifier)}
+          onClick={() => onOpenIssue(parent.identifier)}
         >
-          {issue.parent.identifier} › {issue.parent.title}
+          {parent.identifier} › {parent.title}
         </button>
       )}
       <h1 className={styles.title}>{issue.title}</h1>
       {issue.description.trim() ? (
         <Markdown
           className={styles.description}
-          renderEmbed={renderLinearEmbed}
+          renderEmbed={renderEmbed}
           text={issue.description}
-          onLinkClick={openFigmaLink}
+          onLinkClick={onLinkClick}
         />
       ) : (
         <p className={styles.muted}>No description.</p>
@@ -84,6 +104,7 @@ export function IssueBody({ issue }: { issue: LinearIssueDetail }) {
               identifier={child.identifier}
               title={child.title}
               type={child.state.type}
+              onOpen={onOpenIssue}
             />
           ))}
         </section>
@@ -102,6 +123,7 @@ export function IssueBody({ issue }: { issue: LinearIssueDetail }) {
                 identifier={r.identifier}
                 title={r.title}
                 type={r.state.type}
+                onOpen={onOpenIssue}
               />
             ))}
         </section>
@@ -115,16 +137,12 @@ export function IssueBody({ issue }: { issue: LinearIssueDetail }) {
               key={a.url}
               className={styles.resource}
               type="button"
-              onClick={() => {
-                if (!openFigmaLink(a.url)) {
-                  openExternalUrl(a.url).catch(() => {});
-                }
-              }}
+              onClick={() => onOpenResource(a.url)}
             >
-              {isFigmaUrl(a.url) ? (
-                <Icons.FigmaIcon size={12} />
+              {isDesignUrl?.(a.url) ? (
+                <FigmaIcon size={12} />
               ) : (
-                <Icons.LinkIcon size={12} />
+                <LinkIcon size={12} />
               )}
               <span className={styles.rowTitle}>{a.title}</span>
               {a.subtitle && <span className={styles.mono}>{a.subtitle}</span>}

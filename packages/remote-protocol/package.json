@@ -8,7 +8,9 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./account": "./src/account/index.ts"
+    "./account": "./src/account/index.ts",
+    "./issueTime": "./src/issueTime.ts",
+    "./linearLabels": "./src/linearLabels.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

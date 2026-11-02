@@ -4,7 +4,7 @@
  * on different fields all have to match, values within one filter any.
  */
 
-import type { LinearIssue } from "./types";
+import type { LinearIssue } from "@argus/remote-protocol";
 import { cycleLabel } from "./issueBoard";
 
 export type FilterField =
@@ -298,4 +298,102 @@ export function applyFilters(
   return filters.length === 0
     ? issues
     : issues.filter((issue) => filters.every((f) => matches(issue, f, now)));
+}
+
+/** The Add filter menu's fields, grouped like Linear's. */
+export const FILTER_MENU_FIELDS = FILTER_FIELD_GROUPS.map((group) =>
+  group.map((id) => ({
+    id,
+    label: FILTER_FIELDS[id].label,
+    kind: FILTER_FIELDS[id].kind,
+  })),
+);
+
+/** What a filter chip says after its operator: the values, or how many. */
+export function filterSummary(filter: IssueFilter): string {
+  if (filter.field === "content") {
+    return filter.values.join(" ");
+  }
+  const labels = filter.values.map((v) => optionLabel(filter.field, v));
+
+  return labels.length > 2
+    ? `${labels.length} ${FILTER_FIELDS[filter.field].label.toLowerCase()}`
+    : labels.join(", ");
+}
+
+export function filterOperator(filter: IssueFilter): string {
+  if (filter.field === "content") {
+    return filter.negate ? "doesn't contain" : "contains";
+  }
+
+  return filter.negate ? "is not" : "is";
+}
+
+export function isFilterField(value: string): value is FilterField {
+  return value in FILTER_FIELDS;
+}
+
+/** How the filter row changed, for telemetry; null when nothing did. */
+export type FilterChange = "add" | "flip" | "remove" | null;
+
+/**
+ * One field's filter changed (or was removed with null): the row after it,
+ * a changed filter keeping its place and a new one going last.
+ */
+export function updateIssueFilter(
+  filters: readonly IssueFilter[],
+  field: FilterField,
+  change: (f: IssueFilter) => IssueFilter | null,
+): { change: FilterChange; filters: IssueFilter[] } {
+  const existing = filters.find((f) => f.field === field);
+  const next = change(existing ?? { field, negate: false, values: [] });
+  const rest = filters.filter((f) => f.field !== field);
+  if (!next || next.values.length === 0) {
+    return { change: existing ? "remove" : null, filters: rest };
+  }
+  if (!existing) {
+    return { change: "add", filters: [...rest, next] };
+  }
+
+  return {
+    change: next.negate !== existing.negate ? "flip" : null,
+    filters: filters.map((f) => (f.field === field ? next : f)),
+  };
+}
+
+/** Pick or unpick one option of a field's filter. */
+export function toggleFilterValue(
+  filters: readonly IssueFilter[],
+  field: FilterField,
+  value: string,
+): { change: FilterChange; filters: IssueFilter[] } {
+  return updateIssueFilter(filters, field, (f) => ({
+    ...f,
+    values: f.values.includes(value)
+      ? f.values.filter((v) => v !== value)
+      : [...f.values, value],
+  }));
+}
+
+/** A content filter's text: one term, or no filter when it's cleared. */
+export function setFilterText(
+  filters: readonly IssueFilter[],
+  field: FilterField,
+  text: string,
+): { change: FilterChange; filters: IssueFilter[] } {
+  return updateIssueFilter(filters, field, (f) => ({
+    ...f,
+    values: text ? [text] : [],
+  }));
+}
+
+/** "is" ↔ "is not". */
+export function flipFilter(
+  filters: readonly IssueFilter[],
+  field: FilterField,
+): { change: FilterChange; filters: IssueFilter[] } {
+  return updateIssueFilter(filters, field, (f) => ({
+    ...f,
+    negate: !f.negate,
+  }));
 }

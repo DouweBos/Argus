@@ -1,15 +1,6 @@
 import type { ReactNode } from "react";
-import { LinearImage, LinearVideo } from "./LinearMedia";
-
-const VIDEO_NAME = /\.(mov|mp4|m4v|webm)$/i;
-
-function isLinearUpload(url: string): boolean {
-  try {
-    return new URL(url).hostname === "uploads.linear.app";
-  } catch {
-    return false;
-  }
-}
+import { linearMediaFor } from "@argus/client-core";
+import { LinearMedia } from "./LinearMedia";
 
 /**
  * Markdown embed hook for issue text: Linear-hosted recordings become players
@@ -20,15 +11,7 @@ export function renderLinearEmbed(
   url: string,
   label: string,
 ): ReactNode | null {
-  if (!isLinearUpload(url)) {
-    return null;
-  }
-  if (kind === "image") {
-    return <LinearImage label={label} url={url} />;
-  }
-  if (VIDEO_NAME.test(label) || VIDEO_NAME.test(new URL(url).pathname)) {
-    return <LinearVideo label={label || "Video"} url={url} />;
-  }
+  const media = linearMediaFor(kind, url, label);
 
-  return null;
+  return media ? <LinearMedia media={media} /> : null;
 }

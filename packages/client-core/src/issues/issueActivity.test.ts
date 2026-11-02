@@ -1,4 +1,4 @@
-import type { LinearComment } from "./types";
+import type { LinearComment } from "@argus/remote-protocol";
 import { describe, expect, it } from "vitest";
 import { ago, commentThreads } from "./issueActivity";
 

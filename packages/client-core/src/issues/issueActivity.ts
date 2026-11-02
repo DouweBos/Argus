@@ -8,7 +8,7 @@ import type {
   LinearHistoryEvent,
   LinearIssue,
   LinearIssueDetail,
-} from "./types";
+} from "@argus/remote-protocol";
 import { boardColumns, byPriority } from "./issueBoard";
 
 const UNITS: [number, string][] = [
@@ -76,12 +76,4 @@ export function issueOrder(issues: LinearIssue[]): string[] {
   return boardColumns(issues).flatMap((column) =>
     [...column.issues].sort(byPriority).map((i) => i.identifier),
   );
-}
-
-/** The latest change of one kind, for "Changed by X · 2d ago". */
-export function lastChange(
-  issue: LinearIssueDetail,
-  kind: LinearHistoryEvent["kind"],
-): LinearHistoryEvent | null {
-  return (issue.history ?? []).findLast((h) => h.kind === kind) ?? null;
 }

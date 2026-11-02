@@ -1,14 +1,11 @@
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import {
-  HoverCard,
-  OptionMenu,
-  type OptionMenuItem,
-  PropertyButton,
-} from "@argus/peacock";
+import { HoverCard } from "../HoverCard/HoverCard";
+import { OptionMenu, type OptionMenuItem } from "../OptionMenu/OptionMenu";
+import { PropertyButton } from "../PropertyButton/PropertyButton";
 import styles from "./IssuePropertyMenu.module.css";
 
-interface IssuePropertyMenuProps {
+export interface IssuePropertyMenuProps {
   /** What hovering the button shows. */
   card: ReactNode;
   disabled?: boolean;

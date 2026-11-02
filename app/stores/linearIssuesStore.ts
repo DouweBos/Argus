@@ -1,4 +1,4 @@
-import type { IssueFilter } from "../lib/issueFilters";
+import type { IssueFilter } from "@argus/client-core";
 import type { IssueScope } from "../lib/router";
 import type {
   LinearIssue,
