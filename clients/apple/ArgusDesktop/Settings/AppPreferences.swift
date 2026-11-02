@@ -17,7 +17,6 @@ final class AppPreferences {
     static let colorTheme = AppPreferences.colorThemeKey
     static let displaySize = "argus:ui-scale"
     static let permissionMode = "argus:settings.defaultPermissionMode"
-    static let defaultModel = "argus:settings.defaultModel"
     static let customEditors = "argus:settings.customEditors"
     static let editorFontName = "argus:editor.fontName"
     static let editorFontSize = "argus:editor.fontSize"
@@ -81,10 +80,8 @@ final class AppPreferences {
     didSet { defaults.set(showInMenuBar, forKey: Key.showInMenuBar) }
   }
 
-  /// Seeded into new sessions; empty means the CLI's own default.
-  var defaultModel: String {
-    didSet { defaults.set(defaultModel, forKey: Key.defaultModel) }
-  }
+  /// The host's `default_llm.model`, which Settings → LLM edits; empty means the runner's own default.
+  var defaultLlmModel = ""
 
   var customEditors: [CustomEditor] {
     didSet {
@@ -156,7 +153,6 @@ final class AppPreferences {
     colorTheme = .sanitize(defaults.string(forKey: Key.colorTheme))
     displaySize = .sanitize(defaults.string(forKey: Key.displaySize))
     defaultPermissionMode = .sanitize(defaults.string(forKey: Key.permissionMode))
-    defaultModel = defaults.string(forKey: Key.defaultModel) ?? ""
     deviceName = defaults.string(forKey: Key.deviceName) ?? ""
     // Registered rather than stored, so it follows a server installed later until it's set.
     defaults.register(defaults: [Key.showInMenuBar: !InstalledServer.isInstalled()])

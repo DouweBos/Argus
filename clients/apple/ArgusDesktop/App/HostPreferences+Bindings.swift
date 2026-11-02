@@ -24,9 +24,15 @@ extension HostPreferences {
       enumSetting("ui_scale", get: { prefs.displaySize }, set: { prefs.displaySize = $0 }),
       enumSetting(
         "default_permission_mode", get: { prefs.defaultPermissionMode }, set: { prefs.defaultPermissionMode = $0 }),
+      // Only ever taken: Settings → LLM writes `default_llm` itself.
       Binding(
-        slot: .setting("default_model"), read: { .string(prefs.defaultModel) },
-        write: { if case .string(let model) = $0 { prefs.defaultModel = model } }),
+        slot: .setting("default_llm"), read: { nil },
+        write: { value in
+          guard case .object(let llm) = value else { return }
+          if case .string(let model) = llm["model"] { prefs.defaultLlmModel = model } else {
+            prefs.defaultLlmModel = ""
+          }
+        }),
       Binding(
         slot: .setting("custom_editors"), read: { json(prefs.customEditors) },
         write: { value in

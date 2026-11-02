@@ -18,6 +18,7 @@ import {
 import { startPinnedChats } from "./services/agent/pins/resume";
 import { reapOrphanedAgentProcesses } from "./services/agent/reapOrphans";
 import { startWarmPolicy, stopWarmPolicy } from "./services/agent/warmPolicy";
+import { migrateLegacyDefaultModel } from "./services/appSettings/store";
 import { initAutomations } from "./services/automation/manager";
 import { initAutomationOutcomes } from "./services/automation/outcomes";
 import {
@@ -145,6 +146,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
 
   // Before anything opens the device store or an MCP token.
   migrateSecretStores();
+  migrateLegacyDefaultModel();
 
   // The projects this host had open last run. Must happen before the gateway
   // accepts anyone: a client hydrates from this set the moment it attaches,

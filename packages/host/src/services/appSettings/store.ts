@@ -148,8 +148,6 @@ export interface AppSettings {
   ui_scale?: "default" | "large" | "larger" | "small" | "smaller";
   /** Permission mode for agents started without one. */
   default_permission_mode?: "ask" | "auto" | "plan" | "review" | "trusted";
-  /** Model seeded into new sessions; empty means the CLI's own default. */
-  default_model?: string;
   custom_editors?: { id: string; name: string; command: string }[];
   /** Name shown to guests in huddles this machine hosts. */
   huddle_display_name?: string;
@@ -216,6 +214,29 @@ export function saveAppSettings(settings: AppSettings): AppSettings {
   emitPrefsChanged({ settings: Object.keys(settings) });
 
   return file.settings;
+}
+
+/**
+ * Folds the retired `default_model` into `default_llm.model`, which only takes
+ * it when no model is set there yet.
+ */
+export function migrateLegacyDefaultModel(): void {
+  const file = readFile();
+  const settings: AppSettings & { default_model?: unknown } = {
+    ...file.settings,
+  };
+  if (!("default_model" in settings)) {
+    return;
+  }
+  const legacy =
+    typeof settings.default_model === "string"
+      ? settings.default_model.trim()
+      : "";
+  delete settings.default_model;
+  if (legacy && !settings.default_llm?.model?.trim()) {
+    settings.default_llm = { ...settings.default_llm, model: legacy };
+  }
+  writeFile({ ...file, settings });
 }
 
 /** App-level MCP servers, normalised to an empty object if absent. */

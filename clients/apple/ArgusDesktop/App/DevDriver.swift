@@ -371,7 +371,7 @@
         let prefs = AppPreferences.shared
         return [
           "theme": prefs.theme.rawValue, "displaySize": prefs.displaySize.rawValue,
-          "permissionMode": prefs.defaultPermissionMode.rawValue, "model": prefs.defaultModel,
+          "permissionMode": prefs.defaultPermissionMode.rawValue, "model": prefs.defaultLlmModel,
           "editors": prefs.customEditors.map(\.name), "telemetry": MacTelemetry.mode,
           "huddleName": HuddleDisplayName.value,
           "platform": AppDelegate.current?.model.runtime.platform.rawValue ?? "",

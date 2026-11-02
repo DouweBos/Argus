@@ -174,10 +174,10 @@ runner is fixed at session creation; the model can still be overridden by
 [`.argus.json`](./project-settings.md), individual sessions, or the
 new-agent picker.
 
-| Setting           | Default       | Description                                                                                                                            |
-| ----------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **Runner**        | `claude-code` | The CLI/agent that drives sessions. Claude Code is the built-in runner; any [custom runner](#custom-runners) you add appears here too. |
-| **Default model** | _(empty)_     | Optional model id passed to the runner — e.g. `claude-opus-4-7`. Leave blank to let the runner pick its own default.                   |
+| Setting           | Default       | Description                                                                                                                                                                             |
+| ----------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Runner**        | `claude-code` | The CLI/agent that drives sessions. Claude Code is the built-in runner; any [custom runner](#custom-runners) you add appears here too.                                                  |
+| **Default model** | _(empty)_     | Optional model id passed to the runner — e.g. `claude-opus-4-7`. Leave blank to let the runner pick its own default. The new-agent picker starts on it when the agent uses this runner. |
 
 Resolution order for the runner (at session creation):
 

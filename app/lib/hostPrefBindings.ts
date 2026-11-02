@@ -180,7 +180,6 @@ export const PREF_BINDINGS: PrefBinding[] = [
     "default_permission_mode",
     oneOf(["ask", "auto", "plan", "review", "trusted"]),
   ),
-  settingsField("defaultModel", "default_model", isString),
   settingsField(
     "customEditors",
     "custom_editors",

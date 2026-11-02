@@ -60,9 +60,9 @@ extension DesktopModel {
     return true
   }
 
-  /// Settings' default model; empty there is the runner's own.
+  /// Settings → LLM's default model; empty there is the runner's own.
   static var defaultModel: String? {
-    let model = AppPreferences.shared.defaultModel
+    let model = AppPreferences.shared.defaultLlmModel
     return model.isEmpty ? nil : model
   }
 }

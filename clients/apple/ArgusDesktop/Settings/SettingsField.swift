@@ -13,7 +13,6 @@ enum SettingsField: String {
   case accountRemoved = "account_removed"
   case accountRenamed = "account_renamed"
   case accountReauth = "account_reauth"
-  case defaultModel = "default_model"
   case permissionMode = "permission_mode"
   case automationsEnabled = "automations_enabled"
   case followUpSuggestions = "follow_up_suggestions"
@@ -58,7 +57,7 @@ enum SettingsField: String {
       .general
     case .accountSelected, .accountAdded, .accountRemoved, .accountRenamed, .accountReauth:
       .accounts
-    case .defaultModel, .permissionMode, .automationsEnabled, .followUpSuggestions, .warmAgents, .defaultAutonomy,
+    case .permissionMode, .automationsEnabled, .followUpSuggestions, .warmAgents, .defaultAutonomy,
       .concurrency, .dailyBudget, .importCliChats, .saveChatHistory, .allowedCommands, .allowedTools, .refusalAllowed,
       .refusalDismissed:
       .agents

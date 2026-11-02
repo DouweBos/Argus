@@ -9,7 +9,7 @@ import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { useSessions } from "../../../stores/sessionStore";
 import {
   DEFAULT_LLM_RUNNER,
-  getDefaultModel,
+  getDefaultModelForRunner,
   getDefaultPermissionMode,
 } from "../../../stores/settingsStore";
 
@@ -22,12 +22,14 @@ export function useAgentOptions(sessionId: string) {
   const [permissionMode, setPermissionMode] = useState<CanonicalPermissionMode>(
     getDefaultPermissionMode,
   );
-  const [model, setModel] = useState(() => getDefaultModel() || "default");
   const [linkedProjects, setLinkedProjects] = useState<string[]>([]);
 
   const session = useSessions().find((s) => s.id === sessionId) ?? null;
   const registeredRunners = useRegisteredRunners();
   const sessionRunnerId = session?.runner_id ?? DEFAULT_LLM_RUNNER;
+  const [model, setModel] = useState(
+    () => getDefaultModelForRunner(sessionRunnerId) ?? "default",
+  );
   const [runnerId, setRunnerId] = useState(sessionRunnerId);
 
   // The host answers from the CLI the start will take, else what that runner

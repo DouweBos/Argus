@@ -1,6 +1,6 @@
 import type { LaunchRoute } from "../../../lib/launchRoute";
 import type { PrereqId } from "../../../lib/types";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   ColorThemePicker,
@@ -21,7 +21,6 @@ import {
   gitSetConfig,
   setAppSettings,
 } from "../../../lib/ipc";
-import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
 import { setTelemetryMode } from "../../../lib/telemetry";
 import { setColorTheme, useColorTheme } from "../../../stores/colorThemeStore";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
@@ -34,7 +33,6 @@ import {
   setConventionalCommitsPicker,
   setDefaultLlmModel,
   setDefaultLlmRunner,
-  setDefaultModel,
   setDefaultPermissionMode,
   setStartWorkspace,
   setDefaultPullStrategy,
@@ -46,7 +44,6 @@ import {
   useConventionalCommitsPicker,
   useCustomEditors,
   useDefaultLlm,
-  useDefaultModel,
   useDefaultPermissionMode,
   useStartWorkspace,
   useDefaultPullStrategy,
@@ -416,45 +413,14 @@ function AutomationsToggle() {
 function PermissionsSection() {
   const mode = useDefaultPermissionMode();
   const startWorkspace = useStartWorkspace();
-  const defaultModel = useDefaultModel();
-  const knownModels = useMemo(() => getLastKnownCapabilities().models, []);
 
   return (
     <SettingsScreenDetail>
       <SettingsScreenDetailHeader
-        description="Defaults applied when starting a new agent. Both can be overridden per session."
+        description="Defaults applied when starting a new agent. Each can be overridden per session."
         title="Agents"
       />
       <SettingsScreenDetailBody>
-        <SettingsScreenField
-          label="Default model"
-          caption={
-            knownModels.length === 0
-              ? "Start an agent at least once to populate the model list."
-              : "Pre-selected in the launcher and new-session dialog."
-          }
-        >
-          <select
-            value={defaultModel}
-            disabled={knownModels.length === 0}
-            onChange={(e) => setDefaultModel(e.target.value)}
-            style={{
-              padding: "8px 10px",
-              borderRadius: "var(--border-radius-small)",
-              background: "var(--surface-1)",
-              border: "1px solid var(--border)",
-              color: "var(--text-primary)",
-              fontFamily: "var(--font-ui)",
-            }}
-          >
-            <option value="">Use Claude CLI default</option>
-            {knownModels.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.displayName}
-              </option>
-            ))}
-          </select>
-        </SettingsScreenField>
         <SettingsScreenField label="Default permission mode">
           <div className={styles.options}>
             {MODES.map((m) => (

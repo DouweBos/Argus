@@ -1610,7 +1610,6 @@ extension ArgusProtocol {
     public var saveChatHistory: Bool?
     public var uiScale: AppSettingsUiScale?
     public var defaultPermissionMode: AppSettingsDefaultPermissionMode?
-    public var defaultModel: String?
     public var customEditors: [AppSettingsCustomEditorsItem]?
     public var huddleDisplayName: String?
     public var telemetryMode: AppSettingsTelemetryMode?
@@ -1650,7 +1649,6 @@ extension ArgusProtocol {
       case saveChatHistory = "save_chat_history"
       case uiScale = "ui_scale"
       case defaultPermissionMode = "default_permission_mode"
-      case defaultModel = "default_model"
       case customEditors = "custom_editors"
       case huddleDisplayName = "huddle_display_name"
       case telemetryMode = "telemetry_mode"
@@ -1659,7 +1657,7 @@ extension ArgusProtocol {
       case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, warmAgents: Int? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, defaultModel: String? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, warmAgents: Int? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
       self.defaultLlm = defaultLlm
@@ -1691,7 +1689,6 @@ extension ArgusProtocol {
       self.saveChatHistory = saveChatHistory
       self.uiScale = uiScale
       self.defaultPermissionMode = defaultPermissionMode
-      self.defaultModel = defaultModel
       self.customEditors = customEditors
       self.huddleDisplayName = huddleDisplayName
       self.telemetryMode = telemetryMode
@@ -1733,7 +1730,6 @@ extension ArgusProtocol {
       try c.encodeIfPresent(saveChatHistory, forKey: .saveChatHistory)
       try c.encodeIfPresent(uiScale, forKey: .uiScale)
       try c.encodeIfPresent(defaultPermissionMode, forKey: .defaultPermissionMode)
-      try c.encodeIfPresent(defaultModel, forKey: .defaultModel)
       try c.encodeIfPresent(customEditors, forKey: .customEditors)
       try c.encodeIfPresent(huddleDisplayName, forKey: .huddleDisplayName)
       try c.encodeIfPresent(telemetryMode, forKey: .telemetryMode)

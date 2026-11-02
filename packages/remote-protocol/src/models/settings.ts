@@ -118,8 +118,6 @@ export const AppSettings = z.object({
   default_permission_mode: z
     .enum(["ask", "auto", "plan", "review", "trusted"])
     .optional(),
-  /** Model seeded into new sessions; empty means the CLI's own default. */
-  default_model: z.string().optional(),
   custom_editors: z
     .array(z.object({ id: z.string(), name: z.string(), command: z.string() }))
     .optional(),

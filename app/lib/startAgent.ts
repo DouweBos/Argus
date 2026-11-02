@@ -10,7 +10,7 @@ import {
 } from "../stores/sessionStore";
 import {
   DEFAULT_LLM_RUNNER,
-  getDefaultModel,
+  getDefaultModelForRunner,
   getDefaultPermissionMode,
 } from "../stores/settingsStore";
 import { sendUserMessageToAgent, startAgentInSession } from "./agentLifecycle";
@@ -183,14 +183,15 @@ export async function startPromptInNewWorktree(
   const base = await loadBaseBranches(repoRoot, projectRootBranch).catch(
     () => null,
   );
+  const runner = runnerId ?? DEFAULT_LLM_RUNNER;
   await startInNewWorktree(repoRoot, base?.defaultBranch ?? undefined, {
     designs: [],
     images: [],
     issues: [],
     linkedProjects: [],
-    model: getDefaultModel() || "default",
+    model: getDefaultModelForRunner(runner) ?? "default",
     permissionMode: getDefaultPermissionMode(),
     prompt,
-    runnerId: runnerId ?? DEFAULT_LLM_RUNNER,
+    runnerId: runner,
   });
 }

@@ -18,17 +18,8 @@ struct AgentsSettingsTab: View {
   var body: some View {
     SettingsPage {
       SettingsGroup(
-        "Agents", footer: "Defaults applied when starting a new agent. Both can be overridden per session."
+        "Agents", footer: "Defaults applied when starting a new agent. Each can be overridden per session."
       ) {
-        SettingsRow("Default model", description: "Pre-selected in the launcher and new-session dialog.") {
-          Picker("Default model", selection: $prefs.defaultModel.tracked(.defaultModel)) {
-            Text("Use Claude CLI default").tag("")
-            ForEach(knownModels, id: \.value) { Text($0.displayName).tag($0.value) }
-            if !prefs.defaultModel.isEmpty, !knownModels.contains(where: { $0.value == prefs.defaultModel }) {
-              Text(prefs.defaultModel).tag(prefs.defaultModel)
-            }
-          }
-        }
         SettingsRow("Default permission mode", description: "The mode new agents start in.") {
           Picker("Default permission mode", selection: $prefs.defaultPermissionMode.tracked(.permissionMode)) {
             ForEach(DefaultPermissionMode.allCases, id: \.self) { Text($0.label).tag($0) }
@@ -123,13 +114,6 @@ struct AgentsSettingsTab: View {
 
       SettingsError(text: host.error)
     }
-  }
-
-  /// What the default runner advertises; the desktop's list is whatever an
-  /// agent last reported, which a fresh Mac app hasn't seen.
-  private var knownModels: [ArgusProtocol.RunnerModelOption] {
-    let runnerId = host.settings?.defaultLlm?.runner ?? "claude-code"
-    return host.runners.first { $0.id == runnerId }?.models ?? []
   }
 
   private func automationsEnabled(_ settings: ArgusProtocol.AppSettings) -> Binding<Bool> {

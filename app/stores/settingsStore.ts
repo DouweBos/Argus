@@ -90,8 +90,6 @@ interface SettingsState {
   customEditors: CustomEditor[];
   /** App-level default LLM runner + model used when project/session don't specify one. */
   defaultLlm: DefaultLlm;
-  /** Model id seeded into the new-session dialog. Empty = CLI default. */
-  defaultModel: string;
   defaultPermissionMode: PermissionMode;
   /** Default strategy used by the project-scope pull dialog (Phase 6B P11). */
   defaultPullStrategy: "ff-only" | "merge" | "rebase";
@@ -299,8 +297,6 @@ function load(): SettingsState {
         defaultPermissionMode: sanitizeDefaultPermissionMode(
           parsed.defaultPermissionMode,
         ),
-        defaultModel:
-          typeof parsed.defaultModel === "string" ? parsed.defaultModel : "",
         huddleDisplayName:
           typeof parsed.huddleDisplayName === "string"
             ? parsed.huddleDisplayName
@@ -356,7 +352,6 @@ function load(): SettingsState {
 
   return {
     defaultPermissionMode: "auto",
-    defaultModel: "",
     huddleDisplayName: "",
     customEditors: [],
     defaultLlm: { runner: DEFAULT_LLM_RUNNER, model: null },
@@ -409,21 +404,12 @@ export const useStartWorkspace = () => store((s) => s.startWorkspace);
 
 export const getStartWorkspace = () => store.getState().startWorkspace;
 
-export const setDefaultModel = (model: string) => {
-  store.setState({ defaultModel: model });
-  persist(store.getState());
-};
-
 export const setHuddleDisplayName = (name: string) => {
   store.setState({ huddleDisplayName: name });
   persist(store.getState());
 };
 
 export const useHuddleDisplayName = () => store((s) => s.huddleDisplayName);
-
-export const useDefaultModel = () => store((s) => s.defaultModel);
-
-export const getDefaultModel = () => store.getState().defaultModel;
 
 export const useCustomEditors = () => store((s) => s.customEditors);
 
@@ -599,6 +585,13 @@ export const setGitSidebarSectionCollapsed = (
 export const useDefaultLlm = (): DefaultLlm => store((s) => s.defaultLlm);
 
 export const getDefaultLlm = (): DefaultLlm => store.getState().defaultLlm;
+
+/** The default model for a new agent on `runnerId`; model ids don't carry across runners. */
+export const getDefaultModelForRunner = (runnerId: string): string | null => {
+  const { runner, model } = store.getState().defaultLlm;
+
+  return (runner ?? DEFAULT_LLM_RUNNER) === runnerId ? model : null;
+};
 
 export const setDefaultLlmRunner = (runner: string | null): void => {
   const next = runner && runner.trim() ? runner.trim() : null;

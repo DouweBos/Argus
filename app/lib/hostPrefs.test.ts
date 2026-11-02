@@ -48,7 +48,7 @@ describe("host prefs", () => {
     storage.set("argus:theme", "dark");
     storage.set(
       "argus:settings",
-      JSON.stringify({ defaultModel: "opus", telemetryMode: "full" }),
+      JSON.stringify({ huddleDisplayName: "Ada", telemetryMode: "full" }),
     );
     storage.set("argus:simulatorBySession", JSON.stringify({ s1: "UDID" }));
     const { host, io } = fakeHost({ theme: "light" });
@@ -59,7 +59,7 @@ describe("host prefs", () => {
     expect(hostPrefsImportedCount()).toBe(4);
     expect(host.settings).toMatchObject({
       theme: "dark",
-      default_model: "opus",
+      huddle_display_name: "Ada",
       telemetry_mode: "full",
     });
     expect(JSON.parse(host.ui["runtime.ios_by_session"])).toEqual({
@@ -72,10 +72,14 @@ describe("host prefs", () => {
     storage.set("argus:theme", "dark");
     storage.set(
       "argus:settings",
-      JSON.stringify({ defaultModel: "opus", diffView: "unified" }),
+      JSON.stringify({ huddleDisplayName: "Ada", diffView: "unified" }),
     );
     const { io } = fakeHost(
-      { theme: "light", default_model: "sonnet", git_diff_layout: "split" },
+      {
+        theme: "light",
+        huddle_display_name: "Grace",
+        git_diff_layout: "split",
+      },
       { "devices.tile_size": "300" },
     );
 
@@ -83,7 +87,7 @@ describe("host prefs", () => {
 
     expect(storage.get("argus:theme")).toBe("light");
     expect(JSON.parse(storage.get("argus:settings")!)).toEqual({
-      defaultModel: "sonnet",
+      huddleDisplayName: "Grace",
       diffView: "split",
     });
     expect(storage.get("argus:devices:gridTileSize")).toBe("300");
