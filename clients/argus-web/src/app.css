@@ -756,6 +756,8 @@ button {
   flex: 1 1 auto;
   min-height: 280px;
   border-radius: var(--border-radius-sm);
+}
+
 /* Inbox and automation screens: Peacock views, a little air under the bar. */
 .aw-automations {
   display: flex;
