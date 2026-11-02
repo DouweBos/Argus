@@ -146,7 +146,8 @@
       }
       controller.model.entries = ChromeMenuEntry.tidy(entries())
       if controller.isOpen {
-        controller.layout()
+        // Inside this update the panel's hosting view hasn't seen the new rows, so it would measure the old ones.
+        DispatchQueue.main.async { controller.layout() }
       } else if controller.justDismissed {
         // The click that closed it by leaving the panel lands on the trigger; don't reopen.
         DispatchQueue.main.async { binding.wrappedValue = false }
@@ -207,6 +208,8 @@
       panel.onKey = { [weak self] event in self?.handle(event) ?? false }
       panel.onResign = { [weak self] in self?.dismiss(restoreFocus: false, notify: true) }
       let hosting = NSHostingView(rootView: AnyView(EmptyView()))
+      // layout() owns the panel's size; left on, the hosting view regrows it past the screen when rows change.
+      hosting.sizingOptions = []
       panel.contentView = hosting
       self.panel = panel
       self.hosting = hosting
@@ -238,15 +241,13 @@
       let below = rect.minY - gap - screen.minY - 8
       let above = screen.maxY - rect.maxY - gap - 8
 
-      hosting.rootView = root(minWidth: rect.width, scrollHeight: nil)
-      var size = hosting.fittingSize
+      var size = NSHostingView(rootView: root(minWidth: rect.width, scrollHeight: nil)).fittingSize
       let fitsPreferred = size.height <= (edge == .below ? below : above)
       let placeBelow = fitsPreferred ? edge == .below : below >= above
       let room = max(80, placeBelow ? below : above)
-      if size.height > room {
-        hosting.rootView = root(minWidth: size.width, scrollHeight: room - 8)
-        size = NSSize(width: size.width, height: room)
-      }
+      let scrolls = size.height > room
+      if scrolls { size.height = room }
+      hosting.rootView = root(minWidth: size.width, scrollHeight: scrolls ? room - 8 : nil)
       let x = min(max(rect.minX, screen.minX + 4), screen.maxX - size.width - 4)
       let y = placeBelow ? rect.minY - gap - size.height : rect.maxY + gap
       panel.setFrame(NSRect(x: x, y: y, width: size.width, height: size.height), display: true)
