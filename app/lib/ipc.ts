@@ -816,20 +816,6 @@ export const getSessionStatus = (id: string): Promise<string> =>
 export const gitStatus = (id: string): Promise<GitStatus> =>
   invoke("git_status", { id });
 
-/**
- * Phase 4 — list files ignored by git for this session's worktree.
- * Paths are relative to the worktree root.
- */
-export const gitListIgnoredFiles = (id: string): Promise<string[]> =>
-  invoke("git_list_ignored_files", { id });
-
-/**
- * Phase 4 — list files marked assume-unchanged (or skip-worktree) via
- * `git update-index`. Paths are relative to the worktree root.
- */
-export const gitListAssumeUnchangedFiles = (id: string): Promise<string[]> =>
-  invoke("git_list_assume_unchanged_files", { id });
-
 export const getSessionFullDiff = (id: string): Promise<string> =>
   invoke("get_session_full_diff", { id });
 

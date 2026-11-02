@@ -21,10 +21,6 @@ import {
 } from "../../services/session/gitDiscard";
 import { gitStatus } from "../../services/session/gitStatus";
 import {
-  gitListAssumeUnchangedFiles,
-  gitListIgnoredFiles,
-} from "../../services/session/gitWorkingCopyFilters";
-import {
   discardFile,
   discardHunk,
   getGitAuthor,
@@ -64,12 +60,6 @@ export function registerGitWorkingCopyCommands(): void {
   );
   defineTypedCommand("get_session_status", (p) => getSessionStatus(p.id));
   defineTypedCommand("git_status", (p) => gitStatus(p.id));
-  defineTypedCommand("git_list_ignored_files", (p) =>
-    gitListIgnoredFiles(p.id),
-  );
-  defineTypedCommand("git_list_assume_unchanged_files", (p) =>
-    gitListAssumeUnchangedFiles(p.id),
-  );
   defineTypedCommand("stage_file", (p) => stageFile(p.id, p.filePath));
   defineTypedCommand("stage_all", (p) => stageAll(p.id));
   defineTypedCommand("unstage_file", (p) => unstageFile(p.id, p.filePath));

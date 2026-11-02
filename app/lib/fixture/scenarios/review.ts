@@ -104,7 +104,5 @@ export const review: FixtureScenario = {
     get_session_branch_diff: DIFF,
     get_session_staged_diff: "",
     get_session_untracked_diff: "",
-    git_list_ignored_files: [],
-    git_list_assume_unchanged_files: [],
   },
 };

@@ -3974,41 +3974,7 @@ extension ArgusProtocol {
       }
     }
 
-    public struct GitListAssumeUnchangedFilesParams: Codable, Sendable {
-      public var id: String
-
-      enum CodingKeys: String, CodingKey {
-        case id = "id"
-      }
-
-      public init(id: String) {
-        self.id = id
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(id, forKey: .id)
-      }
-    }
-
     public struct GitListHooksParams: Codable, Sendable {
-      public var id: String
-
-      enum CodingKeys: String, CodingKey {
-        case id = "id"
-      }
-
-      public init(id: String) {
-        self.id = id
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(id, forKey: .id)
-      }
-    }
-
-    public struct GitListIgnoredFilesParams: Codable, Sendable {
       public var id: String
 
       enum CodingKeys: String, CodingKey {
@@ -11268,24 +11234,10 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
-    public enum GitListAssumeUnchangedFiles: RemoteCommand {
-      public typealias Params = ArgusProtocol.CommandsTypes.GitListAssumeUnchangedFilesParams
-      public typealias Result = [String]
-      public static let name = "git_list_assume_unchanged_files"
-      public static let tier = "admin"
-    }
-
     public enum GitListHooks: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.GitListHooksParams
       public typealias Result = [ArgusProtocol.GitHook]
       public static let name = "git_list_hooks"
-      public static let tier = "admin"
-    }
-
-    public enum GitListIgnoredFiles: RemoteCommand {
-      public typealias Params = ArgusProtocol.CommandsTypes.GitListIgnoredFilesParams
-      public typealias Result = [String]
-      public static let name = "git_list_ignored_files"
       public static let tier = "admin"
     }
 

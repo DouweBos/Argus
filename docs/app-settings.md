@@ -462,17 +462,14 @@ Defaults for the git panel. Each setting also has an inline toggle in
 the relevant toolbar — use the dialog when you want to set the
 default for every project on this machine.
 
-| Setting                                | Default   | Description                                                                                                   |
-| -------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------- |
-| **Working copy view**                  | `flat`    | `flat` shows changed files as a list; `tree` groups them by directory.                                        |
-| **Diff layout**                        | `unified` | `unified` stacks removed/added lines; `split` shows them side-by-side.                                        |
-| **Ignore whitespace in diffs**         | `false`   | Hide pure-whitespace changes when comparing files.                                                            |
-| **Highlight word-level changes**       | `false`   | Inline word-diff inside changed lines.                                                                        |
-| **Conventional Commits picker**        | `false`   | Show a commit-type prefix picker (`feat`, `fix`, `chore`, …) in the commit composer.                          |
-| **Default pull strategy**              | `ff-only` | Used by the project-scope pull dialog when you don't pick a strategy. One of `ff-only`, `merge`, or `rebase`. |
-| **Show ignored files**                 | `false`   | Include files matched by `.gitignore` in the working copy list.                                               |
-| **Show assume-unchanged files**        | `false`   | Include files marked with `git update-index --assume-unchanged`.                                              |
-| **Show unmodified files in tree view** | `false`   | Only applies when the working copy view is set to Tree — shows tracked files that aren't currently modified.  |
+| Setting                          | Default   | Description                                                                                                   |
+| -------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------- |
+| **Working copy view**            | `flat`    | `flat` shows changed files as a list; `tree` groups them by directory.                                        |
+| **Diff layout**                  | `unified` | `unified` stacks removed/added lines; `split` shows them side-by-side.                                        |
+| **Ignore whitespace in diffs**   | `false`   | Hide pure-whitespace changes when comparing files.                                                            |
+| **Highlight word-level changes** | `false`   | Inline word-diff inside changed lines.                                                                        |
+| **Conventional Commits picker**  | `false`   | Show a commit-type prefix picker (`feat`, `fix`, `chore`, …) in the commit composer.                          |
+| **Default pull strategy**        | `ff-only` | Used by the project-scope pull dialog when you don't pick a strategy. One of `ff-only`, `merge`, or `rebase`. |
 
 A few git-panel preferences are intentionally _not_ in this dialog
 because they're pure layout state: the source-sidebar collapsed state

@@ -41,9 +41,6 @@ import {
   setDiffView,
   setDiffWhitespace,
   setDiffWordDiff,
-  setShowAssumeUnchangedFiles,
-  setShowIgnoredFiles,
-  setShowNonModifiedFiles,
   setTelemetryModeSetting,
   setWorkingCopyView,
   updateCustomEditor,
@@ -60,9 +57,6 @@ import {
   useSettingsDialogOpen,
   useSettingsDialogRequest,
   useSettingsInitialSection,
-  useShowAssumeUnchangedFiles,
-  useShowIgnoredFiles,
-  useShowNonModifiedFiles,
   useTelemetryMode,
   useWorkingCopyView,
   type DiffViewMode,
@@ -933,9 +927,6 @@ function GitSection() {
   const diffWordDiff = useDiffWordDiff();
   const conventionalCommits = useConventionalCommitsPicker();
   const pullStrategy = useDefaultPullStrategy();
-  const showIgnored = useShowIgnoredFiles();
-  const showAssumeUnchanged = useShowAssumeUnchangedFiles();
-  const showNonModified = useShowNonModifiedFiles();
 
   return (
     <SettingsScreenDetail>
@@ -1033,36 +1024,6 @@ function GitSection() {
               </label>
             ))}
           </div>
-        </SettingsScreenField>
-
-        <SettingsScreenField
-          label="Show ignored files"
-          caption="Include files matched by .gitignore in the working copy list."
-        >
-          <Toggle checked={showIgnored} onChange={setShowIgnoredFiles}>
-            {showIgnored ? "On" : "Off"}
-          </Toggle>
-        </SettingsScreenField>
-
-        <SettingsScreenField
-          label="Show assume-unchanged files"
-          caption="Include files marked with `git update-index --assume-unchanged`."
-        >
-          <Toggle
-            checked={showAssumeUnchanged}
-            onChange={setShowAssumeUnchangedFiles}
-          >
-            {showAssumeUnchanged ? "On" : "Off"}
-          </Toggle>
-        </SettingsScreenField>
-
-        <SettingsScreenField
-          label="Show unmodified files in tree view"
-          caption="Only applies when the working copy view is set to Tree."
-        >
-          <Toggle checked={showNonModified} onChange={setShowNonModifiedFiles}>
-            {showNonModified ? "On" : "Off"}
-          </Toggle>
         </SettingsScreenField>
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>

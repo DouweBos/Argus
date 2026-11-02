@@ -120,15 +120,6 @@ interface SettingsState {
   lastEffortByRunner: Record<string, string | null>;
   /** Paired hosts, in pairing order. */
   remoteHosts: RemoteHost[];
-  showAssumeUnchangedFiles: boolean;
-  /**
-   * Working copy view toggles.
-   * showIgnoredFiles: include files listed by `git status --ignored`.
-   * showAssumeUnchangedFiles: include files marked with `git update-index --assume-unchanged`.
-   * showNonModifiedFiles: in tree mode, show unmodified tracked files.
-   */
-  showIgnoredFiles: boolean;
-  showNonModifiedFiles: boolean;
   /** Where a prompt typed on a project's home starts: a fresh worktree, or the checkout itself. */
   startWorkspace: StartWorkspace;
   telemetryMode: TelemetryMode;
@@ -350,9 +341,6 @@ function load(): SettingsState {
           parsed.defaultPullStrategy === "ff-only"
             ? parsed.defaultPullStrategy
             : "merge",
-        showIgnoredFiles: parsed.showIgnoredFiles === true,
-        showAssumeUnchangedFiles: parsed.showAssumeUnchangedFiles === true,
-        showNonModifiedFiles: parsed.showNonModifiedFiles === true,
         startWorkspace:
           parsed.startWorkspace === "current" ? "current" : "worktree",
         lastEffortByRunner: sanitizeLastEffortByRunner(
@@ -385,9 +373,6 @@ function load(): SettingsState {
     gitSidebarWidth: 0.18,
     gitSidebarSectionsCollapsed: {},
     defaultPullStrategy: "merge",
-    showIgnoredFiles: false,
-    showAssumeUnchangedFiles: false,
-    showNonModifiedFiles: false,
     startWorkspace: "worktree",
     lastEffortByRunner: {},
     remoteHosts: [],
@@ -616,32 +601,6 @@ export const setGitSidebarSectionCollapsed = (
       [key]: collapsed,
     },
   }));
-  persist(store.getState());
-};
-
-// Phase 4 — working copy view toggles.
-
-export const useShowIgnoredFiles = (): boolean =>
-  store((s) => s.showIgnoredFiles);
-
-export const setShowIgnoredFiles = (on: boolean): void => {
-  store.setState({ showIgnoredFiles: on });
-  persist(store.getState());
-};
-
-export const useShowAssumeUnchangedFiles = (): boolean =>
-  store((s) => s.showAssumeUnchangedFiles);
-
-export const setShowAssumeUnchangedFiles = (on: boolean): void => {
-  store.setState({ showAssumeUnchangedFiles: on });
-  persist(store.getState());
-};
-
-export const useShowNonModifiedFiles = (): boolean =>
-  store((s) => s.showNonModifiedFiles);
-
-export const setShowNonModifiedFiles = (on: boolean): void => {
-  store.setState({ showNonModifiedFiles: on });
   persist(store.getState());
 };
 

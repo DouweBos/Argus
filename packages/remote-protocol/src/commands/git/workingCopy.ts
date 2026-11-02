@@ -33,16 +33,6 @@ export const GIT_WORKING_COPY_COMMANDS = {
   },
   get_session_status: { tier: "admin", params: SessionId, result: z.string() },
   git_status: { tier: "admin", params: SessionId, result: GitStatus },
-  git_list_ignored_files: {
-    tier: "admin",
-    params: SessionId,
-    result: z.array(z.string()),
-  },
-  git_list_assume_unchanged_files: {
-    tier: "admin",
-    params: SessionId,
-    result: z.array(z.string()),
-  },
   stage_file: { tier: "admin", params: SessionFilePath, result: Void },
   stage_all: { tier: "admin", params: SessionId, result: Void },
   unstage_file: { tier: "admin", params: SessionFilePath, result: Void },

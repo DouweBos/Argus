@@ -1,25 +1,14 @@
 import type { GitViewScope, SourceView } from "../GitView";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   GitErrorBanner,
   GitToolbar,
-  Icons,
-  Toggle,
   defaultGitToolbarGroups,
   type GitErrorKind,
   type GitToolbarGroup,
 } from "@argus/peacock";
-import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { GitError } from "../../../lib/gitError";
 import { gitFetch, gitStash } from "../../../lib/ipc";
-import {
-  setShowAssumeUnchangedFiles,
-  setShowIgnoredFiles,
-  setShowNonModifiedFiles,
-  useShowAssumeUnchangedFiles,
-  useShowIgnoredFiles,
-  useShowNonModifiedFiles,
-} from "../../../stores/settingsStore";
 import styles from "./ChangesToolbar.module.css";
 
 interface BannerState {
@@ -27,52 +16,6 @@ interface BannerState {
   message: string;
   recovery?: string;
   source: string;
-}
-
-/**
- * Popover with view-toggle switches for the working-copy file list.
- * State persists in settingsStore.
- */
-function ViewOptionsPopover({ onClose }: { onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const showIgnored = useShowIgnoredFiles();
-  const showAssumeUnchanged = useShowAssumeUnchangedFiles();
-  const showNonModified = useShowNonModifiedFiles();
-  useOutsideClick(ref, true, onClose);
-
-  return (
-    <div ref={ref} className={styles.viewOptionsPanel}>
-      <div className={styles.viewOptionsPanelTitle}>View options</div>
-      <label className={styles.viewOptionsRow}>
-        <Toggle
-          checked={showIgnored}
-          size="sm"
-          onChange={setShowIgnoredFiles}
-        />
-        <span className={styles.viewOptionsLabel}>Show ignored files</span>
-      </label>
-      <label className={styles.viewOptionsRow}>
-        <Toggle
-          checked={showAssumeUnchanged}
-          size="sm"
-          onChange={setShowAssumeUnchangedFiles}
-        />
-        <span className={styles.viewOptionsLabel}>
-          Show assume-unchanged files
-        </span>
-      </label>
-      <label className={styles.viewOptionsRow}>
-        <Toggle
-          checked={showNonModified}
-          size="sm"
-          onChange={setShowNonModifiedFiles}
-        />
-        <span className={styles.viewOptionsLabel}>
-          Show non-modified files (tree mode)
-        </span>
-      </label>
-    </div>
-  );
 }
 
 interface ChangesToolbarProps {
@@ -120,7 +63,6 @@ export function ChangesToolbar({
   onTagSignal,
 }: ChangesToolbarProps) {
   const [banner, setBanner] = useState<BannerState | null>(null);
-  const [viewOptionsOpen, setViewOptionsOpen] = useState(false);
 
   const runAction = useCallback(
     async (name: string, action: () => Promise<unknown>): Promise<void> => {
@@ -240,21 +182,6 @@ export function ChangesToolbar({
             onSearchChange={onSearchChange}
             onSearchSubmit={onSearchSubmit}
           />
-          <div className={styles.viewOptionsAnchor}>
-            <button
-              type="button"
-              className={styles.viewOptionsBtn}
-              title="View options"
-              aria-label="View options"
-              aria-expanded={viewOptionsOpen}
-              onClick={() => setViewOptionsOpen((o) => !o)}
-            >
-              <Icons.FilterIcon size={13} />
-            </button>
-            {viewOptionsOpen && (
-              <ViewOptionsPopover onClose={() => setViewOptionsOpen(false)} />
-            )}
-          </div>
         </div>
       </div>
       {banner && banner.kind === "busy" && (
