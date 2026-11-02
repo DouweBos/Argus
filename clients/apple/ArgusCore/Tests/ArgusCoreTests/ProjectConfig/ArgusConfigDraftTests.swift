@@ -30,7 +30,6 @@ struct ArgusConfigDraftTests {
         "run": [{ "title": "Dev", "command": "pnpm dev", "restartOnRerun": true, "requires": ["Api"] },
                 { "title": "Api", "command": "pnpm api", "cwd": "api", "restartOnRerun": false }],
         "workspace_env": [{ "name": "PORT", "base_value": 1420, "range": 100, "strategy": "sequential" }],
-        "platforms": ["ios", "web"],
         "agent_prompt": "Hi",
         "related_projects": [{ "path": "../x", "description": "X" }],
         "browser_url": "http://localhost:3000",
@@ -55,6 +54,13 @@ struct ArgusConfigDraftTests {
       """#)
     let draft = ArgusConfigDraft(raw: file)
     #expect(draft.applied(to: file) == file)
+  }
+
+  @Test func dropsTheRetiredPlatformsKey() throws {
+    let file = try raw(#"{ "platforms": ["ios"], "custom": 1 }"#)
+    let out = ArgusConfigDraft(raw: file).applied(to: file)
+    #expect(out["platforms"] == nil)
+    #expect(out["custom"] == .number(1))
   }
 
   @Test func appliesTheDesktopsDefaultsAndTrimming() {

@@ -82,9 +82,6 @@ export const BrowserPresetConfig = z.object({
 });
 export type BrowserPresetConfig = z.infer<typeof BrowserPresetConfig>;
 
-export const RuntimePlatform = z.enum(["android", "ios", "tvos", "web"]);
-export type RuntimePlatform = z.infer<typeof RuntimePlatform>;
-
 /**
  * A deep link entry surfaced by the runtime toolbar's "Link" dropdown: a leaf
  * link, or a folder grouping nested entries.
@@ -149,8 +146,6 @@ export const ArgusConfig = z.object({
   browser_presets: z.array(BrowserPresetConfig),
   /** Whether to save chat history when agents stop. Defaults to true. */
   save_chat_history: z.boolean().nullish(),
-  /** Runtime platforms this project targets. Omitted = iOS, Android and Web. */
-  platforms: z.array(RuntimePlatform).nullish(),
   /** Branches updated through a pull request instead of a direct merge. */
   protected_branches: z.array(z.string()),
   /** Preferred default source branch for new sessions. */

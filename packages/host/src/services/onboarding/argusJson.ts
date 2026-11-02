@@ -5,6 +5,7 @@
  */
 
 import type { ArgusConfigSuggestion, DetectedSignal } from "./types";
+import type { RuntimePlatform } from "../session/models";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -16,7 +17,7 @@ interface PackageJsonShape {
   workspaces?: string[] | { packages?: string[] };
 }
 
-type Platform = "android" | "ios" | "tvos" | "web";
+type Platform = RuntimePlatform;
 
 interface DetectionContext {
   copy: Set<string>;
@@ -80,6 +81,18 @@ function firstMatchingDir(
  * made.
  */
 export function suggestArgusJson(repoRoot: string): ArgusConfigSuggestion {
+  return inferProject(repoRoot).suggestion;
+}
+
+/** The runtimes onboarding detection infers from the repo, sorted. */
+export function detectPlatforms(repoRoot: string): RuntimePlatform[] {
+  return inferProject(repoRoot).platforms;
+}
+
+function inferProject(repoRoot: string): {
+  suggestion: ArgusConfigSuggestion;
+  platforms: RuntimePlatform[];
+} {
   const signals: DetectedSignal[] = [];
   const inferred: string[] = [];
   const platforms = new Set<Platform>();
@@ -313,14 +326,14 @@ export function suggestArgusJson(repoRoot: string): ArgusConfigSuggestion {
     workspace_env: workspaceEnv,
     protected_branches: ["main", "master"],
   };
-  if (platforms.size > 0) {
-    config.platforms = Array.from(platforms).sort();
-  }
   if (browserUrl) {
     config.browser_url = browserUrl;
   }
 
-  return { config, inferredFrom: inferred, signals };
+  return {
+    suggestion: { config, inferredFrom: inferred, signals },
+    platforms: Array.from(platforms).sort(),
+  };
 }
 
 function pickRunner(repoRoot: string): string {

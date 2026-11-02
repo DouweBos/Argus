@@ -626,12 +626,10 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   // runtime → caller-provided.
   let projectPrompt: string | null = null;
   let browserUrl: string | null = null;
-  let configPlatforms: RuntimePlatform[] | null = null;
   try {
     const config = loadArgusConfig(argusSession.repo_root);
     projectPrompt = config.agent_prompt ?? null;
     browserUrl = config.browser_url ?? null;
-    configPlatforms = config.platforms ?? null;
   } catch {
     // Config missing or invalid — non-fatal.
   }
@@ -641,7 +639,6 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     ? buildRuntimeSection({
         platforms: resolveRuntimePlatforms({
           override: platformsOverride,
-          configPlatforms,
           repoRoot: argusSession.repo_root,
           hasIosReservation: iosReservation !== null,
           hasBrowserSession: browserSession !== null,

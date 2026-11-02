@@ -18,7 +18,6 @@ import type {
   RunCommand,
   SetupCopyEntry,
   SimulatorDeeplinkConfig,
-  ArgusConfig,
   WorkspaceEnvConfig,
 } from "./models";
 import { warn } from "@argus/host/logger";
@@ -560,37 +559,6 @@ export function normalizeRunCommands(
       ...(requires.length > 0 ? { requires } : {}),
     };
   });
-}
-
-/**
- * Normalise `platforms` from `.argus.json`. Accepts an array of the
- * strings "ios" | "android" | "tvos" | "web" (case-insensitive); returns
- * null if absent or unparseable so the prompt falls back to describing
- * the default set.
- */
-export function normalizePlatforms(raw: unknown): ArgusConfig["platforms"] {
-  if (!Array.isArray(raw)) {
-    return null;
-  }
-  const valid: ("android" | "ios" | "tvos" | "web")[] = [];
-  for (const entry of raw) {
-    if (typeof entry !== "string") {
-      continue;
-    }
-    const lower = entry.toLowerCase();
-    if (
-      lower === "ios" ||
-      lower === "android" ||
-      lower === "tvos" ||
-      lower === "web"
-    ) {
-      if (!valid.includes(lower)) {
-        valid.push(lower);
-      }
-    }
-  }
-
-  return valid.length > 0 ? valid : null;
 }
 
 /**

@@ -15,7 +15,7 @@ moves files around inside it.
 
 Each project has a single `.argus.json` at its root. This is the team-shared
 configuration that tells Argus how to set up worktrees, what commands to
-run, which platforms it targets, and so on. See
+run, and so on. See
 [Project settings](/argus/docs/project-settings).
 
 ---

@@ -2,11 +2,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { suggestArgusJson } from "./argusJson";
+import { detectPlatforms, suggestArgusJson } from "./argusJson";
 
 interface InferredConfig {
   browser_url?: string;
-  platforms?: string[];
   run: { command: string; restartOnRerun: boolean; title: string }[];
   setup: { commands: string[]; copy: string[]; symlink: string[] };
   workspace_env: { base_value: number; name: string }[];
@@ -27,6 +26,7 @@ function mkdir(rel: string): void {
 function suggest(): {
   config: InferredConfig;
   inferredFrom: string[];
+  platforms: string[];
   signalLabels: string[];
 } {
   const { config, inferredFrom, signals } = suggestArgusJson(tmpRoot);
@@ -34,6 +34,7 @@ function suggest(): {
   return {
     config: config as unknown as InferredConfig,
     inferredFrom,
+    platforms: detectPlatforms(tmpRoot),
     signalLabels: signals.map((s) => s.label),
   };
 }
@@ -49,9 +50,9 @@ describe("suggestArgusJson", () => {
 
   describe("empty repo", () => {
     it("returns a minimal default with no platforms", () => {
-      const { config, signalLabels } = suggest();
+      const { config, platforms, signalLabels } = suggest();
 
-      expect(config.platforms).toBeUndefined();
+      expect(platforms).toEqual([]);
       expect(config.setup.commands).toEqual([]);
       expect(config.setup.copy).toEqual([]);
       expect(config.run).toEqual([]);
@@ -71,9 +72,9 @@ describe("suggestArgusJson", () => {
       );
       writeFile("pnpm-lock.yaml", "");
 
-      const { config, signalLabels } = suggest();
+      const { config, platforms, signalLabels } = suggest();
 
-      expect(config.platforms).toEqual(["web"]);
+      expect(platforms).toEqual(["web"]);
       expect(config.browser_url).toBe("http://localhost:5173");
       expect(config.setup.commands).toContain("pnpm install");
       expect(config.run).toContainEqual({
@@ -101,9 +102,9 @@ describe("suggestArgusJson", () => {
       writeFile("ios/Podfile", "platform :ios, '15.0'");
       mkdir("ios/MyApp.xcworkspace");
 
-      const { config, signalLabels } = suggest();
+      const { config, platforms, signalLabels } = suggest();
 
-      expect(config.platforms).toEqual(["android", "ios"].sort());
+      expect(platforms).toEqual(["android", "ios"]);
       expect(config.setup.copy).toContain("ios/Pods");
       expect(config.setup.commands).toContain("yarn install");
       expect(config.setup.commands).toContain("cd ios && pod install");
@@ -117,9 +118,9 @@ describe("suggestArgusJson", () => {
     it("detects an xcodeproj-only repo with no package.json", () => {
       mkdir("MyApp.xcodeproj");
 
-      const { config, inferredFrom, signalLabels } = suggest();
+      const { config, platforms, inferredFrom, signalLabels } = suggest();
 
-      expect(config.platforms).toEqual(["ios"]);
+      expect(platforms).toEqual(["ios"]);
       expect(inferredFrom).toContain("native-ios");
       expect(signalLabels).toContain("iOS project");
       expect(signalLabels).toContain("Xcode");
@@ -132,9 +133,9 @@ describe("suggestArgusJson", () => {
       mkdir("MyApp.xcworkspace");
       writeFile("Podfile", "platform :ios, '16.0'");
 
-      const { config, signalLabels } = suggest();
+      const { config, platforms, signalLabels } = suggest();
 
-      expect(config.platforms).toEqual(["ios"]);
+      expect(platforms).toEqual(["ios"]);
       expect(config.setup.commands).toContain("pod install");
       expect(config.setup.copy).toContain("Pods");
       expect(signalLabels).toContain("CocoaPods");
@@ -143,9 +144,9 @@ describe("suggestArgusJson", () => {
     it("detects a Swift Package Manager project and copies .build", () => {
       writeFile("Package.swift", "// swift-tools-version:5.9\n");
 
-      const { config, signalLabels } = suggest();
+      const { config, platforms, signalLabels } = suggest();
 
-      expect(config.platforms).toEqual(["ios"]);
+      expect(platforms).toEqual(["ios"]);
       expect(config.setup.copy).toContain(".build");
       expect(signalLabels).toContain("Swift Package Manager");
     });
@@ -159,9 +160,9 @@ describe("suggestArgusJson", () => {
       mkdir("app");
       mkdir("app/build");
 
-      const { config, inferredFrom, signalLabels } = suggest();
+      const { config, platforms, inferredFrom, signalLabels } = suggest();
 
-      expect(config.platforms).toEqual(["android"]);
+      expect(platforms).toEqual(["android"]);
       expect(inferredFrom).toContain("native-android");
       expect(config.setup.copy).toContain(".gradle");
       expect(config.setup.copy).toContain("build");
@@ -173,9 +174,9 @@ describe("suggestArgusJson", () => {
     it("does not misidentify a plain build.gradle without gradlew as native root", () => {
       writeFile("build.gradle", "");
 
-      const { config } = suggest();
+      const { platforms } = suggest();
 
-      expect(config.platforms).toBeUndefined();
+      expect(platforms).toEqual([]);
     });
   });
 
@@ -195,10 +196,11 @@ describe("suggestArgusJson", () => {
       mkdir("android");
       mkdir("web");
 
-      const { config, inferredFrom, signalLabels } = suggest();
+      const { config, platforms, inferredFrom, signalLabels } = suggest();
 
       expect(inferredFrom).toContain("flutter");
-      expect(config.platforms).toEqual(["android", "ios", "web"]);
+      expect(platforms).toEqual(["android", "ios", "web"]);
+      expect(config).not.toHaveProperty("platforms");
       expect(config.setup.commands).toContain("flutter pub get");
       expect(config.setup.commands).toContain("cd ios && pod install");
       expect(config.setup.copy).toContain(".dart_tool");

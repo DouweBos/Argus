@@ -6,12 +6,15 @@ import Foundation
 extension ArgusConfigDraft {
   /// Every key the draft owns. Anything else in the file is left untouched.
   static let ownedKeys: Set<String> = [
-    "setup", "terminals", "run", "workspace_env", "platforms", "agent_prompt", "related_projects",
+    "setup", "terminals", "run", "workspace_env", "agent_prompt", "related_projects",
     "browser_url", "browser_presets", "simulator_deeplinks", "save_chat_history",
     "auto_continue_on_limit", "protected_branches", "pull_request_template", "default_base_branch",
     "single_runtime", "min_argus_version", "mcp_servers", "auto_fetch_minutes",
     "release_note_patterns", "llm", "tools", "automations",
   ]
+
+  /// Settings Argus no longer reads; saving drops them, as the desktop dialog does.
+  static let retiredKeys: Set<String> = ["platforms"]
 
   public init(raw: [String: JSONValue]) {
     self.init()
@@ -21,7 +24,6 @@ extension ArgusConfigDraft {
     commands = Self.strings(setup["commands"]).map { ListItem($0) }
     minArgusVersion = raw["min_argus_version"]?.stringValue ?? ""
 
-    platforms = Self.strings(raw["platforms"]).filter(Self.platformOptions.contains)
     workspaceEnv = Self.objects(raw["workspace_env"]).map {
       EnvVar(
         name: $0["name"]?.stringValue ?? "",
@@ -81,7 +83,7 @@ extension ArgusConfigDraft {
   /// The file to write: `raw` with every owned key replaced by the draft's
   /// value, or removed when the draft leaves it empty.
   public func applied(to raw: [String: JSONValue]) -> [String: JSONValue] {
-    var out = raw.filter { !Self.ownedKeys.contains($0.key) }
+    var out = raw.filter { !Self.ownedKeys.contains($0.key) && !Self.retiredKeys.contains($0.key) }
     func set(_ key: String, _ value: JSONValue?) { out[key] = value }
 
     // The desktop always writes `setup`, even empty.
@@ -96,7 +98,6 @@ extension ArgusConfigDraft {
     }))
     set("run", Self.nonEmpty(run.compactMap(Self.runValue)))
     set("workspace_env", Self.nonEmpty(workspaceEnv.compactMap(Self.envValue)))
-    set("platforms", Self.nonEmpty(platforms.map(JSONValue.string)))
     set("agent_prompt", Self.trimmed(agentPrompt))
     set("related_projects", Self.nonEmpty(relatedProjects.compactMap { project in
       let path = project.path.trimmingCharacters(in: .whitespaces)

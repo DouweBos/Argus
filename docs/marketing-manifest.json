@@ -70,7 +70,7 @@
           "slug": "project-settings",
           "file": "project-settings.md",
           "title": "Project settings — .argus.json",
-          "summary": "Per-project configuration shared with the team. Setup commands, run targets, terminals, platforms, port allocation, branch protection, and more."
+          "summary": "Per-project configuration shared with the team. Setup commands, run targets, terminals, port allocation, branch protection, and more."
         },
         {
           "slug": "app-settings",

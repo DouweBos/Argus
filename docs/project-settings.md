@@ -37,7 +37,6 @@ Two ways to change project settings:
 | `terminals`                                                          | yes (Terminals)          |
 | `run`                                                                | yes (Run commands)       |
 | `workspace_env`                                                      | yes (Workspace env)      |
-| `platforms`                                                          | yes (Platforms)          |
 | `browser_url`, `browser_presets`                                     | yes (Browser)            |
 | `single_runtime`                                                     | yes (Run commands)       |
 | `agent_prompt`, `save_chat_history`, `auto_continue_on_limit`        | yes (Agent)              |
@@ -60,7 +59,6 @@ Two ways to change project settings:
   "terminals":          [{ "name": "...", "dir": "..." }],
   "run":                [{ "title": "...", "command": "...", "restartOnRerun": true }],
   "workspace_env":      [{ "name": "...", "base_value": 0, "range": 100, "strategy": "sequential" }],
-  "platforms":          ["ios", "android", "tvos", "web"],
   "agent_prompt":       "Extra system prompt appended to every agent.",
   "related_projects":   [{ "path": "../other-repo", "description": "..." }],
   "browser_url":        "http://localhost:3000",
@@ -169,25 +167,6 @@ in particular.
 | `base_value` | `number`                 | required | Starting integer; final value is `base_value + offset`.                                                                             |
 | `range`      | `number`                 | required | Modulus for the `hash` strategy.                                                                                                    |
 | `strategy`   | `"sequential" \| "hash"` | required | `sequential` — assigned at session creation from a counter. `hash` — derived deterministically from the branch name modulo `range`. |
-
----
-
-## `platforms` — runtime targets
-
-Tells agents which runtimes to drive. Every agent in a project with a
-runtime, and every subagent it spawns, gets a guide to the `conductor`
-CLI for those platforms. If omitted, Argus infers them from the project
-(Expo or React Native means iOS and Android, a web framework or a `dev`
-script means Web, native `ios/` and `android/` folders count too); a
-project with none gets no guide. Declare `platforms` to opt into tvOS or
-to narrow the set to what your project ships. `[]` turns the guide off for
-the project; **Device guide** in app settings turns it off everywhere.
-
-```jsonc
-"platforms": ["ios", "tvos"]
-```
-
-Valid values: `"ios"`, `"android"`, `"tvos"`, `"web"`.
 
 ---
 
@@ -632,7 +611,6 @@ started.
       "strategy": "sequential",
     },
   ],
-  "platforms": ["web"],
   "browser_url": "http://localhost:1420",
   "protected_branches": ["main"],
   "llm": { "runner": "claude-code", "model": "claude-opus-4-7" },

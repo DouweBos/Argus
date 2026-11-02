@@ -310,12 +310,6 @@ export interface ArgusConfig {
   /** Whether to save chat history when agents stop. Defaults to true. */
   save_chat_history?: boolean | null;
   /**
-   * Runtime platforms this project targets (e.g. `["ios", "web"]`).
-   * Agents (and their subagents) get the conductor guide for these runtimes.
-   * If omitted they are inferred from the repo; `[]` means no guide.
-   */
-  platforms?: RuntimePlatform[] | null;
-  /**
    * Branches that must be updated through a pull request instead of a direct
    * merge (e.g. `["main", "master"]`). Workspaces whose base branch is
    * protected surface a "Push & open PR" flow instead of "Merge".
@@ -478,7 +472,6 @@ export function defaultArgusConfig(): ArgusConfig {
     browser_url: null,
     browser_presets: [],
     save_chat_history: true,
-    platforms: null,
     protected_branches: [],
     default_base_branch: null,
     single_runtime: false,

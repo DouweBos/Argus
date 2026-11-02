@@ -2,7 +2,6 @@ import type {
   BrowserPresetConfig,
   ProjectAutomationConfig,
   RelatedProject,
-  RuntimePlatform,
   SetupCopyEntry,
   SimulatorDeeplinkConfig,
   ArgusConfig,
@@ -18,7 +17,6 @@ import {
   EmptyState,
   Icons,
   Input,
-  PlatformChip,
   SettingsDialogShell,
   SettingsScreenDetail,
   SettingsScreenDetailBody,
@@ -1778,7 +1776,6 @@ export function SetupConfigDialog({
   const protectedBranchList = useListState([]);
   const releaseNotesList = useReleaseNotesListState([]);
   const [browserUrl, setBrowserUrl] = useState("");
-  const [platforms, setPlatforms] = useState<RuntimePlatform[]>([]);
   const [agentPrompt, setAgentPrompt] = useState("");
   const [saveChatHistory, setSaveChatHistory] = useState(true);
   const [singleRuntime, setSingleRuntime] = useState(false);
@@ -1868,14 +1865,6 @@ export function SetupConfigDialog({
         }
         if (config.browser_url) {
           setBrowserUrl(config.browser_url);
-        }
-        if (config.platforms?.length) {
-          setPlatforms(
-            config.platforms.filter(
-              (p): p is RuntimePlatform =>
-                p === "ios" || p === "android" || p === "tvos" || p === "web",
-            ),
-          );
         }
         if (config.workspace_env?.length) {
           setEnvs(
@@ -2045,9 +2034,6 @@ export function SetupConfigDialog({
     if (browserUrlVal) {
       config.browser_url = browserUrlVal;
     }
-    if (platforms.length) {
-      config.platforms = platforms;
-    }
     if (singleRuntime) {
       config.single_runtime = true;
     }
@@ -2170,7 +2156,6 @@ export function SetupConfigDialog({
       browserPresetList.items,
       protectedBranchList.items,
       browserUrl,
-      platforms,
       agentPrompt,
       saveChatHistory,
       singleRuntime,
@@ -2265,76 +2250,6 @@ export function SetupConfigDialog({
                     Optional semver string. The project home screen warns
                     teammates running an older Argus build.
                   </p>
-                </div>
-              </SettingsScreenDetailBody>
-            </SettingsScreenDetail>
-          ),
-        },
-        {
-          id: "platforms",
-          label: "Platforms",
-          description: "iOS / Android / tvOS / Web",
-          icon: <Icons.SimulatorIcon size={12} />,
-          render: () => (
-            <SettingsScreenDetail>
-              <SettingsScreenDetailHeader
-                description="Runtimes the agent system prompt describes. Leave empty to describe iOS, Android, and Web — narrow this so agents only see platforms this project actually targets. Devices are still acquired lazily when agents run conductor commands."
-                title="Target platforms"
-              />
-              <SettingsScreenDetailBody>
-                <div className={styles.field}>
-                  <div className={sectionStyles.platformsRow}>
-                    {(
-                      [
-                        { id: "ios", chip: "ios" },
-                        { id: "android", chip: "android" },
-                        { id: "tvos", label: "tvOS" },
-                        { id: "web", chip: "web" },
-                      ] as const
-                    ).map((p) => {
-                      const active = platforms.includes(
-                        p.id as RuntimePlatform,
-                      );
-                      const toggle = () =>
-                        setPlatforms((prev) =>
-                          active
-                            ? prev.filter((x) => x !== p.id)
-                            : [...prev, p.id as RuntimePlatform],
-                        );
-
-                      if ("chip" in p) {
-                        return (
-                          <PlatformChip
-                            key={p.id}
-                            active={active}
-                            platform={p.chip}
-                            onClick={toggle}
-                          />
-                        );
-                      }
-
-                      // tvOS — no dedicated PlatformChip variant, use Chip
-                      return (
-                        <Chip
-                          key={p.id}
-                          interactive
-                          style={
-                            active
-                              ? {
-                                  borderColor: "var(--accent-border-soft)",
-                                  color: "var(--text-primary)",
-                                  background: "var(--surface-5)",
-                                }
-                              : undefined
-                          }
-                          onClick={toggle}
-                        >
-                          <Icons.SimulatorIcon size={10} />
-                          {p.label}
-                        </Chip>
-                      );
-                    })}
-                  </div>
                 </div>
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>

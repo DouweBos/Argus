@@ -165,7 +165,6 @@ export type {
   SimulatorDeeplinkConfig,
   BrowserDevtools,
   BrowserPresetConfig,
-  RuntimePlatform,
 } from "@argus/remote-protocol";
 
 export type {

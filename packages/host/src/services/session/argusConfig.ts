@@ -15,7 +15,6 @@ import {
   normalizeLlmConfig,
   normalizeMcpServers,
   normalizeMinArgusVersion,
-  normalizePlatforms,
   normalizeProjectAutomations,
   normalizeProtectedBranches,
   normalizeRelatedProjects,
@@ -102,7 +101,6 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
       parsed.save_chat_history != null
         ? Boolean(parsed.save_chat_history)
         : true,
-    platforms: normalizePlatforms(parsed.platforms),
     protected_branches: normalizeProtectedBranches(parsed.protected_branches),
     default_base_branch: normalizeDefaultBaseBranch(parsed.default_base_branch),
     single_runtime:
@@ -185,7 +183,6 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
       local.browser_presets,
     ),
     save_chat_history: local.save_chat_history ?? base.save_chat_history,
-    platforms: local.platforms ?? base.platforms ?? null,
     protected_branches:
       local.protected_branches.length > 0
         ? local.protected_branches

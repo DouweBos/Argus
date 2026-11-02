@@ -13,7 +13,7 @@ area, what's included, and which configuration controls it.
   buttons, rotate, and trigger system gestures.
 - Per-session isolation — parallel sessions never interfere.
 
-Enable iOS in `.argus.json` with `"platforms": ["ios", …]`.
+Argus detects iOS projects (Xcode, Expo, React Native, Flutter) on its own.
 
 ---
 
@@ -24,7 +24,7 @@ Enable iOS in `.argus.json` with `"platforms": ["ios", …]`.
 - Tap, swipe, type, hardware keys.
 - Per-session isolation, like iOS.
 
-Enable Android in `.argus.json` with `"platforms": ["android", …]`.
+Argus detects Android projects (Gradle, Expo, React Native, Flutter) on its own.
 
 ---
 
@@ -35,8 +35,8 @@ Enable Android in `.argus.json` with `"platforms": ["android", …]`.
 - Agents can click, type, scroll, fill forms, and run JavaScript.
 - DevTools available on demand, per-session.
 
-Enable the web platform with `"platforms": ["web", …]` and configure
-`browser_url` (e.g. `"http://localhost:{PORT}"`).
+Point it at your dev server with `browser_url` in `.argus.json` (e.g.
+`"http://localhost:{PORT}"`).
 
 ---
 

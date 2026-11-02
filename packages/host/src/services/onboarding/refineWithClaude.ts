@@ -56,7 +56,6 @@ export async function refineArgusJsonWithClaude(
     "- Add `setup.symlink` entries for `.env` / `.env.local` style files if present — these should be shared, not copied.",
     "- Add `setup.commands` for install / bundle / pod install as needed.",
     "- Populate `run[]` with the real dev command (title it meaningfully).",
-    "- Pick `platforms` based on the detected stack.",
     "- Add a `workspace_env` port allocation if the dev server listens on a port.",
     "- Keep it minimal: don't invent commands that aren't warranted by the project.",
     "",

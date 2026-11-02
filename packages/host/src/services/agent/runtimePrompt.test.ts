@@ -113,26 +113,28 @@ describe("resolveRuntimePlatforms", () => {
   afterEach(cleanUp);
 
   const base = {
-    configPlatforms: null,
     hasIosReservation: false,
     hasBrowserSession: false,
   };
 
-  it("prefers the override, then the project config", () => {
-    const repoRoot = repoWith({});
+  it("prefers the override over detection", () => {
+    const repoRoot = repoWith({
+      "package.json": JSON.stringify({ dependencies: { expo: "52.0.0" } }),
+    });
     expect([
       ...resolveRuntimePlatforms({ ...base, repoRoot, override: ["tvos"] }),
     ]).toEqual(["tvos"]);
-    expect([
-      ...resolveRuntimePlatforms({
-        ...base,
-        repoRoot,
-        configPlatforms: ["web"],
-      }),
-    ]).toEqual(["web"]);
   });
 
-  it("detects a frontend project when the config names none", () => {
+  it("ignores a legacy platforms key in .argus.json", () => {
+    const repoRoot = repoWith({
+      ".argus.json": JSON.stringify({ platforms: ["web"] }),
+      "go.mod": "module x",
+    });
+    expect(resolveRuntimePlatforms({ ...base, repoRoot }).size).toBe(0);
+  });
+
+  it("detects a frontend project", () => {
     const repoRoot = repoWith({
       "package.json": JSON.stringify({ dependencies: { expo: "52.0.0" } }),
     });
@@ -149,7 +151,6 @@ describe("resolveRuntimePlatforms", () => {
       ...resolveRuntimePlatforms({
         ...base,
         repoRoot,
-        configPlatforms: [],
         hasIosReservation: true,
       }),
     ]).toEqual(["ios"]);

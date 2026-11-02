@@ -11,7 +11,7 @@ import type {
 } from "../../state";
 import type { RuntimePlatform } from "../session/models";
 import { loadAppSettings } from "../appSettings/store";
-import { suggestArgusJson } from "../onboarding/argusJson";
+import { detectPlatforms } from "../onboarding/argusJson";
 
 export interface RuntimeContext {
   platforms: ReadonlySet<RuntimePlatform>;
@@ -38,21 +38,18 @@ export function conductorGuideEnabled(): boolean {
 }
 
 /**
- * The runtimes to describe: an explicit override, then `.argus.json`, then
- * what onboarding detection infers from the repo. A device already attached
- * to the agent always counts.
+ * The runtimes to describe: an explicit override, else what onboarding
+ * detection infers from the repo. A device already attached to the agent
+ * always counts.
  */
 export function resolveRuntimePlatforms(opts: {
   override?: RuntimePlatform[];
-  configPlatforms: RuntimePlatform[] | null;
   repoRoot: string;
   hasIosReservation: boolean;
   hasBrowserSession: boolean;
 }): Set<RuntimePlatform> {
   const platforms = new Set<RuntimePlatform>(
-    opts.override?.length
-      ? opts.override
-      : (opts.configPlatforms ?? detectPlatforms(opts.repoRoot)),
+    opts.override?.length ? opts.override : detectRepoPlatforms(opts.repoRoot),
   );
   if (opts.hasIosReservation) {
     platforms.add("ios");
@@ -64,11 +61,9 @@ export function resolveRuntimePlatforms(opts: {
   return platforms;
 }
 
-function detectPlatforms(repoRoot: string): RuntimePlatform[] {
+function detectRepoPlatforms(repoRoot: string): RuntimePlatform[] {
   try {
-    const { platforms } = suggestArgusJson(repoRoot).config;
-
-    return Array.isArray(platforms) ? (platforms as RuntimePlatform[]) : [];
+    return detectPlatforms(repoRoot);
   } catch {
     return [];
   }

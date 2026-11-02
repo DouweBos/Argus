@@ -18,7 +18,6 @@ public struct ArgusConfigDraft: Equatable, Sendable {
   var symlinkExcludes: [String: JSONValue] = [:]
 
   // Runtime
-  public var platforms: [String] = []
   public var workspaceEnv: [EnvVar] = []
   public var run: [RunCommand] = []
   public var singleRuntime = false
@@ -188,7 +187,6 @@ public struct ArgusConfigDraft: Equatable, Sendable {
 
   // MARK: Constants
 
-  public static let platformOptions = ["ios", "android", "tvos", "web"]
   public static let autonomyLevels = ["propose", "draft", "pr", "auto_merge"]
   /// The Git settings panel's choices; any other saved value is kept as is.
   public static let autoFetchOptions = [0, 5, 15, 60]

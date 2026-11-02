@@ -1771,7 +1771,6 @@ extension ArgusProtocol {
     public var browserUrl: String?
     public var browserPresets: [BrowserPresetConfig]
     public var saveChatHistory: Bool?
-    public var platforms: [RuntimePlatform]?
     public var protectedBranches: [String]
     public var defaultBaseBranch: String?
     public var pullRequestTemplate: String?
@@ -1796,7 +1795,6 @@ extension ArgusProtocol {
       case browserUrl = "browser_url"
       case browserPresets = "browser_presets"
       case saveChatHistory = "save_chat_history"
-      case platforms = "platforms"
       case protectedBranches = "protected_branches"
       case defaultBaseBranch = "default_base_branch"
       case pullRequestTemplate = "pull_request_template"
@@ -1811,7 +1809,7 @@ extension ArgusProtocol {
       case automations = "automations"
     }
 
-    public init(minArgusVersion: String? = nil, setup: ArgusSetupConfig, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], agentPrompt: String? = nil, relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], saveChatHistory: Bool? = nil, platforms: [RuntimePlatform]? = nil, protectedBranches: [String], defaultBaseBranch: String? = nil, pullRequestTemplate: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, mcpServers: [String: [String: JSONValue]]? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
+    public init(minArgusVersion: String? = nil, setup: ArgusSetupConfig, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], agentPrompt: String? = nil, relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], saveChatHistory: Bool? = nil, protectedBranches: [String], defaultBaseBranch: String? = nil, pullRequestTemplate: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, mcpServers: [String: [String: JSONValue]]? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
       self.minArgusVersion = minArgusVersion
       self.setup = setup
       self.terminals = terminals
@@ -1822,7 +1820,6 @@ extension ArgusProtocol {
       self.browserUrl = browserUrl
       self.browserPresets = browserPresets
       self.saveChatHistory = saveChatHistory
-      self.platforms = platforms
       self.protectedBranches = protectedBranches
       self.defaultBaseBranch = defaultBaseBranch
       self.pullRequestTemplate = pullRequestTemplate
@@ -1849,7 +1846,6 @@ extension ArgusProtocol {
       try c.encodeIfPresent(browserUrl, forKey: .browserUrl)
       try c.encode(browserPresets, forKey: .browserPresets)
       try c.encodeIfPresent(saveChatHistory, forKey: .saveChatHistory)
-      try c.encodeIfPresent(platforms, forKey: .platforms)
       try c.encode(protectedBranches, forKey: .protectedBranches)
       try c.encodeIfPresent(defaultBaseBranch, forKey: .defaultBaseBranch)
       try c.encodeIfPresent(pullRequestTemplate, forKey: .pullRequestTemplate)
@@ -16462,23 +16458,6 @@ extension ArgusProtocol {
       try c.encode(started, forKey: .started)
       try c.encode(title, forKey: .title)
     }
-  }
-
-  public struct RuntimePlatform: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let android = RuntimePlatform(rawValue: "android")
-    public static let ios = RuntimePlatform(rawValue: "ios")
-    public static let tvos = RuntimePlatform(rawValue: "tvos")
-    public static let web = RuntimePlatform(rawValue: "web")
   }
 
   public struct SaveAutomationMemoryInput: Codable, Sendable {

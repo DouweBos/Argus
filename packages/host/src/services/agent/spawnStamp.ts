@@ -7,7 +7,7 @@ import { conductorGuideEnabled } from "./runtimePrompt";
 
 /**
  * A hash of the config a spawn reads besides runner and account — the
- * project's agent prompt and platforms, the conductor-guide setting, and
+ * project's agent prompt and browser URL, the conductor-guide setting, and
  * every MCP server — so a spare spawned before any of it changed is never
  * handed out.
  */
@@ -16,10 +16,8 @@ export async function spawnConfigStamp(
 ): Promise<string> {
   let config: Record<string, unknown> = {};
   try {
-    const { agent_prompt, browser_url, platforms } = loadArgusConfig(
-      session.repo_root,
-    );
-    config = { agent_prompt, browser_url, platforms };
+    const { agent_prompt, browser_url } = loadArgusConfig(session.repo_root);
+    config = { agent_prompt, browser_url };
   } catch {
     // Missing or invalid — the spawn falls back the same way.
   }

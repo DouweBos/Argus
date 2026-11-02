@@ -24,42 +24,6 @@ struct SetupSection: View {
   }
 }
 
-struct PlatformsSection: View {
-  @Binding var draft: ArgusConfigDraft
-
-  var body: some View {
-    SectionIntro(
-      title: "Target platforms",
-      text: "Runtimes the agent system prompt describes. Leave empty to describe iOS, Android, and Web — narrow this so agents only see platforms this project actually targets. Devices are still acquired lazily when agents run conductor commands."
-    )
-    Section {
-      ForEach(ArgusConfigDraft.platformOptions, id: \.self) { platform in
-        Toggle(label(platform), isOn: binding(platform))
-      }
-    }
-  }
-
-  private func label(_ platform: String) -> String {
-    switch platform {
-    case "ios": "iOS"
-    case "android": "Android"
-    case "tvos": "tvOS"
-    default: "Web"
-    }
-  }
-
-  /// Kept in the canonical order whatever order they're ticked in.
-  private func binding(_ platform: String) -> Binding<Bool> {
-    Binding(
-      get: { draft.platforms.contains(platform) },
-      set: { on in
-        var set = Set(draft.platforms)
-        if on { set.insert(platform) } else { set.remove(platform) }
-        draft.platforms = ArgusConfigDraft.platformOptions.filter(set.contains)
-      })
-  }
-}
-
 struct WorkspaceEnvSection: View {
   @Binding var draft: ArgusConfigDraft
   @Environment(\.theme) private var theme

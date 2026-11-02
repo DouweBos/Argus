@@ -86,7 +86,7 @@ struct ProjectSettingsSheet: View {
 }
 
 enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
-  case setup, platforms, workspaceEnv
+  case setup, workspaceEnv
   case run, terminals, browser, deeplinks
   case branchProtection, releaseNotes, agent, llm, relatedProjects, mcp, automations, tools
   case branchPrefix, worktreeLocation
@@ -97,7 +97,6 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
   var title: String {
     switch self {
     case .setup: "Setup"
-    case .platforms: "Platforms"
     case .workspaceEnv: "Workspace env"
     case .run: "Run commands"
     case .terminals: "Terminals"
@@ -120,7 +119,6 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
   var icon: String {
     switch self {
     case .setup: "folder"
-    case .platforms: "iphone"
     case .workspaceEnv: "number"
     case .run: "play"
     case .terminals: "terminal"
@@ -141,7 +139,7 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
   }
 
   static let groups: [(title: String, sections: [ProjectSettingsSection])] = [
-    ("Workspace", [.setup, .platforms, .workspaceEnv]),
+    ("Workspace", [.setup, .workspaceEnv]),
     ("Runtime", [.run, .terminals, .browser, .deeplinks]),
     ("Workflow", [.branchProtection, .releaseNotes, .agent, .llm, .relatedProjects, .mcp, .automations, .tools]),
     ("Personal", [.branchPrefix, .worktreeLocation]),
@@ -158,7 +156,6 @@ private struct ProjectSettingsDetail: View {
     Form {
       switch section {
       case .setup: SetupSection(draft: $settings.draft)
-      case .platforms: PlatformsSection(draft: $settings.draft)
       case .workspaceEnv: WorkspaceEnvSection(draft: $settings.draft)
       case .run: RunCommandsSection(draft: $settings.draft)
       case .terminals: TerminalsSection(draft: $settings.draft)
