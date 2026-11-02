@@ -60,7 +60,6 @@ describe("screenFromPath", () => {
 
   it.each([
     "/pull-requests/o/r/1",
-    "/usage/cost",
     "/devices/web/tab-1",
   ])("opens the nearest screen it has for %s", (path) => {
     const screen = screenFromPath(path);
@@ -74,6 +73,40 @@ describe("screenFromPath", () => {
       sessionId: "s1",
       mode: "branch",
     });
+  });
+});
+
+describe("usage, notifications and settings pages", () => {
+  it.each<[string, Screen]>([
+    ["/usage", { name: "usage", tab: "limits", range: "30d" }],
+    ["/usage/cost?range=7d", { name: "usage", tab: "cost", range: "7d" }],
+    ["/usage/tokens", { name: "usage", tab: "tokens", range: "30d" }],
+    ["/notifications", { name: "notifications" }],
+    ["/settings/appearance", { name: "settingsPage", page: "appearance" }],
+    [
+      "/settings/claude-accounts",
+      { name: "settingsPage", page: "claude-accounts" },
+    ],
+    ["/settings/nope", { name: "settings" }],
+  ])("reads %s", (path, screen) => {
+    expect(screenFromPath(path)).toEqual(screen);
+  });
+
+  it.each([
+    "/usage",
+    "/usage/cost?range=7d",
+    "/usage/tokens",
+    "/notifications",
+    "/settings/device-hosts",
+  ])("round-trips %s", (path) => {
+    expect(pathForScreen(screenFromPath(path))).toBe(path);
+  });
+
+  it("names the pattern, never the range", () => {
+    expect(
+      screenPattern({ name: "usage", tab: "cost", range: "7d" }),
+    ).toBe("/usage/cost");
+    expect(paneFor({ name: "notifications" })).toBe("detail");
   });
 });
 

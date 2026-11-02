@@ -4,7 +4,7 @@ import { isFallback } from "./links";
 describe("isFallback", () => {
   it("flags routes this client opens the parent of", () => {
     expect(isFallback("/pull-requests/o/r/1")).toBe(true);
-    expect(isFallback("/usage/cost")).toBe(true);
+    expect(isFallback("/settings/nope")).toBe(true);
     expect(isFallback("/devices/web/tab-1")).toBe(true);
   });
 
@@ -18,5 +18,8 @@ describe("isFallback", () => {
     expect(isFallback("/inbox/proposals/p1")).toBe(false);
     expect(isFallback("/automations/describe")).toBe(false);
     expect(isFallback("/automations/quick/runs/r1")).toBe(false);
+    expect(isFallback("/usage/cost?range=7d")).toBe(false);
+    expect(isFallback("/notifications")).toBe(false);
+    expect(isFallback("/settings/claude-accounts")).toBe(false);
   });
 });

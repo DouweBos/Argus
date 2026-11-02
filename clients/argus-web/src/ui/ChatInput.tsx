@@ -41,6 +41,7 @@ import { useAgentsStore } from "../stores/agents";
 import { useHuddleStore } from "../stores/huddle";
 import { useProjectsStore } from "../stores/projects";
 import { useTranscriptsStore } from "../stores/transcripts";
+import { AccountChip } from "./AccountChip";
 import { useMentionPicker } from "./useMentionPicker";
 
 /** The computer never lets a remote switch an agent into Trusted, so it isn't offered. */
@@ -635,6 +636,7 @@ export function ChatInput({
           )}
         </div>
       )}
+      <AccountChip agentId={agentId} sessionId={sessionId} />
       <div className="aw-picker-anchor" ref={projectChipRef}>
         <Chip
           interactive

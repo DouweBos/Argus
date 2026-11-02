@@ -287,6 +287,18 @@ button {
   min-width: 0;
 }
 
+.aw-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Usage and Notifications bring their own padded layout. */
+.aw-flush {
+  margin: 0 calc(-1 * var(--aw-gutter-right)) 0
+    calc(-1 * var(--aw-gutter-left));
+}
+
 /* Agent list grouping under a session section header. */
 .aw-group {
   display: flex;

@@ -22,6 +22,10 @@ import {
 import { useAgentsStore } from "../stores/agents";
 import { useConnectionStore } from "../stores/connection";
 import { useDevicesStore } from "../stores/devices";
+import {
+  useNotificationsStore,
+  useUnseenNotifications,
+} from "../stores/notifications";
 import { useProjectsStore } from "../stores/projects";
 import { AgentTranscript } from "./transcript/AgentTranscript";
 import { AutomationScreen } from "./automations/AutomationScreen";
@@ -41,7 +45,9 @@ import { Projects } from "./ProjectViews";
 import { DeviceRoute, ProjectRoute, SessionRedirect } from "./ScreenRoutes";
 import { useScreenTitle } from "./screenTitle";
 import { LazySessionTool, SessionToolActions } from "./SessionToolActions";
-import { Settings } from "./Settings";
+import { NotificationsView } from "./NotificationsView";
+import { Settings, SettingsPageScreen } from "./Settings";
+import { UsageView } from "./UsageView";
 import { SavedChat } from "./start/SavedChat";
 import { SessionHome } from "./start/SessionHome";
 import { useScrollRestore } from "./useScrollRestore";
@@ -154,6 +160,12 @@ function ScreenBody({
       );
     case "settings":
       return <Settings />;
+    case "settingsPage":
+      return <SettingsPageScreen page={screen.page} />;
+    case "usage":
+      return <UsageView range={screen.range} tab={screen.tab} />;
+    case "notifications":
+      return <NotificationsView />;
     case "files":
     case "file":
     case "search":
@@ -215,6 +227,8 @@ function RootActions() {
   const connection = useConnectionStore((s) => s.connection);
   const refreshProjects = useProjectsStore((s) => s.refreshProjects);
   const waiting = useInboxBadge();
+  const warnings = useNotificationsStore((s) => s.entries.length);
+  const unseen = useUnseenNotifications();
 
   return (
     <>
@@ -241,6 +255,17 @@ function RootActions() {
       >
         <Icons.SimulatorIcon size={14} />
       </SidebarHeaderAction>
+      {warnings > 0 && (
+        <SidebarHeaderAction
+          className="aw-badged"
+          onClick={() => appNavigate({ name: "notifications" })}
+          title={unseen > 0 ? `Warnings & errors — ${unseen} new` : "Warnings & errors"}
+          aria-label={unseen > 0 ? `Warnings and errors, ${unseen} new` : "Warnings and errors"}
+        >
+          <Icons.WarningIcon size={14} />
+          {unseen > 0 && <span className="aw-badge-count">{unseen}</span>}
+        </SidebarHeaderAction>
+      )}
       <SidebarHeaderAction
         onClick={() => refreshProjects().catch(() => {})}
         title="Refresh"
@@ -558,7 +583,12 @@ function PaneIcon({ screen }: { screen: Screen }) {
     case "device":
       return <Icons.SimulatorIcon size={14} />;
     case "settings":
+    case "settingsPage":
       return <Icons.GearIcon size={14} />;
+    case "usage":
+      return <Icons.GaugeIcon size={14} />;
+    case "notifications":
+      return <Icons.WarningIcon size={14} />;
     case "chat":
       return <Icons.HistoryIcon size={14} />;
     case "inbox":

@@ -1,197 +1,168 @@
-import { useState } from "react";
+/**
+ * Settings as a list of pages, grouped like the phone's: this browser, then
+ * the computer it's connected to. Each page has its own URL.
+ */
+
+import { useEffect } from "react";
 import {
-  Button,
-  Input,
-  SegmentedControl,
-  SettingsScreenField,
+  Icons,
+  SettingsScreenSection,
+  SettingsScreenSectionGroup,
 } from "@argus/peacock";
-import {
-  notificationsSupported,
-  requestNotificationPermission,
-} from "../lib/notify";
+import { useThemePreference } from "../lib/theme";
+import { appNavigate } from "../routing/router";
+import type { Screen, SettingsPage } from "../routing/screens";
 import { useConnectionStore } from "../stores/connection";
+import { useUnseenNotifications } from "../stores/notifications";
+import { useSettingsStore } from "../stores/settings";
+import { telemetryMode } from "../telemetry/telemetry";
 import { accountFields } from "./accountFields";
-import { PrivacyField } from "./TelemetryConsent";
-import { usePushStore } from "../stores/push";
-import { webPushSupported, type WebPushState } from "../lib/webpush";
+import { AlertsPage, AppearancePage, NamePage, PrivacyPage } from "./settings/BrowserPages";
+import { ClaudeAccountsPage } from "./settings/ClaudeAccountsPage";
 import {
-  setThemePreference,
-  THEME_PREFERENCE_LABELS,
-  type ThemePreference,
-  useThemePreference,
-} from "../lib/theme";
+  AgentsPage,
+  AutomationsPage,
+  ConnectionPage,
+  DeviceHostsPage,
+} from "./settings/ComputerPages";
+import { SETTINGS_PAGE_TITLES } from "./settings/pages";
 
-function notificationStatusLabel(): string {
-  if (!notificationsSupported()) {
-    return "Not supported in this browser";
-  }
-  if (Notification.permission === "granted") {
-    return "Enabled";
-  }
-  if (Notification.permission === "denied") {
-    return "Blocked — enable in browser settings";
-  }
+const SCHEME_LABELS = { system: "System", light: "Light", dark: "Dark" };
 
-  return "Not enabled";
+function Row({
+  icon,
+  to,
+  value,
+  children,
+}: {
+  icon: React.ReactNode;
+  to: Screen;
+  value?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <SettingsScreenSection
+      description={value}
+      icon={icon}
+      onClick={() => appNavigate(to)}
+    >
+      {children}
+    </SettingsScreenSection>
+  );
 }
 
-const THEME_OPTIONS: { label: string; value: ThemePreference }[] = (
-  ["system", "light", "dark"] as const
-).map((value) => ({ value, label: THEME_PREFERENCE_LABELS[value] }));
-
-const PUSH_OPTIONS: { label: string; value: "off" | "on" }[] = [
-  { value: "on", label: "On" },
-  { value: "off", label: "Off" },
-];
-
-const PUSH_LABEL: Record<WebPushState, string> = {
-  registered: "Registered — your computer can reach this browser with every tab closed.",
-  unconfigured:
-    "Background push is switched off in Argus on your computer (Settings → Remote access).",
-  unavailable:
-    "Unavailable here — background push needs notification permission and an https address.",
-  off: "Off — you'll only see alerts while this tab is open.",
-};
-
-function AppearanceField({ theme }: { theme: ThemePreference }) {
+function PageRow({
+  page,
+  icon,
+  value,
+}: {
+  page: SettingsPage;
+  icon: React.ReactNode;
+  value?: string;
+}) {
   return (
-    <SettingsScreenField
-      label="Appearance"
-      caption="Match your system, or force light or dark."
-    >
-      <SegmentedControl<ThemePreference>
-        aria-label="Theme"
-        value={theme}
-        options={THEME_OPTIONS}
-        onChange={setThemePreference}
-      />
-    </SettingsScreenField>
+    <Row icon={icon} to={{ name: "settingsPage", page }} value={value}>
+      {SETTINGS_PAGE_TITLES[page]}
+    </Row>
   );
 }
 
 export function Settings() {
   const deviceName = useConnectionStore((s) => s.deviceName);
-  const setDeviceName = useConnectionStore((s) => s.setDeviceName);
-  const unpair = useConnectionStore((s) => s.unpair);
-  const pushEnabled = usePushStore((s) => s.pushEnabled);
-  const pushState = usePushStore((s) => s.pushState);
-  const setPushEnabled = usePushStore((s) => s.setPushEnabled);
-  const theme = useThemePreference();
   const account = useConnectionStore((s) => s.identity?.account);
+  const connection = useConnectionStore((s) => s.connection);
+  const scheme = useThemePreference();
+  const unseen = useUnseenNotifications();
+  const deviceHosts = useSettingsStore((s) => s.deviceHosts);
+  const loadDeviceHosts = useSettingsStore((s) => s.loadDeviceHosts);
+  const fields = accountFields();
 
-  const [name, setName] = useState(deviceName);
-  const [saved, setSaved] = useState(false);
-  const [notifyStatus, setNotifyStatus] = useState(notificationStatusLabel());
-  const enableNotifications = () => {
-    requestNotificationPermission()
-      // Permission is what gates the push subscription, so retry it right after.
-      .then(() => setPushEnabled(pushEnabled))
-      .finally(() => setNotifyStatus(notificationStatusLabel()));
-  };
-
-  const dirty = name.trim() !== deviceName && name.trim().length > 0;
-  const save = () => {
-    setDeviceName(name).catch(() => {});
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1200);
-  };
-
-  if (account) {
-    const fields = accountFields();
-
-    return (
-      <div className="aw-settings">
-        <SettingsScreenField
-          label="Computer"
-          caption={`Connected to ${account.hostName} through its tunnel.`}
-        >
-          <Button variant="secondary" onClick={account.leave}>
-            Switch computer
-          </Button>
-        </SettingsScreenField>
-        {fields && <fields.Name />}
-        <AppearanceField theme={theme} />
-        <PrivacyField />
-        {fields && <fields.SignOut />}
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (connection === "ready") {
+      loadDeviceHosts({ background: true }).catch(() => {});
+    }
+  }, [connection, loadDeviceHosts]);
 
   return (
     <div className="aw-settings">
-      <SettingsScreenField
-        label="Device name"
-        caption="Shown in Argus on your computer under paired devices."
-      >
-        <div className="aw-settings-inline">
-          <Input
-            value={name}
-            maxLength={60}
-            placeholder="Device name"
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && dirty) {
-                save();
-              }
-            }}
-          />
-          <Button variant="secondary" disabled={!dirty} onClick={save}>
-            {saved ? "Saved" : "Save"}
-          </Button>
-        </div>
-      </SettingsScreenField>
-
-      <AppearanceField theme={theme} />
-
-      <PrivacyField />
-
-      <SettingsScreenField
-        label="Notifications"
-        caption="Get alerted when an agent finishes or needs approval, even when you're on another screen."
-      >
-        <div className="aw-settings-inline">
-          <span className="aw-muted">{notifyStatus}</span>
-          <Button
-            variant="secondary"
-            disabled={
-              !notificationsSupported() ||
-              Notification.permission === "granted" ||
-              Notification.permission === "denied"
-            }
-            onClick={enableNotifications}
-          >
-            Enable
-          </Button>
-        </div>
-      </SettingsScreenField>
-
-      <SettingsScreenField
-        label="Background push"
-        caption="Keep getting alerts after you close every Argus tab. Your computer encrypts and sends these itself — no Argus server sees them."
-      >
-        <SegmentedControl<"off" | "on">
-          aria-label="Background push"
-          value={pushEnabled ? "on" : "off"}
-          options={PUSH_OPTIONS}
-          onChange={(v) => {
-            setPushEnabled(v === "on").catch(() => {});
-          }}
+      <SettingsScreenSectionGroup label="This browser">
+        <PageRow
+          icon={<Icons.PencilIcon size={14} />}
+          page="name"
+          value={account ? undefined : deviceName}
         />
-        <span className="aw-muted">
-          {webPushSupported()
-            ? PUSH_LABEL[pushState]
-            : PUSH_LABEL.unavailable}
-        </span>
-      </SettingsScreenField>
+        <PageRow
+          icon={<Icons.SlidersIcon size={14} />}
+          page="appearance"
+          value={SCHEME_LABELS[scheme]}
+        />
+        <PageRow icon={<Icons.ChatIcon size={14} />} page="alerts" />
+        <PageRow
+          icon={<Icons.LockIcon size={14} />}
+          page="privacy"
+          value={telemetryMode() === "full" ? "Sharing" : "Minimal"}
+        />
+        <Row
+          icon={<Icons.WarningIcon size={14} />}
+          to={{ name: "notifications" }}
+          value={unseen > 0 ? `${String(unseen)} new` : undefined}
+        >
+          Warnings &amp; errors
+        </Row>
+      </SettingsScreenSectionGroup>
 
-      <SettingsScreenField
-        label="Unpair this device"
-        caption="Removes the stored key from this browser. You'll need to pair again from Argus to reconnect."
-      >
-        <Button variant="danger" onClick={unpair}>
-          Unpair
-        </Button>
-      </SettingsScreenField>
+      <SettingsScreenSectionGroup label={account?.hostName ?? "This computer"}>
+        <PageRow
+          icon={<Icons.LaptopIcon size={14} />}
+          page="connection"
+          value={connection === "ready" ? "Connected" : "Not connected"}
+        />
+        <PageRow icon={<Icons.AgentIcon size={14} />} page="agents" />
+        <PageRow icon={<Icons.ClockIcon size={14} />} page="automations" />
+        <PageRow
+          icon={<Icons.OrganizationIcon size={14} />}
+          page="claude-accounts"
+        />
+        <Row
+          icon={<Icons.GaugeIcon size={14} />}
+          to={{ name: "usage", tab: "limits", range: "30d" }}
+        >
+          Usage
+        </Row>
+        {deviceHosts && deviceHosts.length > 0 && (
+          <PageRow
+            icon={<Icons.SimulatorIcon size={14} />}
+            page="device-hosts"
+            value={String(deviceHosts.length)}
+          />
+        )}
+      </SettingsScreenSectionGroup>
+
+      {account && fields && <fields.SignOut />}
     </div>
   );
+}
+
+/** `/settings/:page`. */
+export function SettingsPageScreen({ page }: { page: SettingsPage }) {
+  switch (page) {
+    case "name":
+      return <NamePage />;
+    case "appearance":
+      return <AppearancePage />;
+    case "alerts":
+      return <AlertsPage />;
+    case "privacy":
+      return <PrivacyPage />;
+    case "connection":
+      return <ConnectionPage />;
+    case "agents":
+      return <AgentsPage />;
+    case "automations":
+      return <AutomationsPage />;
+    case "claude-accounts":
+      return <ClaudeAccountsPage />;
+    case "device-hosts":
+      return <DeviceHostsPage />;
+  }
 }

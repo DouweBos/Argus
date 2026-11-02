@@ -17,6 +17,10 @@ export function isFallback(path: string): boolean {
     return pathname !== "/";
   }
 
+  if (screen.name === "settings") {
+    return pathname !== "/settings";
+  }
+
   return screen.name === "devices" && pathname !== "/devices";
 }
 

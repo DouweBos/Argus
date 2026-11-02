@@ -274,27 +274,30 @@ it can:
   and shared links all work; the computer and the hosted site serve
   `index.html` for every path. What it shows today:
 
-  | URL                                     | Screen                                                                                                                                |
-  | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-  | `/`                                     | Projects and recent agents                                                                                                            |
-  | `/projects/:projectKey`                 | One project's sessions and agents (web and iOS only). The key is a hash of the repo root, never the path, so no path reaches a server |
-  | `/sessions/:sessionId`                  | The session's home: start an agent (here, in a new worktree or on an existing branch), its agents, and its recent chats               |
-  | `/sessions/:sessionId/agents/:agentId`  | An agent's chat. Without `:agentId` it opens the session's newest agent, or the session's home when it has none                       |
-  | `/sessions/:sessionId/chats/:historyId` | One of the session's saved chats, to read, resume or pin (web only)                                                                   |
-  | `/sessions/:sessionId/git/branch`       | The session's changes against its base branch; any other `/git/*` sub-view opens this                                                 |
-  | `/sessions/:sessionId/git/working`      | The session's uncommitted changes                                                                                                     |
-  | `/sessions/:sessionId/git/:mode/diff`   | One file's diff from Changes, `?path=` the file; `:mode` is `branch` or `working`                                                     |
-  | `/sessions/:sessionId/code`             | `?path=&line=` a file, read-only and highlighted, at a line. Without `?path=` it opens the file list below                            |
-  | `/sessions/:sessionId/code/quick-open`  | The session's files, fuzzy-matched by name, changed files first (Cmd/Ctrl+P opens the same list over any session screen)              |
-  | `/sessions/:sessionId/code/search`      | Search across the worktree, with case, word and regex toggles (Cmd/Ctrl+Shift+F)                                                      |
-  | `/sessions/:sessionId/terminals`        | The session's terminals, read-only and live; `/terminals/:terminalId` puts one in front                                               |
-  | `/devices`, `/devices/:platform/:key`   | Devices, and one device's live screen; an unknown device opens `/devices`                                                             |
-  | `/settings`                             | Settings (web and iOS only)                                                                                                           |
-  | `/inbox`, `/inbox/proposals/:id`        | The inbox in the Mac's groups, and one proposal in full with its decision                                                             |
-  | `/automations`, `/automations/:id`      | Automations, and one automation: its editor, memories and run history                                                                 |
-  | `/automations/:id/runs/:runId`          | One run: its report, feedback and the agent that did it                                                                               |
-  | `/automations/quick[/runs/:runId]`      | Quick Run and one quick run                                                                                                           |
-  | `/automations/describe`                 | Describe an automation (web and iOS)                                                                                                  |
+  | URL                                     | Screen                                                                                                                                                                                       |
+  | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `/`                                     | Projects and recent agents                                                                                                                                                                   |
+  | `/projects/:projectKey`                 | One project's sessions and agents (web and iOS only). The key is a hash of the repo root, never the path, so no path reaches a server                                                        |
+  | `/sessions/:sessionId`                  | The session's home: start an agent (here, in a new worktree or on an existing branch), its agents, and its recent chats                                                                      |
+  | `/sessions/:sessionId/agents/:agentId`  | An agent's chat. Without `:agentId` it opens the session's newest agent, or the session's home when it has none                                                                              |
+  | `/sessions/:sessionId/chats/:historyId` | One of the session's saved chats, to read, resume or pin (web only)                                                                                                                          |
+  | `/sessions/:sessionId/git/branch`       | The session's changes against its base branch; any other `/git/*` sub-view opens this                                                                                                        |
+  | `/sessions/:sessionId/git/working`      | The session's uncommitted changes                                                                                                                                                            |
+  | `/sessions/:sessionId/git/:mode/diff`   | One file's diff from Changes, `?path=` the file; `:mode` is `branch` or `working`                                                                                                            |
+  | `/sessions/:sessionId/code`             | `?path=&line=` a file, read-only and highlighted, at a line. Without `?path=` it opens the file list below                                                                                   |
+  | `/sessions/:sessionId/code/quick-open`  | The session's files, fuzzy-matched by name, changed files first (Cmd/Ctrl+P opens the same list over any session screen)                                                                     |
+  | `/sessions/:sessionId/code/search`      | Search across the worktree, with case, word and regex toggles (Cmd/Ctrl+Shift+F)                                                                                                             |
+  | `/sessions/:sessionId/terminals`        | The session's terminals, read-only and live; `/terminals/:terminalId` puts one in front                                                                                                      |
+  | `/devices`, `/devices/:platform/:key`   | Devices, and one device's live screen; an unknown device opens `/devices`                                                                                                                    |
+  | `/settings`                             | Settings (web and iOS only): this browser's pages, then the connected computer's                                                                                                             |
+  | `/settings/:page`                       | One settings page, the phone's names: `name`, `appearance`, `alerts`, `privacy`, `connection`, `agents`, `automations`, `claude-accounts`, `device-hosts`; an unknown page opens `/settings` |
+  | `/usage`, `/usage/:tab`                 | Plan limits per Claude account (`/usage`), or cost or tokens (`/usage/cost`, `/usage/tokens`) over `?range=` (`24h`, `7d`, `30d` or `90d`), as on the Mac                                    |
+  | `/notifications`                        | This visit's warnings and errors, a repeat folded into one entry with a count                                                                                                                |
+  | `/inbox`, `/inbox/proposals/:id`        | The inbox in the Mac's groups, and one proposal in full with its decision                                                                                                                    |
+  | `/automations`, `/automations/:id`      | Automations, and one automation: its editor, memories and run history                                                                                                                        |
+  | `/automations/:id/runs/:runId`          | One run: its report, feedback and the agent that did it                                                                                                                                      |
+  | `/automations/quick[/runs/:runId]`      | Quick Run and one quick run                                                                                                                                                                  |
+  | `/automations/describe`                 | Describe an automation (web and iOS)                                                                                                                                                         |
 
   Any other route opens its nearest parent, as on iOS, which today is Home.
   From tablet width the project list (or the project an agent belongs to)
