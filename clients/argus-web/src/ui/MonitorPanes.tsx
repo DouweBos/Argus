@@ -561,8 +561,10 @@ function PaneIcon({ screen }: { screen: Screen }) {
       return <Icons.GearIcon size={14} />;
     case "chat":
       return <Icons.HistoryIcon size={14} />;
+    case "inbox":
     case "proposal":
       return <Icons.EnvelopeIcon size={14} />;
+    case "automations":
     case "automation":
     case "automationRun":
     case "quickRun":

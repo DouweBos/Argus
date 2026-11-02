@@ -195,8 +195,6 @@ describe("paneFor", () => {
   it("keeps the project list and a project in the master pane", () => {
     expect(paneFor(HOME)).toBe("master");
     expect(paneFor({ name: "project", projectKey: "k" })).toBe("master");
-    expect(paneFor({ name: "inbox" })).toBe("master");
-    expect(paneFor({ name: "automations" })).toBe("master");
     expect(paneFor({ name: "proposal", proposalId: "p" })).toBe("detail");
     expect(paneFor({ name: "quickRun" })).toBe("detail");
   });
@@ -207,5 +205,7 @@ describe("paneFor", () => {
     );
     expect(paneFor({ name: "devices" })).toBe("detail");
     expect(paneFor({ name: "settings" })).toBe("detail");
+    expect(paneFor({ name: "inbox" })).toBe("detail");
+    expect(paneFor({ name: "automations" })).toBe("detail");
   });
 });

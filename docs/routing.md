@@ -297,10 +297,9 @@ it can:
   | `/automations/describe`                 | Describe an automation (web and iOS)                                                                                                  |
 
   Any other route opens its nearest parent, as on iOS, which today is Home.
-  From tablet width the project list (or the project an agent belongs to,
-  or the inbox or automations list a screen opened from) stays beside the
-  screen the URL names; browsing it while something is open
-  moves that pane only, and Close returns to it. Back from a screen a link
+  From tablet width the project list (or the project an agent belongs to)
+  stays beside the screen the URL names, the inbox and automations included;
+  browsing it while something is open moves that pane only, and Close returns to it. Back from a screen a link
   opened goes to its parent rather than out of the app.
 
   In the hosted app `?host=<hostId>` names the account computer, survives

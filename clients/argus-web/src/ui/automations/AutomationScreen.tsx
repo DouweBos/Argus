@@ -3,7 +3,10 @@
  * remembers, and every time it ran.
  */
 
-import type { RemoteAutomationDetail } from "@argus/remote-protocol";
+import type {
+  RemoteAutomation,
+  RemoteAutomationDetail,
+} from "@argus/remote-protocol";
 import { useCallback, useEffect, useState } from "react";
 import {
   automationProjectOptions,
@@ -33,6 +36,18 @@ import { useProjectsStore } from "../../stores/projects";
 import { useLiveRefresh } from "../useLiveRefresh";
 import { RunControl } from "./AutomationsScreen";
 import { INBOX_REFRESH_MS } from "./useInbox";
+
+/** "07:30 weekdays · next Nov 3, 07:30 (in 18h)", "… · paused", or "Manual". */
+function automationMeta(automation: RemoteAutomation): string {
+  if (automation.trigger_kind === "manual") {
+    return "Manual — runs when someone presses Run now";
+  }
+  const schedule = scheduleLabel(automation);
+
+  return automation.enabled
+    ? `${schedule} · next ${nextRunLabel(automation)}`
+    : `${schedule} · paused`;
+}
 
 export function AutomationScreen({ automationId }: { automationId: string }) {
   const ready = useConnectionStore((s) => s.connection === "ready");
@@ -178,11 +193,7 @@ export function AutomationScreen({ automationId }: { automationId: string }) {
             }
           />
         }
-        meta={
-          automation
-            ? `${scheduleLabel(automation)} · next ${nextRunLabel(automation)}`
-            : undefined
-        }
+        meta={automation ? automationMeta(automation) : undefined}
         missingAction={
           <Button size="sm" onClick={() => appNavigate({ name: "automations" })}>
             Back to automations

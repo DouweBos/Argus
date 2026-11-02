@@ -158,14 +158,17 @@ export function RunScreen({
     }
     store()
       .loadRun(runId)
-      .then(() => {
-        // Opening a report is reading it, on the computer too.
-        if (store().detailByRun[runId]?.run.unread_report) {
-          void store().markRunRead(runId);
-        }
-      })
       .catch(() => setMissing(true));
   }, [ready, runId, store]);
+
+  // Opening a report is reading it, on the computer too — including one
+  // that lands while the run is on screen.
+  const unread = detail?.run.unread_report ?? false;
+  useEffect(() => {
+    if (ready && unread) {
+      void store().markRunRead(runId);
+    }
+  }, [ready, unread, runId, store]);
 
   // A settled run's report never changes, so stop asking once it has.
   const poll = useCallback(

@@ -18,7 +18,7 @@ let lastMaster: Screen = HOME;
 
 const sessionOf = sessionOfScreen;
 
-/** The list an inbox or automations screen opened from, which sits beside it. */
+/** The list an inbox or automations screen opened from: where Back goes. */
 function listOf(screen: Screen): Screen | null {
   switch (screen.name) {
     case "proposal":
@@ -46,10 +46,6 @@ export function useMasterScreen(screen: Screen): Screen {
     lastMaster = screen;
 
     return screen;
-  }
-  const list = listOf(screen);
-  if (list) {
-    return list;
   }
   const sessionId = sessionOf(screen);
   const repoRoot = sessionId ? repoOfSession(sessionId) : null;

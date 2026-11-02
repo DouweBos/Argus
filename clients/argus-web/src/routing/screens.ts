@@ -58,8 +58,6 @@ export function paneFor(screen: Screen): Pane {
   switch (screen.name) {
     case "projects":
     case "project":
-    case "inbox":
-    case "automations":
       return "master";
     default:
       return "detail";

@@ -123,7 +123,7 @@ export function QuickRunView({
           <FormField helper="Blank uses the computer's default." label="Model">
             <Input
               mono
-              placeholder="claude-haiku-4-5"
+              placeholder="Default"
               value={model}
               onChange={(e) => setModel(e.target.value)}
             />
