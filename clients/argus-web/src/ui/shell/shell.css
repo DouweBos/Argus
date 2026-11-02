@@ -56,6 +56,18 @@
   padding: 0 16px 16px;
 }
 
+/* A screen that is only its empty state centres it in the window, as the Mac does. */
+.aw-window .aw-main > [data-empty-state]:only-child,
+.aw-window .aw-main > :only-child > [data-empty-state]:only-child {
+  margin: auto;
+}
+
+.aw-window .aw-main > :only-child:has(> [data-empty-state]:only-child) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
 /* ─── Session header: agent tabs, and the context card hanging from the right ─── */
 
 .aw-session-header {

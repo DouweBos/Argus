@@ -30,6 +30,7 @@ export function EmptyState({
   return (
     <div
       className={[styles.wrap, className].filter(Boolean).join(" ")}
+      data-empty-state=""
       {...rest}
     >
       {icon && <div className={styles.icon}>{icon}</div>}
