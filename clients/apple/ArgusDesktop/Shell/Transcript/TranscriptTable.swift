@@ -250,7 +250,12 @@ class TranscriptHoverCell: NSTableCellView {
   /// Tracking areas fire under whatever covers the row (the sidebar, the
   /// palette), so the tip and bar only show while the row is what's under the pointer.
   private func follow(_ event: NSEvent) {
-    guard window?.contentView?.superview?.hitTest(event.locationInWindow)?.isDescendant(of: self) == true else {
+    // The row spans the transcript; only its reading column counts as on it.
+    let column = TranscriptTextCell.textFrame(in: bounds, reserve: reserve)
+    let x = convert(event.locationInWindow, from: nil).x
+    guard (column.minX...column.maxX).contains(x),
+      window?.contentView?.superview?.hitTest(event.locationInWindow)?.isDescendant(of: self) == true
+    else {
       return leave()
     }
     if toolTip != tip { toolTip = tip }
