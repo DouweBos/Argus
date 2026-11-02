@@ -49,7 +49,6 @@ import {
   setHistoryFilters,
   useHistoryFilters,
 } from "../../../stores/gitUiStore";
-import { useDefaultPullStrategy } from "../../../stores/settingsStore";
 import {
   setGitSidebarWidth,
   toggleGitSidebarCollapsed,
@@ -78,6 +77,7 @@ import { ReflogView } from "./ReflogView";
 import { SubmodulesView } from "./SubmodulesView";
 import { GIT_SHORTCUTS } from "./shortcuts";
 import { useGitShortcuts } from "./useGitShortcuts";
+import { useRepoPullStrategy } from "./useRepoPullStrategy";
 
 export type SourceView =
   | "bisect"
@@ -225,7 +225,7 @@ export function GitView({
   const [remotes, setRemotes] = useState<GitRemoteRich[]>([]);
   /** Search query lifted from DiffViewer/ChangesToolbar so the unified toolbar can drive Working Copy file filtering. */
   const [searchQuery, setSearchQuery] = useState("");
-  const defaultPullStrategy = useDefaultPullStrategy();
+  const defaultPullStrategy = useRepoPullStrategy(sessionId);
 
   const { status, refresh: refreshStatus } = useGitObservation(sessionId);
 

@@ -30,23 +30,19 @@ import {
   addCustomEditor,
   hideSettingsDialog,
   removeCustomEditor,
-  setConventionalCommitsPicker,
   setDefaultLlmModel,
   setDefaultLlmRunner,
   setDefaultPermissionMode,
   setStartWorkspace,
-  setDefaultPullStrategy,
   setDiffView,
   setDiffWhitespace,
   setTelemetryModeSetting,
   setWorkingCopyView,
   updateCustomEditor,
-  useConventionalCommitsPicker,
   useCustomEditors,
   useDefaultLlm,
   useDefaultPermissionMode,
   useStartWorkspace,
-  useDefaultPullStrategy,
   useDiffView,
   useDiffWhitespace,
   useSettingsDialogOpen,
@@ -875,26 +871,15 @@ const DIFF_VIEWS: { label: string; value: DiffViewMode }[] = [
   { label: "Side-by-side", value: "split" },
 ];
 
-const PULL_STRATEGIES: {
-  label: string;
-  value: "ff-only" | "merge" | "rebase";
-}[] = [
-  { label: "Fast-forward only", value: "ff-only" },
-  { label: "Merge", value: "merge" },
-  { label: "Rebase", value: "rebase" },
-];
-
 function GitSection() {
   const workingCopyView = useWorkingCopyView();
   const diffView = useDiffView();
   const diffWhitespace = useDiffWhitespace();
-  const conventionalCommits = useConventionalCommitsPicker();
-  const pullStrategy = useDefaultPullStrategy();
 
   return (
     <SettingsScreenDetail>
       <SettingsScreenDetailHeader
-        description="Defaults for the git panel — working copy view, diff display, and pull strategy. The toolbar in each panel can still override these per session."
+        description="Defaults for the git panel — working copy view and diff display. The toolbar in each panel can still override these per session."
         title="Git"
       />
       <SettingsScreenDetailBody>
@@ -942,42 +927,6 @@ function GitSection() {
           <Toggle checked={diffWhitespace} onChange={setDiffWhitespace}>
             {diffWhitespace ? "On" : "Off"}
           </Toggle>
-        </SettingsScreenField>
-
-        <SettingsScreenField
-          label="Conventional Commits picker"
-          caption="Show a commit-type prefix picker (feat, fix, chore, …) in the commit composer."
-        >
-          <Toggle
-            checked={conventionalCommits}
-            onChange={setConventionalCommitsPicker}
-          >
-            {conventionalCommits ? "On" : "Off"}
-          </Toggle>
-        </SettingsScreenField>
-
-        <SettingsScreenField
-          label="Default pull strategy"
-          caption="Used when you pull from the project-scope dialog without picking a strategy."
-        >
-          <div className={styles.options}>
-            {PULL_STRATEGIES.map((s) => (
-              <label
-                key={s.value}
-                className={`${styles.option} ${pullStrategy === s.value ? styles.optionActive : ""}`}
-              >
-                <input
-                  checked={pullStrategy === s.value}
-                  className={styles.radio}
-                  name="pull-strategy"
-                  type="radio"
-                  value={s.value}
-                  onChange={() => setDefaultPullStrategy(s.value)}
-                />
-                <span>{s.label}</span>
-              </label>
-            ))}
-          </div>
         </SettingsScreenField>
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>

@@ -85,14 +85,10 @@ interface SettingsState {
   attachedRemoteHostIds: string[];
   /** Map of `rememberKey` → user opted out of the corresponding confirm dialog. */
   confirmPreferences: Record<string, boolean>;
-  /** Conventional Commits prefix picker on/off (Phase 2 W10). */
-  conventionalCommitsPicker: boolean;
   customEditors: CustomEditor[];
   /** App-level default LLM runner + model used when project/session don't specify one. */
   defaultLlm: DefaultLlm;
   defaultPermissionMode: PermissionMode;
-  /** Default strategy used by the project-scope pull dialog (Phase 6B P11). */
-  defaultPullStrategy: "ff-only" | "merge" | "rebase";
   diffView: DiffViewMode;
   diffWhitespace: boolean;
   /** Phase 3 K4 — collapse the git source sidebar (Working Copy / Branch / …). */
@@ -316,7 +312,6 @@ function load(): SettingsState {
         workingCopyView: parsed.workingCopyView === "tree" ? "tree" : "flat",
         diffView: parsed.diffView === "split" ? "split" : "unified",
         diffWhitespace: parsed.diffWhitespace === true,
-        conventionalCommitsPicker: parsed.conventionalCommitsPicker === true,
         gitSidebarCollapsed: parsed.gitSidebarCollapsed === true,
         gitSidebarWidth:
           typeof parsed.gitSidebarWidth === "number" &&
@@ -330,11 +325,6 @@ function load(): SettingsState {
           !Array.isArray(parsed.gitSidebarSectionsCollapsed)
             ? (parsed.gitSidebarSectionsCollapsed as Record<string, boolean>)
             : {},
-        defaultPullStrategy:
-          parsed.defaultPullStrategy === "rebase" ||
-          parsed.defaultPullStrategy === "ff-only"
-            ? parsed.defaultPullStrategy
-            : "merge",
         startWorkspace:
           parsed.startWorkspace === "current" ? "current" : "worktree",
         lastEffortByRunner: sanitizeLastEffortByRunner(
@@ -360,11 +350,9 @@ function load(): SettingsState {
     workingCopyView: "flat",
     diffView: "unified",
     diffWhitespace: false,
-    conventionalCommitsPicker: false,
     gitSidebarCollapsed: false,
     gitSidebarWidth: 0.18,
     gitSidebarSectionsCollapsed: {},
-    defaultPullStrategy: "merge",
     startWorkspace: "worktree",
     lastEffortByRunner: {},
     remoteHosts: [],
@@ -506,14 +494,6 @@ export const setDiffWhitespace = (on: boolean): void => {
   persist(store.getState());
 };
 
-export const useConventionalCommitsPicker = (): boolean =>
-  store((s) => s.conventionalCommitsPicker);
-
-export const setConventionalCommitsPicker = (on: boolean): void => {
-  store.setState({ conventionalCommitsPicker: on });
-  persist(store.getState());
-};
-
 // Phase 3 K4 — git source sidebar collapse state.
 
 export const useGitSidebarCollapsed = (): boolean =>
@@ -523,19 +503,6 @@ export const setGitSidebarCollapsed = (collapsed: boolean): void => {
   store.setState({ gitSidebarCollapsed: collapsed });
   persist(store.getState());
 };
-
-export const useDefaultPullStrategy = (): "ff-only" | "merge" | "rebase" =>
-  store((s) => s.defaultPullStrategy);
-
-export const setDefaultPullStrategy = (
-  strategy: "ff-only" | "merge" | "rebase",
-): void => {
-  store.setState({ defaultPullStrategy: strategy });
-  persist(store.getState());
-};
-
-export const getDefaultPullStrategy = (): "ff-only" | "merge" | "rebase" =>
-  store.getState().defaultPullStrategy;
 
 export const toggleGitSidebarCollapsed = (): void => {
   store.setState((s) => ({ gitSidebarCollapsed: !s.gitSidebarCollapsed }));

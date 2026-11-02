@@ -121,17 +121,6 @@
   flex: 1;
 }
 
-.conventionalPicker {
-  font-family: var(--font-ui);
-  font: var(--type-caption);
-  color: var(--text-primary);
-  background: var(--surface-2);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius-sm);
-  padding: var(--space-2) var(--space-3);
-  outline: none;
-}
-
 .rulerWarn {
   font: var(--type-eyebrow);
   color: var(--warning, var(--accent));

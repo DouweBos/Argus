@@ -20,10 +20,7 @@ import {
 } from "../../../lib/ipc";
 import { md5Hex } from "../../../lib/md5";
 import { useFocusCommitRequests } from "../../../stores/gitUiStore";
-import {
-  showSettingsDialog,
-  useConventionalCommitsPicker,
-} from "../../../stores/settingsStore";
+import { showSettingsDialog } from "../../../stores/settingsStore";
 import { useGitShortcuts } from "../GitView/useGitShortcuts";
 import { CommitComposer } from "./CommitComposer";
 import styles from "./CommitPanel.module.css";
@@ -79,16 +76,13 @@ export function CommitPanel({
   const [authorName, setAuthorName] = useState("");
   const [authorEmail, setAuthorEmail] = useState("");
   const [gpgSign, setGpgSign] = useState(false);
-  const [conventionalPrefix, setConventionalPrefix] = useState<string>("");
   const [rewordOpen, setRewordOpen] = useState(false);
-  const showConventionalPicker = useConventionalCommitsPicker();
   const [hasGithubRemote, setHasGithubRemote] = useState(false);
   const [issueNumber, setIssueNumber] = useState<string | null>(null);
   const [tipHash, setTipHash] = useState<string>("");
   /** Saved subject/body the user had typed before amend prefill, restored on toggle off. */
   const preAmendDraftRef = useRef<{
     body: string;
-    prefix: string;
     subject: string;
   } | null>(null);
 
@@ -221,9 +215,7 @@ export function CommitPanel({
       setIsCommitting(true);
       setCommitError(null);
       try {
-        let message = conventionalPrefix
-          ? `${conventionalPrefix}: ${commitSubject.trim()}`
-          : commitSubject.trim();
+        let message = commitSubject.trim();
         if (commitBody.trim()) {
           message += `\n\n${commitBody.trim()}`;
         }
@@ -235,10 +227,7 @@ export function CommitPanel({
         if (amend) {
           // Use the dedicated amend-tip command so backend safety checks
           // (merge-base, pushed) run consistently.
-          const subjectOnly = conventionalPrefix
-            ? `${conventionalPrefix}: ${commitSubject.trim()}`
-            : commitSubject.trim();
-          await gitAmendTip(sessionId, subjectOnly, commitBody.trim());
+          await gitAmendTip(sessionId, commitSubject.trim(), commitBody.trim());
         } else {
           await gitCommit(sessionId, message, false);
         }
@@ -290,7 +279,6 @@ export function CommitPanel({
       signOff,
       authorName,
       authorEmail,
-      conventionalPrefix,
       onCommitted,
     ],
   );
@@ -308,8 +296,7 @@ export function CommitPanel({
     commitBtnTitle = "Enter a commit subject";
   }
 
-  const subjectLength =
-    (conventionalPrefix ? conventionalPrefix.length : 0) + commitSubject.length;
+  const subjectLength = commitSubject.length;
   const subjectWarn = subjectLength > 50;
   const subjectError = subjectLength > 72;
 
@@ -336,25 +323,20 @@ export function CommitPanel({
       preAmendDraftRef.current = {
         subject: commitSubject,
         body: commitBody,
-        prefix: conventionalPrefix,
       };
-      // The composer's subject is the message minus any conventional prefix.
-      // Reset the prefix dropdown so the prefilled subject isn't double-prefixed.
-      setConventionalPrefix("");
       setCommitSubject(subj || "");
       setCommitBody(rest.join("\n").replace(/^\n+/, ""));
       setExpanded(true);
     } catch (err) {
       setCommitError(err instanceof Error ? err.message : String(err));
     }
-  }, [sessionId, commitSubject, commitBody, conventionalPrefix]);
+  }, [sessionId, commitSubject, commitBody]);
 
   const restorePreAmendDraft = useCallback(() => {
     const saved = preAmendDraftRef.current;
     if (saved) {
       setCommitSubject(saved.subject);
       setCommitBody(saved.body);
-      setConventionalPrefix(saved.prefix);
       preAmendDraftRef.current = null;
     }
   }, []);
@@ -406,21 +388,6 @@ export function CommitPanel({
     [sessionId],
   );
 
-  const CONVENTIONAL_PREFIXES = [
-    "",
-    "feat",
-    "fix",
-    "docs",
-    "style",
-    "refactor",
-    "perf",
-    "test",
-    "build",
-    "ci",
-    "chore",
-    "revert",
-  ];
-
   // Handle subject change — also track issue number hint.
   const handleSubjectChange = useCallback(
     (value: string) => {
@@ -436,20 +403,6 @@ export function CommitPanel({
   return (
     <div ref={panelRef} className={styles.commitPanel}>
       <div className={styles.subjectRow}>
-        {showConventionalPicker && (
-          <select
-            aria-label="Conventional Commits prefix"
-            className={styles.conventionalPicker}
-            value={conventionalPrefix}
-            onChange={(e) => setConventionalPrefix(e.target.value)}
-          >
-            {CONVENTIONAL_PREFIXES.map((p) => (
-              <option key={p || "none"} value={p}>
-                {p || "—"}
-              </option>
-            ))}
-          </select>
-        )}
         <CommitComposer
           subject={commitSubject}
           body={commitBody}

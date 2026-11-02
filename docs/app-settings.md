@@ -462,13 +462,15 @@ Defaults for the git panel. Each setting also has an inline toggle in
 the relevant toolbar — use the dialog when you want to set the
 default for every project on this machine.
 
-| Setting                         | Default   | Description                                                                                                   |
-| ------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------- |
-| **Working copy view**           | `flat`    | `flat` shows changed files as a list; `tree` groups them by directory.                                        |
-| **Diff layout**                 | `unified` | `unified` stacks removed/added lines; `split` shows them side-by-side.                                        |
-| **Ignore whitespace in diffs**  | `false`   | Hide pure-whitespace changes when comparing files.                                                            |
-| **Conventional Commits picker** | `false`   | Show a commit-type prefix picker (`feat`, `fix`, `chore`, …) in the commit composer.                          |
-| **Default pull strategy**       | `ff-only` | Used by the project-scope pull dialog when you don't pick a strategy. One of `ff-only`, `merge`, or `rebase`. |
+| Setting                        | Default   | Description                                                            |
+| ------------------------------ | --------- | ---------------------------------------------------------------------- |
+| **Working copy view**          | `flat`    | `flat` shows changed files as a list; `tree` groups them by directory. |
+| **Diff layout**                | `unified` | `unified` stacks removed/added lines; `split` shows them side-by-side. |
+| **Ignore whitespace in diffs** | `false`   | Hide pure-whitespace changes when comparing files.                     |
+
+The pull dialog starts on the repository's own `pull.rebase` / `pull.ff`
+git config (set it in the Mac app's Git settings), and merges when neither is
+set.
 
 A few git-panel preferences are intentionally _not_ in this dialog
 because they're pure layout state: the source-sidebar collapsed state
