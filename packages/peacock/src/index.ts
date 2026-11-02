@@ -107,6 +107,7 @@ export * from "./components/SlashCommandList/SlashCommandList";
 export * from "./components/SplitShell/SplitShell";
 export * from "./components/AppShell/AppShell";
 export * from "./components/HomeOverview/HomeOverview";
+export * from "./components/SettingsGroup/SettingsGroup";
 export * from "./components/AppSidebar/AppSidebar";
 export * from "./components/AppSidebar/AppSidebarRows";
 export * from "./components/AppToolbar/AppToolbar";

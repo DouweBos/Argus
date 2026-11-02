@@ -11,7 +11,9 @@ import {
   ColorThemePicker,
   Input,
   SegmentedControl,
-  SettingsScreenField,
+  SettingsGroup,
+  SettingsPageColumn,
+  SettingsRow,
 } from "@argus/peacock";
 import {
   notificationsSupported,
@@ -54,12 +56,11 @@ export function NamePage() {
   };
 
   return (
-    <div className="aw-settings">
-      <SettingsScreenField
-        label="Device name"
-        caption="Shown in Argus on your computer under paired devices."
-      >
-        <div className="aw-settings-inline">
+    <SettingsPageColumn>
+      <SettingsGroup title="This browser">
+        <SettingsRow
+          control={
+            <>
           <Input
             value={name}
             maxLength={60}
@@ -74,9 +75,13 @@ export function NamePage() {
           <Button variant="secondary" disabled={!dirty} onClick={save}>
             {saved ? "Saved" : "Save"}
           </Button>
-        </div>
-      </SettingsScreenField>
-    </div>
+            </>
+          }
+          description="Shown in Argus on your computer under paired devices."
+          title="Device name"
+        />
+      </SettingsGroup>
+    </SettingsPageColumn>
   );
 }
 
@@ -85,11 +90,11 @@ export function AppearancePage() {
   const colorTheme = useColorTheme();
 
   return (
-    <div className="aw-settings">
-      <SettingsScreenField
-        label="Colour scheme"
-        caption="Match your system, or keep this browser light or dark."
-      >
+    <SettingsPageColumn>
+      <SettingsGroup title="Appearance">
+        <SettingsRow
+          stacked
+          control={
         <ColorSchemePicker
           value={scheme}
           onChange={(next) => {
@@ -97,11 +102,13 @@ export function AppearancePage() {
             capture("web_appearance_changed", { appearance: next });
           }}
         />
-      </SettingsScreenField>
-      <SettingsScreenField
-        label="Colour theme"
-        caption="The accent used for buttons, links and selection."
-      >
+          }
+          description="Match your system, or keep this browser light or dark."
+          title="Colour scheme"
+        />
+        <SettingsRow
+          stacked
+          control={
         <ColorThemePicker
           value={colorTheme}
           onChange={(next) => {
@@ -109,8 +116,12 @@ export function AppearancePage() {
             capture("web_color_theme_changed", { theme: next });
           }}
         />
-      </SettingsScreenField>
-    </div>
+          }
+          description="The accent used for buttons, links and selection."
+          title="Colour theme"
+        />
+      </SettingsGroup>
+    </SettingsPageColumn>
   );
 }
 
@@ -157,13 +168,12 @@ export function AlertsPage() {
   };
 
   return (
-    <div className="aw-settings">
-      <SettingsScreenField
-        label="Notifications"
-        caption="Get alerted when an agent finishes or needs approval, even when you're on another screen."
-      >
-        <div className="aw-settings-inline">
-          <span className="aw-muted">{status}</span>
+    <SettingsPageColumn>
+      <SettingsGroup title="Alerts">
+        <SettingsRow
+          control={
+            <>
+              <span>{status}</span>
           <Button
             variant="secondary"
             disabled={
@@ -175,15 +185,16 @@ export function AlertsPage() {
           >
             Enable
           </Button>
-        </div>
-      </SettingsScreenField>
+            </>
+          }
+          description="Get alerted when an agent finishes or needs approval, even when you're on another screen."
+          title="Notifications"
+        />
 
       {/* Push is off in the hosted app: one origin serves every computer. */}
       {!account && (
-        <SettingsScreenField
-          label="Background push"
-          caption="Keep getting alerts after you close every Argus tab. Your computer encrypts and sends these itself — no Argus server sees them."
-        >
+          <SettingsRow
+            control={
           <SegmentedControl<"off" | "on">
             aria-label="Background push"
             value={pushEnabled ? "on" : "off"}
@@ -192,28 +203,34 @@ export function AlertsPage() {
               setPushEnabled(v === "on").catch(() => {});
             }}
           />
-          <span className="aw-muted">
+            }
+            description="Keep getting alerts after you close every Argus tab. Your computer encrypts and sends these itself — no Argus server sees them."
+            title="Background push"
+          >
+            <span className="aw-settings-note">
             {webPushSupported()
               ? PUSH_LABEL[pushState]
               : PUSH_LABEL.unavailable}
-          </span>
-        </SettingsScreenField>
-      )}
-    </div>
+            </span>
+          </SettingsRow>
+        )}
+      </SettingsGroup>
+    </SettingsPageColumn>
   );
 }
 
 export function PrivacyPage() {
   return (
-    <div className="aw-settings">
-      {telemetryConfigured() ? (
-        <PrivacyField />
-      ) : (
-        <SettingsScreenField
-          label="Usage data"
-          caption="This build of Argus has no analytics key, so it sends nothing at all."
-        />
-      )}
-    </div>
+    <SettingsPageColumn>
+      <SettingsGroup title="Privacy">
+        {telemetryConfigured() ? (
+          <div className="aw-settings-card-body">
+            <PrivacyField />
+          </div>
+        ) : (
+          <SettingsRow description="This build of Argus has no analytics key, so it sends nothing at all." title="Usage data" />
+        )}
+      </SettingsGroup>
+    </SettingsPageColumn>
   );
 }

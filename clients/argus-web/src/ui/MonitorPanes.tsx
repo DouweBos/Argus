@@ -32,7 +32,7 @@ import {
   LazySessionTool,
   LazyShipScreen,
 } from "./SessionToolActions";
-import { Settings, SettingsPageScreen } from "./Settings";
+import { SettingsSplit } from "./settings/SettingsSplit";
 import { UsageView } from "./UsageView";
 import { SavedChat } from "./start/SavedChat";
 import { SessionHome } from "./start/SessionHome";
@@ -93,9 +93,9 @@ export function ScreenBody({ screen }: { screen: Screen }) {
         <DeviceRoute platform={screen.platform} deviceKey={screen.deviceKey} />
       );
     case "settings":
-      return <Settings />;
+      return <SettingsSplit page={null} />;
     case "settingsPage":
-      return <SettingsPageScreen page={screen.page} />;
+      return <SettingsSplit page={screen.page} />;
     case "usage":
       return <UsageView range={screen.range} tab={screen.tab} />;
     case "notifications":

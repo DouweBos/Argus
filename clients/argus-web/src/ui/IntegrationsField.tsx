@@ -1,7 +1,10 @@
 /** Settings: which integrations the computer has connected, and as whom. */
 
 import { useCallback, useEffect, useMemo } from "react";
-import { IntegrationStatusList, SettingsScreenField } from "@argus/peacock";
+import {
+  IntegrationStatusList,
+  SettingsGroup,
+} from "@argus/peacock";
 import { integrationView } from "@argus/client-core";
 import { useConnectionStore } from "../stores/connection";
 import { useIntegrationsStore } from "../stores/integrations";
@@ -34,15 +37,17 @@ export function IntegrationsField() {
   }
 
   return (
-    <SettingsScreenField
-      label="Integrations"
-      caption="Connect or disconnect them in Argus on the computer."
+    <SettingsGroup
+      footer="Connect or disconnect them in Argus on the computer."
+      title="Integrations"
     >
-      <IntegrationStatusList
+      <div className="aw-settings-card-body">
+        <IntegrationStatusList
         error={load.error}
         integrations={load.loaded || rows.length > 0 ? rows : null}
         onRetry={() => refresh(false)}
-      />
-    </SettingsScreenField>
+        />
+      </div>
+    </SettingsGroup>
   );
 }

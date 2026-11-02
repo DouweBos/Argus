@@ -1,0 +1,103 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  width: 100%;
+  max-width: 720px;
+  padding: 24px 0;
+  font-family: var(--font-ui);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+.title {
+  flex: 1;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.accessory {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--chrome-hairline);
+  border-radius: var(--border-radius);
+  background: var(--chrome-surface);
+  overflow: hidden;
+}
+
+.footer {
+  margin: 0;
+  padding: 0 12px;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 11px 14px;
+}
+
+.row + .row {
+  border-top: 1px solid var(--chrome-hairline);
+}
+
+.inline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.label {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 160px;
+}
+
+.rowTitle {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.description {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.control {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.stackedControl {
+  width: 100%;
+}
