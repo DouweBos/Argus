@@ -31,11 +31,14 @@ extension TranscriptTableController {
   }
 
   private func layOut(_ cell: TranscriptCell, width: CGFloat, height: CGFloat) -> CGFloat? {
-    measuring += 1
-    defer { measuring -= 1 }
+    cell.measuring = true
+    defer { cell.measuring = false }
     cell.frame.size = NSSize(width: width, height: max(height, 1))
     cell.layoutSubtreeIfNeeded()
-    return cell.laidOutHeight
+    // Only a size laid out at this width; anything else is from before a resize.
+    guard let size = cell.laidOutSize, TranscriptRowHeights.widthKey(size.width) == TranscriptRowHeights.widthKey(width)
+    else { return nil }
+    return size.height
   }
 
   #if DEBUG

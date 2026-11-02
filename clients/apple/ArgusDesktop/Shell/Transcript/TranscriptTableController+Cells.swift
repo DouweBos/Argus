@@ -33,9 +33,11 @@ extension TranscriptTableController {
     let revision = revision(id)
     let root = TranscriptRow.root(
       row(index), id: id, agentKey: agentKey, model: model, selection: selection, environment: environment,
-      onHeight: { [weak self, weak cell] height in
-        cell?.laidOutHeight = height
-        self?.rowLaidOut(id, revision: revision, height: height)
+      onLayout: { [weak self, weak cell] size in
+        // A recycled cell may hear the row it showed before.
+        guard let cell, cell.rowId == id, cell.revision == revision else { return }
+        cell.laidOutSize = size
+        if !cell.measuring { self?.rowLaidOut(id, revision: revision, size: size) }
       })
     cell.show(root, id: id, revision: revision, environmentKey: environmentKey)
     cell.reserve = reserve

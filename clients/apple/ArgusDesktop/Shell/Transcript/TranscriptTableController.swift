@@ -23,8 +23,6 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
   let staging = NSView(frame: NSRect(x: -100_000, y: 0, width: 1, height: 1))
   var prepared = PreparedCells()
   var prefetchLink: CADisplayLink?
-  /// Hosted rows laying out to be measured, whose heights `measure` stores itself.
-  var measuring = 0
   /// Which way the reader last scrolled; prefetch looks further that way.
   var scrollingUp = true
   var lastHostedBuild: CFTimeInterval = 0
@@ -332,20 +330,23 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
   /// A hosted row laid out at a height the table doesn't have: it resized
   /// itself, or was measured before an image or a form arrived. Applied once
   /// this layout pass is over, all together.
-  func rowLaidOut(_ id: String, revision: Int, height: CGFloat) {
-    guard measuring == 0, revision == self.revision(id), height.isFinite, height > 0 else { return }
-    let height = ceil(height)
+  func rowLaidOut(_ id: String, revision: Int, size: CGSize) {
+    // At another width it's mid-resize, and measured again once that settles.
+    guard revision == self.revision(id), TranscriptRowHeights.widthKey(size.width) == TranscriptRowHeights.widthKey(width),
+      size.height.isFinite, size.height > 0
+    else { return }
+    let height = ceil(size.height)
     guard heights.reported[id].map({ abs($0 - height) > 0.5 }) ?? false else { return }
     let first = laidOut.isEmpty
-    laidOut[id] = height
+    laidOut[id] = (revision, height)
     guard first else { return }
     DispatchQueue.main.async { [weak self] in self?.applyLaidOut() }
   }
 
-  private var laidOut: [String: CGFloat] = [:]
+  private var laidOut: [String: (revision: Int, height: CGFloat)] = [:]
 
   private func applyLaidOut() {
-    let pending = laidOut
+    var pending = laidOut
     laidOut = [:]
     let width = width
     let visible = scrollView.contentView.bounds
@@ -353,10 +354,12 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     var moved = IndexSet()
     for index in band.location..<(band.location + band.length) {
       let id = id(index)
-      guard let height = pending[id] else { continue }
-      heights.store(id, revision: revision(id), width: width, height: height)
+      guard let laid = pending.removeValue(forKey: id), laid.revision == revision(id) else { continue }
+      heights.store(id, revision: laid.revision, width: width, height: laid.height)
       moved.insert(index)
     }
+    // Further off, measured again as they come near rather than kept at a stale height.
+    for id in pending.keys { heights.forget(id) }
     if !moved.isEmpty { keepingPlace { note(moved) } }
   }
 

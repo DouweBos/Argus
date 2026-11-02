@@ -25,17 +25,16 @@ enum TranscriptRow {
 
   /// A hosting view's root: the column, the pane's environment (AppKit hosting
   /// doesn't inherit it) and an identity, so a recycled view keeps no stale state.
-  /// `onHeight` hears a row that resizes itself (an image landing, a card opening).
+  /// `onLayout` hears every size the row lays out at, during that layout pass:
+  /// `onGeometryChange` reports a turn later, by when the cell may show another row.
   @MainActor
   static func root(
     _ row: TranscriptRow, id: String?, agentKey: String, model: TranscriptModel, selection: TranscriptSelection,
     environment: EnvironmentValues,
-    onHeight: ((CGFloat) -> Void)? = nil
+    onLayout: (@MainActor (CGSize) -> Void)? = nil
   ) -> AnyView {
-    let laidOut = content(row, agentKey: agentKey)
-      .readingColumn()
+    let laidOut = LaidOutSize(onLayout: onLayout) { content(row, agentKey: agentKey).readingColumn() }
       .fixedSize(horizontal: false, vertical: true)
-      .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { onHeight?($0) }
       // A recycled row swaps in new content; nothing in it may animate that in.
       .transaction { if row.isContent { $0.disablesAnimations = true; $0.animation = nil } }
     // No identity for measuring: the sizer keeps no state, and diffing one row
@@ -81,6 +80,22 @@ extension TranscriptRow {
     case .segment, .work: true
     case .top, .footer: false
     }
+  }
+}
+
+/// Passes its content through, telling `onLayout` the size it was placed at.
+private struct LaidOutSize: SwiftUI.Layout {
+  let onLayout: (@MainActor (CGSize) -> Void)?
+
+  func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+    subviews.first?.sizeThatFits(proposal) ?? .zero
+  }
+
+  func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+    subviews.first?.place(at: bounds.origin, anchor: .topLeading, proposal: ProposedViewSize(bounds.size))
+    guard let onLayout else { return }
+    let size = bounds.size
+    MainActor.assumeIsolated { onLayout(size) }
   }
 }
 
