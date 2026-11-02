@@ -103,9 +103,19 @@ export function reportError(
 }
 
 /** Route every failed request into the log. Call once at startup. */
+/**
+ * An integration the computer hasn't connected: the screen that asked says so
+ * itself, so it isn't a warning to collect.
+ */
+export function isIntegrationNotConnected(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+
+  return /\b(figma|linear)\b.*\b(isn.t|not) connected\b/i.test(message);
+}
+
 export function installNotifications(): void {
   setRequestFailureSink((method, error, background) => {
-    if (QUIET_METHODS.has(method)) {
+    if (QUIET_METHODS.has(method) || isIntegrationNotConnected(error)) {
       return;
     }
     reportError(error, scopeOf(method), { background });
