@@ -9,6 +9,7 @@ import SwiftUI
 public struct RevisePlaybookSheet: View {
   @Environment(AutomationsStore.self) private var store
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.theme) private var theme
 
   let playbook: String
   let name: String
@@ -19,8 +20,20 @@ public struct RevisePlaybookSheet: View {
   @State private var revising = false
   @FocusState private var focused: Bool
 
+  private static let title = "Rewrite the Playbook"
+  private static let placeholder = "Check for a merged PR before calling a branch unshipped."
+  private static let explanation = "The whole playbook is rewritten around this; the rest is kept."
+
   private var canRevise: Bool {
     !instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !revising
+  }
+
+  private var canApply: Bool {
+    !revising && !(revised?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+  }
+
+  private var revisedBinding: Binding<String> {
+    Binding(get: { revised ?? "" }, set: { revised = $0 })
   }
 
   public init(playbook: String, name: String, onApply: @escaping (String) -> Void) {
@@ -29,56 +42,13 @@ public struct RevisePlaybookSheet: View {
     self.onApply = onApply
   }
 
-  public var body: some View {
-    NavigationStack {
-      Screen {
-        if let error = store.error {
-          Banner(text: error, tone: .danger)
-        }
-        Field(
-          label: "WHAT SHOULD CHANGE?",
-          caption: "The whole playbook is rewritten around this; the rest is kept."
-        ) {
-          ThemedTextField(
-            placeholder: "Check for a merged PR before calling a branch unshipped.",
-            text: $instruction, multiline: true, lines: 3...8
-          )
-          .focused($focused)
-          Btn(
-            label: revising ? "Rewriting…" : (revised == nil ? "Rewrite" : "Rewrite again"),
-            tone: .secondary, small: true
-          ) { revise() }
-            .disabled(!canRevise)
-        }
-
-        if let text = revised {
-          Field(label: "Revised playbook", caption: "Edit it here if you want.") {
-            ThemedTextField(
-              placeholder: "Playbook",
-              text: Binding(get: { text }, set: { revised = $0 }),
-              multiline: true, lines: 8...24, mono: true)
-          }
-        }
-      }
-      .navigationTitle("Rewrite the Playbook")
-      .inlineNavigationTitle()
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { dismiss() }
-        }
-        ToolbarItem(placement: .confirmationAction) {
-          Button("Apply") {
-            if let revised { onApply(revised) }
-            dismiss()
-          }
-          .disabled(revised?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
-        }
-      }
-      .task { focused = true }
-    }
+  private func apply() {
+    if let revised { onApply(revised) }
+    dismiss()
   }
 
   private func revise() {
+    guard canRevise else { return }
     revising = true
     Task {
       let result = await store.revisePlaybook(
@@ -88,4 +58,98 @@ public struct RevisePlaybookSheet: View {
       revised = result
     }
   }
+
+  // MARK: - Layout
+
+  #if os(macOS)
+    public var body: some View {
+      VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 4) {
+          Text(Self.title).font(.scaled(.headline))
+          MutedText("Say what should change; Claude rewrites the playbook around it.")
+        }
+        VStack(alignment: .leading, spacing: 6) {
+          ThemedTextField(placeholder: Self.placeholder, text: $instruction, multiline: true, lines: 3...6)
+            .focused($focused)
+          Text("Nothing is saved until you save the automation.")
+            .font(.scaled(size: 12)).foregroundStyle(theme.textMuted)
+        }
+        if revised != nil {
+          VStack(alignment: .leading, spacing: 6) {
+            Text("Revised playbook").font(.scaled(size: 12, weight: .medium)).foregroundStyle(theme.textMuted)
+            ThemedTextField(placeholder: "Playbook", text: revisedBinding, multiline: true, lines: 10...18, mono: true)
+            Text("Edit it here if you want; applying replaces the playbook in the editor.")
+              .font(.scaled(size: 12)).foregroundStyle(theme.textMuted)
+          }
+        }
+        if let error = store.error {
+          Text(error).font(.scaled(size: 12)).foregroundStyle(theme.error).textSelection(.enabled)
+        }
+        footer
+      }
+      .padding(20)
+      .frame(width: 560)
+      .fixedSize(horizontal: false, vertical: true)
+      .task { focused = true }
+    }
+
+    private var footer: some View {
+      HStack(spacing: 8) {
+        if revising {
+          ProgressView().controlSize(.small)
+          MutedText("Rewriting the playbook…")
+        }
+        Spacer()
+        Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+        if revised == nil {
+          Button(revising ? "Rewriting…" : "Rewrite") { revise() }
+            .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.return, modifiers: .command)
+            .disabled(!canRevise)
+        } else {
+          Button("Rewrite Again") { revise() }.disabled(!canRevise)
+          Button("Apply") { apply() }
+            .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.return, modifiers: .command)
+            .disabled(!canApply)
+        }
+      }
+    }
+  #else
+    public var body: some View {
+      NavigationStack {
+        Screen {
+          if let error = store.error {
+            Banner(text: error, tone: .danger)
+          }
+          Field(label: "WHAT SHOULD CHANGE?", caption: Self.explanation) {
+            ThemedTextField(placeholder: Self.placeholder, text: $instruction, multiline: true, lines: 3...8)
+              .focused($focused)
+            Btn(
+              label: revising ? "Rewriting…" : (revised == nil ? "Rewrite" : "Rewrite again"),
+              tone: .secondary, small: true
+            ) { revise() }
+              .disabled(!canRevise)
+          }
+
+          if revised != nil {
+            Field(label: "Revised playbook", caption: "Edit it here if you want.") {
+              ThemedTextField(placeholder: "Playbook", text: revisedBinding, multiline: true, lines: 8...24, mono: true)
+            }
+          }
+        }
+        .navigationTitle(Self.title)
+        .inlineNavigationTitle()
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") { dismiss() }
+          }
+          ToolbarItem(placement: .confirmationAction) {
+            Button("Apply") { apply() }.disabled(!canApply)
+          }
+        }
+        .task { focused = true }
+      }
+    }
+  #endif
 }

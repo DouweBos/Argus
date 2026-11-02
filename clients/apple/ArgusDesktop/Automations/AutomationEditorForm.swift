@@ -124,7 +124,6 @@ struct AutomationEditorForm: View {
     }
     .sheet(isPresented: $revising) {
       RevisePlaybookSheet(playbook: draft.playbook, name: draft.name) { draft.playbook = $0 }
-        .frame(minWidth: 560, minHeight: 480)
     }
   }
 
