@@ -247,6 +247,27 @@ button {
   gap: 2px;
 }
 
+/* Session home — the start composer, the session's agents, its saved chats. */
+.aw-session-home {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px;
+}
+
+/* A saved chat's Resume / Pin, above the transcript. */
+.aw-chat-actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px 20px 12px;
+}
+
+/* A header toggle that's on (a pinned agent). */
+.aw-topbar .aw-action-on,
+.aw-action-on.aw-action-on {
+  color: var(--accent);
+}
+
 /* Settings screen — fields stacked with breathing room. */
 .aw-settings {
   display: flex;

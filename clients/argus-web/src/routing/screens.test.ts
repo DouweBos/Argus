@@ -24,8 +24,12 @@ describe("screenFromPath", () => {
       { name: "device", platform: "android", deviceKey: "avd:Pixel_9" },
     ],
     ["/sessions/s1/agents", { name: "session", sessionId: "s1" }],
-    // The session home is gone; old links land on its agents.
-    ["/sessions/s1", { name: "session", sessionId: "s1" }],
+    ["/sessions/s1", { name: "sessionHome", sessionId: "s1" }],
+    ["/sessions/s1/home", { name: "sessionHome", sessionId: "s1" }],
+    [
+      "/sessions/s1/chats/h1",
+      { name: "chat", sessionId: "s1", historyId: "h1" },
+    ],
     [
       "/sessions/s1/agents/a1",
       { name: "agent", sessionId: "s1", agentId: "a1" },
@@ -73,6 +77,8 @@ describe("pathForScreen", () => {
     "/devices/ios/ABC-123",
     "/sessions/s1/agents",
     "/sessions/s1/agents/a1",
+    "/sessions/s1",
+    "/sessions/s1/chats/h1",
     "/sessions/s1/git/working",
     "/sessions/s1/git/branch",
     "/sessions/s1/code/quick-open",

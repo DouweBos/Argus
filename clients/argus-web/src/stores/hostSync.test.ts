@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Transport } from "@argus/remote-client";
-import type { RemoteAgentStatus, RemoteMessage } from "../lib/protocol";
+import type {
+  RemoteAgentStatus,
+  RemoteMessage,
+  RemoteSession,
+} from "../lib/protocol";
 import { useAgentsStore } from "./agents";
 import { useConnectionStore } from "./connection";
 import {
@@ -9,7 +13,7 @@ import {
   resyncAfterReconnect,
   routeEvent,
 } from "./hostSync";
-import { useProjectsStore } from "./projects";
+import { setViewingSession, useProjectsStore } from "./projects";
 import { usePromptsStore } from "./prompts";
 import { useTranscriptsStore } from "./transcripts";
 
@@ -276,5 +280,75 @@ describe("background refreshes", () => {
     expect(useProjectsStore.getState().projectsLoad.error).toBe(
       "Project store is locked",
     );
+  });
+});
+
+describe("live list updates", () => {
+  it("reloads the lists of the repo a session changed in, and only held ones", async () => {
+    const { calls } = fakeTransport({
+      "sessions.list": () => ({ sessions: [] }),
+      "agents.list": () => ({ agents: [] }),
+      "agents.stopped": () => ({ agents: [] }),
+    });
+    useProjectsStore.setState({
+      sessionsByRepo: { "/r": [], "/other": [] },
+      agentsByRepo: { "/r": [] },
+    });
+
+    routeEvent(event("sessions.changed", { repo_root: "/r" }));
+    routeEvent(event("sessions.changed", { repo_root: "/never-listed" }));
+    await Promise.resolve();
+
+    expect(calls.map(([m, p]) => `${m} ${String(p.repo_root)}`)).toEqual([
+      "sessions.list /r",
+      "agents.list /r",
+    ]);
+  });
+
+  it("reloads everything held when the computer can't say which repo", async () => {
+    const { calls } = fakeTransport({
+      "sessions.list": () => ({ sessions: [] }),
+    });
+    useProjectsStore.setState({ sessionsByRepo: { "/a": [], "/b": [] } });
+
+    routeEvent(event("sessions.changed", { repo_root: null }));
+    await Promise.resolve();
+
+    expect(calls.map(([, p]) => p.repo_root)).toEqual(["/a", "/b"]);
+  });
+
+  it("refetches the projects when one opens or closes", async () => {
+    const { calls } = fakeTransport({
+      "projects.list": () => ({ projects: [] }),
+    });
+
+    routeEvent(event("projects.changed", {}));
+    await Promise.resolve();
+
+    expect(calls.map(([m]) => m)).toEqual(["projects.list"]);
+  });
+
+  it("adds a new agent to its project's list", () => {
+    useProjectsStore.setState({
+      sessionsByRepo: { "/r": [{ id: "s1" } as RemoteSession] },
+      agentsByRepo: { "/r": [] },
+    });
+
+    routeEvent(event("agent.status", agent("a9")));
+
+    expect(
+      useProjectsStore.getState().agentsByRepo["/r"].map((a) => a.agent_id),
+    ).toEqual(["a9"]);
+  });
+
+  it("tells a fresh channel which session is on screen", async () => {
+    const { calls } = fakeTransport({ "sessions.viewing": () => ({}) });
+    setViewingSession("s1");
+    calls.length = 0;
+
+    resyncAfterReconnect();
+    await Promise.resolve();
+
+    expect(calls).toContainEqual(["sessions.viewing", { session_id: "s1" }]);
   });
 });

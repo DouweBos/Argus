@@ -17,7 +17,7 @@ import {
 } from "@argus/peacock";
 import type { RemoteAgentStatus } from "../lib/protocol";
 import type { AgentRef } from "../routing/open";
-import { useAgentsStore } from "../stores/agents";
+import { appNavigate } from "../routing/router";
 import { useConnectionStore } from "../stores/connection";
 import { useProjectsStore } from "../stores/projects";
 import {
@@ -26,7 +26,7 @@ import {
   mapAgentStatus,
 } from "./agentStatus";
 import { NewSessionForm, SessionGroup } from "./SessionViews";
-import { useLiveRefresh } from "./useLiveRefresh";
+import { PUSHED_LIST_REFRESH_MS, useLiveRefresh } from "./useLiveRefresh";
 
 function Loading({ label }: { label: string }) {
   return (
@@ -102,7 +102,7 @@ export function Projects({
     refreshProjects({ background: true }).catch(() => {});
     loadRecentAgents().catch(() => {});
   }, [refreshProjects, loadRecentAgents]);
-  useLiveRefresh(connection === "ready", refresh);
+  useLiveRefresh(connection === "ready", refresh, PUSHED_LIST_REFRESH_MS);
 
   const phase = loadPhase(load, projects.length === 0);
   if (phase.kind === "loading") {
@@ -173,22 +173,18 @@ export function Project({
   const loadSessions = useProjectsStore((s) => s.loadSessions);
   const loadRecentAgents = useProjectsStore((s) => s.loadRecentAgents);
   const hasControl = useConnectionStore((s) => s.hasControl());
-  const spawnAgent = useAgentsStore((s) => s.spawnAgent);
 
   const refresh = useCallback(() => {
     loadAgents(repoRoot).catch(() => {});
     loadSessions(repoRoot).catch(() => {});
     loadRecentAgents().catch(() => {});
   }, [loadAgents, loadSessions, loadRecentAgents, repoRoot]);
-  useLiveRefresh(connection === "ready", refresh);
+  useLiveRefresh(connection === "ready", refresh, PUSHED_LIST_REFRESH_MS);
 
+  // A new agent starts from its session's composer, where its task and workspace are picked.
   const spawn = useCallback(
-    (sessionId: string) => {
-      spawnAgent(sessionId)
-        .then((a) => onOpenAgent(a))
-        .catch(() => {});
-    },
-    [spawnAgent, onOpenAgent],
+    (sessionId: string) => appNavigate({ name: "sessionHome", sessionId }),
+    [],
   );
 
   if (agents === undefined) {

@@ -38,7 +38,7 @@ import { useAgentsStore } from "../stores/agents";
 import { useConnectionStore } from "../stores/connection";
 import { useDevicesStore } from "../stores/devices";
 import { useHuddleStore } from "../stores/huddle";
-import { AgentTranscript } from "./AgentTranscript";
+import { AgentTranscript } from "./transcript/AgentTranscript";
 import { ChatInput } from "./ChatInput";
 import { ConnectionBadge } from "./ConnectionBadge";
 import { DeviceScreen } from "./DeviceScreen";
@@ -243,7 +243,9 @@ function HuddleRoom({ view }: { view: HuddleView }) {
       >
         <div className="aw-pane">
           <div className="aw-main">
-            {pane === "agent" && <AgentTranscript agentId={agentId} />}
+            {pane === "agent" && (
+              <AgentTranscript agentId={agentId} messageMenu={false} />
+            )}
             {pane === "chat" && (
               <RoomChat view={view} onSend={sayInHuddle} />
             )}

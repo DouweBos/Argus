@@ -182,12 +182,23 @@ export const useProjectsStore = create<ProjectsState>()((set, get) => ({
 export function receiveListedAgentStatus(agent: RemoteAgentStatus): void {
   useProjectsStore.setState((s) => {
     const agentsByRepo = { ...s.agentsByRepo };
+    let listed = false;
     for (const [repo, list] of Object.entries(agentsByRepo)) {
       if (list.some((x) => x.agent_id === agent.agent_id)) {
+        listed = true;
         agentsByRepo[repo] = list.map((x) =>
           x.agent_id === agent.agent_id ? agent : x,
         );
       }
+    }
+    // A new agent lands in its project's list without waiting for the next poll.
+    const repo = listed
+      ? undefined
+      : Object.entries(s.sessionsByRepo).find(([, sessions]) =>
+          sessions.some((x) => x.id === agent.session_id),
+        )?.[0];
+    if (repo && agentsByRepo[repo]) {
+      agentsByRepo[repo] = [...agentsByRepo[repo], agent];
     }
     const recentAgents = s.recentAgents.some(
       (x) => x.agent_id === agent.agent_id,
@@ -206,6 +217,71 @@ export function projectFor(repoRoot: string): RemoteProject | undefined {
     .projects.find((p) => p.repo_root === repoRoot);
 }
 
+/**
+ * `sessions.changed`: a named repo reloads just its lists; null means the
+ * computer couldn't say which, so every list held is refetched. A repo never
+ * listed has nothing to refresh.
+ */
+export function receiveSessionsChanged(repoRoot: string | null): void {
+  const { sessionsByRepo, agentsByRepo, loadSessions, loadAgents } =
+    useProjectsStore.getState();
+  const repos = repoRoot
+    ? [repoRoot]
+    : [...new Set([...Object.keys(sessionsByRepo), ...Object.keys(agentsByRepo)])];
+  for (const repo of repos) {
+    if (sessionsByRepo[repo] !== undefined) {
+      loadSessions(repo).catch(() => {});
+    }
+    if (agentsByRepo[repo] !== undefined) {
+      loadAgents(repo).catch(() => {});
+    }
+  }
+}
+
+/** `projects.changed`: a project was opened or closed on the computer. */
+export function receiveProjectsChanged(): void {
+  useProjectsStore
+    .getState()
+    .refreshProjects({ background: true })
+    .catch(() => {});
+}
+
+/** The session on screen, so the host keeps a warm agent there; resent on every `ready`. */
+let viewing: { sessionId: string | null; runnerId: string | null } = {
+  sessionId: null,
+  runnerId: null,
+};
+
+function sendViewing(): void {
+  const t = currentTransport();
+  if (!t) {
+    return;
+  }
+  request(t, "sessions.viewing", {
+    session_id: viewing.sessionId,
+    ...(viewing.runnerId ? { runner_id: viewing.runnerId } : {}),
+  }).catch(() => {});
+}
+
+export function setViewingSession(
+  sessionId: string | null,
+  runnerId: string | null = null,
+): void {
+  if (viewing.sessionId === sessionId && viewing.runnerId === runnerId) {
+    return;
+  }
+  viewing = { sessionId, runnerId };
+  sendViewing();
+}
+
+/** A fresh channel: the host forgot what this tab was looking at. */
+export function resendViewing(): void {
+  if (viewing.sessionId) {
+    sendViewing();
+  }
+}
+
 export function resetProjects(): void {
+  viewing = { sessionId: null, runnerId: null };
   useProjectsStore.setState(EMPTY);
 }

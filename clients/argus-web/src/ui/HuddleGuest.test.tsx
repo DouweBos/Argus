@@ -9,7 +9,7 @@ let huddle: HuddleView | null = null;
 
 let wide = false;
 vi.mock("./useIsWide", () => ({ useIsWide: () => wide }));
-vi.mock("./AgentTranscript", () => ({ AgentTranscript: () => null }));
+vi.mock("./transcript/AgentTranscript", () => ({ AgentTranscript: () => null }));
 vi.mock("./ChatInput", () => ({ ChatInput: () => null }));
 
 /** One state object behind every store the guest view reads. */

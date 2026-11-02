@@ -29,7 +29,16 @@ import {
   resyncTerminals,
 } from "./terminals";
 import { receiveHuddleChat, receiveHuddleState } from "./huddle";
-import { receiveListedAgentStatus, resetProjects } from "./projects";
+import { resetAgentExtras, useAgentExtrasStore } from "./agentExtras";
+import { resetChats, resyncStoppedChats } from "./chats";
+import {
+  receiveListedAgentStatus,
+  receiveProjectsChanged,
+  receiveSessionsChanged,
+  resendViewing,
+  resetProjects,
+} from "./projects";
+import { resetStart } from "./start";
 import {
   cancelPrompt,
   flushPendingDecisions,
@@ -72,7 +81,16 @@ const HANDLERS: Partial<Record<RemoteEventType, Handler>> = {
     const agent = payload<"agent.status">(ev);
     receiveListedAgentStatus(agent);
     receiveAgentStatus(agent);
+    if (agent.limit_stalled === false) {
+      useAgentExtrasStore.getState().clearHandoff(agent.agent_id);
+    }
   },
+  "sessions.changed": (ev) => {
+    receiveSessionsChanged(payload<"sessions.changed">(ev).repo_root);
+    // A stopped agent becomes a saved chat; the session's history moves with it.
+    resyncStoppedChats();
+  },
+  "projects.changed": () => receiveProjectsChanged(),
   "agent.queue": (ev) => {
     if (ev.agent_id) {
       receiveQueue(ev.agent_id, payload<"agent.queue">(ev).messages);
@@ -114,6 +132,9 @@ export function routeEvent(event: EventEnvelope): void {
 export function resetHostStores(): void {
   resetProjects();
   resetAgents();
+  resetAgentExtras();
+  resetChats();
+  resetStart();
   resetTranscripts();
   resetPrompts();
   resetGit();
@@ -136,6 +157,7 @@ export function resyncAfterReconnect(): void {
   resyncQueues();
   resyncAgentStatuses();
   resyncTerminals();
+  resendViewing();
 }
 
 /** Wire the domain stores to the connection. Call once, before `init()`. */

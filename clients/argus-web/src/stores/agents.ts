@@ -5,15 +5,24 @@
  */
 
 import { create } from "zustand";
+import { resendText } from "@argus/client-core";
 import type {
   RemoteAgentCapabilities,
   RemoteAgentStatus,
   RemoteImageAttachment,
+  RemoteMessage,
   RemotePermissionMode,
   RemoteQueuedMessage,
 } from "../lib/protocol";
 import { request } from "../lib/request";
 import { currentTransport } from "./connection";
+import { receiveListedAgentStatus } from "./projects";
+
+export interface ForkRequest {
+  into: "agent" | "session";
+  description: string;
+  branch: string;
+}
 
 interface AgentsState {
   /** Latest known status per agent (drives the input's Send/Stop + pills). */
@@ -53,9 +62,29 @@ interface AgentsState {
   setEffort: (agentId: string, level: string | null) => Promise<void>;
   spawnAgent: (
     sessionId: string,
-    opts?: { model?: string; permissionMode?: RemotePermissionMode },
+    opts?: {
+      model?: string;
+      permissionMode?: RemotePermissionMode;
+      runnerId?: string;
+      /** Resume a stopped chat's conversation instead of starting empty. */
+      resumeSessionId?: string;
+    },
   ) => Promise<RemoteAgentStatus>;
   stopAgentProcess: (agentId: string) => Promise<void>;
+  /** Pin a live agent so the computer resumes it on its next start, or unpin it. */
+  setPinned: (agentId: string, pinned: boolean) => Promise<void>;
+  /** Rewind to just before `message` and send `edited` in its place. Throws the host's reason. */
+  rewind: (
+    agentId: string,
+    message: RemoteMessage,
+    edited: string,
+  ) => Promise<void>;
+  /** Fork the chat up to `message` into a new agent. Throws the host's reason. */
+  fork: (
+    agentId: string,
+    message: RemoteMessage,
+    request: ForkRequest,
+  ) => Promise<{ sessionId: string; agent: RemoteAgentStatus }>;
   /** Follow an agent's live events (deltas, prompts) while it is on screen. */
   watchAgent: (agentId: string, on: boolean) => void;
 }
@@ -209,7 +238,13 @@ export const useAgentsStore = create<AgentsState>()((set, get) => ({
       session_id: sessionId,
       ...(opts?.model ? { model: opts.model } : {}),
       ...(opts?.permissionMode ? { permission_mode: opts.permissionMode } : {}),
+      ...(opts?.runnerId ? { runner_id: opts.runnerId } : {}),
+      ...(opts?.resumeSessionId
+        ? { resume_session_id: opts.resumeSessionId }
+        : {}),
     });
+    receiveAgentStatus(agent);
+    receiveListedAgentStatus(agent);
 
     return agent;
   },
@@ -220,6 +255,51 @@ export const useAgentsStore = create<AgentsState>()((set, get) => ({
     if (t) {
       await request(t, "agents.stop", { agent_id: agentId });
     }
+  },
+
+  setPinned: async (agentId, pinned) => {
+    // The host owns the pin and captures its telemetry; its answer is the truth.
+    const result = await request(connected(), "agents.set_pinned", {
+      agent_id: agentId,
+      pinned,
+    });
+    set((s) => {
+      const status = s.statusByAgent[agentId];
+
+      return status
+        ? {
+            statusByAgent: {
+              ...s.statusByAgent,
+              [agentId]: { ...status, pinned: result.pinned },
+            },
+          }
+        : {};
+    });
+  },
+
+  rewind: async (agentId, message, edited) => {
+    await request(connected(), "agents.rewind", {
+      agent_id: agentId,
+      message_id: message.id,
+      text: resendText(message, edited),
+    });
+  },
+
+  fork: async (agentId, message, { into, description, branch }) => {
+    const result = await request(connected(), "agents.fork", {
+      agent_id: agentId,
+      message_id: message.id,
+      into,
+      ...(description.trim() ? { description: description.trim() } : {}),
+      ...(branch.trim() ? { branch: branch.trim() } : {}),
+    });
+    receiveAgentStatus(result.agent);
+    receiveListedAgentStatus(result.agent);
+    if (result.agent.effort) {
+      get().setEffortLocal(result.agent.agent_id, result.agent.effort);
+    }
+
+    return { sessionId: result.session_id, agent: result.agent };
   },
 
   watchAgent: (agentId, on) => {

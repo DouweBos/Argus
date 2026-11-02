@@ -38,6 +38,7 @@ import { useAppLocation } from "../routing/useAppLocation";
 import { useConnectionStore } from "../stores/connection";
 import { useDevicesStore } from "../stores/devices";
 import { usePromptsStore } from "../stores/prompts";
+import { setViewingSession } from "../stores/projects";
 import { usePushStore } from "../stores/push";
 import {
   isFallback,
@@ -74,6 +75,19 @@ export function Monitor() {
     [detail],
   );
   const back = useCallback(() => navigateBack(parentOf(screen)), [screen]);
+
+  // The host keeps a warm agent in the session on screen.
+  const viewing =
+    screen.name === "agent" ||
+    screen.name === "session" ||
+    screen.name === "sessionHome"
+      ? screen.sessionId
+      : null;
+  useEffect(() => {
+    if (connection === "ready") {
+      setViewingSession(viewing);
+    }
+  }, [connection, viewing]);
 
   const pattern = screenPattern(screen);
   useEffect(() => captureScreen(pattern), [pattern]);

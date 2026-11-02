@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { EmptyState, Icons, Spinner } from "@argus/peacock";
+import { Spinner } from "@argus/peacock";
 import { appNavigate } from "../routing/router";
 import { openAgent } from "../routing/open";
 import { useConnectionStore } from "../stores/connection";
@@ -77,29 +77,27 @@ export function SessionRedirect({ sessionId }: { sessionId: string }) {
     .filter((a) => a.session_id === sessionId)
     .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0))[0];
 
+  // Only a list fetched for this link may send it home; an older one may predate its agent.
+  const [checked, setChecked] = useState(false);
+
   useEffect(() => {
     if (connection === "ready") {
-      loadRecentAgents().catch(() => {});
+      loadRecentAgents()
+        .catch(() => {})
+        .finally(() => setChecked(true));
     }
   }, [connection, loadRecentAgents]);
 
   useEffect(() => {
     if (newest) {
       openAgent(newest, { replace: true });
+    } else if (checked) {
+      // No agent yet: the session's home, where one can be started.
+      appNavigate({ name: "sessionHome", sessionId }, { replace: true });
     }
-  }, [newest]);
+  }, [checked, newest, sessionId]);
 
-  if (connection !== "ready" || recentAgents.length === 0) {
-    return <Waiting label="Finding the session…" />;
-  }
-
-  return (
-    <EmptyState
-      icon={<Icons.AgentIcon size={22} />}
-      title="No agents in this session"
-      body="Start one from its project, or from Argus on your computer."
-    />
-  );
+  return <Waiting label="Finding the session…" />;
 }
 
 /** `/devices/:platform/:deviceKey`: an unknown device opens the list instead. */

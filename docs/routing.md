@@ -274,20 +274,22 @@ it can:
   and shared links all work; the computer and the hosted site serve
   `index.html` for every path. What it shows today:
 
-  | URL                                    | Screen                                                                                                                                |
-  | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-  | `/`                                    | Projects and recent agents                                                                                                            |
-  | `/projects/:projectKey`                | One project's sessions and agents (web and iOS only). The key is a hash of the repo root, never the path, so no path reaches a server |
-  | `/sessions/:sessionId/agents/:agentId` | An agent's chat. Without `:agentId` (or `/sessions/:id`) it opens the session's newest agent                                          |
-  | `/sessions/:sessionId/git/branch`      | The session's changes against its base branch; any other `/git/*` sub-view opens this                                                 |
-  | `/sessions/:sessionId/git/working`     | The session's uncommitted changes                                                                                                     |
-  | `/sessions/:sessionId/git/:mode/diff`  | One file's diff from Changes, `?path=` the file; `:mode` is `branch` or `working`                                                     |
-  | `/sessions/:sessionId/code`            | `?path=&line=` a file, read-only and highlighted, at a line. Without `?path=` it opens the file list below                            |
-  | `/sessions/:sessionId/code/quick-open` | The session's files, fuzzy-matched by name, changed files first (Cmd/Ctrl+P opens the same list over any session screen)              |
-  | `/sessions/:sessionId/code/search`     | Search across the worktree, with case, word and regex toggles (Cmd/Ctrl+Shift+F)                                                      |
-  | `/sessions/:sessionId/terminals`       | The session's terminals, read-only and live; `/terminals/:terminalId` puts one in front                                               |
-  | `/devices`, `/devices/:platform/:key`  | Devices, and one device's live screen; an unknown device opens `/devices`                                                             |
-  | `/settings`                            | Settings (web and iOS only)                                                                                                           |
+  | URL                                     | Screen                                                                                                                                |
+  | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+  | `/`                                     | Projects and recent agents                                                                                                            |
+  | `/projects/:projectKey`                 | One project's sessions and agents (web and iOS only). The key is a hash of the repo root, never the path, so no path reaches a server |
+  | `/sessions/:sessionId`                  | The session's home: start an agent (here, in a new worktree or on an existing branch), its agents, and its recent chats               |
+  | `/sessions/:sessionId/agents/:agentId`  | An agent's chat. Without `:agentId` it opens the session's newest agent, or the session's home when it has none                       |
+  | `/sessions/:sessionId/chats/:historyId` | One of the session's saved chats, to read, resume or pin (web only)                                                                   |
+  | `/sessions/:sessionId/git/branch`       | The session's changes against its base branch; any other `/git/*` sub-view opens this                                                 |
+  | `/sessions/:sessionId/git/working`      | The session's uncommitted changes                                                                                                     |
+  | `/sessions/:sessionId/git/:mode/diff`   | One file's diff from Changes, `?path=` the file; `:mode` is `branch` or `working`                                                     |
+  | `/sessions/:sessionId/code`             | `?path=&line=` a file, read-only and highlighted, at a line. Without `?path=` it opens the file list below                            |
+  | `/sessions/:sessionId/code/quick-open`  | The session's files, fuzzy-matched by name, changed files first (Cmd/Ctrl+P opens the same list over any session screen)              |
+  | `/sessions/:sessionId/code/search`      | Search across the worktree, with case, word and regex toggles (Cmd/Ctrl+Shift+F)                                                      |
+  | `/sessions/:sessionId/terminals`        | The session's terminals, read-only and live; `/terminals/:terminalId` puts one in front                                               |
+  | `/devices`, `/devices/:platform/:key`   | Devices, and one device's live screen; an unknown device opens `/devices`                                                             |
+  | `/settings`                             | Settings (web and iOS only)                                                                                                           |
 
   Any other route opens its nearest parent, as on iOS, which today is Home.
   From tablet width the project list (or the project an agent belongs to)

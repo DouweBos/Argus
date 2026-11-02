@@ -23,16 +23,19 @@ import { useAgentsStore } from "../stores/agents";
 import { useConnectionStore } from "../stores/connection";
 import { useDevicesStore } from "../stores/devices";
 import { useProjectsStore } from "../stores/projects";
-import { AgentTranscript } from "./AgentTranscript";
+import { AgentTranscript } from "./transcript/AgentTranscript";
 import { ChangesView } from "./ChangesView";
 import { ChatInput } from "./ChatInput";
 import { ConnectionBadge } from "./ConnectionBadge";
 import { DevicesView } from "./DevicesView";
+import { McpServersDialog } from "./McpServersDialog";
 import { Projects } from "./ProjectViews";
 import { DeviceRoute, ProjectRoute, SessionRedirect } from "./ScreenRoutes";
 import { useScreenTitle } from "./screenTitle";
 import { LazySessionTool, SessionToolActions } from "./SessionToolActions";
 import { Settings } from "./Settings";
+import { SavedChat } from "./start/SavedChat";
+import { SessionHome } from "./start/SessionHome";
 import { useScrollRestore } from "./useScrollRestore";
 
 /** Where master-pane navigation goes: the URL, or the pane alone while a detail is open. */
@@ -107,6 +110,12 @@ function ScreenBody({
       );
     case "session":
       return <SessionRedirect sessionId={screen.sessionId} />;
+    case "sessionHome":
+      return <SessionHome sessionId={screen.sessionId} />;
+    case "chat":
+      return (
+        <SavedChat historyId={screen.historyId} sessionId={screen.sessionId} />
+      );
     case "agent":
       return <AgentTranscript agentId={screen.agentId} />;
     case "changes":
@@ -200,6 +209,37 @@ function RootActions() {
   );
 }
 
+/** Pin the agent so the computer resumes it on restart, or unpin it. */
+function PinAction({ agentId }: { agentId: string }) {
+  const status = useAgentsStore((s) => s.statusByAgent[agentId]);
+  const setPinned = useAgentsStore((s) => s.setPinned);
+  if (!status) {
+    return null;
+  }
+  const pinned = status.pinned === true;
+  // Pinning needs the agent live; unpinning works on one already stopped.
+  if (!pinned && (status.status === "stopped" || status.status === "error")) {
+    return null;
+  }
+  const label = pinned
+    ? "Unpin: stop resuming it when the computer restarts"
+    : "Pin: resume it when the computer restarts";
+
+  return (
+    <SidebarHeaderAction
+      aria-label={label}
+      aria-pressed={pinned}
+      className={pinned ? "aw-action-on" : undefined}
+      title={label}
+      onClick={() => {
+        setPinned(agentId, !pinned).catch(() => {});
+      }}
+    >
+      <Icons.PinIcon size={14} />
+    </SidebarHeaderAction>
+  );
+}
+
 /** Jump to the agent's device and changes, or stop it outright. */
 function AgentActions({
   agentId,
@@ -214,9 +254,25 @@ function AgentActions({
   const devices = useDevicesStore((s) => s.devices);
   const stopAgentProcess = useAgentsStore((s) => s.stopAgentProcess);
   const [confirmingStop, setConfirmingStop] = useState(false);
+  const [showingMcp, setShowingMcp] = useState(false);
 
   return (
     <>
+      <SidebarHeaderAction
+        onClick={() => appNavigate({ name: "sessionHome", sessionId })}
+        title="New agent and recent chats"
+        aria-label="New agent and recent chats"
+      >
+        <Icons.HistoryIcon size={14} />
+      </SidebarHeaderAction>
+      {hasControl && <PinAction agentId={agentId} />}
+      <SidebarHeaderAction
+        onClick={() => setShowingMcp(true)}
+        title="MCP servers"
+        aria-label="MCP servers"
+      >
+        <Icons.SlidersIcon size={14} />
+      </SidebarHeaderAction>
       <SidebarHeaderAction
         onClick={() => {
           const only = devices.length === 1 ? devices[0] : null;
@@ -246,6 +302,12 @@ function AgentActions({
         >
           <Icons.StopIcon size={14} />
         </SidebarHeaderAction>
+      )}
+      {showingMcp && (
+        <McpServersDialog
+          agentId={agentId}
+          onClose={() => setShowingMcp(false)}
+        />
       )}
       {confirmingStop && (
         <ConfirmDialog
@@ -446,6 +508,8 @@ function PaneIcon({ screen }: { screen: Screen }) {
       return <Icons.SimulatorIcon size={14} />;
     case "settings":
       return <Icons.GearIcon size={14} />;
+    case "chat":
+      return <Icons.HistoryIcon size={14} />;
     default:
       return <Icons.AgentIcon size={14} />;
   }

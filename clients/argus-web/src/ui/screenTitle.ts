@@ -8,6 +8,7 @@ import { fileNameOf } from "@argus/client-core";
 import type { RemoteAgentStatus } from "../lib/protocol";
 import { projectKey, type Screen } from "../routing/screens";
 import { useAgentsStore } from "../stores/agents";
+import { useChatsStore } from "../stores/chats";
 import { useDevicesStore } from "../stores/devices";
 import { useProjectsStore } from "../stores/projects";
 
@@ -24,6 +25,14 @@ export function useScreenTitle(screen: Screen): string {
   const recentAgents = useProjectsStore((s) => s.recentAgents);
   const statusByAgent = useAgentsStore((s) => s.statusByAgent);
   const devices = useDevicesStore((s) => s.devices);
+  const stoppedByRepo = useChatsStore((s) => s.stoppedByRepo);
+  const sessionLabel = (sessionId: string) => {
+    const session = Object.values(sessionsByRepo)
+      .flat()
+      .find((s) => s.id === sessionId);
+
+    return session?.display_name ?? session?.branch ?? null;
+  };
 
   function withSession(title: string, sessionId: string): string {
     const session = Object.values(sessionsByRepo)
@@ -71,5 +80,14 @@ export function useScreenTitle(screen: Screen): string {
     case "file":
     case "fileDiff":
       return fileNameOf(screen.path);
+    case "sessionHome":
+      return sessionLabel(screen.sessionId) ?? "Session";
+    case "chat":
+      return (
+        Object.values(stoppedByRepo)
+          .flat()
+          .find((c) => c.history_id === screen.historyId)
+          ?.title.trim() || "Saved chat"
+      );
   }
 }

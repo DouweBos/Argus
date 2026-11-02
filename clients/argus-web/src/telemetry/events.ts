@@ -44,6 +44,20 @@ export interface EventMap {
     truncated: boolean;
   };
   web_terminal_viewed: { kind: TerminalKind; live: boolean };
+  web_agent_start_submitted: {
+    workspace: "current" | "existing" | "worktree";
+    changed_workspace: boolean;
+    has_images: boolean;
+    effort_set: boolean;
+  };
+  web_message_action: {
+    action: "copy" | "edit" | "fork_agent" | "fork_session";
+    role: "assistant" | "user";
+    success: boolean;
+  };
+  web_chat_history_used: { action: "delete" | "search" };
+  web_transcript_work_log_opened: { working: boolean };
+  web_mcp_servers_opened: undefined;
   telemetry_enabled: undefined;
   telemetry_disabled: undefined;
 }

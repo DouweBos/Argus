@@ -2,7 +2,8 @@
  * The web client's screens and the `docs/routing.md` paths they live at.
  * Shared paths go through `@argus/client-core`'s codec, so a link opens the
  * same screen here as on the Mac; `/projects/:repoRoot` and `/settings` are
- * the phone's own and only exist here and on iOS. A path for a screen the web
+ * the phone's own and only exist here and on iOS, and a saved chat at
+ * `/sessions/:id/chats/:historyId` only here. A path for a screen the web
  * client doesn't have yet opens its nearest parent, as on iOS.
  *
  * A project is named by a hash of its repo root, never the path itself: the
@@ -20,6 +21,10 @@ export type Screen =
   | { name: "project"; projectKey: string }
   /** A session with no agent picked: shows its newest agent once known. */
   | { name: "session"; sessionId: string }
+  /** A session's home: start an agent, its live agents, its saved chats. */
+  | { name: "sessionHome"; sessionId: string }
+  /** One of a session's saved chats, read back to resume. */
+  | { name: "chat"; sessionId: string; historyId: string }
   | { name: "agent"; sessionId: string; agentId: string }
   | { name: "changes"; sessionId: string; mode: DiffMode }
   /** One file's diff from Changes: `/git/:mode/diff?path=`. */
@@ -137,6 +142,9 @@ export function screenFromPath(path: string): Screen {
   if (parts[0] === "projects" && parts.length === 2) {
     return { name: "project", projectKey: parts[1] };
   }
+  if (parts[0] === "sessions" && parts[2] === "chats" && parts.length === 4) {
+    return { name: "chat", sessionId: parts[1], historyId: parts[3] };
+  }
   if (parts[0] === "settings" && parts.length === 1) {
     return { name: "settings" };
   }
@@ -161,6 +169,10 @@ export function screenFromPath(path: string): Screen {
           sessionId,
           mode: route.gitView === "working" ? "working" : "branch",
         };
+      }
+
+      if (route.panel === "home") {
+        return { name: "sessionHome", sessionId };
       }
 
       return route.agentId
@@ -221,6 +233,14 @@ export function pathForScreen(screen: Screen): string {
         panel: "agents",
         agentId: screen.agentId,
       });
+    case "sessionHome":
+      return routeToPath({
+        view: "session",
+        sessionId: encodeURIComponent(screen.sessionId),
+        panel: "home",
+      });
+    case "chat":
+      return `/sessions/${encodeURIComponent(screen.sessionId)}/chats/${encodeURIComponent(screen.historyId)}`;
     case "changes":
       return routeToPath({
         view: "session",
@@ -250,6 +270,10 @@ export function screenPattern(screen: Screen): string {
     case "session":
     case "agent":
       return "/sessions/:sessionId/agents";
+    case "sessionHome":
+      return "/sessions/:sessionId";
+    case "chat":
+      return "/sessions/:sessionId/chats/:historyId";
     case "changes":
       return `/sessions/:sessionId/git/${screen.mode}`;
     case "fileDiff":
