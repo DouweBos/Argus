@@ -1,0 +1,102 @@
+.toolbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  height: 52px;
+  min-width: 0;
+  padding: 0 10px 0 12px;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+}
+
+.history {
+  display: flex;
+  gap: 14px;
+  margin-right: 8px;
+}
+
+.title {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+}
+
+.trailing {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}
+
+.titleStack {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.titleText {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.crumb {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 2px 4px;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+}
+
+button.crumb {
+  cursor: pointer;
+}
+
+button.crumb:hover {
+  background: var(--chrome-hover);
+  color: var(--text-primary);
+}
+
+.crumb[data-current] {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.crumbLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.separator {
+  flex: none;
+  color: var(--text-muted);
+}

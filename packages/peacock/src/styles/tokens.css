@@ -764,3 +764,75 @@ html[data-theme="light"][data-color-theme="rose"] {
   --accent-fg: #ffffff;
   --accent-gradient: linear-gradient(135deg, #c23a73, #c0612a);
 }
+
+/* ==========================================================================
+   App chrome — the main window's sidebar, toolbar, tabs and context card.
+   Defaults follow the theme's surfaces; `data-chrome="flat"` swaps in Argus
+   for Mac's neutrals (ArgusUI `Theme.swift`): a near-black (or white)
+   canvas, hairlines instead of boxes, system type. Colour themes keep their
+   accent but not their tinted surfaces, as on the Mac.
+   ========================================================================== */
+
+html {
+  --chrome-canvas: var(--bg-primary);
+  --chrome-sidebar: var(--bg-secondary);
+  --chrome-surface: var(--bg-secondary);
+  --chrome-selection: var(--surface-5);
+  --chrome-hover: var(--surface-3);
+  --chrome-hairline: var(--border);
+  --chrome-shadow: var(--shadow-sm);
+  --chrome-sidebar-inset: 0px;
+  --chrome-sidebar-radius: 0px;
+}
+
+html[data-chrome="flat"] {
+  --font-ui:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI",
+    Roboto, sans-serif;
+  --chrome-sidebar-inset: 8px;
+  --chrome-sidebar-radius: var(--border-radius);
+}
+
+html[data-chrome="flat"]:not([data-theme="light"]) {
+  --bg-primary: #0d0d0f;
+  --bg-secondary: #161618;
+  --bg-tertiary: #1f1f22;
+  --bg-hover: #26262a;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --text-primary: rgba(255, 255, 255, 0.86);
+  --text-secondary: rgba(255, 255, 255, 0.55);
+  --text-muted: rgba(255, 255, 255, 0.36);
+  --surface-3-solid: #1c1c1f;
+  --surface-4-solid: #222225;
+  --chrome-canvas: #0d0d0f;
+  --chrome-sidebar: #161618;
+  --chrome-surface: #141416;
+  --chrome-selection: rgba(255, 255, 255, 0.08);
+  --chrome-hover: rgba(255, 255, 255, 0.045);
+  --chrome-hairline: rgba(255, 255, 255, 0.09);
+  --chrome-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+html[data-chrome="flat"][data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f6f7;
+  --bg-tertiary: #ececee;
+  --bg-hover: #e3e3e6;
+  --border: rgba(0, 0, 0, 0.1);
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --border-strong: rgba(0, 0, 0, 0.2);
+  --text-primary: rgba(0, 0, 0, 0.86);
+  --text-secondary: rgba(0, 0, 0, 0.56);
+  --text-muted: rgba(0, 0, 0, 0.4);
+  --surface-3-solid: #f0f0f1;
+  --surface-4-solid: #e9e9eb;
+  --chrome-canvas: #ffffff;
+  --chrome-sidebar: #f2f2f3;
+  --chrome-surface: #ffffff;
+  --chrome-selection: rgba(0, 0, 0, 0.06);
+  --chrome-hover: rgba(0, 0, 0, 0.035);
+  --chrome-hairline: rgba(0, 0, 0, 0.1);
+  --chrome-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.06);
+}

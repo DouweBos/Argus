@@ -1,4 +1,4 @@
-import type { SVGProps } from "react";
+import type { ReactNode, SVGProps } from "react";
 
 export type IconProps = Omit<SVGProps<SVGSVGElement>, "ref"> & {
   size?: number;
@@ -2020,5 +2020,69 @@ export function PullRequestIcon({ size = 14, className, ...rest }: IconProps) {
       <circle cx="18" cy="18" r="2.5" />
       <path d="M6 8.5v7M18 15.5V9a3 3 0 0 0-3-3h-4m2-2.5L10.5 6 13 8.5" />
     </svg>
+  );
+}
+
+function StrokeIcon({
+  size = 14,
+  className,
+  children,
+  ...rest
+}: IconProps & { children: ReactNode }) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.3"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      {children}
+    </svg>
+  );
+}
+
+/** Notifications, as the Mac sidebar's foot draws them. */
+export function BellIcon(props: IconProps) {
+  return (
+    <StrokeIcon {...props}>
+      <path d="M4 11.5V7a4 4 0 0 1 8 0v4.5l1 1.25H3L4 11.5Z" />
+      <path d="M6.6 14.25a1.5 1.5 0 0 0 2.8 0" />
+    </StrokeIcon>
+  );
+}
+
+/** The inbox tray: decisions waiting on you. */
+export function InboxIcon(props: IconProps) {
+  return (
+    <StrokeIcon {...props}>
+      <path d="M2 9.5 3.6 4a1 1 0 0 1 1-.75h6.8a1 1 0 0 1 1 .75L14 9.5V12a1.25 1.25 0 0 1-1.25 1.25h-9.5A1.25 1.25 0 0 1 2 12V9.5Z" />
+      <path d="M2 9.5h3.25l.75 1.5h4l.75-1.5H14" />
+    </StrokeIcon>
+  );
+}
+
+/** Square and pencil: start something new. */
+export function ComposeIcon(props: IconProps) {
+  return (
+    <StrokeIcon {...props}>
+      <path d="M7.5 2.75H4A1.25 1.25 0 0 0 2.75 4v8A1.25 1.25 0 0 0 4 13.25h8A1.25 1.25 0 0 0 13.25 12V8.5" />
+      <path d="M12.1 2.4a1.1 1.1 0 0 1 1.5 1.5L8.4 9.1l-2 .5.5-2 5.2-5.2Z" />
+    </StrokeIcon>
+  );
+}
+
+/** A folder with a plus: add a project. */
+export function FolderPlusIcon(props: IconProps) {
+  return (
+    <StrokeIcon {...props}>
+      <path d="M2 4.5A1.25 1.25 0 0 1 3.25 3.25h2.6l1.4 1.5h5.5A1.25 1.25 0 0 1 14 6v5.75A1.25 1.25 0 0 1 12.75 13H3.25A1.25 1.25 0 0 1 2 11.75V4.5Z" />
+      <path d="M8 7v4M6 9h4" />
+    </StrokeIcon>
   );
 }

@@ -1,0 +1,132 @@
+.shell {
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--chrome-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+}
+
+/* ─── Sidebar ─── */
+
+.sidebar {
+  position: relative;
+  display: flex;
+  flex: none;
+  width: var(--shell-sidebar-width);
+  min-height: 0;
+  padding: var(--chrome-sidebar-inset);
+  padding-right: 0;
+  transition:
+    width var(--transition-smooth),
+    margin var(--transition-smooth),
+    transform var(--transition-smooth);
+}
+
+.sidebar[data-mode="docked"]:not([data-open]) {
+  margin-left: calc(-1 * var(--shell-sidebar-width));
+}
+
+.shell[data-dragging] .sidebar {
+  transition: none;
+}
+
+.sidebarCard {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--chrome-sidebar-radius);
+  background: var(--chrome-sidebar);
+  box-shadow: var(--chrome-shadow);
+}
+
+.sidebar[data-mode="overlay"] {
+  position: absolute;
+  z-index: 30;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(300px, 86vw);
+  padding: var(--chrome-sidebar-inset);
+  transform: translateX(-105%);
+}
+
+.sidebar[data-mode="overlay"][data-open] {
+  transform: none;
+}
+
+.sidebar[data-mode="overlay"] .sidebarCard {
+  box-shadow: var(--shadow-lg);
+}
+
+.sidebarHandle,
+.panelHandle {
+  position: absolute;
+  z-index: 10;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.sidebarHandle {
+  right: -3px;
+}
+
+.panelHandle {
+  left: -3px;
+}
+
+.scrim {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  background: var(--scrim-md);
+}
+
+/* ─── Centre ─── */
+
+.centre {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.content {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ─── Side panel ─── */
+
+.panel {
+  position: relative;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: var(--shell-panel-width);
+  min-height: 0;
+  border-left: 1px solid var(--chrome-hairline);
+  background: var(--chrome-canvas);
+}
+
+.panel[data-mode="overlay"] {
+  position: absolute;
+  z-index: 25;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(440px, 100vw);
+  box-shadow: var(--shadow-lg);
+}

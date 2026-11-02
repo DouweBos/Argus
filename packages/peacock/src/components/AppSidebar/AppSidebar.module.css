@@ -1,0 +1,332 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 8px 6px;
+}
+
+.list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 6px 8px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.list::-webkit-scrollbar {
+  display: none;
+}
+
+.status {
+  padding: 8px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+}
+
+.footerGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─── Search ─── */
+
+.search {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+}
+
+.search:focus-within {
+  background: var(--chrome-hover);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font: 400 13px/1 var(--font-ui);
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: var(--text-muted);
+}
+
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+/* ─── Rows ─── */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  min-height: 28px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.row:hover:not([data-unavailable]) {
+  background: var(--chrome-hover);
+}
+
+.row[data-selected] {
+  background: var(--chrome-selection);
+}
+
+.row[data-unavailable] {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--accent-border-strong);
+  outline-offset: -2px;
+}
+
+.navItem {
+  gap: 8px;
+  min-height: 29px;
+  font-size: 13px;
+}
+
+.navIcon {
+  display: inline-grid;
+  width: 16px;
+  place-items: center;
+  color: var(--text-secondary);
+}
+
+.navLabel {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pill {
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: var(--border-radius-pill);
+  background: var(--chrome-selection);
+  color: var(--text-secondary);
+  font: 600 10px/14px var(--font-ui);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Project header ─── */
+
+.projectHeader {
+  min-height: 26px;
+}
+
+.lead {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  width: 16px;
+  place-items: center;
+}
+
+.fold {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.projectHeader:hover .fold,
+.fold:focus-visible {
+  opacity: 1;
+}
+
+.projectHeader:hover .badgeFoldable {
+  visibility: hidden;
+}
+
+.projectName {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectHeader[data-selected] .projectName {
+  color: var(--text-primary);
+}
+
+.sync {
+  display: inline-flex;
+  flex: none;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.behind {
+  color: var(--warning);
+}
+
+.spacer {
+  flex: 1;
+  min-width: 4px;
+}
+
+.branch {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.branchName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hoverAction {
+  display: none;
+}
+
+.projectHeader:hover .hoverAction,
+.projectHeader:focus-within .hoverAction {
+  display: inline-grid;
+}
+
+.projectHeader:hover [data-hover-hide],
+.projectHeader:focus-within [data-hover-hide] {
+  display: none;
+}
+
+/* ─── Session row ─── */
+
+.sessionRow {
+  gap: 8px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.idleDot {
+  width: 6px;
+  height: 6px;
+}
+
+.sessionText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.sessionTitle,
+.sessionSubtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sessionTitle {
+  font-size: 13px;
+}
+
+.sessionSubtitle {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.age {
+  flex: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Section rule ─── */
+
+.rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 8px;
+}
+
+.ruleLabel {
+  flex: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.ruleLine {
+  flex: 1;
+  height: 1px;
+  background: var(--chrome-hairline);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}

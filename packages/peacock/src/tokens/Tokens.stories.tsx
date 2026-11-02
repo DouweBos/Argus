@@ -397,6 +397,37 @@ export const Radii: Story = {
   ),
 };
 
+const CHROME_TOKENS = [
+  "canvas",
+  "sidebar",
+  "surface",
+  "selection",
+  "hover",
+  "hairline",
+];
+
+/**
+ * The main window's chrome: sidebar, toolbar, tabs, context card. They follow
+ * the theme's surfaces; `data-chrome="flat"` on <html> (the web client) swaps
+ * in Argus for Mac's neutrals and system type.
+ */
+export const Chrome: Story = {
+  render: () => (
+    <div style={{ padding: 24 }}>
+      <div style={row}>
+        {CHROME_TOKENS.map((name) => (
+          <Token
+            key={name}
+            name={`--chrome-${name}`}
+            value={`var(--chrome-${name})`}
+            preview={<div style={swatch(`var(--chrome-${name})`)} />}
+          />
+        ))}
+      </div>
+    </div>
+  ),
+};
+
 export const Shadows: Story = {
   render: () => (
     <div style={{ padding: 40, display: "flex", gap: 32 }}>

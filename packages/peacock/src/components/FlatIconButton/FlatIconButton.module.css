@@ -1,0 +1,65 @@
+.button {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--chrome-hover);
+  color: var(--text-primary);
+}
+
+.button[data-selected] {
+  background: var(--chrome-selection);
+  color: var(--text-primary);
+}
+
+.button:disabled {
+  cursor: default;
+  opacity: var(--opacity-disabled);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--accent-border-strong);
+  outline-offset: 1px;
+}
+
+.sm {
+  width: 22px;
+  height: 22px;
+}
+
+.md {
+  width: 26px;
+  height: 26px;
+}
+
+.lg {
+  width: 30px;
+  height: 30px;
+}
+
+.badge {
+  position: absolute;
+  top: -2px;
+  right: -3px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: var(--border-radius-pill);
+  background: var(--error);
+  color: var(--error-fg);
+  font: 600 9px/14px var(--font-ui);
+  text-align: center;
+  pointer-events: none;
+}
