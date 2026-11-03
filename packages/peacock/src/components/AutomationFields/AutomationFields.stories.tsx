@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
 import { AutomationFields } from "./AutomationFields";
 import {
+  FIXTURE_ACCOUNTS,
   FIXTURE_DETAIL,
   FIXTURE_PROJECTS,
   FIXTURE_RUNNERS,
@@ -24,6 +25,8 @@ function Live({ initial }: { initial: RemoteAutomationDetail }) {
     <AutomationFields
       draft={draft}
       projects={FIXTURE_PROJECTS}
+      accounts={FIXTURE_ACCOUNTS}
+      activeAccountId="default"
       runners={FIXTURE_RUNNERS}
       sources={FIXTURE_SOURCES}
       onChange={setDraft}
@@ -49,6 +52,13 @@ export const BadCron: Story = {
 export const CustomRunner: Story = {
   render: () => (
     <Live initial={{ ...FIXTURE_DETAIL, runner: "local", model: "qwen" }} />
+  ),
+};
+
+/** Pinned to the work account: the run never falls back to another one. */
+export const PinnedAccount: Story = {
+  render: () => (
+    <Live initial={{ ...FIXTURE_DETAIL, claude_account_id: "work" }} />
   ),
 };
 

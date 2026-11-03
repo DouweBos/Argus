@@ -181,6 +181,9 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
   public var model: String?
   /// Runner the run's agent is pinned to; nil follows the app default.
   public var runner: String?
+  /// Claude account the run is pinned to; nil follows the active account, and
+  /// is all a computer from before pins ever sends.
+  public var claudeAccountId: String?
   public var guardrails: RemoteAutomationGuardrails
 
   public init(
@@ -190,7 +193,7 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     catchUp: Bool = true, repoRoots: [String] = [], sourceIds: [String] = [],
     playbook: String = "", extraInstructions: String? = nil,
     autonomy: RemoteAutonomy? = nil, model: String? = nil,
-    runner: String? = nil,
+    runner: String? = nil, claudeAccountId: String? = nil,
     guardrails: RemoteAutomationGuardrails = .init()
   ) {
     self.id = id
@@ -208,6 +211,7 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     self.autonomy = autonomy
     self.model = model
     self.runner = runner
+    self.claudeAccountId = claudeAccountId
     self.guardrails = guardrails
   }
 
@@ -219,6 +223,7 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     case repoRoots = "repo_roots"
     case sourceIds = "source_ids"
     case extraInstructions = "extra_instructions"
+    case claudeAccountId = "claude_account_id"
   }
 }
 
@@ -239,6 +244,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
   public var autonomy: RemoteAutonomy?
   public var model: String?
   public var runner: String?
+  public var claudeAccountId: String?
   public var guardrails: RemoteAutomationGuardrails
 
   public init(_ detail: RemoteAutomationDetail) {
@@ -256,6 +262,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     autonomy = detail.autonomy
     model = detail.model
     runner = detail.runner
+    claudeAccountId = detail.claudeAccountId
     guardrails = detail.guardrails
   }
 
@@ -267,6 +274,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     case repoRoots = "repo_roots"
     case sourceIds = "source_ids"
     case extraInstructions = "extra_instructions"
+    case claudeAccountId = "claude_account_id"
   }
 
   // `autonomy` and `model` go out as null rather than missing: null is
@@ -287,6 +295,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     try c.encode(autonomy, forKey: .autonomy)
     try c.encode(model, forKey: .model)
     try c.encode(runner, forKey: .runner)
+    try c.encode(claudeAccountId, forKey: .claudeAccountId)
     try c.encode(guardrails, forKey: .guardrails)
   }
 }

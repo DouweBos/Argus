@@ -5,6 +5,7 @@ import {
   draftScheduleError,
   draftToInput,
   newAutomationDraft,
+  runnerTakesAccountPin,
 } from "./draft";
 
 describe("automation drafts", () => {
@@ -36,6 +37,22 @@ describe("automation drafts", () => {
       false,
     );
     expect(draftChanged({ ...draft, playbook: "x" }, draft)).toBe(true);
+  });
+
+  it("send the account pin, reading a missing one as unpinned", () => {
+    expect(draftToInput({ ...draft, claude_account_id: "work" })).toMatchObject(
+      { claude_account_id: "work" },
+    );
+    expect(
+      draftToInput({ ...draft, claude_account_id: undefined })
+        .claude_account_id,
+    ).toBeNull();
+  });
+
+  it("only offer the account pin on Claude Code", () => {
+    expect(runnerTakesAccountPin(null)).toBe(true);
+    expect(runnerTakesAccountPin("claude-code")).toBe(true);
+    expect(runnerTakesAccountPin("custom:apex")).toBe(false);
   });
 
   it("keep a picked project the computer no longer lists", () => {

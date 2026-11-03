@@ -24,16 +24,24 @@ import {
   waitForAgent,
 } from "../agent/agentService";
 import {
-  accountFallbackOrder,
   classifyRunFailure,
   resolveAccountForSession,
 } from "../claudeAuth/accounts";
 import { ensureRepoRegistered } from "../mcp/projects";
-import { DEFAULT_RUNNER_ID } from "../session/models";
+import { DEFAULT_RUNNER_ID, sessionRunnerId } from "../session/models";
 import { gatherSignals } from "../signals/registry";
+import { capture as telemetryCapture } from "../telemetry/telemetry";
+import {
+  accountPinError,
+  accountPinState,
+  runAccountOrder,
+} from "./accountPin";
 import { resolveHostAutonomy } from "./autonomy";
 import { normalizeGuardrails } from "./guardrails";
-import { createAutomationHostSession } from "./hostSession";
+import {
+  createAutomationHostSession,
+  disposeAutomationHostSession,
+} from "./hostSession";
 import {
   createRun,
   getAutomationRun,
@@ -171,7 +179,23 @@ async function execute(automation: Automation, runId: string): Promise<void> {
     displayName: automation.name,
     runner: automation.runner,
     model: automation.model,
+    claudeAccountId: automation.claude_account_id,
   });
+
+  // Custom runners bring their own credentials, so a pin means nothing there.
+  const defaultRunner = sessionRunnerId(session) === DEFAULT_RUNNER_ID;
+  const pinnedId = defaultRunner ? automation.claude_account_id : null;
+  telemetryCapture("automation_run_started", {
+    account_pin: accountPinState(pinnedId),
+  });
+  // Running on another account would quietly lose whatever the pin was for.
+  const pinError = accountPinError(pinnedId);
+  if (pinError) {
+    disposeAutomationHostSession(session.id);
+    finishRun(runId, "failed", { error: pinError });
+
+    return;
+  }
   updateRun(runId, { host_session_id: session.id });
 
   const autonomy = resolveHostAutonomy(automation);
@@ -180,12 +204,13 @@ async function execute(automation: Automation, runId: string): Promise<void> {
   const prompt = buildPrompt(automation, signals, autonomy, scope);
 
   // A spent plan limit on one Claude account says nothing about the others, so
-  // the run moves on to the next one before giving up, unless opted out.
-  // Custom runners bring their own credentials.
-  const accounts: (string | null)[] =
-    guardrails.retry_other_accounts && session.runner_id === DEFAULT_RUNNER_ID
-      ? accountFallbackOrder(resolveAccountForSession(session))
-      : [null];
+  // an unpinned run moves on to the next one before giving up, unless opted out.
+  const accounts = runAccountOrder({
+    pinnedId,
+    sessionAccountId: resolveAccountForSession(session),
+    retryOtherAccounts: guardrails.retry_other_accounts,
+    defaultRunner,
+  });
 
   for (const [attempt, accountId] of accounts.entries()) {
     const live = appState.sessions.get(session.id);

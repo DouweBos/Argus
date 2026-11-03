@@ -17,10 +17,16 @@ struct AutomationEditorForm: View {
     }
     trigger
     scope
-    Section("Runner and model") {
+    Section {
       runner
       model
+      account
+    } header: {
+      Text("Runner and model")
+    } footer: {
+      if offersAccount, draft.claudeAccountId != nil { Text(AutomationAccountPin.pinnedCaption) }
     }
+    .task { if host.claudeAccounts == nil { await host.refreshClaudeAccounts() } }
     AutonomySection(autonomy: $draft.autonomy, guardrails: $draft.guardrails)
     playbook
     if draft.extraInstructions != nil { extraInstructions }
@@ -87,6 +93,31 @@ struct AutomationEditorForm: View {
     }
   }
 
+  @ViewBuilder
+  private var account: some View {
+    if offersAccount {
+      Picker("Claude account", selection: accountBinding) {
+        ForEach(
+          AutomationAccountPin.options(
+            accounts: host.claudeAccounts ?? [], activeId: host.activeClaudeAccountId,
+            pinned: draft.claudeAccountId),
+          id: \.value
+        ) { Text($0.name).tag($0.value) }
+      }
+    }
+  }
+
+  private var offersAccount: Bool {
+    AutomationAccountPin.applies(toRunner: draft.runner)
+      && AutomationAccountPin.offered(accounts: host.claudeAccounts ?? [], pinned: draft.claudeAccountId)
+  }
+
+  private var accountBinding: Binding<String> {
+    Binding(
+      get: { draft.claudeAccountId ?? "" },
+      set: { draft.claudeAccountId = $0.isEmpty ? nil : $0 })
+  }
+
   /// A runner that declares its models gets a picker; Claude Code only learns
   /// its list from a live handshake, so there it stays free text.
   @ViewBuilder
@@ -139,13 +170,15 @@ struct AutomationEditorForm: View {
     }
   }
 
-  /// Model ids don't carry across runners, so a switch drops the model.
+  /// Model ids don't carry across runners, so a switch drops the model, and a
+  /// custom runner's own credentials drop the account.
   private var runnerBinding: Binding<String> {
     Binding(
       get: { draft.runner ?? "" },
       set: { id in
         draft.runner = id.isEmpty ? nil : id
         draft.model = nil
+        if !AutomationAccountPin.applies(toRunner: draft.runner) { draft.claudeAccountId = nil }
       })
   }
 

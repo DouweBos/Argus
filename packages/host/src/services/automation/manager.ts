@@ -19,6 +19,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import { emitHostEvent } from "@argus/host/bus";
 import { info, warn } from "@argus/host/logger";
+import { getClaudeAccount } from "../claudeAuth/accounts";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { computeNextRun, isValidCron } from "./cron";
 import { migrateSpendCeiling, normalizeGuardrails } from "./guardrails";
@@ -58,6 +59,7 @@ function automationCache(): Automation[] {
       migrated = migrateSpendCeiling(automation.guardrails) || migrated;
       automation.seeded_playbook_hash ??= null;
       automation.extra_instructions ??= "";
+      automation.claude_account_id ??= null;
     }
     seedBuiltIns(automations, migrated);
   }
@@ -103,7 +105,15 @@ function seedBuiltIns(list: Automation[], force = false): void {
   }
 }
 
+/** A pin to an account that isn't signed in would only fail every run. */
+function assertKnownAccount(accountId: string | null | undefined): void {
+  if (accountId && !getClaudeAccount(accountId)) {
+    throw `Unknown Claude account: ${accountId}`;
+  }
+}
+
 function buildAutomation(input: CreateAutomationInput): Automation {
+  assertKnownAccount(input.claude_account_id);
   const now = Date.now();
   const trigger = input.trigger;
   if (trigger.kind === "schedule" && !isValidCron(trigger.cron)) {
@@ -124,6 +134,7 @@ function buildAutomation(input: CreateAutomationInput): Automation {
     guardrails: normalizeGuardrails(input.guardrails),
     model: input.model ?? null,
     runner: input.runner ?? null,
+    claude_account_id: input.claude_account_id ?? null,
     template_id: input.template_id ?? null,
     // Only a built-in has a fingerprint to compare a future release against.
     seeded_playbook_hash: input.template_id
@@ -202,6 +213,7 @@ export function initAutomations(): void {
         runId: run.id,
         displayName: automation.name,
         runner: automation.runner,
+        claudeAccountId: automation.claude_account_id,
         model: automation.model,
       });
     }
@@ -258,6 +270,7 @@ export function scratchAutomationForRun(run: AutomationRun): Automation | null {
     model: spec.model,
     // An ad-hoc run has no runner of its own; it follows the app default.
     runner: null,
+    claude_account_id: null,
     template_id: null,
     seeded_playbook_hash: null,
     created_at: run.started_at,
@@ -302,6 +315,9 @@ export function updateAutomation(
   patch: UpdateAutomationInput,
 ): Automation {
   const automation = requireAutomation(id);
+  if (patch.claude_account_id !== automation.claude_account_id) {
+    assertKnownAccount(patch.claude_account_id);
+  }
   const trigger = patch.trigger ?? automation.trigger;
   if (trigger.kind === "schedule" && !isValidCron(trigger.cron)) {
     throw `Invalid cron expression: ${trigger.cron}`;

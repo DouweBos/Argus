@@ -75,6 +75,11 @@ export const Automation = z.object({
   model: z.string().nullable(),
   /** Runner id for the run's agent; null inherits the app default. */
   runner: z.string().nullable(),
+  /**
+   * Claude account the run is pinned to; null follows the active account. A
+   * pinned run never falls back to another account. Ignored on custom runners.
+   */
+  claude_account_id: z.string().nullable(),
   /** Built-in template this was seeded from, for upgrade-on-release. */
   template_id: z.string().nullable(),
   /**
@@ -179,6 +184,7 @@ export const CreateAutomationInput = z.object({
   guardrails: AutomationGuardrails.partial().optional(),
   model: z.string().nullish(),
   runner: z.string().nullish(),
+  claude_account_id: z.string().nullish(),
   template_id: z.string().nullish(),
 });
 export type CreateAutomationInput = z.infer<typeof CreateAutomationInput>;

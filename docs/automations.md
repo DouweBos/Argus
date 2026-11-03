@@ -68,6 +68,25 @@ automation's proposals is created on the same runner, whether Argus auto-started
 it or you pressed Start in the Inbox. The work was thought up by an agent on
 that runner, so it continues there.
 
+### Which Claude account it runs as
+
+With more than one Claude account signed in, **Claude account** next to the
+runner pins the automation to one of them. Leave it on **Default account** and
+each run uses whichever account is active when it fires. Pin one when the
+playbook needs something only that account has — MCP servers your work account
+brings, say — and every run signs in as it, whatever the active account is.
+
+A pinned run never moves to another account: if it hits that account's plan
+limit it fails rather than retrying elsewhere, since the other accounts lack
+what the pin was for. If the pinned account has been removed or needs you to
+sign in again, the run fails straight away and says so; it does not quietly fall
+back to another account. Sessions started from its proposals are pinned to the
+same account.
+
+The pin only applies on Claude Code. A custom runner brings its own
+credentials, so the picker is hidden there and a pin is ignored. Quick runs
+always follow the active account.
+
 ---
 
 ## Quick runs — one-off, without saving
@@ -154,16 +173,16 @@ Node:
 
 Per-automation limits, applied to every proposal before it may start work:
 
-| Guardrail                 | Default | What it does                                                                |
-| ------------------------- | ------- | --------------------------------------------------------------------------- |
-| `confidence_threshold`    | `0.8`   | A proposal the run is less sure about than this never auto-starts.          |
-| `max_concurrent_sessions` | `2`     | Sessions this automation may have in flight at once.                        |
-| `max_files_changed`       | `25`    | A branch touching more files than this cannot be pushed.                    |
-| `max_cost_usd_per_run`    | `0`     | Ceiling on one run's spend. `0` is off, which is the default.               |
-| `max_run_minutes`         | `20`    | Wall-clock ceiling on one run. Past it, the run is stopped.                 |
-| `path_denylist`           | empty   | Globs no automation-started branch may touch, e.g. `["infra/**"]`.          |
-| `require_clean_ci`        | `true`  | Gates auto-merge: CI must be green.                                         |
-| `retry_other_accounts`    | `true`  | A run that hits a Claude usage limit reruns on your next signed-in account. |
+| Guardrail                 | Default | What it does                                                                                                                                                         |
+| ------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `confidence_threshold`    | `0.8`   | A proposal the run is less sure about than this never auto-starts.                                                                                                   |
+| `max_concurrent_sessions` | `2`     | Sessions this automation may have in flight at once.                                                                                                                 |
+| `max_files_changed`       | `25`    | A branch touching more files than this cannot be pushed.                                                                                                             |
+| `max_cost_usd_per_run`    | `0`     | Ceiling on one run's spend. `0` is off, which is the default.                                                                                                        |
+| `max_run_minutes`         | `20`    | Wall-clock ceiling on one run. Past it, the run is stopped.                                                                                                          |
+| `path_denylist`           | empty   | Globs no automation-started branch may touch, e.g. `["infra/**"]`.                                                                                                   |
+| `require_clean_ci`        | `true`  | Gates auto-merge: CI must be green.                                                                                                                                  |
+| `retry_other_accounts`    | `true`  | A run that hits a Claude usage limit reruns on your next signed-in account. Never applies to an automation [pinned to an account](#which-claude-account-it-runs-as). |
 
 All eight are edited per automation in **Automations → the automation →
 Autonomy**, including the spend ceiling. It ships **off**: how much a run may cost is a
@@ -181,7 +200,9 @@ Unlike the spend ceiling this one cannot be turned off; the minimum is a minute.
 With more than one Claude account signed in, a run that hits a usage limit
 reruns from the start on the next account — ones not already marked as limited
 first — and only fails once they are all spent. Turn
-`retry_other_accounts` off on an automation that must stay on one account.
+`retry_other_accounts` off to stop that, or
+[pin the automation to an account](#which-claude-account-it-runs-as) when it
+must run as that one: a pinned run never moves, whatever this is set to.
 
 Two more caps live above the individual automation, in
 [App settings](./app-settings.md#autonomy): **concurrent automation sessions**

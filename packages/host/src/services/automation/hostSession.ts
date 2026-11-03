@@ -7,14 +7,15 @@
  * paths and orchestrates through MCP.
  */
 
-import type { Session } from "../session/models";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import { emitHostEvent } from "@argus/host/bus";
 import { info } from "@argus/host/logger";
 import { appState } from "../../state";
 import { loadAppSettings } from "../appSettings/store";
+import { listClaudeAccounts } from "../claudeAuth/accounts";
 import { resolveRunnerForSession } from "../llm/resolve";
+import { DEFAULT_RUNNER_ID, type Session } from "../session/models";
 import { automationRunDir } from "./paths";
 
 interface HostSessionOptions {
@@ -24,6 +25,20 @@ interface HostSessionOptions {
   /** Runner the automation pinned; null follows the app default. */
   runner?: string | null;
   model?: string | null;
+  /** Claude account the automation pinned; null follows the active one. */
+  claudeAccountId?: string | null;
+}
+
+/** The pin applies only on the default runner, and only while the account exists. */
+function pinnedAccount(
+  runnerId: string,
+  accountId?: string | null,
+): string | null {
+  return runnerId === DEFAULT_RUNNER_ID &&
+    accountId &&
+    listClaudeAccounts().some((a) => a.id === accountId)
+    ? accountId
+    : null;
 }
 
 function hostSession(id: string, options: HostSessionOptions): Session {
@@ -51,6 +66,7 @@ function hostSession(id: string, options: HostSessionOptions): Session {
     base_branch: null,
     runner_id: runner.id,
     model: defaultModel ?? appDefault?.model?.trim() ?? null,
+    claude_account_id: pinnedAccount(runner.id, options.claudeAccountId),
   };
 }
 

@@ -130,6 +130,15 @@ public struct AutomationFields: View {
               + runners.map { .init(value: $0.id, label: $0.displayName, hint: $0.isCustom ? "Custom" : nil) },
             icon: Icon.terminal, showsTitle: true)
         }
+        if offersAccount {
+          MenuChip(
+            "Account", selection: accountBinding,
+            options: AutomationAccountPin.options(
+              accounts: host.claudeAccounts ?? [], activeId: host.activeClaudeAccountId,
+              pinned: draft.claudeAccountId
+            ).map { .init(value: $0.value, label: $0.name, hint: $0.hint) },
+            icon: Icon.person, showsTitle: true)
+        }
         if !declaredModels.isEmpty {
           MenuChip(
             "Model", selection: modelBinding,
@@ -139,6 +148,10 @@ public struct AutomationFields: View {
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
+      .task { if showsSchedule, host.claudeAccounts == nil { await host.refreshClaudeAccounts() } }
+      if offersAccount, draft.claudeAccountId != nil {
+        MutedText(AutomationAccountPin.pinnedCaption)
+      }
       // A runner that declares its models gets a menu; Claude Code only
       // learns its list from a live handshake, so there it stays free text.
       if declaredModels.isEmpty {
@@ -200,7 +213,8 @@ public struct AutomationFields: View {
     Binding(get: { draft.autonomy?.rawValue ?? "" }, set: { draft.autonomy = RemoteAutonomy(rawValue: $0) })
   }
 
-  /// Model ids don't carry across runners, so a switch drops the model.
+  /// Model ids don't carry across runners, so a switch drops the model, and a
+  /// custom runner's own credentials drop the account.
   private var runnerBinding: Binding<String> {
     Binding(
       get: { draft.runner ?? "" },
@@ -208,7 +222,20 @@ public struct AutomationFields: View {
         guard id != (draft.runner ?? "") else { return }
         draft.runner = id.isEmpty ? nil : id
         draft.model = nil
+        if !AutomationAccountPin.applies(toRunner: draft.runner) { draft.claudeAccountId = nil }
       })
+  }
+
+  /// A quick run is never pinned; it follows the active account.
+  private var offersAccount: Bool {
+    showsSchedule && AutomationAccountPin.applies(toRunner: draft.runner)
+      && AutomationAccountPin.offered(accounts: host.claudeAccounts ?? [], pinned: draft.claudeAccountId)
+  }
+
+  private var accountBinding: Binding<String> {
+    Binding(
+      get: { draft.claudeAccountId ?? "" },
+      set: { draft.claudeAccountId = $0.isEmpty ? nil : $0 })
   }
 
   private var modelBinding: Binding<String> {

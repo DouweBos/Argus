@@ -84,6 +84,11 @@ export interface Automation {
   model: string | null;
   /** Runner id for the run's agent; null inherits the app default. */
   runner: string | null;
+  /**
+   * Claude account the run is pinned to; null follows the active account. A
+   * pinned run never falls back to another account. Ignored on custom runners.
+   */
+  claude_account_id: string | null;
   /** Built-in template this was seeded from, for upgrade-on-release. */
   template_id: string | null;
   /**
@@ -195,6 +200,7 @@ export interface CreateAutomationInput {
   guardrails?: Partial<AutomationGuardrails>;
   model?: string | null;
   runner?: string | null;
+  claude_account_id?: string | null;
   template_id?: string | null;
 }
 

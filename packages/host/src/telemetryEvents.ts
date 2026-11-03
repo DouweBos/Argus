@@ -176,6 +176,10 @@ export interface EventMap {
   app_launched: undefined;
   app_quit: undefined;
   automation_extra_instructions_changed: { has_instructions: boolean };
+  automation_run_started: {
+    /** `none` unpinned; otherwise whether the pinned account could run it. */
+    account_pin: "missing" | "none" | "ok" | "reauth";
+  };
   automation_github_read: {
     success: boolean;
     tool: "artifact_search" | "get";

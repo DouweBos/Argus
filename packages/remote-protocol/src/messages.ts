@@ -123,6 +123,8 @@ export const AutomationInput = z.object({
   model: z.string().nullable(),
   /** Optional so a client built before runners could be picked still creates. */
   runner: z.string().nullable().optional(),
+  /** Optional so a client built before accounts could be pinned still creates. */
+  claude_account_id: z.string().nullable().optional(),
   guardrails: RemoteAutomationGuardrails,
 });
 export type AutomationInput = z.infer<typeof AutomationInput>;

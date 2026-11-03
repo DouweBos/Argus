@@ -11,6 +11,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { appState } from "../../state";
 import { saveAppSettings } from "../appSettings/store";
+import { upsertClaudeAccount } from "../claudeAuth/accounts";
 import { registerRunner } from "../llm/registry";
 import { hydrateHostState } from "../session/hostState";
 import {
@@ -88,6 +89,42 @@ describe("createAutomationHostSession", () => {
     expect(session.runner_id).toBe("custom:other");
     expect(session.model).toBe("m1");
   });
+
+  it("pins the Claude account the automation chose", () => {
+    upsertClaudeAccount({ id: "work", account_type: "claudeai" });
+
+    const session = createAutomationHostSession({
+      automationId: "a1",
+      runId: "r3",
+      displayName: "Standup digest",
+      runner: "claude-code",
+      claudeAccountId: "work",
+    });
+
+    expect(session.claude_account_id).toBe("work");
+  });
+
+  it("leaves the account unpinned once it is gone, or on a custom runner", () => {
+    upsertClaudeAccount({ id: "work", account_type: "claudeai" });
+
+    const removed = createAutomationHostSession({
+      automationId: "a1",
+      runId: "r4",
+      displayName: "Standup digest",
+      runner: "claude-code",
+      claudeAccountId: "gone",
+    });
+    const custom = createAutomationHostSession({
+      automationId: "a1",
+      runId: "r5",
+      displayName: "Standup digest",
+      runner: "custom:apex",
+      claudeAccountId: "work",
+    });
+
+    expect(removed.claude_account_id).toBeNull();
+    expect(custom.claude_account_id).toBeNull();
+  });
 });
 
 describe("a run's session after a restart", () => {
@@ -126,6 +163,21 @@ describe("a run's session after a restart", () => {
     });
     const snapshot = await hydrateHostState();
     expect(snapshot.sessions.map((s) => s.id)).toContain(created.id);
+  });
+
+  it("keeps the automation's account pin", () => {
+    upsertClaudeAccount({ id: "work", account_type: "claudeai" });
+    const pinned = {
+      ...options,
+      runner: "claude-code",
+      claudeAccountId: "work",
+    };
+    const created = createAutomationHostSession(pinned);
+    appState.sessions.clear();
+
+    restoreAutomationHostSession(created.id, pinned);
+
+    expect(appState.sessions.get(created.id)?.claude_account_id).toBe("work");
   });
 
   it("stays gone once the run's directory is", () => {

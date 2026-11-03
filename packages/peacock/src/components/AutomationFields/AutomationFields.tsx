@@ -2,12 +2,15 @@ import {
   AUTONOMY_CAPTIONS,
   AUTONOMY_LABELS,
   AUTONOMY_LEVELS,
+  automationAccountOptions,
   type AutonomyLevel,
+  type ClaudeAccountLike,
   cronLabel,
   draftScheduleError,
   formatTimestamp,
   localTimezone,
   nextFireTimes,
+  runnerTakesAccountPin,
 } from "@argus/client-core";
 import type {
   RemoteAutomationDetail,
@@ -15,7 +18,7 @@ import type {
   RemoteSignalSource,
 } from "@argus/remote-protocol";
 import { useMemo } from "react";
-import { TerminalIcon } from "../../icons/Icons";
+import { OrganizationIcon, TerminalIcon } from "../../icons/Icons";
 import { Button } from "../Button/Button";
 import { CronSchedulePreview } from "../CronSchedulePreview/CronSchedulePreview";
 import { FormField } from "../FormField/FormField";
@@ -37,6 +40,10 @@ export interface AutomationFieldsProps {
   sources: RemoteSignalSource[];
   /** Empty on a computer too old to say: the runner chip is hidden. */
   runners: RemoteRunner[];
+  /** The computer's Claude accounts. With one or none the account chip is hidden. */
+  accounts?: ClaudeAccountLike[];
+  /** The account an unpinned run follows, named in the "Default account" hint. */
+  activeAccountId?: string | null;
   /** "Rewrite with Claude". Omit when this client may not spend. */
   onRevisePlaybook?: () => void;
   disabled?: boolean;
@@ -48,6 +55,8 @@ export interface AutomationFieldsProps {
  * open menus, switches for lists — as ArgusUI's `AutomationFields` does.
  */
 export function AutomationFields({
+  accounts = [],
+  activeAccountId = null,
   disabled,
   draft,
   onChange,
@@ -73,6 +82,10 @@ export function AutomationFields({
 
   const runner = runners.find((r) => r.id === draft.runner);
   const declaredModels = runner?.models ?? [];
+  // A pin is kept visible even with one account left, so it can be cleared.
+  const showsAccount =
+    runnerTakesAccountPin(draft.runner) &&
+    (accounts.length > 1 || Boolean(draft.claude_account_id));
 
   return (
     <div className={styles.fields}>
@@ -243,11 +256,37 @@ export function AutomationFields({
               ]}
               title="Runner"
               value={draft.runner ?? ""}
-              // Model ids don't carry across runners, so a switch drops the model.
+              // Model ids don't carry across runners, so a switch drops the
+              // model, and a custom runner's own credentials drop the account.
               onChange={(id) =>
                 id !== (draft.runner ?? "") &&
-                patch({ runner: id || null, model: null })
+                patch({
+                  runner: id || null,
+                  model: null,
+                  ...(!runnerTakesAccountPin(id) && {
+                    claude_account_id: null,
+                  }),
+                })
               }
+            />
+          )}
+          {showsAccount && (
+            <MenuChip
+              showsTitle
+              disabled={disabled}
+              leading={<OrganizationIcon size={11} />}
+              options={automationAccountOptions(
+                accounts,
+                activeAccountId,
+                draft.claude_account_id,
+              ).map((o) => ({
+                value: o.value,
+                label: o.name,
+                hint: o.description,
+              }))}
+              title="Account"
+              value={draft.claude_account_id ?? ""}
+              onChange={(id) => patch({ claude_account_id: id || null })}
             />
           )}
           {declaredModels.length > 0 && (
@@ -272,6 +311,12 @@ export function AutomationFields({
             />
           )}
         </div>
+        {showsAccount && draft.claude_account_id && (
+          <p className={styles.caption}>
+            Runs only on this account, and never move to another one when its
+            plan limit is reached.
+          </p>
+        )}
         {/* Claude Code only learns its models from a live handshake, so there it stays free text. */}
         {declaredModels.length === 0 && (
           <Input

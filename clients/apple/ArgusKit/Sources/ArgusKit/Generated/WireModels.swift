@@ -1993,6 +1993,7 @@ extension ArgusProtocol {
     public var guardrails: AutomationGuardrails
     public var model: String?
     public var runner: String?
+    public var claudeAccountId: String?
     public var templateId: String?
     public var seededPlaybookHash: String?
     public var createdAt: Double
@@ -2014,6 +2015,7 @@ extension ArgusProtocol {
       case guardrails = "guardrails"
       case model = "model"
       case runner = "runner"
+      case claudeAccountId = "claude_account_id"
       case templateId = "template_id"
       case seededPlaybookHash = "seeded_playbook_hash"
       case createdAt = "created_at"
@@ -2022,7 +2024,7 @@ extension ArgusProtocol {
       case nextRunAt = "next_run_at"
     }
 
-    public init(id: String, name: String, description: String, enabled: Bool, trigger: AutomationTrigger, scope: AutomationScope, sourceIds: [String], playbook: String, extraInstructions: String, autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails, model: String? = nil, runner: String? = nil, templateId: String? = nil, seededPlaybookHash: String? = nil, createdAt: Double, updatedAt: Double, lastRunAt: Double? = nil, nextRunAt: Double? = nil) {
+    public init(id: String, name: String, description: String, enabled: Bool, trigger: AutomationTrigger, scope: AutomationScope, sourceIds: [String], playbook: String, extraInstructions: String, autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, seededPlaybookHash: String? = nil, createdAt: Double, updatedAt: Double, lastRunAt: Double? = nil, nextRunAt: Double? = nil) {
       self.id = id
       self.name = name
       self.description = description
@@ -2036,6 +2038,7 @@ extension ArgusProtocol {
       self.guardrails = guardrails
       self.model = model
       self.runner = runner
+      self.claudeAccountId = claudeAccountId
       self.templateId = templateId
       self.seededPlaybookHash = seededPlaybookHash
       self.createdAt = createdAt
@@ -2059,6 +2062,7 @@ extension ArgusProtocol {
       try c.encode(guardrails, forKey: .guardrails)
       try c.encode(model, forKey: .model)
       try c.encode(runner, forKey: .runner)
+      try c.encode(claudeAccountId, forKey: .claudeAccountId)
       try c.encode(templateId, forKey: .templateId)
       try c.encode(seededPlaybookHash, forKey: .seededPlaybookHash)
       try c.encode(createdAt, forKey: .createdAt)
@@ -2296,6 +2300,7 @@ extension ArgusProtocol {
     public var autonomy: AutomationInputAutonomy?
     public var model: String?
     public var runner: String?
+    public var claudeAccountId: String?
     public var guardrails: RemoteAutomationGuardrails
 
     enum CodingKeys: String, CodingKey {
@@ -2313,10 +2318,11 @@ extension ArgusProtocol {
       case autonomy = "autonomy"
       case model = "model"
       case runner = "runner"
+      case claudeAccountId = "claude_account_id"
       case guardrails = "guardrails"
     }
 
-    public init(name: String, description: String, enabled: Bool, triggerKind: AutomationInputTriggerKind, cron: String, timezone: String, catchUp: Bool, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String? = nil, autonomy: AutomationInputAutonomy? = nil, model: String? = nil, runner: String? = nil, guardrails: RemoteAutomationGuardrails) {
+    public init(name: String, description: String, enabled: Bool, triggerKind: AutomationInputTriggerKind, cron: String, timezone: String, catchUp: Bool, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String? = nil, autonomy: AutomationInputAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails) {
       self.name = name
       self.description = description
       self.enabled = enabled
@@ -2331,6 +2337,7 @@ extension ArgusProtocol {
       self.autonomy = autonomy
       self.model = model
       self.runner = runner
+      self.claudeAccountId = claudeAccountId
       self.guardrails = guardrails
     }
 
@@ -2350,6 +2357,7 @@ extension ArgusProtocol {
       try c.encode(autonomy, forKey: .autonomy)
       try c.encode(model, forKey: .model)
       try c.encodeIfPresent(runner, forKey: .runner)
+      try c.encodeIfPresent(claudeAccountId, forKey: .claudeAccountId)
       try c.encode(guardrails, forKey: .guardrails)
     }
   }
@@ -4865,6 +4873,7 @@ extension ArgusProtocol {
     public var guardrails: CreateAutomationInputGuardrails?
     public var model: String?
     public var runner: String?
+    public var claudeAccountId: String?
     public var templateId: String?
 
     enum CodingKeys: String, CodingKey {
@@ -4880,10 +4889,11 @@ extension ArgusProtocol {
       case guardrails = "guardrails"
       case model = "model"
       case runner = "runner"
+      case claudeAccountId = "claude_account_id"
       case templateId = "template_id"
     }
 
-    public init(name: String, description: String? = nil, enabled: Bool? = nil, trigger: AutomationTrigger, scope: CreateAutomationInputScope? = nil, sourceIds: [String]? = nil, playbook: String, extraInstructions: String? = nil, autonomy: AutonomyLevel? = nil, guardrails: CreateAutomationInputGuardrails? = nil, model: String? = nil, runner: String? = nil, templateId: String? = nil) {
+    public init(name: String, description: String? = nil, enabled: Bool? = nil, trigger: AutomationTrigger, scope: CreateAutomationInputScope? = nil, sourceIds: [String]? = nil, playbook: String, extraInstructions: String? = nil, autonomy: AutonomyLevel? = nil, guardrails: CreateAutomationInputGuardrails? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil) {
       self.name = name
       self.description = description
       self.enabled = enabled
@@ -4896,6 +4906,7 @@ extension ArgusProtocol {
       self.guardrails = guardrails
       self.model = model
       self.runner = runner
+      self.claudeAccountId = claudeAccountId
       self.templateId = templateId
     }
 
@@ -4913,6 +4924,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(guardrails, forKey: .guardrails)
       try c.encodeIfPresent(model, forKey: .model)
       try c.encodeIfPresent(runner, forKey: .runner)
+      try c.encodeIfPresent(claudeAccountId, forKey: .claudeAccountId)
       try c.encodeIfPresent(templateId, forKey: .templateId)
     }
   }
@@ -13047,6 +13059,7 @@ extension ArgusProtocol {
     public var autonomy: RemoteAutomationDetailAutonomy?
     public var model: String?
     public var runner: String?
+    public var claudeAccountId: String?
     public var guardrails: RemoteAutomationGuardrails
 
     enum CodingKeys: String, CodingKey {
@@ -13065,10 +13078,11 @@ extension ArgusProtocol {
       case autonomy = "autonomy"
       case model = "model"
       case runner = "runner"
+      case claudeAccountId = "claude_account_id"
       case guardrails = "guardrails"
     }
 
-    public init(id: String, name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationDetailTriggerKind, cron: String? = nil, timezone: String? = nil, catchUp: Bool, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String, autonomy: RemoteAutomationDetailAutonomy? = nil, model: String? = nil, runner: String? = nil, guardrails: RemoteAutomationGuardrails) {
+    public init(id: String, name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationDetailTriggerKind, cron: String? = nil, timezone: String? = nil, catchUp: Bool, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String, autonomy: RemoteAutomationDetailAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails) {
       self.id = id
       self.name = name
       self.description = description
@@ -13084,6 +13098,7 @@ extension ArgusProtocol {
       self.autonomy = autonomy
       self.model = model
       self.runner = runner
+      self.claudeAccountId = claudeAccountId
       self.guardrails = guardrails
     }
 
@@ -13104,6 +13119,7 @@ extension ArgusProtocol {
       try c.encode(autonomy, forKey: .autonomy)
       try c.encode(model, forKey: .model)
       try c.encode(runner, forKey: .runner)
+      try c.encodeIfPresent(claudeAccountId, forKey: .claudeAccountId)
       try c.encode(guardrails, forKey: .guardrails)
     }
   }
@@ -17349,6 +17365,7 @@ extension ArgusProtocol {
     public var guardrails: AutomationGuardrails?
     public var model: String?
     public var runner: String?
+    public var claudeAccountId: String?
     public var templateId: String?
     public var lastRunAt: Double?
     public var nextRunAt: Double?
@@ -17366,12 +17383,13 @@ extension ArgusProtocol {
       case guardrails = "guardrails"
       case model = "model"
       case runner = "runner"
+      case claudeAccountId = "claude_account_id"
       case templateId = "template_id"
       case lastRunAt = "last_run_at"
       case nextRunAt = "next_run_at"
     }
 
-    public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, trigger: AutomationTrigger? = nil, scope: UpdateAutomationInputScope? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails? = nil, model: String? = nil, runner: String? = nil, templateId: String? = nil, lastRunAt: Double? = nil, nextRunAt: Double? = nil) {
+    public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, trigger: AutomationTrigger? = nil, scope: UpdateAutomationInputScope? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, lastRunAt: Double? = nil, nextRunAt: Double? = nil) {
       self.name = name
       self.description = description
       self.enabled = enabled
@@ -17384,6 +17402,7 @@ extension ArgusProtocol {
       self.guardrails = guardrails
       self.model = model
       self.runner = runner
+      self.claudeAccountId = claudeAccountId
       self.templateId = templateId
       self.lastRunAt = lastRunAt
       self.nextRunAt = nextRunAt
@@ -17403,6 +17422,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(guardrails, forKey: .guardrails)
       try c.encodeIfPresent(model, forKey: .model)
       try c.encodeIfPresent(runner, forKey: .runner)
+      try c.encodeIfPresent(claudeAccountId, forKey: .claudeAccountId)
       try c.encodeIfPresent(templateId, forKey: .templateId)
       try c.encodeIfPresent(lastRunAt, forKey: .lastRunAt)
       try c.encodeIfPresent(nextRunAt, forKey: .nextRunAt)

@@ -818,6 +818,8 @@ export const RemoteAutomationDetail = z.object({
   model: z.string().nullable(),
   /** Runner the run's agent is pinned to; null follows the app default. */
   runner: z.string().nullable(),
+  /** Optional so a phone still reads a host from before accounts could be pinned. */
+  claude_account_id: z.string().nullable().optional(),
   guardrails: RemoteAutomationGuardrails,
 });
 export type RemoteAutomationDetail = z.infer<typeof RemoteAutomationDetail>;

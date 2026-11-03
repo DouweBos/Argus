@@ -39,6 +39,7 @@ function automation(
     next_run_at: NOW + 3 * HOURS,
     playbook: "",
     runner: null,
+    claude_account_id: null,
     scope: { repo_roots: [REPO] },
     source_ids: sources,
     template_id: null,

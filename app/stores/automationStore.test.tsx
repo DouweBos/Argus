@@ -76,6 +76,7 @@ function automation(id: string, name: string): Automation {
     extra_instructions: "",
     model: null,
     runner: null,
+    claude_account_id: null,
     template_id: null,
     seeded_playbook_hash: null,
     trigger: { kind: "manual" },

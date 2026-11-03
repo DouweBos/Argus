@@ -40,6 +40,7 @@ function automation(overrides: Partial<Automation> = {}): Automation {
     guardrails: DEFAULT_GUARDRAILS,
     model: null,
     runner: null,
+    claude_account_id: null,
     template_id: "standup-digest",
     seeded_playbook_hash: null,
     created_at: 1,

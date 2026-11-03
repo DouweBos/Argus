@@ -117,6 +117,30 @@ export function accountPickerOptions(
   ];
 }
 
+/**
+ * The picker for an automation's account pin. A pin to an account since
+ * signed out stays listed, so the editor can say why its runs fail.
+ */
+export function automationAccountOptions(
+  accounts: ClaudeAccountLike[],
+  activeId: string | null,
+  pinnedId: string | null | undefined,
+): AccountPickerOption[] {
+  const options = accountPickerOptions(accounts, activeId);
+  if (!pinnedId || accounts.some((a) => a.id === pinnedId)) {
+    return options;
+  }
+
+  return [
+    ...options,
+    {
+      value: pinnedId,
+      name: "Signed-out account",
+      description: "Runs fail until it is signed back in",
+    },
+  ];
+}
+
 /** What the account chip reads: the pinned account, else "Default account". */
 export function accountPickerLabel(
   accounts: ClaudeAccountLike[],

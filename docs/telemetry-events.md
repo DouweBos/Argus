@@ -203,11 +203,12 @@ initial attempt from a `continue` after the user resolved conflicts.
 
 ## Automations
 
-| Event                                   | Source | When                                                     | Extra props                                                   |
-| --------------------------------------- | ------ | -------------------------------------------------------- | ------------------------------------------------------------- |
-| `automation_extra_instructions_changed` | main   | An automation's extra instructions were added or cleared | `has_instructions`                                            |
-| `automation_github_read`                | main   | An automation run read GitHub through an Argus tool      | `tool: "get" \| "artifact_search"`, `success`                 |
-| `proposal_start_failed`                 | main   | Starting a proposal failed before its agent ran          | `stage` (`creating_worktree`, `setting_up`, `starting_agent`) |
+| Event                                   | Source | When                                                         | Extra props                                                                                                                                   |
+| --------------------------------------- | ------ | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `automation_extra_instructions_changed` | main   | An automation's extra instructions were added or cleared     | `has_instructions`                                                                                                                            |
+| `automation_github_read`                | main   | An automation run read GitHub through an Argus tool          | `tool: "get" \| "artifact_search"`, `success`                                                                                                 |
+| `automation_run_started`                | main   | An automation run's session came up, before its agent starts | `account_pin` — `none` (follows the active account or a custom runner), `ok`, or why the pinned account couldn't run it (`missing`, `reauth`) |
+| `proposal_start_failed`                 | main   | Starting a proposal failed before its agent ran              | `stage` (`creating_worktree`, `setting_up`, `starting_agent`)                                                                                 |
 
 ## Simulators
 

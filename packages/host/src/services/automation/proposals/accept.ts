@@ -9,14 +9,20 @@
  */
 
 import type { Proposal, ProposalStartStage } from "./models";
-import type { Session } from "../../session/models";
 import { emitHostEvent } from "@argus/host/bus";
 import { info } from "@argus/host/logger";
 import { sendAgentMessage, startAgent } from "../../agent/agentService";
 import { ensureRepoRegistered } from "../../mcp/projects";
 import { createSession } from "../../session/manager";
+import {
+  DEFAULT_RUNNER_ID,
+  type Session,
+  sessionRunnerId,
+} from "../../session/models";
+import { setSessionClaudeAccount } from "../../session/sessionOps";
 import { waitForSessionReady } from "../../session/waitForReady";
 import { capture as telemetryCapture } from "../../telemetry/telemetry";
+import { accountPinState } from "../accountPin";
 import { getAutomation } from "../manager";
 import { recordAutomationSession } from "../ownedSessions";
 import { requireProposal, updateProposal } from "./manager";
@@ -85,6 +91,15 @@ export async function acceptProposal(
       },
     );
     emitSessionCreated(session);
+    // The proposal's work likely needs the same account-only MCPs as its run.
+    const pin = automation?.claude_account_id ?? null;
+    if (
+      pin &&
+      sessionRunnerId(session) === DEFAULT_RUNNER_ID &&
+      accountPinState(pin) === "ok"
+    ) {
+      setSessionClaudeAccount(session.id, pin);
+    }
 
     // Claim the session before its agent can run: the shell guard resolves
     // the automation through this link, so a gap here is a window in which an

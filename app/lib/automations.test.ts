@@ -63,6 +63,7 @@ describe("labels", () => {
         guardrails: DEFAULT_GUARDRAILS,
         model: null,
         runner: null,
+        claude_account_id: null,
         template_id: null,
         seeded_playbook_hash: null,
         trigger: {

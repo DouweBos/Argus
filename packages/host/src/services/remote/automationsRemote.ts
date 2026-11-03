@@ -129,6 +129,7 @@ function toRemoteAutomationDetail(
     autonomy: automation.autonomy,
     model: automation.model,
     runner: automation.runner ?? null,
+    claude_account_id: automation.claude_account_id ?? null,
     guardrails: automation.guardrails,
   };
 }
@@ -214,6 +215,7 @@ export function createRemoteAutomation(input: AutomationInput): {
     guardrails: input.guardrails,
     model: input.model,
     runner: input.runner ?? null,
+    claude_account_id: input.claude_account_id ?? null,
   };
 
   return both(createAutomation(create));
@@ -243,6 +245,9 @@ export function updateRemoteAutomation(
     ...(patch.autonomy !== undefined && { autonomy: patch.autonomy }),
     ...(patch.model !== undefined && { model: patch.model }),
     ...(patch.runner !== undefined && { runner: patch.runner ?? null }),
+    ...(patch.claude_account_id !== undefined && {
+      claude_account_id: patch.claude_account_id ?? null,
+    }),
     // Merged, so a guardrail an older phone doesn't know about survives its save.
     ...(patch.guardrails !== undefined && {
       guardrails: { ...current.guardrails, ...patch.guardrails },
@@ -428,6 +433,7 @@ export async function remoteAutomationDraft(
       autonomy: input.autonomy ?? null,
       model: input.model ?? null,
       runner: input.runner ?? null,
+      claude_account_id: input.claude_account_id ?? null,
       guardrails: normalizeGuardrails(input.guardrails),
     },
     notes,

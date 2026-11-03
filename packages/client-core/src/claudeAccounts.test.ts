@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   accountPickerLabel,
   accountPickerOptions,
+  automationAccountOptions,
   claudeAccountRows,
   claudeSignInOutcome,
   claudeSignInPhase,
@@ -80,6 +81,13 @@ describe("account picker", () => {
     expect(accountPickerLabel([work, home], "w")).toBe("Work");
     expect(accountPickerLabel([work, home], null)).toBe("Default account");
     expect(accountPickerLabel([work, home], "gone")).toBe("Default account");
+  });
+
+  it("keeps an automation's pin to a signed-out account listed", () => {
+    expect(
+      automationAccountOptions([work, home], "h", "gone").map((o) => o.value),
+    ).toEqual(["", "w", "h", "gone"]);
+    expect(automationAccountOptions([work, home], "h", "w")).toHaveLength(3);
   });
 
   it("says who an agent runs as only when there is a choice", () => {

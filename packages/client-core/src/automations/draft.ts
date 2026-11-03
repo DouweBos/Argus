@@ -38,6 +38,7 @@ export function newAutomationDraft(
     autonomy: null,
     model: null,
     runner: null,
+    claude_account_id: null,
     guardrails: { ...DEFAULT_GUARDRAILS },
   };
 }
@@ -59,8 +60,21 @@ export function draftToInput(draft: RemoteAutomationDetail): AutomationInput {
     autonomy: draft.autonomy,
     model: draft.model?.trim() || null,
     runner: draft.runner?.trim() || null,
+    claude_account_id: draft.claude_account_id ?? null,
     guardrails: draft.guardrails,
   };
+}
+
+const CLAUDE_CODE_RUNNER_ID = "claude-code";
+
+/**
+ * Whether a run on this runner honours a Claude account pin. Custom runners
+ * bring their own credentials; null is the computer's default runner.
+ */
+export function runnerTakesAccountPin(
+  runnerId: string | null | undefined,
+): boolean {
+  return !runnerId || runnerId === CLAUDE_CODE_RUNNER_ID;
 }
 
 /** Why the draft's schedule can't be saved, or null when it can. */

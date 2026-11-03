@@ -2530,6 +2530,7 @@ extension ArgusProtocol {
       public var autonomy: AutomationsUpdateParamsPatchAutonomy?
       public var model: String?
       public var runner: String?
+      public var claudeAccountId: String?
       public var guardrails: RemoteAutomationGuardrails?
 
       enum CodingKeys: String, CodingKey {
@@ -2547,10 +2548,11 @@ extension ArgusProtocol {
         case autonomy = "autonomy"
         case model = "model"
         case runner = "runner"
+        case claudeAccountId = "claude_account_id"
         case guardrails = "guardrails"
       }
 
-      public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, triggerKind: AutomationsUpdateParamsPatchTriggerKind? = nil, cron: String? = nil, timezone: String? = nil, catchUp: Bool? = nil, repoRoots: [String]? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutomationsUpdateParamsPatchAutonomy? = nil, model: String? = nil, runner: String? = nil, guardrails: RemoteAutomationGuardrails? = nil) {
+      public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, triggerKind: AutomationsUpdateParamsPatchTriggerKind? = nil, cron: String? = nil, timezone: String? = nil, catchUp: Bool? = nil, repoRoots: [String]? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutomationsUpdateParamsPatchAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails? = nil) {
         self.name = name
         self.description = description
         self.enabled = enabled
@@ -2565,6 +2567,7 @@ extension ArgusProtocol {
         self.autonomy = autonomy
         self.model = model
         self.runner = runner
+        self.claudeAccountId = claudeAccountId
         self.guardrails = guardrails
       }
 
@@ -2584,6 +2587,7 @@ extension ArgusProtocol {
         try c.encodeIfPresent(autonomy, forKey: .autonomy)
         try c.encodeIfPresent(model, forKey: .model)
         try c.encodeIfPresent(runner, forKey: .runner)
+        try c.encodeIfPresent(claudeAccountId, forKey: .claudeAccountId)
         try c.encodeIfPresent(guardrails, forKey: .guardrails)
       }
     }

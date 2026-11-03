@@ -31,6 +31,7 @@ import {
 } from "@argus/peacock";
 import { appNavigate, navigateBack } from "../../routing/router";
 import { useAutomationsStore } from "../../stores/automations";
+import { useClaudeAccountsStore } from "../../stores/claudeAccounts";
 import { useConnectionStore } from "../../stores/connection";
 import { useProjectsStore } from "../../stores/projects";
 import { useLiveRefresh } from "../useLiveRefresh";
@@ -64,6 +65,8 @@ export function AutomationScreen({ automationId }: { automationId: string }) {
   const allRuns = useAutomationsStore((s) => s.runs);
   const sources = useAutomationsStore((s) => s.sources);
   const runners = useAutomationsStore((s) => s.runners);
+  const accounts = useClaudeAccountsStore((s) => s.accounts);
+  const activeAccountId = useClaudeAccountsStore((s) => s.activeId);
   const store = useAutomationsStore.getState;
   const runs = allRuns.filter((r) => r.automation_id === automationId);
 
@@ -85,6 +88,12 @@ export function AutomationScreen({ automationId }: { automationId: string }) {
       .catch(() => setMissing(true));
     void store().loadMemories(automationId).catch(() => {});
     void store().loadEditorOptions();
+    if (useClaudeAccountsStore.getState().accounts === null) {
+      void useClaudeAccountsStore
+        .getState()
+        .refresh({ background: true })
+        .catch(() => {});
+    }
     if (projects.length === 0) {
       void useProjectsStore
         .getState()
@@ -168,6 +177,8 @@ export function AutomationScreen({ automationId }: { automationId: string }) {
             <AutomationFields
               disabled={!hasControl}
               draft={draft}
+              accounts={accounts ?? []}
+              activeAccountId={activeAccountId}
               projects={automationProjectOptions(projects, draft.repo_roots)}
               runners={runners}
               sources={sources}

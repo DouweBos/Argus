@@ -34,6 +34,7 @@ import {
   useDefaultLlm,
 } from "../../../stores/settingsStore";
 import { ModelPicker, type RunnerSelection } from "../../agent/ModelPicker";
+import { AccountField } from "./AccountField";
 import styles from "./AutomationEditor.module.css";
 import { AutonomyFields } from "./AutonomyFields";
 
@@ -60,6 +61,8 @@ function useSignalSources(): SignalSourceInfo[] {
 }
 
 interface Draft {
+  /** Blank follows the active account. */
+  accountId: string;
   autonomy: AutonomyChoice;
   catchUp: boolean;
   cron: string;
@@ -87,6 +90,7 @@ function toDraft(automation: Automation): Draft {
     extraInstructions: automation.extra_instructions,
     model: automation.model ?? "",
     runner: automation.runner ?? "",
+    accountId: automation.claude_account_id ?? "",
     kind: automation.trigger.kind,
     cron: schedule?.cron ?? "0 9 * * 1-5",
     timezone: schedule?.timezone ?? localTimezone(),
@@ -150,8 +154,16 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
     available: runners,
     onSelect: (id) =>
       // Model ids don't carry across runners, so a switch drops the model back
-      // to the new runner's default.
-      setDraft((d) => ({ ...d, runner: id, model: "" })),
+      // to the new runner's default; a custom runner's own credentials drop the account.
+      setDraft((d) => ({
+        ...d,
+        runner: id,
+        model: "",
+        accountId:
+          (id || defaultLlm.runner || DEFAULT_LLM_RUNNER) === DEFAULT_LLM_RUNNER
+            ? d.accountId
+            : "",
+      })),
   };
 
   // Save is explicit, so the button only lights up once the form differs from
@@ -205,6 +217,7 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
         extra_instructions: draft.extraInstructions.trim(),
         model: draft.model.trim() || null,
         runner: draft.runner.trim() || null,
+        claude_account_id: draft.accountId || null,
         trigger: toTrigger(draft),
         scope: { repo_roots: draft.repoRoots },
         source_ids: draft.sourceIds,
@@ -386,6 +399,13 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
             )}
           </div>
         </FormField>
+
+        {effectiveRunnerId === DEFAULT_LLM_RUNNER && (
+          <AccountField
+            value={draft.accountId}
+            onChange={(id) => patch("accountId", id)}
+          />
+        )}
 
         <AutonomyFields
           autonomy={draft.autonomy}

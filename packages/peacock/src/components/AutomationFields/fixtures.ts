@@ -1,4 +1,5 @@
 // Story fixtures for the automation screens, in the gateway's shapes.
+import type { ClaudeAccountLike } from "@argus/client-core";
 import type {
   AutomationCalibration,
   RemoteAutomation,
@@ -30,6 +31,7 @@ export const FIXTURE_DETAIL: RemoteAutomationDetail = {
   autonomy: null,
   model: null,
   runner: null,
+  claude_account_id: null,
   guardrails: {
     confidence_threshold: 0.8,
     max_concurrent_sessions: 2,
@@ -73,6 +75,23 @@ export const FIXTURE_RUNNERS: RemoteRunner[] = [
     models: [
       { value: "qwen", display_name: "Qwen", description: "Fast and local" },
     ],
+  },
+];
+
+export const FIXTURE_ACCOUNTS: ClaudeAccountLike[] = [
+  {
+    id: "default",
+    label: "Personal",
+    email: "me@example.com",
+    subscription_type: "max",
+    account_type: "claudeai",
+  },
+  {
+    id: "work",
+    email: "me@corp.example",
+    org_name: "Corp",
+    subscription_type: "team",
+    account_type: "claudeai",
   },
 ];
 
