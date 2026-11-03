@@ -26,6 +26,7 @@ struct SessionContextCard: View {
   @State private var path: String?
   @State private var editors: [ArgusProtocol.EditorDescriptor] = []
   @State private var pushing = false
+  @State private var pulling = false
   @State private var pullRequestURL: URL?
   @State private var renamingBranch = false
   @State private var showingChats = false
@@ -82,6 +83,7 @@ struct SessionContextCard: View {
       if let issue = session.linkedIssue { linkedIssueRow(issue) }
       ForEach(session.designRefs ?? [], id: \.url) { designRow($0) }
       branchRow
+      if ready, (git?.behind ?? 0) > 0 || pulling { pullRow }
       if ready { pushRow }
       if ready { changesRow }
     }
@@ -227,6 +229,22 @@ struct SessionContextCard: View {
     .help(session.baseBranch.map { "\(session.branch) from \($0)" } ?? session.branch)
   }
 
+  private var pullRow: some View {
+    let behind = git?.behind ?? 0
+    return Button {
+      pull()
+    } label: {
+      ContextCardRow(icon: "icloud.and.arrow.down", title: pulling ? "Pulling…" : "Pull") {
+        if behind > 0 {
+          Text("↓\(behind)").font(.scaled(size: 11).monospacedDigit()).foregroundStyle(theme.textSecondary)
+        }
+      }
+    }
+    .buttonStyle(ContextRowButtonStyle())
+    .disabled(pulling)
+    .help("Pull \(behind) commit\(behind == 1 ? "" : "s") from \(git?.upstream ?? "upstream")")
+  }
+
   @ViewBuilder private var pushRow: some View {
     let ahead = Int(git?.ahead ?? 0)
     Button {
@@ -281,6 +299,17 @@ struct SessionContextCard: View {
       let result = await store.push(sessionId: session.id)
       pushing = false
       pullRequestURL = result?.pr_url.flatMap(URL.init(string:))
+    }
+  }
+
+  /// Fast-forwards when there's nothing local; otherwise rebases the unpushed commits onto upstream.
+  private func pull() {
+    MacTelemetry.capture(.contextCardUsed(action: .pull))
+    pulling = true
+    let strategy: HostStore.PullStrategy = (git?.ahead ?? 0) > 0 ? .rebase : .ffOnly
+    Task {
+      _ = await store.pullCurrent(sessionId: session.id, strategy: strategy)
+      pulling = false
     }
   }
 
