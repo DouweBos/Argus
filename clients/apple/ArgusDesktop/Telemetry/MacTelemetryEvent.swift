@@ -203,6 +203,7 @@ enum MacTelemetryEvent {
     case switchBranch = "switch_branch"
     case pull
     case push
+    case merge
     case changes
     case linkedIssue = "linked_issue"
     case design

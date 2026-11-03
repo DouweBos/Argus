@@ -27,6 +27,9 @@ struct SessionContextCard: View {
   @State private var editors: [ArgusProtocol.EditorDescriptor] = []
   @State private var pushing = false
   @State private var pulling = false
+  @State private var merging = false
+  /// Why the host would refuse a merge into the base branch; empty means it would go through.
+  @State private var mergeBlockers: [String] = []
   @State private var pullRequestURL: URL?
   @State private var renamingBranch = false
   @State private var showingChats = false
@@ -64,6 +67,10 @@ struct SessionContextCard: View {
     .liveRefresh(enabled: !collapsed && ready && !session.isOutsideProjects, every: .seconds(10)) {
       await store.loadGitStatus(sessionId: session.id)
     }
+    .task(id: collapsed || !ready || session.kind != .worktree ? nil : "\(session.id):\(git?.dirtyCount ?? 0):\(git?.ahead ?? 0)") {
+      guard !collapsed, ready, session.kind == .worktree else { return }
+      mergeBlockers = await store.mergeBlockers(sessionId: session.id)
+    }
   }
 
   @ViewBuilder private var details: some View {
@@ -85,6 +92,7 @@ struct SessionContextCard: View {
       branchRow
       if ready, (git?.behind ?? 0) > 0 || pulling { pullRow }
       if ready { pushRow }
+      if ready, session.kind == .worktree, session.baseBranch != nil { mergeRow }
       if ready { changesRow }
     }
     ContextCardDivider()
@@ -271,6 +279,18 @@ struct SessionContextCard: View {
     }
   }
 
+  private var mergeRow: some View {
+    let base = session.baseBranch ?? "base"
+    return Button {
+      Task { await merge(into: base) }
+    } label: {
+      ContextCardRow(icon: Icon.merge, title: merging ? "Merging…" : "Merge into \(base)", muted: !mergeBlockers.isEmpty)
+    }
+    .buttonStyle(ContextRowButtonStyle())
+    .disabled(merging || !mergeBlockers.isEmpty)
+    .help(mergeBlockers.isEmpty ? "Merge this branch into \(base)" : mergeBlockers.joined(separator: "\n"))
+  }
+
   private var changesRow: some View {
     Button {
       MacTelemetry.capture(.contextCardUsed(action: .changes))
@@ -311,6 +331,21 @@ struct SessionContextCard: View {
       _ = await store.pullCurrent(sessionId: session.id, strategy: strategy)
       pulling = false
     }
+  }
+
+  /// Squashing rewrites the commits the agent wrote, so it's asked rather than assumed.
+  private func merge(into base: String) async {
+    guard
+      let choice = await GitDialogs.choose(
+        "Merge into \(base)?", message: "Uncommitted changes are committed first. A conflict stops the merge.",
+        buttons: [HostStore.MergeStrategy.keep.label, HostStore.MergeStrategy.squash.label])
+    else { return }
+    MacTelemetry.capture(.contextCardUsed(action: .merge))
+    merging = true
+    _ = await store.mergeIntoBase(sessionId: session.id, strategy: choice == 0 ? .keep : .squash)
+    await store.loadGitStatus(sessionId: session.id)
+    mergeBlockers = await store.mergeBlockers(sessionId: session.id)
+    merging = false
   }
 
   private func reveal() {
