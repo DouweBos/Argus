@@ -124,6 +124,23 @@ struct AccountStoreTests {
     #expect(published.first?.source == .account)
   }
 
+  @Test("cached keys without a sign-in behind them start signed out")
+  func lostSession() async throws {
+    let phone = TestKey(1)
+    let g = genesis(phone)
+    let state = try #require(AccountLog.verify([g]).state)
+    service.seed([g])
+    let (store, memory) = makeStore(vault: AccountVault(keys: phone.deviceKeys, root: state.root, entries: [g]))
+    var events: [AccountStore.Event] = []
+    store.onEvent = { events.append($0) }
+    await store.start()
+    #expect(store.phase == .signedOut)
+    #expect(store.error == AccountServiceError.notSignedIn.message)
+    #expect(events == [.sessionLost])
+    #expect(await memory.load().root == nil)
+    #expect(service.batches.isEmpty)
+  }
+
   func readyStore() async -> AccountStore {
     let (store, _) = makeStore()
     await store.start()

@@ -39,6 +39,8 @@ public final class AccountStore {
   public enum Event: Equatable, Sendable {
     case signedIn(provider: AccountSignInProvider, firstDevice: Bool)
     case signedOut
+    /// The keys were still here but the sign-in behind them was gone.
+    case sessionLost
     case memberRemoved(role: AccountMember.Role)
     case memberRenamed(role: AccountMember.Role)
     /// `viaPairing`: started from a QR-paired computer rather than a typed code.
@@ -183,6 +185,7 @@ public final class AccountStore {
       return
     }
     refreshProfile()
+    if await dropLostSession() { return }
     if phase == .ready {
       await refresh()
       await linkLocalHostIfNeeded()
@@ -198,6 +201,7 @@ public final class AccountStore {
   public func refresh() async {
     guard phase == .ready else { return }
     refreshProfile()
+    if await dropLostSession() { return }
     if await checkForReset() { return }
     await refreshLog()
     await flushName()
@@ -415,6 +419,24 @@ public final class AccountStore {
     try? await auth.signOut()
     await forgetAccount()
     onEvent(.signedOut)
+  }
+
+  /// Ready from this device's keys, but signed out of Clerk (signed out
+  /// elsewhere, or the service moved Clerk instance): nothing can sync, so it
+  /// starts signed out. The service has to agree, so a slow load never signs anyone out.
+  func dropLostSession() async -> Bool {
+    guard phase == .ready, !auth.isSignedIn else { return false }
+    do {
+      _ = try await client.account()
+      return false
+    } catch AccountServiceError.notSignedIn {
+      await forgetAccount()
+      error = AccountServiceError.notSignedIn.message
+      onEvent(.sessionLost)
+      return true
+    } catch {
+      return false
+    }
   }
 
   func forgetAccount() async {

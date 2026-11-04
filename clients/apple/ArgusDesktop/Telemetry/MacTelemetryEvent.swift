@@ -329,6 +329,8 @@ enum MacTelemetryEvent {
   case accountJoinActed(action: AccountStore.JoinAction, role: AccountStore.JoinRole)
   /// Starting the account over from this Mac, or noticing it was started over elsewhere.
   case accountReset(action: ResetAction)
+  /// Found signed out on launch or return: this Mac's keys outlived the sign-in behind them.
+  case accountSessionLost
   /// This Mac removed or renamed a member of the account.
   case accountMemberChanged(action: AccountMemberAction, role: AccountMember.Role)
   /// This Mac's name setting changed; `linked`: renamed on the account too.
@@ -441,6 +443,7 @@ enum MacTelemetryEvent {
     case .pullRequestActed: "mac_pull_request_acted"
     case .accountJoinActed: "mac_account_join_acted"
     case .accountReset: "mac_account_reset"
+    case .accountSessionLost: "mac_account_session_lost"
     case .accountMemberChanged: "mac_account_member_changed"
     case .deviceNameChanged: "mac_device_name_changed"
     case .paletteCommandRun: "mac_palette_command_run"
@@ -475,7 +478,7 @@ enum MacTelemetryEvent {
 
   var properties: [String: Any] {
     switch self {
-    case .launched:
+    case .launched, .accountSessionLost:
       [:]
     case .quit(let hadRunningAgents):
       ["had_running_agents": hadRunningAgents]
