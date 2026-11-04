@@ -1,6 +1,7 @@
 import AppKit
 import ArgusAuth
 import ArgusCore
+import ArgusKit
 import ArgusUpdate
 import Foundation
 import Observation
@@ -98,6 +99,32 @@ final class DesktopModel {
   var tabs: [WindowTab] = WindowTab.restored()
   var activeTabId = WindowTab.localId
 
+  /// The keychain's, except under `ARGUS_NO_KEYCHAIN` (debug only): a build
+  /// signed differently from the one that sealed the vault makes macOS prompt
+  /// for it, and a throwaway run (`pnpm shots`) has no business reading it.
+  private static func accountVault() -> any AccountVaultStore {
+    #if DEBUG
+      let environment = ProcessInfo.processInfo.environment
+      if let name = environment["ARGUS_ACCOUNT_FIXTURE"] { return MemoryAccountVault(fixtureVault(deviceName: name)) }
+      if environment["ARGUS_NO_KEYCHAIN"] != nil { return MemoryAccountVault() }
+    #endif
+    return KeychainAccountVault()
+  }
+
+  #if DEBUG
+    /// `ARGUS_ACCOUNT_FIXTURE=<device name>`: a made-up account this Mac founded,
+    /// verified offline, so a capture shows a signed-in account without one.
+    private static func fixtureVault(deviceName: String) -> AccountVault {
+      let keys = AccountDeviceKeys.generate(kind: "mac", name: deviceName)
+      guard let signer = keys.signer,
+        let genesis = try? AccountEntryBuilder.make(
+          accountId: "acct_fixture", epoch: 1, head: nil, signer: signer, .genesis(member: keys.member)),
+        case .ok(let verified) = AccountLog.verify([genesis])
+      else { return .empty }
+      return AccountVault(keys: keys, root: verified.root, entries: [genesis])
+    }
+  #endif
+
   init() {
     supervisor = HostSupervisor(configuration: HostLocation.current.configuration())
     hosts = RemoteHostsStore(
@@ -106,8 +133,8 @@ final class DesktopModel {
         product: "Argus for Mac", kind: "desktop", device: AppPreferences.shared.effectiveDeviceName,
         version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String))
     account = AccountStore(
-      auth: AccountAuth(), deviceKind: "mac", deviceName: { AppPreferences.shared.effectiveDeviceName },
-      localHost: localAccountLink)
+      auth: AccountAuth(), vault: Self.accountVault(), deviceKind: "mac",
+      deviceName: { AppPreferences.shared.effectiveDeviceName }, localHost: localAccountLink)
     let notificationsLog = NotificationsLog()
     self.notificationsLog = notificationsLog
     store = HostStore(

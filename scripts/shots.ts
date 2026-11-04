@@ -71,6 +71,17 @@ async function waitForData(app: RunningApp): Promise<void> {
   throw new Error("the app never listed the fixture's projects");
 }
 
+/** Behind everything and on every Space: captured, never in the user's way. */
+async function backstage(shoot: Shoot): Promise<void> {
+  const out = await shoot.app.driver.run({
+    op: "backstage",
+    window: shoot.window,
+  });
+  if (out.error) {
+    throw new Error(`backstage: ${String(out.error)}`);
+  }
+}
+
 async function apply(shoot: Shoot, steps: Step[]): Promise<void> {
   const { driver } = shoot.app;
   for (const step of steps) {
@@ -111,6 +122,7 @@ async function apply(shoot: Shoot, steps: Step[]): Promise<void> {
         width: WINDOW.width,
         height: WINDOW.height,
       });
+      await backstage(shoot);
     } else {
       // Mid-window: the settings column, or a screen's list.
       await driver.run({
@@ -176,6 +188,7 @@ async function capture(id: string, theme: string, app: string): Promise<void> {
       scrolled: 0,
       window: await running.windowNumber(),
     };
+    await backstage(shoot);
     await apply(shoot, stepsFor(scenario, scene, true));
 
     const shot = path.join(work, `${label}.png`);

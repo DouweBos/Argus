@@ -106,6 +106,11 @@ export async function launchApp(
         ARGUS_ATTACH_HOME: home,
         ARGUS_DEV_DRIVER: driver.dir,
         ARGUS_SPINNER_VERB: "Simmering",
+        ARGUS_SHOTS_ACTIVE: "1",
+        // Never the real account: a made-up one this "Mac" founded, and no
+        // service to reach — the account URL is a closed local port.
+        ARGUS_ACCOUNT_FIXTURE: "Studio",
+        ARGUS_ACCOUNT_URL: "http://127.0.0.1:9",
       },
       stdio: ["ignore", log, log],
     },
@@ -152,5 +157,19 @@ export async function captureWindow(
   windowNumber: number,
   out: string,
 ): Promise<void> {
-  await run("screencapture", ["-x", "-o", `-l${windowNumber}`, out]);
+  // WindowServer can't image a window mid-reorder; a moment later it can.
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await run("screencapture", ["-x", "-o", `-l${windowNumber}`, out]);
+
+      return;
+    } catch (err) {
+      if (attempt >= 10) {
+        throw new Error(
+          `window ${windowNumber} could not be captured: ${String(err)}`,
+        );
+      }
+      await sleep(500);
+    }
+  }
 }

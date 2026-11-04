@@ -31,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     model.start()
     #if DEBUG
+      ShotsActiveAppearance.installIfConfigured()
       devDriver = DevDriver.startIfConfigured()
     #endif
   }

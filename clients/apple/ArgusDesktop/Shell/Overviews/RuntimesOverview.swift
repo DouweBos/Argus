@@ -79,6 +79,8 @@ struct RuntimesOverview: View {
           }
           .width(28)
         }
+        // NSTableView stripes the empty space below the last row too.
+        .alternatingRowBackgrounds(.disabled)
         .contextMenu(forSelectionType: String.self) { _ in
         } primaryAction: { ids in
           guard let id = ids.first, let row = rows.first(where: { $0.id == id }) else { return }

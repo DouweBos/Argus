@@ -40,7 +40,6 @@ struct AgentsOverview: View {
                   tone: row.agent.awaiting != nil ? .warning : row.agent.status.tone,
                   pulse: row.agent.status == .running)
                 Text(Labels.agentName(row.agent)).lineLimit(1)
-                Text(row.agent.agentId.prefix(8)).foregroundStyle(.tertiary).font(.scaled(.caption).monospaced())
               }
               .contentShape(.rect)
             }
@@ -79,6 +78,8 @@ struct AgentsOverview: View {
           }
           .width(min: 70)
         }
+        // NSTableView stripes the empty space below the last row too.
+        .alternatingRowBackgrounds(.disabled)
         .contextMenu(forSelectionType: String.self) { _ in
         } primaryAction: { ids in
           guard let id = ids.first, let row = rows.first(where: { $0.id == id }) else { return }

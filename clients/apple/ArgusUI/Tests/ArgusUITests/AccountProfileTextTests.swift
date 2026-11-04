@@ -32,4 +32,10 @@ struct AccountProfileTextTests {
     #expect(AccountProfileText.title(phase: .signedOut, profile: ada) == "Sign in to Argus")
     #expect(AccountProfileText.subtitle(phase: .awaitingApproval, profile: ada) == "Waiting for device approval")
   }
+
+  @Test("the sidebar row names the account instead of pitching it")
+  func compactSignedOut() {
+    #expect(AccountProfileText.title(phase: .signedOut, profile: ada, compact: true) == "Argus account")
+    #expect(AccountProfileText.subtitle(phase: .signedOut, profile: ada, compact: true) == "Not signed in")
+  }
 }

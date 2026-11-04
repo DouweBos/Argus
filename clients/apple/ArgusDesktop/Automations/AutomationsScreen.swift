@@ -105,6 +105,8 @@ struct AutomationsScreen: View {
       TableColumn("Next run") { Text(AutomationText.nextRun($0)).foregroundStyle(.secondary) }
       TableColumn("") { AutomationRunButton(automationId: $0.id) }.width(90)
     }
+    // NSTableView stripes the empty space below the last row too.
+    .alternatingRowBackgrounds(.disabled)
     .contextMenu(forSelectionType: String.self) { ids in
       if let id = ids.first {
         Button("Open") { model.navigate(.automation(id: id, runId: nil)) }
