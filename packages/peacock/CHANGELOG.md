@@ -1,5 +1,28 @@
 # @argus/peacock
 
+## 0.28.0
+
+### Minor Changes
+
+- f9afd84: Adds `AccountMemberActions` (rename and remove for an account member) and per-row actions on `AccountMemberList`.
+- b900bdb: Adds `WorkLogRow` for a turn folded into "Worked for…", and `CollapsedToolGroup`, `MessageActions` and `MessageEditForm` lifted out of the desktop chat.
+- a12de34: Adds a design viewer and a design compare pane: a Figma frame with its layers, comments and pages, and how it differs from the device.
+- cbf496c: Adds a device host list with a start action for EAS Simulator sessions, and a read-only list of connected integrations.
+- 8aead07: Adds a read-only code viewer with syntax highlighting, a file search panel, a search-and-pick palette and an xterm terminal view, plus syntax and terminal colour tokens for both themes.
+- c07cb00: Adds the inbox and automation screens — inbox, proposal detail, automations list, automation detail and editor, memories, runs, quick run and describe — plus the `MenuChip` and `ToggleList` pickers they use.
+- 42b417f: Adds the Issues screen's pieces: `IssueBoardView`, `IssueListView`, `IssueFilterBar`, `IssueSearchField`, and the issue page (`IssueDetailPage`, `IssueBody`, `IssueActivitySection`, `IssueProperties`, `CommentComposer`, `IssueMediaEmbed`).
+- 06a0a7b: New app shell building blocks modelled on Argus for Mac: an inset sidebar with search, nav rows, project headers and session rows, a flat toolbar with breadcrumbs, agent tabs, the session context card, a tabbed side panel, project badges and flat icon buttons, plus a flat chrome theme with the Mac's neutral surfaces.
+- 86b5d1c: Adds `McpServerList`, an agent's MCP servers and whether each one connected.
+- 6b31231: Adds components for shipping work: a commit form with summary, description and commit options, a land-work card, branch rows and comparison, commit rows, the pull request list, the pull request detail pieces with a merge split button, and an open pull request dialog.
+- 86b5d1c: Adds `StartComposer` with `StartWorkspaceChip`, `BranchChip` and `PickerChip`, plus `ChatHistoryList` and `ForkChatDialog`, lifted out of the desktop app so the web client draws the same start, history and fork screens.
+- 53bc66e: Warnings that repeat now fold into one entry with a count, removing a Claude account asks first, and the theme setting shows a preview of each colour scheme.
+
+### Patch Changes
+
+- a3951d2: When someone else is driving a device, the screen stays fully visible with a small notice to take control, so huddle guests can watch a demo instead of a blurred picture.
+- 1473ad0: Argus now describes itself as an agentic IDE for front-end development rather than mobile only.
+- 921b956: Section headings in the inbox no longer lose their first letter.
+
 ## 0.27.0
 
 ### Minor Changes
