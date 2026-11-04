@@ -9,6 +9,10 @@ import { DriveIcon } from "../../icons/Icons";
 import { Badge } from "../Badge/Badge";
 import { BranchDivergence } from "../BranchDivergence/BranchDivergence";
 import { DiffStat } from "../DiffStat/DiffStat";
+import {
+  PullRequestState,
+  type PullRequestStateKind,
+} from "../PullRequestState/PullRequestState";
 import styles from "./SessionCard.module.css";
 
 export interface SessionCardProps extends Omit<
@@ -26,6 +30,12 @@ export interface SessionCardProps extends Omit<
   showUnread?: boolean;
   /** Name of the external drive the session lives on; shows a drive icon. */
   drive?: string;
+  /** The branch's pull request, drawn as GitHub's icon in its state colour. */
+  pullRequest?: {
+    number: number;
+    state: PullRequestStateKind;
+    onOpen?: () => void;
+  };
 
   /** Kind pill ("root" / "worktree"); web only. */
   kind?: { label: string; tone: BadgeTone };
@@ -82,6 +92,7 @@ export function SessionCard({
   title,
   showUnread,
   drive,
+  pullRequest,
   kind,
   status,
   diff,
@@ -152,6 +163,14 @@ export function SessionCard({
           </span>
         )}
         <span className={styles.title}>{title}</span>
+        {pullRequest && (
+          <PullRequestState
+            number={pullRequest.number}
+            state={pullRequest.state}
+            onOpen={pullRequest.onOpen}
+            size={11}
+          />
+        )}
         {drive && (
           <span
             className={styles.drive}

@@ -104,6 +104,12 @@ html[data-theme="dark"] {
   --brand-purple-overlay-md: rgba(124, 92, 252, 0.12);
   --brand-purple-overlay-lg: rgba(124, 92, 252, 0.2);
 
+  /* ─── Pull request states ─── GitHub's own hues, so a PR reads at a glance */
+  --pr-open: #3fb950;
+  --pr-draft: #9198a1;
+  --pr-merged: #ab7df8;
+  --pr-closed: #f85149;
+
   /* ─── Chart palette ─── data-viz roles for SeriesChart / ReportView.
      Aliases on purpose: each resolves against whichever theme block is
      active, so a chart never reaches for --accent (or a raw colour) itself.
@@ -338,6 +344,12 @@ html[data-theme="light"] {
   --brand-purple-overlay-sm: rgba(90, 61, 212, 0.08);
   --brand-purple-overlay-md: rgba(90, 61, 212, 0.14);
   --brand-purple-overlay-lg: rgba(90, 61, 212, 0.22);
+
+  /* Pull request states — GitHub's light-mode hues */
+  --pr-open: #1a7f37;
+  --pr-draft: #59636e;
+  --pr-merged: #8250df;
+  --pr-closed: #d1242f;
 
   /* Chart series — the same four hues stepped for the light surface */
   --chart-series-1: #2a78d6;
