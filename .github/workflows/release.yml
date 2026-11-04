@@ -157,18 +157,15 @@ jobs:
           echo "MATCH_GIT_BASIC_AUTHORIZATION=$AUTH" >> "$GITHUB_ENV"
 
       - name: Let SwiftPM fetch Grove
-        # Argus for Mac depends on the private DouweBos/Grove package; a read-only
-        # deploy key on that repo, used for its URL alone.
+        # Argus for Mac depends on the private DouweBos/Grove package; a fine-grained
+        # token (Contents: read on Grove only), used for its URL alone.
         if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app == 'mac' }}
         env:
-          GROVE_DEPLOY_KEY: ${{ secrets.GROVE_DEPLOY_KEY }}
+          GROVE_TOKEN: ${{ secrets.GROVE_TOKEN }}
         run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$GROVE_DEPLOY_KEY" > ~/.ssh/grove_deploy
-          chmod 600 ~/.ssh/grove_deploy
-          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
-          printf 'Host grove.github.com\n  HostName github.com\n  IdentityFile ~/.ssh/grove_deploy\n  IdentitiesOnly yes\n' >> ~/.ssh/config
-          git config --global url."git@grove.github.com:DouweBos/Grove.git".insteadOf "https://github.com/DouweBos/Grove.git"
+          git config --global \
+            url."https://x-access-token:${GROVE_TOKEN}@github.com/DouweBos/Grove.git".insteadOf \
+            "https://github.com/DouweBos/Grove.git"
 
       - name: Run fastlane release
         if: steps.stage.outputs.has_changes == 'true'
