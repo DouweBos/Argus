@@ -1,6 +1,7 @@
 import type { AccountLinkState, AccountStatus } from "../../../lib/types";
 import { useState } from "react";
 import {
+  Banner,
   Button,
   CopyField,
   SettingsScreenDetail,
@@ -10,6 +11,7 @@ import {
 } from "@argus/peacock";
 import { useAccountStatus } from "../../../hooks/useAccountStatus";
 import {
+  accountDismissReset,
   accountLoginCancel,
   accountLoginStart,
   accountLogout,
@@ -70,6 +72,8 @@ function SignedOut({ status }: { status: AccountStatus }) {
   const link = status.link;
   const linking = link.kind !== "idle" && link.kind !== "error";
 
+  const reset = linking ? null : status.reset;
+
   return (
     <SettingsScreenField
       label="Link this computer"
@@ -79,6 +83,18 @@ function SignedOut({ status }: { status: AccountStatus }) {
         <LinkFlow link={link} />
       ) : (
         <div className={styles.flow}>
+          {reset && (
+            <Banner
+              tone="warning"
+              onDismiss={() => accountDismissReset().catch(() => undefined)}
+            >
+              This account was reset
+              {reset.by_name ? ` from “${reset.by_name}”` : ""} on{" "}
+              {new Date(reset.at).toLocaleDateString()}. Link this computer
+              again to keep using it with your account. Devices that were on the
+              old account can no longer reach it until they join again.
+            </Banner>
+          )}
           <div>
             <Button
               variant="primary"

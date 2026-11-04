@@ -8,6 +8,8 @@ import type {
   AccountApprovalState,
   AccountConfigPatch,
   AccountLinkState,
+  AccountResetNotice,
+  AccountStatus,
 } from "@argus/remote-protocol";
 import { addHostEventSink } from "../bus";
 import {
@@ -17,6 +19,7 @@ import {
 } from "../services/account/approvals";
 import { cancelLink, confirmLink, startLink } from "../services/account/link";
 import { setComputerName } from "../services/account/name";
+import { dismissReset } from "../services/account/reset";
 import {
   getAccountStatus,
   listHosts,
@@ -79,8 +82,21 @@ function describeApproval(state: AccountApprovalState): string | null {
   }
 }
 
+/** The account was reset elsewhere (§5.8): this computer must be linked again. */
+export function describeReset(notice: AccountResetNotice): string {
+  const by = notice.by_name ? ` from "${notice.by_name}"` : "";
+  const on = new Date(notice.at).toLocaleString();
+
+  return `This account was reset${by} on ${on}. Type "login" to link this computer again (or "account dismiss").`;
+}
+
 async function printAccount(print: (line: string) => void): Promise<void> {
   const status = await getAccountStatus();
+  if (!status.linked && status.reset) {
+    print(describeReset(status.reset));
+
+    return;
+  }
   if (!status.linked) {
     print('Not linked to an account. Type "login" to link this computer.');
 
@@ -203,9 +219,16 @@ async function approve(
 export function attachConsoleAccount(
   print: (line: string) => void,
 ): (input: string) => boolean {
+  let shownReset: number | null = null;
   addHostEventSink((channel, args) => {
     let line: string | null = null;
-    if (channel === "account:link-state") {
+    if (channel === "account:status") {
+      const reset = (args[0] as AccountStatus).reset ?? null;
+      if (reset && reset.epoch !== shownReset) {
+        line = describeReset(reset);
+      }
+      shownReset = reset?.epoch ?? null;
+    } else if (channel === "account:link-state") {
       line = describeLink(args[0] as AccountLinkState);
     } else if (channel === "account:approval-state") {
       line = describeApproval(args[0] as AccountApprovalState);
@@ -253,6 +276,10 @@ export function attachConsoleAccount(
       case "account":
         if (arg === "set") {
           setSetting(rest, print).catch(fail);
+        } else if (arg === "dismiss") {
+          dismissReset()
+            .then(() => print("Dismissed."))
+            .catch(fail);
         } else {
           printAccount(print).catch(fail);
         }

@@ -53,12 +53,48 @@ The new device then lists every computer on the account and connects to them
 without a pairing code. A computer that hasn't heard of it yet looks it up the
 first time it knocks.
 
-If you've lost every device, a linked computer can approve instead: type
-`approve` in its `argus-host` terminal, pick **Waiting to join** in Argus
-Server's menu, or use the prompt in the desktop app on that computer. (Turn this off per computer with _Approve from this computer_.)
-
 Deny anything you didn't just sign in on: a request only gets in if someone
 confirms the code on a device that's already trusted.
+
+## If you lose your devices
+
+| You still have                    | Do                                                                                                                                                                                                                                                       |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Any device on the account         | Approve the new one from it, as above.                                                                                                                                                                                                                   |
+| No device, but a linked computer  | Approve from that computer instead: type `approve` in its `argus-host` terminal, pick **Waiting to join** in Argus Server's menu, or use the prompt in the desktop app on that computer. (Turn this off per computer with _Approve from this computer_.) |
+| Nothing at all that could approve | Reset your account from the iPhone or Mac app (see below).                                                                                                                                                                                               |
+
+### Resetting your account
+
+Sign in on the iPhone or Mac app. While it waits for approval, choose **Reset
+account…** under _Nobody left to approve?_ (it is also at the bottom of
+Settings → Account). Argus emails you a code to confirm it's you, then starts
+your account over with this device as its only member. Resetting is only
+possible from the iPhone and Mac apps, never from a browser.
+
+What happens next:
+
+- **Every device and computer leaves the account.** Your other phones and
+  Macs say _Your account was reset_ and ask to join again; approve them from
+  the device you reset on.
+- **Each computer has to be linked again from its own keyboard.** It stops
+  publishing its address, gives back its tunnel, lets no account device in,
+  and shows _This account was reset — link this computer again_ in desktop
+  Settings → Account, Argus Server's menu, the Mac app and the `argus-host`
+  terminal. Link it the usual way (**Link this computer**, **Link to Argus
+  Account…** or `login`). The Mac you reset on links its own host again by
+  itself.
+- **Computers you paired with a QR code keep working.** Pairings don't go
+  through the account.
+
+A computer never follows a reset on its own, because the account service
+can't prove one happened — only that someone signed in to your account
+recently. Linking it again from its keyboard is what puts it on the new
+account. Your account's safety code changes with the reset.
+
+If a device or computer says your account was reset and you didn't do it,
+someone has your sign-in: change it with your sign-in provider, then reset
+again from a device of yours and link your computers again.
 
 ## In a browser
 

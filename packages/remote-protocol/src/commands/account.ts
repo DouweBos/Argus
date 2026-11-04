@@ -120,6 +120,12 @@ export const ACCOUNT_COMMANDS = {
     params: z.object({ name: z.string().nullable() }),
     result: AccountStatus,
   },
+  /** Hide the "this account was reset" notice without linking again. */
+  account_dismiss_reset: {
+    tier: "host",
+    params: NoParams,
+    result: AccountStatus,
+  },
   account_set_config: {
     tier: "host",
     params: z.object({ patch: AccountConfigPatch }),

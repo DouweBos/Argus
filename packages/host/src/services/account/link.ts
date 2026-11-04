@@ -28,6 +28,7 @@ import { hostPlatform } from "../../platform";
 import { capture } from "../telemetry/telemetry";
 import { AccountClient, AccountServiceError } from "./client";
 import { adoptAccount } from "./lifecycle";
+import { refreshBeforeLink } from "./reset";
 import { getLinkState, setLinkState } from "./status";
 import {
   deviceMember,
@@ -114,6 +115,7 @@ function schedule(s: Session): void {
 export async function startLink(
   surface: LinkSurface,
 ): Promise<AccountLinkState> {
+  await refreshBeforeLink();
   if (isLinked()) {
     throw "This computer is already linked to an account";
   }

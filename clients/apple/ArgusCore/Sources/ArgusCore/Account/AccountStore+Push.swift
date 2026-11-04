@@ -25,6 +25,8 @@ public struct AccountWakeResult: Equatable, Sendable {
   public var removed: Bool
   /// Whether anything was fetched at all.
   public var reached: Bool
+  /// The account was reset elsewhere; this device now asks to join again.
+  public var reset = false
 }
 
 extension AccountStore {
@@ -108,6 +110,9 @@ extension AccountStore {
     if let token, pushToken == nil { pushToken = token }
     let wasReady = phase == .ready
     guard wasReady else { return AccountWakeResult(newRequests: [], removed: false, reached: false) }
+    if await checkForReset() {
+      return AccountWakeResult(newRequests: [], removed: true, reached: true, reset: true)
+    }
     await refreshLog()
     guard phase == .ready else { return AccountWakeResult(newRequests: [], removed: true, reached: true) }
     await refreshDirectory()

@@ -86,6 +86,28 @@ public final class AccountAuth: AccountAuthenticating {
     return try await Clerk.shared.auth.getToken()
   }
 
+  public func isReverified(withinMinutes minutes: Int) -> Bool {
+    configuredKey != nil
+      && Clerk.shared.has(reverification: .custom(level: .firstFactor, afterMinutes: minutes))
+  }
+
+  public func startReverification() async throws -> String {
+    guard configuredKey != nil, let session = Clerk.shared.session,
+      let email = Clerk.shared.user?.primaryEmailAddress
+    else { throw AccountReverifyError.unavailable }
+    try await session.startVerification(level: .firstFactor)
+    try await session.sendEmailCode(emailAddressId: email.id)
+    return email.emailAddress
+  }
+
+  public func finishReverification(code: String) async throws {
+    guard let session = Clerk.shared.session else { throw AccountReverifyError.unavailable }
+    let result = try await session.verifyWithEmailCode(
+      code: code.trimmingCharacters(in: .whitespacesAndNewlines))
+    guard result.status == .complete else { throw AccountReverifyError.incomplete }
+    _ = try await Clerk.shared.auth.getToken(.init(skipCache: true))
+  }
+
   public func signOut() async throws {
     guard configuredKey != nil, Clerk.shared.session != nil else { return }
     try await Clerk.shared.auth.signOut()

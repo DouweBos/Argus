@@ -49,6 +49,8 @@ public final class AccountStore {
     case pushRegistered(success: Bool)
     /// This device's name setting changed here; `linked`: put on the account too.
     case nameChanged(source: NameSource, linked: Bool)
+    /// Starting the account over (§5.8), or noticing it was started over elsewhere.
+    case accountReset(action: ResetAction)
   }
 
   /// Where this device's name was edited.
@@ -86,6 +88,10 @@ public final class AccountStore {
   public internal(set) var requests: [AccountJoinRequestInfo] = []
   /// Approving one of `requests`.
   public internal(set) var approval: ApprovalFlow = .idle
+  /// Starting the account over from this device.
+  public internal(set) var reset: ResetFlow = .idle
+  /// The account was reset from another device; shown until this one is back on it.
+  public internal(set) var resetNotice: AccountResetNotice?
 
   /// How often a visible host list re-reads the directory. Well inside the
   /// online window, so a host that comes back shows within a minute.
@@ -192,6 +198,7 @@ public final class AccountStore {
   public func refresh() async {
     guard phase == .ready else { return }
     refreshProfile()
+    if await checkForReset() { return }
     await refreshLog()
     await flushName()
     await refreshDirectory()
@@ -290,8 +297,11 @@ public final class AccountStore {
     phase = .settingUp
     do {
       let info = try await client.account()
-      if vault.root.map({ $0.accountId != info.accountId || $0.epoch != info.epoch }) ?? false {
-        vault = AccountVault(keys: vault.keys)
+      if vault.root.map({ $0.accountId != info.accountId || $0.epoch != info.epoch }) ?? false,
+        !(await followReset(info))
+      {
+        // Another account: the service never takes these keys there.
+        vault = .empty
       }
       var firstDevice = false
       if info.headSeq == nil {
@@ -370,6 +380,7 @@ public final class AccountStore {
       vault.entries = entries
       state = verified
       logError = nil
+      resetNotice = nil
       await vaultStore.save(vault)
       return .adopted
     case .rejected(let reason, _, _):
@@ -421,6 +432,8 @@ public final class AccountStore {
     approval = .idle
     pendingApproval = nil
     pushFingerprint = nil
+    reset = .idle
+    resetNotice = nil
     phase = .signedOut
     onHostsChanged([])
   }

@@ -151,6 +151,8 @@ public final class HostAccountMenu {
       account = try await backend.request(ArgusProtocol.Commands.AccountLogout.self, EmptyParams())
     case .noticeDismiss:
       return
+    case .resetDismiss:
+      account = try await backend.request(ArgusProtocol.Commands.AccountDismissReset.self, EmptyParams())
     }
   }
 

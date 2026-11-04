@@ -21,6 +21,7 @@ import {
   startLink,
 } from "@argus/host/services/account/link";
 import { setComputerName } from "@argus/host/services/account/name";
+import { dismissReset } from "@argus/host/services/account/reset";
 import {
   listHosts,
   logout,
@@ -184,6 +185,10 @@ async function perform(action: AccountTrayAction): Promise<void> {
 
       return;
     case "notice_dismiss":
+      return;
+    case "reset_dismiss":
+      await dismissReset();
+
       return;
   }
 }

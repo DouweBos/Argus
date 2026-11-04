@@ -78,6 +78,21 @@ describe("accountMenuModel", () => {
     });
   });
 
+  it("says the account was reset and offers linking again", () => {
+    const menu = accountMenuModel(
+      snapshot({
+        status: { reset: { epoch: 1, at: 0, by_name: "New phone" } },
+      }),
+    );
+    expect(labels(menu)).toEqual([
+      'This account was reset from "New phone"',
+      "Link this computer again to keep using it",
+      "Link to Argus Account…",
+      "Dismiss",
+    ]);
+    expect(find(menu, "Dismiss").action).toEqual({ kind: "reset_dismiss" });
+  });
+
   it("shows the code and where to enter it while waiting for a claim", () => {
     const menu = accountMenuModel(
       snapshot({

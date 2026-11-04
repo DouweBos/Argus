@@ -12,6 +12,8 @@ public final class HostLinkModel {
   public private(set) var state: ArgusProtocol.AccountLinkState?
   /// Why the last request failed.
   public private(set) var failure: String?
+  /// The account was reset elsewhere and the host went unlinked: link it again.
+  public private(set) var reset: ArgusProtocol.AccountResetNotice?
   @ObservationIgnored private let surface: ArgusProtocol.AccountLinkSurface
   @ObservationIgnored private var backend: (any HostBackend)?
   @ObservationIgnored private var poll: Task<Void, Never>?
@@ -38,6 +40,15 @@ public final class HostLinkModel {
     stopPolling()
     guard let backend else { return }
     await run { try await backend.request(ArgusProtocol.Commands.AccountLoginCancel.self, EmptyParams()) }
+  }
+
+  /// Read where the host is, including a reset it noticed.
+  public func load(_ backend: (any HostBackend)?) async {
+    guard let backend,
+      let status = try? await backend.request(ArgusProtocol.Commands.AccountGetStatus.self, EmptyParams())
+    else { return }
+    state = status.link
+    reset = status.linked ? nil : status.reset
   }
 
   /// The host moved on its own (an `account:link-state` event, or a status read).
@@ -70,6 +81,7 @@ public final class HostLinkModel {
           let status = try? await backend.request(ArgusProtocol.Commands.AccountGetStatus.self, EmptyParams())
         else { continue }
         self.state = status.link
+        self.reset = status.linked ? nil : status.reset
         switch status.link {
         case .linked, .error, .idle: return
         default: continue

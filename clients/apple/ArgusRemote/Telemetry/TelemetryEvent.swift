@@ -91,6 +91,8 @@ enum TelemetryEvent {
     case refreshed
     /// This phone had been removed from the account.
     case removed
+    /// The account was reset from another device; this phone asks to join again.
+    case reset
     /// Not signed in, or the account service couldn't be reached.
     case unreachable
   }
@@ -235,6 +237,8 @@ enum TelemetryEvent {
   case joinActed(action: JoinAction, role: JoinRole)
   /// The phone renamed a member of the account.
   case memberRenamed(role: MemberRole)
+  /// Starting the account over from this phone, or noticing it was started over elsewhere.
+  case accountReset(action: ResetAction)
   /// This phone's name setting changed; `linked`: renamed on the account too.
   case deviceNameChanged(source: AccountStore.NameSource, linked: Bool)
   /// Push registered with the account (every computer on it can wake the phone), or it failed.
@@ -304,6 +308,7 @@ enum TelemetryEvent {
     case .deviceNameChanged: "ios_device_name_changed"
     case .accountPushRegistered: "ios_account_push_registered"
     case .accountWoken: "ios_account_woken"
+    case .accountReset: "ios_account_reset"
     case .routeUpgraded: "ios_route_upgraded"
     case .linkOpened: "ios_link_opened"
     }
@@ -328,6 +333,8 @@ enum TelemetryEvent {
       ["success": success]
     case .accountWoken(let reason, let outcome):
       ["reason": reason.rawValue, "outcome": outcome.rawValue]
+    case .accountReset(let action):
+      ["action": action.rawValue]
     case .paired(let endpointKind, let hasControl):
       ["endpoint_kind": endpointKind, "has_control": hasControl]
     case .pairFailed(let reason):

@@ -7,6 +7,7 @@
 import type {
   AccountConfig,
   AccountConfigPatch,
+  AccountResetNotice,
   AccountRoot,
   DeviceMember,
   HostMember,
@@ -54,6 +55,8 @@ export interface AccountRecord {
   name?: string | null;
   /** `name` changed while linked and isn't on the account yet (offline). */
   name_pending?: boolean;
+  /** The account was reset without this computer; cleared on the next link. */
+  reset_notice?: AccountResetNotice | null;
 }
 
 export interface StoredTunnel {
@@ -130,8 +133,13 @@ export async function writeAccountRecord(record: AccountRecord): Promise<void> {
  */
 export async function resetAccountRecord(
   previous: AccountRecord,
+  notice: AccountResetNotice | null = null,
 ): Promise<AccountRecord> {
-  const next = { ...freshIdentity(previous.config), name: previous.name };
+  const next = {
+    ...freshIdentity(previous.config),
+    name: previous.name,
+    reset_notice: notice,
+  };
   await saveAccountRecord(next);
 
   return next;

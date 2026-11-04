@@ -13,6 +13,7 @@ struct AccountView: View {
   @State private var email = ""
   @State private var code = ""
   @State private var confirmingSignOut = false
+  @State private var resetting = false
   @State private var removing: AccountStore.Host?
   @State private var renaming: AccountStore.Host?
   @State private var draft = ""
@@ -36,6 +37,10 @@ struct AccountView: View {
     }
     .navigationTitle("Account")
     .navigationBarTitleDisplayMode(.inline)
+    .sheet(isPresented: $resetting) {
+      AccountResetSheet(account: account, deviceNoun: "phone") { resetting = false }
+        .presentationDetents([.medium, .large])
+    }
     .task { await account.prepare() }
     // Presence moves while the list is open: a host going quiet or coming back.
     .liveRefresh(enabled: account.isSignedIn, every: AccountStore.presencePollInterval) {
@@ -140,8 +145,11 @@ struct AccountView: View {
   }
 
   @ViewBuilder private var awaitingApproval: some View {
+    if let notice = account.resetNotice {
+      AccountResetNoticeBanner(notice: notice, deviceNoun: "phone") { account.dismissResetNotice() }
+    }
     profileHeader
-    JoinAccountView()
+    JoinAccountView { resetting = true }
   }
 
   // MARK: Signed in
@@ -183,6 +191,13 @@ struct AccountView: View {
 
     Field(label: "Sign out", caption: "Takes this phone off the account. QR pairings keep working.") {
       Btn(label: "Sign out", tone: .danger) { confirmingSignOut = true }
+    }
+
+    Field(
+      label: "Reset account",
+      caption: "Only when every other device and computer on your account is lost. Everything leaves the account and has to join again."
+    ) {
+      Btn(label: "Reset account…", tone: .ghost) { resetting = true }
     }
   }
 

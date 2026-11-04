@@ -29,6 +29,8 @@ extension AppStore {
         Telemetry.capture(.deviceNameChanged(source: source, linked: linked))
       case .pushRegistered(let success):
         Telemetry.capture(.accountPushRegistered(success: success))
+      case .accountReset(let action):
+        Telemetry.capture(.accountReset(action: action))
       }
     }
     // A removal reaches the connected computer at once, not at its next poll.
@@ -138,6 +140,7 @@ enum AccountWake {
     }
     let outcome: TelemetryEvent.WakeOutcome =
       !result.reached ? .unreachable
+      : result.reset ? .reset
       : result.removed ? .removed : result.newRequests.isEmpty ? .refreshed : .prompted
     Telemetry.capture(.accountWoken(reason: reason, outcome: outcome))
     return result.reached ? .newData : .failed

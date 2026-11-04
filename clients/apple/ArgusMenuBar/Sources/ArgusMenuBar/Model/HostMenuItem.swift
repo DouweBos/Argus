@@ -75,6 +75,7 @@ public enum AccountMenuAction: Equatable, Sendable {
   case linkOpen(String)
   case linkStart
   case noticeDismiss
+  case resetDismiss
   case renameDefault
   case rename(current: String)
   case tunnel(on: Bool)

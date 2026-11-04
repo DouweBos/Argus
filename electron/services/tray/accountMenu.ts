@@ -12,20 +12,7 @@ import type {
 } from "@argus/remote-protocol";
 
 export type AccountTrayAction =
-  | { kind: "approval_confirm"; match: boolean }
-  | { kind: "approval_dismiss" }
-  | { kind: "approve"; requestId: string }
-  | { kind: "deny"; requestId: string }
-  | { kind: "link_cancel" }
-  | { kind: "link_confirm"; match: boolean }
-  | { kind: "link_copy_code"; code: string }
-  | { kind: "link_open"; url: string }
-  | { kind: "link_start" }
-  | { kind: "notice_dismiss" }
-  | { kind: "rename_default" }
-  | { kind: "rename"; current: string }
-  | { kind: "tunnel"; on: boolean }
-  | { kind: "unlink" };
+  { kind: "approval_confirm"; match: boolean } | { kind: "approval_dismiss" } | { kind: "approve"; requestId: string } | { kind: "deny"; requestId: string } | { kind: "link_cancel" } | { kind: "link_confirm"; match: boolean } | { kind: "link_copy_code"; code: string } | { kind: "link_open"; url: string } | { kind: "link_start" } | { kind: "notice_dismiss" } | { kind: "rename_default" } | { kind: "rename"; current: string } | { kind: "reset_dismiss" } | { kind: "tunnel"; on: boolean } | { kind: "unlink" };
 
 export type AccountMenuEntry =
   | {
@@ -42,7 +29,13 @@ export type AccountMenuEntry =
 export interface AccountTraySnapshot {
   status: Pick<
     AccountStatus,
-    "config" | "link" | "linked" | "name" | "safety_code" | "system_name"
+    | "config"
+    | "link"
+    | "linked"
+    | "name"
+    | "reset"
+    | "safety_code"
+    | "system_name"
   >;
   approval: AccountApprovalState;
   tunnel: Pick<ManagedTunnelState, "phase" | "reason" | "url">;
@@ -267,6 +260,21 @@ export function accountMenuModel(s: AccountTraySnapshot): AccountMenuEntry[] {
       label: "Dismiss",
       action: { kind: "notice_dismiss" },
     });
+  }
+  const reset = s.status.reset;
+  if (!s.status.linked && reset && s.status.link.kind === "idle") {
+    const by = reset.by_name ? ` from "${reset.by_name}"` : "";
+
+    return [
+      ...out,
+      info(`This account was reset${by}`),
+      info("Link this computer again to keep using it"),
+      {
+        label: "Link to Argus Account…",
+        action: { kind: "link_start" },
+      },
+      { label: "Dismiss", action: { kind: "reset_dismiss" } },
+    ];
   }
   if (!s.status.linked) {
     return [...out, ...linkEntries(s)];

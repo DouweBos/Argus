@@ -23,6 +23,9 @@ final class FakeAccountService: @unchecked Sendable {
   private var nextJoin = 1
   private(set) var accountId = "abcdefghijklmnopqrstuvwxyz"
   private(set) var entries: [AccountEntry] = []
+  private(set) var epoch = 0
+  /// Logs of earlier epochs, still readable after a reset.
+  private var oldLogs: [Int: [AccountEntry]] = [:]
   private(set) var appends: [[AccountEntry]] = []
   private var links: [String: LinkRequest] = [:]
   private var directory: [AccountDirectoryRecord] = []
@@ -42,6 +45,20 @@ final class FakeAccountService: @unchecked Sendable {
   var headHash: String { lock.withLock { entries.last?.hash ?? "" } }
 
   func seed(_ log: [AccountEntry]) { lock.withLock { entries = log } }
+
+  var currentEpoch: Int { lock.withLock { epoch } }
+
+  /// Another device reset the account (`POST /account/reset`).
+  func resetElsewhere(_ genesis: AccountEntry) { lock.withLock { applyReset([genesis]) } }
+
+  private func applyReset(_ batch: [AccountEntry]) {
+    oldLogs[epoch] = entries
+    epoch += 1
+    entries = batch
+    for (id, join) in joins where ["pending", "claimed", "approving"].contains(join.status) {
+      joins[id]?.status = "denied"
+    }
+  }
 
   /// Append outside the API, as another device would.
   func inject(_ entry: AccountEntry) { lock.withLock { entries.append(entry) } }
@@ -95,7 +112,8 @@ final class FakeAccountService: @unchecked Sendable {
     let path = url.path.replacingOccurrences(of: "/argus/account/v1/", with: "")
     let method = request.httpMethod ?? "GET"
     let body = request.httpBody.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
-    if path != "config", request.value(forHTTPHeaderField: "Authorization") != "Bearer token" {
+    let bearer = request.value(forHTTPHeaderField: "Authorization") ?? ""
+    if path != "config", !bearer.hasPrefix("Bearer token") {
       return respond(401, ["error": "unauthorized"], url)
     }
     switch (method, path) {
@@ -104,12 +122,23 @@ final class FakeAccountService: @unchecked Sendable {
     case ("POST", "account"):
       let count = lock.withLock { entries.count }
       let head: Any = count == 0 ? NSNull() : count - 1
-      return respond(200, ["account_id": accountId, "epoch": 0, "head_seq": head], url)
+      return respond(200, ["account_id": accountId, "epoch": currentEpoch, "head_seq": head], url)
+    case ("POST", "account/reset"):
+      guard bearer == "Bearer token-reverified" else { return respond(403, ["error": "forbidden"], url) }
+      let raw = body["entries"] as? [[String: Any]] ?? []
+      let batch = raw.map { AccountEntry(body: $0["body"] as? String ?? "", sigs: $0["sigs"] as? [String: String] ?? [:]) }
+      return lock.withLock {
+        guard body["epoch"] as? Int == epoch + 1 else { return respond(409, ["error": "conflict", "epoch": epoch], url) }
+        applyReset(batch)
+        return respond(201, ["account_id": accountId, "epoch": epoch, "head_seq": batch.count - 1], url)
+      }
     case ("GET", "log"):
       let after = Int(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?
         .first { $0.name == "after" }?.value ?? "-1") ?? -1
-      let page = lock.withLock { Array(entries.dropFirst(after + 1)) }
-      return respond(200, ["epoch": 0, "entries": page.map(Self.json), "next_after": NSNull()], url)
+      let asked = Int(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?
+        .first { $0.name == "epoch" }?.value ?? "") ?? currentEpoch
+      let page = lock.withLock { Array((asked == epoch ? entries : oldLogs[asked] ?? []).dropFirst(after + 1)) }
+      return respond(200, ["epoch": asked, "entries": page.map(Self.json), "next_after": NSNull()], url)
     case ("POST", "log"):
       return appendLog(body, url)
     case ("GET", "directory"):
@@ -160,7 +189,7 @@ final class FakeAccountService: @unchecked Sendable {
     case ("GET", _) where path.hasPrefix("join/"):
       let id = String(path.dropFirst("join/".count))
       guard let join = lock.withLock({ joins[id] }) else { return respond(404, ["error": "not_found"], url) }
-      var out: [String: Any] = ["status": join.status, "account_id": accountId, "epoch": 0]
+      var out: [String: Any] = ["status": join.status, "account_id": accountId, "epoch": currentEpoch]
       if let approver = join.approver, join.status != "claimed" {
         out["approver"] = ["id": approver.id, "sign_pub": approver.signPub]
       }
@@ -234,6 +263,10 @@ final class FakeAccountAuth: AccountAuthenticating {
   var configuredKey: String?
   var signedOut = false
   var user: AccountProfile?
+  /// The session proved a factor recently; the service then accepts a reset.
+  var reverified = false
+  var reverifyEmail: String? = "me@example.test"
+  var sentReverifyCodes = 0
 
   var isSignedIn: Bool { signedIn }
   func configure(publishableKey: String) async throws { configuredKey = publishableKey }
@@ -241,7 +274,17 @@ final class FakeAccountAuth: AccountAuthenticating {
   func signInWithGitHub() async throws { signedIn = true }
   func sendEmailCode(_: String) async throws {}
   func verifyEmailCode(_: String) async throws { signedIn = true }
-  func token() async throws -> String? { signedIn ? "token" : nil }
+  func token() async throws -> String? { signedIn ? (reverified ? "token-reverified" : "token") : nil }
+  func isReverified(withinMinutes _: Int) -> Bool { reverified }
+  func startReverification() async throws -> String {
+    guard let reverifyEmail else { throw AccountReverifyError.unavailable }
+    sentReverifyCodes += 1
+    return reverifyEmail
+  }
+  func finishReverification(code: String) async throws {
+    guard code == "424242" else { throw AccountReverifyError.incomplete }
+    reverified = true
+  }
   var profile: AccountProfile? { signedIn ? user : nil }
   func signOut() async throws {
     signedIn = false

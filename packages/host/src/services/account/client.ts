@@ -13,6 +13,21 @@ import type {
 } from "@argus/remote-protocol";
 import { requestSigningBytes, signB64 } from "@argus/remote-protocol";
 
+/** `410 account_reset`: the account moved to a newer epoch without this member. */
+export interface AccountResetSignal {
+  epoch: number;
+  genesis: LogEntry | null;
+}
+
+let onReset: (signal: AccountResetSignal) => void = () => undefined;
+
+/** Boot wires this to the lifecycle; any member-signed call may be the one that notices. */
+export function setAccountResetHandler(
+  fn: (signal: AccountResetSignal) => void,
+): void {
+  onReset = fn;
+}
+
 export class AccountServiceError extends Error {
   constructor(
     readonly status: number,
@@ -139,6 +154,17 @@ export class AccountClient {
       string,
       unknown
     >;
+    if (
+      res.status === 410 &&
+      parsed.error === "account_reset" &&
+      this.signer.member_id &&
+      typeof parsed.epoch === "number"
+    ) {
+      onReset({
+        epoch: parsed.epoch,
+        genesis: isEntry(parsed.genesis) ? parsed.genesis : null,
+      });
+    }
     if (!res.ok) {
       throw new AccountServiceError(
         res.status,
@@ -239,4 +265,12 @@ export class AccountClient {
       {},
     );
   }
+}
+
+function isEntry(value: unknown): value is LogEntry {
+  const v = value as { body?: unknown; sigs?: unknown } | null;
+
+  return (
+    typeof v?.body === "string" && typeof v.sigs === "object" && v.sigs !== null
+  );
 }

@@ -6,7 +6,11 @@
 
 import type { AccountRecord } from "./store";
 import type { PairedDevice } from "../remote/deviceStore";
-import type { LogEntry, LogState } from "@argus/remote-protocol";
+import type {
+  AccountResetNotice,
+  LogEntry,
+  LogState,
+} from "@argus/remote-protocol";
 import { verifyLog } from "@argus/remote-protocol";
 import { warn } from "@argus/host/logger";
 import { capture } from "../telemetry/telemetry";
@@ -58,6 +62,7 @@ export async function adoptAccount(
     genesis_hash: state.genesis_hash,
   };
   record.entries = entries;
+  record.reset_notice = null;
   await writeAccountRecord(record);
   setTrust(record, state);
   await reconcileDevices("log");
@@ -94,15 +99,20 @@ export function stopBackground(): void {
   }
 }
 
-/** Unlink locally: forget the account, its key and its devices. */
-export async function forgetAccount(): Promise<void> {
+/**
+ * Unlink locally: forget the account, its key and its devices. A reset keeps
+ * its notice so the consoles can say why.
+ */
+export async function forgetAccount(
+  notice: AccountResetNotice | null = null,
+): Promise<void> {
   const record = currentRecord();
   stopBackground();
   stopAccountTunnel();
   if (!record) {
     return;
   }
-  const next = await resetAccountRecord(record);
+  const next = await resetAccountRecord(record, notice);
   setTrust(next, null);
   await dropAccountDevices();
   emitAccountStatus();
