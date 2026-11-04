@@ -271,7 +271,11 @@ final class FakeAccountAuth: AccountAuthenticating {
   var isSignedIn: Bool { signedIn }
   func configure(publishableKey: String) async throws { configuredKey = publishableKey }
   func signInWithApple(idToken _: String?) async throws { signedIn = true }
-  func signInWithGitHub() async throws { signedIn = true }
+  /// Clerk refuses a second sign-in while a session is live.
+  func signInWithGitHub() async throws {
+    if signedIn { throw URLError(.userAuthenticationRequired) }
+    signedIn = true
+  }
   func sendEmailCode(_: String) async throws {}
   func verifyEmailCode(_: String) async throws { signedIn = true }
   func token() async throws -> String? { signedIn ? (reverified ? "token-reverified" : "token") : nil }

@@ -142,6 +142,20 @@ struct AccountStoreTests {
     #expect(service.batches.isEmpty)
   }
 
+  @Test("a retry after a failed account setup sets it up without signing in again")
+  func retryAfterFailedSetup() async {
+    service.setAppendDown(true)
+    let (store, _) = makeStore()
+    await store.start()
+    await store.signIn(with: .github)
+    #expect(store.phase == .signedOut)
+    #expect(auth.signedIn)
+    service.setAppendDown(false)
+    await store.signIn(with: .github)
+    #expect(store.phase == .ready)
+    #expect(store.error == nil)
+  }
+
   func readyStore() async -> AccountStore {
     let (store, _) = makeStore()
     await store.start()

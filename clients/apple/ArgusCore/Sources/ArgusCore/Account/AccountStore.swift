@@ -258,6 +258,10 @@ public final class AccountStore {
     error = nil
     do {
       try await ensureConfigured()
+      if auth.isSignedIn {
+        await runSignIn(.email) {}
+        return
+      }
       try await auth.sendEmailCode(email)
       awaitingEmailCode = true
     } catch {
@@ -282,7 +286,8 @@ public final class AccountStore {
     defer { signingInWith = nil }
     do {
       try await ensureConfigured()
-      try await flow()
+      // A sign-in whose account setup failed is still signed in: retrying sets it up.
+      if !auth.isSignedIn { try await flow() }
       refreshProfile()
     } catch {
       self.error = Self.describe(error)
