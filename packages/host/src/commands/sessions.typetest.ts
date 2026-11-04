@@ -7,6 +7,7 @@ import type {
 } from "../services/session/manager";
 import type {
   Session as HostSession,
+  SessionPullRequest as HostSessionPullRequest,
   SessionKind as HostSessionKind,
   SessionStatus as HostSessionStatus,
 } from "../services/session/models";
@@ -17,6 +18,7 @@ import type {
   ProjectEntry,
   Session,
   SessionKind,
+  SessionPullRequest,
   SessionStatus,
 } from "@argus/remote-protocol";
 
@@ -24,6 +26,7 @@ export type SessionModelChecks = [
   Expect<Equal<SessionKind, HostSessionKind>>,
   Expect<Equal<SessionStatus, HostSessionStatus>>,
   Expect<Equal<Session, HostSession>>,
+  Expect<Equal<SessionPullRequest, HostSessionPullRequest>>,
   Expect<Equal<ProjectEntry, HostProjectEntry>>,
   Expect<Equal<HostSnapshot, HostHostSnapshot>>,
   Expect<Equal<ForkReplayOp, HostForkReplayOp>>,

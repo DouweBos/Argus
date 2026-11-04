@@ -50,6 +50,7 @@ export function initSessionEventListeners(): void {
     id: string;
     model?: string | null;
     path?: string;
+    pull_request?: Session["pull_request"];
     runner_id?: string | null;
     setup_pending?: boolean;
     status?: Session["status"];
@@ -66,6 +67,7 @@ export function initSessionEventListeners(): void {
       model,
       setup_pending,
       volume,
+      pull_request,
     } = event.payload;
     if (!getSessionState().sessions.some((w) => w.id === id)) {
       return;
@@ -97,6 +99,9 @@ export function initSessionEventListeners(): void {
     }
     if (setup_pending !== undefined) {
       patch.setup_pending = setup_pending;
+    }
+    if (pull_request !== undefined) {
+      patch.pull_request = pull_request;
     }
     updateSession(id, patch);
   });

@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import { DesignRef, LinkedIssue } from "./models/integrations";
+import { SessionPullRequest } from "./models/sessions";
 
 export const RemoteProject = z.object({
   repo_root: z.string(),
@@ -53,6 +54,8 @@ export const RemoteSession = z.object({
   design_refs: z.array(DesignRef).nullable().optional(),
   /** Made outside Argus, so the project's setup never ran in it. Absent on older hosts. */
   setup_pending: z.boolean().optional(),
+  /** The branch's GitHub pull request, null when none. Absent on older hosts. */
+  pull_request: SessionPullRequest.nullable().optional(),
 });
 export type RemoteSession = z.infer<typeof RemoteSession>;
 

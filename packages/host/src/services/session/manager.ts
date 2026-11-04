@@ -13,6 +13,7 @@ import { canonicalPath } from "../../lib/canonicalPath";
 import { appState } from "../../state";
 import { loadAppSettings } from "../appSettings/store";
 import { writeDesignFiles } from "../design/files";
+import { withSessionPullRequest } from "../github/sessionPullRequests";
 import { issueSessionStarted } from "../integrations/service";
 import { type AppDefaultLlm, resolveRunnerForSession } from "../llm/resolve";
 import { forkClaudeSessionFile } from "../llm/runners/claudeCode/transcriptFork";
@@ -412,7 +413,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
     }
   }
 
-  return merged;
+  return merged.map(withSessionPullRequest);
 }
 
 // ---------------------------------------------------------------------------
