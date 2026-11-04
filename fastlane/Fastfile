@@ -221,6 +221,8 @@ platform :mac do
     FileUtils.mkdir_p(out)
     archive = File.join(out, "#{scheme}.xcarchive")
     derived = File.join(out, "dd")
+    # CI clones packages into a cached folder outside `out`, which is wiped each run.
+    packages = ENV["SPM_CLONE_DIR"].to_s.empty? ? File.join(derived, "SourcePackages") : ENV["SPM_CLONE_DIR"]
 
     sh("cd #{root.shellescape} && pnpm install --frozen-lockfile && pnpm build:web-client")
     sh([
@@ -231,6 +233,7 @@ platform :mac do
       "-destination", "generic/platform=macOS",
       "-archivePath", archive,
       "-derivedDataPath", derived,
+      "-clonedSourcePackagesDirPath", packages,
       # System git, so the url.insteadOf CI sets reaches private packages (Grove).
       "-scmProvider", "system",
       "MARKETING_VERSION=#{version}",
@@ -285,7 +288,7 @@ platform :mac do
     key_file = File.join(out, "sparkle-ed.key")
     File.write(key_file, private_key)
     at_exit { File.delete(key_file) if File.exist?(key_file) }
-    generate_appcast = File.join(derived, "SourcePackages/artifacts/sparkle/Sparkle/bin/generate_appcast")
+    generate_appcast = File.join(packages, "artifacts/sparkle/Sparkle/bin/generate_appcast")
     sh([
       generate_appcast, "--ed-key-file", key_file,
       "--download-url-prefix", "https://houwert.dev/argus/updates/",

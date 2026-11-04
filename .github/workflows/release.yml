@@ -30,7 +30,7 @@ concurrency:
 jobs:
   release:
     runs-on: macos-26
-    timeout-minutes: 60
+    timeout-minutes: 90
     permissions:
       contents: write
       id-token: write
@@ -167,6 +167,31 @@ jobs:
             url."https://x-access-token:${GROVE_TOKEN}@github.com/DouweBos/Grove.git".insteadOf \
             "https://github.com/DouweBos/Grove.git"
 
+      # Saved straight after resolving, so a run that fails later still fills it:
+      # cold clones of the tree-sitter grammars take most of half an hour.
+      - name: Restore Swift packages
+        id: spm-cache
+        if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app == 'mac' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/spm-clones
+          key: spm-${{ hashFiles('clients/apple/**/Package.resolved') }}
+          restore-keys: spm-
+
+      - name: Resolve Swift packages
+        if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app == 'mac' }}
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project clients/apple/ArgusRemote.xcodeproj -scheme ArgusDesktop \
+            -clonedSourcePackagesDirPath ~/spm-clones -scmProvider system
+
+      - name: Save Swift packages
+        if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app == 'mac' && steps.spm-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ~/spm-clones
+          key: spm-${{ hashFiles('clients/apple/**/Package.resolved') }}
+
       - name: Run fastlane release
         if: steps.stage.outputs.has_changes == 'true'
         env:
@@ -210,6 +235,8 @@ jobs:
           CI: "true"
           NODE_OPTIONS: "--max-old-space-size=8192"
           APP: ${{ github.event.inputs.app || 'electron' }}
+          # Where "Resolve Swift packages" cloned them; only the Mac lane reads it.
+          SPM_CLONE_DIR: /Users/runner/spm-clones
         run: |
           lane=release
           [ "$APP" = "mac" ] && lane=mac_app_release
