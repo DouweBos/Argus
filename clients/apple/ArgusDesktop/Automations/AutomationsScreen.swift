@@ -55,7 +55,7 @@ struct AutomationsScreen: View {
         Label(quickRuns > 0 ? "Quick Run (\(quickRuns))" : "Quick Run", systemImage: "bolt")
       }
       .labelStyle(.titleAndIcon)
-      Button { describing = true } label: { Label("Describe It…", systemImage: "sparkles") }
+      Button { describing = true } label: { Label("Describe It", systemImage: "sparkles") }
         .labelStyle(.titleAndIcon)
       Button { create() } label: { Label("New Automation", systemImage: "plus") }
         .disabled(creating)
