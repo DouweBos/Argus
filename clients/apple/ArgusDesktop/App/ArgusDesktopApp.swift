@@ -28,7 +28,8 @@ struct ArgusDesktopApp: App {
         .environment(delegate.model.hosts)
         .environment(delegate.model.account)
         .frame(minWidth: MainWindow.minWindowWidth, minHeight: 600)
-        // Deep links, once a build claims `argus://` (see docs/mac-app.md).
+        // Only Release builds claim `argus://` (Debug gets `argus-mac-dev`), so a dev
+        // build never takes links from the installed app.
         .onOpenURL { url in
           delegate.model.open(deepLink: url)
         }
