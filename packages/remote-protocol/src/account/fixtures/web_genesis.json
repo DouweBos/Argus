@@ -1,0 +1,17 @@
+{
+  "name": "web_genesis",
+  "description": "a browser starts the account",
+  "entries": [
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":0,\"prev\":\"\",\"ts\":1800000000000,\"signer\":\"00000000-0000-4000-8000-000000000009\",\"type\":\"genesis\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000009\",\"role\":\"device\",\"kind\":\"web\",\"sign_pub\":\"/RckOFqgx1tk+3jNYC+h2ZH96/drE8WO1wLqyDXp9hg=\",\"noise_pub\":\"Y13l6wOfwSagF7nnieHbchzdUfftP1UV0Y4vTi3XhRo=\",\"name\":\"Browser\",\"created_at\":1800000000000}}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000009": "Soky3+lgPvUpVfkyEJD6M7mHMO5roJAWCahDkFpZC72MENV5OOtPPL6IwpN+xzMKP0Tsdb6OyjyN7INBGZiBDw=="
+      }
+    }
+  ],
+  "expect": {
+    "ok": false,
+    "reason": "web_approver",
+    "index": 0
+  }
+}

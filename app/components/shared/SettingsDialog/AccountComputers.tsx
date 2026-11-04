@@ -4,7 +4,12 @@ import type {
   AccountStatus,
 } from "../../../lib/types";
 import { useCallback, useEffect, useState } from "react";
-import { Button, SettingsScreenField, StatusBulb } from "@argus/peacock";
+import {
+  AccountMemberActions,
+  Button,
+  SettingsScreenField,
+  StatusBulb,
+} from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import { useLiveRefresh } from "../../../hooks/useLiveRefresh";
 import { refreshAccountHosts } from "../../../lib/accountHosts";
@@ -14,9 +19,10 @@ import {
   accountApproveJoin,
   accountDenyJoin,
   accountListRequests,
+  accountRenameMember,
+  accountRevokeMember,
 } from "../../../lib/ipc";
 import { PRESENCE_POLL_MS } from "../../../stores/accountPresenceStore";
-import { AccountMemberActions } from "./AccountMemberActions";
 import styles from "./AccountSection.module.css";
 
 /** Also folds the computers into Hosts, so they attach like a pairing. */
@@ -83,7 +89,8 @@ export function AccountComputers({ status }: { status: AccountStatus }) {
               </span>
               <span className={styles.muted}>{presenceLabel(host)}</span>
               <AccountMemberActions
-                id={host.host_id}
+                onRename={(name) => accountRenameMember(host.host_id, name)}
+                onRemove={() => accountRevokeMember(host.host_id)}
                 name={host.name}
                 canRename={host.is_self || status.device_id !== null}
                 canRemove={!host.is_self && status.device_id !== null}

@@ -40,6 +40,7 @@ public enum AccountLog {
     else { throw .badSignature }
     guard body.seq == 0, body.prev.isEmpty else { throw .fork }
     guard body.signer == member.id else { throw .unknownSigner }
+    guard !member.isWeb else { throw .webApprover }
     let hash = AccountCodec.entryHash(entry.body)
     if let root, root.accountId != body.accountId || root.epoch != body.epoch || root.genesisHash != hash {
       throw .fork
@@ -69,6 +70,7 @@ public enum AccountLog {
     else { throw .fork }
     guard signer.live else { throw .unknownSigner }
     let signerIsHost = signer.member.role == .host
+    if signer.member.isWeb, case .add = body.fields { throw .webApprover }
 
     switch body.fields {
     case .genesis:

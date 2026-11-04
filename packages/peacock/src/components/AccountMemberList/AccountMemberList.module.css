@@ -17,6 +17,12 @@
   background: var(--bg-tertiary);
   color: var(--text-primary);
   text-align: left;
+  flex-wrap: wrap;
+}
+
+.actions {
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .pick {

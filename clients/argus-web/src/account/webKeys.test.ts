@@ -46,7 +46,7 @@ describe("web device keys", () => {
     expect(verifyB64(message, toB64(sig), original.signPub)).toBe(true);
   });
 
-  it("signs proofs and log entries the shared verifier accepts", async () => {
+  it("signs proofs and log entries the shared verifier checks", async () => {
     const keys = await generateDeviceKeys("Test browser", 1);
     const member = deviceMember(keys);
     expect(member.kind).toBe("web");
@@ -58,8 +58,8 @@ describe("web device keys", () => {
       entrySigner(keys),
       { type: "genesis", member },
     );
-    const verified = verifyLog([genesis]);
-    expect(verified.ok).toBe(true);
+    // The signature checks out; a browser just may not start an account.
+    expect(verifyLog([genesis])).toMatchObject({ ok: false, reason: "web_approver" });
   });
 
   it("agrees on the X25519 secret with a host holding a raw key", async () => {

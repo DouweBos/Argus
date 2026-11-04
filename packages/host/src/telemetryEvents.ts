@@ -90,7 +90,8 @@ export interface EventMap {
       | "fork"
       | "malformed"
       | "sas_mismatch"
-      | "unknown_signer";
+      | "unknown_signer"
+      | "web_approver";
   };
   account_member_renamed: { role: "device" | "host" };
   account_member_revoked: {

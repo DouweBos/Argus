@@ -6,6 +6,7 @@
 import type { AccountMember } from "@argus/remote-protocol/account";
 import { create } from "zustand";
 import { defaultDeviceName } from "../lib/keystore";
+import { capture } from "../telemetry/telemetry";
 import { accountClient, type AccountClient } from "./client";
 import { type ClerkJs, clerkAuth, loadClerk } from "./clerk";
 import type { AccountComputer } from "./directory";
@@ -17,6 +18,7 @@ import {
   rejectJoinCode,
   retryJoin,
 } from "./join";
+import { deleteAccount, removeMember, renameMember } from "./members";
 import { AccountSession, type AccountPhase } from "./session";
 import { indexedDbVaultStore } from "./vault";
 import { generateDeviceKeys, webCryptoSupported } from "./webKeys";
@@ -42,6 +44,14 @@ interface AccountStoreState {
   retryJoin: () => Promise<void>;
   setName: (name: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  renameMember: (id: string, name: string) => Promise<void>;
+  /** Removes `id`, then hands the removal to `handOver` (the computers it can reach). */
+  removeMember: (
+    id: string,
+    handOver: (session: AccountSession, computers: AccountComputer[]) => Promise<number>,
+  ) => Promise<void>;
+  /** False when the user cancelled verifying their sign-in. */
+  deleteAccount: () => Promise<boolean>;
   rememberHost: (hostId: string | null) => void;
   approvalCode: (memberId: string) => string | null;
 }
@@ -102,7 +112,10 @@ export const useAccountStore = create<AccountStoreState>()((set) => {
       try {
         const bootstrapClient = accountClient(async () => null);
         clerk = await loadClerk(await bootstrapClient.config());
-        client = accountClient(async () => (await clerk.session?.getToken()) ?? null);
+        client = accountClient(
+          async (opts) =>
+            (await clerk.session?.getToken(opts?.fresh ? { skipCache: true } : undefined)) ?? null,
+        );
       } catch {
         set({ phase: "unavailable" });
 
@@ -141,7 +154,79 @@ export const useAccountStore = create<AccountStoreState>()((set) => {
     rejectApproved: run(rejectApprovedJoin),
     retryJoin: run(retryJoin),
     setName: async (name) => (session ? session.setName(name) : false),
-    signOut: run((s) => s.signOut()),
+    signOut: run(async (s) => {
+      await s.signOut();
+      capture("web_account_left", { action: "sign_out", outcome: "done", reverified: false });
+    }),
+    renameMember: async (id, name) => {
+      if (!session) {
+        return;
+      }
+      const role = session.state?.members[id]?.member.role ?? "device";
+      const self = id === session.vault.keys?.memberId;
+      const report = (success: boolean) =>
+        capture("web_account_member_changed", {
+          action: "rename",
+          role,
+          self,
+          success,
+          computers_reached: 0,
+        });
+      try {
+        await renameMember(session, id, name);
+      } catch (err) {
+        report(false);
+        throw err;
+      }
+      report(true);
+    },
+    removeMember: async (id, handOver) => {
+      const current = session;
+      if (!current) {
+        return;
+      }
+      const role = current.state?.members[id]?.member.role ?? "device";
+      // Read first: a removed computer still gets told of its own removal.
+      const computers = current.computers;
+      try {
+        await removeMember(current, id);
+      } catch (err) {
+        capture("web_account_member_changed", {
+          action: "remove",
+          role,
+          self: false,
+          success: false,
+          computers_reached: 0,
+        });
+        throw err;
+      }
+      const reached = await handOver(current, computers).catch(() => 0);
+      capture("web_account_member_changed", {
+        action: "remove",
+        role,
+        self: false,
+        success: true,
+        computers_reached: reached,
+      });
+    },
+    deleteAccount: async () => {
+      if (!session) {
+        return false;
+      }
+      try {
+        const { outcome, reverified } = await deleteAccount(session);
+        capture("web_account_left", {
+          action: "delete",
+          outcome: outcome === "deleted" ? "done" : "cancelled",
+          reverified,
+        });
+
+        return outcome === "deleted";
+      } catch (err) {
+        capture("web_account_left", { action: "delete", outcome: "failed", reverified: false });
+        throw err;
+      }
+    },
     rememberHost: (hostId) => {
       void session?.rememberHost(hostId).then(publish);
     },
