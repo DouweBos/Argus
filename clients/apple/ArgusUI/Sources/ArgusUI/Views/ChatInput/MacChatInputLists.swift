@@ -144,33 +144,36 @@
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 8) {
           ForEach(images) { image in
-            Image(platformImage: image.preview)
-              .resizable()
-              .scaledToFill()
-              .frame(width: 56, height: 56)
-              .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
-              .overlay {
-                RoundedRectangle(cornerRadius: theme.radiusSmall)
-                  .strokeBorder(theme.border, lineWidth: 1)
-              }
-              .overlay(alignment: .topTrailing) {
-                Button {
-                  remove(image.id)
-                } label: {
-                  Image(systemName: Icon.close)
-                    .font(.scaled(size: 8, weight: .bold))
-                    .foregroundStyle(theme.onAccent)
-                    .padding(4)
-                    .background(Circle().fill(theme.accent))
+            // The button stays inside the item's frame: offset past it, the next
+            // thumbnail took its clicks, so only the last one could be removed.
+            ZStack(alignment: .topTrailing) {
+              Image(platformImage: image.preview)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 56, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
+                .overlay {
+                  RoundedRectangle(cornerRadius: theme.radiusSmall)
+                    .strokeBorder(theme.border, lineWidth: 1)
                 }
-                .buttonStyle(.argusPlain)
-                .help("Remove image")
-                .offset(x: 5, y: -5)
+                .padding(.top, 6)
+                .padding(.trailing, 6)
+              Button {
+                remove(image.id)
+              } label: {
+                Image(systemName: Icon.close)
+                  .font(.scaled(size: 8, weight: .bold))
+                  .foregroundStyle(theme.onAccent)
+                  .padding(4)
+                  .background(Circle().fill(theme.accent))
+                  .contentShape(Circle())
               }
+              .buttonStyle(.argusPlain)
+              .help("Remove image")
+              .offset(x: 1, y: 1)
+            }
           }
         }
-        .padding(.top, 6)
-        .padding(.trailing, 6)
       }
     }
   }
