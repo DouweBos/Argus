@@ -274,13 +274,13 @@ public struct QuestionFormView: View {
       }
 
       HStack(spacing: 8) {
-        Btn(label: "Submit", small: true) {
+        Btn(label: "Submit", small: true, fills: true) {
           onSubmit(
             Questions.formatAnswer(questions: questions, picks: picks, custom: custom))
         }
         .disabled(!allAnswered)
         .commandReturnShortcut()
-        Btn(label: "Cancel", tone: .ghost, small: true, action: onCancel)
+        Btn(label: "Cancel", tone: .secondary, small: true, fills: true, action: onCancel)
       }
     }
   }
