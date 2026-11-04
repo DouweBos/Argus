@@ -39,10 +39,11 @@ extension ComposerModel {
 
     Task {
       if queue {
-        await host.queueMessage(agentId: agentId, message: body, images: attachments, displayText: display)
+        // The bubble keeps the preamble: the transcript draws it as linked-project chips.
+        await host.queueMessage(agentId: agentId, message: body, images: attachments, displayText: body)
       } else {
         await host.sendMessage(
-          agentId: agentId, message: body, images: attachments, displayText: display, isRetry: false)
+          agentId: agentId, message: body, images: attachments, displayText: nil, isRetry: false)
       }
     }
   }

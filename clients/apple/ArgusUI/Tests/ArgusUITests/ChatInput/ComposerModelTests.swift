@@ -56,7 +56,8 @@ struct ComposerModelTests {
     composer.submit()
     await settle()
     let sent = try #require(host.sent.first)
-    #expect(sent.displayText == "(see attached images)")
+    // The bubble shows the whole body so the transcript can draw the link as a chip.
+    #expect(sent.displayText == nil)
     #expect(sent.message == LinkedProjects.buildPreamble(paths: ["/repos/other"], message: "(see attached images)"))
     #expect(sent.images.count == 1)
     #expect(composer.linkedProjects.isEmpty)

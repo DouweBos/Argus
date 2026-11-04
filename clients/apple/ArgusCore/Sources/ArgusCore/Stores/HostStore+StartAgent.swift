@@ -35,7 +35,7 @@ extension HostStore {
     let send = hasMessage
       ? Task {
         await sendMessage(
-          agentId: agentId, message: request.message, images: request.images, displayText: request.displayText)
+          agentId: agentId, message: request.message, images: request.images, displayText: nil)
       } : nil
     onSpawned?(agentId, id)
     await send?.value
