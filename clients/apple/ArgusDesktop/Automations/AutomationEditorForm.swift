@@ -55,31 +55,37 @@ struct AutomationEditorForm: View {
     }
   }
 
+  @ViewBuilder
   private var scope: some View {
     Section {
-      LabeledContent("Projects") {
-        VStack(alignment: .trailing, spacing: 4) {
-          if host.projects.isEmpty, host.projectsLoaded { Text("No projects are open.").foregroundStyle(.secondary) }
-          ForEach(host.projects) { project in
-            Toggle(project.name, isOn: member(project.repoRoot, of: \.repoRoots))
-              .help(HostScopedPath.path(project.repoRoot))
-          }
+      if host.projects.isEmpty, host.projectsLoaded { Text("No projects are open.").foregroundStyle(.secondary) }
+      ForEach(host.projects) { project in
+        Toggle(isOn: member(project.repoRoot, of: \.repoRoots)) {
+          Label(project.name, systemImage: "folder")
         }
+        .help(HostScopedPath.path(project.repoRoot))
       }
-      LabeledContent("Signal sources") {
-        VStack(alignment: .trailing, spacing: 4) {
-          if store.sources.isEmpty { Text("None reported.").foregroundStyle(.secondary) }
-          ForEach(store.sources) { source in
-            Toggle(
-              source.available ? source.label : "\(source.label) (not configured)",
-              isOn: member(source.id, of: \.sourceIds))
-          }
+    } header: {
+      ScopeHeader(
+        title: "Projects", selected: host.projects.filter { draft.repoRoots.contains($0.repoRoot) }.count,
+        total: host.projects.count)
+    } footer: {
+      Text("Repos the run may read.")
+    }
+    Section {
+      if store.sources.isEmpty { Text("None reported.").foregroundStyle(.secondary) }
+      ForEach(store.sources) { source in
+        Toggle(isOn: member(source.id, of: \.sourceIds)) {
+          Text(source.label)
+          if !source.available { Text("Not configured") }
         }
       }
     } header: {
-      Text("Scope")
+      ScopeHeader(
+        title: "Signal sources", selected: store.sources.filter { draft.sourceIds.contains($0.id) }.count,
+        total: store.sources.count)
     } footer: {
-      Text("Repos the run may read, and what feeds it work.")
+      Text("What feeds the run its work.")
     }
   }
 
@@ -195,6 +201,20 @@ struct AutomationEditorForm: View {
         draft[keyPath: path].removeAll { $0 == value }
         if on { draft[keyPath: path].append(value) }
       })
+  }
+}
+
+private struct ScopeHeader: View {
+  let title: String
+  let selected: Int
+  let total: Int
+
+  var body: some View {
+    HStack {
+      Text(title)
+      Spacer()
+      if total > 0 { Text("\(selected) of \(total)").monospacedDigit().foregroundStyle(.secondary) }
+    }
   }
 }
 
