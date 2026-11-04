@@ -57,8 +57,14 @@
         let start = CACurrentMediaTime()
         // Built once per count and shape, so a second open measures only the transcript.
         let slot = narrated ? -count : count
-        let (messages, images) = prepared[slot] ?? prepare(count, narrated: narrated)
+        var (messages, images) = prepared[slot] ?? prepare(count, narrated: narrated)
         prepared[slot] = (messages, images)
+        // `markdown`: one more assistant reply at the tail, where the view lands.
+        if let markdown = command["markdown"] as? String {
+          let tail = TranscriptFixture.Message(
+            id: "fx-tail", role: "assistant", text: [markdown], timestamp: 1_900_000_000_000)
+          messages += TranscriptFixture.remote([tail])
+        }
         let built = CACurrentMediaTime() - start
         let paged = command["paged"] as? Bool ?? true
         let store = paged ? HostStore() : model.store
@@ -149,11 +155,17 @@
           try? backend.push(pending, agentId: key, revision: streamRevision)
           return ["ok": true]
         }
+        // `markdown`: streamed line by line in place of the last message's text.
+        let lines = (command["markdown"] as? String).map { $0.split(separator: "\n", omittingEmptySubsequences: false) }
         Task {
           let meter = HangMeter()
           var applied: [Double] = []
-          for index in 0..<count {
-            last.textBlocks.append(index % 12 == 11 ? "\n\n" : "token \(index) ")
+          for index in 0..<(lines?.count ?? count) {
+            if let lines {
+              last.textBlocks = [lines[...index].joined(separator: "\n")]
+            } else {
+              last.textBlocks.append(index % 12 == 11 ? "\n\n" : "token \(index) ")
+            }
             let start = CACurrentMediaTime()
             streamRevision += 1
             try? backend.push(last, agentId: key, revision: streamRevision)

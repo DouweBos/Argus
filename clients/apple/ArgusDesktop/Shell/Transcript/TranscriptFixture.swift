@@ -259,7 +259,7 @@
     /// Fences in the languages chats show most, one unknown, one bare, and
     /// lines too long to wrap.
     private static func fence(_ turn: Int) -> String {
-      switch turn % 5 {
+      switch turn % 6 {
       case 0:
         return "```json\n{\n  \"name\": \"argus\",\n  \"version\": \(turn),\n  \"private\": true,\n  \"scripts\": { \"build\": \"tsc --noEmit && vite build --mode production --config vite.config.ts --emptyOutDir\" }\n}\n```"
       case 1:
@@ -268,6 +268,19 @@
         return "```diff\n- let old = \(turn)\n+ let new = \(turn + 1)\n```"
       case 3:
         return "```brainfuck\n++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.\n```"
+      case 4:
+        return """
+          ```yaml
+                - name: Let SwiftPM fetch Grove
+                  if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app == 'mac' }}
+                  env:
+                    GROVE_TOKEN: ${{ secrets.GROVE_TOKEN }}
+                  run: |
+                    git config --global \\
+                      url."https://x-access-token:${GROVE_TOKEN}@github.com/DouweBos/Grove.git".insteadOf \\
+                      "https://github.com/DouweBos/Grove.git"
+          ```
+          """
       default:
         return "```\nplain fenced output \(turn) with no language at all, and a line long enough that it should scroll sideways rather than wrap\n```"
       }

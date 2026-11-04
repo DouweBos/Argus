@@ -188,6 +188,9 @@ final class TranscriptCodeBlockView: NSView {
 
   let text = TranscriptNSTextView.make()
   private let scroll = NSScrollView()
+  /// Measured rather than `text.textStorage`: the measurer caches by identity,
+  /// and the storage is one object for every string a streamed block grows through.
+  private var content = NSAttributedString()
 
   override var isFlipped: Bool { true }
 
@@ -216,6 +219,7 @@ final class TranscriptCodeBlockView: NSView {
   required init?(coder: NSCoder) { fatalError() }
 
   func setContent(_ content: NSAttributedString) {
+    self.content = content
     text.setContent(content)
     needsLayout = true
   }
@@ -223,7 +227,7 @@ final class TranscriptCodeBlockView: NSView {
   override func layout() {
     super.layout()
     scroll.frame = bounds
-    let natural = text.textStorage.map { TextMeasurer.size(of: $0, width: nil) } ?? .zero
+    let natural = TextMeasurer.size(of: content, width: nil)
     text.frame = NSRect(
       x: 0, y: 0, width: max(ceil(natural.width) + Self.insets.width * 2, bounds.width),
       height: ceil(natural.height) + Self.insets.height * 2)
