@@ -25,10 +25,9 @@ struct AccountView: View {
       switch account.phase {
       case .loading, .settingUp:
         Loading(label: account.phase == .loading ? "Checking your account…" : "Setting up your account…")
-      case .signingIn:
-        Loading(label: "Signing in…")
-      case .signedOut:
-        signIn
+      // Signing in keeps the form, so a web sign-in that comes back shows where it left.
+      case .signedOut, .signingIn:
+        signIn.disabled(account.phase == .signingIn)
       case .awaitingApproval:
         awaitingApproval
       case .ready:
@@ -94,8 +93,18 @@ struct AccountView: View {
     .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
     .frame(height: 44)
     .frame(maxWidth: Layout.maxControlWidth)
+    // Apple's button draws no spinner of its own.
+    if account.signingInWith == .apple {
+      HStack(spacing: 8) {
+        ProgressView().controlSize(.small)
+        MutedText("Signing in with Apple…")
+      }
+    }
 
-    Btn(label: "Sign in with GitHub", tone: .secondary, image: BrandIcon.github) {
+    Btn(
+      label: "Sign in with GitHub", tone: .secondary, image: BrandIcon.github,
+      busy: account.signingInWith == .github
+    ) {
       Task { await account.signIn(with: .github) }
     }
 
@@ -104,7 +113,7 @@ struct AccountView: View {
         MutedText("Enter the code we emailed to \(email).")
         ThemedTextField(placeholder: "123456", text: $code, input: .code) { verifyCode() }
         HStack(spacing: 8) {
-          Btn(label: "Verify", hugs: true) { verifyCode() }
+          Btn(label: "Verify", hugs: true, busy: account.signingInWith == .email) { verifyCode() }
             .disabled(code.trimmingCharacters(in: .whitespaces).isEmpty)
           Btn(label: "Use another email", tone: .ghost) {
             code = ""

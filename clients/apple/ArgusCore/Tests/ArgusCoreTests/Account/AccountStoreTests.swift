@@ -88,6 +88,7 @@ struct AccountStoreTests {
     #expect(store.phase == .ready)
     #expect(service.batches.isEmpty)
     #expect(events == [.signedIn(provider: .github, firstDevice: false)])
+    #expect(store.signingInWith == nil)
   }
 
   @Test("a second device asks to join and waits for approval")

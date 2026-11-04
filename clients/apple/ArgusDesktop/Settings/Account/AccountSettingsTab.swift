@@ -11,15 +11,15 @@ struct AccountSettingsTab: View {
   var body: some View {
     SettingsPage {
       switch account.phase {
-      case .loading, .settingUp, .signingIn:
+      case .loading, .settingUp:
         SettingsGroup {
           HStack {
             ProgressView().controlSize(.small)
-            Text(account.phase == .signingIn ? "Signing in…" : "Setting up your account…")
-              .foregroundStyle(.secondary)
+            Text("Setting up your account…").foregroundStyle(.secondary)
           }
         }
-      case .signedOut:
+      // Signing in keeps the form, so a web sign-in that comes back shows where it left.
+      case .signedOut, .signingIn:
         AccountSignInSection()
       case .awaitingApproval:
         if let notice = account.resetNotice {

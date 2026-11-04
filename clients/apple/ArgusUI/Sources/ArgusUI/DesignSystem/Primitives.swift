@@ -269,6 +269,8 @@ public struct Btn: View {
   var hugs = false
   /// Takes all the width it is offered, uncapped, ghost included.
   var fills = false
+  /// A spinner in place of the icon while its action runs.
+  var busy = false
   let action: () -> Void
 
   public init(
@@ -279,6 +281,7 @@ public struct Btn: View {
     image: Image? = nil,
     hugs: Bool = false,
     fills: Bool = false,
+    busy: Bool = false,
     action: @escaping () -> Void
   ) {
     self.label = label
@@ -288,6 +291,7 @@ public struct Btn: View {
     self.image = image
     self.hugs = hugs
     self.fills = fills
+    self.busy = busy
     self.action = action
   }
 
@@ -305,7 +309,9 @@ public struct Btn: View {
 
   private var face: some View {
     HStack(spacing: 6) {
-      if let icon {
+      if busy {
+        ProgressView().controlSize(.small).tint(foreground)
+      } else if let icon {
         Image(systemName: icon).font(.scaled(size: small ? 11 : 13, weight: .semibold))
       } else if let image {
         image.resizable().scaledToFit().frame(width: small ? 12 : 15, height: small ? 12 : 15)

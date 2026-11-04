@@ -82,6 +82,8 @@ public final class AccountStore {
   public internal(set) var localLinkError: String?
   /// An email code is on its way and the next step is to type it.
   public internal(set) var awaitingEmailCode = false
+  /// The way in that's running while `phase` is `.signingIn`, for its button's spinner.
+  public internal(set) var signingInWith: AccountSignInProvider?
   /// Who is signed in, for the account header. Never sent anywhere.
   public internal(set) var profile: AccountProfile?
   /// This device asking to join an account that already has devices.
@@ -276,6 +278,8 @@ public final class AccountStore {
   private func runSignIn(_ provider: AccountSignInProvider, _ flow: () async throws -> Void) async {
     error = nil
     phase = .signingIn
+    signingInWith = provider
+    defer { signingInWith = nil }
     do {
       try await ensureConfigured()
       try await flow()

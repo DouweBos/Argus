@@ -21,8 +21,12 @@ struct AccountSignInSection: View {
         Button {
           Task { await account.signIn(with: .apple) }
         } label: {
-          Label("Sign in with Apple", systemImage: "apple.logo")
-            .frame(width: 216)
+          Label {
+            Text("Sign in with Apple")
+          } icon: {
+            busyIcon(.apple) { Image(systemName: "apple.logo") }
+          }
+          .frame(width: 216)
         }
         .buttonStyle(.secondary)
       }
@@ -32,7 +36,7 @@ struct AccountSignInSection: View {
         Label {
           Text("Sign in with GitHub")
         } icon: {
-          BrandIcon.github.resizable().scaledToFit().frame(width: 13, height: 13)
+          busyIcon(.github) { BrandIcon.github.resizable().scaledToFit().frame(width: 13, height: 13) }
         }
         .frame(width: 216)
       }
@@ -43,9 +47,15 @@ struct AccountSignInSection: View {
           TextField("Code from the email", text: $code)
             .textFieldStyle(.roundedBorder)
             .onSubmit(verify)
-          Button("Verify", action: verify)
-            .buttonStyle(.accent)
-            .disabled(code.trimmingCharacters(in: .whitespaces).isEmpty)
+          Button(action: verify) {
+            if account.signingInWith == .email {
+              ProgressView().controlSize(.small)
+            } else {
+              Text("Verify")
+            }
+          }
+          .buttonStyle(.accent)
+          .disabled(code.trimmingCharacters(in: .whitespaces).isEmpty)
           Button("Use Another Email") {
             code = ""
             account.cancelEmailCode()
@@ -64,7 +74,19 @@ struct AccountSignInSection: View {
       }
       SettingsError(text: account.error)
     }
+    .disabled(account.phase == .signingIn)
     .task { await account.prepare() }
+  }
+
+  /// A spinner in place of the provider's mark while its sign-in runs.
+  @ViewBuilder private func busyIcon(
+    _ provider: AccountSignInProvider, @ViewBuilder mark: () -> some View
+  ) -> some View {
+    if account.signingInWith == provider {
+      ProgressView().controlSize(.mini)
+    } else {
+      mark()
+    }
   }
 
   private var appleButton: some View {
