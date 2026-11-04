@@ -231,7 +231,7 @@ platform :mac do
       "-destination", "generic/platform=macOS",
       "-archivePath", archive,
       "-derivedDataPath", derived,
-      # System git, so CI's url.insteadOf and SSH key reach private packages (Grove).
+      # System git, so the url.insteadOf CI sets reaches private packages (Grove).
       "-scmProvider", "system",
       "MARKETING_VERSION=#{version}",
       "CURRENT_PROJECT_VERSION=#{build_number}",
