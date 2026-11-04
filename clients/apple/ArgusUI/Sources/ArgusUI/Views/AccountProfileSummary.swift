@@ -39,7 +39,8 @@ public struct AccountProfileSummary: View {
     let profile = account.phase == .signedOut ? nil : account.profile
     HStack(spacing: compact ? 8 : 12) {
       AccountAvatar(profile: profile, size: avatarSize)
-      // A sidebar row is narrow: a long name or email wraps rather than clips.
+      // A sidebar row is narrow: a long name or status wraps; an email can't break
+      // mid-word, so it shrinks a little, then elides its middle.
       VStack(alignment: .leading, spacing: 2) {
         Text(AccountProfileText.title(phase: account.phase, profile: profile, compact: compact))
           .font(compact ? .scaled(size: 13, weight: .medium) : .scaled(.headline))
@@ -49,7 +50,9 @@ public struct AccountProfileSummary: View {
           Text(subtitle)
             .font(compact ? .scaled(size: 11) : .scaled(.subheadline))
             .foregroundStyle(theme.textSecondary)
-            .lineLimit(compact ? 2 : 1)
+            .lineLimit(compact && subtitle != profile?.subtitle ? 2 : 1)
+            .minimumScaleFactor(compact ? 0.85 : 1)
+            .truncationMode(.middle)
         }
       }
     }
