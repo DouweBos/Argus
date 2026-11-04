@@ -97,6 +97,7 @@ export interface EventMap {
     role: "device" | "host";
     source: "local" | "log" | "sync";
   };
+  account_reset_seen: { action: "dismissed" | "unlinked" };
   account_push_sent: {
     outcome: "delivered" | "failed" | "refused" | "unregistered";
   };

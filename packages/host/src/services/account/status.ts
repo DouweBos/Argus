@@ -63,6 +63,7 @@ export function accountStatus(): AccountStatus {
     link: linkState,
     name: computerName(record),
     system_name: machineName(),
+    reset: linked ? null : (record?.reset_notice ?? null),
   };
 }
 

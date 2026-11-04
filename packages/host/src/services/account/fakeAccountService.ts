@@ -74,6 +74,8 @@ export class FakeAccountService {
   /** Every `POST /host/tunnel`, and every `DELETE`, by host id. */
   tunnelRequests: string[] = [];
   tunnelReleases: string[] = [];
+  /** Members of earlier epochs, by id → sign_pub: they get `410 account_reset`. */
+  retired = new Map<string, string>();
   private nextId = 1;
 
   /** Tokens the next `POST /host/tunnel` calls hand out, in order. */
@@ -131,6 +133,22 @@ export class FakeAccountService {
     request.head = this.head();
 
     return request.head!;
+  }
+
+  /** `POST /account/reset`: a new epoch from `genesis`; every old member retires. */
+  resetAccount(genesis: LogEntry): void {
+    for (const { member } of Object.values(this.state()?.members ?? {})) {
+      this.retired.set(member.id, member.sign_pub);
+    }
+    this.epoch += 1;
+    this.entries = [genesis];
+    this.presence.clear();
+    this.tunnels.clear();
+    for (const request of this.requests.values()) {
+      if (["pending", "claimed", "approving"].includes(request.status)) {
+        request.status = "denied";
+      }
+    }
   }
 
   /** Append like `POST /log`: CAS on the head, then the verifier. */
@@ -210,6 +228,25 @@ export class FakeAccountService {
     const method = init?.method ?? "GET";
     const body = typeof init?.body === "string" ? init.body : "";
     const headers = new Headers(init?.headers);
+    const retiredKey = this.retired.get(headers.get("x-argus-member") ?? "");
+    if (
+      retiredKey &&
+      verifyB64(
+        requestSigningBytes(
+          method,
+          url.pathname + url.search,
+          Number(headers.get("x-argus-ts")),
+          body,
+        ),
+        headers.get("x-argus-sig") ?? "",
+        retiredKey,
+      )
+    ) {
+      return json(
+        { error: "account_reset", epoch: this.epoch, genesis: this.entries[0] },
+        410,
+      );
+    }
     const key = this.authorized(
       { method, path: url.pathname + url.search, body },
       headers,

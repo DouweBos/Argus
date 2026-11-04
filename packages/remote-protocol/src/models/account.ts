@@ -96,6 +96,16 @@ export const AccountConfigPatch = z.object({
 });
 export type AccountConfigPatch = z.infer<typeof AccountConfigPatch>;
 
+/** The account moved to a newer epoch without this computer (§5.8): link it again. */
+export const AccountResetNotice = z.object({
+  epoch: z.number().int(),
+  /** When the reset's genesis was signed. */
+  at: z.number(),
+  /** The device that reset the account, as it named itself. */
+  by_name: z.string().nullable(),
+});
+export type AccountResetNotice = z.infer<typeof AccountResetNotice>;
+
 export const AccountStatus = z.object({
   linked: z.boolean(),
   account_id: z.string().nullable(),
@@ -117,6 +127,8 @@ export const AccountStatus = z.object({
   name: z.string().optional(),
   /** The name the system gives this computer, used while `name` isn't set. */
   system_name: z.string().optional(),
+  /** Set after the account was reset elsewhere, until this computer links again or it's dismissed. */
+  reset: AccountResetNotice.nullable().optional(),
 });
 export type AccountStatus = z.infer<typeof AccountStatus>;
 

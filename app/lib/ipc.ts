@@ -2757,6 +2757,10 @@ export const accountLoginCancel = (): Promise<AccountLinkState> =>
 export const accountLogout = (): Promise<AccountStatus> =>
   invoke("account_logout", {});
 
+/** Hide the "this account was reset" notice without linking again. */
+export const accountDismissReset = (): Promise<AccountStatus> =>
+  invoke("account_dismiss_reset", {});
+
 export const accountListRequests = (): Promise<AccountJoinRequest[]> =>
   invoke("account_list_requests", {});
 

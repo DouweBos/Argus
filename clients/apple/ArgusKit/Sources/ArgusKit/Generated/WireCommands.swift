@@ -9749,6 +9749,13 @@ extension ArgusProtocol {
       public static let tier = "host"
     }
 
+    public enum AccountDismissReset: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.AccountStatus
+      public static let name = "account_dismiss_reset"
+      public static let tier = "host"
+    }
+
     public enum AccountGetStatus: RemoteCommand {
       public typealias Params = EmptyParams
       public typealias Result = ArgusProtocol.AccountStatus

@@ -30,6 +30,7 @@ import {
   stopBackground,
 } from "./lifecycle";
 import { cancelLink, linkInProgress, startLink } from "./link";
+import { refreshBeforeLink, watchAccountReset } from "./reset";
 import { accountStatus, emitAccountStatus } from "./status";
 import {
   ensureAccountRecord,
@@ -55,6 +56,7 @@ export async function startAccount(opts: {
   disconnect: (deviceId: string) => void;
 }): Promise<void> {
   setDeviceDisconnector(opts.disconnect);
+  watchAccountReset();
   await loadTrust();
   startBackground();
   emitAccountStatus();
@@ -126,6 +128,7 @@ export async function logout(): Promise<AccountStatus> {
 
 /** The Mac app's bundled host: hand the app this host's member and proof. */
 export async function linkLocalBegin(): Promise<AccountLocalLinkOffer> {
+  await refreshBeforeLink();
   if (isLinked()) {
     throw "This computer is already linked to an account";
   }

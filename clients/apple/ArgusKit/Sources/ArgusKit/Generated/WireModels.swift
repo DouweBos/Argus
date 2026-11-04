@@ -732,6 +732,31 @@ extension ArgusProtocol {
     public static let host = AccountMemberRole(rawValue: "host")
   }
 
+  public struct AccountResetNotice: Codable, Sendable {
+    public var epoch: Int
+    public var at: Double
+    public var byName: String?
+
+    enum CodingKeys: String, CodingKey {
+      case epoch = "epoch"
+      case at = "at"
+      case byName = "by_name"
+    }
+
+    public init(epoch: Int, at: Double, byName: String? = nil) {
+      self.epoch = epoch
+      self.at = at
+      self.byName = byName
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(epoch, forKey: .epoch)
+      try c.encode(at, forKey: .at)
+      try c.encode(byName, forKey: .byName)
+    }
+  }
+
   public struct AccountRoot: Codable, Sendable {
     public var accountId: String
     public var epoch: Int
@@ -771,6 +796,7 @@ extension ArgusProtocol {
     public var link: AccountLinkState
     public var name: String?
     public var systemName: String?
+    public var reset: AccountResetNotice?
 
     enum CodingKeys: String, CodingKey {
       case linked = "linked"
@@ -786,9 +812,10 @@ extension ArgusProtocol {
       case link = "link"
       case name = "name"
       case systemName = "system_name"
+      case reset = "reset"
     }
 
-    public init(linked: Bool, accountId: String? = nil, epoch: Int? = nil, hostId: String? = nil, deviceId: String? = nil, safetyCode: String? = nil, headSeq: Int? = nil, logError: String? = nil, presenceAt: Double? = nil, config: AccountConfig, link: AccountLinkState, name: String? = nil, systemName: String? = nil) {
+    public init(linked: Bool, accountId: String? = nil, epoch: Int? = nil, hostId: String? = nil, deviceId: String? = nil, safetyCode: String? = nil, headSeq: Int? = nil, logError: String? = nil, presenceAt: Double? = nil, config: AccountConfig, link: AccountLinkState, name: String? = nil, systemName: String? = nil, reset: AccountResetNotice? = nil) {
       self.linked = linked
       self.accountId = accountId
       self.epoch = epoch
@@ -802,6 +829,7 @@ extension ArgusProtocol {
       self.link = link
       self.name = name
       self.systemName = systemName
+      self.reset = reset
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -819,6 +847,7 @@ extension ArgusProtocol {
       try c.encode(link, forKey: .link)
       try c.encodeIfPresent(name, forKey: .name)
       try c.encodeIfPresent(systemName, forKey: .systemName)
+      try c.encodeIfPresent(reset, forKey: .reset)
     }
   }
 

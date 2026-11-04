@@ -7,6 +7,7 @@ import {
 import { cancelLink, confirmLink, startLink } from "../services/account/link";
 import { renameMember, revokeMember } from "../services/account/members";
 import { setComputerName } from "../services/account/name";
+import { dismissReset } from "../services/account/reset";
 import {
   deviceKey,
   getAccountStatus,
@@ -41,5 +42,6 @@ export function registerAccountCommands(): void {
   defineTypedCommand("account_set_name", (p) =>
     setComputerName(p.name, "settings"),
   );
+  defineTypedCommand("account_dismiss_reset", () => dismissReset());
   defineTypedCommand("account_set_config", (p) => setAccountConfig(p.patch));
 }
