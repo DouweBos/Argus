@@ -20,15 +20,17 @@ struct SessionView: View {
   /// The panel's card is folded to its switcher, so its run control and huddle sit in the toolbar.
   private var cardCollapsed: Bool {
     switch model.sessionPanel ?? .agents {
-    case .agents: agentCardCollapsed
+    case .agents: agentCardCollapsed || !agentCardFits
     case .code: codeCardCollapsed
     case .git: gitCardCollapsed
     }
   }
 
-  /// The reading column steps clear of an open card when there's room to.
+  /// Too narrow for the reading column to step clear, the agent card folds rather than cover the chat.
+  private var agentCardFits: Bool { contentWidth == 0 || contentWidth >= SessionContextCardOverlay.minWidth }
+
   private var readingReserve: CGFloat {
-    !agentCardCollapsed && contentWidth >= SessionContextCardOverlay.minWidth ? SessionContextCardOverlay.reserve : 0
+    !agentCardCollapsed && agentCardFits ? SessionContextCardOverlay.reserve : 0
   }
   private var agents: [RemoteAgentStatus] { model.agents(inSession: sessionId) }
   private var focusedAgentId: String? { model.focusedAgentId(inSession: sessionId, agents: agents) }
@@ -112,7 +114,7 @@ struct SessionView: View {
       .environment(\.readingColumnReserve, readingReserve)
     }
     .frame(maxHeight: .infinity, alignment: .top)
-    .sessionContextCard(session, panel: .agents, barHeight: AgentTabBar.height)
+    .sessionContextCard(session, panel: .agents, barHeight: AgentTabBar.height, roomToOpen: agentCardFits)
     .background {
       // ⌘T too, as the Mac app always had it: agents are this panel's tabs.
       Button("New Agent") { MenuCommand.newAgent.run(model, via: .shortcut) }

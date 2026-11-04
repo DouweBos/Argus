@@ -22,7 +22,10 @@ struct SessionContextCard: View {
   @Environment(\.openURL) private var openURL
   let session: RemoteSession
   let panel: SessionPanel
-  @AppStorage private var collapsed: Bool
+  @AppStorage private var savedCollapsed: Bool
+  /// Too narrow to stay open, the card folds; the chevron can still open it over the panel for a moment.
+  let roomToOpen: Bool
+  @State private var peeking = false
   @State private var path: String?
   @State private var editors: [ArgusProtocol.EditorDescriptor] = []
   @State private var pushing = false
@@ -38,22 +41,25 @@ struct SessionContextCard: View {
   @State private var localBranches: [String] = []
   @AppStorage("argus:contextCard.editor") private var lastEditor = ""
 
-  init(session: RemoteSession, panel: SessionPanel) {
+  init(session: RemoteSession, panel: SessionPanel, roomToOpen: Bool = true) {
     self.session = session
     self.panel = panel
-    _collapsed = AppStorage(wrappedValue: ContextCardPreference.collapsedByDefault(panel), ContextCardPreference.key(panel))
+    self.roomToOpen = roomToOpen
+    _savedCollapsed = AppStorage(wrappedValue: ContextCardPreference.collapsedByDefault(panel), ContextCardPreference.key(panel))
   }
 
   private var hostId: HostId { model.host(ofSession: session.id) }
   private var isLocal: Bool { hostId == Hosts.local }
   private var git: RemoteGitStatus? { store.gitStatusBySession[session.id] }
   private var ready: Bool { session.status == .ready && !session.isUnavailable }
+  private var collapsed: Bool { roomToOpen ? savedCollapsed : !peeking }
 
   var body: some View {
     ContextCard(chrome: !collapsed) {
       switcher
       if !collapsed { details }
     }
+    .onChange(of: roomToOpen) { peeking = false }
     .sheet(isPresented: $renamingBranch) { RenameBranchSheet(session: session) }
     .sheet(isPresented: $showingChats) {
       RecentChatsSheet(session: session) { Task { await loadChatCount() } }
@@ -112,7 +118,7 @@ struct SessionContextCard: View {
       model.show(picked, via: .card)
     } trailing: {
       Button {
-        collapsed.toggle()
+        if roomToOpen { savedCollapsed.toggle() } else { peeking.toggle() }
         MacTelemetry.capture(.contextCardUsed(action: collapsed ? .collapse : .expand))
       } label: {
         Label(collapsed ? "Show Session Details" : "Hide Session Details", systemImage: collapsed ? "chevron.down" : "chevron.up")
@@ -429,6 +435,7 @@ struct SessionContextCardOverlay: ViewModifier {
   let panel: SessionPanel
   /// The top bar's height, to centre the collapsed card in it.
   var barHeight: CGFloat = ContextCardMetrics.collapsedHeight
+  var roomToOpen = true
 
   static let margin: CGFloat = 8
   /// Narrower than this and the reading column couldn't step clear of the card.
@@ -441,7 +448,7 @@ struct SessionContextCardOverlay: ViewModifier {
   func body(content: Content) -> some View {
     content.overlay(alignment: .topTrailing) {
       if let session {
-        SessionContextCard(session: session, panel: panel)
+        SessionContextCard(session: session, panel: panel, roomToOpen: roomToOpen)
           .padding(.top, max(0, (barHeight - ContextCardMetrics.collapsedHeight) / 2))
           .padding(.trailing, Self.margin)
       }
@@ -450,9 +457,12 @@ struct SessionContextCardOverlay: ViewModifier {
 }
 
 extension View {
-  func sessionContextCard(_ session: RemoteSession?, panel: SessionPanel, barHeight: CGFloat? = nil) -> some View {
+  func sessionContextCard(
+    _ session: RemoteSession?, panel: SessionPanel, barHeight: CGFloat? = nil, roomToOpen: Bool = true
+  ) -> some View {
     modifier(
       SessionContextCardOverlay(
-        session: session, panel: panel, barHeight: barHeight ?? ContextCardMetrics.collapsedHeight))
+        session: session, panel: panel, barHeight: barHeight ?? ContextCardMetrics.collapsedHeight,
+        roomToOpen: roomToOpen))
   }
 }
