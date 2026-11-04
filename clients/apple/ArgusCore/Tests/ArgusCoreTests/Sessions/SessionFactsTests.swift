@@ -8,10 +8,13 @@ private func decode<T: Decodable>(_ json: [String: Any]) -> T {
   try! JSONDecoder().decode(T.self, from: JSONSerialization.data(withJSONObject: json))
 }
 
-private func session(name: String? = nil, branch: String = "fix-login", base: String? = nil) -> RemoteSession {
+private func session(
+  name: String? = nil, branch: String = "fix-login", base: String? = nil, pullRequest: [String: Any]? = nil
+) -> RemoteSession {
   var json: [String: Any] = ["id": "s1", "repo_root": "/r", "kind": "worktree", "branch": branch, "status": "ready"]
   json["display_name"] = name
   json["base_branch"] = base
+  json["pull_request"] = pullRequest
   return decode(json)
 }
 
@@ -47,5 +50,13 @@ struct SessionFactsTests {
     #expect(busy[1].value == .changes(additions: 4, deletions: 1))
     #expect(busy[2].value == .text("1 file"))
     #expect(busy[3].emphasis == .warning && busy[4].emphasis == .danger)
+  }
+
+  @Test("a pull request follows the base, with its number and link")
+  func pullRequestFact() {
+    let pr: [String: Any] = ["number": 42, "state": "open", "url": "https://github.com/o/r/pull/42"]
+    let facts = SessionActivity(session: session(base: "main", pullRequest: pr), agents: []).facts(git: nil)
+    #expect(facts.map(\.label) == ["Base", "Pull request"])
+    #expect(facts[1].value == .pullRequest(RemoteSessionPullRequest(number: 42, state: .open, url: "https://github.com/o/r/pull/42")))
   }
 }

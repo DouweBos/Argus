@@ -97,9 +97,10 @@ public struct SessionRow: View {
   #endif
 }
 
-/// A `SessionFact`'s value: plain, a monospaced ref, change counts or an age.
+/// A `SessionFact`'s value: plain, a monospaced ref, change counts, an age or a pull request link.
 public struct SessionFactValue: View {
   @Environment(\.theme) private var theme
+  @Environment(\.openURL) private var openURL
   let fact: SessionFact
   var size: CGFloat?
 
@@ -116,7 +117,25 @@ public struct SessionFactValue: View {
     case .text(let text): label(text, mono: false)
     case .ref(let ref): label(ref, mono: true)
     case .age(let millis): label("\(ChromeText.shortAge(millis)) ago", mono: false)
+    case .pullRequest(let pr): pullRequest(pr)
     }
+  }
+
+  private func pullRequest(_ pr: RemoteSessionPullRequest) -> some View {
+    Button {
+      if let url = URL(string: pr.url) { openURL(url) }
+    } label: {
+      HStack(spacing: 4) {
+        PullRequestStateIcon(pr, size: size ?? 12, opensPullRequest: false)
+        Text("#\(pr.number)")
+          .font(size.map { .scaled(size: $0) })
+          .foregroundStyle(theme.accent)
+      }
+    }
+    .buttonStyle(.argusPlain)
+    .help("Open on GitHub")
+    .accessibilityLabel(PullRequestLabels.state(pr))
+    .accessibilityHint("Opens it on GitHub")
   }
 
   private func label(_ text: String, mono: Bool) -> some View {

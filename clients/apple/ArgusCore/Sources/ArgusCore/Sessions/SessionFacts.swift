@@ -10,6 +10,8 @@ public struct SessionFact: Identifiable, Sendable, Equatable {
     case changes(additions: Int, deletions: Int)
     /// Epoch milliseconds; the view phrases it as an age.
     case age(Double)
+    /// Its number and state, opening it on GitHub.
+    case pullRequest(RemoteSessionPullRequest)
   }
 
   public enum Emphasis: Sendable, Equatable { case none, warning, danger }
@@ -42,11 +44,12 @@ extension SessionActivity {
     title(session) == session.branch || session.branch.isEmpty ? nil : session.branch
   }
 
-  /// Base, changes, upstream, conflicts, agents, activity and drive — whatever applies.
+  /// Base, pull request, changes, upstream, conflicts, agents, activity and drive — whatever applies.
   public func facts(git: RemoteGitStatus?) -> [SessionFact] {
     var facts: [SessionFact] = []
     let branch = git?.branch ?? session.branch
     if let base = session.baseBranch, base != branch { facts.append(SessionFact("Base", .ref(base))) }
+    if let pr = session.pullRequest { facts.append(SessionFact("Pull request", .pullRequest(pr))) }
     if let git {
       let additions = git.diffAdditions ?? 0
       let deletions = git.diffDeletions ?? 0

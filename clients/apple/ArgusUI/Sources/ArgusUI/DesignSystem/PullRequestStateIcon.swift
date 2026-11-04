@@ -9,14 +9,25 @@ public struct PullRequestStateIcon: View {
   @ScaledMetric(relativeTo: .body) private var dynamicType: CGFloat = 1
   let pullRequest: RemoteSessionPullRequest
   var size: CGFloat
+  /// Off when it sits inside something that already opens the PR.
+  var opensPullRequest: Bool
 
-  public init(_ pullRequest: RemoteSessionPullRequest, size: CGFloat = 12) {
+  public init(_ pullRequest: RemoteSessionPullRequest, size: CGFloat = 12, opensPullRequest: Bool = true) {
     self.pullRequest = pullRequest
     self.size = size
+    self.opensPullRequest = opensPullRequest
   }
 
   public var body: some View {
     #if os(macOS)
+      if opensPullRequest { button } else { icon.accessibilityHidden(true) }
+    #else
+      icon.accessibilityLabel(label)
+    #endif
+  }
+
+  #if os(macOS)
+    private var button: some View {
       Button {
         if let url = URL(string: pullRequest.url) { openURL(url) }
       } label: {
@@ -25,10 +36,8 @@ public struct PullRequestStateIcon: View {
       .buttonStyle(.argusPlain)
       .help(label)
       .accessibilityLabel(label)
-    #else
-      icon.accessibilityLabel(label)
-    #endif
-  }
+    }
+  #endif
 
   private var icon: some View {
     let side = TextScale.shared(size) * dynamicType

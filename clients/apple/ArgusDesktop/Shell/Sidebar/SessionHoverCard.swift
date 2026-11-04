@@ -3,7 +3,7 @@ import ArgusUI
 import SwiftUI
 
 /// What resting the pointer on a sidebar session shows: its branch and where
-/// it came from, how much it changed, how it stands against its upstream, and
+/// it came from, its pull request, how much it changed, how it stands against its upstream, and
 /// what its agents are up to.
 struct SessionHoverCard: View {
   @Environment(\.theme) private var theme
@@ -44,5 +44,12 @@ struct SessionHoverCard: View {
     .padding(12)
     .frame(width: 260, alignment: .leading)
     .floatingSurface()
+    // The pull request fact is the card's only link.
+    .environment(
+      \.openURL,
+      OpenURLAction { _ in
+        MacTelemetry.capture(.sessionHoverCardPullRequestOpened)
+        return .systemAction
+      })
   }
 }

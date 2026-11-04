@@ -8,13 +8,28 @@ extension View {
   }
 }
 
+extension EnvironmentValues {
+  /// Inside a window that never becomes key, where macOS ignores `pointerStyle`.
+  @Entry public var inNonKeyWindow = false
+}
+
 private struct ClickablePointer: ViewModifier {
   @Environment(\.isEnabled) private var isEnabled
+  @Environment(\.inNonKeyWindow) private var inNonKeyWindow
   let active: Bool
 
   func body(content: Content) -> some View {
     #if os(macOS)
-      content.pointerStyle(active && isEnabled ? .link : nil)
+      if inNonKeyWindow {
+        content.onContinuousHover { phase in
+          switch phase {
+          case .active where active && isEnabled: NSCursor.pointingHand.set()
+          default: NSCursor.arrow.set()
+          }
+        }
+      } else {
+        content.pointerStyle(active && isEnabled ? .link : nil)
+      }
     #else
       content
     #endif

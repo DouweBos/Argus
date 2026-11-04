@@ -23,43 +23,53 @@
     /// Shows `content` anchored to this view in its own borderless panel while `isPresented`.
     /// Interactive panels take the keyboard: `onKey` sees arrows, Return and plain characters
     /// first, and Esc or a click elsewhere closes. Passive ones only show, and ignore the pointer.
+    /// `acceptsPointer` lets a passive panel take clicks without taking the keyboard.
     public func floatingPanel<Content: View>(
       isPresented: Binding<Bool>, placement: FloatingPanelPlacement = .below, interactive: Bool = true,
-      onKey: ((FloatingPanelKey) -> Bool)? = nil, @ViewBuilder content: @escaping () -> Content
+      acceptsPointer: Bool = false, onKey: ((FloatingPanelKey) -> Bool)? = nil,
+      @ViewBuilder content: @escaping () -> Content
     ) -> some View {
       modifier(
         FloatingPanelModifier(
-          isPresented: isPresented, placement: placement, interactive: interactive, onKey: onKey,
-          content: { AnyView(content()) }))
+          isPresented: isPresented, placement: placement, interactive: interactive, acceptsPointer: acceptsPointer,
+          onKey: onKey, content: { AnyView(content()) }))
     }
   }
 
   extension View {
-    /// A passive card beside this view once the pointer rests on it; leaving hides it.
+    /// A card beside this view once the pointer rests on it; leaving hides it. A `hoverable`
+    /// card also takes the pointer, staying open while it's over the card so links in it work.
     public func hoverCard(
-      placement: FloatingPanelPlacement = .leading, enabled: Bool = true, onShow: (() -> Void)? = nil,
-      @ViewBuilder card: @escaping () -> some View
+      placement: FloatingPanelPlacement = .leading, enabled: Bool = true, hoverable: Bool = false,
+      onShow: (() -> Void)? = nil, @ViewBuilder card: @escaping () -> some View
     ) -> some View {
-      modifier(HoverCardModifier(placement: placement, enabled: enabled, onShow: onShow, card: { AnyView(card()) }))
+      modifier(
+        HoverCardModifier(
+          placement: placement, enabled: enabled, hoverable: hoverable, onShow: onShow, card: { AnyView(card()) }))
     }
   }
 
   private struct HoverCardModifier: ViewModifier {
     let placement: FloatingPanelPlacement
     let enabled: Bool
+    let hoverable: Bool
     let onShow: (() -> Void)?
     let card: () -> AnyView
     @State private var shown = false
     @State private var pending: Task<Void, Never>?
+    @State private var overTrigger = false
+    @State private var overCard = false
 
     func body(content: Content) -> some View {
       content
         .onHover { inside in
+          overTrigger = inside
           pending?.cancel()
           guard inside, enabled else {
-            shown = false
+            hideUnlessHovered()
             return
           }
+          guard !shown else { return }
           pending = Task {
             try? await Task.sleep(for: .milliseconds(600))
             guard !Task.isCancelled else { return }
@@ -73,7 +83,28 @@
             shown = false
           }
         }
-        .floatingPanel(isPresented: $shown, placement: placement, interactive: false, content: card)
+        .floatingPanel(
+          isPresented: $shown, placement: placement, interactive: false, acceptsPointer: hoverable,
+          content: {
+            card().onHover { inside in
+              overCard = inside
+              if !inside { hideUnlessHovered() }
+            }
+          })
+    }
+
+    /// A hoverable card gets a moment for the pointer to cross the gap from the trigger.
+    private func hideUnlessHovered() {
+      guard hoverable, enabled else {
+        shown = false
+        return
+      }
+      pending?.cancel()
+      pending = Task {
+        try? await Task.sleep(for: .milliseconds(250))
+        guard !Task.isCancelled, !overTrigger, !overCard else { return }
+        shown = false
+      }
     }
   }
 
@@ -82,14 +113,15 @@
     @Binding var isPresented: Bool
     let placement: FloatingPanelPlacement
     let interactive: Bool
+    let acceptsPointer: Bool
     let onKey: ((FloatingPanelKey) -> Bool)?
     let content: () -> AnyView
 
     func body(content trigger: Content) -> some View {
       trigger.background(
         FloatingPanelAnchor(
-          isPresented: $isPresented, placement: placement, interactive: interactive, theme: theme,
-          onKey: onKey, content: content))
+          isPresented: $isPresented, placement: placement, interactive: interactive, acceptsPointer: acceptsPointer,
+          theme: theme, onKey: onKey, content: content))
     }
   }
 
@@ -97,6 +129,7 @@
     @Binding var isPresented: Bool
     let placement: FloatingPanelPlacement
     let interactive: Bool
+    let acceptsPointer: Bool
     let theme: Theme
     let onKey: ((FloatingPanelKey) -> Bool)?
     let content: () -> AnyView
@@ -114,6 +147,7 @@
       let binding = $isPresented
       controller.placement = placement
       controller.interactive = interactive
+      controller.acceptsPointer = acceptsPointer
       controller.onKey = onKey
       controller.onDismiss = { binding.wrappedValue = false }
       guard isPresented else {
@@ -163,6 +197,7 @@
     weak var anchor: NSView?
     var placement: FloatingPanelPlacement = .below
     var interactive = true
+    var acceptsPointer = false
     var onKey: ((FloatingPanelKey) -> Bool)?
     var onDismiss: (() -> Void)?
     private var panel: FloatingPanelWindow?
@@ -179,6 +214,7 @@
         content
           .environment(\.theme, theme)
           .environment(\.colorScheme, theme.scheme)
+          .environment(\.inNonKeyWindow, acceptsPointer && !interactive)
           .fixedSize()
           .onGeometryChange(for: CGSize.self, of: \.size) { [weak self] _ in
             DispatchQueue.main.async { self?.layout() }
@@ -199,7 +235,7 @@
       panel.hasShadow = false
       panel.isReleasedWhenClosed = false
       panel.animationBehavior = .none
-      panel.ignoresMouseEvents = !interactive
+      panel.ignoresMouseEvents = !interactive && !acceptsPointer
       panel.appearance = window.effectiveAppearance
       panel.onKey = { [weak self] event in self?.handle(event) ?? false }
       if interactive {

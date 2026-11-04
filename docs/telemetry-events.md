@@ -635,7 +635,8 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_sidebar_project_toggled` | A project in the sidebar was collapsed or expanded | `collapsed` |
 | `mac_sidebar_filtered` | The sidebar was searched (once per search, never the query) or narrowed to one project from its filter menu | `kind` (`search`, `project`) |
 | `mac_context_card_used` | A session's context card was folded to its switcher or opened again, or one of its actions used (its view switcher counts as `mac_session_panel_switched`) | `action` (`collapse`, `expand`, `recent_chats`, `open_editor`, `reveal`, `copy_path`, `run`, `share`, `branch`, `switch_branch`, `pull`, `push`, `merge`, `changes`, `linked_issue`, `design`, `mcp`) |
-| `mac_session_hover_card_shown` | The pointer rested on a sidebar session long enough to open its git and activity card | `has_changes` (bool) — its diff wasn't empty |
+| `mac_session_hover_card_shown` | The pointer rested on a sidebar session long enough to open its git and activity card | `has_changes` (bool) — its diff wasn't empty, `has_pull_request` (bool) — the card listed the session's pull request |
+| `mac_session_hover_card_pull_request_opened` | The pull request link in a sidebar session's hover card was clicked to open it on GitHub | — |
 | `mac_issue_property_menu_opened` | An issue page's status or priority menu was opened (picking a value is `linear_issue_updated`) | `property` (`status`, `priority`), `via` (`click`, `shortcut` the page's S / P keys) |
 | `mac_agent_tab_menu_used` | An item in an agent tab's right-click menu was used | `action` (`rename`, `copy_id`, `pin`, `unpin`, `stop`, `reveal`, `close`, `close_others`, `close_left`, `close_right`, `close_idle`, `close_all`) |
 | `mac_agent_tab_reordered` | An agent tab was dragged to a new place in its session's tab bar | — |

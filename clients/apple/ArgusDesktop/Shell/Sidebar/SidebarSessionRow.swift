@@ -18,8 +18,11 @@ struct SidebarSessionRow: View {
         guard inside, hasCard, session.status == .ready else { return }
         Task { await store.loadGitStatus(sessionId: session.id) }
       }
-      .hoverCard(placement: .trailing, enabled: hasCard, onShow: {
-        MacTelemetry.capture(.sessionHoverCardShown(hasChanges: git.map { ($0.diffAdditions ?? 0) + ($0.diffDeletions ?? 0) > 0 } ?? false))
+      .hoverCard(placement: .trailing, enabled: hasCard, hoverable: true, onShow: {
+        MacTelemetry.capture(
+          .sessionHoverCardShown(
+            hasChanges: git.map { ($0.diffAdditions ?? 0) + ($0.diffDeletions ?? 0) > 0 } ?? false,
+            hasPullRequest: session.pullRequest != nil))
       }) {
         SessionHoverCard(session: session, git: git, activity: activity)
       }
