@@ -171,41 +171,14 @@ jobs:
           git config --global credential.helper ""
           echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
 
-      # Saved straight after resolving, so a run that fails later still fills it:
-      # cold clones of the tree-sitter grammars take most of half an hour.
-      - name: Restore Swift packages
-        id: spm-cache
+      # The tree-sitter grammars' full histories take ~8 minutes to clone cold.
+      - name: Cache Swift packages
         if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app == 'mac' }}
-        uses: actions/cache/restore@v4
+        uses: actions/cache@v4
         with:
           path: ~/spm-clones
           key: spm-${{ hashFiles('clients/apple/**/Package.resolved') }}
           restore-keys: spm-
-
-      - name: Resolve Swift packages
-        if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app == 'mac' }}
-        timeout-minutes: 30
-        run: |
-          xcodebuild -resolvePackageDependencies \
-            -project clients/apple/ArgusRemote.xcodeproj -scheme ArgusDesktop \
-            -clonedSourcePackagesDirPath ~/spm-clones -scmProvider system &
-          pid=$!
-          # If it goes quiet, show what it is waiting on.
-          while kill -0 $pid 2>/dev/null; do
-            sleep 120
-            kill -0 $pid 2>/dev/null || break
-            echo "::group::still resolving, child processes"
-            ps -axo pid,ppid,etime,command | grep -E "git|ssh|security|xcodebuild|swift|curl" | grep -v grep || true
-            echo "::endgroup::"
-          done
-          wait $pid
-
-      - name: Save Swift packages
-        if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app == 'mac' && steps.spm-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v4
-        with:
-          path: ~/spm-clones
-          key: spm-${{ hashFiles('clients/apple/**/Package.resolved') }}
 
       - name: Run fastlane release
         if: steps.stage.outputs.has_changes == 'true'
@@ -250,7 +223,7 @@ jobs:
           CI: "true"
           NODE_OPTIONS: "--max-old-space-size=8192"
           APP: ${{ github.event.inputs.app || 'electron' }}
-          # Where "Resolve Swift packages" cloned them; only the Mac lane reads it.
+          # The cached package clones; only the Mac lane reads it.
           SPM_CLONE_DIR: /Users/runner/spm-clones
         run: |
           lane=release
