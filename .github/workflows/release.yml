@@ -163,6 +163,8 @@ jobs:
         run: |
           sudo xcode-select -s /Applications/Xcode_27.2.app
           xcodebuild -version
+          # Xcode 27 ships without it; SwiftTerm compiles Metal shaders.
+          xcodebuild -downloadComponent MetalToolchain
 
       - name: Let SwiftPM fetch Grove
         # Argus for Mac depends on the private DouweBos/Grove package; a fine-grained
