@@ -88,9 +88,12 @@ can use them but not read them out. Clearing the site's data, or **Sign out**
 there too, or from any other device.
 
 One thing is different from the apps: in a browser, the code comes from the
-site. The account service can't add a device or read your traffic, but
-`houwert.dev` serves the page that holds the browser's key, so whoever
-controls that site could change what the page does. The page loads scripts
+site. `houwert.dev` serves the page that holds the browser's key, so whoever
+controls that site could change what the page does. That's why a browser can
+only take trust away: it can rename and remove devices and computers, but it
+can never approve a new device or computer, or start an account. Every
+computer and device checks this itself and refuses an approval signed by a
+browser, so even a tampered page can't let anyone into your account. The page loads scripts
 only from `houwert.dev` and the sign-in provider, pinned with integrity
 hashes where it can, and keeps no third-party scripts. Prefer the apps on a
 device you can install them on, and remove a browser you no longer use.

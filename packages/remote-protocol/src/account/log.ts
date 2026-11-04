@@ -24,7 +24,8 @@ export type LogRejectReason =
   | "bad_signature"
   | "fork"
   | "malformed"
-  | "unknown_signer";
+  | "unknown_signer"
+  | "web_approver";
 
 export interface MemberState {
   member: AccountMember;
@@ -79,6 +80,10 @@ function liveMember(state: LogState, id: string): MemberState | null {
   return found?.live ? found : null;
 }
 
+function isWeb(member: AccountMember): boolean {
+  return member.role === "device" && member.kind === "web";
+}
+
 function signKeyInUse(state: LogState, signPub: string): boolean {
   return Object.values(state.members).some(
     (m) => m.member.sign_pub === signPub,
@@ -128,6 +133,9 @@ function verifyGenesis(entry: LogEntry, root: AccountRoot | null): LogState {
   }
   if (body.signer !== body.member.id) {
     throw new Reject("unknown_signer");
+  }
+  if (isWeb(body.member)) {
+    throw new Reject("web_approver");
   }
   const hash = entryHash(entry.body);
   if (
@@ -182,6 +190,13 @@ function applyEntry(state: LogState, entry: LogEntry): void {
     throw new Reject("unknown_signer");
   }
   const signerRole = signer.member.role;
+  // A browser runs whatever page the site serves, so it may only take trust away.
+  if (
+    isWeb(signer.member) &&
+    (body.type === "add_device" || body.type === "add_host")
+  ) {
+    throw new Reject("web_approver");
+  }
 
   switch (body.type) {
     case "genesis":

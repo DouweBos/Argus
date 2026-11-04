@@ -32,6 +32,7 @@ import {
 } from "./fixtureChain";
 import { joinFixtures, laptop, tablet } from "./fixtureJoins";
 import { pushKeyVector } from "./fixturePush";
+import { browser, webFixtures } from "./fixtureWeb";
 
 const miniMember = host(mini, "Mini");
 const sasForMini = (approver: Keys, headHash: string) =>
@@ -364,6 +365,7 @@ function fixtures(): Fixture[] {
       expect: { ok: false, reason: "malformed", index: 1 },
     },
     ...joinFixtures(),
+    ...webFixtures(),
   ];
 
   // Self-check: the TS verifier must agree before anything is written.
@@ -413,6 +415,7 @@ export function buildFixtures(): Record<string, unknown> {
       stranger,
       tablet,
       laptop,
+      browser,
     },
     "sas.json": sasVectors(),
     "push_key.json": pushKeyVector(),

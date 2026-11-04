@@ -46,5 +46,11 @@
     "sign_priv": "CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg=",
     "sign_pub": "E5j2LG0aRXxRumpLXz29L2n8qTIWIY3ImX5Ba9F9k8o=",
     "noise_pub": "yxsE+ys0ET51t+Ira4BYhZ0NKlBa8htfu/EO/5Bt3mc="
+  },
+  "browser": {
+    "id": "00000000-0000-4000-8000-000000000009",
+    "sign_priv": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQk=",
+    "sign_pub": "/RckOFqgx1tk+3jNYC+h2ZH96/drE8WO1wLqyDXp9hg=",
+    "noise_pub": "Y13l6wOfwSagF7nnieHbchzdUfftP1UV0Y4vTi3XhRo="
   }
 }

@@ -10,6 +10,8 @@ public struct AccountMember: Codable, Hashable, Sendable, Identifiable {
   public var role: Role
   /// `ios` / `mac` / `electron`, for a device.
   public var kind: String?
+  /// The hosted web client: it may sign revokes and renames, never approvals.
+  public var isWeb: Bool { role == .device && kind == "web" }
   /// `darwin` / `linux`, for a host.
   public var platform: String?
   /// Ed25519, standard base64.
@@ -184,6 +186,8 @@ public enum AccountLogRejectReason: String, Codable, Sendable, Error {
   case fork
   case malformed
   case unknownSigner = "unknown_signer"
+  /// A browser member approved a join or started an account; it may only take trust away.
+  case webApprover = "web_approver"
 }
 
 public enum AccountVerifyResult: Sendable {
