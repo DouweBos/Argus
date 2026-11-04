@@ -1,5 +1,26 @@
 # argus-web
 
+## 0.1.24
+
+### Patch Changes
+
+- Updated dependencies [a3951d2]
+- Updated dependencies [1473ad0]
+- Updated dependencies [f9afd84]
+- Updated dependencies [b900bdb]
+- Updated dependencies [a12de34]
+- Updated dependencies [cbf496c]
+- Updated dependencies [8aead07]
+- Updated dependencies [c07cb00]
+- Updated dependencies [42b417f]
+- Updated dependencies [06a0a7b]
+- Updated dependencies [86b5d1c]
+- Updated dependencies [6b31231]
+- Updated dependencies [86b5d1c]
+- Updated dependencies [921b956]
+- Updated dependencies [53bc66e]
+  - @argus/peacock@0.28.0
+
 ## 0.1.23
 
 ### Patch Changes

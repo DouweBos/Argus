@@ -1,5 +1,228 @@
 # argus
 
+## 0.71.0
+
+### Minor Changes
+
+- 5c3c0a9: Lost every device and computer that could approve a new one? The iPhone and Mac apps can now reset your Argus account after you confirm a code sent to your email. Devices still on the old account say it was reset and ask to join again.
+- 92aaf83: When your Argus account is reset from a new device, each computer notices, stops letting in the account's old devices, and asks to be linked again from its own settings, menu bar or terminal.
+- 509e1c1: Worktrees Claude Code makes itself, under the project's `.claude/worktrees`, now show up as sessions.
+- 990b88b: Worktrees made outside Argus now get a readable session name, and offer to run the project's setup they never got.
+- afbd045: An automation can be pinned to one of your Claude accounts, so it always runs with that account's tools and never moves to another one when a plan limit is hit.
+- 979daa5: Saving agent chats to project history is now a switch in Settings → Agents instead of a per-project setting, and turning it off also stops importing Claude Code chats.
+- 45352c1: Agents and every subagent they spawn now learn to use conductor for all simulator, emulator and browser work, including gestures like long-press and rotation. Turning off Device control in Tools leaves the guide out.
+- 7d5f464: The Mac app's session card can switch the checkout to another local branch from the branch row's menu.
+- dc9e66c: The session card in the Mac app can merge a session into its base branch, keeping or squashing its commits.
+- 4966b36: The session card in the Mac app offers Pull when the branch is behind its remote.
+- e26c0bb: Design compare now works with a single component, not just a whole screen: it finds the component on the device's screen and compares only that area, and tells you when the component isn't on screen.
+- 050efc2: Once Argus for Mac is released, the desktop app updates into it in place, without a new download, and only after your paired devices and MCP sign-ins have moved to the format both apps read.
+- f018d4e: The iPhone app can now Always Allow a permission for the rest of the session, and every prompt says what it's asking for.
+- 7770b34: The iPhone app opens `argus://` links, landing on the same agent, session, proposal or issue the desktop would, or the closest screen it has.
+- 1ab847e: On iPhone, an automation's projects and signal sources are switched on in place, and its autonomy, runner and model are picked from a menu instead of a separate sheet.
+- f5ab438: Branches on the phone have a long-press menu and swipe actions, a new-branch sheet that picks what to start from, and the branch screen groups its actions in menus.
+- 00f04c6: The iOS app folds each turn's tool calls into one line that says how long the agent worked, like the Mac app. Tap it to see the work.
+- 2eecc38: Search a project's saved chats from your phone and delete the ones you no longer need. Resuming a saved chat picks up on the same runner it ran on.
+- c76fea0: The phone's commit composer has separate summary and description fields, shows who the commit is authored as, and can sign off or sign the commit.
+- 6e8cc4c: The phone's composer now works like the Mac's: built-in slash commands with argument hints, `/plan` and `/model` handled on the spot, the full effort range including Ultracode and Default, images sent without needless re-compression, and linked projects that leave out the current one.
+- f8c6a3b: The iPhone's @ menu now follows the cursor, lists folders alongside files, and can link a whole folder, as on the Mac. Tapping a suggested reply puts it in the message field ready to edit.
+- 99d43b4: Describing an automation on iPhone shows the draft right below for review, with Regenerate and Create, instead of opening the full editor.
+- f24c756: The phone's tabs now follow the Mac: Home, Inbox, Agents, Automations and More, with badges for decisions waiting and unseen notifications. Home shows plan limits, what needs you, each project's activity and recent runs, with the computer switcher at the top.
+- 086f780: The phone's image viewer can copy an image or share it, including saving it to Photos.
+- 6732bc2: The phone's inbox now shows the same groups as the Mac: new reports, work Argus is on, failed runs to look at, and proposals Argus cleared.
+- acf96e5: New reports in the phone's inbox and run lists show the first line of the report, like the Mac.
+- c239b24: Adding or re-signing a Claude account on the phone happens right in the accounts list, including pasting the sign-in code.
+- 0564527: Starting an agent from a Linear issue on the phone opens the composer straight away, with the project picked in its footer.
+- 48d8102: Long-press a message on your phone to copy it, edit one of yours and rewind the chat to it, or fork the chat from there into a new session or agent.
+- 87e2664: The phone's Notifications list tells errors from warnings, lets you swipe one away, and folds a repeated failure into one entry, as the Mac now does too.
+- dc82689: Opening a pull request from the phone now starts the description from the repo's template, can have Claude fill it in, pushes the branch for you, and ends with links to open or copy the new pull request.
+- c5c4f2f: Changes on the iPhone and iPad list the changed files, and each one opens its own diff.
+- db3a7c9: The iOS app groups pull requests the way the Mac app does, with what needs your review first, and labels why each one is in your list.
+- 50ff2c5: Quick Run on iPhone matches the Mac: write a playbook, switch on the projects it may read, press Run once, and see your past quick runs on the same page.
+- 78838c1: On iPhone and iPad a project now lists its sessions, one row each, and a session opens on its own screen with its agents as tabs and its changes, terminals, branches and chats in a details sheet. The iPad sidebar lists sessions like the Mac's, and untitled agents read "New agent".
+- 7fd6e78: Settings on the iPhone and iPad is now a short list of pages, grouped into this device, the connected computer and your computers, with the Mac's colour scheme and theme cards under Appearance. Warnings & errors is now called Notifications.
+- 14e7cae: Proposal cards in the phone's inbox can start with a note or ask for a revision, and look the same as on the Mac.
+- 68efff5: Starting an agent from the phone can now attach photos, pick an effort level and link other projects, and a new worktree starts from the same base branch the Mac would pick.
+- 1f44fb5: On iPhone and iPad, a new agent starts from the chat composer, as on the Mac: write the prompt with `/` commands, `@` mentions and images, pick model, effort and mode from the same chips as a chat, and choose where it works from the strip below.
+- c2c0a70: On iPad, a session's details, changes, files, terminals and device open in a resizable side panel beside the chat, as on the Mac. The open session, agent tab and panel survive a rotation or a Split View resize.
+- 3292c68: Argus for Mac opens `argus://` links.
+- 6ae4ecc: Searching Recent Chats in the Mac app now matches what was said in each chat, not just its title, and shows the matching lines.
+- d4a6974: In the Mac app, drag a session's agent tabs to reorder them; the order is remembered.
+- fa54eac: Pin a chat from its tab's menu or from chat history on the desktop; pinned tabs and chats show a pin.
+- 019e4c1: Pin a chat from the phone: long-press its tab, use Session details, or the pin on a saved chat. Pinned tabs and chats show a pin.
+- f109857: Pin a chat in the Mac app from its tab's menu or from Recent Chats; pinned tabs and chats show a pin.
+- 4e434cb: Pinned chats come back on their own when Argus restarts, on the same conversation, model, mode and effort.
+- e499e1b: The Mac app's start composer can switch the current checkout to another local branch from its branch pill.
+- f9afd84: In the browser at houwert.dev/argus/app, the Account screen now lists your devices and computers so you can rename or remove any of them, and you can delete your whole account.
+- a85f8d8: The web client catches up on chat: start an agent from any session in the current checkout, a new worktree or an existing branch, with its model, mode, effort, images and linked projects. Each turn's work folds into a "Worked for…" line, messages can be copied, edited or forked, agents pinned, and a session's recent chats searched, resumed or deleted. Agents show their MCP servers, a chat stuck on a spent limit offers your other accounts, and project and session lists update as they change on your computer.
+- 52a559a: The web client opens Figma links in a design viewer with the frame's layers, comments and pages. From a session you can compare the design with a running simulator or emulator.
+- 34e7d52: The web client lists the computer's device hosts and can start and end EAS Simulator sessions, shows a session's browser live, and shows which integrations are connected in Settings.
+- fd132c4: The web client can browse a session's files: open any file read-only with syntax highlighting, find files by name with Cmd/Ctrl+P, search across the worktree with Cmd/Ctrl+Shift+F, and open one changed file's diff from Changes. It also shows a session's terminals live, read-only.
+- 47926ff: The web client now has the inbox and automations: decide on proposals, edit automations and their memories, read runs and give feedback, start a quick run, and describe a new automation in a sentence.
+- c111edd: The web client shows your Linear issues as a board or list with Linear's filters, opens an issue in full to change its status and priority or comment, and starts agents on issues in the project you pick.
+- 880fe3e: The web client now looks like Argus for Mac: a sidebar with your projects and sessions, a toolbar with where you are, agent tabs, the session card with its branch, push and changes, a side panel for devices, terminals and changes, and the same black-and-white theme. Narrow windows get a drawer and a sheet instead.
+- 93dabb3: The browser client can now ship work: commit with a description, sign-off or signature, push, merge into the base branch and open pull requests from a session's changes. It also lists and manages branches, compares them, applies stashes, and shows your pull requests with their checks and conversation, where you can comment and merge.
+- c7502b9: The web client asks once how much anonymous usage data to share, with the same two choices as the phone, and lets you change it under Settings → Privacy. Prompts, names and paths are never sent.
+- c7a2026: Every screen in the web client has its own address, so back and forward, reloading and sharing a link all land on the same chat, changes or device. In the hosted app the address also names the computer, and a pairing link fills in the pairing code for you.
+- 9654592: The browser client now shows plan limits and usage, manages Claude accounts (including signing one in and picking the account a session runs as), has settings pages for this browser and the connected computer, and keeps a list of warnings and errors with an unseen count.
+
+### Patch Changes
+
+- 757c166: Run results read as words ("Succeeded", "Skipped"), and the iPhone lists automations before their runs, with when each last ran and a swipe to run it now.
+- 503e59d: Automation schedules read in words for more shapes, such as "09:00 Mondays" or "hourly at :30", instead of the raw cron.
+- 8a9d91b: The Mac app's automation editor lists projects and signal sources as tidy rows, each with a count of what's selected.
+- 9d9cc6d: Links to files and web pages in a chat on the phone and the Mac are underlined, so they stand out from the text around them.
+- a97a5e0: Comparing two branches lists the commits only each side has again, instead of showing none.
+- 2e0e9df: The composer's send button is now easier to see while it's disabled.
+- 94c536b: Links to describe an automation open the describe screen instead of an empty automation.
+- 1c00f51: The "Describe It" toolbar button on the Mac Automations screen no longer looks cut off.
+- a3951d2: When someone else is driving a device, the screen stays fully visible with a small notice to take control, so huddle guests can watch a demo instead of a blurred picture.
+- c57788e: The project-level agent prompt setting is gone; put project conventions in the repo's `CLAUDE.md` instead.
+- a89b37f: The desktop app's diff toolbar and its Working copy view, Diff layout and Ignore whitespace settings are gone; they never changed the file list or the diff. The Mac app keeps its own.
+- e567037: The Conventional Commits picker and Default pull strategy settings are gone; pulling now follows the repository's own git config.
+- 76d0274: The minimum Argus version project setting and its out-of-date warning on the project home screen are gone.
+- 4c53d4f: The preferred pull request template project setting is gone: Argus now always uses the repo's own GitHub pull request templates.
+- 0d79b7c: Project Settings no longer has its own MCP servers list: share servers with your team through a `.mcp.json` in the repo, or add personal ones under Settings → MCP servers.
+- 8025c19: The Target platforms project setting is gone: Argus now works out which simulators, emulators and browsers a project uses on its own.
+- 40f4a3d: The Word diff toggle and the Highlight word-level changes setting are gone; they never changed how diffs looked.
+- 93c7716: The working copy's View options menu and its show ignored, assume-unchanged and unmodified files settings are gone; they never changed the file list.
+- 2d3aabf: A phone paired with a computer on its very first run now connects straight away, instead of reporting the computer unreachable until Argus restarts.
+- 1473ad0: Argus now describes itself as an agentic IDE for front-end development rather than mobile only.
+- 7d73074: The phone keeps its connection to the computer alive while idle and notices a dropped one sooner after coming back to the foreground.
+- 70f3094: Huddle chat in the Mac app now opens as a side panel tab instead of a column the panel's menu could cover.
+- d7e9454: Huddle guests on a wide screen now see the room chat in its own column beside the device, and a hidden chat reopens when someone else writes.
+- 04b28d1: The iPhone and iPad sign-in screen uses one button size throughout, and "Pair with a QR code instead" now looks like a button.
+- 49b7e79: The iPhone's agents list shows its counts as a subtitle and marks each agent row as opening it.
+- 12e948b: The image attach menu on the iPhone points at the button that opened it.
+- 4f309e9: On the phone, each automation's status dot shows how its latest run went.
+- fd232e9: Empty screens on the iPhone and iPad sit centred instead of in a list row, and an empty project offers a Start agent button.
+- ca99117: The iPhone's Changes screen says its file count is uncommitted work, and the branch it lands into reads in the normal font.
+- 46cbf57: The phone's Changes screen now lists new, untracked files alongside the edited ones.
+- 47aa1e0: Links in a chat on your phone are tappable: web addresses everywhere, and files you mention with @ in your own messages.
+- 209ba88: An error on the iPhone's Claude Accounts screen shows once, not twice.
+- 2f8e02f: The phone composer's model, effort, mode and project chips wrap onto another line instead of running off the screen, in the same order as on the Mac.
+- 5d7c1e2: On iPhone and iPad, the computer switcher stays visible while its menu is open instead of going blank.
+- 883f8f7: Computers on the iPhone and iPad is a plain list: tap a computer to connect, or its info button for details.
+- f65e9f1: The iPhone app connects to your computer in about a second instead of waiting up to eight.
+- 1e36f53: The iPhone and iPad app calls itself Argus, says what a computer lets it do in plain words, and points to Settings → Remote on the computer when it needs more access.
+- c67ab0d: The iPhone and iPad app uses the same icons as Argus for Mac for each screen, including a proper pull request icon.
+- 76149c0: The phone keeps trying to show a device that has only just booted, instead of giving up on the first refusal.
+- a6fd1e4: The iPhone's device list groups devices by the Mac they run on, marks streaming ones "Live", and leaves out the simulator the app itself runs in.
+- c9727a7: Disabled buttons on the iPhone and iPad stay legible, so you can still read what they will do.
+- 80b7c82: More of the iPhone app follows your text size, and a run's buttons wrap instead of squeezing their labels.
+- 83763ec: The iPhone and iPad app now follows your text size setting everywhere, not just in system lists.
+- ff463da: Empty lists on the iPhone and iPad keep their grey background instead of turning white.
+- 2f76360: On the iPhone, file search lists hits compactly under a clear header per file, and quick open highlights changed files instead of greying them out.
+- 05f8895: On the phone, forking a chat into a new agent or resuming a stopped one opens it as a tab in the same session, in front and scrolled into view, rather than showing the original agent again.
+- 6d37c88: Icon buttons on the iPhone and iPad are easier to tap.
+- 4ccdccb: Proposal cards in the iPhone inbox no longer sit framed inside a second card, and their links match the card's text size.
+- e306a11: The iPhone's Issues screen keeps the grouped background and only shows search once Linear is connected.
+- 6015669: The phone's jump-to-latest button in a chat only shows once you've scrolled up.
+- 5680406: On a phone, the Changes screen's commit row no longer squeezes the Commit all button into a narrow column.
+- f50abea: At the largest text sizes on the iPhone, project badges, change counts, status pills and the computer card no longer break mid-word.
+- 670fe40: An Argus link opened on the phone right after launch now lands on its session or device instead of the projects list.
+- 0bd5016: The iOS app no longer shows an empty bubble for a message that only links projects.
+- 602ebca: Starting an agent in a new worktree from the iPhone or iPad opens its session instead of leaving you on the project list.
+- 1842e66: On iPhone and iPad, opening an agent from a list, a notification or a link now shows that agent instead of the tab its session last had in front.
+- 7d53df0: The phone's composer now shows Ask and Accept edits correctly instead of reading every agent started in those modes as Auto.
+- f1f6c62: On the phone, a pull request's Merge button shows the strategy you used last, with the others a tap away in its menu.
+- 17ba304: The phone shows a project's coloured badge wherever it names the project: recent agents, the Agents list, a project's title and a proposal, as on the Mac.
+- 7dccc57: On the phone, a proposal card's more button stays on the same line as its other buttons.
+- 20fcd97: On the phone, the note for starting, revising, finishing or dismissing a proposal is typed right in the card instead of a separate sheet.
+- 51035eb: The note sheet behind a proposal's decisions on the phone has a one-word confirm button, so its title no longer crowds the bar.
+- d2909ec: Renaming a session or its branch on the iPhone can't be saved empty, and the branch rename says spaces become hyphens.
+- ea2cc0d: A stopped agent on the phone now offers to resume its conversation in a new agent, instead of only saying it can't take messages.
+- 976be14: Section headers on the iPhone and iPad are consistently in sentence case, and no longer repeat the screen's title on Automations and Devices.
+- b40cfba: The iOS app lists sessions and agents in the same order as the Mac app, says "Setting up…" or "Setup failed" instead of a raw status, and uses the same status words everywhere.
+- 6b7723f: A short chat opened on the iPhone or iPad starts at the top instead of below a blank gap.
+- e06a980: Leaving or refreshing a screen mid-load no longer shows a cancellation error.
+- 7ec957b: The iPhone's new-agent sheet shows runner, model, effort and permission mode as picker rows, and opens only as tall as it needs.
+- cb27341: On the phone, an agent you shut down keeps its tab, with Resume, until you close the tab or leave the session.
+- e40ab6c: Segmented choices on the iPhone, such as Changes' base-branch and uncommitted views, use the standard iOS segmented control.
+- 82ce44a: On the iPhone and iPad, captions and placeholders are easier to read, and disabled buttons grey out instead of fading away.
+- 995ed2a: Screen titles on the iPhone use title case throughout, as Argus for Mac does ("Pull Requests", "Claude Accounts", "New Agent").
+- 81a0e51: On a phone, error messages appear above the tab bar instead of behind it.
+- 3cea2be: Your messages in an iPhone transcript sit in a quiet bubble without the heavy outline, as on the Mac.
+- d7e9eb3: On the iPad, a notification or link that opens a chat from another section now lands on the chat instead of that section's start screen.
+- f59fe21: On the iPad, opening a session from a link or the sidebar shows it straight away instead of stopping at its project or the home screen.
+- 476f09f: On an iPad too narrow for the sidebar, a chat and the session side panel together (an 11-inch in portrait), opening the panel hides the sidebar and closing it brings it back, so the chat keeps its room.
+- b29f76b: On an iPad, screens keep a readable width instead of stretching cards and forms edge to edge.
+- 4cba2b3: On iPad, opening an agent from a link or notification highlights its session in the sidebar, and a session's age no longer wraps in its row.
+- 6750003: The iPad sidebar marks each project with its coloured badge, as Argus for Mac does.
+- 07fcc8d: On iPad, picking another session of the same project in the sidebar opens it instead of dropping back to the project.
+- ea601bc: The selected session in the iPad sidebar stays readable after the sidebar is hidden and shown again, when its highlight turns grey.
+- b699516: The selected session and section in the iPad sidebar stay readable in light and dark mode.
+- 1f96132: VoiceOver now reads each agent's status in the iPad sidebar.
+- fd1e7e2: The "Usage limit reached" card now disappears once the chat's own account has usage again, instead of lingering until the next message.
+- de7b70c: On iPhone and iPad, lists like Pull Requests, Inbox, Automations and Devices show that they're loading instead of saying there's nothing there, and a list that fails to load says why with a way to retry.
+- 0b39ca3: A `.argus.local.json` no longer turns off the team's single runtime or chat history settings unless it sets them itself.
+- f3c8d1b: Messages with a long pasted log now send instead of failing with "invalid params for agents.send".
+- c72dc97: In Argus for Mac, agents started while the Agents screen is open now appear on it right away.
+- e78366c: The Agents screen in Argus for Mac gives each agent's name the whole column instead of squeezing it next to a cut-off id.
+- cb4547d: Code blocks in the Mac app's chat are coloured by the same highlighter as the editor and the phone, so they read the same everywhere.
+- 9ef604e: Signing in a Claude account on the Mac no longer shows a stray "Sign in opened on your computer" error.
+- f2aaebb: The device view in the Mac app no longer surrounds a device's screen with a black area; the space blends into the panel instead.
+- 5eb0100: Find References results in the Mac app stay put instead of being replaced by a text search for the symbol a moment later.
+- 2806684: Hide LFS banners in the Mac app's git settings now hides the missing git-lfs banner above the changes list.
+- ccfa631: The Mac app opens on your Launch screen instead of the last screen you had open.
+- 7cdd8bf: The Mac app's `@` file picker can link absolute and home paths anywhere on the Mac, not just inside your projects.
+- 23f2702: A message queued in the Mac app shows up in the queue right away, marked as sending, instead of appearing only once the agent has it.
+- 879bf0f: The Mac app's "Rewrite the Playbook" sheet is now a compact native sheet that grows to show the rewrite, with Rewrite and Apply as its primary actions.
+- 77de2fa: Secondary buttons in the Mac app no longer look disabled in the default color theme.
+- e78366c: The account row at the top of Settings in Argus for Mac no longer cuts off its text: signed out it reads "Argus account, Not signed in", and a long name or email wraps to a second line.
+- c72dc97: Argus for Mac's Settings window now has a light background in light mode.
+- 9c47c81: Clicking outside a dialog in the Mac app now closes it.
+- e78366c: The Agents, Runtimes and Automations screens in Argus for Mac no longer fill the space below their last row with empty striped rows.
+- 2288632: Buttons in the Mac app's side panel show the pointing hand again instead of a text cursor when a terminal tab is open in the background.
+- 67d85e6: Messages in the Mac app's chat no longer show cut off or overlapping the next message after you send one or resize the window.
+- 4bc1a48: Images you attach to a message in the Mac app line up with the message on the right instead of sitting in the middle of the chat.
+- 69ac691: Long dropdowns in the Mac app, like the composer's branch switcher, now scroll instead of running off the screen.
+- bbbc16e: There is now one Default model setting, under LLM, and the new-agent picker starts on it. A model picked in the old Agents setting carries over when none is set there.
+- 27839e1: VoiceOver can copy, edit and fork a chat message from its actions on the phone.
+- 29ae34e: Pushing a repository's default branch no longer offers to create a pull request.
+- 465d6d3: Several untitled agents in one session now read "New agent", "New agent 2" and so on, on the phone and the Mac.
+- abd055b: Plan limits on the phone no longer fail with "didn't answer in time" while the computer is still checking them.
+- 6bf0617: Saving Project Settings no longer copies your `.argus.local.json` overrides into `.argus.json` or drops settings the dialog doesn't show.
+- 2de7fb0: An inbox proposal's confidence, project and automation badges sit together under its title instead of spreading across a wide card.
+- 2fdfb84: Push now works from a project's main checkout when it's on a feature branch, instead of failing with "Cannot push a project_root session".
+- 6cb0210: Sharing an agent without an account no longer fails when a fresh public link takes a moment to come online.
+- babfa10: Background refreshes no longer fill Notifications with "Not connected to a computer" errors while the app is reconnecting.
+- b31e7bd: README files show the Markdown file icon instead of an info badge.
+- 2506ff6: Resumed and forked chats keep the model, permission mode and effort they ran with instead of starting on the default model.
+- 08ab8aa: Editing an earlier message from the phone or the Mac app drops the replaced messages at once, instead of leaving them on screen until the chat is reopened.
+- 921b956: Section headings in the inbox no longer lose their first letter.
+- 67b7a3d: The Mac and the phone now word account devices, autonomy levels and decided proposals the same way: a host shows as a "Mac computer", and a proposal you started shows the note you started it with.
+- 7e5f271: Chats started with only an image are no longer titled from the placeholder text; they take their title from the first message you type.
+- 78ba91b: The new agent heading has its space back between "in" and the project name.
+- 052e786: Starting an agent offers a model and effort right away, even before any agent has run since the computer restarted.
+- b13b170: Message actions in the Mac app's chat only appear when the pointer is over the message, not the empty space beside it.
+- 53bc66e: Warnings that repeat now fold into one entry with a count, removing a Claude account asks first, and the theme setting shows a preview of each colour scheme.
+- c298f45: Plan limit bars fill up with what you have used again, so a full bar means the limit is spent.
+- 903769c: The web client's connection status is a small dot again instead of a bar stretched across the row.
+- 421e0f5: In the web client, opening a design or issue while Figma or Linear isn't connected no longer adds a warning to Warnings & errors; the screen already says so.
+- 748ad74: The web client keeps its connection to the computer alive while idle, notices a dropped one as soon as the tab comes back, and catches up on chats and queues after reconnecting. Background refreshes no longer report errors while it reconnects.
+- 53ec605: Computers and devices now refuse a new device or computer approved from a browser, so a tampered web page can't add anyone to your account.
+- d4547e3: The web client no longer offers Trusted mode, which the computer always refused from a browser. An agent started in Trusted mode still shows it.
+- 391d512: The web app's sign-in page is redesigned and follows your theme: readable buttons, visible Apple and GitHub logos, and a progress guide from signing in to opening a computer.
+- 4995b33: The browser client is styled again; a stray rule had switched off most of its layout.
+- c615e6b: A turn's "Worked for" time now includes the agents it ran in the background, and keeps counting while they are still running.
+- 6eed7c6: New worktrees are named after their first prompt instead of an unrelated made-up title.
+- Updated dependencies [a3951d2]
+- Updated dependencies [1473ad0]
+- Updated dependencies [f9afd84]
+- Updated dependencies [b900bdb]
+- Updated dependencies [a12de34]
+- Updated dependencies [cbf496c]
+- Updated dependencies [8aead07]
+- Updated dependencies [c07cb00]
+- Updated dependencies [42b417f]
+- Updated dependencies [06a0a7b]
+- Updated dependencies [86b5d1c]
+- Updated dependencies [6b31231]
+- Updated dependencies [86b5d1c]
+- Updated dependencies [921b956]
+- Updated dependencies [53bc66e]
+  - @argus/peacock@0.28.0
+
 ## 0.70.0
 
 ### Minor Changes
