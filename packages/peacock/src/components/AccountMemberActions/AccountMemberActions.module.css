@@ -1,0 +1,12 @@
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.prompt {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}

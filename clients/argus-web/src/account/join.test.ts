@@ -30,6 +30,7 @@ function session(fake: FakeAccountService, vaults: VaultStore = memoryVaultStore
       signOut: async () => {
         signedOut = true;
       },
+      reverify: async () => true,
     },
     defaultName: () => "Test browser",
     generateKeys: (name, now) => generateDeviceKeys(name, now),

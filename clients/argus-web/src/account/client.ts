@@ -50,7 +50,8 @@ export class AccountServiceError extends Error {
 export const UNTRUSTED_LOG =
   "The account service sent a log that doesn't check out, so nothing was changed.";
 
-export type TokenProvider = () => Promise<string | null>;
+/** `fresh` skips the provider's cache, e.g. to carry a reverification just made. */
+export type TokenProvider = (opts?: { fresh?: boolean }) => Promise<string | null>;
 
 export interface AccountClient {
   config: () => Promise<AccountConfig>;
@@ -65,6 +66,8 @@ export interface AccountClient {
   ) => Promise<{ request_id: string; expires_at: number }>;
   joinStatus: (requestId: string) => Promise<RequestStatus>;
   deny: (requestId: string) => Promise<void>;
+  /** Needs a sign-in verified in the last 10 minutes; 403 otherwise. */
+  deleteAccount: () => Promise<void>;
 }
 
 export function describeAccountError(error: unknown): string {
@@ -96,14 +99,14 @@ export function accountClient(
   async function send<T>(
     method: string,
     path: string,
-    opts: { body?: unknown; auth?: boolean } = {},
+    opts: { body?: unknown; auth?: boolean; fresh?: boolean } = {},
   ): Promise<T> {
     const headers: Record<string, string> = { accept: "application/json" };
     if (opts.body !== undefined) {
       headers["content-type"] = "application/json";
     }
     if (opts.auth !== false) {
-      const bearer = await token();
+      const bearer = await token({ fresh: opts.fresh });
       if (!bearer) {
         throw new AccountServiceError(401, "unauthorized");
       }
@@ -170,6 +173,9 @@ export function accountClient(
       await send("POST", `join/${encodeURIComponent(requestId)}/deny`, {
         body: {},
       });
+    },
+    deleteAccount: async () => {
+      await send("DELETE", "account", { body: {}, fresh: true });
     },
   };
 }

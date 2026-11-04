@@ -153,6 +153,8 @@ export class FakeAccountService implements AccountClient {
   }
 
   proofs = new Map<string, string>();
+  /** Whether the caller's sign-in counts as recently verified (`DELETE /account`). */
+  reverified = false;
 
   revokeAsPhone(memberId: string): void {
     this.write(
@@ -211,6 +213,15 @@ export class FakeAccountService implements AccountClient {
     }
 
     return request.status;
+  };
+
+  deleteAccount = async () => {
+    if (!this.reverified) {
+      throw new AccountServiceError(403, "forbidden");
+    }
+    this.entries = [];
+    this.state = null;
+    this.records = [];
   };
 
   deny = async (requestId: string) => {

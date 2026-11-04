@@ -1,40 +1,48 @@
 import { useState } from "react";
-import { Button, Input } from "@argus/peacock";
-import { accountRenameMember, accountRevokeMember } from "../../../lib/ipc";
-import styles from "./AccountSection.module.css";
+import { Button } from "../Button/Button";
+import { Input } from "../Input/Input";
+import styles from "./AccountMemberActions.module.css";
+
+export interface AccountMemberActionsProps {
+  name: string;
+  canRename: boolean;
+  canRemove: boolean;
+  /** Settles once the rename is on the account; a rejection goes to `onError`. */
+  onRename: (name: string) => Promise<unknown>;
+  onRemove: () => Promise<unknown>;
+  onChanged?: () => void;
+  onError: (message: string) => void;
+}
 
 /**
- * Rename and Remove for one account member. `canRename`/`canRemove` follow
- * who may sign: this window's device for anyone, the host only for itself.
+ * Rename and Remove for one device or computer on an Argus account: an inline
+ * name field, and an inline "Remove …?" confirmation.
  */
 export function AccountMemberActions({
-  id,
   name,
-  canRemove,
   canRename,
+  canRemove,
+  onRename,
+  onRemove,
   onChanged,
   onError,
-}: {
-  canRemove: boolean;
-  canRename: boolean;
-  id: string;
-  name: string;
-  onChanged: () => void;
-  onError: (message: string) => void;
-}) {
+}: AccountMemberActionsProps) {
   const [draft, setDraft] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const run = (action: () => Promise<unknown>) => {
+    setBusy(true);
     action()
       .then(() => {
         setDraft(null);
         setConfirming(false);
-        onChanged();
+        onChanged?.();
       })
       .catch((e: unknown) =>
         onError(e instanceof Error ? e.message : String(e)),
-      );
+      )
+      .finally(() => setBusy(false));
   };
 
   if (draft !== null) {
@@ -43,7 +51,7 @@ export function AccountMemberActions({
         className={styles.actions}
         onSubmit={(e) => {
           e.preventDefault();
-          run(() => accountRenameMember(id, draft));
+          run(() => onRename(draft));
         }}
       >
         <Input
@@ -53,10 +61,15 @@ export function AccountMemberActions({
           onChange={(e) => setDraft(e.target.value)}
           autoFocus
         />
-        <Button variant="ghost" type="button" onClick={() => setDraft(null)}>
+        <Button
+          variant="ghost"
+          type="button"
+          disabled={busy}
+          onClick={() => setDraft(null)}
+        >
           Cancel
         </Button>
-        <Button type="submit" disabled={draft.trim() === ""}>
+        <Button type="submit" disabled={busy || draft.trim() === ""}>
           Save
         </Button>
       </form>
@@ -65,18 +78,22 @@ export function AccountMemberActions({
   if (confirming) {
     return (
       <div className={styles.actions}>
-        <span className={styles.muted}>Remove {name}?</span>
-        <Button variant="ghost" onClick={() => setConfirming(false)}>
+        <span className={styles.prompt}>Remove {name}?</span>
+        <Button
+          variant="ghost"
+          disabled={busy}
+          onClick={() => setConfirming(false)}
+        >
           Keep
         </Button>
-        <Button
-          variant="danger"
-          onClick={() => run(() => accountRevokeMember(id))}
-        >
+        <Button variant="danger" disabled={busy} onClick={() => run(onRemove)}>
           Remove
         </Button>
       </div>
     );
+  }
+  if (!canRename && !canRemove) {
+    return null;
   }
 
   return (

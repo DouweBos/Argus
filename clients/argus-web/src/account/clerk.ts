@@ -15,7 +15,15 @@ export const CLERK_JS_INTEGRITY =
 export interface ClerkJs {
   load: (options?: Record<string, unknown>) => Promise<void>;
   user: unknown;
-  session: { getToken: () => Promise<string | null> } | null;
+  session: {
+    getToken: (opts?: { skipCache?: boolean }) => Promise<string | null>;
+  } | null;
+  /** Clerk's "verify it's you" modal; the hooks are how it reports back. */
+  __internal_openReverification?: (props: {
+    level?: "first_factor" | "second_factor" | "multi_factor";
+    afterVerification?: () => void;
+    afterVerificationCancelled?: () => void;
+  }) => void;
   mountSignIn: (node: HTMLDivElement, props?: Record<string, unknown>) => void;
   unmountSignIn: (node: HTMLDivElement) => void;
   addListener: (cb: (resources: { user?: unknown }) => void) => () => void;
@@ -149,10 +157,31 @@ export async function loadClerk(config: {
   return clerk;
 }
 
+/** Opens Clerk's reverification modal; resolves true once the user verified. */
+export function clerkReverify(clerk: ClerkJs): Promise<boolean> {
+  const open = clerk.__internal_openReverification;
+  if (!open) {
+    return Promise.reject(
+      new Error(
+        "Couldn't ask you to verify it's you. Sign out, sign in again, and delete the account within 10 minutes.",
+      ),
+    );
+  }
+
+  return new Promise((resolve) => {
+    open.call(clerk, {
+      level: "first_factor",
+      afterVerification: () => resolve(true),
+      afterVerificationCancelled: () => resolve(false),
+    });
+  });
+}
+
 export function clerkAuth(clerk: ClerkJs): AccountAuth {
   return {
     isSignedIn: () => !!clerk.user,
     token: async () => (await clerk.session?.getToken()) ?? null,
     signOut: () => clerk.signOut(),
+    reverify: () => clerkReverify(clerk),
   };
 }

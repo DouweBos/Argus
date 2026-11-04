@@ -103,6 +103,18 @@ export interface EventMap {
   web_connection_lost: { connected_bucket: DurationBucket };
   web_reconnected: { offline_bucket: DurationBucket };
   web_host_switched: { computer_count: number };
+  web_account_member_changed: {
+    action: "remove" | "rename";
+    role: "device" | "host";
+    self: boolean;
+    success: boolean;
+    computers_reached: number;
+  };
+  web_account_left: {
+    action: "delete" | "sign_out";
+    outcome: "cancelled" | "done" | "failed";
+    reverified: boolean;
+  };
   web_file_viewed: { source: FileViewSource; language: string };
   web_quick_open_used: { via: QuickOpenVia; picked: boolean };
   web_file_search_run: {

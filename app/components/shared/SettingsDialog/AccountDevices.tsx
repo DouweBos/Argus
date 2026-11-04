@@ -1,10 +1,13 @@
 import type { AccountMemberInfo, AccountStatus } from "../../../lib/types";
 import { useCallback, useEffect, useState } from "react";
-import { SettingsScreenField } from "@argus/peacock";
+import { AccountMemberActions, SettingsScreenField } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import { memberKindLabel } from "../../../lib/accountMembers";
-import { accountListMembers } from "../../../lib/ipc";
-import { AccountMemberActions } from "./AccountMemberActions";
+import {
+  accountListMembers,
+  accountRenameMember,
+  accountRevokeMember,
+} from "../../../lib/ipc";
 import styles from "./AccountSection.module.css";
 
 function added(member: AccountMemberInfo): string {
@@ -47,7 +50,8 @@ export function AccountDevices({ status }: { status: AccountStatus }) {
               {memberKindLabel(device.kind)} · {added(device)}
             </span>
             <AccountMemberActions
-              id={device.id}
+              onRename={(name) => accountRenameMember(device.id, name)}
+              onRemove={() => accountRevokeMember(device.id)}
               name={device.name}
               canRename={canManage}
               canRemove={canManage && !device.is_self}

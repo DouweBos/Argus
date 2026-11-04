@@ -84,8 +84,12 @@ browser access_ in that computer's account settings).
 
 The browser keeps its keys in its own storage, created so that page scripts
 can use them but not read them out. Clearing the site's data, or **Sign out**
-(Account, top right), takes the browser off the account. You can rename it
-there too, or from any other device.
+(Account, top right), takes the browser off the account.
+
+The Account screen also lists every device and computer on the account. From
+there you can rename any of them, remove any of them, or delete the whole
+account (see [Deleting your account](#deleting-your-account)). Adding
+anything — approving a device, linking a computer — stays with the apps.
 
 One thing is different from the apps: in a browser, the code comes from the
 site. `houwert.dev` serves the page that holds the browser's key, so whoever
@@ -231,20 +235,34 @@ account service is reachable. Renaming this device or computer from the
 Devices/Computers list edits the same setting, and a rename made from another
 of your devices shows up in the setting too.
 
-- **Remove** a device from your phone, the Mac app or the desktop app. Every
-  computer it is connected to drops it straight away; it has to be approved
-  again to come back.
+- **Remove** a device from your phone, the Mac app, the desktop app or a
+  browser at `houwert.dev/argus/app`. Every computer it is connected to drops
+  it straight away; it has to be approved again to come back.
 - **Sign out** on a device removes that device from the account. Computers it
   was QR-paired with are unaffected.
 - **Unlink this computer** (desktop Settings → Account, Argus Server's menu →
   Argus Account → **Unlink…**, or `logout` in `argus-host`) removes the computer: it stops publishing its address, gives
   back its tunnel, and devices on the account can no longer connect to it
   through the account.
-- Removing a computer from your phone does the same from the other side.
+- Removing a computer from your phone, the Mac app or a browser does the same
+  from the other side.
 
 A device that removes another hands the removal straight to every computer it's
-connected to, so it can't be held back by the account service. Other computers
-pick it up within five minutes.
+connected to, so it can't be held back by the account service. A browser
+briefly connects to each computer that's online to do the same. Other
+computers pick it up within five minutes.
+
+### Deleting your account
+
+**Delete account** in the browser (`houwert.dev/argus/app` → Account) removes
+the account from the service in one go. You're asked to verify it's you first.
+
+- Every device and computer loses the account at once, the browser included.
+  The service forgets their addresses and closes their tunnels.
+- Pairings made with a QR code keep working.
+- To start over, sign in on the Argus app on your iPhone or Mac — that device
+  sets up a fresh account — then link each computer again from its own console,
+  and approve your other devices as they sign in.
 
 ## Computer settings
 

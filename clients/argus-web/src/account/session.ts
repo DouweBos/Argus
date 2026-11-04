@@ -62,6 +62,8 @@ export interface AccountAuth {
   isSignedIn: () => boolean;
   token: () => Promise<string | null>;
   signOut: () => Promise<void>;
+  /** Ask the user to verify their sign-in again; false when they cancel. */
+  reverify: () => Promise<boolean>;
 }
 
 export interface AccountSessionDeps {
