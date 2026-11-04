@@ -18,10 +18,25 @@ public protocol AccountAuthenticating: AnyObject, Sendable {
   func signOut() async throws
   /// Who is signed in, for the account header. Shown on this device only.
   var profile: AccountProfile? { get }
+  /// Whether the session proved its first factor within `minutes` (Clerk's `fva`).
+  func isReverified(withinMinutes minutes: Int) -> Bool
+  /// Step-up for a sensitive action: email a code; returns where it went.
+  func startReverification() async throws -> String
+  /// Finish the step-up; the next `token()` carries the fresh factor age.
+  func finishReverification(code: String) async throws
 }
 
 extension AccountAuthenticating {
   public var profile: AccountProfile? { nil }
+  public func isReverified(withinMinutes minutes: Int) -> Bool { false }
+  public func startReverification() async throws -> String { throw AccountReverifyError.unavailable }
+  public func finishReverification(code: String) async throws { throw AccountReverifyError.unavailable }
+}
+
+public enum AccountReverifyError: Error, Equatable, Sendable {
+  /// The sign-in has no email address to send a code to, or the provider can't step up.
+  case unavailable
+  case incomplete
 }
 
 /// The signed-in person as the sign-in provider knows them. Never leaves the device.

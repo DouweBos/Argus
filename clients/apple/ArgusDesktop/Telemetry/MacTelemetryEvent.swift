@@ -327,6 +327,8 @@ enum MacTelemetryEvent {
   case pullRequestActed(action: PullRequestAction)
   /// This Mac asked to join the account, or approved or denied a device joining it.
   case accountJoinActed(action: AccountStore.JoinAction, role: AccountStore.JoinRole)
+  /// Starting the account over from this Mac, or noticing it was started over elsewhere.
+  case accountReset(action: ResetAction)
   /// This Mac removed or renamed a member of the account.
   case accountMemberChanged(action: AccountMemberAction, role: AccountMember.Role)
   /// This Mac's name setting changed; `linked`: renamed on the account too.
@@ -438,6 +440,7 @@ enum MacTelemetryEvent {
     case .hostsUsed: "mac_hosts_used"
     case .pullRequestActed: "mac_pull_request_acted"
     case .accountJoinActed: "mac_account_join_acted"
+    case .accountReset: "mac_account_reset"
     case .accountMemberChanged: "mac_account_member_changed"
     case .deviceNameChanged: "mac_device_name_changed"
     case .paletteCommandRun: "mac_palette_command_run"
@@ -596,6 +599,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue]
     case .accountJoinActed(let action, let role):
       ["action": action.rawValue, "role": role.rawValue]
+    case .accountReset(let action):
+      ["action": action.rawValue]
     case .accountMemberChanged(let action, let role):
       ["action": action.rawValue, "role": role.rawValue]
     case .deviceNameChanged(let source, let linked):

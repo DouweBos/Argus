@@ -36,6 +36,15 @@ public enum AccountMenuModel {
     if let notice = s.notice {
       out += [.info(notice), .action("Dismiss", .account(.noticeDismiss))]
     }
+    if !s.status.linked, let reset = s.status.reset, case .idle = s.status.link {
+      let by = reset.byName.map { " from \"\($0)\"" } ?? ""
+      return out + [
+        .info("This account was reset\(by)"),
+        .info("Link this computer again to keep using it"),
+        .action("Link to Argus Account…", .account(.linkStart)),
+        .action("Dismiss", .account(.resetDismiss)),
+      ]
+    }
     guard s.status.linked else { return out + linkItems(s) }
     out.append(.info(s.status.name.map { "Argus Account: linked as \"\($0)\"" } ?? "Argus Account: linked"))
     out.append(.info(presenceLine(s)))

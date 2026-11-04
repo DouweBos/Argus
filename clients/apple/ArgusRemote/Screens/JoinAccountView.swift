@@ -7,6 +7,8 @@ import SwiftUI
 struct JoinAccountView: View {
   @Environment(AppStore.self) private var app
   @Environment(Router.self) private var router
+  /// Nobody left to approve: start the account over.
+  let onReset: () -> Void
 
   private var account: AccountStore { app.account }
 
@@ -48,6 +50,14 @@ struct JoinAccountView: View {
       Banner(text: error, tone: .danger)
     }
     Btn(label: "Pair with a QR code instead", tone: .secondary, icon: Icon.qrCode) { router.push(.pair) }
+    if account.canReset {
+      Field(
+        label: "Nobody left to approve?",
+        caption: "Lost every device and computer on your account? Reset it from this phone and link your computers again."
+      ) {
+        Btn(label: "Reset account…", tone: .ghost, action: onReset)
+      }
+    }
     Btn(label: "Sign out", tone: .ghost) { Task { await account.signOut() } }
   }
 

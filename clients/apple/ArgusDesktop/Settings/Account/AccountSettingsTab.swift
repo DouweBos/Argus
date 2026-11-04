@@ -6,6 +6,7 @@ import SwiftUI
 /// listed in Hosts with no pairing code; this Mac's own host joins on its own.
 struct AccountSettingsTab: View {
   @Environment(AccountStore.self) private var account
+  @State private var resetting = false
 
   var body: some View {
     SettingsPage {
@@ -21,18 +22,45 @@ struct AccountSettingsTab: View {
       case .signedOut:
         AccountSignInSection()
       case .awaitingApproval:
+        if let notice = account.resetNotice {
+          AccountResetNoticeBanner(notice: notice, deviceNoun: "Mac") { account.dismissResetNotice() }
+        }
         AccountProfileHeader()
         AccountJoinSection()
         MacHostLinkSection()
+        resetGroup(
+          "Nobody left to approve?",
+          footer: "Lost every device and computer on your account? Reset it from this Mac and link your other computers again.")
       case .ready:
         AccountProfileHeader()
         AccountOverview()
+        resetGroup(
+          "Reset account",
+          footer: "Only when every other device and computer on your account is lost. Everything leaves the account and has to join again.")
       }
+    }
+    .sheet(isPresented: $resetting) {
+      AccountResetSheet(account: account, deviceNoun: "Mac") { resetting = false }
+        .frame(width: 420)
     }
     // Presence moves while this is open: a host going quiet or coming back,
     // and someone may be waiting to join.
     .liveRefresh(enabled: account.isSignedIn, every: AccountStore.presencePollInterval) {
       await account.refresh()
+    }
+  }
+}
+
+extension AccountSettingsTab {
+  @ViewBuilder fileprivate func resetGroup(_ title: String, footer: String) -> some View {
+    if account.canReset {
+      SettingsGroup(title, footer: footer) {
+        HStack {
+          Spacer()
+          Button("Reset Account…", role: .destructive) { resetting = true }
+            .buttonStyle(.secondary)
+        }
+      }
     }
   }
 }

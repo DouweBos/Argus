@@ -15,6 +15,10 @@ struct MacHostLinkSection: View {
       "Link this Mac with a code",
       footer: "On your phone: Settings → Account → Add a computer, then type this code. Codes last 10 minutes."
     ) {
+      if let reset = link.reset {
+        SettingsError(
+          text: "This account was reset\(reset.byName.map { " from “\($0)”" } ?? ""). Link this Mac's host again to keep reaching it.")
+      }
       switch link.state {
       case .none, .idle:
         HStack {
@@ -74,6 +78,7 @@ struct MacHostLinkSection: View {
       }
       SettingsError(text: link.failure)
     }
+    .task { await link.load(model.localBackend) }
     .onDisappear { link.stopPolling() }
   }
 }

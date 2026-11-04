@@ -75,6 +75,17 @@ public struct AccountClient: Sendable {
     return result.headSeq
   }
 
+  /// Start the account over at `epoch` (current + 1) from this device's genesis (§5.8).
+  /// Needs a session reverified within 10 minutes (`403` otherwise).
+  @discardableResult
+  public func resetAccount(epoch: Int, entries: [AccountEntry]) async throws -> AccountInfo {
+    struct Body: Encodable {
+      let epoch: Int
+      let entries: [AccountEntry]
+    }
+    return try await send("POST", "account/reset", body: Body(epoch: epoch, entries: entries))
+  }
+
   public func directory() async throws -> [AccountDirectoryRecord] {
     struct Result: Decodable { let hosts: [AccountDirectoryRecord] }
     let result: Result = try await send("GET", "directory")

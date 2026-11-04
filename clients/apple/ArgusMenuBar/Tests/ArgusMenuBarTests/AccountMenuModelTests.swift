@@ -15,6 +15,18 @@ struct AccountMenuModelTests {
     #expect(F.action(F.find(menu, "Link to Argus Account…")) == .account(.linkStart))
   }
 
+  @Test func saysTheAccountWasResetAndOffersLinkingAgain() {
+    var status = F.status()
+    status.reset = .init(epoch: 1, at: 0, byName: "New phone")
+    let menu = AccountMenuModel.items(F.account(status))
+    #expect(
+      F.labels(menu) == [
+        "This account was reset from \"New phone\"", "Link this computer again to keep using it",
+        "Link to Argus Account…", "Dismiss",
+      ])
+    #expect(F.action(F.find(menu, "Dismiss")) == .account(.resetDismiss))
+  }
+
   @Test func showsTheCodeAndWhereToEnterIt() {
     let claim = ArgusProtocol.AccountLinkStateAwaitingClaim(
       kind: "awaiting_claim", userCode: "WDJB-MJHT", verificationUri: "https://houwert.dev/argus/link",
