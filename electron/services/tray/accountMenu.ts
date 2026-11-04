@@ -12,7 +12,21 @@ import type {
 } from "@argus/remote-protocol";
 
 export type AccountTrayAction =
-  { kind: "approval_confirm"; match: boolean } | { kind: "approval_dismiss" } | { kind: "approve"; requestId: string } | { kind: "deny"; requestId: string } | { kind: "link_cancel" } | { kind: "link_confirm"; match: boolean } | { kind: "link_copy_code"; code: string } | { kind: "link_open"; url: string } | { kind: "link_start" } | { kind: "notice_dismiss" } | { kind: "rename_default" } | { kind: "rename"; current: string } | { kind: "reset_dismiss" } | { kind: "tunnel"; on: boolean } | { kind: "unlink" };
+  | { kind: "approval_confirm"; match: boolean }
+  | { kind: "approval_dismiss" }
+  | { kind: "approve"; requestId: string }
+  | { kind: "deny"; requestId: string }
+  | { kind: "link_cancel" }
+  | { kind: "link_confirm"; match: boolean }
+  | { kind: "link_copy_code"; code: string }
+  | { kind: "link_open"; url: string }
+  | { kind: "link_start" }
+  | { kind: "notice_dismiss" }
+  | { kind: "rename_default" }
+  | { kind: "rename"; current: string }
+  | { kind: "reset_dismiss" }
+  | { kind: "tunnel"; on: boolean }
+  | { kind: "unlink" };
 
 export type AccountMenuEntry =
   | {
