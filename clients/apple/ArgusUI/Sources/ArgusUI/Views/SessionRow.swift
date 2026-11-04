@@ -31,10 +31,15 @@ public struct SessionRow: View {
         .opacity(activity.showsDot ? 1 : 0)
         .frame(width: 8)
       VStack(alignment: .leading, spacing: detailed ? 2 : 1) {
-        Text(activity.title)
-          .font(Self.titleFont)
-          .foregroundStyle(selected ? AnyShapeStyle(.primary) : AnyShapeStyle(theme.text))
-          .lineLimit(1)
+        HStack(spacing: 4) {
+          Text(activity.title)
+            .font(Self.titleFont)
+            .foregroundStyle(selected ? AnyShapeStyle(.primary) : AnyShapeStyle(theme.text))
+            .lineLimit(1)
+          if let pullRequest = session.pullRequest {
+            PullRequestStateIcon(pullRequest, size: Self.prIconSize)
+          }
+        }
         if let detail {
           Text(detail)
             .font(Self.detailFont)
@@ -83,10 +88,12 @@ public struct SessionRow: View {
 
   #if os(iOS)
     private static let spacing: CGFloat = 10
+    private static let prIconSize: CGFloat = 13
     private static var titleFont: Font { .scaled(.body) }
     private static var detailFont: Font { .scaled(.footnote) }
   #else
     private static let spacing: CGFloat = 6
+    private static let prIconSize: CGFloat = 10
     private static var titleFont: Font { .scaled(size: 13) }
     private static var detailFont: Font { .scaled(size: 11) }
   #endif

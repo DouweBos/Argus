@@ -1,8 +1,21 @@
 import ArgusCore
+import ArgusKit
 import Foundation
 
 /// How a PR's reasons, review state and dates read, on the Mac and the phone alike.
 public enum PullRequestLabels {
+  /// "Pull request #123 · Merged".
+  public static func state(_ pr: RemoteSessionPullRequest) -> String {
+    let state =
+      switch pr.state {
+      case .open: "Open"
+      case .draft: "Draft"
+      case .merged: "Merged"
+      case .closed: "Closed"
+      }
+    return "Pull request #\(pr.number) · \(state)"
+  }
+
   public static func reason(_ raw: String) -> String {
     switch raw {
     case "author": "Author"

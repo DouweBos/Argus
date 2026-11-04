@@ -49,6 +49,12 @@ public struct Theme: Sendable, Equatable {
   /// Dims the window under a floating panel (the command palette).
   public var scrim: Color { .black.opacity(scheme == .dark ? 0.45 : 0.18) }
 
+  /// Pull request states in GitHub's own hues, twins of `--pr-*` in `tokens.css`.
+  public var prOpen: Color { Color(hex: scheme == .light ? 0x1A7F37 : 0x3FB950) }
+  public var prDraft: Color { Color(hex: scheme == .light ? 0x59636E : 0x9198A1) }
+  public var prMerged: Color { Color(hex: scheme == .light ? 0x8250DF : 0xAB7DF8) }
+  public var prClosed: Color { Color(hex: scheme == .light ? 0xD1242F : 0xF85149) }
+
   /// A selected pill tab: the label colour inverted, as Grove's tab bar draws it.
   public var pillSelected: Color { scheme == .light ? Color(hex: 0x1C1C1E) : .white }
   public var pillSelectedText: Color { scheme == .light ? .white : Color(hex: 0x1C1C1E) }
