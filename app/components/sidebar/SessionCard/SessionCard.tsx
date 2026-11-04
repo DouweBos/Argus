@@ -8,7 +8,11 @@ import {
   SessionCard as PeacockSessionCard,
 } from "@argus/peacock";
 import { useGitObservation } from "../../../hooks/useGitObservation";
-import { createTerminal, revealInFinder } from "../../../lib/ipc";
+import {
+  createTerminal,
+  openExternalUrl,
+  revealInFinder,
+} from "../../../lib/ipc";
 import { truncateStart } from "../../../lib/sessionProgress";
 import { openSessionTab } from "../../../lib/tabActions";
 import {
@@ -217,6 +221,7 @@ export function SessionCard({
       ? session.status.error
       : null;
 
+  const pullRequest = session.pull_request;
   const iconInfo = resolveSessionIcon(
     session.kind,
     isRunning,
@@ -364,6 +369,15 @@ export function SessionCard({
       unavailable={isUnavailable}
       unavailableTitle={unavailableTitle}
       drive={session.volume?.split(/[/\\]/).filter(Boolean).pop()}
+      pullRequest={
+        pullRequest
+          ? {
+              number: pullRequest.number,
+              state: pullRequest.state,
+              onOpen: () => openExternalUrl(pullRequest.url),
+            }
+          : undefined
+      }
       status={statusBadge}
       diff={
         showDiff

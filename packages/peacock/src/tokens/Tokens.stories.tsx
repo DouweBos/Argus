@@ -154,6 +154,19 @@ export const Colors: Story = {
         </div>
       </section>
       <section>
+        <h3 className="eyebrow">Pull request states</h3>
+        <div style={row}>
+          {["open", "draft", "merged", "closed"].map((state) => (
+            <Token
+              key={state}
+              name={`--pr-${state}`}
+              value="GitHub's hue, per theme"
+              preview={<div style={swatch(`var(--pr-${state})`)} />}
+            />
+          ))}
+        </div>
+      </section>
+      <section>
         <h3 className="eyebrow">Text</h3>
         <div style={row}>
           <Token

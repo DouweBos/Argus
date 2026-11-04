@@ -220,6 +220,7 @@ export * from "./components/UsageMeter/UsageMeter";
 export * from "./components/ContextMeter/ContextMeter";
 export * from "./components/QueuedMessage/QueuedMessage";
 export * from "./components/SessionCard/SessionCard";
+export * from "./components/PullRequestState/PullRequestState";
 export * from "./components/SettingsScreen/SettingsScreen";
 export * from "./components/SetupBlocker/SetupBlocker";
 export * from "./components/SettingsDialogShell/SettingsDialogShell";

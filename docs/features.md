@@ -85,6 +85,13 @@ A real git workflow lives inside Argus:
 - **Merge & rebase** — Argus runs them for you and surfaces conflicts
   with an inline resolver.
 - **Pull request** — open a draft PR directly from the session.
+- **Pull request state** — a session whose branch has a GitHub PR shows
+  GitHub's PR icon next to it in the session list: green when open, grey
+  for a draft, purple once merged, red when closed. On a computer, click it
+  to open the PR.
+  Argus checks every few minutes, when you come back to the window, and
+  right after a push or a PR action from Argus. It needs the GitHub CLI
+  (`gh`) signed in; without it the icon simply doesn't appear.
 
 ---
 

@@ -22,6 +22,23 @@ export const SessionStatus = z.union([
 ]);
 export type SessionStatus = z.infer<typeof SessionStatus>;
 
+/** Where a session's pull request stands on GitHub. */
+export const SessionPullRequestState = z.enum([
+  "closed",
+  "draft",
+  "merged",
+  "open",
+]);
+export type SessionPullRequestState = z.infer<typeof SessionPullRequestState>;
+
+/** The newest GitHub pull request whose head is the session's branch. */
+export const SessionPullRequest = z.object({
+  number: z.number(),
+  state: SessionPullRequestState,
+  url: z.string(),
+});
+export type SessionPullRequest = z.infer<typeof SessionPullRequest>;
+
 /** A single session backed by a git worktree or the repo root. */
 export const Session = z.object({
   /**
@@ -67,6 +84,11 @@ export const Session = z.object({
   model: z.string().nullish(),
   /** Absolute path to the worktree root on disk. */
   path: z.string(),
+  /**
+   * The branch's pull request on GitHub. Null when it has none or the lookup
+   * isn't possible (no `gh`, signed out, not a GitHub remote).
+   */
+  pull_request: SessionPullRequest.nullish(),
   /** Absolute path to the repository root this session belongs to. */
   repo_root: z.string(),
   /**

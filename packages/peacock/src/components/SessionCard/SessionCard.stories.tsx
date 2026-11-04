@@ -37,6 +37,25 @@ export const WorktreeSelected: Story = {
   },
 };
 
+export const WithPullRequest: Story = {
+  render: () => (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      {(["open", "draft", "merged", "closed"] as const).map((state, i) => (
+        <SessionCard
+          key={state}
+          icon={<BranchIcon size={13} />}
+          title={`Session with a ${state} PR`}
+          interactive
+          actionReveal="hover"
+          pullRequest={{ number: 120 + i, state, onOpen: () => undefined }}
+          diff={{ added: 12, removed: 3 }}
+          actions={ellipsis}
+        />
+      ))}
+    </div>
+  ),
+};
+
 export const HoverActions: Story = {
   args: {
     icon: <BranchIcon size={13} />,

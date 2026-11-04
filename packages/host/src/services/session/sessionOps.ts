@@ -16,6 +16,7 @@ import { info } from "@argus/host/logger";
 import { appState } from "../../state";
 import { listClaudeAccounts } from "../claudeAuth/accounts";
 import { writeDesignFiles } from "../design/files";
+import { sessionPullRequestMayHaveChanged } from "../github/sessionPullRequests";
 import { updateScratchPadRecord } from "../scratchPad/store";
 import { isBranchProtected, loadArgusConfig } from "./argusConfig";
 import { git } from "./git";
@@ -671,10 +672,12 @@ export async function gitPull(
 /** Push to the remote for a session. */
 export async function gitPush(id: string): Promise<string> {
   const wt = sessionPath(id);
-
-  return announcingRepoGitStatus(id, () =>
+  const out = await announcingRepoGitStatus(id, () =>
     withGitLock(wt, () => git(wt, ["push"])),
   );
+  sessionPullRequestMayHaveChanged(id);
+
+  return out;
 }
 
 /** Fetch from all remotes for a session. */
@@ -1408,6 +1411,7 @@ export async function pushSessionBranch(id: string): Promise<{
       await git(ws.path, ["push", "-u", remoteName, ws.branch]);
     }),
   );
+  sessionPullRequestMayHaveChanged(id);
 
   const remoteUrl = (
     await git(ws.repo_root, ["remote", "get-url", remoteName])

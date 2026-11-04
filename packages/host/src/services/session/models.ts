@@ -30,6 +30,16 @@ export type SessionStatus =
   | "ready"
   | { error: string };
 
+/** Where a session's pull request stands on GitHub. */
+export type SessionPullRequestState = "closed" | "draft" | "merged" | "open";
+
+/** The newest GitHub pull request whose head is the session's branch. */
+export interface SessionPullRequest {
+  number: number;
+  state: SessionPullRequestState;
+  url: string;
+}
+
 /** A single session backed by a git worktree or the repo root. */
 export interface Session {
   /** Stable UUID used as the key in `appState.sessions`. */
@@ -44,6 +54,8 @@ export interface Session {
   description: string;
   /** Absolute path to the worktree root on disk. */
   path: string;
+  /** The branch's GitHub pull request; null when it has none or can't be looked up. */
+  pull_request?: SessionPullRequest | null;
   /** Absolute path to the repository root this session belongs to. */
   repo_root: string;
   /** Current lifecycle status. */

@@ -65,6 +65,8 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var designRefs: [RemoteDesignRef]?
   /// Made outside Argus, so the project's setup never ran in it. Nil on older computers.
   public var setupPending: Bool?
+  /// The branch's GitHub pull request. Nil when it has none, and on older computers.
+  public var pullRequest: RemoteSessionPullRequest?
 
   public var isUnavailable: Bool { availability == .unavailable }
   /// A scratch pad or automation run: its own folder, no project, no git.
@@ -84,6 +86,24 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case linkedIssue = "linked_issue"
     case designRefs = "design_refs"
     case setupPending = "setup_pending"
+    case pullRequest = "pull_request"
+  }
+}
+
+/// The newest GitHub pull request whose head is a session's branch.
+public struct RemoteSessionPullRequest: Codable, Hashable, Sendable {
+  public enum State: String, Codable, Sendable {
+    case open, draft, merged, closed
+  }
+
+  public var number: Int
+  public var state: State
+  public var url: String
+
+  public init(number: Int, state: State, url: String) {
+    self.number = number
+    self.state = state
+    self.url = url
   }
 }
 

@@ -9,6 +9,10 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { prReferenceSection } from "../design/prSection";
 import { pullRequestOpened } from "../integrations/report";
+import {
+  requestSessionPullRequestRefresh,
+  sessionPullRequestMayHaveChanged,
+} from "./sessionPullRequests";
 
 const execFileAsync = promisify(execFile);
 
@@ -87,6 +91,7 @@ export async function ghPrCreate(params: {
   }
   const number = Number(match[1]);
   pullRequestOpened(repoRoot, head, url);
+  requestSessionPullRequestRefresh([repoRoot], { force: true });
 
   return { url, number };
 }
@@ -162,6 +167,7 @@ export async function ghPrMerge(params: {
       ],
       { maxBuffer: 1024 * 1024 },
     );
+    sessionPullRequestMayHaveChanged();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("command not found") || msg.includes("ENOENT")) {
@@ -193,6 +199,7 @@ export async function ghPrClose(params: {
       ["pr", "close", String(number), "--repo", `${owner}/${repo}`],
       { maxBuffer: 1024 * 1024 },
     );
+    sessionPullRequestMayHaveChanged();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("command not found") || msg.includes("ENOENT")) {

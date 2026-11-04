@@ -1,0 +1,33 @@
+.root {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.button {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.button:hover {
+  opacity: 0.8;
+}
+.button:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.open {
+  color: var(--pr-open);
+}
+.draft {
+  color: var(--pr-draft);
+}
+.merged {
+  color: var(--pr-merged);
+}
+.closed {
+  color: var(--pr-closed);
+}

@@ -6,6 +6,7 @@
  */
 
 import { appState } from "../../state";
+import { sessionPullRequestMayHaveChanged } from "../github/sessionPullRequests";
 import { git } from "./git";
 import { GitError } from "./gitError";
 import { withGitLock } from "./gitLock";
@@ -56,9 +57,12 @@ export async function gitPushV2(id: string, opts: PushV2Opts): Promise<string> {
     args.push(remote, "HEAD");
   }
 
-  return announcingRepoGitStatus(id, () =>
+  const out = await announcingRepoGitStatus(id, () =>
     withGitLock(wt, () => git(wt, args)),
   );
+  sessionPullRequestMayHaveChanged(id);
+
+  return out;
 }
 
 export interface PullV2Opts {

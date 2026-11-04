@@ -15243,6 +15243,7 @@ extension ArgusProtocol {
     public var linkedIssue: LinkedIssue?
     public var designRefs: [DesignRef]?
     public var setupPending: Bool?
+    public var pullRequest: SessionPullRequest?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -15261,9 +15262,10 @@ extension ArgusProtocol {
       case linkedIssue = "linked_issue"
       case designRefs = "design_refs"
       case setupPending = "setup_pending"
+      case pullRequest = "pull_request"
     }
 
-    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil) {
+    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil) {
       self.id = id
       self.repoRoot = repoRoot
       self.kind = kind
@@ -15280,6 +15282,7 @@ extension ArgusProtocol {
       self.linkedIssue = linkedIssue
       self.designRefs = designRefs
       self.setupPending = setupPending
+      self.pullRequest = pullRequest
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -15300,6 +15303,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(linkedIssue, forKey: .linkedIssue)
       try c.encodeIfPresent(designRefs, forKey: .designRefs)
       try c.encodeIfPresent(setupPending, forKey: .setupPending)
+      try c.encodeIfPresent(pullRequest, forKey: .pullRequest)
     }
   }
 
@@ -16666,6 +16670,7 @@ extension ArgusProtocol {
     public var linkedIssue: LinkedIssue?
     public var model: String?
     public var path: String
+    public var pullRequest: SessionPullRequest?
     public var repoRoot: String
     public var runnerId: String?
     public var setupTerminalId: String?
@@ -16689,6 +16694,7 @@ extension ArgusProtocol {
       case linkedIssue = "linked_issue"
       case model = "model"
       case path = "path"
+      case pullRequest = "pull_request"
       case repoRoot = "repo_root"
       case runnerId = "runner_id"
       case setupTerminalId = "setup_terminal_id"
@@ -16698,7 +16704,7 @@ extension ArgusProtocol {
       case volume = "volume"
     }
 
-    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, branch: String, claudeAccountId: String? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
+    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, branch: String, claudeAccountId: String? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, pullRequest: SessionPullRequest? = nil, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
       self.availability = availability
       self.baseBranch = baseBranch
       self.branch = branch
@@ -16713,6 +16719,7 @@ extension ArgusProtocol {
       self.linkedIssue = linkedIssue
       self.model = model
       self.path = path
+      self.pullRequest = pullRequest
       self.repoRoot = repoRoot
       self.runnerId = runnerId
       self.setupTerminalId = setupTerminalId
@@ -16738,6 +16745,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(linkedIssue, forKey: .linkedIssue)
       try c.encodeIfPresent(model, forKey: .model)
       try c.encode(path, forKey: .path)
+      try c.encodeIfPresent(pullRequest, forKey: .pullRequest)
       try c.encode(repoRoot, forKey: .repoRoot)
       try c.encodeIfPresent(runnerId, forKey: .runnerId)
       try c.encodeIfPresent(setupTerminalId, forKey: .setupTerminalId)
@@ -16763,6 +16771,48 @@ extension ArgusProtocol {
     public static let projectRoot = SessionKind(rawValue: "project_root")
     public static let scratchPad = SessionKind(rawValue: "scratch_pad")
     public static let worktree = SessionKind(rawValue: "worktree")
+  }
+
+  public struct SessionPullRequest: Codable, Sendable {
+    public var number: Double
+    public var state: SessionPullRequestState
+    public var url: String
+
+    enum CodingKeys: String, CodingKey {
+      case number = "number"
+      case state = "state"
+      case url = "url"
+    }
+
+    public init(number: Double, state: SessionPullRequestState, url: String) {
+      self.number = number
+      self.state = state
+      self.url = url
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(number, forKey: .number)
+      try c.encode(state, forKey: .state)
+      try c.encode(url, forKey: .url)
+    }
+  }
+
+  public struct SessionPullRequestState: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let closed = SessionPullRequestState(rawValue: "closed")
+    public static let draft = SessionPullRequestState(rawValue: "draft")
+    public static let merged = SessionPullRequestState(rawValue: "merged")
+    public static let `open` = SessionPullRequestState(rawValue: "open")
   }
 
   public struct SessionReleaseNotesResult: Codable, Sendable {

@@ -51,6 +51,22 @@ struct RemoteSessionTests {
     #expect(session.status == .ready)
   }
 
+  @Test("a session's pull request decodes with its state, and is nil when absent")
+  func pullRequest() throws {
+    let session = try decode(
+      """
+      {"id":"s1","repo_root":"/r","kind":"worktree","branch":"feat","status":"ready",
+       "pull_request":{"number":12,"state":"merged","url":"https://github.com/o/r/pull/12"}}
+      """)
+
+    #expect(session.pullRequest == RemoteSessionPullRequest(number: 12, state: .merged, url: "https://github.com/o/r/pull/12"))
+    let none = try decode(
+      """
+      {"id":"s1","repo_root":"/r","kind":"worktree","branch":"feat","status":"ready","pull_request":null}
+      """)
+    #expect(none.pullRequest == nil)
+  }
+
   @Test("a session started from a Linear issue carries the issue")
   func linkedIssue() throws {
     let session = try decode(

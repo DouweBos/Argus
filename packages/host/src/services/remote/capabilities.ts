@@ -136,6 +136,7 @@ import {
 } from "../deviceHosts/eas/registry";
 import { listDeviceHosts } from "../deviceHosts/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
+import { sessionPullRequest } from "../github/sessionPullRequests";
 import { figmaFrameDetails } from "../integrations/figma/service";
 import { prepareIssueStart } from "../integrations/issueStart";
 import {
@@ -558,6 +559,7 @@ function toRemoteSession(s: Session): RemoteSession {
     linked_issue: s.linked_issue ?? null,
     design_refs: s.design_refs ?? null,
     setup_pending: s.setup_pending ?? false,
+    pull_request: sessionPullRequest(s.id),
   };
 }
 
