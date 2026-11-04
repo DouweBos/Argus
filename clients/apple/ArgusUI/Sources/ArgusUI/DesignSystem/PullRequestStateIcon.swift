@@ -6,10 +6,11 @@ import SwiftUI
 public struct PullRequestStateIcon: View {
   @Environment(\.theme) private var theme
   @Environment(\.openURL) private var openURL
+  @ScaledMetric(relativeTo: .body) private var dynamicType: CGFloat = 1
   let pullRequest: RemoteSessionPullRequest
   var size: CGFloat
 
-  public init(_ pullRequest: RemoteSessionPullRequest, size: CGFloat = 11) {
+  public init(_ pullRequest: RemoteSessionPullRequest, size: CGFloat = 12) {
     self.pullRequest = pullRequest
     self.size = size
   }
@@ -30,9 +31,22 @@ public struct PullRequestStateIcon: View {
   }
 
   private var icon: some View {
-    Image(systemName: Icon.pullRequest)
-      .font(.scaled(size: size, weight: .semibold))
+    let side = TextScale.shared(size) * dynamicType
+    return Image(octicon, bundle: .module)
+      .renderingMode(.template)
+      .resizable()
+      .frame(width: side, height: side)
       .foregroundStyle(color)
+  }
+
+  /// GitHub's own glyph per state, so a PR reads the same here as on github.com.
+  private var octicon: String {
+    switch pullRequest.state {
+    case .open: "octicon-git-pull-request"
+    case .draft: "octicon-git-pull-request-draft"
+    case .merged: "octicon-git-merge"
+    case .closed: "octicon-git-pull-request-closed"
+    }
   }
 
   private var label: String { PullRequestLabels.state(pullRequest) }
