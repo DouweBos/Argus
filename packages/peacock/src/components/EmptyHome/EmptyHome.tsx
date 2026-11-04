@@ -18,7 +18,7 @@ export interface EmptyHomeProps extends Omit<
 
 export function EmptyHome({
   title = "Argus",
-  tagline = "parallel agentic mobile & web dev",
+  tagline = "parallel agentic front-end dev",
   actions,
   shortcuts,
   glow = true,

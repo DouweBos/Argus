@@ -17,7 +17,7 @@ export function WelcomeStep() {
       currentStep="welcome"
       hero={<EmptyStateIllustration variant="welcome" size={140} />}
       title="Welcome to Argus"
-      subtitle="An agentic IDE for mobile and web. Argus orchestrates parallel Claude Code agents in isolated git worktrees, each with live iOS simulators, Android emulators, and a browser for instant testing."
+      subtitle="An agentic IDE for front-end development. Argus orchestrates parallel Claude Code agents in isolated git worktrees, each with a live browser, iOS simulators, and Android emulators for instant testing."
       footerLeft={
         <button
           type="button"

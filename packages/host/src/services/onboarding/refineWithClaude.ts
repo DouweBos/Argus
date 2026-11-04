@@ -47,7 +47,7 @@ export async function refineArgusJsonWithClaude(
   currentConfig: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
   const prompt = [
-    `${REFINE_ARGUS_JSON_PROMPT} Argus runs Claude Code agents in isolated git worktrees for parallel mobile/web development.`,
+    `${REFINE_ARGUS_JSON_PROMPT} Argus runs Claude Code agents in isolated git worktrees for parallel front-end development.`,
     "",
     "Inspect the project in the current working directory — read package.json, lockfiles, ios/Podfile, android/build.gradle, pnpm-workspace.yaml, turbo.json, Makefile, .env.example, and any run scripts. Detect the package manager, frameworks (Expo, RN, Next, Vite, etc.), native targets, and dev/build commands.",
     "",

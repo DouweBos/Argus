@@ -1,6 +1,6 @@
 # Argus
 
-Electron agentic IDE for mobile development. Multiple Claude Code agents work in parallel, each in an isolated git worktree, with embedded iOS simulators.
+Electron agentic IDE for front-end development. Multiple Claude Code agents work in parallel, each in an isolated git worktree, with an embedded browser, iOS simulators and Android emulators.
 
 ## Commands
 

@@ -110,7 +110,7 @@ struct OnboardingWelcomeStep: View {
   var body: some View {
     OnboardingPage(
       title: "Welcome to Argus",
-      subtitle: "An agentic IDE for mobile and web. Argus orchestrates parallel Claude Code agents in isolated git worktrees, each with live iOS simulators, Android emulators, and a browser for instant testing."
+      subtitle: "An agentic IDE for front-end development. Argus orchestrates parallel Claude Code agents in isolated git worktrees, each with a live browser, iOS simulators, and Android emulators for instant testing."
     ) {
       VStack(alignment: .leading, spacing: 8) {
         Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 96, height: 96)

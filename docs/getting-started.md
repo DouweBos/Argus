@@ -1,9 +1,9 @@
 # Getting started
 
 Argus is a desktop app for macOS (Apple Silicon) that runs Claude Code agents
-in parallel — each in its own isolated git worktree, with a live iOS
-simulator, Android emulator, embedded Chromium browser, and a full git
-client side-by-side.
+in parallel — each in its own isolated git worktree, with an embedded Chromium
+browser, live iOS simulator, Android emulator, and a full git client
+side-by-side.
 
 This page walks through the first five minutes: install, prerequisites, and
 opening your first project.

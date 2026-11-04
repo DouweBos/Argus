@@ -178,7 +178,7 @@ Surfaced via the `list_projects` MCP tool.
 
 ```jsonc
 "related_projects": [
-  { "path": "../conductor",   "description": "CLI used for runtime mobile testing" },
+  { "path": "../conductor",   "description": "CLI used for runtime browser and device testing" },
   { "path": "../houwert.dev", "description": "Marketing site" }
 ]
 ```

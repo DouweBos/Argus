@@ -6,8 +6,8 @@
 
 ### Run a flock of agents. Watch every one.
 
-Argus gives every Claude Code agent its own git worktree and its own iOS simulator or Android
-emulator — then lets it tap, type and scroll through the app it just built.
+Argus gives every Claude Code agent its own git worktree and its own browser, iOS simulator or Android
+emulator — then lets it click, tap, type and scroll through the app it just built.
 Run five at once, watch them work on real devices, review the diffs, merge what survives.
 
 <a href="https://houwert.dev/argus"><img alt="Website" src="https://img.shields.io/badge/houwert.dev%2Fargus-website-4c6ef5?style=for-the-badge" /></a>
@@ -31,7 +31,7 @@ Run five at once, watch them work on real devices, review the diffs, merge what 
 
 <div align="center">
 
-**Five agents, five worktrees, five devices — at once** · **The agent taps through the app it just
+**Five agents, five worktrees, five devices — at once** · **The agent clicks through the app it just
 built** · **Hand a teammate one agent, not your whole machine** · **Runs headless on a Mac mini;
 drive it from your phone**
 
