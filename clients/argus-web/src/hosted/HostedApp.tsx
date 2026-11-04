@@ -17,7 +17,7 @@ import { useAppLocation } from "../routing/useAppLocation";
 import { useConnectionStore } from "../stores/connection";
 import { Monitor } from "../ui/Monitor";
 import { ComputersScreen } from "./ComputersScreen";
-import { HostedFrame } from "./HostedFrame";
+import { HostedAuthFrame, HostedFrame } from "./HostedFrame";
 import { JoinScreen } from "./JoinScreen";
 import { capture } from "../telemetry/telemetry";
 import { openComputer } from "./openComputer";
@@ -142,47 +142,55 @@ export function HostedApp() {
     case "loading":
     case "settingUp":
       return (
-        <HostedFrame title="Argus">
+        <HostedAuthFrame title="Argus">
           <Waiting label="Checking your account…" />
-        </HostedFrame>
+        </HostedAuthFrame>
       );
     case "unsupported":
       return (
-        <HostedFrame title="Argus">
+        <HostedAuthFrame title="Argus">
           <Banner tone="warning">
             This browser can't keep an Argus device key. Use a current Chrome,
             Edge, Firefox or Safari, outside private browsing.
           </Banner>
-        </HostedFrame>
+        </HostedAuthFrame>
       );
     case "unavailable":
       return (
-        <HostedFrame title="Argus">
+        <HostedAuthFrame title="Argus">
           <Banner tone="error">
             Couldn't reach the Argus account service. Check your connection
             and reload.
           </Banner>
-        </HostedFrame>
+        </HostedAuthFrame>
       );
     case "signedOut":
       return (
-        <HostedFrame title="Sign in to Argus">
+        <HostedAuthFrame
+          title="Sign in to Argus"
+          subtitle="Your computers, their agents and simulators — from any browser."
+          step={0}
+        >
           {banner}
           <SignInScreen />
-        </HostedFrame>
+        </HostedAuthFrame>
       );
     case "empty":
       return (
-        <HostedFrame title="Argus">
+        <HostedAuthFrame title="Set up your account" step={1}>
           <EmptyAccount />
-        </HostedFrame>
+        </HostedAuthFrame>
       );
     case "awaitingApproval":
       return (
-        <HostedFrame title="Approve this browser">
+        <HostedAuthFrame
+          title="Approve this browser"
+          subtitle="A device already on your account lets this browser in, once."
+          step={1}
+        >
           {banner}
           <JoinScreen />
-        </HostedFrame>
+        </HostedAuthFrame>
       );
     default:
       return <ComputersScreen />;
