@@ -1,295 +1,275 @@
 /**
- * Marketing screenshots, start to finish: boot Vite, drive a conductor web
- * device through every fixture scenario in both themes, write PNGs to
- * `shots/out/`.
+ * Marketing screenshots and clips of Argus for Mac, start to finish: build the
+ * Debug app, attach it to a fixture host per scenario and theme, capture its
+ * window, write PNGs and mp4s to `shots/out/`.
  *
  * `--check` compares against the committed references instead of overwriting
  * them, so a UI change that breaks the site's imagery fails the build.
+ * `--no-build` reuses the last build; `--only <id>` runs one scenario.
  */
 
-import { execFile, spawn, type ChildProcess } from "node:child_process";
-import { copyFile, mkdir, rm, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import type {
+  FixtureEvent,
+  FixtureScenario,
+} from "../app/lib/fixture/types.js";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
+import { COMMANDS } from "@argus/remote-protocol";
 import { scenarios } from "../app/lib/fixture/scenarios/index.js";
+import { sleep } from "./shots/devDriver";
+import { startFixtureHost } from "./shots/fixtureHost";
+import {
+  crop,
+  pixelSize,
+  similarity,
+  stableCapture,
+  stitch,
+} from "./shots/frames";
+import {
+  WINDOW,
+  buildApp,
+  bundleForShots,
+  launchApp,
+  type RunningApp,
+} from "./shots/macApp";
+import { MacFixture } from "./shots/macFixture";
+import { MAC_SCENES, stepsFor, type MacScene, type Step } from "./shots/scenes";
+import { synthesize } from "./shots/synth";
 
-const run = promisify(execFile);
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const OUT = resolve(ROOT, "shots/out");
-const PORT = 1420;
-const VIEWPORT = { width: 1600, height: 1000, scale: 2 };
-
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const OUT = path.join(ROOT, "shots/out");
 const THEMES = ["dark", "light"] as const;
+/** Below this a capture differs from its reference in more than antialiasing. */
+const MIN_SIMILARITY = 0.97;
 
-/**
- * A second, cropped capture per scenario. A whole 1600x1000 window scaled into
- * a web column is unreadable; these are the regions that actually carry the
- * pitch. Coordinates are stable because the captures are deterministic.
- */
-const CROPS: Record<string, { x: number; y: number; w: number; h: number }> = {
-  parallel: { x: 784, y: 288, w: 2096, h: 840 },
-  review: { x: 1024, y: 208, w: 2080, h: 1328 },
-};
-
-/** Any real screen has far more than this; a blank one has almost none. */
-const MIN_TEXT_CHARS = 200;
-
-const check = process.argv.includes("--check");
+const argv = process.argv.slice(2);
+const check = argv.includes("--check");
+const only = argv.includes("--only") ? argv[argv.indexOf("--only") + 1] : null;
 
 function log(message: string): void {
   process.stdout.write(`${message}\n`);
 }
 
-/** Conductor needs an explicit device: unscoped calls pick a simulator. */
-let device = "";
-
-async function conductor(...args: string[]): Promise<string> {
-  const { stdout } = await run(
-    "conductor",
-    device ? [...args, "--device", device] : args,
-    { cwd: ROOT, maxBuffer: 1024 * 1024 * 32 },
-  );
-
-  return stdout;
+interface Shoot {
+  app: RunningApp;
+  /** Points scrolled so far: a beat's `scrollTo` is absolute, the wheel relative. */
+  scrolled: number;
+  /** The window frames come from: the main one, or Settings once opened. */
+  window: number;
 }
 
-async function waitForVite(): Promise<void> {
-  for (let i = 0; i < 60; i += 1) {
-    try {
-      const res = await fetch(`http://localhost:${PORT}/`);
-      if (res.ok) {
-        return;
-      }
-    } catch {
-      // not up yet
-    }
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error(`Vite never came up on :${PORT}`);
-}
-
-/** Poll the flag the fixture bridge sets once the tree has flushed. */
-async function waitForShotReady(): Promise<void> {
-  for (let i = 0; i < 40; i += 1) {
-    const out = await conductor(
-      "debug",
-      "evaluate",
-      "document.documentElement.dataset.shotReady === 'true'",
-    );
-    if (out.includes("true")) {
+async function waitForData(app: RunningApp): Promise<void> {
+  for (let i = 0; i < 100; i += 1) {
+    const state = await app.driver.run({ op: "state" });
+    if (Number(state.projects) > 0) {
       return;
     }
-    await new Promise((r) => setTimeout(r, 250));
+    await sleep(200);
   }
-  throw new Error("shot-ready never set");
+  throw new Error("the app never listed the fixture's projects");
 }
 
-async function assertNoErrors(label: string): Promise<void> {
-  const out = await conductor(
-    "debug",
-    "evaluate",
-    "JSON.stringify(window.__argusFixtureErrors || [])",
-  );
-  if (!out.includes("[]")) {
-    throw new Error(`${label} rendered with errors: ${out.trim()}`);
-  }
-
-  // An error boundary catches its error, so `window.onerror` stays clean and a
-  // broken panel would otherwise be captured as if it were the real screen.
-  const boundary = await conductor(
-    "debug",
-    "evaluate",
-    "document.body.innerText.includes('Something went wrong') ? (document.querySelector('h2 + p')?.textContent ?? 'unknown') : ''",
-  );
-  if (boundary.trim().length > 0) {
-    throw new Error(`${label} hit an error boundary: ${boundary.trim()}`);
-  }
-
-  // A blank page throws nothing and mounts no boundary, so without this a
-  // capture of an empty window counts as a pass.
-  const text = await conductor(
-    "debug",
-    "evaluate",
-    "document.body.innerText.trim().length",
-  );
-  const chars = Number.parseInt(text.trim().split(/\s+/).pop() ?? "0", 10);
-  if (!Number.isFinite(chars) || chars < MIN_TEXT_CHARS) {
-    throw new Error(`${label} rendered almost nothing (${chars} chars)`);
+async function apply(shoot: Shoot, steps: Step[]): Promise<void> {
+  const { driver } = shoot.app;
+  for (const step of steps) {
+    if (step.kind === "route") {
+      const out = await driver.run({ op: "routePath", path: step.path });
+      if (out.error) {
+        throw new Error(`route ${step.path}: ${String(out.error)}`);
+      }
+    } else if (step.kind === "click") {
+      await sleep(600);
+      // A list ignores clicks in a window that isn't key; key within this app only.
+      await driver.run({ op: "makeKey", window: shoot.window });
+      await driver.run({
+        op: "clickAt",
+        window: shoot.window,
+        x: step.x,
+        y: step.y,
+      });
+    } else if (step.kind === "settings") {
+      await driver.run({ op: "settingsTab", tab: step.tab });
+      await driver.run({ op: "menu", title: "Settings…" });
+      await sleep(800);
+      const { windows } = await driver.run({ op: "windows" });
+      const line = (windows as string[]).find(
+        (w) =>
+          w.includes("visible=true") &&
+          !w.includes("id=main") &&
+          w.includes("level=0"),
+      );
+      if (!line) {
+        throw new Error("Settings never opened");
+      }
+      shoot.window = Number.parseInt(line, 10);
+      // The same frame as the main window's captures.
+      await driver.run({
+        op: "resize",
+        window: shoot.window,
+        width: WINDOW.width,
+        height: WINDOW.height,
+      });
+    } else {
+      // Mid-window: the settings column, or a screen's list.
+      await driver.run({
+        op: "scrollAt",
+        window: shoot.window,
+        x: WINDOW.width / 2,
+        y: WINDOW.height / 2,
+        dy: -Math.round(step.to - shoot.scrolled),
+      });
+      shoot.scrolled = step.to;
+    }
   }
 }
 
-/**
- * Records a scenario's beats as frames and stitches them into an mp4. Conductor
- * only records real devices, and a timed screen capture of a web page is not
- * reproducible — stepping the fixture and shooting between steps is.
- */
-async function record(scenario: string, theme: string): Promise<void> {
-  const beats = scenarios[scenario]?.beats ?? [];
+function themed(scenario: FixtureScenario, theme: string, fixture: MacFixture) {
+  const settings = synthesize(COMMANDS.get_app_settings.result) as Record<
+    string,
+    unknown
+  >;
+
+  return (method: string, params: Record<string, unknown>) => {
+    if (method === "get_app_settings") {
+      return { ...settings, theme };
+    }
+
+    return fixture.resolve(method, params);
+  };
+}
+
+/** Scenario events in the renderer's order: registrations, then the streamed ones. */
+function boot(scenario: FixtureScenario, fixture: MacFixture): void {
+  const events = scenario.events ?? [];
+  const ordered: FixtureEvent[] = [
+    ...events.filter((e) => !e.delayMs),
+    ...events.filter((e) => e.delayMs),
+  ];
+  ordered.forEach((e) => fixture.apply(e));
+}
+
+async function capture(id: string, theme: string, app: string): Promise<void> {
+  const scenario = scenarios[id];
+  const scene: MacScene = MAC_SCENES[id] ?? {};
+  const label = `${id}@${theme}`;
+  // Short: a Unix socket path is capped at 104 bytes.
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), "argus-shot-"));
+  const home = path.join(work, "home");
+  const fixture = new MacFixture(scenario);
+  await fixture.materialize(path.join(work, "wt"));
+  const host = await startFixtureHost(home, themed(scenario, theme, fixture));
+  fixture.attach(host);
+  boot(scenario, fixture);
+
+  const running = await launchApp(app, home, work);
+  try {
+    await waitForData(running);
+    await running.driver.run({
+      op: "resizeWindow",
+      width: WINDOW.width,
+      height: WINDOW.height,
+    });
+    const shoot: Shoot = {
+      app: running,
+      scrolled: 0,
+      window: await running.windowNumber(),
+    };
+    await apply(shoot, stepsFor(scenario, scene, true));
+
+    const shot = path.join(work, `${label}.png`);
+    // A running agent's spinner never settles; its last frame is as good as any.
+    await stableCapture(shoot.window, shot);
+    if (fixture.mismatches.length > 0) {
+      log(
+        `  ! ${label} answered off-schema:\n    ${fixture.mismatches.join("\n    ")}`,
+      );
+    }
+    const target = path.join(OUT, `${label}.png`);
+    if (check) {
+      const score = await similarity(shot, target);
+      if (score < MIN_SIMILARITY) {
+        throw new Error(
+          `${label} differs from its reference (SSIM ${score.toFixed(4)})`,
+        );
+      }
+      log(`✓ ${label} matches reference (SSIM ${score.toFixed(4)})`);
+
+      return;
+    }
+    fs.copyFileSync(shot, target);
+    const size = await pixelSize(target);
+    if (scene.crop) {
+      await crop(
+        target,
+        scene.crop,
+        path.join(OUT, `${id}-detail@${theme}.png`),
+      );
+    }
+    log(`✓ ${label} (${size.width}x${size.height})`);
+    await record(scenario, scene, label, shoot, fixture, work);
+  } finally {
+    await running.quit();
+    await host.close();
+    fixture.dispose();
+    fs.rmSync(work, { recursive: true, force: true });
+  }
+}
+
+/** Each beat: push its events, move the window, shoot; then stitch. */
+async function record(
+  scenario: FixtureScenario,
+  scene: MacScene,
+  label: string,
+  shoot: Shoot,
+  fixture: MacFixture,
+  work: string,
+): Promise<void> {
+  const beats = scenario.beats ?? [];
   if (beats.length === 0) {
     return;
   }
-  const label = `${scenario}@${theme}`;
-  const dir = resolve(OUT, `.frames-${label}`);
-  await mkdir(dir, { recursive: true });
-
-  const parts: string[] = [];
-  for (let i = 0; i < beats.length; i += 1) {
-    const advanced = await conductor(
-      "debug",
-      "evaluate",
-      "window.__argusFixtureBeat ? window.__argusFixtureBeat() : -1",
-    );
-    if (advanced.includes("-1")) {
-      throw new Error(`${label} ran out of beats at ${i}`);
-    }
-    const frame = resolve(dir, `${String(i).padStart(3, "0")}.png`);
-    await conductor("take-screenshot", "--output", frame);
-    parts.push(`file '${frame}'\nduration ${beats[i].holdSeconds ?? 2}`);
+  const frames: { file: string; holdSeconds: number }[] = [];
+  for (const [index, beat] of beats.entries()) {
+    (beat.events ?? []).forEach((e) => fixture.apply(e));
+    await apply(shoot, stepsFor(beat, scene));
+    const file = path.join(work, `frame-${String(index).padStart(3, "0")}.png`);
+    await stableCapture(shoot.window, file);
+    frames.push({ file, holdSeconds: beat.holdSeconds ?? 2 });
   }
-  // concat demuxer needs the last frame repeated or it drops its duration
-  parts.push(
-    `file '${resolve(dir, `${String(beats.length - 1).padStart(3, "0")}.png`)}'`,
-  );
-
-  const list = resolve(dir, "frames.txt");
-  await writeFile(list, `${parts.join("\n")}\n`);
-  await run("ffmpeg", [
-    "-y",
-    "-f",
-    "concat",
-    "-safe",
-    "0",
-    "-i",
-    list,
-    "-vf",
-    "scale=trunc(iw/2)*2:trunc(ih/2)*2,fps=30",
-    "-c:v",
-    "libx264",
-    "-pix_fmt",
-    "yuv420p",
-    "-movflags",
-    "+faststart",
-    resolve(OUT, `${scenario}@${theme}.mp4`),
-  ]);
-  const posterIndex = Math.min(
-    scenarios[scenario]?.posterBeat ?? beats.length - 1,
+  await stitch(frames, label.split("@")[1], path.join(OUT, `${label}.mp4`));
+  const poster = Math.min(
+    scenario.posterBeat ?? beats.length - 1,
     beats.length - 1,
   );
-  await copyFile(
-    resolve(dir, `${String(posterIndex).padStart(3, "0")}.png`),
-    resolve(OUT, `${scenario}-poster@${theme}.png`),
+  fs.copyFileSync(
+    frames[poster].file,
+    path.join(OUT, `${label.replace("@", "-poster@")}.png`),
   );
-  await rm(dir, { recursive: true, force: true });
   log(`  ↳ recorded ${label}.mp4 (${beats.length} beats)`);
 }
 
-async function capture(scenario: string, theme: string): Promise<void> {
-  const label = `${scenario}@${theme}`;
-  const route = scenarios[scenario]?.route ?? "/";
-  const url = `http://localhost:${PORT}/?fixture=${scenario}&shot=1&theme=${theme}&route=${encodeURIComponent(route)}`;
-
-  // Vite re-optimises dependencies on the first request after a lockfile
-  // change, and a navigation that lands mid-rebuild renders an empty document.
-  // Retry the load rather than capture a blank window.
-  let lastError: unknown = null;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      await conductor("open-link", url);
-      await waitForShotReady();
-      await assertNoErrors(label);
-      lastError = null;
-      break;
-    } catch (err) {
-      lastError = err;
-      log(`  ↻ ${label} attempt ${attempt + 1} failed, reloading`);
-    }
-  }
-  if (lastError) {
-    throw lastError;
-  }
-
-  if (check) {
-    // Compares against the committed shot: those are the images the README and
-    // the site actually ship, so they are the only reference worth holding to.
-    await conductor(
-      "assert-screenshot",
-      resolve(OUT, `${label}.png`),
-      "--threshold",
-      "0.02",
-    );
-    log(`✓ ${label} matches reference`);
-
-    return;
-  }
-  const full = resolve(OUT, `${label}.png`);
-  await conductor("take-screenshot", "--output", full);
-
-  const crop = CROPS[scenario];
-  if (crop) {
-    await run("sips", [
-      "-c",
-      String(crop.h),
-      String(crop.w),
-      "--cropOffset",
-      String(crop.y),
-      String(crop.x),
-      full,
-      "--out",
-      resolve(OUT, `${scenario}-detail@${theme}.png`),
-    ]);
-  }
-  log(`✓ ${label}`);
-  if (!check) {
-    await record(scenario, theme);
-  }
-}
-
 async function main(): Promise<void> {
-  await mkdir(OUT, { recursive: true });
-
-  let vite: ChildProcess | null = null;
-  try {
-    vite = spawn("pnpm", ["dev:vite"], { cwd: ROOT, stdio: "ignore" });
-    await waitForVite();
-
-    const started = await run("conductor", [
-      "start-device",
-      "--platform",
-      "web",
-      "--browser",
-      "chromium",
-    ]);
-    // Matches both "Web driver ready: Chromium (web:…)" and the
-    // "already running: web:…" reply from a device left over from a prior run.
-    device = /web:[\w:-]+/.exec(started.stdout)?.[0] ?? "";
-    if (!device) {
-      throw new Error(`could not parse device id from: ${started.stdout}`);
+  fs.mkdirSync(OUT, { recursive: true });
+  const built = argv.includes("--no-build")
+    ? path.join(ROOT, ".build/mac-shots-dd/Build/Products/Debug/Argus.app")
+    : await buildApp(ROOT);
+  const app = await bundleForShots(built, ROOT);
+  const ids = only ? [only] : Object.keys(scenarios);
+  for (const id of ids) {
+    if (!scenarios[id]) {
+      throw new Error(`unknown scenario ${id}`);
     }
-    await conductor(
-      "set-viewport",
-      "--width",
-      String(VIEWPORT.width),
-      "--height",
-      String(VIEWPORT.height),
-      "--scale",
-      String(VIEWPORT.scale),
-    );
-
-    for (const scenario of Object.keys(scenarios)) {
-      for (const theme of THEMES) {
-        await capture(scenario, theme);
-      }
+    for (const theme of THEMES) {
+      await capture(id, theme, app);
     }
-  } finally {
-    if (device) {
-      await conductor("stop-device").catch(() => undefined);
-    }
-    vite?.kill();
   }
 }
 
 main().catch((err: unknown) => {
-  process.stderr.write(`${String(err)}\n`);
+  process.stderr.write(
+    `${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`,
+  );
   process.exitCode = 1;
 });

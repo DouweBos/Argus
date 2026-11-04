@@ -21,8 +21,8 @@ Run five at once, watch them work on real devices, review the diffs, merge what 
 <br />
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="shots/out/flock@dark.png" />
-  <img alt="Five agents running in parallel, each with its own worktree and its own reserved device" src="shots/out/flock@light.png" />
+  <source media="(prefers-color-scheme: dark)" srcset="shots/out/flock-poster@dark.png" />
+  <img alt="Five agents running in parallel, each with its own worktree and its own reserved device" src="shots/out/flock-poster@light.png" />
 </picture>
 
 </div>
@@ -228,18 +228,22 @@ directory, so your primary checkout and your git client stay clean.
 
 <br />
 
-`pnpm shots` renders the real app in a plain browser tab against fixture data and captures it with
-[conductor](https://github.com/DouweBos/conductor). No Electron, no backend, no Claude auth, no
-simulator — so the output is identical run to run and safe to publish.
+`pnpm shots` builds Argus for Mac (Debug) and attaches it, as a second window, to a small fixture
+host: a stand-in for the host core that answers the app's socket from canned data. No real
+sessions, no Claude auth, no simulator — so the output is identical run to run and safe to publish.
+The app captures nothing itself; the runner shoots its window through WindowServer, so whoever runs
+it needs Screen Recording permission.
 
-Scenarios with a `beats` list are **recorded**: the runner steps the fixture one beat at a time,
-screenshots between steps, and stitches the frames with ffmpeg. Conductor only records real
-devices, and a timed screen capture of a web page is not reproducible — a scripted sequence is.
+Scenarios with a `beats` list are **recorded**: the runner pushes one beat's events at a time,
+screenshots between steps, and stitches the frames with ffmpeg — a scripted sequence is
+reproducible in a way a screen recording never is.
 
-Scenarios are plain data in `app/lib/fixture/scenarios/`, reached via `?fixture=<id>`;
-`app/lib/fixture/stubBridge.ts` stands in for the preload bridge. To add a shot, add a scenario and
-run `pnpm shots`. `pnpm shots --check` compares against the committed images, so a UI change that
-breaks the README or the website fails the build instead of rotting quietly.
+Scenarios are plain data in `app/lib/fixture/scenarios/`; `scripts/shots/` turns them into what the
+Mac app asks for, with real git repos behind the worktrees for the Git view. To add a shot, add a
+scenario (and, if the Mac needs it, an entry in `scripts/shots/scenes.ts`) and run `pnpm shots`.
+`pnpm shots --check` compares against the committed images, so a UI change that breaks the README or
+the website fails the build instead of rotting quietly. `--no-build` reuses the last build and
+`--only <id>` runs one scenario.
 
 </details>
 

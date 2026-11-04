@@ -33,7 +33,6 @@ struct SettingsWindow: View {
       host.backend = model.backend
       await host.load()
     }
-    .themed()
   }
 
   @ViewBuilder private func section(_ tab: SettingsTab) -> some View {

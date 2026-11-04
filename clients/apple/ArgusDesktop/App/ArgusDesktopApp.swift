@@ -76,7 +76,9 @@ struct ArgusDesktopApp: App {
     }
 
     Settings {
+      // Themed from outside: the window reads `\.theme` for its own background.
       SettingsWindow()
+        .themed()
         .environment(delegate.model)
         .environment(delegate.model.store)
         .environment(delegate.model.automations)

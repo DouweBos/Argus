@@ -5,7 +5,7 @@ import { AGENTS, BASE_CHANNELS, BASE_STORAGE, NOW } from "./aurora";
  * A real unified diff — the viewer parses this the same way it parses git's
  * output, so the hunk headers and counts have to add up.
  */
-const DIFF = `diff --git a/src/search/TrigramIndex.swift b/src/search/TrigramIndex.swift
+export const DIFF = `diff --git a/src/search/TrigramIndex.swift b/src/search/TrigramIndex.swift
 new file mode 100644
 index 0000000..b3f21ac
 --- /dev/null

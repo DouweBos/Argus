@@ -25,7 +25,7 @@ function device(
 }
 
 const DEVICES = [
-  device("dev_iphone", "Douwe's iPhone", ["control"], 0, true),
+  device("dev_iphone", "Sam's iPhone", ["control"], 0, true),
   device("dev_ipad", "iPad Pro", [], 26, true),
   device("dev_mini", "Studio mini", ["control", "admin"], 1, false),
 ];

@@ -65,6 +65,7 @@ function guest(label: string, state: "approved" | "pending") {
     joined_at: NOW - 60_000,
     approved_at: state === "approved" ? NOW - 30_000 : null,
     connected: true,
+    typing: false,
   };
 }
 
@@ -78,6 +79,9 @@ function room(guests: ReturnType<typeof guest>[]) {
     created_at: NOW - 6 * 60_000,
     expires_at: NOW + 54 * 60_000,
     guests,
+    host_typing: false,
+    host_label: "Sam",
+    chat: [],
   };
 }
 

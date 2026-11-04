@@ -72,6 +72,8 @@ extension HostStore {
   private func agentStarted(_ info: StartedAgent) async {
     await backend?.subscribe(agentId: info.agent_id, on: true)
     await reloadAgents(ofSession: info.session_id)
+    // The Agents screen lists across projects and only loads on appear.
+    if recentAgentsLoaded { await loadRecentAgents() }
   }
 
   /// Exits aren't a typed status: the host drops a stopped agent instead.

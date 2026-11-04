@@ -101,6 +101,10 @@ public enum Activity {
   ]
 
   public static func randomSpinnerVerb() -> String {
-    spinnerVerbs.randomElement() ?? "Thinking"
+    #if DEBUG
+      // Marketing captures (`pnpm shots`) must read the same run to run.
+      if let fixed = ProcessInfo.processInfo.environment["ARGUS_SPINNER_VERB"] { return fixed }
+    #endif
+    return spinnerVerbs.randomElement() ?? "Thinking"
   }
 }
