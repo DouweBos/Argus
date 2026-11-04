@@ -5,9 +5,8 @@ app. It runs the same host core — sessions, worktrees, agents, terminals,
 simulators — so your projects and sessions carry over, and it reads and writes
 the same `~/.argus`.
 
-It is a beta. The Electron app keeps shipping and stays the recommended
-desktop until the Mac app reaches parity; the checklist that gates the switch
-lives in the repository (`plan/swiftui-parity.md`).
+It is a beta. The Electron app keeps shipping until Argus for Mac replaces it
+through an update (see [Moving from the Electron app](#moving-from-the-electron-app)).
 
 ## What works today
 

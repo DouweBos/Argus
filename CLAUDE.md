@@ -110,7 +110,7 @@ Every Peacock component ships with a Storybook story covering meaningful states.
 4. Typed wrapper in `src/lib/ipc.ts`; re-export any new result type from `src/lib/types.ts`
 5. `pnpm gen:protocol` to regenerate the Swift types
 
-**The Mac app is the desktop's successor.** It ships as a beta next to Electron until `plan/swiftui-parity.md` is ticked. Once it is the product, every new desktop feature lands there too, in the same PR — until then, keep new desktop work portable (host commands, not renderer-only logic).
+**The Mac app is the desktop's successor.** It ships as a beta next to Electron until the cutover release (`fastlane mac mac_app_release`) replaces it. Once it is the product, every new desktop feature lands there too, in the same PR — until then, keep new desktop work portable (host commands, not renderer-only logic).
 
 **Mac app: everything clickable shows the pointing hand.** SwiftUI never does this on its own, so it goes through ArgusUI (`DesignSystem/Clickable.swift`):
 
