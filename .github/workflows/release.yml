@@ -166,6 +166,10 @@ jobs:
           git config --global \
             url."https://x-access-token:${GROVE_TOKEN}@github.com/DouweBos/Grove.git".insteadOf \
             "https://github.com/DouweBos/Grove.git"
+          # The token is in the URL: no credential helper, so git never asks the
+          # (build) keychain to store it, and never prompts.
+          git config --global credential.helper ""
+          echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
 
       # Saved straight after resolving, so a run that fails later still fills it:
       # cold clones of the tree-sitter grammars take most of half an hour.
@@ -180,10 +184,21 @@ jobs:
 
       - name: Resolve Swift packages
         if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app == 'mac' }}
+        timeout-minutes: 30
         run: |
           xcodebuild -resolvePackageDependencies \
             -project clients/apple/ArgusRemote.xcodeproj -scheme ArgusDesktop \
-            -clonedSourcePackagesDirPath ~/spm-clones -scmProvider system
+            -clonedSourcePackagesDirPath ~/spm-clones -scmProvider system &
+          pid=$!
+          # If it goes quiet, show what it is waiting on.
+          while kill -0 $pid 2>/dev/null; do
+            sleep 120
+            kill -0 $pid 2>/dev/null || break
+            echo "::group::still resolving, child processes"
+            ps -axo pid,ppid,etime,command | grep -E "git|ssh|security|xcodebuild|swift|curl" | grep -v grep || true
+            echo "::endgroup::"
+          done
+          wait $pid
 
       - name: Save Swift packages
         if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app == 'mac' && steps.spm-cache.outputs.cache-hit != 'true' }}
