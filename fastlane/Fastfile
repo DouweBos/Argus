@@ -285,6 +285,9 @@ platform :mac do
     appcast_name = "#{product}-#{feed_channel}.xml"
     appcast = File.join(feeds, appcast_name)
     sh("curl -fsSL https://houwert.dev/argus/updates/#{appcast_name} -o #{appcast.shellescape} || rm -f #{appcast.shellescape}")
+    # Sparkle's update window shows these; the lane's own CHANGELOG section, embedded.
+    notes_html = File.join(feeds, "#{File.basename(zip, ".zip")}.html")
+    sh("cd .. && pnpm exec tsx scripts/release-notes-html.ts #{release_notes_file.shellescape} #{notes_html.shellescape}")
     key_file = File.join(out, "sparkle-ed.key")
     File.write(key_file, private_key)
     at_exit { File.delete(key_file) if File.exist?(key_file) }
@@ -292,6 +295,7 @@ platform :mac do
     sh([
       generate_appcast, "--ed-key-file", key_file,
       "--download-url-prefix", "https://houwert.dev/argus/updates/",
+      "--embed-release-notes",
       "-o", appcast, feeds,
     ].shelljoin)
     assets = [zip, appcast]
@@ -332,14 +336,20 @@ platform :mac do
     end
   end
 
-  # An electron-updater manifest for a zip, in the shape electron-builder
-  # writes `latest-mac.yml`, so the Electron desktop's "What's new" shows notes.
-  def write_electron_feed(path, zip, version)
+  # This version's CHANGELOG section as Markdown; CI passes the file it already wrote.
+  def release_notes_file
     notes_file = ENV["ARGUS_RELEASE_NOTES_FILE"]
     if notes_file.nil? || notes_file.empty?
       notes_file = File.expand_path("../release-notes.md", __dir__)
       sh("cd .. && pnpm exec tsx scripts/extract-release-notes.ts #{notes_file.shellescape}")
     end
+    notes_file
+  end
+
+  # An electron-updater manifest for a zip, in the shape electron-builder
+  # writes `latest-mac.yml`, so the Electron desktop's "What's new" shows notes.
+  def write_electron_feed(path, zip, version)
+    notes_file = release_notes_file
     sha512 = Digest::SHA512.file(zip).base64digest
     file = { "url" => File.basename(zip), "sha512" => sha512, "size" => File.size(zip) }
     feed = {
