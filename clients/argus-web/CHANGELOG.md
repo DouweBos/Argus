@@ -1,5 +1,12 @@
 # argus-web
 
+## 0.1.25
+
+### Patch Changes
+
+- Updated dependencies [7772de5]
+  - @argus/peacock@0.29.0
+
 ## 0.1.24
 
 ### Patch Changes
