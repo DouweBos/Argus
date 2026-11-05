@@ -13,8 +13,8 @@ Run five at once, watch them work on real devices, review the diffs, merge what 
 <a href="https://houwert.dev/argus"><img alt="Website" src="https://img.shields.io/badge/houwert.dev%2Fargus-website-4c6ef5?style=for-the-badge" /></a>
 <a href="https://houwert.dev/argus/docs"><img alt="Docs" src="https://img.shields.io/badge/docs-read-1f2937?style=for-the-badge" /></a>
 
-![macOS 13+ · Apple Silicon](https://img.shields.io/badge/macOS-13%2B%20Apple%20Silicon-black)
-![Electron + React 19](https://img.shields.io/badge/Electron-React%2019-47848f)
+![macOS 15+ · Apple Silicon](https://img.shields.io/badge/macOS-15%2B%20Apple%20Silicon-black)
+![SwiftUI · Node host](https://img.shields.io/badge/SwiftUI-Node%20host-f05138)
 ![Node 24 · pnpm 10](https://img.shields.io/badge/Node-24%20%C2%B7%20pnpm%2010-5fa04e)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-stream--json-d97757)
 
@@ -101,7 +101,7 @@ Or hand a Mac mini the job with the headless server build.
 <details open>
 <summary><b>Prerequisites</b></summary>
 
-- macOS 13+ (Apple Silicon)
+- macOS 15+ (Apple Silicon)
 - [mise](https://mise.jdx.dev/) — pins Node 24 and pnpm 10 (see `mise.toml`)
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) on your `PATH`, with your own
   subscription or API key
@@ -117,15 +117,22 @@ pnpm build:bridge   # native iOS capture bridge (required for simulator mirrorin
 
 ### Run
 
+Argus for Mac is the desktop app: open `clients/apple/ArgusRemote.xcodeproj` and run the
+`ArgusDesktop` scheme, or build it from the command line. A Debug build ("Argus Dev") keeps its
+state in `~/.argus-mac-dev`, apart from an installed Argus.
+
 ```sh
-pnpm dev            # Vite dev server + Electron
-pnpm build          # type-check + Vite build + Electron compile
-pnpm build:app      # produce .app / .dmg via electron-builder
+xcodebuild -project clients/apple/ArgusRemote.xcodeproj -scheme ArgusDesktop \
+  -destination 'platform=macOS' build
+pnpm dev:host       # the host core on its own, as a plain Node process
 pnpm lint           # tsc + eslint + prettier + CSS-module and cycle checks
 pnpm test           # vitest
 pnpm storybook      # Peacock design system at :6006
 pnpm shots          # regenerate the product screenshots (see below)
 ```
+
+The Electron app (`pnpm dev`, `pnpm build:app`) is deprecated: Argus for Mac replaced it in
+v0.72.0, and Electron installs update into it.
 
 ---
 
@@ -168,17 +175,18 @@ editable in-app under Project Settings; the full reference is in
 
 ## Architecture
 
-A pnpm monorepo behind a three-panel desktop shell: workspace sidebar on the left, agent control in
+A pnpm monorepo of the host core, its clients and the design system, behind a three-panel desktop app: workspace sidebar on the left, agent control in
 the center, runtime and testing on the right.
 
-| Package            | What it is                                                                                     |
-| ------------------ | ---------------------------------------------------------------------------------------------- |
-| `packages/host`    | `@argus/host` — sessions, agents, git, terminals, simulators, command registry. **Plain Node** |
-| `packages/peacock` | `@argus/peacock` — the design system: tokens, icons, components                                |
-| `app/`             | React 19 + Vite renderer                                                                       |
-| `electron/`        | Thin desktop shell — window lifecycle and the bridges into the host                            |
-| `clients/`         | The LAN web client and the native iOS remote                                                   |
-| `native/`          | Swift/ObjC simulator bridge                                                                    |
+| Package             | What it is                                                                                     |
+| ------------------- | ---------------------------------------------------------------------------------------------- |
+| `packages/host`     | `@argus/host` — sessions, agents, git, terminals, simulators, command registry. **Plain Node** |
+| `packages/peacock`  | `@argus/peacock` — the design system: tokens, icons, components                                |
+| `clients/apple`     | Argus for Mac (the desktop app) and the iPhone client, in SwiftUI                              |
+| `clients/argus-web` | The web client                                                                                 |
+| `app/`              | React 19 + Vite renderer; the deprecated Electron app's, and the source of web-client views    |
+| `electron/`         | The deprecated Electron shell                                                                  |
+| `native/`           | Swift/ObjC simulator bridge                                                                    |
 
 The interesting constraint is that **`packages/host` never imports `electron`** — enforced by
 `packages/host/src/noElectron.test.ts` and a `no-restricted-imports` rule. Anything the desktop
@@ -264,10 +272,11 @@ A few ground rules (the full list is in `CLAUDE.md`):
   `<svg>` in `app/`, no Tailwind, no ad-hoc icon packs.
 - **Keep files focused.** ~500 LOC is the soft ceiling for a module, ~300 for a component. If it's
   growing, split it.
-- **Typed IPC everywhere.** Handlers in `packages/host/src/services/`, registered in
-  `electron/ipc.ts`, wrapped in `app/lib/ipc.ts`. Keep `types.ts` in sync.
+- **Typed commands everywhere.** Handlers in `packages/host/src/services/`, catalogued in
+  `packages/remote-protocol`, registered with `defineTypedCommand`; `pnpm gen:protocol` gives the
+  Swift clients the same types.
 - **Worktrees are sacred.** Changes to the worktree lifecycle touch real user repos. Tread lightly,
-  and test with `pnpm dev` first.
+  and test with a Debug build of Argus for Mac first.
 - **Tokens only.** No hardcoded colors — they silently break the opposite theme.
 
 ---

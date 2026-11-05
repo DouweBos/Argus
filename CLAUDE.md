@@ -1,10 +1,12 @@
 # Argus
 
-Electron agentic IDE for front-end development. Multiple Claude Code agents work in parallel, each in an isolated git worktree, with an embedded browser, iOS simulators and Android emulators.
+Agentic IDE for front-end development: Argus for Mac (native SwiftUI over a Node host core), an iPhone client and a web client. Multiple Claude Code agents work in parallel, each in an isolated git worktree, with an embedded browser, iOS simulators and Android emulators.
+
+**The Electron app is deprecated.** Argus for Mac replaced it in v0.72.0 (Electron installs update into it). No new work lands in `electron/` or the Electron-only parts of `app/`; desktop features go into `clients/apple/ArgusDesktop` and the host.
 
 ## Commands
 
-- `pnpm dev` — Vite + Electron (concurrently)
+- `pnpm dev` — Vite + Electron (concurrently). Deprecated Electron app, as are the next three
 - `pnpm build` — type-check + Vite + electron TS compile
 - `pnpm build:app` — build + electron-builder (.app/.dmg)
 - `pnpm hotswap` — build, splice into the installed `/Applications/Argus.app`, re-sign, and relaunch it (`--no-restart`, `--no-build`, `--web`; `ARGUS_APP`/`ARGUS_SIGN_IDENTITY` to retarget). Needs the Developer ID cert in the keychain — writing to the asar breaks the sealed-resource hash and macOS rejects the app as damaged without a re-sign. Agents can run this to ship their own change into the live app; the relaunch is detached, so it survives the app going down.
@@ -22,10 +24,10 @@ pnpm monorepo. Three-panel layout: workspace sidebar / agent control / runtime &
 
 - `packages/peacock` → `@argus/peacock` design system (tokens, icons, components)
 - `packages/host` → `@argus/host` host core — sessions, agents, git, terminals, simulators, the command registry. **Plain Node, never imports `electron`** (enforced by `packages/host/src/noElectron.test.ts` and a `no-restricted-imports` rule)
-- `app/` + `electron/` → desktop app, consumes both via `workspace:*`
+- `app/` + `electron/` → the deprecated Electron desktop app, consumes both via `workspace:*`. `app/` components still feed the web client (see Peacock rule 10)
 - `clients/apple` → the native Swift apps, one Xcode project (`ArgusRemote.xcodeproj`):
   - `ArgusKit` (protocol, Noise, generated wire types, `Transport` for the gateway, `LocalTransport` for the host's UI socket), `ArgusCore` (the shared stores behind a `HostBackend`: `GatewayBackend` for the phone, `LocalBackend` for the Mac; the transcript reducer; `HostSupervisor`; no SwiftUI), `ArgusUI` (design system + shared views, iOS 18 and macOS 15)
-  - `ArgusRemote` — the iOS app shell. `ArgusDesktop` — the native Mac app (beta, see `docs/mac-app.md`): bundles and supervises the Node host and talks to it over `$ARGUS_HOME/host.sock`
+  - `ArgusRemote` — the iOS app shell. `ArgusDesktop` — Argus for Mac, the desktop app (see `docs/mac-app.md`): bundles and supervises the Node host and talks to it over `$ARGUS_HOME/host.sock`
 
 ### Frontend (`app/`, also `src/`)
 
@@ -48,7 +50,7 @@ Node.js + TypeScript. No Electron — a Linux box or a CLI can run it.
 - `src/services/` — one dir per domain: `session/` (git worktree + setup + merge), `agent/` (Claude Code subprocess, stream-json), `terminal/` (node-pty), `simulator/` (simctl + native bridge), `file/`, `command/` (the registry), `remote/` (the Noise/WS gateway)
 - `native/argus-sim-bridge/` — standalone Swift/ObjC binary for simulator capture + HID injection, JSON-over-stdio
 
-### Desktop shell (`electron/`)
+### Electron shell (`electron/`, deprecated)
 
 Thin. Window lifecycle and the bridges into the core.
 
@@ -110,7 +112,7 @@ Every Peacock component ships with a Storybook story covering meaningful states.
 4. Typed wrapper in `src/lib/ipc.ts`; re-export any new result type from `src/lib/types.ts`
 5. `pnpm gen:protocol` to regenerate the Swift types
 
-**The Mac app is the desktop's successor.** It ships as a beta next to Electron until the cutover release (`fastlane mac mac_app_release`) replaces it. Once it is the product, every new desktop feature lands there too, in the same PR — until then, keep new desktop work portable (host commands, not renderer-only logic).
+**The Mac app is the desktop app.** Every desktop feature lands in `ArgusDesktop` (plus host commands), with the iPhone client in the same PR. Releases ship it by default (`fastlane mac mac_app_release`, release workflow `app: mac`); the Electron app is deprecated and gets no new work.
 
 **Mac app: everything clickable shows the pointing hand.** SwiftUI never does this on its own, so it goes through ArgusUI (`DesignSystem/Clickable.swift`):
 
