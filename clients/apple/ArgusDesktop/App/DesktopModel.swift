@@ -298,6 +298,8 @@ final class DesktopModel {
         await self?.terminals.reconnected()
         await self?.code.reconnected()
         await self?.languages.reconnected()
+        // Sign-in may have tried before the host was up; a no-op once it's on the account.
+        await self?.account.linkLocalHost()
         while await backend.transport.state == .ready {
           try? await Task.sleep(for: .milliseconds(500))
         }

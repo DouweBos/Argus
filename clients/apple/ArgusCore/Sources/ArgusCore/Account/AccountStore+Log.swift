@@ -173,6 +173,9 @@ extension AccountStore {
       vault.localHostId = offer.host.id
       await vaultStore.save(vault)
       publishHosts()
+    } catch let error as Transport.TransportError where error.isTransient {
+      // Retried when the connection to the host comes up.
+      localLinkError = "Waiting for this Mac's host to start."
     } catch {
       localLinkError = Self.describe(error)
     }

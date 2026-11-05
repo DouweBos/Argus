@@ -329,6 +329,23 @@ struct AccountStoreTests {
     #expect(store.hostIdentities.isEmpty)
   }
 
+  @Test("a host that isn't up at sign-in is added once it is")
+  func localHostLinkAfterHostStarts() async {
+    let mac = TestKey(4)
+    let local = FakeLocalHost(member: mac.host("This Mac"), proof: mac.proof(mac.host("This Mac")))
+    local.down = true
+    let (store, _) = makeStore(localHost: local)
+    await store.start()
+    await store.signIn(with: .apple)
+    #expect(store.phase == .ready)
+    #expect(!store.localHostLinked)
+    #expect(store.localLinkError == "Waiting for this Mac's host to start.")
+    local.down = false
+    await store.linkLocalHost()
+    #expect(store.localHostLinked)
+    #expect(store.localLinkError == nil)
+  }
+
   private func storeKeysSeed(_ store: AccountStore) async -> String? {
     store.vault.keys?.signSeed
   }
@@ -339,12 +356,17 @@ final class FakeLocalHost: AccountLocalHostLinking {
   let member: AccountMember
   let proof: String
   var finished: AccountRoot?
+  /// No connection to the host yet, as right after launch.
+  var down = false
 
   init(member: AccountMember, proof: String) {
     self.member = member
     self.proof = proof
   }
 
-  func begin() async throws -> (host: AccountMember, proof: String) { (member, proof) }
+  func begin() async throws -> (host: AccountMember, proof: String) {
+    if down { throw Transport.TransportError.notReady }
+    return (member, proof)
+  }
   func finish(root: AccountRoot) async throws { finished = root }
 }
