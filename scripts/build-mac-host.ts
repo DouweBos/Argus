@@ -301,7 +301,7 @@ function signFile(
   identity: string,
   entitlements: string | null,
 ): void {
-  execFileSync("codesign", [
+  const args = [
     "--force",
     "--sign",
     identity,
@@ -310,7 +310,28 @@ function signFile(
     identity === "-" ? "--timestamp=none" : "--timestamp",
     ...(entitlements ? ["--entitlements", entitlements] : []),
     file,
-  ]);
+  ];
+  // Apple's timestamp server drops the odd request; anything else fails at once.
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      execFileSync("codesign", args, { stdio: ["ignore", "pipe", "pipe"] });
+
+      return;
+    } catch (err) {
+      const stderr = String((err as { stderr?: Buffer }).stderr ?? "");
+      if (attempt >= 4 || !/timestamp/i.test(stderr)) {
+        process.stderr.write(stderr);
+        throw err;
+      }
+      log(`no timestamp for ${path.basename(file)}, retrying (${attempt}/3)`);
+      Atomics.wait(
+        new Int32Array(new SharedArrayBuffer(4)),
+        0,
+        0,
+        5000 * attempt,
+      );
+    }
+  }
 }
 
 function entitlementsFor(file: string): string | null {
