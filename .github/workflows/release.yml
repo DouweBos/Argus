@@ -12,14 +12,15 @@ on:
           - alpha
         default: production
       app:
-        # `mac` ships Argus for Mac, and on production that is the cutover:
-        # its cutover-mac.yml moves every migrated Electron desktop onto it.
+        # Argus for Mac is the desktop app; each production release republishes
+        # cutover-mac.yml, which moves migrated Electron installs onto it. The
+        # Electron app is deprecated: `electron` stays for an emergency fix only.
         description: "Desktop app"
         type: choice
         options:
-          - electron
           - mac
-        default: electron
+          - electron
+        default: mac
 
 concurrency:
   # Each channel gets its own concurrency group so an alpha cut doesn't queue
@@ -31,7 +32,7 @@ jobs:
   release:
     # Argus for Mac builds with Xcode 27 (its SDK is what development uses); the
     # Electron app stays on the macOS 26 image it has always shipped from.
-    runs-on: ${{ github.event.inputs.app == 'mac' && 'xcode-27' || 'macos-26' }}
+    runs-on: ${{ github.event.inputs.app != 'electron' && 'xcode-27' || 'macos-26' }}
     timeout-minutes: 90
     permissions:
       contents: write
@@ -159,7 +160,7 @@ jobs:
           echo "MATCH_GIT_BASIC_AUTHORIZATION=$AUTH" >> "$GITHUB_ENV"
 
       - name: Select Xcode 27.2
-        if: ${{ github.event.inputs.app == 'mac' }}
+        if: ${{ github.event.inputs.app != 'electron' }}
         run: |
           sudo xcode-select -s /Applications/Xcode_27.2.app
           xcodebuild -version
@@ -169,7 +170,7 @@ jobs:
       - name: Let SwiftPM fetch Grove
         # Argus for Mac depends on the private DouweBos/Grove package; a fine-grained
         # token (Contents: read on Grove only), used for its URL alone.
-        if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app == 'mac' }}
+        if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app != 'electron' }}
         env:
           GROVE_TOKEN: ${{ secrets.GROVE_TOKEN }}
         run: |
@@ -183,7 +184,7 @@ jobs:
 
       # The tree-sitter grammars' full histories take ~8 minutes to clone cold.
       - name: Cache Swift packages
-        if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app == 'mac' }}
+        if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app != 'electron' }}
         uses: actions/cache@v4
         with:
           path: ~/spm-clones
@@ -232,12 +233,12 @@ jobs:
           FASTLANE_HIDE_CHANGELOG: "1"
           CI: "true"
           NODE_OPTIONS: "--max-old-space-size=8192"
-          APP: ${{ github.event.inputs.app || 'electron' }}
+          APP: ${{ github.event.inputs.app || 'mac' }}
           # The cached package clones; only the Mac lane reads it.
           SPM_CLONE_DIR: /Users/runner/spm-clones
         run: |
-          lane=release
-          [ "$APP" = "mac" ] && lane=mac_app_release
+          lane=mac_app_release
+          [ "$APP" = "electron" ] && lane=release
           bundle exec fastlane mac "$lane" \
             allow_dirty:true \
             allow_any_branch:true \
