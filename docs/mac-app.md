@@ -1,14 +1,15 @@
-# Argus for Mac (beta)
+# Argus for Mac
 
-Argus for Mac is a native SwiftUI app that will replace the Electron desktop
-app. It runs the same host core — sessions, worktrees, agents, terminals,
+Argus for Mac is the Argus desktop app, a native SwiftUI app. It runs the same
+host core the Electron app did — sessions, worktrees, agents, terminals,
 simulators — so your projects and sessions carry over, and it reads and writes
 the same `~/.argus`.
 
-It is a beta. The Electron app keeps shipping until Argus for Mac replaces it
-through an update (see [Moving from the Electron app](#moving-from-the-electron-app)).
+It replaced the Electron app in v0.72.0. The Electron app is deprecated: it gets
+no new features, and it updates into Argus for Mac by itself (see
+[Moving from the Electron app](#moving-from-the-electron-app)).
 
-## What works today
+## What it does
 
 - The three-panel window: projects and their sessions, live from the host.
   The sidebar searches sessions and narrows to one project, lists Home, Inbox,
@@ -293,9 +294,9 @@ Development builds use the system Sign in with Apple sheet. Released builds are
 signed with Developer ID, which Apple doesn't allow Sign in with Apple in, so
 they sign in with Apple in a browser sheet instead.
 
-## How it relates to the Electron app
+## Running next to the Electron app
 
-Both apps run the Argus host on the same `~/.argus`, and **only one host may
+If you still have the Electron app, both apps run the Argus host on the same `~/.argus`, and **only one host may
 run at a time**: two hosts on the same state would fight over the same
 worktrees and agents. Whichever starts first holds the lock
 (`~/.argus/host.lock`).
@@ -329,11 +330,13 @@ gateway, with the same paired devices.
 
 ## Moving from the Electron app
 
-Once Argus for Mac is released, the Electron app offers it as its next update
-and installs it in place, the same way it installs any update, without a new
-download. It only does so after it has moved your paired devices and MCP
-sign-ins to the format both apps read (step 1 below); until then it keeps
-updating as the Electron app and tries the move again each time it opens.
+The Electron app offers Argus for Mac as its next update and installs it in
+place, the same way it installs any update, without a new download. It only
+does so after it has moved your paired devices and MCP sign-ins to the format
+both apps read (step 1 below); until then it keeps updating as the Electron app
+and tries the move again each time it opens. You can also download Argus for
+Mac from [houwert.dev/argus](https://houwert.dev/argus) and follow the same
+steps.
 
 Everything the host keeps carries over by itself: projects, sessions and
 their worktrees, chat history, automations, each project's `.argus.json`,
@@ -341,15 +344,16 @@ and your settings — appearance, display size, agent defaults, custom
 editors, git views, your telemetry choice — along with recent projects,
 the device each session last used and the Devices view.
 
-1. **Update the Electron app and open it once.** It moves your paired
+1. **Update the Electron app to v0.71.0 or later and open it once.** It moves your paired
    devices and MCP sign-ins to the keychain format both apps read, and
    copies the preferences it kept to itself into your Argus home. Nothing
    else changes for it; it keeps working as before. If the move can't
    finish (the keychain refuses, say), the Electron app leaves the files
    exactly as they were, keeps using them in the old format, and tries
    again the next time it opens.
-2. **Quit it and open Argus for Mac.** Your phone stays paired, your MCP
-   servers stay signed in, and the app opens with your settings.
+2. **Let it update into Argus for Mac**, or quit it and open Argus for Mac.
+   Your phone stays paired, your MCP servers stay signed in, and the app
+   opens with your settings.
 
 You can switch back and forth: both apps read and write the same values, so
 a change in one shows up in the other the next time it opens.
