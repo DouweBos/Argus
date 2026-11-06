@@ -204,6 +204,7 @@ enum MacTelemetryEvent {
     case pull
     case push
     case merge
+    case pullRequest = "pull_request"
     case changes
     case linkedIssue = "linked_issue"
     case design

@@ -9,6 +9,7 @@ import SwiftUI
 public struct LandWorkCard: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
+  @Environment(\.openURL) private var openURL
 
   let sessionId: String
   /// Offers folding the changes into the last commit.
@@ -69,14 +70,23 @@ public struct LandWorkCard: View {
       ViewThatFits(in: .horizontal) {
         HStack(spacing: 8) {
           pushButton(hugs: true)
-          pullRequestButton(hugs: true)
-          Spacer(minLength: 0)
-          mergeButton(hugs: true)
+          if let openPullRequest {
+            Spacer(minLength: 0)
+            viewPullRequestButton(openPullRequest, hugs: true)
+          } else {
+            pullRequestButton(hugs: true)
+            Spacer(minLength: 0)
+            mergeButton(hugs: true)
+          }
         }
         VStack(spacing: 8) {
           pushButton(hugs: false)
-          pullRequestButton(hugs: false)
-          mergeButton(hugs: false)
+          if let openPullRequest {
+            viewPullRequestButton(openPullRequest, hugs: false)
+          } else {
+            pullRequestButton(hugs: false)
+            mergeButton(hugs: false)
+          }
         }
       }
     }
@@ -147,6 +157,21 @@ public struct LandWorkCard: View {
       hugs: hugs
     ) { openingPullRequest = true }
     .disabled(busy != nil)
+  }
+
+  /// An open PR is where the branch lands, so it replaces opening one and merging locally.
+  private var openPullRequest: RemoteSessionPullRequest? {
+    session?.pullRequest.flatMap { $0.isOpen ? $0 : nil }
+  }
+
+  private func viewPullRequestButton(_ pr: RemoteSessionPullRequest, hugs: Bool) -> some View {
+    Btn(
+      label: "Pull request #\(pr.number)", tone: .primary, small: true, icon: Icon.pullRequest,
+      hugs: hugs
+    ) {
+      host.hooks.track(.pullRequestActed(action: .view))
+      if let url = URL(string: pr.url) { openURL(url) }
+    }
   }
 
   /// The way out once everything is committed, so it leads then.

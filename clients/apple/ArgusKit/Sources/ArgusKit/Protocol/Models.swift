@@ -100,6 +100,9 @@ public struct RemoteSessionPullRequest: Codable, Hashable, Sendable {
   public var state: State
   public var url: String
 
+  /// Still awaiting review or merge on GitHub.
+  public var isOpen: Bool { state == .open || state == .draft }
+
   public init(number: Int, state: State, url: String) {
     self.number = number
     self.state = state

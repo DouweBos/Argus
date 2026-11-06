@@ -72,6 +72,8 @@ public enum StoreEvent: Sendable, Equatable {
     case comment
     /// Claude filled in a new PR's description.
     case fill
+    /// A session's open PR was opened from where it would otherwise merge.
+    case view
   }
 
   /// What was done to a branch.

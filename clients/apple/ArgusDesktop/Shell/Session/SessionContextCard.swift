@@ -98,7 +98,12 @@ struct SessionContextCard: View {
       branchRow
       if ready, (git?.behind ?? 0) > 0 || pulling { pullRow }
       if ready { pushRow }
-      if ready, session.kind == .worktree, session.baseBranch != nil { mergeRow }
+      // An open PR is where the branch lands, so it replaces merging locally.
+      if let pr = session.pullRequest, pr.isOpen {
+        pullRequestRow(pr)
+      } else if ready, session.kind == .worktree, session.baseBranch != nil {
+        mergeRow
+      }
       if ready { changesRow }
     }
     ContextCardDivider()
@@ -295,6 +300,28 @@ struct SessionContextCard: View {
     .buttonStyle(ContextRowButtonStyle())
     .disabled(merging || !mergeBlockers.isEmpty)
     .help(mergeBlockers.isEmpty ? "Merge this branch into \(base)" : mergeBlockers.joined(separator: "\n"))
+  }
+
+  private func pullRequestRow(_ pr: RemoteSessionPullRequest) -> some View {
+    ContextSplitRow {
+      MacTelemetry.capture(.contextCardUsed(action: .pullRequest))
+      if let url = URL(string: pr.url) { openURL(url) }
+    } row: {
+      ContextCardRow(icon: Icon.pullRequest, title: "Pull Request #\(pr.number)") {
+        if pr.state == .draft {
+          Text("Draft").font(.scaled(size: 11)).foregroundStyle(theme.textSecondary)
+        }
+      }
+    } menu: {
+      if let remote = model.sessionPullRequest(session) {
+        ChromeMenuItem("Show in Argus", icon: .symbol(Icon.pullRequest)) {
+          MacTelemetry.capture(.contextCardUsed(action: .pullRequest))
+          model.navigate(.pullRequest(repo: remote.repo, number: remote.number))
+        }
+      }
+      ChromeMenuItem("Copy Link", icon: .symbol(Icon.copy)) { Clipboard.copy(pr.url) }
+    }
+    .help("Open pull request #\(pr.number) on GitHub")
   }
 
   private var changesRow: some View {
