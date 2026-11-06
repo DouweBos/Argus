@@ -421,3 +421,71 @@ platform :mac do
     JSON.parse(File.read(pkg_path))["version"]
   end
 end
+
+IOS_APP_ID       = "dev.houwert.argus.remote"
+IOS_EXTENSION_ID = "dev.houwert.argus.remote.NotificationService"
+# Target name => bundle id, for the App Store profiles each one signs with.
+IOS_TARGETS = { "ArgusRemote" => IOS_APP_ID, "ArgusNotificationService" => IOS_EXTENSION_ID }.freeze
+
+platform :ios do
+  desc "One-time, local: create the iPhone app in App Store Connect and the App Store profiles TestFlight builds sign with. Logs in with your Apple ID (App Store Connect API keys can't create apps). Pass name: for the App Store name."
+  lane :testflight_setup do |options|
+    produce(
+      app_identifier: IOS_APP_ID,
+      app_name:       options.fetch(:name, "Argus Remote"),
+      language:       "en-US",
+      sku:            "argus-remote",
+      # The App IDs exist already: development signing registered them.
+      skip_devcenter: true,
+    )
+    match(type: "appstore", platform: "ios", app_identifier: IOS_TARGETS.values, readonly: false)
+  end
+
+  desc "Build the iPhone app and upload it to TestFlight. Needs the profiles from testflight_setup."
+  lane :testflight do
+    api_key = load_app_store_connect_api_key
+    match(type: "appstore", platform: "ios", app_identifier: IOS_TARGETS.values, readonly: true, api_key: api_key)
+
+    root = File.expand_path("..", __dir__)
+    out = File.join(root, "release-ios")
+    FileUtils.rm_rf(out)
+    project = File.join(root, "clients/apple/ArgusRemote.xcodeproj")
+    # App Store versions are plain x.y.z; TestFlight orders builds by the build number.
+    version = read_package_version.sub(/-.*\z/, "")
+    build_number = sh("git rev-list --count HEAD", log: false).strip
+
+    # Development builds sign automatically; App Store builds sign with match's profiles.
+    IOS_TARGETS.each do |target, bundle_id|
+      update_code_signing_settings(
+        path:                  project,
+        targets:               [target],
+        build_configurations:  ["Release"],
+        use_automatic_signing: false,
+        team_id:               TEAM_ID,
+        code_sign_identity:    "Apple Distribution",
+        profile_name:          "match AppStore #{bundle_id}",
+      )
+    end
+
+    packages = ENV["SPM_CLONE_DIR"].to_s.empty? ? File.join(out, "SourcePackages") : ENV["SPM_CLONE_DIR"]
+    ipa = build_app(
+      project:                      project,
+      scheme:                       "ArgusRemote",
+      configuration:                "Release",
+      export_method:                "app-store",
+      export_options:               { provisioningProfiles: IOS_TARGETS.values.to_h { |id| [id, "match AppStore #{id}"] } },
+      output_directory:             out,
+      cloned_source_packages_path:  packages,
+      # System git, so the url.insteadOf CI sets reaches private packages (Grove).
+      xcargs:                       "-scmProvider system MARKETING_VERSION=#{version} CURRENT_PROJECT_VERSION=#{build_number}",
+    )
+
+    upload_to_testflight(
+      api_key:                           api_key,
+      ipa:                               ipa,
+      changelog:                         File.read(release_notes_file)[0, 4000],
+      skip_waiting_for_build_processing: true,
+    )
+    UI.success("Uploaded Argus #{version} (#{build_number}) to TestFlight")
+  end
+end
