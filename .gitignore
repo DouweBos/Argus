@@ -82,3 +82,4 @@ release-mac-server
 # Local iOS build settings (PostHog key et al)
 clients/apple/Config/Argus.local.xcconfig
 clients/argus-web/dist-hosted
+release-assets.txt

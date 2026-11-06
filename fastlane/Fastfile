@@ -141,6 +141,12 @@ platform :mac do
 
     publish_flag = publish ? "--publish always" : "--publish never"
     sh("cd .. && pnpm build && pnpm build:web-client && pnpm exec electron-builder --config electron-builder.release.cjs #{publish_flag}#{notes_flag}")
+    unless publish
+      out = File.expand_path("../release", __dir__)
+      write_release_assets(
+        Dir[File.join(out, "*-#{version}-*.{dmg,zip,blockmap}")] + [File.join(out, "#{channel_name}-mac.yml")],
+      )
+    end
 
     # Stable-only side effects: the website-changelog dispatch and main-branch
     # commit/tag bump are driven from the workflow, not this lane. Pre-release
@@ -332,8 +338,17 @@ platform :mac do
       sh(["gh", "release", "upload", tag, *assets, "--clobber"].shelljoin)
       UI.success("Published #{app_name} #{version} to #{tag} (#{assets.map { |a| File.basename(a) }.join(", ")})")
     else
+      write_release_assets(assets)
       UI.success("Built #{assets.join(", ")}; not published")
     end
+  end
+
+  # What a `publish:false` run built, one path per line, for the release workflow
+  # to upload once the build has passed and the version is tagged.
+  def write_release_assets(paths)
+    missing = paths.reject { |p| File.exist?(p) }
+    UI.user_error!("Missing release assets: #{missing.join(", ")}") unless missing.empty?
+    File.write(File.expand_path("../release-assets.txt", __dir__), paths.join("\n") + "\n")
   end
 
   # This version's CHANGELOG section as Markdown; CI passes the file it already wrote.
