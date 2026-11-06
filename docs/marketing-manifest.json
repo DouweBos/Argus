@@ -58,7 +58,7 @@
           "slug": "mac-app",
           "file": "mac-app.md",
           "title": "Argus for Mac",
-          "summary": "The native Mac app that will replace the Electron desktop: what works, and how it shares your projects with the Electron app."
+          "summary": "The Argus desktop app: what it does, and moving to it from the deprecated Electron app."
         }
       ]
     },
