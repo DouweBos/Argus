@@ -58,11 +58,14 @@ import {
 import { waitForSessionReady } from "../session/waitForReady";
 import {
   createRunTerminal,
+  findRunSession,
   readTerminalOutput,
+  resolveRunCommand,
   startTerminal,
   stripAnsi,
   waitForTerminal,
 } from "../terminal/multiplexer";
+import { stopTerminalGracefully } from "../terminal/stop";
 import { worktreePurposeForCaller } from "./automationCaller";
 import {
   automationMergeBlock,
@@ -2051,7 +2054,7 @@ export function createMcpServer(
 
   server.tool(
     "trigger_run",
-    "Start (or restart) one of the project's configured run commands from .argus.json — its dev server, watcher, test runner, simulator boot script, etc. ALWAYS use this instead of running `npm run dev`, `pnpm start`, `expo start`, `bun run`, `next dev`, `vite`, `cargo run`, `python manage.py runserver`, or any equivalent long-running process via the Bash tool. The user already has the runtime open in the Argus UI on the project's configured port; spawning your own copy from Bash collides on that port, fragments output the user can't see, and leaves orphaned processes. The command runs in a visible UI terminal the user can inspect. Pass `title` to pick a specific entry; omit to run the first configured command. If you don't know what's configured, call `list_run_commands` first. Returns a `terminal_session_id` — pair it with `wait_for_terminal` (block until a 'ready' regex appears or the process exits) and `read_terminal` (snapshot captured output) to observe the run.",
+    "Start (or restart) one of the project's configured run commands from .argus.json — its dev server, watcher, test runner, simulator boot script, etc. ALWAYS use this instead of running `npm run dev`, `pnpm start`, `expo start`, `bun run`, `next dev`, `vite`, `cargo run`, `python manage.py runserver`, or any equivalent long-running process via the Bash tool. The user already has the runtime open in the Argus UI on the project's configured port; spawning your own copy from Bash collides on that port, fragments output the user can't see, and leaves orphaned processes. The command runs in a visible UI terminal the user can inspect. Pass `title` to pick a specific entry; omit to run the first configured command. If you don't know what's configured, call `list_run_commands` first. Returns a `terminal_session_id` — pair it with `wait_for_terminal` (block until a 'ready' regex appears or the process exits) and `read_terminal` (snapshot captured output) to observe the run, and `stop_terminal` to shut it down.",
     {
       session: z.string().describe("Session ID, branch name, or display name"),
       project_path: sessionProjectPathArg,
@@ -2089,7 +2092,7 @@ export function createMcpServer(
       }
 
       try {
-        const result = createRunTerminal(ws.id, title);
+        const result = await createRunTerminal(ws.id, title);
         // Boot the primary terminal plus every auto-spawned dependency so
         // their PTYs actually start producing output — `createRunTerminal`
         // only allocates the sessions.
@@ -2202,6 +2205,149 @@ export function createMcpServer(
           content: [{ type: "text" as const, text: String(e) }],
           isError: true,
         };
+      }
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // stop_terminal
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "stop_terminal",
+    "Stop a running terminal — typically a dev server or watcher started with `trigger_run` — the way Ctrl-C in that terminal would. ALWAYS use this instead of finding PIDs with `lsof`/`ps` and sending `kill` from Bash: Argus sends SIGINT to the terminal's foreground process group (so wrappers like `pnpm` → `turbo` → `vite` all get it), escalates to SIGTERM and then SIGKILL on the whole process tree if it doesn't exit, and keeps the UI terminal in sync. Killing processes yourself leaves the UI showing a run that is gone, and can miss children that then hold the port. Identify the run by `terminal_session_id`, or by `session` + `project_path` (+ optional `title`, defaulting to the first configured run command). Blocks until the run has exited; returns whether it stopped, the exit code or signal, which escalation step (`SIGINT` | `SIGTERM` | `SIGKILL`) finished it, and the output tail. A later `trigger_run` of the same title starts a fresh copy.",
+    {
+      terminal_session_id: z
+        .string()
+        .optional()
+        .describe(
+          "Terminal session id returned by `trigger_run` (NOT the worktree session id). Takes precedence over `session` / `title`.",
+        ),
+      session: z
+        .string()
+        .optional()
+        .describe(
+          "Session ID, branch name, or display name whose run to stop. Use with `project_path` when you don't have the terminal session id.",
+        ),
+      project_path: sessionProjectPathArg.optional(),
+      title: z
+        .string()
+        .optional()
+        .describe(
+          "Title of the run command from .argus.json. Defaults to the first entry. Only used with `session`.",
+        ),
+      grace_ms: z
+        .number()
+        .int()
+        .optional()
+        .describe(
+          "How long to wait after each signal before escalating (SIGINT → SIGTERM → SIGKILL). Defaults to 3000. Capped at 30000.",
+        ),
+      tail_bytes: z
+        .number()
+        .int()
+        .optional()
+        .describe(
+          "Return only the last N bytes of captured output. Defaults to ~16KB. Pass 0 for the full capture.",
+        ),
+    },
+    async ({
+      terminal_session_id,
+      session,
+      project_path,
+      title,
+      grace_ms,
+      tail_bytes,
+    }) => {
+      const fail = (text: string) => ({
+        content: [{ type: "text" as const, text }],
+        isError: true,
+      });
+
+      let terminalId: string;
+      let ws = null;
+      if (terminal_session_id) {
+        terminalId = terminal_session_id;
+        const terminal = appState.terminals.get(terminalId);
+        if (!terminal) {
+          return fail(`Terminal session not found: ${terminalId}`);
+        }
+        ws = appState.sessions.get(terminal.sessionId) ?? null;
+      } else {
+        if (!session || !project_path) {
+          return fail(
+            "Pass `terminal_session_id`, or `session` + `project_path` (and optionally `title`).",
+          );
+        }
+        ws = resolveSession(session, project_path, callerAgentId);
+        if (!ws) {
+          return fail(`Session not found: ${session}`);
+        }
+        let runTitle: string;
+        try {
+          runTitle = title ?? resolveRunCommand(ws.id).title;
+        } catch (e) {
+          return fail(String(e));
+        }
+        const running = findRunSession(ws.id, runTitle);
+        if (!running) {
+          return fail(
+            `No running '${runTitle}' terminal in session ${ws.display_name || ws.branch}. Nothing to stop.`,
+          );
+        }
+        terminalId = running.id;
+      }
+
+      if (ws) {
+        const blocked = automationSessionToolBlock(
+          callerAgentId,
+          ws,
+          "stop_terminal",
+        );
+        if (blocked) {
+          return fail(blocked);
+        }
+      }
+
+      try {
+        const outcome = await stopTerminalGracefully(
+          terminalId,
+          "mcp",
+          grace_ms,
+        );
+        const result = readTerminalOutput(terminalId, {
+          tailBytes: tail_bytes,
+        });
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  terminal_session_id: terminalId,
+                  session_id: result.sessionId,
+                  run_title: result.runTitle,
+                  stopped: outcome.stopped,
+                  already_exited: outcome.alreadyExited,
+                  step: outcome.step,
+                  running: result.running,
+                  exit_code: outcome.exitCode,
+                  exit_signal: outcome.exitSignal,
+                  surviving_pids: outcome.survivors,
+                  total_bytes: result.totalBytes,
+                  dropped_bytes: result.droppedBytes,
+                  output: result.output,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+          ...(outcome.stopped ? {} : { isError: true }),
+        };
+      } catch (e) {
+        return fail(String(e));
       }
     },
   );

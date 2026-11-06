@@ -14,8 +14,9 @@ Use the MCP runtime tools instead:
 - `trigger_run` — (re)start one of those commands in a visible Argus terminal. Returns a `terminal_session_id`. Argus handles restart-on-rerun for you.
 - `wait_for_terminal` — block on that `terminal_session_id` until output matches a regex (`until_pattern`, e.g. `ready in \d+`, `compiled successfully`, `Listening on`), the process exits, or `timeout_ms` elapses. Use this to wait for "ready" before testing, or to wait for a one-shot configured command to finish.
 - `read_terminal` — non-blocking snapshot of captured output (ANSI-stripped, tail-limited) plus running/exit-code state. Use it to peek without blocking.
+- `stop_terminal` — stop a run like Ctrl-C would (SIGINT to the foreground process group, escalating to SIGTERM/SIGKILL on the whole tree), by `terminal_session_id` or by session + run title. Never hunt PIDs with `lsof`/`ps` and `kill` them from Bash: wrappers like `pnpm` ignore a stray SIGINT, children get orphaned, and the UI terminal goes out of sync.
 
-These three together replace what you'd normally get from a Bash invocation (output + exit code), so you have no excuse to spawn the runtime yourself. Output capture is bounded (~256KB per terminal, with `dropped_bytes` reporting what was truncated).
+These together replace what you'd normally get from a Bash invocation (output + exit code), so you have no excuse to spawn the runtime yourself. Output capture is bounded (~256KB per terminal, with `dropped_bytes` reporting what was truncated).
 
 For genuinely one-shot commands whose output you need _and_ aren't configured as a run command (`git`, `pnpm lint`, `pnpm test`, file scripts, codegen), Bash is still the right call — the rule is about long-running runtimes the user is watching, not about every shell command.
 

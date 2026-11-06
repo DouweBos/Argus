@@ -16,7 +16,7 @@ export function registerTerminalCommands(): void {
   defineTypedCommand("create_terminal", (p) =>
     createTerminal(p.sessionId, p.subDir, undefined, p.title),
   );
-  defineTypedCommand("create_run_terminal", (p) =>
+  defineTypedCommand("create_run_terminal", async (p) =>
     createRunTerminal(p.sessionId, p.title),
   );
   defineTypedCommand("list_terminals", (p) => listTerminals(p.sessionId));

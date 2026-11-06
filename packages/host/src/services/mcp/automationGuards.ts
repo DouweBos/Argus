@@ -121,7 +121,7 @@ function ownsSession(automationId: string, sessionId: string): boolean {
 /**
  * Refusal text when an automation host reaches into a session with one of the
  * tools that act on an existing one — `write_session_file`, `trigger_run`,
- * `delete_session`. Two conditions, both of which `automationWorkBlock` alone
+ * `stop_terminal`, `delete_session`. Two conditions, both of which `automationWorkBlock` alone
  * would miss: the ladder (a `propose` run may not act at all) and ownership (a
  * run may not edit, run or delete a session a human made).
  */

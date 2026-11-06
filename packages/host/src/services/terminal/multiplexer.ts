@@ -40,6 +40,7 @@ import {
 } from "../claudeAuth/accounts";
 import { loadArgusConfig } from "../session/argusConfig";
 import { forgetPty, recordPty } from "./ptyLedger";
+import { signalName, stopTerminalGracefully } from "./stop";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty = require("node-pty") as typeof NodePty;
@@ -107,6 +108,8 @@ export interface TerminalSession {
    * one-shot has finished) still return its output.
    */
   exitCode: number | null;
+  /** Signal name (e.g. `SIGINT`) when the process died from one. */
+  exitSignal: string | null;
   /** Wall-clock ms timestamp of exit, or `null` while still running. */
   exitedAt: number | null;
   /** Pending {@link waitForTerminal} resolvers. Drained on match or exit. */
@@ -477,6 +480,7 @@ export function createTerminal(
     unflushedChars: 0,
     record: () => {},
     exitCode: null,
+    exitSignal: null,
     exitedAt: null,
     waiters: [],
   };
@@ -510,7 +514,10 @@ export function createTerminal(
   ptyProcess.onData((data: string) => terminal.record(data));
 
   // Forward exit notification to the renderer.
-  ptyProcess.onExit(({ exitCode }: { exitCode: number }) => {
+  ptyProcess.onExit(({ exitCode: code, signal }) => {
+    // Shell convention: death by signal N reports as 128 + N.
+    const exitCode = signal ? 128 + signal : code;
+    const exitSignal = signal ? signalName(signal) : null;
     forgetPty(ptyProcess.pid);
     // Drain any buffered output before signalling exit so the renderer sees
     // trailing bytes (e.g. a failing command's last line) before the close.
@@ -524,8 +531,11 @@ export function createTerminal(
     // print, leaving the user unable to tell whether the run finished.
     if (terminal.runTitle) {
       const color = exitCode === 0 ? "\x1b[1;32m" : "\x1b[1;31m";
-      const label =
+      let label =
         exitCode === 0 ? "exited cleanly" : `exited with code ${exitCode}`;
+      if (exitSignal) {
+        label = `stopped by ${exitSignal}`;
+      }
       const line = `\r\n${color}— ${terminal.runTitle} ${label}\x1b[0m\r\n`;
       terminal.outputTotalBytes += line.length;
       terminal.outputLog += line;
@@ -540,6 +550,7 @@ export function createTerminal(
       );
     }
     terminal.exitCode = exitCode;
+    terminal.exitSignal = exitSignal;
     terminal.exitedAt = Date.now();
     emitHostEvent(`terminal:exit:${terminalId}`, exitCode);
     // Wake any pending waiters so they unblock immediately. We deliberately
@@ -831,9 +842,8 @@ export function resolveRunCommand(
  * @returns An object with the session id and whether a new session was
  *          actually started (vs. reusing an existing one).
  *
- * TODO: once the new graceful `stopTerminal` / signal-escalation work from the
- * terminal-stop branch lands, swap the `destroyTerminal` call below for it so
- * restart kills are not SIGKILL-hammered.
+ * Restarting stops the old run gracefully and waits for it to exit, so the
+ * replacement doesn't race it for the port.
  */
 export interface RunTerminalResult {
   sessionId: string;
@@ -849,11 +859,36 @@ export interface RunTerminalResult {
   dependencies: { sessionId: string; title: string }[];
 }
 
+/** Per-session queue, so two quick reruns can't both spawn while a stop is pending. */
+const runStartQueues = new Map<string, Promise<void>>();
+
 export function createRunTerminal(
   sessionId: string,
   title?: string,
-  visiting = new Set<string>(),
-): RunTerminalResult {
+): Promise<RunTerminalResult> {
+  const previous = runStartQueues.get(sessionId) ?? Promise.resolve();
+  const next = previous.then(() =>
+    startRunTerminal(sessionId, title, new Set()),
+  );
+  const settled = next.then(
+    () => {},
+    () => {},
+  );
+  runStartQueues.set(sessionId, settled);
+  settled.finally(() => {
+    if (runStartQueues.get(sessionId) === settled) {
+      runStartQueues.delete(sessionId);
+    }
+  });
+
+  return next;
+}
+
+async function startRunTerminal(
+  sessionId: string,
+  title: string | undefined,
+  visiting: Set<string>,
+): Promise<RunTerminalResult> {
   const runCmd = resolveRunCommand(sessionId, title);
 
   if (visiting.has(runCmd.title)) {
@@ -873,7 +908,7 @@ export function createRunTerminal(
       if (findRunSession(sessionId, req)) {
         continue;
       }
-      const depResult = createRunTerminal(sessionId, req, nextVisiting);
+      const depResult = await startRunTerminal(sessionId, req, nextVisiting);
       // Surface the entire transitive chain so the renderer registers tabs
       // for every newly-spawned terminal, not just the direct dependency.
       for (const transitive of depResult.dependencies) {
@@ -899,9 +934,9 @@ export function createRunTerminal(
       };
     }
     try {
-      destroyTerminal(existing.id);
+      await stopTerminalGracefully(existing.id, "rerun");
     } catch {
-      // non-fatal; the session may have exited between the lookup and kill.
+      // non-fatal; the session may have exited between the lookup and stop.
     }
   }
 
@@ -925,7 +960,7 @@ export function createRunTerminal(
 }
 
 /** Look up an alive run-terminal session for this session + title. */
-function findRunSession(
+export function findRunSession(
   sessionId: string,
   title: string,
 ): TerminalSession | null {
@@ -1070,56 +1105,15 @@ export function destroyTerminal(sessionId: string): void {
 }
 
 /**
- * Gracefully stop a PTY session by escalating signals: SIGINT → SIGTERM →
- * SIGKILL, with ~1.5s between each step. Returns immediately; the escalation
- * runs in the background and stops as soon as the process exits (the
- * `onExit` handler removes the session from the registry).
- *
- * Unlike {@link destroyTerminal}, this gives well-behaved processes a chance
- * to clean up. Use this for user-triggered stop actions (e.g. a Stop button);
- * use {@link destroyTerminal} for hard teardown when the renderer is closing
- * a tab.
+ * Fire-and-forget {@link stopTerminalGracefully} for the UI's Stop button;
+ * `terminal:exit:{id}` fires once the process is gone.
  *
  * @throws A plain string if the session is not found.
  */
 export function stopTerminal(sessionId: string): void {
-  const session = appState.terminals.get(sessionId);
-  if (!session) {
-    throw `Terminal session not found: ${sessionId}`;
-  }
-  if (session.exitCode !== null) {
-    return;
-  }
-
-  const escalate = (signal: "SIGINT" | "SIGKILL" | "SIGTERM"): boolean => {
-    if (!appState.terminals.has(sessionId)) {
-      return false;
-    }
-    try {
-      session.pty.kill(signal);
-    } catch {
-      // Process may have already exited between checks; treat as done.
-      return false;
-    }
-
-    return true;
-  };
-
-  if (!escalate("SIGINT")) {
-    return;
-  }
-
-  const termTimer = setTimeout(() => {
-    if (!escalate("SIGTERM")) {
-      return;
-    }
-    const killTimer = setTimeout(() => {
-      escalate("SIGKILL");
-    }, 1500);
-    // Don't keep the event loop alive for escalation during app shutdown.
-    killTimer.unref?.();
-  }, 1500);
-  termTimer.unref?.();
+  stopTerminalGracefully(sessionId, "ui").catch((e: unknown) =>
+    warn(`stop_terminal ${sessionId} failed: ${String(e)}`),
+  );
 }
 
 /**

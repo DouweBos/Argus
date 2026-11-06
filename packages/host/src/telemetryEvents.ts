@@ -377,6 +377,13 @@ export interface EventMap {
   };
   simulator_repaired: { action: "delete" | "erase"; success: boolean };
   telemetry_disabled: undefined;
+  terminal_stopped: {
+    source: "mcp" | "rerun" | "ui";
+    /** The signal that finished it; `SIGKILL` means it ignored the gentler ones. */
+    step: "SIGINT" | "SIGKILL" | "SIGTERM";
+    /** False when processes outlived SIGKILL. */
+    stopped: boolean;
+  };
   telemetry_enabled: undefined;
   usage_summary_loaded: {
     prices_available: boolean;

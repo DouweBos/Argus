@@ -64,6 +64,13 @@ vi.mock("../terminal/multiplexer", () => ({
   createTerminal: vi.fn(),
   createRunTerminal: vi.fn(),
   startTerminal: vi.fn(),
+  findRunSession: vi.fn(),
+  readTerminalOutput: vi.fn(),
+  resolveRunCommand: vi.fn(),
+}));
+
+vi.mock("../terminal/stop", () => ({
+  stopTerminalGracefully: vi.fn(),
 }));
 
 vi.mock("../session/argusConfig", () => ({
@@ -95,8 +102,14 @@ const {
 } = await import("../session/sessionOps");
 const { startAgent, sendAgentMessage, listAgents } =
   await import("../agent/claude");
-const { createRunTerminal, startTerminal } =
-  await import("../terminal/multiplexer");
+const {
+  createRunTerminal,
+  findRunSession,
+  readTerminalOutput,
+  resolveRunCommand,
+  startTerminal,
+} = await import("../terminal/multiplexer");
+const { stopTerminalGracefully } = await import("../terminal/stop");
 const { ensureRepoRegistered } = await import("./projects");
 const { loadHistoryIndex } = await import("../agent/chatHistory");
 const { isGitRepo, collectAllProjects } = await import("./projectDiscovery");
@@ -115,6 +128,10 @@ const mockLoadHistoryIndex = vi.mocked(loadHistoryIndex);
 const mockListAgents = vi.mocked(listAgents);
 const mockCreateRunTerminal = vi.mocked(createRunTerminal);
 const mockStartTerminal = vi.mocked(startTerminal);
+const mockFindRunSession = vi.mocked(findRunSession);
+const mockReadTerminalOutput = vi.mocked(readTerminalOutput);
+const mockResolveRunCommand = vi.mocked(resolveRunCommand);
+const mockStopTerminalGracefully = vi.mocked(stopTerminalGracefully);
 const mockIsGitRepo = vi.mocked(isGitRepo);
 const mockEnsureRepoRegistered = vi.mocked(ensureRepoRegistered);
 const mockCollectAllProjects = vi.mocked(collectAllProjects);
@@ -868,7 +885,7 @@ describe("trigger_run", () => {
   it("starts the configured run terminal", async () => {
     const ws = mockSession();
     appState.sessions.set("ws-1", ws);
-    mockCreateRunTerminal.mockReturnValue({
+    mockCreateRunTerminal.mockResolvedValue({
       sessionId: "term-1",
       started: true,
       title: "dev",
@@ -902,6 +919,131 @@ describe("trigger_run", () => {
     });
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain("bad config");
+  });
+});
+
+// ===========================================================================
+// stop_terminal
+// ===========================================================================
+
+describe("stop_terminal", () => {
+  const outcome = {
+    stopped: true,
+    alreadyExited: false,
+    step: "SIGINT" as const,
+    exitCode: 130,
+    exitSignal: "SIGINT",
+    survivors: [],
+  };
+
+  beforeEach(() => {
+    mockStopTerminalGracefully.mockResolvedValue(outcome);
+    mockReadTerminalOutput.mockReturnValue({
+      running: false,
+      exitCode: 130,
+      output: "bye",
+      totalBytes: 3,
+      droppedBytes: 0,
+      runTitle: "dev",
+      sessionId: "ws-1",
+    });
+  });
+
+  it("stops a terminal by id and reports how it ended", async () => {
+    appState.sessions.set("ws-1", mockSession());
+    appState.terminals.set("term-1", {
+      id: "term-1",
+      sessionId: "ws-1",
+    } as never);
+
+    const result = await client.callTool({
+      name: "stop_terminal",
+      arguments: { terminal_session_id: "term-1", grace_ms: 500 },
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(mockStopTerminalGracefully).toHaveBeenCalledWith(
+      "term-1",
+      "mcp",
+      500,
+    );
+    expect(jsonOf(result)).toMatchObject({
+      terminal_session_id: "term-1",
+      stopped: true,
+      step: "SIGINT",
+      exit_code: 130,
+      exit_signal: "SIGINT",
+      running: false,
+      output: "bye",
+    });
+  });
+
+  it("finds the running terminal by session and run title", async () => {
+    appState.sessions.set("ws-1", mockSession());
+    mockResolveRunCommand.mockReturnValue({ title: "dev" } as never);
+    mockFindRunSession.mockReturnValue({ id: "term-2" } as never);
+
+    const result = await client.callTool({
+      name: "stop_terminal",
+      arguments: { session: "ws-1", project_path: "/projects/frontend" },
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(mockFindRunSession).toHaveBeenCalledWith("ws-1", "dev");
+    expect(mockStopTerminalGracefully).toHaveBeenCalledWith(
+      "term-2",
+      "mcp",
+      undefined,
+    );
+  });
+
+  it("errors when no run with that title is running", async () => {
+    appState.sessions.set("ws-1", mockSession());
+    mockFindRunSession.mockReturnValue(null);
+
+    const result = await client.callTool({
+      name: "stop_terminal",
+      arguments: {
+        session: "ws-1",
+        project_path: "/projects/frontend",
+        title: "web",
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain("No running 'web' terminal");
+    expect(mockStopTerminalGracefully).not.toHaveBeenCalled();
+  });
+
+  it("errors on an unknown terminal id", async () => {
+    const result = await client.callTool({
+      name: "stop_terminal",
+      arguments: { terminal_session_id: "ghost" },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain("Terminal session not found");
+  });
+
+  it("flags a run that survived escalation as an error", async () => {
+    appState.terminals.set("term-1", {
+      id: "term-1",
+      sessionId: "ws-1",
+    } as never);
+    mockStopTerminalGracefully.mockResolvedValue({
+      ...outcome,
+      stopped: false,
+      step: "SIGKILL",
+      survivors: [4242],
+    });
+
+    const result = await client.callTool({
+      name: "stop_terminal",
+      arguments: { terminal_session_id: "term-1" },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(jsonOf(result)).toMatchObject({ surviving_pids: [4242] });
   });
 });
 
