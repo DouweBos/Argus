@@ -186,8 +186,10 @@
         var view: UIView? = element as? UIView
         while let current = view, !(current is UIControl) { view = current.superview }
         if let control = view as? UIControl {
-          control.sendActions(for: .primaryActionTriggered)
-          control.sendActions(for: .touchUpInside)
+          // Send only one event: controls listening to both would otherwise fire twice.
+          let event: UIControl.Event =
+            control.allControlEvents.contains(.primaryActionTriggered) ? .primaryActionTriggered : .touchUpInside
+          control.sendActions(for: event)
           return ["ok": true, "via": "control"]
         }
         return ["ok": false, "type": String(describing: type(of: element))]
