@@ -57,6 +57,8 @@
       /// What `launch()` passes the host script.
       public func arguments(ownerPid: Int32) -> [String] {
         [
+          // Node's ~4 GB default heap OOM-crashed long-running hosts.
+          "--max-old-space-size=8192",
           hostScript.path, mode.flag,
           "--ui-socket", socketPath,
           "--owner-pid", String(ownerPid),

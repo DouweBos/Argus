@@ -65,6 +65,7 @@
     @Test func supervisorPassesTheModeFlag() {
       let config = server(debug: true).configuration()
       #expect(config.arguments(ownerPid: 42) == [
+        "--max-old-space-size=8192",
         config.hostScript.path, "--server", "--ui-socket", config.socketPath, "--owner-pid", "42",
       ])
       #expect(HostSupervisor.Mode.server.lockOwner == .macServer)
