@@ -261,6 +261,13 @@ export interface EventMap {
   follow_up_used: { method: "click" | "tab" };
   follow_ups_suggested: { count: number; success: boolean };
   home_usage_opened: { level: "critical" | "normal" | "warning" };
+  host_heap_sampled: {
+    agents: number;
+    heap_limit_bucket: "<25%" | "<50%" | "<75%" | ">=75%";
+    heap_used_bucket: "<1GB" | "<2GB" | "<4GB" | "<256MB" | ">=4GB";
+    mcp_sessions: number;
+    uptime_bucket: "<1d" | "<3d" | "<6h" | ">=3d";
+  };
   host_lock_handover: { holder: "cli" | "electron" | "mac-server" | "mac" };
   integration_connected: {
     method: "key" | "oauth";

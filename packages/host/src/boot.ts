@@ -75,6 +75,10 @@ import {
   stopVolumeWatcher,
 } from "./services/session/volumeWatcher";
 import {
+  startHeapSampling,
+  stopHeapSampling,
+} from "./services/telemetry/heapSample";
+import {
   capture as telemetryCapture,
   captureWhenEnabled,
   initTelemetry,
@@ -245,6 +249,8 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
     log.error("Failed to start MJPEG server:", err);
   });
 
+  startHeapSampling();
+
   return { remoteReady };
 }
 
@@ -255,6 +261,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
  */
 export function stopHostServices(): void {
   telemetryCapture("app_quit");
+  stopHeapSampling();
   shutdownTelemetry().catch(() => undefined);
   stopAutomationScheduler();
   stopVolumeWatcher();
