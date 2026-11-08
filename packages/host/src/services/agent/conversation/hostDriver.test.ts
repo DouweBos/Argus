@@ -64,6 +64,8 @@ const { sendQueuedMessageNow, startHostConversations, stopHostConversations } =
   await import("./hostDriver");
 const { readConversation, resetLive, stageConversation } =
   await import("./live");
+const { forgetAgent } = await import("../forget");
+const { trackedAgentIds } = await import("./folded");
 
 const AGENT = "agent-1";
 
@@ -149,6 +151,23 @@ describe("host conversation driver", () => {
     followUps.reply = ["Add the tests", "Commit it"];
     followUps.enabled = true;
     vi.useRealTimers();
+  });
+
+  it("lets go of an agent removed without a stop, as a deleted session's are", async () => {
+    addAgent();
+    started();
+    line(INIT);
+    line(reply("Done."));
+    enqueueMessage(AGENT, { text: "and the signup" });
+    await vi.advanceTimersByTimeAsync(100);
+    expect(snapshot()).not.toBeNull();
+
+    forgetAgent(AGENT);
+
+    expect(snapshot()).toBeNull();
+    expect(trackedAgentIds()).toEqual([]);
+    expect(appState.agents.has(AGENT)).toBe(false);
+    expect(appState.agentQueues.has(AGENT)).toBe(false);
   });
 
   it("publishes the transcript a headless host serves the phone", async () => {

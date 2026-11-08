@@ -15,6 +15,7 @@ import path from "node:path";
 import { emitHostEvent } from "../../bus";
 import { info, warn } from "../../logger";
 import { appState } from "../../state";
+import { forgetAgent } from "../agent/forget";
 import { liveOwnedSessions } from "../automation/ownedSessions";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import {
@@ -234,7 +235,7 @@ function quiesce(sessionIds: string[]): void {
       agent.handle.kill().catch((e: unknown) => {
         info(`moveWorktrees: kill agent ${key} returned:`, e);
       });
-      appState.agents.delete(key);
+      forgetAgent(key);
     }
   }
   for (const id of sessionIds) {

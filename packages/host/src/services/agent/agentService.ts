@@ -78,8 +78,9 @@ import {
   contextWindowFromModelUsage,
   rememberContextWindow,
 } from "./contextWindow";
-import { stageConversation, takeStagedConversation } from "./conversation/live";
+import { stageConversation } from "./conversation/live";
 import { fromSavedMessages } from "./conversation/reducer";
+import { forgetAgent } from "./forget";
 import { noteLimitStallStarted } from "./limitHandoff";
 import {
   cancelLimitResume,
@@ -88,7 +89,6 @@ import {
   noteRateLimitLine,
   onTurnResult,
 } from "./limitResume";
-import { clearQueue } from "./messageQueue";
 import { resultSubtype } from "./models";
 import { adoptPinOnResume, isPinned, refreshPin } from "./pins/pins";
 import {
@@ -1347,13 +1347,7 @@ export async function stopAgent(agentId: string): Promise<void> {
   await simulatorPool.releaseSimulator(agentId);
   await webBrowserPool.releaseBrowser(agentId);
 
-  appState.agents.delete(agentId);
-  takeStagedConversation(agentId);
-  appState.agentPendingPermissions.delete(agentId);
-  clearQueue(agentId);
-  forgetLimitResume(agentId);
-
-  emitAgentStatus(agentId, "stopped");
+  forgetAgent(agentId);
   info(`[agent:${agentId}] stopped`);
   telemetryCapture("agent_stopped");
 }

@@ -11,6 +11,7 @@ import { emitHostEvent } from "@argus/host/bus";
 import { error, info } from "@argus/host/logger";
 import { canonicalPath } from "../../lib/canonicalPath";
 import { appState } from "../../state";
+import { forgetAgent } from "../agent/forget";
 import { loadAppSettings } from "../appSettings/store";
 import { writeDesignFiles } from "../design/files";
 import { withSessionPullRequest } from "../github/sessionPullRequests";
@@ -169,7 +170,7 @@ export function removeRepoRoot(dirPath: string): void {
       session.handle.kill().catch((e) => {
         info(`removeRepoRoot: kill agent ${key} returned:`, e);
       });
-      appState.agents.delete(key);
+      forgetAgent(key);
     }
   }
 
@@ -1619,7 +1620,7 @@ export async function deleteSession(
       agentEntry.handle.kill().catch((e) => {
         info(`deleteSession: kill agent ${key} returned:`, e);
       });
-      appState.agents.delete(key);
+      forgetAgent(key);
       killedAgentIds.push(key);
     }
   }
