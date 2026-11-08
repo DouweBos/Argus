@@ -388,3 +388,41 @@ describe("transcript pagination", () => {
     expect(res.prev_before).toBe(1);
   });
 });
+
+describe("sessions.list", () => {
+  beforeEach(async () => {
+    appState.sessions.clear();
+    const { collectAllProjects } = await import("../mcp/projectDiscovery");
+    vi.mocked(collectAllProjects).mockReturnValue([{ path: "/repo" } as never]);
+  });
+
+  it("includes a session whose worktree failed to be made, with the reason", async () => {
+    appState.sessions.set("s-failed", {
+      id: "s-failed",
+      kind: "worktree",
+      branch: "",
+      display_name: "reply with hi",
+      description: "",
+      path: "",
+      repo_root: "/repo",
+      status: { error: 'Branch "reply-with-hi" is already used' },
+      env_index: 0,
+    } as never);
+
+    const res = (await dispatch(
+      "sessions.list",
+      { repo_root: "/repo" },
+      ctx,
+    )) as {
+      sessions: { id: string; status: string; setup_error: string | null }[];
+    };
+
+    expect(res.sessions).toEqual([
+      expect.objectContaining({
+        id: "s-failed",
+        status: "error",
+        setup_error: 'Branch "reply-with-hi" is already used',
+      }),
+    ]);
+  });
+});

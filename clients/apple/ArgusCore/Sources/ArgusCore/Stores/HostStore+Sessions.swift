@@ -41,6 +41,8 @@ extension HostStore {
       ).session
       creatingSessions[session.id] = session
       sessionsByRepo[repoRoot] = [session] + (sessionsByRepo[repoRoot] ?? []).filter { $0.id != session.id }
+      // A setup that fails at once announces it before this reply lands, so re-list to catch it.
+      await loadSessions(repoRoot: repoRoot)
       return session
     } catch {
       report(error)
@@ -52,11 +54,7 @@ extension HostStore {
   /// worktree is ready, so backgrounding the phone can't strand the plan.
   public func handOffPlan(repoRoot: String, plan: String) async {
     let prompt = "Implement the following plan:\n\n\(plan)"
-    guard
-      await createSession(repoRoot: repoRoot, branch: "", description: prompt, prompt: prompt)
-        != nil
-    else { return }
-    await loadSessions(repoRoot: repoRoot)
+    await createSession(repoRoot: repoRoot, branch: "", description: prompt, prompt: prompt)
   }
 
   // MARK: Landing work

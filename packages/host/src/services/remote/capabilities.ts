@@ -915,9 +915,18 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "sessions.list": async (params) => {
     const { repo_root } = parse("sessions.list", params);
     requireKnownRepoRoot(repo_root);
-    const sessions = (await listSessions(repo_root)).map(toRemoteSession);
+    const listed = await listSessions(repo_root);
+    // A session still making (or that failed to make) its worktree has no path
+    // and isn't on disk, but the client must see it to show it set up or failed.
+    const pending = [...appState.sessions.values()].filter(
+      (s) =>
+        s.kind === "worktree" &&
+        s.repo_root === repo_root &&
+        !s.path &&
+        !listed.some((l) => l.id === s.id),
+    );
 
-    return { sessions };
+    return { sessions: [...pending, ...listed].map(toRemoteSession) };
   },
 
   "sessions.viewing": async (params, ctx) => {
