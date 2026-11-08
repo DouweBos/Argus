@@ -145,6 +145,8 @@ struct RouteScreen: View {
       AllAgentsView()
     case .project(let repoRoot, let name):
       ProjectView(repoRoot: repoRoot, name: name)
+    case .newSession(let repoRoot):
+      NewSessionView(repoRoot: repoRoot)
     case .session(let id, let label, let repoRoot):
       SessionView(sessionId: id, label: label, repoRoot: repoRoot)
     case .agent(let id, let label):

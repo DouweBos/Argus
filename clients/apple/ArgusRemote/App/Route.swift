@@ -14,6 +14,8 @@ enum Route: Hashable {
   case project(repoRoot: String, name: String)
   /// One session: its agents as tabs, its tools in a details sheet.
   case session(id: String, label: String, repoRoot: String)
+  /// The start composer on a new worktree; nil opens on the last active project with a project chip.
+  case newSession(repoRoot: String?)
   /// The same screen, opened on one agent before its session is known.
   case agent(id: String, label: String)
   case stoppedAgent(historyId: String, repoRoot: String, label: String, branch: String, runnerSessionId: String)
@@ -103,6 +105,7 @@ enum Route: Hashable {
     case .usage: ArgusRoute.usage(.limits).pattern
     case .projects: ArgusRoute.home.pattern
     case .project: "/projects/:repoRoot"
+    case .newSession: "/sessions/new"
     case .stoppedAgent: "/projects/:repoRoot/stopped-agents/:historyId"
     case .quickOpen: "/sessions/:sessionId/code/quick-open"
     case .fileSearch: "/sessions/:sessionId/code/search"
@@ -289,6 +292,8 @@ final class Router {
   }
   /// The agent tab in front on each session screen; kept for the same reason.
   var focusedAgents = AgentFocus()
+  /// Sessions showing a "New agent" tab, the Mac's `+` in the agent tab strip.
+  var newAgentDrafts: Set<String> = []
 
   /// An agent opened from anywhere (a list, a link, a notification) goes in
   /// front of its session's tabs, over the tab that session last showed.

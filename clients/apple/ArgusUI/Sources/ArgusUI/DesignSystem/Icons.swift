@@ -48,6 +48,8 @@ public enum Icon {
   public static let filter = "line.3.horizontal.decrease"
   public static let terminal = "terminal"
   public static let pencil = "pencil"
+  /// A new session, as the Mac sidebar's button.
+  public static let compose = "square.and.pencil"
   public static let scratchPad = "note.text"
   public static let pin = "pin"
   public static let pinSlash = "pin.slash"

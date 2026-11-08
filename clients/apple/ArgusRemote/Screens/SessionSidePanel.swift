@@ -195,7 +195,10 @@ struct SessionSidePanel: View {
       SessionDetailsView(
         session: session, agentId: router.focusedAgents[session: session.id],
         open: open,
-        started: { router.focusedAgents[session: session.id] = $0.agentId },
+        newAgent: {
+          router.newAgentDrafts.insert(session.id)
+          Telemetry.capture(.sessionUsed(action: .newAgentTab))
+        },
         deleted: { router.pop() })
     case .changes:
       ChangesView(sessionId: session.id, label: label)

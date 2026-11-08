@@ -5,6 +5,7 @@ import SwiftUI
 /// and everything else about the session in a details sheet.
 struct SessionView: View {
   @Environment(\.theme) private var theme
+  @Environment(AppStore.self) private var app
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
 
@@ -28,7 +29,6 @@ struct SessionView: View {
   /// Tabs this screen has shown; one that stops stays until closed or the screen is left, as on the Mac.
   @State private var shown: [String] = []
   @State private var closed: Set<String> = []
-  @State private var startingAgent = false
   @State private var confirmingStop = false
 
   private var resolvedSessionId: String? { sessionId ?? agentId.flatMap { host.statusByAgent[$0]?.sessionId } }
@@ -61,14 +61,30 @@ struct SessionView: View {
 
   private var sessionTitle: String { session.map(SessionActivity.title) ?? label }
 
+  /// The draft tab's id in the strip; never an agent's.
+  private static let draftTab = "new-agent"
+
+  /// A "New agent" tab is open, as after the Mac's `+`.
+  private var drafting: Bool {
+    guard canStart, let id = resolvedSessionId else { return false }
+    return router.newAgentDrafts.contains(id)
+  }
+
+  /// No agent to show: the start composer takes the screen, as the Mac's `SessionStartPane`.
+  private var showsStart: Bool { canStart && (drafting || focusedAgentId == nil) }
+
+  /// The strip shows once there's something to switch between, or a `+` to add to it.
+  private var showsTabs: Bool { agents.count > 1 || (!agents.isEmpty && canStart) }
+
   /// The agent in front, else the session; the line under it says where.
   private var title: String {
+    if drafting { return "New agent" }
     if let focusedAgent { return Labels.agentName(focusedAgent, among: agents) }
     return focusedAgentId == nil ? sessionTitle : label
   }
 
   private var subtitle: String? {
-    let parts = focusedAgentId == nil
+    let parts = focusedAgentId == nil || drafting
       ? [session.flatMap(SessionActivity.subtitle)]
       : [sessionTitle, session.flatMap(SessionActivity.subtitle)]
     let line = parts.compactMap { $0 }.filter { !$0.isEmpty && $0 != title }.joined(separator: " · ")
@@ -78,7 +94,7 @@ struct SessionView: View {
   var body: some View {
     HStack(spacing: 0) {
       VStack(spacing: 0) {
-        if agents.count > 1 { tabBar }
+        if showsTabs { tabBar }
         if let session, !session.isUnavailable, session.status == .error || session.setupPending == true {
           setupBanner(session)
         }
@@ -106,9 +122,6 @@ struct SessionView: View {
     .onChange(of: agents.map(\.agentId), initial: true) { _, ids in
       let new = ids.filter { !shown.contains($0) && !closed.contains($0) }
       if !new.isEmpty { shown += new }
-    }
-    .sheet(isPresented: $startingAgent) {
-      if let session { StartInSessionSheet(session: session) { focus($0) } }
     }
     .confirmationDialog("Shut down this agent?", isPresented: $confirmingStop, titleVisibility: .visible) {
       Button("Shut down", role: .destructive) { stopFocused() }
@@ -138,13 +151,13 @@ struct SessionView: View {
     ScrollViewReader { proxy in
       tabStrip
         // A tab opened from elsewhere (a fork, a resume) can land off the edge.
-        .onChange(of: focusedAgentId, initial: true) { _, id in
+        .onChange(of: selectedTab, initial: true) { _, id in
           guard let id else { return }
           withAnimation(.snappy) { proxy.scrollTo(id, anchor: .center) }
         }
         // Or as the side panel opens beside it and the strip narrows.
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { _ in
-          guard let id = focusedAgentId else { return }
+          guard let id = selectedTab else { return }
           // Once the panel's slide-in settles; a scroll asked for mid-resize is dropped.
           DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             withAnimation(.snappy) { proxy.scrollTo(id, anchor: .center) }
@@ -160,12 +173,20 @@ struct SessionView: View {
           PillTab(
             id: agent.agentId, title: Labels.agentName(agent, among: agents),
             symbol: agent.isPinned ? Icon.pin : Icon.agent, indicator: agent.awaiting != nil)
-        },
-        selection: focusedAgentId, compact: true
+        } + (drafting ? [PillTab(id: Self.draftTab, title: "New agent", symbol: Icon.plus)] : []),
+        selection: selectedTab, compact: true
       ) { picked in
-        guard picked != focusedAgentId else { return }
+        guard picked != selectedTab, picked != Self.draftTab else { return }
+        setDrafting(false)
         focused = picked
         Telemetry.capture(.sessionUsed(action: .switchAgent))
+      } trailing: {
+        if canStart, !drafting {
+          Button(action: startDraft) {
+            Label("New agent", systemImage: Icon.plus).labelStyle(.iconOnly)
+          }
+          .id(Self.draftTab + "-add")
+        }
       }
       .tabContextMenu { id in tabMenu(id) }
       .padding(.horizontal, theme.space)
@@ -184,21 +205,40 @@ struct SessionView: View {
     }
   }
 
+  private var selectedTab: String? { drafting ? Self.draftTab : focusedAgentId }
+
   @ViewBuilder private var content: some View {
-    if let id = focusedAgentId {
+    if drafting, let session {
+      startPane(session)
+    } else if let id = focusedAgentId {
       AgentView(agentId: id, label: title).id(id)
     } else if let session, session.status == .initializing || session.status == .deleting {
       setupProgress(session)
+    } else if showsStart, let session {
+      startPane(session)
     } else {
       EmptyState(
         icon: Icon.agent, title: "No agents",
-        body: canStart
-          ? "Start one and it works in this session's checkout."
-          : "Agents started in this session from Argus on your computer appear here."
-      ) {
-        if canStart { Btn(label: "New agent", icon: Icon.plus, hugs: true) { startingAgent = true } }
+        body: "Agents started in this session from Argus on your computer appear here.")
+    }
+  }
+
+  /// "What should we build in <project>?" over the composer, starting in this session's checkout.
+  private func startPane(_ session: RemoteSession) -> some View {
+    AgentStartPane(
+      repoRoot: session.isOutsideProjects ? nil : session.repoRoot, sessionId: session.id, workspace: .current,
+      defaultMode: app.defaultPermissionMode, onAffordance: { Telemetry.capture(.composerInput($0)) }
+    ) { outcome, sent in
+      Telemetry.capture(.agentStartSubmitted(sent, openedOn: .current))
+      setDrafting(false)
+      // A new worktree is another session; open it rather than a tab here.
+      if case .agent(let agent) = outcome, agent.sessionId == session.id {
+        focus(agent)
+      } else {
+        router.push(Route(outcome))
       }
     }
+    .id("start:\(session.id)")
   }
 
   private var canStart: Bool {
@@ -241,7 +281,9 @@ struct SessionView: View {
       .accessibilityElement(children: .combine)
     }
     ToolbarItemGroup(placement: .topBarTrailing) {
-      if let id = focusedAgentId, host.isGone(id), id != agentId || agents.count > 1 {
+      if drafting, !agents.isEmpty {
+        IconBtn(systemName: Icon.close, label: "Close new agent tab") { setDrafting(false) }
+      } else if let id = focusedAgentId, host.isGone(id), id != agentId || agents.count > 1 {
         IconBtn(systemName: Icon.close, label: "Close agent tab") { closeTab(id) }
       } else if host.hasControl, let id = focusedAgentId, !host.isGone(id) {
         IconBtn(systemName: Icon.stop, label: "Shut down agent") { confirmingStop = true }
@@ -264,7 +306,7 @@ struct SessionView: View {
       NavigationStack {
         SessionDetailsView(
           session: session, agentId: focusedAgentId,
-          open: open, started: focus,
+          open: open, newAgent: startDraft,
           deleted: {
             showingDetails = false
             router.pop()
@@ -279,6 +321,18 @@ struct SessionView: View {
   }
 
   // MARK: Actions
+
+  /// The Mac's `+`: a "New agent" tab in front, its composer ready.
+  private func startDraft() {
+    showingDetails = false
+    setDrafting(true)
+    Telemetry.capture(.sessionUsed(action: .newAgentTab))
+  }
+
+  private func setDrafting(_ on: Bool) {
+    guard let id = resolvedSessionId, router.newAgentDrafts.contains(id) != on else { return }
+    if on { router.newAgentDrafts.insert(id) } else { router.newAgentDrafts.remove(id) }
+  }
 
   /// Files the agent in front under its session, once that is known.
   private func pinFocus() {

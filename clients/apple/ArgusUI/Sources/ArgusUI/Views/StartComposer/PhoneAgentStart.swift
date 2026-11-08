@@ -18,8 +18,6 @@
     /// Each gets its own worktree on Linear's branch name.
     var issues: [HostStore.LinearIssue]
     var branches: [RemoteGitBranch] = []
-    /// Set once a start went through, for the screen to close.
-    private(set) var finished = false
 
     @ObservationIgnored private weak var host: HostStore?
     @ObservationIgnored private let defaults: AgentStartDefaults
@@ -107,7 +105,6 @@
         .init(
           workspace: kind, hasImages: issues.isEmpty && !request.images.isEmpty,
           effortSet: issues.isEmpty && request.effort != nil, changedProject: repoRoot != openedOnRepo))
-      finished = true
       return true
     }
 

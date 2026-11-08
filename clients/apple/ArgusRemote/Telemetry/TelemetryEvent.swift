@@ -128,6 +128,20 @@ enum TelemetryEvent {
     case switchAgent = "switch_agent"
     /// A stopped agent's tab was closed.
     case closeAgentTab = "close_agent_tab"
+    /// A "New agent" tab was opened, from the tab strip's `+` or the details.
+    case newAgentTab = "new_agent_tab"
+  }
+
+  /// Where the New Session composer was opened from.
+  enum NewSessionSource: String {
+    /// Home's compose button, on the last active project.
+    case home
+    /// A project screen's `+`.
+    case project
+    /// A project row's swipe action or menu on Home.
+    case projectRow = "project_row"
+    /// A project's `+` in the iPad sidebar.
+    case sidebar
   }
 
   /// What was done with the iPad session's side panel.
@@ -203,6 +217,8 @@ enum TelemetryEvent {
   case sessionPanelUsed(action: SessionPanelAction, tab: SessionPanelTab)
   /// A section link on Home was followed, to measure what Home leads people to.
   case homeUsed(action: HomeAction)
+  /// The New Session composer was opened, to measure which way in people use.
+  case newSessionOpened(source: NewSessionSource)
   /// A turn's folded work was opened in a chat; `working` says the agent was still on it.
   case transcriptWorkLogOpened(working: Bool)
   /// A message's menu was used; `success` says the host took the edit or fork (always true for copy).
@@ -289,6 +305,7 @@ enum TelemetryEvent {
     case .sessionUsed: "ios_session_used"
     case .sessionPanelUsed: "ios_session_panel_used"
     case .homeUsed: "ios_home_used"
+    case .newSessionOpened: "ios_new_session_opened"
     case .transcriptWorkLogOpened: "ios_transcript_work_log_opened"
     case .messageAction: "ios_message_action"
     case .chatHistoryUsed: "ios_chat_history_used"
@@ -408,6 +425,8 @@ enum TelemetryEvent {
       ["action": action.rawValue]
     case .sessionPanelUsed(let action, let tab):
       ["action": action.rawValue, "tab": tab.rawValue]
+    case .newSessionOpened(let source):
+      ["source": source.rawValue]
     case .homeUsed(let action):
       ["action": action.rawValue]
     case .fileViewed(let source, let language):

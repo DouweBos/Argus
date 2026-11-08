@@ -16,6 +16,7 @@
 		3C1C0796FCE5D8AA678463BF /* StoppedAgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13099DE3A6A5F9047693B53C /* StoppedAgentView.swift */; };
 		55304875735519F780DBE883 /* RunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6502F79F862A2272184C48C6 /* RunView.swift */; };
 		5891A5D53C0F0C7CEF4DE90D /* QuickRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */; };
+		FA90B6E7D2E7F0414B40A70D /* NewSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0814D7758DD96C699F098851 /* NewSessionView.swift */; };
 		5E7A00000000000000000007 /* ArgusSyntax in Frameworks */ = {isa = PBXBuildFile; productRef = 5E7A00000000000000000005 /* ArgusSyntax */; };
 		5E7A00000000000000000008 /* ArgusSyntax in Frameworks */ = {isa = PBXBuildFile; productRef = 5E7A00000000000000000006 /* ArgusSyntax */; };
 		613A936BB70479302327501E /* AutomationEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D15E7D98AC7167AE4C6BCF68 /* AutomationEditorView.swift */; };
@@ -144,6 +145,7 @@
 		117E737A68AD0170E2CC50F7 /* ProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsView.swift; sourceTree = "<group>"; };
 		13099DE3A6A5F9047693B53C /* StoppedAgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoppedAgentView.swift; sourceTree = "<group>"; };
 		15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickRunView.swift; sourceTree = "<group>"; };
+		0814D7758DD96C699F098851 /* NewSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSessionView.swift; sourceTree = "<group>"; };
 		195DBDEBD1CDBCE511CAA5C8 /* HardwareKeyCatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardwareKeyCatcher.swift; sourceTree = "<group>"; };
 		1D00B47DC68F09613A0A0769 /* ArgusKit */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ArgusKit; sourceTree = SOURCE_ROOT; };
 		20BFB66C676863B8775FDB91 /* ArgusRemoteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArgusRemoteApp.swift; sourceTree = "<group>"; };
@@ -372,6 +374,7 @@
 				21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */,
 				D15E7D98AC7167AE4C6BCF68 /* AutomationEditorView.swift */,
 				15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */,
+				0814D7758DD96C699F098851 /* NewSessionView.swift */,
 				0EF27D5904269DE56D427462 /* StashesView.swift */,
 				2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */,
 				B4A0C0DE00000000000000A2 /* MoreView.swift */,
@@ -849,6 +852,7 @@
 				AD0D5B2D0F246BA5D6CAF9F2 /* AutomationView.swift in Sources */,
 				613A936BB70479302327501E /* AutomationEditorView.swift in Sources */,
 				5891A5D53C0F0C7CEF4DE90D /* QuickRunView.swift in Sources */,
+				FA90B6E7D2E7F0414B40A70D /* NewSessionView.swift in Sources */,
 				61D0A65B0EF57B4FB152AFF6 /* StashesView.swift in Sources */,
 				F70136FC258ED77D2D4D337A /* WarningsView.swift in Sources */,
 				B4A0C0DE00000000000000A1 /* MoreView.swift in Sources */,

@@ -12,8 +12,6 @@ struct ProjectsView: View {
 
   @State private var openingPad = false
   @State private var padToDelete: RemoteSession?
-  /// The project a new session is being started in.
-  @State private var newSessionProject: RemoteProject?
 
   private static let recentAgentLimit = 5
 
@@ -53,6 +51,19 @@ struct ProjectsView: View {
       }
     }
     .navigationTitle("Home")
+    .toolbar {
+      // The Mac sidebar's New Session, on the project last worked in.
+      if host.hasControl, !host.projects.isEmpty {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button {
+            router.push(.newSession(repoRoot: nil))
+            Telemetry.capture(.newSessionOpened(source: .home))
+          } label: {
+            Label("New session", systemImage: Icon.compose)
+          }
+        }
+      }
+    }
     .confirmationDialog(
       "Delete \(padToDelete?.displayName ?? "scratch pad")?",
       isPresented: Binding(
@@ -66,7 +77,6 @@ struct ProjectsView: View {
     } message: {
       Text("Its agents are stopped and every file in its folder is removed.")
     }
-    .sheet(item: $newSessionProject) { newSession($0) }
     .refreshable { await refresh() }
     .liveRefresh(enabled: app.identity != nil && host.connection == .ready) { await refresh() }
     .liveRefresh(enabled: app.identity != nil && host.connection == .ready, every: .seconds(60)) {
@@ -108,13 +118,13 @@ struct ProjectsView: View {
           }
           .swipeActions {
             if host.hasControl {
-              Button("New session", systemImage: Icon.plus) { newSessionProject = project }
+              Button("New session", systemImage: Icon.plus) { newSession(in: project) }
                 .tint(theme.accent)
             }
           }
           .contextMenu {
             if host.hasControl {
-              Button("New session…", systemImage: Icon.plus) { newSessionProject = project }
+              Button("New session…", systemImage: Icon.plus) { newSession(in: project) }
             }
           }
         }
@@ -194,19 +204,9 @@ struct ProjectsView: View {
     }
   }
 
-  private func newSession(_ project: RemoteProject) -> some View {
-    StartComposerSheet(
-      repoRoot: project.repoRoot,
-      sessionId: host.sessionsByRepo[project.repoRoot]?.first { $0.kind == .projectRoot }?.id,
-      workspace: .worktree,
-      defaultMode: app.defaultPermissionMode,
-      onAffordance: { Telemetry.capture(.composerInput($0)) }
-    ) { started, sent in
-      Telemetry.capture(.agentStartSubmitted(sent, openedOn: .worktree))
-      router.push(Route(started))
-      // Count it straight away rather than waiting for the next poll.
-      Task { await host.loadSessions(repoRoot: project.repoRoot) }
-    }
+  private func newSession(in project: RemoteProject) {
+    router.push(.newSession(repoRoot: project.repoRoot))
+    Telemetry.capture(.newSessionOpened(source: .projectRow))
   }
 
   private func open(_ agent: @escaping () async -> RemoteAgentStatus?) {

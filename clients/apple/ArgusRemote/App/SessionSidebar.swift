@@ -11,9 +11,6 @@ struct SessionSidebar: View {
   @Environment(ProposalsStore.self) private var proposals
   @Environment(AutomationsStore.self) private var automations
 
-  /// The project a new session is being started in.
-  @State private var newSessionProject: RemoteProject?
-
   var body: some View {
     List(selection: selection) {
       if !app.hosts.isEmpty {
@@ -49,25 +46,6 @@ struct SessionSidebar: View {
     // `recentAgents` spans every project, so only the sessions cost a fetch.
     .task(id: host.projects.map(\.repoRoot)) {
       for project in host.projects { await host.loadSessions(repoRoot: project.repoRoot) }
-    }
-    .sheet(item: $newSessionProject) { project in
-      StartComposerSheet(
-        repoRoot: project.repoRoot,
-        sessionId: host.sessionsByRepo[project.repoRoot]?.first { $0.kind == .projectRoot }?.id,
-        workspace: .worktree,
-        defaultMode: app.defaultPermissionMode,
-        onAffordance: { Telemetry.capture(.composerInput($0)) }
-      ) { started, sent in
-        Telemetry.capture(.agentStartSubmitted(sent, openedOn: .worktree))
-        let (id, label): (String, String) =
-          switch started {
-          case .agent(let agent): (agent.sessionId, agent.sessionLabel ?? Labels.agentName(agent))
-          case .session(let session): (session.id, SessionActivity.title(session))
-          }
-        router.apply(.session(id: id, label: label, repoRoot: project.repoRoot, projectName: project.name))
-        // Show it straight away rather than waiting for the next poll.
-        Task { await host.loadSessions(repoRoot: project.repoRoot) }
-      }
     }
   }
 
@@ -105,7 +83,8 @@ struct SessionSidebar: View {
       Spacer(minLength: 4)
       if host.hasControl {
         Button {
-          newSessionProject = project
+          router.push(.newSession(repoRoot: project.repoRoot))
+          Telemetry.capture(.newSessionOpened(source: .sidebar))
         } label: {
           Label("New session in \(project.name)", systemImage: Icon.plus).labelStyle(.iconOnly)
         }

@@ -13,13 +13,13 @@ struct SessionDetailsView: View {
   /// The agent in front, for its MCP servers.
   let agentId: String?
   let open: (Route) -> Void
-  let started: (RemoteAgentStatus) -> Void
+  /// Opens the session's "New agent" tab.
+  let newAgent: () -> Void
   let deleted: () -> Void
 
   @State private var renaming: RenameKind?
   @State private var renameValue = ""
   @State private var confirmingDelete = false
-  @State private var startingAgent = false
 
   enum RenameKind { case name, branch }
 
@@ -73,12 +73,6 @@ struct SessionDetailsView: View {
       Button("Cancel", role: .cancel) {}
     } message: {
       Text("Its worktree is removed from your computer and its agents are shut down.")
-    }
-    .sheet(isPresented: $startingAgent) {
-      StartInSessionSheet(session: session) { agent in
-        startingAgent = false
-        started(agent)
-      }
     }
     .task(id: session.id) {
       guard !session.isUnavailable else { return }
@@ -195,7 +189,7 @@ struct SessionDetailsView: View {
     if canStart || !recentChats.isEmpty {
       Section("Agents") {
         if canStart {
-          rowButton("New agent", icon: Icon.plus) { startingAgent = true }
+          rowButton("New agent", icon: Icon.plus) { newAgent() }
         }
         ForEach(recentChats) { chat in
           Button {
@@ -317,30 +311,5 @@ struct McpServersScreen: View {
       .navigationTitle("MCP Servers")
       .navigationBarTitleDisplayMode(.inline)
       .onAppear { Telemetry.capture(.mcpServersOpened) }
-  }
-}
-
-/// The start composer on "this session", able to switch to a new worktree.
-struct StartInSessionSheet: View {
-  @Environment(AppStore.self) private var app
-  @Environment(HostStore.self) private var host
-  @Environment(Router.self) private var router
-  let session: RemoteSession
-  let started: (RemoteAgentStatus) -> Void
-
-  var body: some View {
-    StartComposerSheet(
-      repoRoot: session.isOutsideProjects ? nil : session.repoRoot, sessionId: session.id,
-      workspace: .current, defaultMode: app.defaultPermissionMode,
-      onAffordance: { Telemetry.capture(.composerInput($0)) }
-    ) { outcome, sent in
-      Telemetry.capture(.agentStartSubmitted(sent, openedOn: .current))
-      // A new worktree is another session; open it rather than a tab here.
-      if case .agent(let agent) = outcome, agent.sessionId == session.id {
-        started(agent)
-      } else {
-        router.push(Route(outcome))
-      }
-    }
   }
 }

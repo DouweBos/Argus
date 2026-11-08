@@ -12,7 +12,6 @@ struct ProjectView: View {
   let repoRoot: String
   let name: String
 
-  @State private var creatingSession = false
   @State private var showingStopped = false
   @State private var searchingChats = false
 
@@ -38,16 +37,13 @@ struct ProjectView: View {
       LoadPhase(loaded: host.sessionsByRepo[repoRoot] != nil, error: nil, isEmpty: groups.isEmpty),
       loading: "Reading sessions…"
     ) {
-      EmptyState(
-        icon: Icon.agent,
-        title: "No sessions",
-        body: host.hasControl
-          ? "Start an agent and it gets a session of its own."
-          : "Start an agent in this project from Argus on your computer and it'll appear here."
-      ) {
-        if host.hasControl {
-          Btn(label: "Start agent", icon: Icon.plus, hugs: true) { creatingSession = true }
-        }
+      if host.hasControl {
+        startPane
+      } else {
+        EmptyState(
+          icon: Icon.agent,
+          title: "No sessions",
+          body: "Start an agent in this project from Argus on your computer and it'll appear here.")
       }
     }
     .navigationTitle(name)
@@ -71,9 +67,10 @@ struct ProjectView: View {
       if host.hasControl {
         ToolbarItem(placement: .topBarTrailing) {
           Button {
-            creatingSession = true
+            router.push(.newSession(repoRoot: repoRoot))
+            Telemetry.capture(.newSessionOpened(source: .project))
           } label: {
-            Label("Start agent", systemImage: Icon.plus)
+            Label("New session", systemImage: Icon.plus)
           }
         }
       }
@@ -88,7 +85,6 @@ struct ProjectView: View {
         Telemetry.capture(.chatHistoryUsed(action: .search))
       }
     }
-    .sheet(isPresented: $creatingSession) { startSheet }
     .refreshable {
       await refresh()
       await refreshGitStatus()
@@ -158,8 +154,8 @@ struct ProjectView: View {
   }
 
   /// A new worktree, branched from the project root — able to switch to the root itself.
-  private var startSheet: some View {
-    StartComposerSheet(
+  private var startPane: some View {
+    AgentStartPane(
       repoRoot: repoRoot, sessionId: branchSessionId, workspace: .worktree, defaultMode: app.defaultPermissionMode,
       onAffordance: { Telemetry.capture(.composerInput($0)) }
     ) { started, sent in
