@@ -111,6 +111,7 @@ function route(channel: string, payload: unknown): void {
       break;
     case "exit":
       entry.inflight = false;
+      flushStderr(id, entry, payload as number);
       update(id, entry, (c) => withBackgroundSettled(c, Date.now()));
       save(id);
       flushLive(id);
@@ -342,19 +343,47 @@ function injected(agentId: string, entry: Tracked, payload: McpMessage): void {
   );
 }
 
+const STDERR_TAIL = 20;
+
 function stderr(agentId: string, entry: Tracked, line: string): void {
   if (!line) {
     return;
   }
   const diagnostic = parseCliDiagnostic(line);
+  if (!diagnostic) {
+    // Stderr is the CLI's log channel (MCP SDK notices etc.); it only explains anything once the process dies.
+    const tail = (entry.stderrTail ??= []);
+    tail.push(line);
+    if (tail.length > STDERR_TAIL) {
+      tail.shift();
+    }
+
+    return;
+  }
   update(agentId, entry, (c) =>
     withSystemMessage(c, {
       id: crypto.randomUUID(),
       role: "system",
-      tone: diagnostic ? "warning" : "error",
-      textBlocks: diagnostic
-        ? [diagnostic.title, ...diagnostic.details]
-        : [line],
+      tone: "warning",
+      textBlocks: [diagnostic.title, ...diagnostic.details],
+      toolCalls: [],
+      timestamp: Date.now(),
+    }),
+  );
+}
+
+function flushStderr(agentId: string, entry: Tracked, exitCode: number): void {
+  const tail = entry.stderrTail;
+  entry.stderrTail = undefined;
+  if (exitCode === 0 || !tail?.length) {
+    return;
+  }
+  update(agentId, entry, (c) =>
+    withSystemMessage(c, {
+      id: crypto.randomUUID(),
+      role: "system",
+      tone: "error",
+      textBlocks: [tail.join("\n")],
       toolCalls: [],
       timestamp: Date.now(),
     }),

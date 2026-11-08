@@ -361,6 +361,40 @@ describe("host conversation driver", () => {
     expect(saved.at(-1)?.messageCount).toBe(1);
   });
 
+  it("keeps runner stderr logs out of the transcript of a healthy run", async () => {
+    addAgent();
+    started();
+    line(INIT);
+    emitHostEvent(
+      `agent:stderr:${AGENT}`,
+      "[mcp-sdk] SEP-2352: stored OAuth credential has no issuer",
+    );
+    line(reply("Done."));
+    emitHostEvent(`agent:exit:${AGENT}`, 0);
+
+    expect(texts()).toEqual(["assistant: Done."]);
+  });
+
+  it("shows stderr diagnostics as they arrive and plain stderr once the run dies", async () => {
+    addAgent();
+    started();
+    line(INIT);
+    emitHostEvent(
+      `agent:stderr:${AGENT}`,
+      '[claude-code:unrecognized_model] {"model":"x"}',
+    );
+    emitHostEvent(`agent:stderr:${AGENT}`, "Error: session not found");
+    expect(texts()).toEqual(["system: Unrecognized modelModel: x"]);
+
+    emitHostEvent(`agent:exit:${AGENT}`, 1);
+
+    expect(texts()).toEqual([
+      "system: Unrecognized modelModel: x",
+      "system: Error: session not found",
+    ]);
+    expect(snapshot()?.messages.at(-1)?.tone).toBe("error");
+  });
+
   it("saves the mode and effort a resume should keep", async () => {
     addAgent();
     Object.assign(appState.agents.get(AGENT)!, {

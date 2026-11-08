@@ -32,6 +32,8 @@ export interface Tracked {
   finished?: { durationMs: number; failed: boolean };
   saveTimer?: NodeJS.Timeout;
   titleRequested?: boolean;
+  /** Recent plain stderr lines, shown only if the process dies. */
+  stderrTail?: string[];
 }
 
 const tracked = new Map<string, Tracked>();
