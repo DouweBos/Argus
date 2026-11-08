@@ -65,6 +65,7 @@ import { getRunnerById, resolveDefaultRunner } from "../llm/registry";
 import { resolveModelForAgent } from "../llm/resolve";
 import { toCanonicalPermissionMode } from "../llm/runners/claudeCode/permissionModes";
 import { getMcpAuthToken, getMcpPort } from "../mcp/server";
+import { closeMcpSessionsForSpawn, SPAWN_ID_HEADER } from "../mcp/sessions";
 import { buildMergedMcpServers } from "../mcp/userConfig";
 import { loadArgusConfig } from "../session/argusConfig";
 import { incrementCommandMetric } from "../session/commandMetrics";
@@ -588,6 +589,8 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   const debugLogPath = path.join(agentLogsDir, `${agentId}.debug.log`);
 
   // Build MCP servers map (gated on runner capability).
+  // Names this process to the MCP server, which closes its sessions when it exits.
+  const spawnId = crypto.randomUUID();
   const mcpPort = getMcpPort();
   const mcpToken = getMcpAuthToken();
   const supportsMcp = runner.capabilities().supportsMcp;
@@ -603,6 +606,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
               // tools (spawn_agent, etc.) can attribute spawns to it without
               // the agent having to know its own ID.
               "X-Argus-Agent-Id": agentId,
+              [SPAWN_ID_HEADER]: spawnId,
             },
           },
         })
@@ -882,6 +886,9 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     emitHostEvent(eventChannel, line);
     onStreamLine(agentId, line);
   });
+
+  // Before the guards below: a respawn's old child still owns its own sessions.
+  handle.on("exit", () => closeMcpSessionsForSpawn(spawnId));
 
   handle.on("exit", (exitCode: number) => {
     const agentEntry = appState.agents.get(agentId);

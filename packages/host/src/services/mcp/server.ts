@@ -78,6 +78,14 @@ import { registerIntegrationTools } from "./integrationTools";
 import { findPastAgent, registerPastAgentTools } from "./pastAgentTools";
 import { isGitRepo, collectAllProjects } from "./projectDiscovery";
 import { ensureRepoRegistered } from "./projects";
+import {
+  addMcpSession,
+  closeAllMcpSessions,
+  getMcpSession,
+  hasMcpSession,
+  removeMcpSession,
+  SPAWN_ID_HEADER,
+} from "./sessions";
 
 // ---------------------------------------------------------------------------
 // State
@@ -3246,9 +3254,6 @@ export async function startMcpServer(): Promise<number> {
   // it (via env vars and --mcp-config headers); other local processes cannot.
   mcpAuthToken = crypto.randomBytes(32).toString("hex");
 
-  // Track transports per session for proper lifecycle management.
-  const transports = new Map<string, StreamableHTTPServerTransport>();
-
   httpServer = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://localhost`);
 
@@ -3326,7 +3331,9 @@ export async function startMcpServer(): Promise<number> {
     if (req.method === "POST") {
       // Check for existing session.
       const sessionId = req.headers["mcp-session-id"] as string | undefined;
-      let transport = sessionId ? transports.get(sessionId) : undefined;
+      let transport = sessionId ? getMcpSession(sessionId) : undefined;
+      const spawnId =
+        (req.headers[SPAWN_ID_HEADER] as string | undefined) ?? null;
 
       if (!transport) {
         // New session — create a fresh McpServer + transport pair.
@@ -3345,7 +3352,7 @@ export async function startMcpServer(): Promise<number> {
         transport.onclose = () => {
           const sid = transport!.sessionId;
           if (sid) {
-            transports.delete(sid);
+            removeMcpSession(sid);
           }
         };
 
@@ -3356,13 +3363,13 @@ export async function startMcpServer(): Promise<number> {
 
       // Store after handleRequest — the session ID is generated during
       // the initialize handshake inside handleRequest, not during connect.
-      if (transport.sessionId && !transports.has(transport.sessionId)) {
-        transports.set(transport.sessionId, transport);
+      if (transport.sessionId && !hasMcpSession(transport.sessionId)) {
+        addMcpSession(transport.sessionId, transport, spawnId);
       }
     } else if (req.method === "GET") {
       // SSE stream for server-initiated messages.
       const sessionId = req.headers["mcp-session-id"] as string | undefined;
-      const transport = sessionId ? transports.get(sessionId) : undefined;
+      const transport = sessionId ? getMcpSession(sessionId) : undefined;
       if (!transport) {
         res.writeHead(400);
         res.end("No active session");
@@ -3373,10 +3380,10 @@ export async function startMcpServer(): Promise<number> {
     } else if (req.method === "DELETE") {
       // Session termination.
       const sessionId = req.headers["mcp-session-id"] as string | undefined;
-      const transport = sessionId ? transports.get(sessionId) : undefined;
+      const transport = sessionId ? getMcpSession(sessionId) : undefined;
       if (transport) {
         await transport.handleRequest(req, res);
-        transports.delete(sessionId!);
+        removeMcpSession(sessionId!);
       } else {
         res.writeHead(404);
         res.end("Session not found");
@@ -3412,6 +3419,7 @@ export async function startMcpServer(): Promise<number> {
 /** Stop the MCP server. */
 export function stopMcpServer(): void {
   if (httpServer) {
+    closeAllMcpSessions();
     httpServer.close();
     httpServer = null;
     mcpPort = null;
