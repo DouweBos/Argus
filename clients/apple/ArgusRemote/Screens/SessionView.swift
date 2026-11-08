@@ -119,6 +119,10 @@ struct SessionView: View {
     // Pinned once shown, so the panel's MCP row and a rebuilt screen agree on the agent in front.
     .onChange(of: focusedAgentId, initial: true) { pinFocus() }
     .onChange(of: resolvedSessionId) { pinFocus() }
+    .onAppear {
+      // Back on screen after another one picked: keep that pick rather than this screen's fallback.
+      if let sid = resolvedSessionId, router.focusedAgents[session: sid] == nil { pinFocus() }
+    }
     .onChange(of: agents.map(\.agentId), initial: true) { _, ids in
       let new = ids.filter { !shown.contains($0) && !closed.contains($0) }
       if !new.isEmpty { shown += new }
@@ -334,9 +338,19 @@ struct SessionView: View {
     if on { router.newAgentDrafts.insert(id) } else { router.newAgentDrafts.remove(id) }
   }
 
+  /// The top of the stack on show; a copy left in another tab or under a push must not file its pick,
+  /// and a tab switch with a push lands before the old copy's `onDisappear`.
+  private var isFront: Bool {
+    switch router.frontRoute {
+    case .agent(let id, _): sessionId == nil && id == agentId
+    case .session(let id, _, _): agentId == nil && id == sessionId
+    default: false
+    }
+  }
+
   /// Files the agent in front under its session, once that is known.
   private func pinFocus() {
-    guard let sid = resolvedSessionId else { return }
+    guard isFront, let sid = resolvedSessionId else { return }
     var next = router.focusedAgents
     next.pick(focusedAgentId, sessionId: sid, agentId: agentId)
     if next != router.focusedAgents { router.focusedAgents = next }

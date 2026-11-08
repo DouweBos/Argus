@@ -438,6 +438,8 @@ final class Router {
       show(section)
       return
     }
+    // A stack already showing this agent sees nothing opened, so ask for its tab here.
+    if case .agent(let id, _) = route { focusedAgents.request(agentId: id, sessionId: sessionOfAgent(id)) }
     if isSplit {
       let selection = sessionItem(route) ?? .section(section)
       guard self.section != section || detailProject != nil || sidebarSelection != selection else {
@@ -484,6 +486,9 @@ final class Router {
     detailProject = nil
     detailStack = []
   }
+
+  /// The screen on top of what's showing.
+  var frontRoute: Route? { isSplit ? detailStack.last : paths[section]?.last }
 
   /// True when that agent's screen is already the top of the current stack, so a
   /// repeated notification doesn't stack a second copy of it; brings its tab to the front.
