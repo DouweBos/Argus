@@ -184,6 +184,8 @@ public final class HostStore {
   /// Adopt a live backend and start listening to it.
   public func attach(_ backend: any HostBackend) async {
     pump?.cancel()
+    // An error from while offline (the toast hides then) is about the connection this one replaces.
+    if connection == .offline { lastError = nil }
     self.backend = backend
     connection = .ready
     // A new connection numbers its events from scratch.
