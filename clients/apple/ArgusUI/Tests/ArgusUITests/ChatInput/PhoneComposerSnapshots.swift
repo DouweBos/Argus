@@ -13,8 +13,9 @@
   @MainActor
   @Suite("Phone composer snapshots", .serialized)
   struct PhoneComposerSnapshots {
-    /// Narrowest phone and iPad slide-over/windowed, the common 390, Pro Max, iPhone Duo unfolded
-    /// (portrait and landscape), iPad mini portrait, a windowed iPad, iPad Pro 13" landscape.
+    /// Narrowest phone and iPad slide-over/windowed, the common 390, Pro Max, the iPhone Duo
+    /// simulator's 466×678 screen both ways (its fold state can't be set there), iPad mini
+    /// portrait, a windowed iPad, iPad Pro 13" landscape.
     private static let widths: [CGFloat] = [320, 390, 440, 466, 678, 744, 1024, 1366]
 
     @Test("new session start composer")
