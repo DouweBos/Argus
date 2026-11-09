@@ -1,6 +1,7 @@
 import type { AcpPreset } from "../preset";
 import { ANTIGRAVITY_PRESET } from "./antigravity";
 import { CURSOR_PRESET } from "./cursor";
+import { FX_PRESET } from "./fx";
 import { GEMINI_PRESET } from "./gemini";
 import { GROK_PRESET } from "./grok";
 import { KIRO_PRESET } from "./kiro";
@@ -14,4 +15,5 @@ export const ACP_PRESETS: AcpPreset[] = [
   OPENCODE_PRESET,
   CURSOR_PRESET,
   GROK_PRESET,
+  FX_PRESET,
 ];

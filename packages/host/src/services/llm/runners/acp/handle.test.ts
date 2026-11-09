@@ -408,4 +408,42 @@ describe("acpHandle", () => {
     await signed.waitForInit();
     expect(again.received.some((m) => m.method === "authenticate")).toBe(true);
   });
+
+  it("writes the preset's mode on start even when the agent already reports it", async () => {
+    const agent = fakeAgent({
+      "session/new": () => ({
+        sessionId: "s-1",
+        modes: {
+          currentModeId: "ask",
+          availableModes: [
+            { id: "ask", name: "Ask" },
+            { id: "code", name: "Code" },
+          ],
+        },
+      }),
+    });
+    const h = new AcpHandle({
+      agentId: "a3",
+      child: agent.child,
+      preset: {
+        ...PRESET,
+        modeIds: { ask: "ask", trusted: ["auto", "code"] },
+        setModeOnStart: true,
+      },
+      cwd: "/work",
+      model: null,
+      permissionMode: "ask",
+      resumeRef: null,
+      systemPrompt: "",
+      mcpServers: {},
+      clientVersion: "1",
+    });
+    await h.waitForInit();
+    await h.setPermissionMode("trusted");
+    const modes = agent.received
+      .filter((m) => m.method === "session/set_mode")
+      .map((m) => m.params?.modeId);
+    // The first mode the agent offers wins: `code` on an fx without `auto`.
+    expect(modes).toEqual(["ask", "code"]);
+  });
 });

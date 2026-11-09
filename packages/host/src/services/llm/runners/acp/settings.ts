@@ -85,9 +85,9 @@ export class AcpSessionSettings {
   }
 
   /** The agent's own mode for this Argus mode, and any config it pairs with. */
-  async applyMode(mode: CanonicalPermissionMode): Promise<void> {
+  async applyMode(mode: CanonicalPermissionMode, force = false): Promise<void> {
     const target = this.targetModeId(mode);
-    if (target && target !== this.agentModeId) {
+    if (target && (force || target !== this.agentModeId)) {
       try {
         await this.rpc.request("session/set_mode", {
           sessionId: this.sessionId,
@@ -117,8 +117,9 @@ export class AcpSessionSettings {
   }
 
   private targetModeId(mode: CanonicalPermissionMode): string | null {
-    const preset = this.preset.modeIds?.[mode];
-    if (preset && this.modes.some((m) => m.id === preset)) {
+    const wanted = [this.preset.modeIds?.[mode] ?? []].flat();
+    const preset = wanted.find((id) => this.modes.some((m) => m.id === id));
+    if (preset) {
       return preset;
     }
     const plan = this.planModeId();

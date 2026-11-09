@@ -19,8 +19,10 @@ export interface AcpPreset {
   loginHint: string;
   /** Auth method to call when `session/new` says it needs one. */
   authMethodId?: string | (() => string);
-  /** The agent's own mode id for an Argus mode, set when it offers one. */
-  modeIds?: Partial<Record<CanonicalPermissionMode, string>>;
+  /** The agent's own mode id for an Argus mode (first one it offers wins). */
+  modeIds?: Partial<Record<CanonicalPermissionMode, string[] | string>>;
+  /** The agent reports one mode but enforces a saved one; set it on start regardless. */
+  setModeOnStart?: boolean;
   /** Session config values for an Argus mode (e.g. an autopilot switch). */
   configFor?: (mode: CanonicalPermissionMode) => Record<string, string>;
   /** The agent saves "always allow" beyond the session, so Argus never picks it. */

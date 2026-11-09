@@ -242,6 +242,7 @@ once; Argus starts it in ACP mode and uses its login and settings as they are.
 | **OpenCode**    | `opencode`    | `opencode acp`           | `npm install -g opencode-ai`                      | `opencode auth login`                 |
 | **Cursor**      | `cursor`      | `cursor-agent acp`       | `curl https://cursor.com/install -fsS \| bash`    | `cursor-agent login`                  |
 | **Grok Build**  | `grok`        | `grok agent stdio`       | `npm install -g @xai-official/grok`               | run `grok` once, or set `XAI_API_KEY` |
+| **fx**          | `fx`          | `fx acp`                 | `curl -fsSL https://fx.sh/setup.sh \| bash`       | run `fx` once                         |
 
 The chat works the same as on Claude Code: streamed replies and thinking, tool
 cards, the agent's plan as the todo list, permission prompts, interrupts, the

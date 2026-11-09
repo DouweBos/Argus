@@ -247,7 +247,10 @@ export class AcpHandle extends EventEmitter implements LlmRunnerHandle {
     );
     const agentModel = this.settings.currentModel();
 
-    await this.settings.applyMode(this.mode);
+    await this.settings.applyMode(
+      this.mode,
+      this.preset.setModeOnStart === true,
+    );
     if (this.model && this.model !== agentModel) {
       await this.settings
         .applyModel(this.model)
