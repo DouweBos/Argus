@@ -10,7 +10,7 @@
   },
   "homepage": "https://github.com/DouweBos/Argus",
   "bugs": "https://github.com/DouweBos/Argus/issues",
-  "version": "0.72.0",
+  "version": "0.73.0",
   "type": "module",
   "scripts": {
     "ensure:bridge": "pnpm build:bridge || (test -x native/argus-sim-bridge/argus-sim-bridge && test -x native/argus-sim-input/argus-sim-input)",
