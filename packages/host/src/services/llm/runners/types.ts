@@ -6,8 +6,8 @@
  * own subprocess, wire protocol, transcript format, and capability set; the
  * agent service only sees the normalized handle.
  *
- * Today only the Claude Code runner is registered; this file's shapes are
- * the seam against which future runners will be implemented.
+ * Built-ins: Claude Code and Codex. Their events share Claude Code's
+ * stream-json shape, which every transcript consumer reads.
  */
 
 import type { InitializeResponse } from "./claudeCode/protocol";
@@ -134,6 +134,8 @@ export interface RunnerCapabilities {
   supportsSetEffort: boolean;
   /** Whether the runner supports a graceful interrupt without killing. */
   supportsInterrupt: boolean;
+  /** Whether a running agent can be asked a side question (a forked read-only run). */
+  supportsSideQuestion: boolean;
 }
 
 // ---------------------------------------------------------------------------

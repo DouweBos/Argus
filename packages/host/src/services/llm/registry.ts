@@ -1,8 +1,8 @@
 /**
  * Runner registry.
  *
- * Today the registry holds a single {@link ClaudeCodeRunner}; future runners
- * register themselves at module load. The agent service resolves a runner
+ * Built-in runners (Claude Code, Codex) register at module load; custom
+ * runners derived from them are layered on top. The agent service resolves a runner
  * by id (or falls back to the only registered one) without importing
  * runner-specific modules.
  */
@@ -20,6 +20,7 @@ import {
   saveCustomRunner,
 } from "./customRunners/store";
 import { ClaudeCodeRunner } from "./runners/claudeCode/runner";
+import { CodexRunner } from "./runners/codex/runner";
 import { DerivedRunner } from "./runners/derived";
 
 const runners = new Map<string, LlmRunner>();
@@ -121,4 +122,5 @@ export function deleteCustomRunnerAndSync(id: string): void {
 
 // Register built-in runners on module load, then layer the user's on top.
 registerRunner(new ClaudeCodeRunner());
+registerRunner(new CodexRunner());
 syncCustomRunners();

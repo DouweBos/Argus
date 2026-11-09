@@ -56,7 +56,11 @@ function addAgent(id = AGENT, status = "idle"): void {
     agentId: id,
     sessionId: "s1",
     parentAgentId: null,
-    runner: { id: "claude-code" },
+    runner: {
+      id: "claude-code",
+      displayName: "Claude Code",
+      capabilities: () => ({ supportsTranscriptFork: true }),
+    },
     status,
     inflightPrompts: 0,
   } as unknown as AgentSession);
@@ -188,6 +192,22 @@ describe("conversation actions", () => {
     expect(liveConversation(AGENT)?.sessionId).toBe("cli-2");
     expect(listQueue(AGENT)).toEqual([]);
     expect(sent.at(-1)?.text).toBe("second, edited");
+  });
+
+  it("refuses to rewind a runner that can't fork, leaving the chat whole", async () => {
+    const ids = await twoTurns();
+    const before = texts();
+    appState.agents.get(AGENT)!.runner = {
+      id: "codex",
+      displayName: "Codex",
+      capabilities: () => ({ supportsTranscriptFork: false }),
+    } as unknown as AgentSession["runner"];
+
+    await expect(
+      actions.rewindAgent(AGENT, ids[2]!, { resend: { text: "edit" } }),
+    ).rejects.toBe("Codex can't rewind or fork a conversation");
+    expect(texts()).toEqual(before);
+    expect(restored).toEqual([]);
   });
 
   it("restores the worktree to the message's checkpoint", async () => {

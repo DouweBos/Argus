@@ -80,7 +80,9 @@ struct TranscriptView: View {
       case .fork(let message): ForkMessageSheet(agentKey: agentKey, message: message)
       }
     }
-    .environment(\.transcriptActionsEnabled, HostStore.parseStoppedKey(agentKey) == nil)
+    .environment(
+      \.transcriptActionsEnabled,
+      HostStore.parseStoppedKey(agentKey) == nil && host.supportsTranscriptFork(agentId: agentKey))
     .environment(model)
     .environment(\.transcriptLinks, links)
     .environment(\.toolTextRenderer, toolTextRenderer)
@@ -88,6 +90,7 @@ struct TranscriptView: View {
       landed = false
       controller.onNeedOlder = { loadOlder() }
       await start()
+      await host.loadRunners()
     }
     #if DEBUG
       .task {

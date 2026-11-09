@@ -65,6 +65,8 @@
       .background(theme.bgSecondary.ignoresSafeArea(edges: .bottom))
       .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
       .task(id: composer.agentId) { await composer.load() }
+      // Which affordances the agent's runner supports.
+      .task { await host.loadRunners() }
       .limitHandoffOffer(agentId: composer.agentId, status: composer.status, into: $handoffAccounts)
       .onChange(of: composer.text) { _, value in
         // Collapse outright. Re-measuring an emptied text view has proved too

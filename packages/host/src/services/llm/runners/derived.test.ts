@@ -19,6 +19,7 @@ function baseRunner(): LlmRunner & {
       supportsSetPermissionMode: true,
       supportsSetEffort: true,
       supportsInterrupt: true,
+      supportsSideQuestion: true,
     }),
     preflight: vi.fn(
       async () => ({ ok: true, binPath: "/usr/bin/claude" }) as const,

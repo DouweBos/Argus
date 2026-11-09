@@ -178,7 +178,7 @@ new-agent picker.
 
 | Setting           | Default       | Description                                                                                                                                                                             |
 | ----------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Runner**        | `claude-code` | The CLI/agent that drives sessions. Claude Code is the built-in runner; any [custom runner](#custom-runners) you add appears here too.                                                  |
+| **Runner**        | `claude-code` | The CLI/agent that drives sessions: Claude Code or [Codex](#codex), plus any [custom runner](#custom-runners) you add.                                                                  |
 | **Default model** | _(empty)_     | Optional model id passed to the runner — e.g. `claude-opus-4-7`. Leave blank to let the runner pick its own default. The new-agent picker starts on it when the agent uses this runner. |
 
 Resolution order for the runner (at session creation):
@@ -200,6 +200,30 @@ Resolution order for the model (at every agent spawn):
 5. The runner's own default (custom runners declare one).
 6. Whatever the runner picks if none of the above specify a model.
 
+### Codex
+
+Pick **Codex** as a session's runner to drive it with OpenAI's Codex CLI
+instead of Claude Code. Install it with `npm install -g @openai/codex` and sign
+in with `codex login` first; Argus uses your Codex login and
+`~/.codex/config.toml` as they are.
+
+The chat works the same: tool cards, permission prompts, interrupts, the Argus
+MCP tools, model and effort pickers (the models are the ones your Codex
+account offers), and token usage. Permission modes map onto Codex's sandbox
+and approval policy:
+
+| Mode        | Codex sandbox   | Asks before                              |
+| ----------- | --------------- | ---------------------------------------- |
+| **Ask**     | read-only       | any edit or command that isn't read-only |
+| **Auto**    | workspace-write | whatever Codex decides needs escalating  |
+| **Review**  | workspace-write | commands; edits go through               |
+| **Plan**    | read-only       | nothing — it can't change anything       |
+| **Trusted** | full access     | nothing                                  |
+
+A few things stay Claude Code only, and are hidden on Codex chats: editing or
+forking from an earlier message, and side questions. Codex reports tokens
+but not spend, so a Codex chat's cost reads $0.
+
 ---
 
 ## Custom runners
@@ -216,7 +240,7 @@ the **LLM** section as an app-wide default.
 | Field             | Description                                                                                                                      |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | **Name**          | Shown wherever runners are listed. The id (`custom:<slug>`) is derived from it and never changes afterwards.                     |
-| **Based on**      | The official runner it delegates to. Claude Code today.                                                                          |
+| **Based on**      | The official runner it delegates to: Claude Code or Codex.                                                                       |
 | **Default model** | Used when neither the agent, session, project, nor app default pins a model.                                                     |
 | **Environment**   | Variables layered on top of the base runner's environment for every agent and one-shot call. An empty value _unsets_ a variable. |
 | **Models**        | Models offered in the model picker. Leave empty to fall back to whatever the base runner advertises.                             |

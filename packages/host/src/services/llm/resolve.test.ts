@@ -15,6 +15,7 @@ function fakeRunner(id: string, isCustom = false): LlmRunner {
       supportsSetPermissionMode: true,
       supportsSetEffort: true,
       supportsInterrupt: true,
+      supportsSideQuestion: true,
     }),
     preflight: async () => ({ ok: true, binPath: "/usr/bin/fake" }),
     spawn: async () => ({}) as never,
@@ -83,6 +84,23 @@ describe("resolveRunnerForSession", () => {
     });
 
     expect(runner.id).toBe("custom:apex");
+  });
+
+  it("defaults to Claude Code with Codex also built in", () => {
+    expect(listRunners().some((r) => r.id === "codex")).toBe(true);
+
+    expect(resolveRunnerForSession({ repoRoot: "/repo" }).runner.id).toBe(
+      "claude-code",
+    );
+  });
+
+  it("honours Codex picked for this session", () => {
+    const { runner } = resolveRunnerForSession({
+      repoRoot: "/repo",
+      explicit: { runner: "codex" },
+    });
+
+    expect(runner.id).toBe("codex");
   });
 
   it("falls back to the built-in when the pinned runner is gone", () => {

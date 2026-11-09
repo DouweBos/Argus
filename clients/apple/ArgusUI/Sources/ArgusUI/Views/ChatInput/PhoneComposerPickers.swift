@@ -41,7 +41,7 @@
           icon: Icon.link, tone: composer.linkedProjects.isEmpty ? nil : .accent
         ) { picker = .project }
         .accessibilityLabel(composer.linkedProjects.isEmpty ? "Link project" : "\(composer.linkedProjects.count) linked")
-        if composer.starter == nil {
+        if composer.starter == nil && host.supportsSideQuestion(agentId: composer.agentId) {
           Chip(label: asked == 0 ? "" : "\(asked)", icon: Icon.sideQuestion, tone: asked == 0 ? nil : .accent) {
             picker = .sideQuestion
           }

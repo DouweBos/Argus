@@ -10,6 +10,7 @@ import type {
   ConversationMessage,
   ImageAttachment,
 } from "./types";
+import type { LlmRunner } from "../../llm/runners/types";
 import type { ForkReplayOp } from "@argus/remote-protocol";
 import { emitHostEvent } from "@argus/host/bus";
 import { appState } from "../../../state";
@@ -156,6 +157,8 @@ export async function rewindAgent(
   } = {},
 ): Promise<{ claude_session_id: string | null; restoredPrompt: string }> {
   const agent = requireAgent(agentId);
+  // Before the transcript is cut: a refusal afterwards would lose turns.
+  requireTranscriptFork(agent.runner);
   const conv = requireConversation(agentId);
   const claudeSessionId = conv.sessionId;
   if (!claudeSessionId) {
@@ -217,6 +220,13 @@ export async function rewindAgent(
     claude_session_id: result.claude_session_id,
     restoredPrompt: target.textBlocks.join("\n\n"),
   };
+}
+
+/** Rewind and fork both rebuild the CLI's transcript; Codex can't. */
+export function requireTranscriptFork(runner: LlmRunner): void {
+  if (!runner.capabilities().supportsTranscriptFork) {
+    throw `${runner.displayName} can't rewind or fork a conversation`;
+  }
 }
 
 export interface AgentForkPoint {

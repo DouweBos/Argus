@@ -3,8 +3,7 @@
  *
  * Wraps the Claude Code CLI (`claude --print --output-format stream-json
  * --input-format stream-json --verbose --permission-prompt-tool stdio`)
- * behind the runner-agnostic {@link LlmRunner} interface. This is the only
- * runner registered today.
+ * behind the runner-agnostic {@link LlmRunner} interface.
  */
 
 import type {
@@ -44,6 +43,7 @@ export class ClaudeCodeRunner implements LlmRunner {
       supportsSetPermissionMode: true,
       supportsSetEffort: true,
       supportsInterrupt: true,
+      supportsSideQuestion: true,
     };
   }
 

@@ -147,6 +147,8 @@ export interface EventMap {
     warm: boolean;
     /** Its prompt, and its subagents', carry the conductor guide. */
     conductor_guide: boolean;
+    /** The harness it runs on; a user's own runner is just `custom`. */
+    runner: "claude-code" | "codex" | "custom";
   };
   spare_discarded: {
     reason:

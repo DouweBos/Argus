@@ -6,8 +6,7 @@
  *
  * - {@link resolveRunnerForSession} — runs once at `create_session` time.
  *   Walks explicit per-session pick → project (`.argus.json` `llm.runner`) →
- *   app default → the single built-in runner. Throws when multiple runners are registered and no
- *   level chose one. The chosen runner is stamped onto `Session.runner_id`
+ *   app default → Claude Code (the default built-in). The chosen runner is stamped onto `Session.runner_id`
  *   and is immutable for the session's lifetime.
  *
  * - {@link resolveModelForAgent} — runs at every agent spawn within a
@@ -21,7 +20,7 @@
 
 import type { CanonicalPermissionMode, LlmRunner } from "./runners/types";
 import { warn } from "@argus/host/logger";
-import { getRunnerById, listRunners } from "./registry";
+import { getRunnerById, resolveDefaultRunner } from "./registry";
 
 /**
  * Subset of {@link ArgusConfig} this module needs. Accepts a partial so
@@ -111,26 +110,10 @@ export function resolveRunnerForSession(
     );
   }
 
-  // 3. Built-in fallback. Custom runners are opt-in, so they never become an
-  // implicit default — callers that don't pass an app default (the MCP
-  // `create_session` tool) must still get a working session.
-  const all = listRunners();
-  if (all.length === 0) {
-    throw "No LLM runners are registered";
-  }
-  const builtIns = all.filter((r) => !r.isCustom);
-  if (builtIns.length === 0) {
-    throw "No built-in LLM runners are registered";
-  }
-  if (builtIns.length > 1) {
-    throw `Multiple LLM runners are registered (${builtIns
-      .map((r) => r.id)
-      .join(
-        ", ",
-      )}) but neither the project (.argus.json llm.runner) nor the app default chose one. Set llm.runner in .argus.json or the LLM section of Settings.`;
-  }
-
-  return { runner: builtIns[0]!, defaultModel: null };
+  // 3. Built-in fallback: Claude Code, else the first built-in. Custom
+  // runners are opt-in and never an implicit default, and callers without an
+  // app default (the MCP `create_session` tool) must still get a session.
+  return { runner: resolveDefaultRunner(), defaultModel: null };
 }
 
 export interface ResolveModelArgs {

@@ -34,6 +34,7 @@ function fakeRunner(id: string): LlmRunner {
       supportsSetPermissionMode: true,
       supportsSetEffort: true,
       supportsInterrupt: true,
+      supportsSideQuestion: true,
     }),
     preflight: async () => ({ ok: true, binPath: "/usr/bin/fake" }),
     spawn: async () => ({}) as never,

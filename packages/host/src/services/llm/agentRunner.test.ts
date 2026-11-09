@@ -25,6 +25,7 @@ function fakeRunner(id: string, defaultModel: string | null): LlmRunner {
       supportsSetPermissionMode: true,
       supportsSetEffort: true,
       supportsInterrupt: true,
+      supportsSideQuestion: true,
     }),
     defaultModel: () => defaultModel,
     preflight: async () => ({ ok: true, binPath: "/usr/bin/fake" }),

@@ -160,10 +160,16 @@ public struct RemoteRunner: Codable, Hashable, Sendable, Identifiable {
   public var models: [Model]
   /// What the runner's CLI last reported, kept by the host; nil from older hosts.
   public var reportedModels: [RemoteModelInfo]?
+  /// Rewind and fork a chat; nil from older hosts, where every runner could.
+  public var supportsTranscriptFork: Bool?
+  /// Side questions to a running agent; nil from older hosts, where every runner could.
+  public var supportsSideQuestion: Bool?
 
   enum CodingKeys: String, CodingKey {
     case id, models
     case reportedModels = "reported_models"
+    case supportsTranscriptFork = "supports_transcript_fork"
+    case supportsSideQuestion = "supports_side_question"
     case displayName = "display_name"
     case isCustom = "is_custom"
     case defaultModel = "default_model"

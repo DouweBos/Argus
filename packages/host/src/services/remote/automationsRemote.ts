@@ -220,6 +220,8 @@ export function remoteRunners(): { runners: RemoteRunner[] } {
         supportsFastMode: m.supportsFastMode,
         resolvedModel: m.resolvedModel,
       })),
+      supports_transcript_fork: runner.capabilities().supportsTranscriptFork,
+      supports_side_question: runner.capabilities().supportsSideQuestion,
     })),
   };
 }

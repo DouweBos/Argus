@@ -8,7 +8,11 @@ import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
 import { forkChatInSession, forkSession } from "../../session/manager";
 import { launchAgent, setAgentEffort } from "../agentService";
-import { agentForkPoint, seedForkedConversation } from "./actions";
+import {
+  agentForkPoint,
+  requireTranscriptFork,
+  seedForkedConversation,
+} from "./actions";
 
 export async function forkChatAt(
   agentId: string,
@@ -20,6 +24,7 @@ export async function forkChatAt(
   if (!source) {
     throw `Agent not found: ${agentId}`;
   }
+  requireTranscriptFork(source.runner);
   const point = agentForkPoint(agentId, messageId);
   let sessionId = source.sessionId;
   let resume: string | null;

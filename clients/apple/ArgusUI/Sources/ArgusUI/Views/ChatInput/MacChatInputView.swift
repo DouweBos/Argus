@@ -66,6 +66,8 @@
       .padding(.top, 6)
       .padding(.bottom, 14)
       .task(id: composer.agentId) { await composer.load() }
+      // Which affordances the agent's runner supports.
+      .task { await host.loadRunners() }
       .limitHandoffOffer(agentId: composer.agentId, status: composer.status, into: $handoffAccounts)
       .onChange(of: focusRequest) { _, _ in controller.focus() }
       .onChange(of: composer.text) { _, value in

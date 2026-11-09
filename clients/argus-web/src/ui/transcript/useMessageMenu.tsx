@@ -11,6 +11,7 @@ import type { RemoteMessage } from "../../lib/protocol";
 import { openAgent } from "../../routing/open";
 import { useAgentsStore } from "../../stores/agents";
 import { useConnectionStore } from "../../stores/connection";
+import { useRunnerSupport } from "../../stores/runnerSupport";
 import { capture } from "../../telemetry/telemetry";
 import type { MessageEdit, MessageMenu } from "./TranscriptMessage";
 
@@ -31,6 +32,8 @@ export function useMessageMenu(
   const status = useAgentsStore((s) => s.statusByAgent[agentId]?.status);
   const rewind = useAgentsStore((s) => s.rewind);
   const fork = useAgentsStore((s) => s.fork);
+  // Edit rewinds the transcript, so both it and fork need a runner that can.
+  const { transcriptFork } = useRunnerSupport(agentId);
   const [editing, setEditing] = useState<{
     id: string;
     busy: boolean;
@@ -43,7 +46,7 @@ export function useMessageMenu(
     () =>
       enabled
         ? {
-            canChange: hasControl && live,
+            canChange: hasControl && live && transcriptFork,
             onCopy: (msg) => {
               const text = copyText(msg);
               if (text) {
@@ -59,7 +62,7 @@ export function useMessageMenu(
             onFork: (msg) => setForking(msg),
           }
         : undefined,
-    [enabled, hasControl, live],
+    [enabled, hasControl, live, transcriptFork],
   );
 
   const editFor = useCallback(

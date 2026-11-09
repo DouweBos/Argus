@@ -13,6 +13,8 @@ export const RunnerCapabilities = z.object({
   supportsSetEffort: z.boolean(),
   /** Whether the runner supports a graceful interrupt without killing. */
   supportsInterrupt: z.boolean(),
+  /** Whether a running agent can be asked a side question. */
+  supportsSideQuestion: z.boolean(),
 });
 export type RunnerCapabilities = z.infer<typeof RunnerCapabilities>;
 

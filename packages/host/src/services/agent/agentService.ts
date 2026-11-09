@@ -352,6 +352,7 @@ export async function startAgent(
       session_kind: argusSession.kind,
       warm: false,
       conductor_guide: agentSession.conductorGuide === true,
+      runner: telemetryRunner(agentSession.runner),
     });
   }
 
@@ -369,6 +370,16 @@ export async function startAgent(
   }
 
   return agentInfoOf(agentSession);
+}
+
+function telemetryRunner(
+  runner: LlmRunner,
+): "claude-code" | "codex" | "custom" {
+  if (runner.isCustom) {
+    return "custom";
+  }
+
+  return runner.id === "codex" ? "codex" : "claude-code";
 }
 
 function agentInfoOf(agent: AgentSession): AgentInfo {
@@ -429,6 +440,7 @@ function announceStart(
     session_kind: argusSession.kind,
     warm: true,
     conductor_guide: agent.conductorGuide === true,
+    runner: telemetryRunner(agent.runner),
   });
   emitAgentStatus(agent.agentId, agent.status);
   info(
@@ -817,8 +829,13 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   // Wire the runner's events to the existing IPC channels & vitals
   // -------------------------------------------------------------------------
 
+  // Claude account badges only mean something for runs on a Claude account.
+  const onClaudeAccount = (runner.baseRunnerId ?? runner.id) === "claude-code";
   const noteRunFailure = (outcome: AuthOutcome): void => {
-    if (outcome !== "rate_limited" && outcome !== "reauth") {
+    if (
+      !onClaudeAccount ||
+      (outcome !== "rate_limited" && outcome !== "reauth")
+    ) {
       return;
     }
     // Only the badge moving is worth a UI event — a spent quota repeats on
@@ -870,7 +887,10 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   handle.on("stream-event", (line: string) => {
     // A revoked token or spent quota reaches us as an API error in the stream,
     // not on stderr. The cheap pre-gate skips parsing ordinary lines.
-    if (line.includes('"error"') || line.includes('"is_error":true')) {
+    if (
+      onClaudeAccount &&
+      (line.includes('"error"') || line.includes('"is_error":true'))
+    ) {
       const outcome = classifyStreamLine(line);
       noteRunFailure(outcome);
       if (outcome === "rate_limited") {
@@ -936,7 +956,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
 
     // A clean exit proves the account works again, so a limit or re-auth badge
     // from an earlier run has to go — nothing else would lift it.
-    if (exitCode === 0) {
+    if (exitCode === 0 && onClaudeAccount) {
       clearAuthFailure(accountId);
     }
 

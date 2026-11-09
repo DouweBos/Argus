@@ -452,9 +452,9 @@ to the next level. An unknown `runner` id is logged as a warning and
 the resolver falls back to the app default — handy if a runner is
 removed or renamed across releases.
 
-Today only the `claude-code` runner is registered. The field exists so
-projects can pin a model per-team without each developer configuring
-their machine.
+Built-in runners are `claude-code` and `codex` (see
+[Codex](./app-settings.md#codex)); custom runners use their `custom:<slug>`
+id. With nothing set at any level, sessions run on `claude-code`.
 
 ---
 

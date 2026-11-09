@@ -56,6 +56,7 @@ struct AgentView: View {
       }
     }
     .background(theme.bg.ignoresSafeArea())
+    .task { await host.loadRunners() }
     // Handoff: the Mac this agent runs on offers to take it back over.
     .userActivity(Handoff.activityType, isActive: handoff != nil) { activity in
       guard let handoff else { return }
@@ -114,9 +115,10 @@ struct AgentView: View {
     }
   }
 
-  /// Copy for any message; edit and fork only while the agent runs and this phone has control.
+  /// Copy for any message; edit and fork only while the agent runs, this phone
+  /// has control and the agent's runner can rewind its chat.
   private var messageMenu: MessageMenu {
-    MessageMenu(canChange: host.hasControl && !isGone) { action, message in
+    MessageMenu(canChange: host.hasControl && !isGone && host.supportsTranscriptFork(agentId: agentId)) { action, message in
       switch action {
       case .copy:
         guard let text = message.copyText else { return }

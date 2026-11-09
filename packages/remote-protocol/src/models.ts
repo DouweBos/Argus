@@ -764,6 +764,10 @@ export const RemoteRunner = z.object({
    * across restarts — a start's model and effort before any agent has run.
    */
   reported_models: z.array(RemoteModelInfo).optional(),
+  /** Rewind and fork a chat; absent from older hosts, where every runner could. */
+  supports_transcript_fork: z.boolean().optional(),
+  /** Side questions to a running agent; absent from older hosts. */
+  supports_side_question: z.boolean().optional(),
 });
 export type RemoteRunner = z.infer<typeof RemoteRunner>;
 

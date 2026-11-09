@@ -41,6 +41,7 @@ import { useAgentsStore } from "../stores/agents";
 import { useConnectionStore } from "../stores/connection";
 import { useHuddleStore } from "../stores/huddle";
 import { useProjectsStore } from "../stores/projects";
+import { useRunnerSupport } from "../stores/runnerSupport";
 import { useTranscriptsStore } from "../stores/transcripts";
 import { AccountChip } from "./AccountChip";
 import { SideQuestionsDialog } from "./SideQuestionsDialog";
@@ -140,6 +141,7 @@ export function ChatInput({
 }) {
   const status = useAgentsStore((s) => s.statusByAgent[agentId]);
   const caps = useAgentsStore((s) => s.capabilitiesByAgent[agentId]);
+  const { sideQuestion } = useRunnerSupport(agentId);
   const effort = useAgentsStore((s) => s.effortByAgent[agentId] ?? null);
   const followUps = useTranscriptsStore(
     (s) => s.followUpsByAgent[agentId] ?? NO_FOLLOW_UPS,
@@ -648,7 +650,7 @@ export function ChatInput({
         </div>
       )}
       <AccountChip agentId={agentId} sessionId={sessionId} />
-      {hasControl && (
+      {hasControl && sideQuestion && (
         <Chip
           bare
           interactive

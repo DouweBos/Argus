@@ -67,6 +67,22 @@ extension HostStore {
     return runners.first { $0.id == id }?.reportedModels ?? []
   }
 
+  /// Whether an agent's runner can rewind and fork its chat. Unknown runners
+  /// and older hosts, which don't say, count as able.
+  public func supportsTranscriptFork(agentId: String) -> Bool {
+    runner(ofAgent: agentId)?.supportsTranscriptFork ?? true
+  }
+
+  /// Whether an agent's runner takes side questions; unknown counts as able.
+  public func supportsSideQuestion(agentId: String) -> Bool {
+    runner(ofAgent: agentId)?.supportsSideQuestion ?? true
+  }
+
+  private func runner(ofAgent agentId: String) -> RemoteRunner? {
+    let id = statusByAgent[agentId]?.runnerId ?? "claude-code"
+    return runners.first { $0.id == id }
+  }
+
   /// Backstop for a change nothing announced (a dropped event, an older
   /// computer): refetch the projects and every session list already held.
   public func refreshHeldLists() async {

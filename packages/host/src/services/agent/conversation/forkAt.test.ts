@@ -14,6 +14,7 @@ vi.mock("../agentService", () => ({
   setAgentEffort: vi.fn(async () => {}),
 }));
 vi.mock("./actions", () => ({
+  requireTranscriptFork: vi.fn(),
   agentForkPoint: vi.fn(() => ({
     timestampMs: 1,
     turnNumber: 1,
