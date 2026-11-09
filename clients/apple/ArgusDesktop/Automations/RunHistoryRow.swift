@@ -15,7 +15,7 @@ struct RunHistoryRow: View {
   var body: some View {
     HStack(spacing: 10) {
       Circle().fill(run.unreadReport ? theme.accent : .clear).frame(width: 6, height: 6)
-      Badge(label: run.status.label, tone: run.status.tone)
+      RunStatusBadge(run.status)
       Button(action: open) {
         VStack(alignment: .leading, spacing: 2) {
           Text(AutomationText.timestamp(run.startedAt))
@@ -30,10 +30,11 @@ struct RunHistoryRow: View {
       .buttonStyle(.argusPlain)
       Text(Labels.runDuration(run)).monospacedDigit().foregroundStyle(.secondary)
       Text(Labels.runCost(run)).monospacedDigit().foregroundStyle(.secondary).frame(width: 56, alignment: .trailing)
+      // One width for both, so the columns before them don't shift between rows.
       if run.isActive {
-        Button("Cancel") { Task { await store.cancelRun(id: run.id) } }
+        Button { Task { await store.cancelRun(id: run.id) } } label: { actionLabel("Cancel") }
       } else {
-        Button("Delete") { confirmingDelete = true }
+        Button { confirmingDelete = true } label: { actionLabel("Delete") }
       }
     }
     .confirmationDialog("Delete this run?", isPresented: $confirmingDelete) {
@@ -42,6 +43,10 @@ struct RunHistoryRow: View {
     } message: {
       Text("The run, its report and any proposals it raised are removed. This cannot be undone.")
     }
+  }
+
+  private func actionLabel(_ title: String) -> some View {
+    Text(title).frame(minWidth: 52)
   }
 }
 
