@@ -35,7 +35,7 @@ export interface MacScene {
 export const MAC_SCENES: Record<string, MacScene> = {
   parallel: {
     routes: { "/": "/agents" },
-    crop: { x: 560, y: 120, w: 2096, h: 840 },
+    crop: { x: 560, y: 120, w: 2096, h: 440 },
   },
   review: {
     clicks: [{ x: 614, y: 412 }],
