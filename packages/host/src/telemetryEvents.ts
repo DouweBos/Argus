@@ -67,6 +67,7 @@ export const TELEMETRY_RUNNERS = [
   "antigravity",
   "kiro",
   "opencode",
+  "cursor",
 ] as const;
 export type TelemetryRunner = (typeof TELEMETRY_RUNNERS)[number] | "custom";
 

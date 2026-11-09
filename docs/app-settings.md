@@ -240,6 +240,7 @@ once; Argus starts it in ACP mode and uses its login and settings as they are.
 | **Antigravity** | `antigravity` | `agy acp` (1.5 or newer) | the Antigravity CLI from antigravity.google       | `agy acp --login`     |
 | **Kiro**        | `kiro`        | `kiro-cli acp`           | `curl -fsSL https://cli.kiro.dev/install \| bash` | `kiro-cli login`      |
 | **OpenCode**    | `opencode`    | `opencode acp`           | `npm install -g opencode-ai`                      | `opencode auth login` |
+| **Cursor**      | `cursor`      | `cursor-agent acp`       | `curl https://cursor.com/install -fsS \| bash`    | `cursor-agent login`  |
 
 The chat works the same as on Claude Code: streamed replies and thinking, tool
 cards, the agent's plan as the todo list, permission prompts, interrupts, the
@@ -261,8 +262,9 @@ Plan mode switches the agent into its own plan mode when it has one. Picking
 Things that differ from Claude Code, and are hidden on ACP chats: editing or
 forking from an earlier message, side questions and the effort picker. A
 message sent while the agent is busy waits for its turn to end. The Argus MCP
-tools reach agents that take HTTP MCP servers; agents that don't still run,
-without them. Resuming a chat needs the agent to support it; one that can't
+tools reach agents that take HTTP MCP servers; agents that don't (Cursor, so
+far) still run, without them, and keep the MCP servers configured in the
+agent itself. Resuming a chat needs the agent to support it; one that can't
 starts fresh and says so.
 
 ---
