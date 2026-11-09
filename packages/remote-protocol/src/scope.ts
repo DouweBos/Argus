@@ -125,6 +125,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "agents.queue_update": agent(),
   "agents.queue_send_now": agent(),
   "agents.rewind": agent(),
+  "agents.ask_side": agent(),
   "permission.respond": agent(),
 
   // Keyed by a history id, not an agent id — nothing a scope can name, and a

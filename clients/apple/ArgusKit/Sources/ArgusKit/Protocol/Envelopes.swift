@@ -88,6 +88,7 @@ public enum RemoteMethod: String, Codable, Sendable {
   case agentsQueueSendNow = "agents.queue_send_now"
   case agentsRewind = "agents.rewind"
   case agentsFork = "agents.fork"
+  case agentsAskSide = "agents.ask_side"
   case agentsHistorySearch = "agents.history_search"
   case agentsHistoryDelete = "agents.history_delete"
 

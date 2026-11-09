@@ -38,10 +38,12 @@ import type {
   RemoteSlashCommand,
 } from "../lib/protocol";
 import { useAgentsStore } from "../stores/agents";
+import { useConnectionStore } from "../stores/connection";
 import { useHuddleStore } from "../stores/huddle";
 import { useProjectsStore } from "../stores/projects";
 import { useTranscriptsStore } from "../stores/transcripts";
 import { AccountChip } from "./AccountChip";
+import { SideQuestionsDialog } from "./SideQuestionsDialog";
 import { useMentionPicker } from "./useMentionPicker";
 
 /** The computer never lets a remote switch an agent into Trusted, so it isn't offered. */
@@ -153,6 +155,8 @@ export function ChatInput({
   const projects = useProjectsStore((s) => s.projects);
   const refreshProjects = useProjectsStore((s) => s.refreshProjects);
   const setHuddleTyping = useHuddleStore((s) => s.setHuddleTyping);
+  const hasControl = useConnectionStore((s) => s.hasControl());
+  const [askingSide, setAskingSide] = useState(false);
 
   // A no-op outside a huddle, so the composer reports either way and never has
   // to know which kind of connection it is sitting on.
@@ -644,6 +648,18 @@ export function ChatInput({
         </div>
       )}
       <AccountChip agentId={agentId} sessionId={sessionId} />
+      {hasControl && (
+        <Chip
+          bare
+          interactive
+          muted
+          leading={<Icons.QuestionIcon size={12} />}
+          title="Ask a side question without interrupting the agent"
+          onClick={() => setAskingSide(true)}
+        >
+          Side question
+        </Chip>
+      )}
       <div className="aw-picker-anchor" ref={projectChipRef}>
         <Chip
           bare
@@ -724,77 +740,85 @@ export function ChatInput({
   );
 
   return (
-    <ChatInputShell
-      above={above}
-      actions={actions}
-      trailing={trailing}
-      dragOver={dragOver}
-      onDragEnter={(e) => {
-        if (Array.from(e.dataTransfer?.types ?? []).includes("Files")) {
-          e.preventDefault();
-          dragDepth.current += 1;
-          setDragOver(true);
-        }
-      }}
-      onDragOver={(e) => {
-        if (Array.from(e.dataTransfer?.types ?? []).includes("Files")) {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = "copy";
-        }
-      }}
-      onDragLeave={() => {
-        dragDepth.current = Math.max(0, dragDepth.current - 1);
-        if (dragDepth.current === 0) {
-          setDragOver(false);
-        }
-      }}
-      onDrop={(e) => {
-        const files = e.dataTransfer?.files;
-        dragDepth.current = 0;
-        setDragOver(false);
-        if (files && files.length > 0) {
-          e.preventDefault();
-          addImageFiles(Array.from(files)).catch(() => {});
-        }
-      }}
-    >
-      <textarea
-        ref={textareaRef}
-        aria-label="Message the agent"
-        className="aw-chat-textarea"
-        placeholder={
-          sendsOnEnter
-            ? "Ask anything, @ for files, / for commands"
-            : "Ask anything, @ for files, / for commands (⌘/Ctrl+Enter to send)"
-        }
-        rows={1}
-        onInput={handleInput}
-        onKeyDown={handleKeyDown}
-        onPaste={(e) => {
-          const imgs = extractImageFilesFromClipboard(e);
-          if (imgs.length > 0) {
+    <>
+      <ChatInputShell
+        above={above}
+        actions={actions}
+        trailing={trailing}
+        dragOver={dragOver}
+        onDragEnter={(e) => {
+          if (Array.from(e.dataTransfer?.types ?? []).includes("Files")) {
             e.preventDefault();
-            addImageFiles(imgs).catch(() => {});
+            dragDepth.current += 1;
+            setDragOver(true);
           }
         }}
-        onSelect={() => updateMentions(textareaRef.current)}
-      />
-      <input
-        ref={fileInputRef}
-        accept={ACCEPTED_IMAGE_TYPES}
-        className="aw-hidden-file-input"
-        multiple
-        tabIndex={-1}
-        type="file"
-        onChange={(e) => {
-          const files = e.target.files;
-          if (files) {
+        onDragOver={(e) => {
+          if (Array.from(e.dataTransfer?.types ?? []).includes("Files")) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "copy";
+          }
+        }}
+        onDragLeave={() => {
+          dragDepth.current = Math.max(0, dragDepth.current - 1);
+          if (dragDepth.current === 0) {
+            setDragOver(false);
+          }
+        }}
+        onDrop={(e) => {
+          const files = e.dataTransfer?.files;
+          dragDepth.current = 0;
+          setDragOver(false);
+          if (files && files.length > 0) {
+            e.preventDefault();
             addImageFiles(Array.from(files)).catch(() => {});
           }
-          e.target.value = "";
-          textareaRef.current?.focus();
         }}
-      />
-    </ChatInputShell>
+      >
+        <textarea
+          ref={textareaRef}
+          aria-label="Message the agent"
+          className="aw-chat-textarea"
+          placeholder={
+            sendsOnEnter
+              ? "Ask anything, @ for files, / for commands"
+              : "Ask anything, @ for files, / for commands (⌘/Ctrl+Enter to send)"
+          }
+          rows={1}
+          onInput={handleInput}
+          onKeyDown={handleKeyDown}
+          onPaste={(e) => {
+            const imgs = extractImageFilesFromClipboard(e);
+            if (imgs.length > 0) {
+              e.preventDefault();
+              addImageFiles(imgs).catch(() => {});
+            }
+          }}
+          onSelect={() => updateMentions(textareaRef.current)}
+        />
+        <input
+          ref={fileInputRef}
+          accept={ACCEPTED_IMAGE_TYPES}
+          className="aw-hidden-file-input"
+          multiple
+          tabIndex={-1}
+          type="file"
+          onChange={(e) => {
+            const files = e.target.files;
+            if (files) {
+              addImageFiles(Array.from(files)).catch(() => {});
+            }
+            e.target.value = "";
+            textareaRef.current?.focus();
+          }}
+        />
+      </ChatInputShell>
+      {askingSide && (
+        <SideQuestionsDialog
+          agentId={agentId}
+          onClose={() => setAskingSide(false)}
+        />
+      )}
+    </>
   );
 }

@@ -119,6 +119,7 @@ export * from "./components/ContextCard/ContextCard";
 export * from "./components/FlatIconButton/FlatIconButton";
 export * from "./components/ProjectBadge/ProjectBadge";
 export * from "./components/SidePanel/SidePanel";
+export * from "./components/SideQuestionPanel/SideQuestionPanel";
 export * from "./components/GuestList/GuestList";
 export * from "./components/HostBadge/HostBadge";
 export * from "./components/HostConnectionList/HostConnectionList";

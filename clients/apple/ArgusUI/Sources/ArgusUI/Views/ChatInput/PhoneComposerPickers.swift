@@ -1,10 +1,11 @@
 #if os(iOS)
+  import ArgusCore
   import ArgusKit
   import SwiftUI
 
   /// Which sheet the phone composer's chip row has open.
   enum PhoneComposerPicker: String, Identifiable {
-    case model, account, mode, effort, project
+    case model, account, mode, effort, project, sideQuestion
     var id: String { rawValue }
   }
 
@@ -14,6 +15,9 @@
   struct PhoneComposerChips: View {
     let composer: ComposerModel
     @Binding var picker: PhoneComposerPicker?
+    @Environment(HostStore.self) private var host
+
+    private var asked: Int { host.sideQuestionsByAgent[composer.agentId]?.count ?? 0 }
 
     var body: some View {
       ChipFlowLayout(spacing: 6, lineSpacing: 6) {
@@ -37,6 +41,12 @@
           icon: Icon.link, tone: composer.linkedProjects.isEmpty ? nil : .accent
         ) { picker = .project }
         .accessibilityLabel(composer.linkedProjects.isEmpty ? "Link project" : "\(composer.linkedProjects.count) linked")
+        if composer.starter == nil {
+          Chip(label: asked == 0 ? "" : "\(asked)", icon: Icon.sideQuestion, tone: asked == 0 ? nil : .accent) {
+            picker = .sideQuestion
+          }
+          .accessibilityLabel("Side question")
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -100,6 +110,10 @@
           multi: true,
           emptyMessage: "No other projects"
         ) { composer.toggleLink($0) }
+      case .sideQuestion:
+        SideQuestionPanel(agentId: composer.agentId) { composer.onAffordance?(.sideAnswerSent) }
+          .padding()
+          .presentationDetents([.medium, .large])
       }
     }
   }

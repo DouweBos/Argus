@@ -159,6 +159,8 @@ export const REMOTE_METHODS = {
   "agents.rewind": "control",
   /** Fork the chat at a message into a new agent, here or in a new session. */
   "agents.fork": "control",
+  /** A side question spends tokens on a fork of the agent's context. */
+  "agents.ask_side": "control",
   /** Create a new session inside an existing project (never a new project). */
   "sessions.create": "control",
   /** Create a scratch pad: a session in its own directory, outside any project. */

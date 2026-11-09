@@ -44,6 +44,7 @@ import {
 } from "./claudeAccounts";
 import { installNotifications } from "./notifications";
 import { resetSettings } from "./settings";
+import { resetSideQuestions } from "./sideQuestions";
 import { resetUsage } from "./usage";
 import {
   receiveListedAgentStatus,
@@ -171,6 +172,7 @@ export function resetHostStores(): void {
   resetIssues();
   resetBranches();
   resetPullRequests();
+  resetSideQuestions();
 }
 
 let installed = false;

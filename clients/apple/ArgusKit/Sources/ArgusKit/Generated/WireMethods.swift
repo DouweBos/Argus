@@ -110,6 +110,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AgentsAskSideParams: Codable, Sendable {
+      public var agentId: String
+      public var question: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case question = "question"
+      }
+
+      public init(agentId: String, question: String) {
+        self.agentId = agentId
+        self.question = question
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(question, forKey: .question)
+      }
+    }
+
+    public struct AgentsAskSideResult: Codable, Sendable {
+      public var answer: String
+
+      enum CodingKeys: String, CodingKey {
+        case answer = "answer"
+      }
+
+      public init(answer: String) {
+        self.answer = answer
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(answer, forKey: .answer)
+      }
+    }
+
     public struct AgentsCapabilitiesParams: Codable, Sendable {
       public var agentId: String
 
@@ -6678,6 +6716,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AccountSyncParams
       public typealias Result = ArgusProtocol.MethodsTypes.AccountSyncResult
       public static let name = "account.sync"
+    }
+
+    public enum AgentsAskSide: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsAskSideParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsAskSideResult
+      public static let name = "agents.ask_side"
     }
 
     public enum AgentsCapabilities: RemoteCommand {

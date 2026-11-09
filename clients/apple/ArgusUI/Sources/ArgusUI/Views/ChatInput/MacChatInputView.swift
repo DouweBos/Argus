@@ -22,6 +22,7 @@
     @State var height = ComposerField.minHeight
     @State var isDropTarget = false
     @State var handoffAccounts: [ArgusProtocol.LimitHandoffAccount] = []
+    @State var showingSideQuestion = false
 
     init(
       host: HostStore, agentId: String, sessionId: String?, onAffordance: ((ChatInputAffordance) -> Void)?,

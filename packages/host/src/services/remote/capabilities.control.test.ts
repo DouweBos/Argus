@@ -49,6 +49,9 @@ vi.mock("../agent/conversation/forkAt", () => ({
     agent: { agent_id: "a1" },
   })),
 }));
+vi.mock("../agent/sideQuestion", () => ({
+  askSideQuestion: vi.fn(async () => ({ answer: "it's in foo.ts" })),
+}));
 vi.mock("../agent/chatHistory", () => ({
   deleteHistoryEntry: vi.fn(),
   searchChatHistory: vi.fn(() => [
@@ -202,6 +205,7 @@ const { rewindAgent } = vi.mocked(
   await import("../agent/conversation/actions"),
 );
 const { forkChatAt } = vi.mocked(await import("../agent/conversation/forkAt"));
+const { askSideQuestion } = vi.mocked(await import("../agent/sideQuestion"));
 const { deleteHistoryEntry } = vi.mocked(await import("../agent/chatHistory"));
 const { setAgentPinned, setHistoryPinned } = vi.mocked(
   await import("../agent/pins/pins"),
@@ -257,6 +261,7 @@ const CONTROL_METHODS = [
   "agents.capabilities",
   "agents.rewind",
   "agents.fork",
+  "agents.ask_side",
   "agents.history_delete",
   "permission.respond",
 ] as const;
@@ -475,6 +480,20 @@ describe("control capability gating", () => {
     });
     expect(res.session_id).toBe("s1");
     expect(res.agent.agent_id).toBe("a1");
+  });
+
+  it("answers a side question without touching the agent", async () => {
+    const ctx = makeCtx(["monitor", "control"]);
+    const res = MethodResult["agents.ask_side"].parse(
+      await dispatch(
+        "agents.ask_side",
+        { agent_id: "a1", question: "where is it?" },
+        ctx,
+      ),
+    );
+    expect(askSideQuestion).toHaveBeenCalledWith("a1", "where is it?");
+    expect(res.answer).toBe("it's in foo.ts");
+    expect(sendAgentMessage).not.toHaveBeenCalled();
   });
 
   it("searches and deletes saved chats", async () => {

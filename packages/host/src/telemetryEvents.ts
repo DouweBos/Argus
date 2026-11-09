@@ -131,6 +131,12 @@ export interface EventMap {
     is_fresh_start: boolean;
     keep_turn_number: number;
   };
+  agent_side_question: {
+    /** The agent was mid-turn when asked. */
+    agent_busy: boolean;
+    duration_bucket: "<10s" | "10-30s" | "30-90s" | "90s+";
+    success: boolean;
+  };
   agent_started: {
     has_model: boolean;
     has_parent: boolean;

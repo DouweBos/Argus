@@ -1497,6 +1497,14 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return { session_id: forked.sessionId, agent: toRemoteAgentStatus(agent) };
   },
 
+  "agents.ask_side": async (params) => {
+    const { agent_id, question } = parse("agents.ask_side", params);
+    requireAgent(agent_id);
+    const { askSideQuestion } = await import("../agent/sideQuestion");
+
+    return control(() => askSideQuestion(agent_id, question));
+  },
+
   "sessions.create": async (params) => {
     const {
       repo_root,

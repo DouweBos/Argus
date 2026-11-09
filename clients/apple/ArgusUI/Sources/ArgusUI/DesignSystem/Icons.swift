@@ -62,6 +62,7 @@ public enum Icon {
   public static let clock = "clock"
   public static let envelope = "tray"
   public static let chat = "bubble.left"
+  public static let sideQuestion = "bubble.left.and.text.bubble.right"
   public static let play = "play.fill"
   public static let link = "link"
   /// A tracker issue (Linear).

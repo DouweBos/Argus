@@ -329,6 +329,14 @@ export const MethodParams = {
     description: z.string().max(500).optional(),
     branch: z.string().max(200).optional(),
   }),
+  /**
+   * Ask an agent a side question on a read-only fork of its context. The
+   * answer comes back here; nothing reaches the agent's own conversation.
+   */
+  "agents.ask_side": z.object({
+    agent_id: z.string(),
+    question: z.string().min(1).max(4000),
+  }),
   "scratch_pads.create": z.object({
     name: z.string().trim().max(80).optional(),
   }),
@@ -909,6 +917,7 @@ export const MethodResult = {
   "agents.queue_send_now": z.object({ mid_turn: z.boolean() }),
   "agents.rewind": z.object({ accepted: z.boolean() }),
   "agents.fork": z.object({ session_id: z.string(), agent: RemoteAgentStatus }),
+  "agents.ask_side": z.object({ answer: z.string() }),
   "sessions.create": z.object({ session: RemoteSession }),
   "scratch_pads.create": z.object({ session: RemoteSession }),
   "sessions.files": z.object({ files: z.array(z.string()) }),

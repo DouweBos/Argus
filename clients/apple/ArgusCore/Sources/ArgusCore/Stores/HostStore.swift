@@ -62,6 +62,8 @@ public final class HostStore {
   public internal(set) var todosByAgent: [String: [RemoteTodo]] = [:]
   /// Replies suggested once each agent's last turn ended; absent when none.
   public internal(set) var followUpsByAgent: [String: [String]] = [:]
+  /// Side questions asked of each agent, oldest first; never part of its transcript.
+  public internal(set) var sideQuestionsByAgent: [String: [SideQuestion]] = [:]
   /// Name of the tool currently executing per agent — drives the activity row.
   public internal(set) var pendingToolByAgent: [String: String] = [:]
   /// Cursor for the next older page per agent; nil means the start is reached.
@@ -246,6 +248,7 @@ public final class HostStore {
     tasksByAgent = [:]
     todosByAgent = [:]
     followUpsByAgent = [:]
+    sideQuestionsByAgent = [:]
     pendingToolByAgent = [:]
     prevBeforeByAgent = [:]
     transcriptErrorByAgent = [:]

@@ -11,4 +11,6 @@ public enum ChatInputAffordance: String, Sendable {
   case interruptShortcut = "interrupt_shortcut"
   /// A suggested reply filled the input, by tap, click or Tab.
   case followUp = "follow_up"
+  /// A side question's answer sent into the chat.
+  case sideAnswerSent = "side_answer_sent"
 }

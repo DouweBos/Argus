@@ -18,6 +18,10 @@
         permissionMenu
         ComposerPillDivider()
         projectMenu
+        if composer.starter == nil {
+          ComposerPillDivider()
+          sideQuestionButton
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .disabled(!composer.isEnabled)
@@ -85,6 +89,27 @@
       .buttonStyle(.argusPlain)
       .fixedSize()
       .help("Reasoning effort")
+    }
+
+    private var sideQuestionButton: some View {
+      let asked = host.sideQuestionsByAgent[composer.agentId]?.count ?? 0
+      return Button {
+        showingSideQuestion.toggle()
+      } label: {
+        ComposerPillLabel(
+          icon: Icon.sideQuestion, title: asked == 0 ? nil : "\(asked)", accent: asked > 0, chevron: false,
+          open: showingSideQuestion)
+      }
+      .buttonStyle(.argusPlain)
+      .fixedSize()
+      .help("Ask a side question without interrupting the agent")
+      .accessibilityLabel("Side question")
+      .popover(isPresented: $showingSideQuestion, arrowEdge: .top) {
+        SideQuestionPanel(agentId: composer.agentId) { composer.onAffordance?(.sideAnswerSent) }
+          .padding(14)
+          .frame(width: 420)
+          .frame(maxHeight: 520)
+      }
     }
 
     private var projectMenu: some View {
