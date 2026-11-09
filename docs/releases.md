@@ -1,6 +1,7 @@
 # Releasing Argus
 
-Cuts a signed + notarized macOS arm64 build, uploads it to a GitHub release.
+Cuts a signed + notarized arm64 build of Argus for Mac (`fastlane mac
+mac_app_release`) and uploads it to a GitHub release.
 
 ## TL;DR
 
@@ -19,8 +20,8 @@ Cuts a signed + notarized macOS arm64 build, uploads it to a GitHub release.
    - If nothing changed (no pending changesets), exit cleanly. Otherwise:
    - Commit `chore: release vX.Y.Z`, tag `vX.Y.Z`, push both back to `main`.
    - Build, sign with Developer ID, notarize via App Store Connect API, staple.
-   - Publish a GitHub release with the `.dmg` + `.zip` and the CHANGELOG section
-     as the release body.
+   - Publish a GitHub release with the `.dmg`, the `.zip` and the channel's
+     Sparkle appcast, and the CHANGELOG section as the release body.
 
 3. Send the `.dmg` link to friends.
 
@@ -65,20 +66,28 @@ protection rule, or the rule must allow that account to push directly.
 
 The release workflow takes a **channel** input: `production`, `beta`, or `alpha`.
 
-| Channel      | Branch      | Tag format        | Feed file        | Pre-release flag | Subscribable in app | Side effects                             |
-| ------------ | ----------- | ----------------- | ---------------- | ---------------- | ------------------- | ---------------------------------------- |
-| `production` | `main` only | `v0.20.0`         | `latest-mac.yml` | no               | yes (default)       | Pushes commit + tag, syncs `houwert.dev` |
-| `beta`       | `main` only | `v0.20.0-beta.0`  | `beta-mac.yml`   | yes              | yes                 | Pushes tag only; nothing else            |
-| `alpha`      | any branch  | `v0.20.0-alpha.0` | `alpha-mac.yml`  | yes              | no — manual install | Pushes tag only; nothing else            |
+| Channel      | Branch      | Tag format        | Feed file              | Pre-release flag | Subscribable in app | Side effects                             |
+| ------------ | ----------- | ----------------- | ---------------------- | ---------------- | ------------------- | ---------------------------------------- |
+| `production` | `main` only | `v0.20.0`         | `argus-mac-latest.xml` | no               | yes (default)       | Pushes commit + tag, syncs `houwert.dev` |
+| `beta`       | `main` only | `v0.20.0-beta.0`  | `argus-mac-beta.xml`   | yes              | yes                 | Pushes tag only; nothing else            |
+| `alpha`      | any branch  | `v0.20.0-alpha.0` | `argus-mac-alpha.xml`  | yes              | no — manual install | Pushes tag only; nothing else            |
 
 **Production** cuts are the public releases — they push the changeset version-bump commit + tag to `main` and notify `houwert.dev` so the marketing site rebuilds its public changelog.
 
 **Beta** cuts are in-development builds of upcoming features, intended to work but not yet vetted. They can only be cut from `main` so the beta feed always tracks ahead of production along the same line of history. Anyone can subscribe by switching to **Beta** under **Settings → Advanced → Update channel**.
 
-**Alpha** cuts are one-off builds from any branch, used to share a work-in-progress with someone else. They are **not** exposed as a subscribable channel in the settings dialog — repo collaborators install the `.dmg` manually from the GitHub release page. The `alpha-mac.yml` feed file is still published, but no in-app UI selects it.
+**Alpha** cuts are one-off builds from any branch, used to share a work-in-progress with someone else. They are **not** offered as a channel in Settings — repo collaborators install the `.dmg` manually from the GitHub release page. The `argus-mac-alpha.xml` appcast is still published, but no in-app UI selects it.
 
 Pre-release versioning (beta/alpha) runs `pnpm changeset pre enter <channel>` → `version` → `pre exit` (without committing the exit), so the source branch's changeset state stays untouched. Bumped versions only live in tag-space; the next `production` cut consumes the same set of unconsumed changesets.
 
 ## Tool assets
 
-Tool assets (`argus-sim-bridge`, `scrcpy-server.jar`, the conductor tree) ship bundled with the app via electron-builder's `extraResources`. Toggling tools on or off in Settings affects whether their UI surfaces and IPC handlers are active — it doesn't move binaries around. Updating Argus updates its tool assets atomically as part of the standard auto-update flow.
+Tool assets (`argus-sim-bridge`, `scrcpy-server.jar`, the conductor tree) ship bundled with the app, staged next to the host by `pnpm build:mac-host`. Toggling tools on or off in Settings affects whether their UI surfaces and host handlers are active — it doesn't move binaries around. Updating Argus updates its tool assets atomically as part of the standard auto-update flow.
+
+## Moving Electron installs over
+
+Production cuts also publish `cutover-mac.yml`, a feed in electron-updater's
+format. Still-installed Electron apps read it and update
+into Argus for Mac (see [Moving from the Electron app](mac-app.md#moving-from-the-electron-app)).
+Beta and alpha cuts never publish it, so no Electron user lands on a
+pre-release.

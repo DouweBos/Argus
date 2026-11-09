@@ -1,6 +1,6 @@
 /**
  * Installs @houwert/conductor into `native/conductor/` as a self-contained
- * directory that electron-builder can bundle as an extraResource.
+ * directory the Mac host build can copy into the app's resources.
  *
  * Uses `npm install` (not pnpm) to create a flat node_modules layout with all
  * transitive dependencies resolved — no pnpm virtual store gymnastics needed.
@@ -29,11 +29,11 @@ import {
   rmSync,
 } from "node:fs";
 import path from "node:path";
+import { log } from "@argus/host/logger";
 import {
   registryInstallArgs,
   writeShim as writeConductorShim,
 } from "@argus/host/services/conductor/install";
-import { log } from "../app/lib/logger";
 
 // ---------------------------------------------------------------------------
 // Configuration — bump this when upgrading conductor
@@ -132,7 +132,7 @@ function installFromLocal(sourceDir: string): void {
       OUT,
       "--ignore-scripts",
       "--no-package-lock",
-      "--install-links=true", // copy instead of symlink so electron-builder bundles real files
+      "--install-links=true", // copy instead of symlink so the app bundles real files
     ],
     {
       stdio: "inherit",

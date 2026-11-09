@@ -19,7 +19,7 @@ targets, related projects, …) see
 | **Theme**         | `system`  | `system`, `light`, or `dark`. `system` follows the OS appearance.                                                                                                                                      |
 | **Colour theme**  | `muted`   | Accent colour and a matching background tint: Muted (black and white, no colour accent), Amber, Grove, Ocean, Ember, Iris or Rose. Each has a light and a dark variant, so it follows the theme above. |
 | **Display size**  | `default` | One of `larger`, `large`, `default`, `small`, `smaller`. Scales the whole app — useful on very large or very small displays.                                                                           |
-| **Launch screen** | `home`    | Which screen Argus opens on: **Home** (the project picker) or **Inbox** (what your automations want from you). The Mac app always opens on it; in the Electron app a restored window tab still wins.   |
+| **Launch screen** | `home`    | Which screen Argus opens on: **Home** (the project picker) or **Inbox** (what your automations want from you). Argus always opens on it. \|                                                            |
 
 ---
 
@@ -67,20 +67,19 @@ files across accounts.
 
 ## Agents
 
-| Setting                               | Default      | Description                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| ------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Default permission mode**           | `auto`       | The permission mode applied to every new agent — at spawn — unless overridden in the new-agent picker.                                                                                                                                                                                                                                                                                                                        |
-| **Follow-up suggestions**             | On           | When an agent finishes a turn, a small model (Haiku) reads its last message and suggests up to three replies. They appear above the chat input on every client; click one, or press Tab, to fill the input. Nothing is sent until you send it.                                                                                                                                                                                |
-| **Warm agents**                       | 1            | How many agents Argus keeps started for the sessions you are looking at — on the desktop, the Mac app or your phone — so starting one there is instant. Off starts every agent from scratch; 2 keeps one ready in each of the two sessions you looked at last. Each warm agent is a running Claude Code process with its MCP servers, so it uses memory while it waits; one nobody has looked at for five minutes is stopped. |
-| **Chat history**                      | On           | Keeps each agent's chat in its project's **Chat history** once it has messages, so you can search, read and resume it after the agent is gone. Off stops saving new chats there and stops importing Claude Code chats (manual **Import now** included); chats already saved stay.                                                                                                                                             |
-| **Import Claude Code chats**          | On           | Chats you ran with the `claude` CLI in a project's folder — in a terminal or another app — show up in that project's chat history, marked Imported, and can be resumed. Checked at launch, when a project is added and every 10 minutes; covers the last 30 days. **Import now** runs it straight away.                                                                                                                       |
-| **Start new agents in**               | New worktree | Electron app only. Whether a prompt on a project's home runs in a fresh worktree or in the project's checkout. Each prompt can switch it.                                                                                                                                                                                                                                                                                     |
-| **Automations**                       | On           | Whether automations start agents on their own schedule. Turning it off leaves the manual Run button working.                                                                                                                                                                                                                                                                                                                  |
-| **Default autonomy**                  | No cap       | App-wide ceiling on how far any automation may go, and the level used by automations that set none.                                                                                                                                                                                                                                                                                                                           |
-| **Concurrent automation sessions**    | 3            | How many sessions automations may have open at once, across all of them.                                                                                                                                                                                                                                                                                                                                                      |
-| **Daily automation budget**           | 0            | Spend automations may reach in a day, in USD. 0 means no budget.                                                                                                                                                                                                                                                                                                                                                              |
-| **Extra commands for read-only runs** | none         | Shell commands a read-only automation may run beyond the built-in reads.                                                                                                                                                                                                                                                                                                                                                      |
-| **Extra tools for read-only runs**    | none         | Tools a read-only automation may call beyond the built-in reads.                                                                                                                                                                                                                                                                                                                                                              |
+| Setting                               | Default | Description                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Default permission mode**           | `auto`  | The permission mode applied to every new agent — at spawn — unless overridden in the new-agent picker.                                                                                                                                                                                                                                                                                                       |
+| **Follow-up suggestions**             | On      | When an agent finishes a turn, a small model (Haiku) reads its last message and suggests up to three replies. They appear above the chat input on every client; click one, or press Tab, to fill the input. Nothing is sent until you send it.                                                                                                                                                               |
+| **Warm agents**                       | 1       | How many agents Argus keeps started for the sessions you are looking at — on the Mac or your phone — so starting one there is instant. Off starts every agent from scratch; 2 keeps one ready in each of the two sessions you looked at last. Each warm agent is a running Claude Code process with its MCP servers, so it uses memory while it waits; one nobody has looked at for five minutes is stopped. |
+| **Chat history**                      | On      | Keeps each agent's chat in its project's **Chat history** once it has messages, so you can search, read and resume it after the agent is gone. Off stops saving new chats there and stops importing Claude Code chats (manual **Import now** included); chats already saved stay.                                                                                                                            |
+| **Import Claude Code chats**          | On      | Chats you ran with the `claude` CLI in a project's folder — in a terminal or another app — show up in that project's chat history, marked Imported, and can be resumed. Checked at launch, when a project is added and every 10 minutes; covers the last 30 days. **Import now** runs it straight away.                                                                                                      |
+| **Automations**                       | On      | Whether automations start agents on their own schedule. Turning it off leaves the manual Run button working.                                                                                                                                                                                                                                                                                                 |
+| **Default autonomy**                  | No cap  | App-wide ceiling on how far any automation may go, and the level used by automations that set none.                                                                                                                                                                                                                                                                                                          |
+| **Concurrent automation sessions**    | 3       | How many sessions automations may have open at once, across all of them.                                                                                                                                                                                                                                                                                                                                     |
+| **Daily automation budget**           | 0       | Spend automations may reach in a day, in USD. 0 means no budget.                                                                                                                                                                                                                                                                                                                                             |
+| **Extra commands for read-only runs** | none    | Shell commands a read-only automation may run beyond the built-in reads.                                                                                                                                                                                                                                                                                                                                     |
+| **Extra tools for read-only runs**    | none    | Tools a read-only automation may call beyond the built-in reads.                                                                                                                                                                                                                                                                                                                                             |
 
 The default model for new agents is set under [LLM](#llm), next to the runner
 it belongs to.
@@ -285,8 +284,7 @@ rather than quietly falling back to your boot disk.
 
 ## Integrations
 
-Linear and Figma connections for this machine, in Settings → Integrations in both the
-desktop and the Mac app. See [Integrations](./integrations.md).
+Linear and Figma connections for this machine, in Settings → Integrations. See [Integrations](./integrations.md).
 
 | Setting                 | Default | Description                                                                                                                                           |
 | ----------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -337,7 +335,7 @@ Argus's device tooling — recording, control, debug streams, the UI inspector �
 | **Device control**      | Drive devices via `conductor` — taps, keyboard, deep links, navigation. Off also stops telling agents to use `conductor`. | Android SDK (for Android), Playwright (for web)               |
 | **Device debug**        | Tail device logs, memory, and other conductor probes from the Debug panel.                                                | Device control (auto)                                         |
 
-Pick tools from **Settings → Tools**. All tool assets ship bundled with the app — toggling a tool on or off only affects whether its UI surfaces and IPC handlers are active.
+Pick tools from **Settings → Tools**. All tool assets ship bundled with the app — toggling a tool on or off only affects whether its UI surfaces and host handlers are active.
 
 Each tool row in Settings runs its declared prereq checks live and surfaces **Install** buttons for the ones we know how to fix. Failed prereqs don't block the toggle, but the surfaces that depend on a missing prereq will error gracefully when used.
 
@@ -350,12 +348,12 @@ Argus ships with a bundled version of the `conductor` CLI (the tool agents use t
 - The dropdown lists stable versions published to npm, newest first. Only versions **at or above the bundled one** are offered — older conductors predate APIs the app relies on.
 - Pick a version and Argus installs `@houwert/conductor@<version>` on demand into `~/.argus/conductor/<version>/`, then points every agent's `conductor` invocation at it.
 - Pick **Bundled** to revert to the version that shipped with the app.
-- Installing requires **`npm` on your PATH** (Electron's Node has none) and registry access. If the install fails — npm missing, unknown version, offline — Argus keeps using the bundled version and shows the error.
+- Installing requires **`npm` on your PATH** (the Node bundled with Argus has none) and registry access. If the install fails — npm missing, unknown version, offline — Argus keeps using the bundled version and shows the error.
 - The pinned version persists at `~/.argus/conductor.json` and is re-provisioned on next launch if needed. Machine-local; not shared with your team.
 
 ### Device hosts
 
-Stream and drive iOS simulators that run on **another Mac** — a Mac mini in the closet, a beefier desktop — as if they were local. Add the Mac under **Settings → Tools → Device hosts** (desktop and Argus for Mac). Its simulators then show up in every device picker, the Devices screen and the phone app, labelled with the host's name, and stream to every viewer with touch, keyboard and hardware buttons.
+Stream and drive iOS simulators that run on **another Mac** — a Mac mini in the closet, a beefier desktop — as if they were local. Add the Mac under **Settings → Tools → Device hosts**. Its simulators then show up in every device picker, the Devices screen and the phone app, labelled with the host's name, and stream to every viewer with touch, keyboard and hardware buttons.
 
 | Field             | Description                                                                                                    |
 | ----------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -407,7 +405,7 @@ EAS hosts are saved next to SSH hosts in `~/.argus/device-hosts.json` (under `ea
 
 Production users never see beta builds — they're published under a separate `beta-mac.yml` feed file. Switching channels takes effect on next app restart.
 
-> Alpha builds (one-off cuts from any branch) are not exposed in this dialog. Repo collaborators install them manually by downloading the `.dmg` from the corresponding GitHub release.
+> Alpha builds (one-off cuts from any branch) are not offered in Settings. Repo collaborators install them manually by downloading the `.dmg` from the corresponding GitHub release.
 
 Argus Server carries one extra update preference of its own, toggled from its
 menu bar item or its Settings and stored in the same `app-settings.json`:
@@ -423,10 +421,9 @@ What we send (when the toggle is on):
 - Anonymous install id (random UUID). Wiping it rotates the id. The id
   isn't linked to a person, account, or email.
 - App version, OS, OS version, CPU architecture.
-- Standard auto-properties added by PostHog's web SDK in the renderer:
-  browser type/version/language, user agent, screen and viewport size,
-  timezone, in-app URL (always local — never external sites), and a
-  per-SDK-session id.
+- The bookkeeping properties PostHog's SDK adds itself, listed in
+  [telemetry-events.md](./telemetry-events.md). There is no browser SDK in
+  the app, so no user agent or screen size.
 - Approximate location, derived **server-side at PostHog** from the
   request IP: country, region, city, postal code, and a city-level
   latitude/longitude. We have **Discard client IP data** enabled on the
@@ -461,21 +458,20 @@ For the full per-event catalogue and exhaustive property list, see
 
 ## Git
 
-Both apps show **Git identity**: the name and email every commit Argus makes
-is authored with.
+Settings → Git shows **Git identity**: the name and email every commit Argus
+makes is authored with.
 
-The Mac app also keeps defaults for its git panel. The panel's own toggles
+It also keeps defaults for the git panel. The panel's own toggles
 change only the repository on screen.
 
-| Setting (Mac app only)         | Default | Description                                                                                               |
+| Setting                        | Default | Description                                                                                               |
 | ------------------------------ | ------- | --------------------------------------------------------------------------------------------------------- |
 | **Changes list**               | List    | `List` shows changed files flat; `Tree` groups them by directory; `All files` also lists unchanged files. |
 | **Diff layout**                | Unified | Unified in one column, or split side by side.                                                             |
 | **Ignore whitespace in diffs** | Off     | Hide pure-whitespace changes when comparing files.                                                        |
 
-The Electron app's pull dialog starts on the repository's own `pull.rebase` /
-`pull.ff` git config (the Mac app edits it under the git panel's settings), and
-merges when neither is set.
+Pulling follows the repository's own `pull.rebase` / `pull.ff` git config,
+which the git panel's settings edit.
 
 A few git-panel preferences are intentionally _not_ in Settings because
 they're pure layout state: the source-sidebar collapsed state
@@ -487,18 +483,15 @@ automatically as you use the panel.
 
 ## Git signing
 
-Per-repo commit-signing toggles. Read and written to the local git config of
-the currently selected session worktree, so each project keeps its own
-preferences.
+Per-repo commit signing, under **Commit signing** in the git panel's settings.
+Read and written to the local git config of the session on screen, so each
+project keeps its own preferences.
 
-| Setting            | Git config key    | Description                                                            |
-| ------------------ | ----------------- | ---------------------------------------------------------------------- |
-| **Enable signing** | `commit.gpgsign`  | When on, every commit is signed (Argus relies on git's own machinery). |
-| **Signing format** | `gpg.format`      | `gpg` or `ssh`.                                                        |
-| **Signing key**    | `user.signingkey` | GPG key id, fingerprint, or path to an SSH key.                        |
-
-Signing failures are surfaced via `<GitErrorBanner kind="signing-failed">`
-with a "Configure signing" recovery action that re-opens this section.
+| Setting               | Git config key    | Description                                                            |
+| --------------------- | ----------------- | ---------------------------------------------------------------------- |
+| **Sign every commit** | `commit.gpgsign`  | When on, every commit is signed (Argus relies on git's own machinery). |
+| **Format**            | `gpg.format`      | GPG (git's default), SSH or X.509.                                     |
+| **Signing key**       | `user.signingkey` | GPG key id, fingerprint, or path to an SSH public key.                 |
 
 ---
 
@@ -518,33 +511,37 @@ your repo.
 
 ## Account
 
-Link this computer to your [Argus account](accounts.md) so your phone, your
-Mac and your other computers find it on its current address without a pairing
-code. **Link this computer** shows a short code and opens your browser on it;
-type the code into the Argus app on your phone or Mac (Settings → Account →
-**Add a computer**), or enter it on the page and approve it from your phone.
-A dialog then shows a six-digit number: confirm only if your phone shows the
-same one. On an empty account this computer becomes the first member instead.
+Sign in to your [Argus account](accounts.md) under **Settings → Account**, with
+Apple, GitHub or an email code. Signing in also puts this Mac's host on the
+account, so your phone and your other computers find it on its current address
+without a pairing code. When this Mac can't join the account itself, **Link
+this Mac with a code** shows a code to type into the Argus app on your phone
+(Settings → Account → **Add a computer**); a six-digit number then shows on
+both screens: confirm only if they match. On an empty account this Mac becomes the
+first member.
 
-Once linked, this screen lists every computer on the account with online or
-offline, and folds them into **Hosts**, where you attach to them like a paired
-host. Other computers waiting to join appear under **Waiting to join** with
-Approve and Deny.
+Once signed in, the tab lists the devices and computers on the account, online
+or offline, and the computers fold into **Hosts**, where you attach to them
+like a paired host. Devices waiting to join appear under **Waiting to join**
+with Approve and Deny. This Mac's name is under **Settings → General → This
+Mac**.
 
-| Setting                        | Default                                            | Description                                                                                                                                                                                                                                                                                                                                                  |
-| ------------------------------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **This computer's name**       | The system's computer name                         | What this computer links to the account as, and how your phone and other computers list it (and this window). Changing it while linked renames both on the account; offline, the rename waits until the account service is reachable. A rename made from your phone shows up here too. Empty returns to the system name. Shown whether or not you're linked. |
-| **Use the account**            | On                                                 | Off stops publishing this computer's address and refuses account devices, while staying linked.                                                                                                                                                                                                                                                              |
-| **Publish addresses**          | All on                                             | Which of the LAN address, the tailnet address and the managed tunnel go into the account directory. The account service can see what you publish.                                                                                                                                                                                                            |
-| **Managed tunnel**             | On                                                 | Run this computer's own tunnel (see [Reaching your computers from anywhere](accounts.md#reaching-your-computers-from-anywhere)) while remote access is on. Off leaves the LAN and Tailscale.                                                                                                                                                                 |
-| **Access for account devices** | iPhone: run agents · Mac and desktop: full control | What devices on the account may do here: the same grants as a pairing (`monitor`, `control`, `admin`).                                                                                                                                                                                                                                                       |
-| **Approve from this computer** | On                                                 | Whether this computer may approve other computers joining.                                                                                                                                                                                                                                                                                                   |
-| **Account service**            | empty (built-in)                                   | Another account service, for self-hosting or testing.                                                                                                                                                                                                                                                                                                        |
-| **Unlink**                     | —                                                  | Removes this computer and this window from the account. QR-paired devices keep working.                                                                                                                                                                                                                                                                      |
+The host keeps a few more account settings. Argus for Mac shows only the
+managed tunnel (under Settings → Remote); Argus Server has them all under
+Settings → Account & Remote.
+
+| Setting                        | Default                                            | Description                                                                                                                                                                                  |
+| ------------------------------ | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Use the account**            | On                                                 | Off stops publishing this computer's address and refuses account devices, while staying linked.                                                                                              |
+| **Publish addresses**          | All on                                             | Which of the LAN address, the tailnet address and the managed tunnel go into the account directory. The account service can see what you publish.                                            |
+| **Managed tunnel**             | On                                                 | Run this computer's own tunnel (see [Reaching your computers from anywhere](accounts.md#reaching-your-computers-from-anywhere)) while remote access is on. Off leaves the LAN and Tailscale. |
+| **Access for account devices** | iPhone: run agents · Mac and desktop: full control | What devices on the account may do here: the same grants as a pairing (`monitor`, `control`, `admin`).                                                                                       |
+| **Approve from this computer** | On                                                 | Whether this computer may approve other computers joining.                                                                                                                                   |
+| **Account service**            | empty (built-in)                                   | Another account service, for self-hosting or testing.                                                                                                                                        |
 
 These live with the remote-access keys in the encrypted
-`~/.argus/remote-devices.json`, per machine. `argus-host` has the same
-settings as `account set …` (see [the server docs](server-app.md)); set its
+`~/.argus/remote-devices.json`, per machine. `argus-host` has them as
+`account set …` (see [the server docs](server-app.md)); set its
 name with `account set name <name>` (`default` returns to the system name).
 
 ## Remote Access
@@ -605,8 +602,7 @@ accepts any connection, can never win: only the real desktop holds the pinned
 key. If a worse-ranked address answers first, the phone waits briefly for a
 better one before settling.
 
-While it's connected over a slower route, the phone (and the Mac and desktop
-apps) check the better ones again whenever the network changes and every few
+While it's connected over a slower route, the phone (and the Mac app) check the better ones again whenever the network changes and every few
 minutes, and move over as soon as one completes the handshake. A route that
 just failed is left alone for a while, so a flaky network can't bounce the
 connection.
@@ -765,7 +761,7 @@ key is present. **Test push** next to a paired device sends a real notification
 and shows the provider's rejection reason if it fails.
 
 On the phone, **Settings → Background push** turns registration on or off. A
-device that has registered shows _push registered_ in the desktop's paired list.
+device that has registered shows _push registered_ in the computer's paired list.
 
 ### Notify my devices while I'm using Argus
 
@@ -800,8 +796,8 @@ the device is enrolled. The pairing secret travels only in the QR/code — never
 over the wire — so nothing in the middle (Cloudflare or Tailscale included) can
 impersonate your desktop.
 
-The desktop identity key lives in `~/.argus/remote-devices.json` (encrypted via
-`safeStorage`), next to the managed tunnel's credentials.
+The computer's identity key lives in `~/.argus/remote-devices.json`
+(encrypted), next to the managed tunnel's credentials.
 
 ---
 
@@ -848,9 +844,8 @@ While reading from a host:
   disconnected banner, reconnects on its own, and re-pulls a fresh snapshot
   when it does. Only that host is affected; the rest keep working.
 
-Host keys are stored in this Mac's `localStorage` alongside the other UI
-preferences. Argus for Mac keeps them in a file only your user can read, in its
-state folder, and has the same Hosts tab in its Settings window.
+Host keys are stored in a file only your user can read, in Argus for Mac's
+state folder. Pair and manage hosts under Settings → Hosts.
 
 ---
 
@@ -876,10 +871,10 @@ The Mac app's code view (⌘3 in a session). These live on this Mac only.
 
 Settings → General → Startup in Argus for Mac. These live on this Mac only.
 
-| Setting              | Default | Description                                                                                                                                                                                                                                                                                                                                                                      |
-| -------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Open at Login**    | off     | Opens Argus when you log in. If macOS wants your OK first, **Open Login Items…** takes you to System Settings → General → Login Items.                                                                                                                                                                                                                                           |
-| **Show in menu bar** | on      | An Argus item in the menu bar: agents that need you and what's running, pairing a device, approving a join and your Argus account. Off by default when Argus Server (the native or the Electron one) is installed on this Mac, since it has its own menu bar item. Dragging the icon off the menu bar with ⌘ held turns it off too. See [the menu bar](mac-app.md#the-menu-bar). |
+| Setting              | Default | Description                                                                                                                                                                                                                                                                                                                                     |
+| -------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Open at Login**    | off     | Opens Argus when you log in. If macOS wants your OK first, **Open Login Items…** takes you to System Settings → General → Login Items.                                                                                                                                                                                                          |
+| **Show in menu bar** | on      | An Argus item in the menu bar: agents that need you and what's running, pairing a device, approving a join and your Argus account. Off by default when Argus Server is installed on this Mac, since it has its own menu bar item. Dragging the icon off the menu bar with ⌘ held turns it off too. See [the menu bar](mac-app.md#the-menu-bar). |
 
 ---
 
@@ -906,11 +901,9 @@ Argus keeps everything under `~/.argus/`:
 ```
 
 Preferences and these picks live in the host's files rather than in one
-app, so the Electron app and Argus for Mac share them: change the theme in
-one and the other opens in it. The first time the Electron app starts with
-this, it copies the preferences it had onto them. Window layout (tabs,
-panel widths, collapsed sections) and a few Electron-only git view toggles
-stay with the app that set them.
+app, so every Argus window on the same home shares them: change the theme in
+one and the other opens in it. Window layout (tabs, panel widths, collapsed
+sections) stays with the app that set it.
 
 Encrypted files are sealed with a key in your login keychain ("Argus Host
 Secret Storage", one per Argus home), which every Argus app on this Mac

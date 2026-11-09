@@ -1,7 +1,0 @@
-.name {
-  font: var(--type-ui);
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}

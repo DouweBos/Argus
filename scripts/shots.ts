@@ -8,17 +8,14 @@
  * `--no-build` reuses the last build; `--only <id>` runs one scenario.
  */
 
-import type {
-  FixtureEvent,
-  FixtureScenario,
-} from "../app/lib/fixture/types.js";
+import type { FixtureEvent, FixtureScenario } from "./shots/fixture/types.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "@argus/remote-protocol";
-import { scenarios } from "../app/lib/fixture/scenarios/index.js";
 import { sleep } from "./shots/devDriver";
+import { scenarios } from "./shots/fixture/scenarios/index.js";
 import { startFixtureHost } from "./shots/fixtureHost";
 import {
   crop,

@@ -1,1 +1,0 @@
-export { BisectView } from "./BisectView";

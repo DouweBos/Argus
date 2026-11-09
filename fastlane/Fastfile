@@ -5,13 +5,9 @@ require "yaml"
 default_platform(:mac)
 
 TEAM_ID      = "CKZT75PN5T"
-# Electron's bundle id: Squirrel.Mac only swaps in a bundle that satisfies the
-# running desktop's designated requirement, so Argus for Mac takes it over.
+# The Electron app's bundle id: Squirrel.Mac only swaps in a bundle that
+# satisfies the running app's designated requirement, so Argus for Mac takes it over.
 MAC_APP_BUNDLE_ID = "dev.houwert.argus"
-# electron-builder reads CSC_NAME and adds the type prefix internally — it
-# rejects values that already start with "Apple Development:" or
-# "Developer ID Application:", so we pass the bare common name.
-SIGN_IDENTITY_DEV     = "Douwe Bos (#{TEAM_ID})"
 SIGN_IDENTITY_RELEASE = "Douwe Bos (#{TEAM_ID})"
 
 platform :mac do
@@ -28,8 +24,8 @@ platform :mac do
       type:                       "developer_id",
       readonly:                   !options.fetch(:generate, false),
       platform:                   "macos",
-      # The Electron app has no profile-bound entitlements; without this
-      # flag match would try to fetch a "Direct" profile for it.
+      # Only the cert: Argus for Mac's profile comes from mac_app_profile, and
+      # Argus Server needs none.
       skip_provisioning_profiles: true,
     }
     match_options[:api_key] = api_key if api_key
@@ -56,103 +52,6 @@ platform :mac do
     match(**match_options)
   end
 
-  desc "Local dev build. Apple Development cert, no notarization."
-  lane :dev do
-    sh("cd .. && pnpm install --frozen-lockfile")
-    ENV["CSC_NAME"] = SIGN_IDENTITY_DEV
-    sh("cd .. && pnpm build && pnpm build:web-client && pnpm exec electron-builder")
-    UI.success("Built release/mac-arm64/Argus.app")
-  end
-
-  desc "Release build: signed with Developer ID, notarized, stapled, uploaded to a GitHub release. Pass channel:beta (main only) or channel:alpha (any branch) for pre-release builds."
-  lane :release do |options|
-    publish = options.fetch(:publish, true)
-    channel = options.fetch(:channel, "production")
-    unless ["production", "beta", "alpha"].include?(channel)
-      UI.user_error!("Unknown channel #{channel.inspect} — expected production | beta | alpha")
-    end
-
-    ensure_git_status_clean unless options[:allow_dirty]
-    # Production and beta cuts must come from main; alpha can come from any
-    # branch (CI passes allow_any_branch:true unconditionally; this guard is
-    # for local invocations).
-    if channel == "production" || channel == "beta"
-      ensure_git_branch(branch: "main") unless options[:allow_any_branch]
-    end
-
-    api_key = load_app_store_connect_api_key
-    match(
-      type:                       "developer_id",
-      readonly:                   true,
-      api_key:                    api_key,
-      platform:                   "macos",
-      skip_provisioning_profiles: true,
-    )
-
-    # Version + tag are driven by changesets. CI runs `changeset version`,
-    # commits, and pushes the tag before invoking this lane. Locally: run
-    # `pnpm exec changeset version`, commit, tag, and push before `dist:release`.
-    version = read_package_version
-    UI.success("Releasing v#{version}")
-
-    prepare_notarize_env
-
-    ENV["CSC_NAME"]        = SIGN_IDENTITY_RELEASE
-    # Let electron-builder find the Developer ID cert match just installed
-    # into build.keychain. With auto-discovery off electron-builder ignores
-    # the keychain entirely (it expects CSC_LINK/CSC_KEY_PASSWORD instead),
-    # which is why CI was falling back to ad-hoc signing.
-    ENV["CSC_IDENTITY_AUTO_DISCOVERY"] = "true"
-    ENV["CSC_KEYCHAIN"]    = ENV["MATCH_KEYCHAIN_NAME"] if ENV["MATCH_KEYCHAIN_NAME"] && !ENV["MATCH_KEYCHAIN_NAME"].empty?
-    ENV["GH_TOKEN"]        = ENV["GITHUB_TOKEN"] if ENV["GITHUB_TOKEN"] && ENV["GH_TOKEN"].nil?
-
-    sh("cd .. && pnpm install --frozen-lockfile")
-
-    # Generate release-notes.md from the current version's CHANGELOG.md
-    # section unless the caller already provided a file. electron-builder
-    # embeds this into latest-mac.yml so electron-updater can show it
-    # inside the running app's "What's new" dialog.
-    notes_file = ENV["ARGUS_RELEASE_NOTES_FILE"]
-    if notes_file.nil? || notes_file.empty?
-      notes_file = File.expand_path("../release-notes.md", __dir__)
-      sh("cd .. && pnpm exec tsx scripts/extract-release-notes.ts #{notes_file.shellescape}")
-    end
-
-    notes_flag = ""
-    if File.exist?(notes_file)
-      notes_flag = " --config.releaseInfo.releaseNotesFile=#{notes_file.shellescape}"
-    end
-
-    # Channel routing for electron-builder + electron-updater:
-    #   production → latest-mac.yml, releaseType=release
-    #   beta       → beta-mac.yml,   releaseType=prerelease
-    #   alpha      → alpha-mac.yml,  releaseType=prerelease
-    # The release config (`electron-builder.release.cjs`) reads ARGUS_CHANNEL
-    # to set the generic provider's channel and the github provider's
-    # releaseType. EP_PRE_RELEASE flips electron-updater's pre-release flag at
-    # runtime.
-    channel_name = case channel
-                   when "alpha" then "alpha"
-                   when "beta"  then "beta"
-                   else              "latest"
-                   end
-    ENV["ARGUS_CHANNEL"]  = channel_name
-    ENV["EP_PRE_RELEASE"] = (channel == "production") ? "false" : "true"
-
-    publish_flag = publish ? "--publish always" : "--publish never"
-    sh("cd .. && pnpm build && pnpm build:web-client && pnpm exec electron-builder --config electron-builder.release.cjs #{publish_flag}#{notes_flag}")
-    unless publish
-      out = File.expand_path("../release", __dir__)
-      write_release_assets(
-        Dir[File.join(out, "*-#{version}-*.{dmg,zip,blockmap}")] + [File.join(out, "#{channel_name}-mac.yml")],
-      )
-    end
-
-    # Stable-only side effects: the website-changelog dispatch and main-branch
-    # commit/tag bump are driven from the workflow, not this lane. Pre-release
-    # builds skip those upstream.
-  end
-
   desc "Argus Server (native, clients/apple/ArgusServer): archive, Developer ID export, notarize, staple, zip, Sparkle appcast, GitHub release upload. Pass channel:beta|alpha for pre-releases, publish:false to stop before uploading. Needs SPARKLE_PUBLIC_ED_KEY and SPARKLE_ED_PRIVATE_KEY."
   lane :mac_server_release do |options|
     release_native_app(
@@ -165,7 +64,7 @@ platform :mac do
     )
   end
 
-  desc "Argus for Mac (native, clients/apple/ArgusDesktop): as mac_server_release, plus a .dmg and, on production, cutover-mac.yml, the feed the Electron desktop updates into it from. Needs the profile from mac_app_profile."
+  desc "Argus for Mac (native, clients/apple/ArgusDesktop): as mac_server_release, plus a .dmg and, on production, cutover-mac.yml, the feed still-installed Electron apps update into it from. Needs the profile from mac_app_profile."
   lane :mac_app_release do |options|
     release_native_app(
       options,
@@ -306,7 +205,7 @@ platform :mac do
     ].shelljoin)
     assets = [zip, appcast]
 
-    # Named like Electron's, so the website's `Argus-latest-arm64.dmg` link keeps resolving.
+    # Named like the Electron app's was, so the website's `Argus-latest-arm64.dmg` link keeps resolving.
     if dmg_name
       stage = File.join(out, "dmg")
       FileUtils.mkdir_p(stage)
@@ -400,8 +299,7 @@ platform :mac do
   end
 
   # Materialize the App Store Connect API key to disk and expose it to
-  # electron-builder via APPLE_API_KEY / _KEY_ID / _ISSUER. Called from
-  # the release lane right before invoking electron-builder.
+  # notarytool via APPLE_API_KEY / _KEY_ID / _ISSUER.
   def prepare_notarize_env
     key_id    = ENV["APP_STORE_CONNECT_API_KEY_ID"]
     issuer_id = ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"]

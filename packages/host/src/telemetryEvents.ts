@@ -4,7 +4,8 @@
  * Adding a new event:
  *   1. Add a row to {@link EventMap} below.
  *   2. Document it in `docs/telemetry-events.md`.
- *   3. Call `capture("event_name", { ... })` from main or renderer telemetry.
+ *   3. Call `capture("event_name", { ... })` from the host service that does
+ *      the work.
  *
  * Mismatched names or props now fail typecheck instead of silently shipping
  * to PostHog with the wrong shape.
@@ -15,9 +16,7 @@
  * them here.
  */
 
-// Inlined rather than imported so this module stays usable from both the
-// renderer (`app/`) and the main process (`electron/`) without dragging in
-// electron-side type imports.
+// Inlined rather than imported so this module stays a dependency-free leaf.
 type SessionKind =
   | "automation_host"
   | "project_root"
@@ -57,8 +56,8 @@ type LspLanguage =
 
 /**
  * Events are alphabetized (lint enforces this). Group by prefix when adding:
- * `agent_*`, `app_*`, `feedback_*`, `onboarding_*`, `renderer_*`,
- * `session_*`, `telemetry_*`.
+ * `agent_*`, `app_*`, `feedback_*`, `onboarding_*`, `session_*`,
+ * `telemetry_*`.
  */
 export interface EventMap {
   account_join_resolved: {
@@ -167,13 +166,6 @@ export interface EventMap {
   };
   agent_nudged: { critical: boolean; tagged: boolean };
   agent_stopped: undefined;
-  agent_start_submitted: {
-    /** The picked workspace differs from the one the composer opened with. */
-    changed_workspace: boolean;
-    workspace: "current" | "worktree";
-  };
-  agent_transcript_paged: { success: boolean };
-  agent_transcript_resynced: { new_epoch: boolean };
   app_error: { message: string; scope: string };
   app_launched: undefined;
   app_quit: undefined;
@@ -206,16 +198,11 @@ export interface EventMap {
   color_theme_changed: {
     theme: "amber" | "ember" | "grove" | "iris" | "muted" | "ocean" | "rose";
   };
-  design_compare_opened: undefined;
   design_compared: {
     diff_bucket: "<2%" | "<10%" | "<30%" | ">=30%";
     matched: boolean;
     mode: "component" | "screen";
     source: "agent" | "app";
-  };
-  design_ref_added: { from: "issue" | "paste" };
-  design_viewer_opened: {
-    source: "composer" | "issue" | "runtime" | "session";
   };
   device_host_added: { has_identity_file: boolean; has_port: boolean };
   device_host_removed: undefined;
@@ -252,15 +239,8 @@ export interface EventMap {
     reason: "closed" | "expired" | "host_removed" | "leftover" | "shutdown";
   };
   eas_session_start_failed: { reason: EasFailure };
-  eas_session_start_prompted: { outcome: "cancelled" | "confirmed" };
   eas_session_started: { wait_bucket: "<1m" | "<3m" | "<10m" | ">=10m" };
-  electron_desktop_cutover: { stage: "held_back" | "offered" };
-  electron_server_handoff: {
-    stage: "blocked_by_agents" | "failed" | "installing" | "offered";
-  };
-  follow_up_used: { method: "click" | "tab" };
   follow_ups_suggested: { count: number; success: boolean };
-  home_usage_opened: { level: "critical" | "normal" | "warning" };
   host_heap_sampled: {
     agents: number;
     heap_limit_bucket: "<25%" | "<50%" | "<75%" | ">=75%";
@@ -268,7 +248,6 @@ export interface EventMap {
     mcp_sessions: number;
     uptime_bucket: "<1d" | "<3d" | "<6h" | ">=3d";
   };
-  host_lock_handover: { holder: "cli" | "electron" | "mac-server" | "mac" };
   integration_connected: {
     method: "key" | "oauth";
     service: "figma" | "linear";
@@ -276,11 +255,6 @@ export interface EventMap {
   };
   integration_reauth_needed: { service: "figma" | "linear" };
   issue_filed_from_device: { has_screenshot: boolean };
-  issue_filter_changed: {
-    action: "add" | "clear" | "flip" | "remove";
-    field: string;
-  };
-  issue_searched: { results_bucket: "0" | "1-5" | "6-20" | "21+" };
   issue_report_posted: { has_screenshots: boolean; trigger: "merge" | "pr" };
   linear_issue_updated: { field: "comment" | "priority" | "status" };
   /** Mirrors `LegacyTunnelKind` in `services/remote/legacyTunnels.ts`. */
@@ -324,7 +298,6 @@ export interface EventMap {
     install: "downloaded" | "managed" | "override" | "path";
   };
   onboarding_completed: undefined;
-  prefs_imported: { keys: number };
   proposal_start_failed: {
     stage: "creating_worktree" | "setting_up" | "starting_agent";
   };
@@ -334,7 +307,6 @@ export interface EventMap {
     hosted_web: boolean;
   };
   remote_device_watched: { success: boolean };
-  renderer_started: { popout: string };
   secret_store_migrated: {
     outcome: "failed" | "migrated";
     store: "mcp_tokens" | "remote_devices";

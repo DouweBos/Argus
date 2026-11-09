@@ -1,10 +1,9 @@
 /**
  * Extract the section for the current package.json version from CHANGELOG.md
- * and write it to a file electron-builder can read via
- * `--config.releaseInfo.releaseNotesFile`.
+ * and write it to a file the release lanes embed in the Sparkle appcast, the
+ * cutover feed and TestFlight's changelog.
  *
- * Run before `pnpm exec electron-builder` (the release fastlane lane wires
- * this up automatically). Falls back to a minimal "Argus vX.Y.Z" stub when
+ * The fastlane lanes run this when CI hasn't already written the file. Falls back to a minimal "Argus vX.Y.Z" stub when
  * the version section can't be found, so a missing CHANGELOG entry never
  * blocks a release build.
  *

@@ -4,7 +4,7 @@
  * Mac window there and which part of it the site shows.
  */
 
-import type { FixtureBeat, FixtureScenario } from "../../app/lib/fixture/types";
+import type { FixtureBeat, FixtureScenario } from "./fixture/types";
 
 export interface Crop {
   h: number;

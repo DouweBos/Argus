@@ -58,7 +58,7 @@
           "slug": "mac-app",
           "file": "mac-app.md",
           "title": "Argus for Mac",
-          "summary": "The Argus desktop app: what it does, and moving to it from the deprecated Electron app."
+          "summary": "The Argus desktop app: what it does, and moving to it from the old Electron app."
         }
       ]
     },

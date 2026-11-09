@@ -35,9 +35,7 @@ export interface ProjectLlmConfig {
 }
 
 /**
- * App-level default LLM. Mirrors the `defaultLlm` shape from
- * `app/stores/settingsStore.ts`. Callers that haven't wired the renderer
- * setting through to the main process should pass `undefined`.
+ * App-level default LLM. Callers without one should pass `undefined`.
  */
 export interface AppDefaultLlm {
   runner?: string | null;

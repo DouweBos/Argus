@@ -8,7 +8,7 @@
  * throwing. This is what a Linux host or `argus-cli` process would do.
  */
 
-import { COMMANDS, SHELL_COMMANDS } from "@argus/remote-protocol";
+import { COMMANDS } from "@argus/remote-protocol";
 import fs from "node:fs";
 import net from "node:net";
 import os from "node:os";
@@ -130,10 +130,7 @@ describe("headless host", () => {
         .listCommands()
         .map((c) => c.name)
         .sort();
-      const hostCatalog = Object.keys(COMMANDS)
-        .filter((name) => !Object.hasOwn(SHELL_COMMANDS, name))
-        .sort();
-      expect(registered).toEqual(hostCatalog);
+      expect(registered).toEqual(Object.keys(COMMANDS).sort());
       await expect(canConnect(port)).resolves.toBe(true);
     } finally {
       await boot.shutdownHost();

@@ -3,6 +3,3 @@ packages:
   - "packages/*"
   # LAN web client — in the workspace so it can consume @argus/peacock.
   - "clients/argus-web"
-
-allowBuilds:
-  electron-winstaller: false

@@ -5,8 +5,8 @@ host core the Electron app did — sessions, worktrees, agents, terminals,
 simulators — so your projects and sessions carry over, and it reads and writes
 the same `~/.argus`.
 
-It replaced the Electron app in v0.72.0. The Electron app is deprecated: it gets
-no new features, and it updates into Argus for Mac by itself (see
+It replaced the Electron app in v0.72.0. The Electron app is no longer
+developed, and an existing install updates into Argus for Mac by itself (see
 [Moving from the Electron app](#moving-from-the-electron-app)).
 
 ## What it does
@@ -75,7 +75,7 @@ The app reads your repositories directly with Grove's git engine, so the git
 views stay current as agents change files and commit — no refresh needed.
 Merging a session into its base branch, pull requests and anything that
 follows your project's rules (protected branches, session branch names) still
-go through the host, exactly as in the Electron app.
+go through the host.
 
 - A first-run walkthrough (welcome, privacy, checking your Mac, a first
   project), a Home screen with cards that fix what's missing, and **Add
@@ -128,7 +128,7 @@ installed, which has its own menu bar item.
 ## Keyboard shortcuts
 
 Every shortcut is a menu item, so the menu bar lists them all and greys out
-the ones that don't apply where you are. They match the Electron app's,
+the ones that don't apply where you are. They match the old Electron app's,
 except where macOS or the Mac app's own layout already uses the keys.
 
 | Shortcut              | Does                                                       | Menu  |
@@ -159,13 +159,13 @@ Back and forward step through the window tab's history, as in Finder: every
 screen, session panel, agent, git view and code-view file you open is a step.
 The toolbar's chevrons and a mouse's side buttons do the same.
 
-Where they differ from the Electron app:
+Where they differ from the old Electron app:
 
 - **⌘1–⌘3** switch the session's Agent, Code and Git views, as Xcode
   and Finder number theirs, so agents are on ⌃⌘1–⌃⌘9 and window tabs have no
   number keys.
 - **⌘T** starts an agent (agents are the session's tabs) and **⌥⌘T** opens
-  a window tab, where Electron uses ⌘T for window tabs.
+  a window tab, where Electron used ⌘T for window tabs.
 - **⌘J** shows the side panel, where terminals live too, as VS Code's does
   its panel. **⌥⌘H** isn't used: it's macOS's Hide Others, so there is no
   project-home shortcut. **⌘B** is the code view's navigator, not the app sidebar.
@@ -423,7 +423,7 @@ signing (your Mac has to be registered with the team). Release builds are
 signed with Developer ID and no profile: Apple doesn't support Sign in with
 Apple for Developer ID apps, so Release signs in with Apple on the web instead.
 
-Telemetry needs a PostHog key at build time, as for the Electron app:
+Telemetry needs a PostHog key at build time:
 `POSTHOG_KEY` in the environment `xcodebuild` runs in, or `POSTHOG_KEY = …` in
 a gitignored `clients/apple/Config/Argus.local.xcconfig`, which also covers
 builds started from Xcode. Without one the host logs that telemetry is off.

@@ -2,10 +2,8 @@
  * Central logging sink. Use these helpers instead of calling `console` directly
  * so eslint can forbid raw console usage outside this module.
  *
- * In the Electron main process `console.*` is patched in `electron/main.ts` to
- * tee every line to the app's log file. Calling through this module means a
- * scope prefix is prepended before that tee sees the message, so both the file
- * and the terminal share the same structured output.
+ * Calling through this module means a scope prefix is prepended to every line,
+ * so the log file and the terminal share the same structured output.
  */
 
 export type LogLevel = "debug" | "error" | "info" | "warn";

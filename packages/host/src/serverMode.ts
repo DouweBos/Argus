@@ -1,18 +1,15 @@
 /**
  * Headless server mode.
  *
- * `Argus Server.app` is a second electron-builder target built from this same
- * codebase. It boots the entire service layer with no BrowserWindow, keeping
- * only a tray item, so a Mac mini can run agents and simulators 24/7 while
- * laptops attach and detach over the remote gateway.
+ * Argus Server runs the entire service layer with no window, so a Mac mini can
+ * run agents and simulators 24/7 while laptops attach and detach over the
+ * remote gateway.
  *
- * Mode is decided by `ARGUS_SERVER=1`, which the packaged server bundle sets in
- * an esbuild banner (see `build-electron.mjs`) so it is in place before any
- * module reads `ARGUS_HOME` or `ARGUS_REMOTE_PORT` at import time. `pnpm
- * dev:server` sets the same variable from the shell.
+ * Mode is decided by `ARGUS_SERVER=1`, set before any module reads
+ * `ARGUS_HOME` or `ARGUS_REMOTE_PORT` at import time (see `bin/hostMode.ts`).
  *
  * Leaf-level on purpose — only node builtins — so `lib/argusHome.ts` can
- * depend on it without pulling Electron into unit tests.
+ * depend on it without pulling the service layer into unit tests.
  */
 
 import { spawn, type ChildProcess } from "node:child_process";

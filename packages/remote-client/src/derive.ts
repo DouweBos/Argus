@@ -1,7 +1,8 @@
 /**
- * Key/identifier derivations — byte-for-byte mirror of the desktop's
- * `electron/services/remote/derive.ts`. Constants are inlined so the client
- * stays standalone. Any change here MUST match the desktop or handshakes break.
+ * Key/identifier derivations — byte-for-byte mirror of the host's
+ * `packages/host/src/services/remote/derive.ts`. Constants are inlined so the
+ * client stays standalone. Any change here MUST match the host or handshakes
+ * break.
  */
 
 import { hkdf } from "@noble/hashes/hkdf.js";

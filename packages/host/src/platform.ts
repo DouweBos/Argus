@@ -4,8 +4,8 @@
  * Everything in `@argus/host` is plain Node. The handful of capabilities that
  * genuinely need a desktop shell — opening a URL in the user's browser, the OS
  * keychain, notification banners, the app version — arrive through this
- * interface instead of an `electron` import. The desktop app installs
- * `ElectronHostPlatform`; a headless host installs `nodeHostPlatform`.
+ * interface instead of an `electron` import. A host the Mac app runs gets them
+ * over the UI socket; a headless host installs `nodeHostPlatform`.
  */
 
 import { argusHomeDir } from "./lib/argusHome";

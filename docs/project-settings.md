@@ -22,9 +22,8 @@ For app-level (machine-local) preferences, see
 
 Two ways to change project settings:
 
-1. **In-app — Project settings dialog.** Open it from the workspace's
-   repo row context menu → _Project settings_ (in the Mac app, from a
-   project's menu in the sidebar). Sections cover Setup, Workspace env,
+1. **In-app — Project Settings.** Open it from a project's menu in the
+   sidebar → _Project Settings…_. Sections cover Setup, Workspace env,
    Run commands, Terminals, Browser, Deep links, Branch protection,
    Release notes, Agent, LLM, Related projects, Automations and Tools,
    plus the personal Branch prefix and Worktree location (stored outside
@@ -36,23 +35,23 @@ Two ways to change project settings:
 2. **Hand-edit `.argus.json`** at the repo root. The dialog re-reads
    on next open, so the two stay in sync.
 
-| Field                                       | Editable in dialog?                                        |
-| ------------------------------------------- | ---------------------------------------------------------- |
-| `setup.copy` / `symlink` / `commands`       | yes (Setup)                                                |
-| `terminals`                                 | yes (Terminals)                                            |
-| `run`                                       | yes (Run commands)                                         |
-| `workspace_env`                             | yes (Workspace env)                                        |
-| `browser_url`, `browser_presets`            | yes (Browser)                                              |
-| `single_runtime`                            | yes (Run commands)                                         |
-| `auto_continue_on_limit`                    | yes (Agent)                                                |
-| `protected_branches`, `default_base_branch` | yes (Branch protection)                                    |
-| `release_note_patterns`                     | yes (Release notes)                                        |
-| `simulator_deeplinks`                       | yes (Deep links)                                           |
-| `auto_fetch_minutes`                        | yes (Git settings panel; Branch protection in the Mac app) |
-| `llm`                                       | yes (LLM)                                                  |
-| `related_projects`                          | yes (Related projects)                                     |
-| `automations`                               | yes (Automations)                                          |
-| `tools.disabled`                            | yes (Tools)                                                |
+| Field                                       | Editable in dialog?     |
+| ------------------------------------------- | ----------------------- |
+| `setup.copy` / `symlink` / `commands`       | yes (Setup)             |
+| `terminals`                                 | yes (Terminals)         |
+| `run`                                       | yes (Run commands)      |
+| `workspace_env`                             | yes (Workspace env)     |
+| `browser_url`, `browser_presets`            | yes (Browser)           |
+| `single_runtime`                            | yes (Run commands)      |
+| `auto_continue_on_limit`                    | yes (Agent)             |
+| `protected_branches`, `default_base_branch` | yes (Branch protection) |
+| `release_note_patterns`                     | yes (Release notes)     |
+| `simulator_deeplinks`                       | yes (Deep links)        |
+| `auto_fetch_minutes`                        | yes (Branch protection) |
+| `llm`                                       | yes (LLM)               |
+| `related_projects`                          | yes (Related projects)  |
+| `automations`                               | yes (Automations)       |
+| `tools.disabled`                            | yes (Tools)             |
 
 ---
 

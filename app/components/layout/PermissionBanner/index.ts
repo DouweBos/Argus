@@ -1,1 +1,0 @@
-export { PermissionBanner } from "./PermissionBanner";

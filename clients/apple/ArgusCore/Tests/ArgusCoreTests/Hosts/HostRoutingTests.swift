@@ -79,9 +79,8 @@ struct HostIndexTests {
 }
 
 struct HostCommandTargetTests {
-  @Test func mirrorsTheDesktopsRouting() {
+  @Test func routesEachCommandWhereItActs() {
     #expect(HostCommandTarget.of("open_external_url", tier: "host") == .client)
-    #expect(HostCommandTarget.of("show_open_dialog") == .client)
     #expect(HostCommandTarget.of("remote_start_pairing", tier: "host") == .client)
     #expect(HostCommandTarget.of("telemetry_capture") == .client)
     #expect(HostCommandTarget.of("ui.focus") == .client)

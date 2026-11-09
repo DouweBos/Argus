@@ -1,1 +1,0 @@
-export { TerminalTool } from "./TerminalTool";

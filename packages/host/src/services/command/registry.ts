@@ -1,11 +1,10 @@
 /**
- * The command registry — one table behind both local IPC and the wire.
+ * The command registry — one table behind both the local UI socket and the wire.
  *
  * `defineCommand` is the only place a command is born: it records the
  * definition (name, tier, handler) and hands it to whatever binder the process
- * installed — `ipcMain.handle` in the desktop app, nothing at all in a headless
- * host. The remote gateway looks commands up here rather than reading
- * Electron's private `_invokeHandlers` map, so the two surfaces cannot drift.
+ * installed. Every transport looks commands up here, so the surfaces cannot
+ * drift.
  */
 
 import {
@@ -80,8 +79,8 @@ export class CommandParamsError extends Error {
 const commands = new Map<string, CommandDefinition>();
 
 /**
- * Publishes a command on a local transport. The desktop installs one that
- * calls `ipcMain.handle`; a CLI or headless host installs none.
+ * Publishes a command on a local transport; a host with none installs no
+ * binder.
  */
 export type CommandBinder = (definition: CommandDefinition) => void;
 
@@ -189,8 +188,8 @@ function errorPayload(err: CommandParamsError | GitError | ShareError): {
 
 /**
  * Run a command for a local transport: log what threw, and flatten structured
- * errors into a plain `Error` carrying the payload as own enumerable props
- * (Electron preserves those across IPC). The gateway carries the same payload
+ * errors into a plain `Error` carrying the payload as own enumerable props.
+ * The gateway carries the same payload
  * in the wire error's `data` field, so it dispatches through `invokeCommand`.
  */
 export async function dispatchCommand(

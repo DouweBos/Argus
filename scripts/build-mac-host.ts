@@ -97,7 +97,7 @@ function sync(src: string, dest: string, byContent = false): boolean {
     .some((line) => line.length > 0 && !/^\.d\.\.t/.test(line));
 }
 
-/** Resources the host resolves through `ARGUS_RESOURCES`, as electron-builder ships them. */
+/** Resources the host resolves through `ARGUS_RESOURCES`. */
 const RESOURCES: { from: string; to: string; optional?: boolean }[] = [
   { from: "native/argus-sim-bridge/argus-sim-bridge", to: "argus-sim-bridge" },
   { from: "native/argus-sim-input/argus-sim-input", to: "argus-sim-input" },

@@ -1,1 +1,0 @@
-export { SetupConfigDialog } from "./SetupConfigDialog";

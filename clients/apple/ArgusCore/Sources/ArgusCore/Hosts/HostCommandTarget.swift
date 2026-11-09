@@ -1,22 +1,17 @@
 import Foundation
 
-/// Where a command runs while it is aimed at a paired host, mirroring the
-/// desktop's `app/lib/transport/routing.ts`.
+/// Where a command runs while it is aimed at a paired host.
 ///
 /// Most commands go to the host — that is the point. The exceptions act on the
-/// machine the window is on (opening a link, a dialog, a popout), on this
-/// app's own trust store and updater, or on a disk the client doesn't have.
+/// machine the window is on (opening a link), on this app's own trust store
+/// and updater, or on a disk the client doesn't have.
 public enum HostCommandTarget: Equatable, Sendable {
   case client
   case host
   case unavailable
 
   /// Host-only commands with a perfectly good meaning here.
-  static let clientExecuted: Set<String> = [
-    "open_external_url", "show_open_dialog", "show_image_context_menu",
-    "open_agent_popout", "close_agent_popout", "open_device_popout", "close_device_popout",
-    "close_window", "app_confirm_quit", "app_cancel_quit",
-  ]
+  static let clientExecuted: Set<String> = ["open_external_url"]
 
   /// Commands that reach into a filesystem the client doesn't have.
   static let unavailableHere: Set<String> = [

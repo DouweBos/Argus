@@ -9,7 +9,6 @@ lerna-debug.log*
 
 node_modules
 dist
-dist-electron
 dist-host
 dist-ssr
 release
@@ -75,9 +74,11 @@ vendor/bundle
 # Generated macOS iconset (built by scripts/render-icon.swift)
 build/icon.iconset/
 
-# Headless server app build output (Electron, then the native app's lane)
-release-server
+# Argus Server's release lane output
 release-mac-server
+# The removed Electron app's build output, left behind in older checkouts
+dist-electron
+release-server
 
 # Local iOS build settings (PostHog key et al)
 clients/apple/Config/Argus.local.xcconfig

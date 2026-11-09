@@ -53,11 +53,10 @@ break with a new Xcode release.
 coding agents, and it works just as well for humans. The short version:
 
 - **UI comes from Peacock** (`packages/peacock`): tokens only, no hardcoded colors, no inline `<svg>`
-  in `app/`, every component with a Storybook story.
-- **`packages/host` is plain Node** and never imports `electron`.
+  in client code, every component with a Storybook story.
+- **`packages/host` is plain Node** and never imports a desktop shell.
 - **New commands** follow the command contract in `CLAUDE.md`, then `pnpm gen:protocol`.
-- **Desktop features land in Argus for Mac and the iPhone client in the same PR.** The Electron app
-  is deprecated and gets no new work.
+- **Desktop features land in Argus for Mac and the iPhone client in the same PR.**
 - **Keep files focused**: ~500 lines per module, ~300 per component.
 
 ### Checks

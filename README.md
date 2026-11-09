@@ -137,8 +137,8 @@ signed with no team at all, see [Building Argus for Mac](CONTRIBUTING.md#buildin
 The simulator bridge relies on Apple's private CoreSimulator and SimulatorKit frameworks, so a new
 Xcode release can break it.
 
-The Electron app (`pnpm dev`, `pnpm build:app`) is deprecated: Argus for Mac replaced it in
-v0.72.0, and Electron installs update into it.
+Argus for Mac replaced the Electron app in v0.72.0; the Electron app has since been removed from
+the repo, and existing Electron installs update into Argus for Mac.
 
 ---
 
@@ -190,13 +190,11 @@ the center, runtime and testing on the right.
 | `packages/peacock`  | `@argus/peacock` — the design system: tokens, icons, components                                |
 | `clients/apple`     | Argus for Mac (the desktop app) and the iPhone client, in SwiftUI                              |
 | `clients/argus-web` | The web client                                                                                 |
-| `app/`              | React 19 + Vite renderer; the deprecated Electron app's, and the source of web-client views    |
-| `electron/`         | The deprecated Electron shell                                                                  |
 | `native/`           | Swift/ObjC simulator bridge                                                                    |
 
-The interesting constraint is that **`packages/host` never imports `electron`** — enforced by
-`packages/host/src/noElectron.test.ts` and a `no-restricted-imports` rule. Anything the desktop
-shell alone can do (open a browser, reach the keychain, post a notification) goes through the
+The interesting constraint is that **`packages/host` is plain Node** — it never imports a desktop
+shell (`packages/host/src/noElectron.test.ts` and a `no-restricted-imports` rule keep it that way).
+Anything the desktop shell alone can do (open a browser, reach the keychain, post a notification) goes through the
 `HostPlatform` seam in `packages/host/src/platform.ts`, which has a headless Node implementation
 where every capability degrades to a documented no-op. A Linux box or a bare CLI can run the core.
 
@@ -231,7 +229,7 @@ directory, so your primary checkout and your git client stay clean.
 | Claude Code as a `stream-json` subprocess  | Structured events over piped stdio, not a fragile interactive PTY |
 | Native binary for the iOS simulator bridge | Private CoreSimulator frameworks are unreachable from Node.js     |
 | Worktrees outside the project directory    | Keeps the user's repo and git client clean                        |
-| `packages/host` free of Electron           | The core runs headless — a Linux box or a CLI can host it         |
+| `packages/host` as plain Node              | The core runs headless — a Linux box or a CLI can host it         |
 | Noise IK for the remote gateway            | The tunnel only ever sees ciphertext; keys are pinned per device  |
 | MCP server baked in                        | Any MCP-aware agent can drive Argus sessions out of the box       |
 
@@ -252,7 +250,7 @@ Scenarios with a `beats` list are **recorded**: the runner pushes one beat's eve
 screenshots between steps, and stitches the frames with ffmpeg — a scripted sequence is
 reproducible in a way a screen recording never is.
 
-Scenarios are plain data in `app/lib/fixture/scenarios/`; `scripts/shots/` turns them into what the
+Scenarios are plain data in `scripts/shots/fixture/scenarios/`; `scripts/shots/` turns them into what the
 Mac app asks for, with real git repos behind the worktrees for the Git view. To add a shot, add a
 scenario (and, if the Mac needs it, an entry in `scripts/shots/scenes.ts`) and run `pnpm shots`.
 `pnpm shots --check` compares against the committed images, so a UI change that breaks the README or

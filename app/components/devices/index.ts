@@ -1,1 +1,0 @@
-export { DevicesScreen } from "./DevicesScreen";

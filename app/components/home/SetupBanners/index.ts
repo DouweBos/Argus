@@ -1,1 +1,0 @@
-export { SetupBanners } from "./SetupBanners";

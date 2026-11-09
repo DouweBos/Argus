@@ -22,14 +22,11 @@ import { ONBOARDING_COMMANDS } from "./onboarding";
 import { REMOTE_COMMANDS } from "./remote";
 import { SESSION_COMMANDS } from "./sessions";
 import { SETTINGS_COMMANDS } from "./settings";
-import { SHELL_COMMANDS } from "./shell";
 import { TERMINAL_COMMANDS } from "./terminals";
 import { USAGE_COMMANDS } from "./usage";
 
 export * from "./spec";
-export { SHELL_COMMANDS } from "./shell";
 export * from "../models/files";
-export * from "../models/shell";
 export * from "../models/git";
 export * from "../models/sessions";
 export * from "../models/agents";
@@ -70,7 +67,6 @@ export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
   mcp: MCP_COMMANDS,
   github: GITHUB_COMMANDS,
   gitRunner: GIT_RUNNER_COMMANDS,
-  shell: SHELL_COMMANDS,
   usage: USAGE_COMMANDS,
   account: ACCOUNT_COMMANDS,
   integrations: INTEGRATION_COMMANDS,
@@ -94,7 +90,6 @@ export const COMMANDS = {
   ...MCP_COMMANDS,
   ...GITHUB_COMMANDS,
   ...GIT_RUNNER_COMMANDS,
-  ...SHELL_COMMANDS,
   ...USAGE_COMMANDS,
   ...ACCOUNT_COMMANDS,
   ...INTEGRATION_COMMANDS,

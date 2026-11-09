@@ -1,1 +1,0 @@
-export { CommitLogView } from "./CommitLogView";

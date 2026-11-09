@@ -21,7 +21,7 @@ export type CommandTier = "admin" | "control" | "host" | "monitor";
 
 /**
  * Closed union of every tool id Argus ships. Adding a tool = adding an entry
- * here AND a manifest in `app/tools/registry.ts`.
+ * here AND one in ArgusCore's `DesktopTool.all`.
  */
 export const TOOL_IDS = [
   "device-control",

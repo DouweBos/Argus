@@ -11,16 +11,6 @@ on:
           - beta
           - alpha
         default: production
-      app:
-        # Argus for Mac is the desktop app; each production release republishes
-        # cutover-mac.yml, which moves migrated Electron installs onto it. The
-        # Electron app is deprecated: `electron` stays for an emergency fix only.
-        description: "Desktop app"
-        type: choice
-        options:
-          - mac
-          - electron
-        default: mac
 
 concurrency:
   # Each channel gets its own concurrency group so an alpha cut doesn't queue
@@ -30,9 +20,8 @@ concurrency:
 
 jobs:
   release:
-    # Argus for Mac builds with Xcode 27 (its SDK is what development uses); the
-    # Electron app stays on the macOS 26 image it has always shipped from.
-    runs-on: ${{ github.event.inputs.app != 'electron' && 'xcode-27' || 'macos-26' }}
+    # Argus for Mac builds with Xcode 27 (its SDK is what development uses).
+    runs-on: xcode-27
     timeout-minutes: 90
     permissions:
       contents: write
@@ -152,7 +141,6 @@ jobs:
           echo "MATCH_GIT_BASIC_AUTHORIZATION=$AUTH" >> "$GITHUB_ENV"
 
       - name: Select Xcode 27.2
-        if: ${{ github.event.inputs.app != 'electron' }}
         run: |
           sudo xcode-select -s /Applications/Xcode_27.2.app
           xcodebuild -version
@@ -161,7 +149,7 @@ jobs:
 
       # The tree-sitter grammars' full histories take ~8 minutes to clone cold.
       - name: Cache Swift packages
-        if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app != 'electron' }}
+        if: steps.stage.outputs.has_changes == 'true'
         uses: actions/cache@v4
         with:
           path: ~/spm-clones
@@ -188,21 +176,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
           # --- Telemetry (PostHog) ---
-          # Inlined at build time into both bundles: Vite picks up
-          # `VITE_POSTHOG_*` for the renderer, and `build-electron.mjs`
-          # passes `POSTHOG_*` to esbuild `define` so posthog-node in the
-          # main process gets the same secret. Both pairs come from the
-          # same GitHub secret. Without these, telemetry stays dormant.
+          # Inlined at build time: `build-host.mjs` passes `POSTHOG_*` to
+          # esbuild `define` for the bundled host, and the web client's build
+          # falls back to the same pair. Without these, telemetry stays dormant.
           POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
           POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
-          VITE_POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
-          VITE_POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
 
-          # Forwarded to electron-builder so the GitHub release body reflects
-          # the CHANGELOG section for this version.
+          # This version's CHANGELOG section, for the Sparkle appcast's notes
+          # and the cutover feed Electron installs read.
           ARGUS_RELEASE_NOTES_FILE: ${{ github.workspace }}/release-notes.md
 
-          # --- Sparkle (Argus for Mac only) ---
+          # --- Sparkle ---
           SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
 
@@ -210,13 +194,10 @@ jobs:
           FASTLANE_HIDE_CHANGELOG: "1"
           CI: "true"
           NODE_OPTIONS: "--max-old-space-size=8192"
-          APP: ${{ github.event.inputs.app || 'mac' }}
-          # The cached package clones; only the Mac lane reads it.
+          # The cached package clones.
           SPM_CLONE_DIR: /Users/runner/spm-clones
         run: |
-          lane=mac_app_release
-          [ "$APP" = "electron" ] && lane=release
-          bundle exec fastlane mac "$lane" \
+          bundle exec fastlane mac mac_app_release \
             allow_dirty:true \
             allow_any_branch:true \
             publish:false \

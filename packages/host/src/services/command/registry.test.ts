@@ -2,9 +2,8 @@
  * The command registry: one table behind local IPC and the wire.
  *
  * Every `defineCommand` reaches the local transport binder under the same
- * name, so the renderer and the gateway can never see different command sets.
- * The registered surface as a whole is asserted in
- * `electron/shellCommands.test.ts`.
+ * name, so the local UI and the gateway can never see different command sets.
+ * The registered surface as a whole is asserted in `commands/tiers.test.ts`.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";

@@ -7,7 +7,7 @@
  * only way to widen the remote surface for monitor/control — there is no
  * implicit escalation. The "admin" tier is the one exception: it dispatches raw
  * IPC command names, bounded by the tier its command registry declares —
- * mirrored here as `HOST_ONLY_COMMANDS` for the renderer.
+ * mirrored here as `HOST_ONLY_COMMANDS`.
  */
 
 /**
@@ -31,32 +31,16 @@ export type Capability = (typeof CAPABILITIES)[number];
  * *window* is on, or mutate the trust store that authorises the wire itself.
  *
  * The host registers these at the "host" tier in its command registry, which is
- * what actually bars them; this set is the renderer-visible mirror (the
- * registry lives in the main process) and is asserted equal to it by test.
- *
- * `updater_get_state` is deliberately absent: reading the host's update status
- * is useful, restarting it under other clients is not.
+ * what actually bars them; this set is the client-visible mirror, asserted
+ * equal to it by test.
  */
 export const HOST_ONLY_COMMANDS = new Set([
-  // window/dialog surface — meaningless on a headless host
-  "show_open_dialog",
-  "show_image_context_menu",
-  "open_agent_popout",
-  "close_agent_popout",
-  "close_window",
-  // Handoff advertises what *this* Mac has on screen; a phone driving it
-  // would make the Mac offer a screen nobody is looking at.
-  "publish_handoff",
   // act on the client's machine, not the host's
   "open_external_url",
   "open_path",
   "reveal_in_finder",
   "open_in_editor",
   "open_in_custom_editor",
-  // the host updates itself; a client must not restart it under other clients
-  "updater_check",
-  "updater_download",
-  "updater_quit_and_install",
   // pairing/revocation is the root of trust — console-only, never remote
   "remote_start_pairing",
   "remote_confirm_pairing",

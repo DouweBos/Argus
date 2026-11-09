@@ -7,11 +7,8 @@
  * reads exactly as a live agent's would.
  */
 
+import type { FixtureEvent, FixtureScenario } from "./fixture/types";
 import type { FixtureHost } from "./fixtureHost";
-import type {
-  FixtureEvent,
-  FixtureScenario,
-} from "../../app/lib/fixture/types";
 import type { LlmStreamEvent } from "@argus/host/services/agent/conversation/types";
 import path, { basename } from "node:path";
 import type { z } from "zod";
@@ -43,8 +40,8 @@ import {
   type RemoteAgentCapabilities,
   type RemoteAgentStatus,
 } from "@argus/remote-protocol";
-import { cannedReply } from "../../app/lib/fixture/reply";
 import { automationReply } from "./automations";
+import { cannedReply } from "./fixture/reply";
 import { materializeWorktree } from "./repos";
 import { conform } from "./synth";
 

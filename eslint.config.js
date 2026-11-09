@@ -1,11 +1,6 @@
 import js from "@eslint/js";
 import confusingBrowserGlobals from "confusing-browser-globals";
-import cssModulesNext from "eslint-plugin-css-modules-next";
 import importPlugin from "eslint-plugin-import";
-import perfectionist from "eslint-plugin-perfectionist";
-import react from "eslint-plugin-react";
-import reactHooks from "eslint-plugin-react-hooks";
-import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 import vitest from "@vitest/eslint-plugin";
 import globals from "globals";
@@ -80,12 +75,9 @@ const baseImportRules = {
       devDependencies: [
         "**/*.test.{ts,tsx}",
         "**/*.config.{js,mjs,cjs,ts,mts}",
-        "build-electron.mjs",
         "build-host.mjs",
         "scripts/**",
-        "vite.config.ts",
         "vitest.setup.ts",
-        "electron/**",
       ],
     },
   ],
@@ -103,8 +95,6 @@ const baseImportRules = {
         "index",
       ],
       "newlines-between": "never",
-      pathGroups: [{ pattern: "@/**", group: "internal" }],
-      pathGroupsExcludedImportTypes: [],
     },
   ],
 };
@@ -153,34 +143,14 @@ const baseTypeScriptRules = {
   "@typescript-eslint/explicit-function-return-type": "off",
 };
 
-const baseReactRules = {
-  "react/function-component-definition": "error",
-  "react/hook-use-state": "error",
-  "react/jsx-boolean-value": ["error", "never"],
-  "react/jsx-curly-brace-presence": [
-    "error",
-    { props: "never", children: "never" },
-  ],
-  "react/jsx-fragments": "error",
-  "react/jsx-handler-names": [
-    "error",
-    { eventHandlerPrefix: "on", eventHandlerPropPrefix: "on" },
-  ],
-  "react/jsx-no-bind": "off",
-  "react/jsx-no-useless-fragment": ["error", { allowExpressions: true }],
-  "react/jsx-pascal-case": ["error", { allowAllCaps: true }],
-  "react/jsx-sort-props": "off",
-  "react/prop-types": "off",
-  "react/self-closing-comp": "error",
-};
-
 export default tseslint.config(
   {
     ignores: [
       "dist",
-      "dist-electron",
       "dist-host",
-      // Packaged app output — bundled vendor JS, never ours to lint.
+      // The removed Electron app's build output, left in older checkouts.
+      "dist-electron",
+      // Release output and vendored gems — never ours to lint.
       "release",
       "release-server",
       "vendor",
@@ -190,7 +160,7 @@ export default tseslint.config(
       "packages/peacock/vite.config.ts",
       "packages/peacock/.storybook/**",
       ".claude/worktrees/**",
-      // Standalone Expo app — separate toolchain (RN/Expo), linted on its own.
+      // The native apps and the web client, checked by their own builds.
       "clients/**",
     ],
   },
@@ -200,13 +170,10 @@ export default tseslint.config(
     files: ["**/*.{ts,tsx,mjs,cjs,js}"],
     plugins: { import: importPlugin },
     settings: {
-      "import/internal-regex": "^@/",
       "import/resolver": {
         typescript: {
           noWarnOnMultipleProjects: true,
           project: [
-            "./tsconfig.json",
-            "./tsconfig.main.json",
             "./tsconfig.node.json",
             "./packages/host/tsconfig.json",
             "./packages/peacock/tsconfig.json",
@@ -223,8 +190,6 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         project: [
-          "./tsconfig.json",
-          "./tsconfig.main.json",
           "./tsconfig.node.json",
           "./packages/host/tsconfig.json",
           "./packages/peacock/tsconfig.json",
@@ -242,59 +207,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["app/**/*.{ts,tsx}"],
-    languageOptions: {
-      globals: globals.browser,
-    },
-    plugins: {
-      "css-modules-next": cssModulesNext,
-      react,
-      "react-hooks": reactHooks,
-      "react-refresh": reactRefresh,
-      perfectionist,
-    },
-    settings: {
-      react: { version: "detect" },
-    },
-    rules: {
-      ...react.configs.flat.recommended.rules,
-      ...react.configs.flat["jsx-runtime"].rules,
-      ...reactHooks.configs.recommended.rules,
-      ...baseReactRules,
-      "react/no-unknown-property": [
-        "error",
-        { ignore: ["partition", "useragent"] },
-      ],
-      "react/jsx-handler-names": "warn",
-      "react/no-unescaped-entities": "warn",
-      "react/hook-use-state": "warn",
-      "react-refresh/only-export-components": [
-        "warn",
-        { allowConstantExport: true },
-      ],
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: [
-            {
-              name: "react",
-              importNames: ["useImperativeHandle"],
-              message:
-                "useImperativeHandle is banned. Use props/callbacks instead.",
-            },
-          ],
-        },
-      ],
-      "perfectionist/sort-interfaces": ["error", { type: "alphabetical" }],
-      "perfectionist/sort-object-types": ["error", { type: "alphabetical" }],
-      "css-modules-next/no-undefined-class": "error",
-      "css-modules-next/no-unused-class": "off",
-      "css-modules-next/invalid-css-module-filepath": "off",
-      "css-modules-next/no-dynamic-class-access": "off",
-    },
-  },
-  {
-    files: ["electron/**/*.ts", "packages/host/**/*.ts"],
+    files: ["packages/host/**/*.ts"],
     languageOptions: {
       globals: globals.node,
     },
@@ -322,13 +235,7 @@ export default tseslint.config(
     },
   },
   {
-    files: [
-      "**/main.tsx",
-      "**/preload.ts",
-      "**/*.config.{js,mjs,cjs,ts,mts}",
-      "build-electron.mjs",
-      "build-host.mjs",
-    ],
+    files: ["**/*.config.{js,mjs,cjs,ts,mts}", "build-host.mjs"],
     rules: {
       "import/no-anonymous-default-export": "off",
     },
@@ -354,7 +261,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["build-electron.mjs", "build-host.mjs"],
+    files: ["build-host.mjs"],
     languageOptions: {
       globals: globals.node,
     },

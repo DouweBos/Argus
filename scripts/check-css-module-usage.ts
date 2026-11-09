@@ -1,5 +1,5 @@
 /**
- * Project-wide CSS module checks (complements ESLint css-modules-next rules):
+ * CSS module checks for the web client:
  * - Reports classes defined in a *.module.css that are never referenced from
  *   any TS/TSX file that imports that module (handles shared CSS modules).
  *
@@ -10,9 +10,9 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, extname, join, relative, resolve } from "node:path";
 import postcss from "postcss";
-import { error } from "../app/lib/logger";
+import { error } from "@argus/host/logger";
 
-const APP_ROOT = resolve(import.meta.dirname, "../app");
+const WEB_ROOT = resolve(import.meta.dirname, "../clients/argus-web/src");
 
 function walkFiles(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -113,7 +113,7 @@ function escapeRegExp(s: string): string {
 }
 
 function main(): void {
-  const tsFiles = walkFiles(APP_ROOT).filter((f) => {
+  const tsFiles = walkFiles(WEB_ROOT).filter((f) => {
     const e = extname(f);
 
     return e === ".ts" || e === ".tsx";

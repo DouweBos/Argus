@@ -1,8 +1,8 @@
 import * as esbuild from "esbuild";
 import fs from "node:fs";
 
-// The standalone Node host: the same core as the desktop's main process, with
-// no Electron on the module graph. Native addons stay in node_modules.
+// The standalone Node host the Mac app and Argus Server bundle, and `argus-host`
+// runs. Native addons stay in node_modules.
 const pkg = JSON.parse(fs.readFileSync("package.json", "utf-8"));
 const posthogKey =
   process.env.POSTHOG_KEY ?? process.env.VITE_POSTHOG_KEY ?? "";
@@ -16,7 +16,7 @@ await esbuild.build({
   platform: "node",
   target: "node20",
   format: "cjs",
-  external: ["electron", "node-pty", "playwright-core"],
+  external: ["node-pty", "playwright-core"],
   sourcemap: true,
   define: {
     "process.env.POSTHOG_KEY": JSON.stringify(posthogKey),

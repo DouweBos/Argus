@@ -1,1 +1,0 @@
-export { CenterPanel } from "./CenterPanel";

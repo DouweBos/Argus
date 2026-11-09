@@ -7,7 +7,7 @@
  *
  * # Architecture
  *
- * The MCP server runs inside the Electron main process and has direct access
+ * The MCP server runs inside the host process and has direct access
  * to `appState` and all service functions. No proxy layer or IPC needed.
  */
 

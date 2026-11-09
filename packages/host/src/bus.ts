@@ -2,10 +2,9 @@
  * The host event bus — transport-agnostic fan-out for everything services push
  * out unprompted (agent streams, session updates, PTY data, device video).
  *
- * The core cannot know about `webContents`: a headless host has no renderer,
- * and a remote client is reached over a socket. So services emit here, and
- * each transport registers a sink — `electron/` forwards to every live
- * BrowserWindow, the remote gateway forwards to paired devices.
+ * The core cannot know about its clients: the Mac app is reached over the local
+ * UI socket and a remote client over the gateway. So services emit here, and
+ * each transport registers a sink that forwards to its connections.
  */
 
 /** Receives a copy of every host event. Must never throw. */

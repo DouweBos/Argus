@@ -38,7 +38,7 @@ const DEFAULT_STATE: OnboardingStateData = {
  * logs, sessions, worktrees — is keyed off this single helper. Override
  * it once and the whole install switches to the parallel home.
  */
-/** @deprecated Prefer `argusHomeDir` from `electron/lib/argusHome.ts` directly. */
+/** @deprecated Prefer `argusHomeDir` from `lib/argusHome.ts` directly. */
 export function argusDirPath(): string {
   return argusHomeDir();
 }

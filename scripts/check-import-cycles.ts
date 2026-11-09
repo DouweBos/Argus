@@ -18,24 +18,17 @@
  */
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
-import { error, info } from "../app/lib/logger";
+import { error, info } from "@argus/host/logger";
 
 const REPO_ROOT = resolve(import.meta.dirname, "..");
 
-const SEARCH_ROOTS = [
-  "packages/host/src",
-  "packages/peacock/src",
-  "app",
-  "src",
-  "electron",
-];
+const SEARCH_ROOTS = ["packages/host/src", "packages/peacock/src"];
 
 /**
  * Cycles that predate this check, each as its files in dependency order.
  * Shrink this list; never grow it.
  */
 const BASELINE: string[][] = [
-  ["app/lib/lastKnownCapabilities.ts", "app/stores/conversationStore.ts"],
   [
     "packages/host/src/services/agent/agentService.ts",
     "packages/host/src/services/mcp/server.ts",
@@ -43,25 +36,11 @@ const BASELINE: string[][] = [
     "packages/host/src/services/notifications/osNotification.ts",
   ],
   [
-    "app/lib/ipc.ts",
-    "app/lib/transport/hostRouting.ts",
-    "app/lib/router.tsx",
-    "app/lib/telemetry.ts",
-  ],
-  [
     "packages/host/src/services/agent/agentService.ts",
     "packages/host/src/services/mcp/server.ts",
     "packages/host/src/services/mcp/automationTools.ts",
     "packages/host/src/services/automation/autoStart.ts",
     "packages/host/src/services/automation/proposals/accept.ts",
-  ],
-  [
-    "app/lib/ipc.ts",
-    "app/lib/transport/index.ts",
-    "app/stores/connectionStore.ts",
-    "app/lib/routeHooks.ts",
-    "app/lib/router.tsx",
-    "app/lib/telemetry.ts",
   ],
   [
     "packages/host/src/services/agent/agentService.ts",

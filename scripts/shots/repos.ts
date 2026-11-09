@@ -10,7 +10,7 @@ import { execFile } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
-import { DIFF } from "../../app/lib/fixture/scenarios/review";
+import { DIFF } from "./fixture/scenarios/review";
 
 const run = promisify(execFile);
 const HOURS = 60 * 60_000;

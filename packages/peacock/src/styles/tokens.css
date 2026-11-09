@@ -3,7 +3,7 @@
    ==========================================================================
    The default `html` block is the dark theme; the light theme lives in
    `html[data-theme="light"]`. The app toggles `data-theme` on <html>
-   based on system preference + user override (see app/stores/themeStore.ts).
+   based on system preference + user override (see the web client's lib/theme.ts).
 
    Token groups:
      - Backgrounds, borders, text            (theme-aware)

@@ -8,8 +8,8 @@ the menu bar.
 
 It is a native Mac app built from `clients/apple` (the `ArgusServer` target),
 a sibling of [Argus for Mac](mac-app.md): it bundles and supervises the same
-Node host core the Mac app does, in a server mode. It replaces the Electron
-build of Argus Server, which is deprecated (see
+Node host core the Mac app does, in a server mode. It replaced the Electron
+build of Argus Server, which has since been removed (see
 [Moving from the Electron server](#moving-from-the-electron-server)).
 
 |                      | Argus for Mac       | Argus Server               |
@@ -397,7 +397,7 @@ Access and the like) all carry over.
   and offers **Take Over from the Old Argus Server**, which asks the old one to
   quit and starts its own host on the same home.
 - **Starting at login.** The old server started from a hand-installed launch
-  agent (`pnpm server:install-agent`). The first time the native server sees it,
+  agent. The first time the native server sees it,
   it asks once whether to start at login with **Open at Login** instead; until
   you agree, the menu offers **Start at Login with This App…**. Agreeing moves
   the old agent to `~/.argus-server/migrated/` and turns on Open at Login.
@@ -406,22 +406,14 @@ Access and the like) all carry over.
   first time a recent version runs. If the native server finds them still in
   the old format, its menu says so: open the old server once, then come back.
 
-Going back is the reverse: quit the native server, put the old app back (it is
-in `migrated/`), and reinstall its launch agent with `pnpm
-server:install-agent`. Both use the same home and the same lock.
+Going back is the reverse: quit the native server and put the old app back (it
+is in `migrated/`, and so is its launch agent if you moved to Open at Login). Both use the same home and the same
+lock.
 
-## Electron server (deprecated)
+## The old Electron server
 
-The Electron build (`pnpm build:app:server`, `pnpm dev:server`,
-`scripts/electron-builder-server.config.cjs`) still builds, so the last
-release that hands over to the native app can ship. It is removed one release
-after that. Until then:
-
-- `pnpm dev:server` runs it unpackaged on `~/.argus-server-dev` and port 47617,
-  with dev-loopback pairing on.
-- `pnpm server:install-agent` installs its launch agent and prints a
-  deprecation note; the native server replaces the agent as described above.
-- Its menu offers only the hand-off as an update: Squirrel.Mac would refuse the
-  desktop's update feed on a server, since the bundle ids differ.
-- When the native server already runs on its home, it quits at launch with a
-  log line instead of competing for it.
+The Electron build of Argus Server has been removed from the repo. An old
+install that is still running offers only the hand-off above as an update
+(Squirrel.Mac would refuse the desktop's update feed on a server, since the
+bundle ids differ), and when the native server already runs on its home it
+quits at launch with a log line instead of competing for it.

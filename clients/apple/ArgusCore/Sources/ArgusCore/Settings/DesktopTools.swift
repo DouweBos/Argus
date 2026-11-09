@@ -1,7 +1,7 @@
 import ArgusKit
 import Foundation
 
-/// The togglable tools of `app/tools/registry.ts`, and what each needs on the
+/// The togglable tools (`TOOL_IDS` in the protocol), and what each needs on the
 /// machine. The host persists the toggles (`get_enabled_tools`).
 public struct DesktopTool: Identifiable, Sendable {
   public let id: String

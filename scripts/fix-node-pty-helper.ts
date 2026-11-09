@@ -13,7 +13,7 @@
  */
 import { chmodSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { error, info } from "../app/lib/logger";
+import { error, info } from "@argus/host/logger";
 
 const PNPM_STORE = join(import.meta.dirname, "..", "node_modules", ".pnpm");
 

@@ -38,7 +38,7 @@ const SERVER_CATALOG = path.join(
   "clients/apple/ArgusServer/Telemetry/ServerTelemetryEvent.swift",
 );
 /** Where a `capture(...)` call can plausibly live. */
-const HOST_SOURCES = ["packages", "app", "electron", "clients/argus-web/src"];
+const HOST_SOURCES = ["packages", "clients/argus-web/src"];
 const WEB_SOURCES = ["clients/argus-web/src"];
 const IOS_SOURCES = ["clients/apple/ArgusRemote"];
 const MAC_SOURCES = ["clients/apple/ArgusDesktop"];

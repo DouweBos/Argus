@@ -25,15 +25,6 @@ vi.mock("./ios", () => ({
   bootSimulator: vi.fn(),
 }));
 
-// Mock electron so state.ts can be imported without Electron runtime.
-vi.mock("electron", () => ({
-  app: {
-    isPackaged: false,
-    getPath: () => "/tmp/argus-test-userdata",
-    getVersion: () => "0.0.0-test",
-  },
-}));
-
 // Mock main.ts to avoid Electron window references.
 vi.mock("../../main", () => ({ getMainWindow: () => null }));
 

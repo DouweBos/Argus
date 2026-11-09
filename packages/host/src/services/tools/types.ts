@@ -2,9 +2,8 @@
  * Tool identity — the part of the tool system the host needs.
  *
  * Tools gate IPC handlers and UI surfaces behind one registry. The host only
- * ever deals in ids and the project-level mask; the renderer's `ToolManifest`
- * (icons, rail contributions, settings sections) stays in `app/tools/types.ts`
- * and imports these from here.
+ * ever deals in ids and the project-level mask; names, descriptions and
+ * prerequisites live with the apps (ArgusCore's `DesktopTool`).
  */
 
 import type { ToolId } from "@argus/remote-protocol";

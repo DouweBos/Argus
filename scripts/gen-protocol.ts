@@ -14,8 +14,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
+import { error, info } from "@argus/host/logger";
 import * as protocol from "@argus/remote-protocol";
-import { error, info } from "../app/lib/logger";
 
 const OUT_DIR = path.resolve(
   import.meta.dirname,

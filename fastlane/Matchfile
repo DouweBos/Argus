@@ -6,15 +6,15 @@
 #   export MATCH_PASSWORD="<the shared password>"
 #   pnpm certs
 #
-# The Electron app's `developer_id` has no provisioning profile — match
-# only syncs the cert + private key. Argus for Mac does have one (Sign in
-# with Apple): `fastlane mac mac_app_profile`.
+# By default match only syncs the `developer_id` cert + private key. Argus for
+# Mac also has a provisioning profile (Sign in with Apple):
+# `fastlane mac mac_app_profile`.
 
 git_url ENV["MATCH_GIT_URL"] || "git@github.com:DouweBos/apple-certificates.git"
 storage_mode "git"
 type "developer_id"
 platform "macos"
 
-# The Electron app has no profile-bound entitlements, so don't let match
-# fetch a "Direct" profile for it. The `mac_app_profile` lane overrides this.
+# Argus Server has no profile-bound entitlements, so don't let match fetch a
+# "Direct" profile by default. The `mac_app_profile` lane overrides this.
 skip_provisioning_profiles true

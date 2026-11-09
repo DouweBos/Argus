@@ -37,9 +37,8 @@ function isToolId(id: string): id is ToolId {
 let cache: ToolsConfigFile | null = null;
 
 /**
- * Default-enabled defaults from the registry. We replicate them here as a
- * static map rather than importing the renderer registry — main process can't
- * pull React-flavored modules. Keep this in sync with `app/tools/registry.ts`.
+ * Default-enabled defaults. Keep this in sync with `defaultEnabled` in
+ * ArgusCore's `DesktopTool.all`.
  */
 const DEFAULT_ENABLED: Record<ToolId, boolean> = {
   "device-recording": true,

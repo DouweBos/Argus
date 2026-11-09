@@ -17,8 +17,6 @@ import {
   writeTerminalOutput,
 } from "./multiplexer";
 
-// broadcast.ts imports electron at runtime; vitest has no windows.
-vi.mock("electron", () => ({ BrowserWindow: { getAllWindows: () => [] } }));
 vi.mock("../../state", () => ({
   appState: { sessions: new Map(), terminals: new Map() },
 }));

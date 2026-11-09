@@ -6,10 +6,5 @@
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true
   },
-  "include": [
-    "vite.config.ts",
-    "vitest.config.ts",
-    "vitest.setup.ts",
-    "scripts/**/*.ts"
-  ]
+  "include": ["vitest.config.ts", "vitest.setup.ts", "scripts/**/*.ts"]
 }

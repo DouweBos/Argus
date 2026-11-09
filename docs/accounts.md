@@ -2,7 +2,7 @@
 
 Sign in once and your computers find each other. An Argus account lists the
 computers you have linked to it with the addresses they are currently reachable
-on, so the iPhone app, the Mac app and the desktop app can connect to every one
+on, so the iPhone app and the Mac app can connect to every one
 of them without scanning a pairing code per computer. Every linked computer also
 gets a tunnel of its own, so you reach it from anywhere with nothing to set up.
 
@@ -11,18 +11,17 @@ way to connect without one.
 
 ## Signing in
 
-| Where              | How                                                                                                                        |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| iPhone             | Settings → Account. Sign in with Apple, GitHub or an email code. The first device you sign in with sets up the account.    |
-| Mac app            | Settings → Account. Sign in with Apple, GitHub or an email code; this also puts this Mac's own host on the account.        |
-| Desktop (Electron) | Settings → Account → **Link this computer**. Your browser opens on a code; approve it from your phone (see below).         |
-| Argus Server       | **Link to Argus Account…** in its menu bar item. It shows a code.                                                          |
-| Headless host      | Type `login` in the `argus-host` terminal (or start it as `argus-host login`). It prints a code.                           |
-| Any browser        | Open `houwert.dev/argus/app` and sign in; a device already on the account approves it (see [In a browser](#in-a-browser)). |
+| Where         | How                                                                                                                        |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| iPhone        | Settings → Account. Sign in with Apple, GitHub or an email code. The first device you sign in with sets up the account.    |
+| Mac app       | Settings → Account. Sign in with Apple, GitHub or an email code; this also puts this Mac's own host on the account.        |
+| Argus Server  | **Link to Argus Account…** in its menu bar item. It shows a code.                                                          |
+| Headless host | Type `login` in the `argus-host` terminal (or start it as `argus-host login`). It prints a code.                           |
+| Any browser   | Open `houwert.dev/argus/app` and sign in; a device already on the account approves it (see [In a browser](#in-a-browser)). |
 
 ### Linking a computer with a code
 
-A computer that has no sign-in of its own — the desktop app, Argus Server,
+A computer that has no sign-in of its own — Argus Server,
 `argus-host` on a Mac mini in a cupboard — shows a code like `WDJB-MJHT`. Then either:
 
 - type the code into the Argus app on your phone or Mac (Settings → Account →
@@ -44,8 +43,8 @@ The first device you sign in with sets up the account. Every device after it
 asks to join, and one that is already on the account approves it:
 
 1. Sign in on the new iPhone or Mac app. It shows _Approve this phone_ (or Mac).
-2. On a device already on the account — your iPhone, the Mac app, or the
-   desktop app — a prompt says the new one wants to join. Choose **Review**
+2. On a device already on the account — your iPhone or the Mac
+   app — a prompt says the new one wants to join. Choose **Review**
    (or find it under Settings → Account → **Waiting to join**).
 3. Both screens show the same six-digit code. Check it, then confirm on both.
 
@@ -58,11 +57,11 @@ confirms the code on a device that's already trusted.
 
 ## If you lose your devices
 
-| You still have                    | Do                                                                                                                                                                                                                                                       |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Any device on the account         | Approve the new one from it, as above.                                                                                                                                                                                                                   |
-| No device, but a linked computer  | Approve from that computer instead: type `approve` in its `argus-host` terminal, pick **Waiting to join** in Argus Server's menu, or use the prompt in the desktop app on that computer. (Turn this off per computer with _Approve from this computer_.) |
-| Nothing at all that could approve | Reset your account from the iPhone or Mac app (see below).                                                                                                                                                                                               |
+| You still have                    | Do                                                                                                                                                                                                                                                   |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Any device on the account         | Approve the new one from it, as above.                                                                                                                                                                                                               |
+| No device, but a linked computer  | Approve from that computer instead: type `approve` in its `argus-host` terminal, pick **Waiting to join** in Argus Server's menu, or use the prompt in the Mac app on that computer. (Turn this off per computer with _Approve from this computer_.) |
+| Nothing at all that could approve | Reset your account from the iPhone or Mac app (see below).                                                                                                                                                                                           |
 
 ### Resetting your account
 
@@ -79,10 +78,9 @@ What happens next:
   the device you reset on.
 - **Each computer has to be linked again from its own keyboard.** It stops
   publishing its address, gives back its tunnel, lets no account device in,
-  and shows _This account was reset — link this computer again_ in desktop
-  Settings → Account, Argus Server's menu, the Mac app and the `argus-host`
-  terminal. Link it the usual way (**Link this computer**, **Link to Argus
-  Account…** or `login`). The Mac you reset on links its own host again by
+  and shows _This account was reset — link this computer again_ in
+  Argus Server's menu, the Mac app and the `argus-host`
+  terminal. Link it the usual way (**Link to Argus Account…** or `login`). The Mac you reset on links its own host again by
   itself.
 - **Computers you paired with a QR code keep working.** Pairings don't go
   through the account.
@@ -100,12 +98,12 @@ again from a device of yours and link your computers again.
 
 `houwert.dev/argus/app` is Argus in any current browser — Chrome, Edge,
 Firefox or Safari — with nothing to install. It is the same client the
-desktop serves on your network, signed in with your account instead of paired
+host serves on your network, signed in with your account instead of paired
 with one computer.
 
 1. Open `houwert.dev/argus/app` and sign in with the account you use in the
    Argus apps.
-2. On your iPhone, the Mac app or the desktop app, approve the browser and
+2. On your iPhone or the Mac app, approve the browser and
    check that both screens show the same six-digit code — exactly as for a
    new phone. A browser can't start an account: if yours has no devices yet,
    sign in on the iPhone or Mac app first.
@@ -201,7 +199,7 @@ phone. Turn them off with **Background push** in the phone's Settings.
   and checks the account itself. iOS may hold them back for an app you swiped
   away; Argus catches up the next time it opens.
 
-Every host list — on the phone, in the Mac app and in the desktop app — also
+Every host list — on the phone and in the Mac app — also
 shows whether each computer on the account is online, or when it was last
 seen.
 
@@ -257,13 +255,12 @@ Each device and computer has a name setting. It starts as the system's name
 (your iPhone's name, the Mac's computer name), and it is what the device joins
 or the computer links as.
 
-| Where              | Setting                                                                                |
-| ------------------ | -------------------------------------------------------------------------------------- |
-| iPhone             | Settings → **This iPhone's name**                                                      |
-| Mac app            | Settings → General → This Mac → **Name** — one name for this Mac and its own host      |
-| Desktop (Electron) | Settings → Account → **This computer's name** — names the computer and its window      |
-| Argus Server       | Menu → Argus Account → **This Computer's Name…**, or its Settings → Account & Remote   |
-| Headless host      | `account set name <name>` in the `argus-host` terminal (`default` for the system name) |
+| Where         | Setting                                                                                |
+| ------------- | -------------------------------------------------------------------------------------- |
+| iPhone        | Settings → **This iPhone's name**                                                      |
+| Mac app       | Settings → General → This Mac → **Name** — one name for this Mac and its own host      |
+| Argus Server  | Menu → Argus Account → **This Computer's Name…**, or its Settings → Account & Remote   |
+| Headless host | `account set name <name>` in the `argus-host` terminal (`default` for the system name) |
 
 Changing it while you're on the account renames that device (and computer) on
 the account straight away. Offline, the rename waits and goes through once the
@@ -271,12 +268,12 @@ account service is reachable. Renaming this device or computer from the
 Devices/Computers list edits the same setting, and a rename made from another
 of your devices shows up in the setting too.
 
-- **Remove** a device from your phone, the Mac app, the desktop app or a
+- **Remove** a device from your phone, the Mac app or a
   browser at `houwert.dev/argus/app`. Every computer it is connected to drops
   it straight away; it has to be approved again to come back.
 - **Sign out** on a device removes that device from the account. Computers it
   was QR-paired with are unaffected.
-- **Unlink this computer** (desktop Settings → Account, Argus Server's menu →
+- **Unlink this computer** (Argus Server's menu →
   Argus Account → **Unlink…**, or `logout` in `argus-host`) removes the computer: it stops publishing its address, gives
   back its tunnel, and devices on the account can no longer connect to it
   through the account.
@@ -310,11 +307,12 @@ the account):
 | Use the account                                | on       | Off: stop publishing the address and refuse account devices, while staying linked |
 | Account service                                | built-in | Point at another account service (self-hosting, staging)                          |
 | iPhone and browser access                      | control  | What account iPhones and browsers may do on this computer (`monitor`, `control`)  |
-| Mac and desktop access                         | admin    | What account Macs and desktop apps may do (`monitor`, `control`, `admin`)         |
+| Mac and desktop access                         | admin    | What account Macs may do (`monitor`, `control`, `admin`)                          |
 | Publish LAN / Tailscale / Cloudflare addresses | on       | Which addresses go into the directory. LAN IPs are visible to the service         |
 | Managed tunnel                                 | on       | Run this computer's tunnel while remote access is on. Off: LAN and Tailscale only |
 | Approve from this computer                     | on       | Whether this computer's console may approve other computers joining               |
 | Name                                           | system   | The name this computer links as and keeps on the account (see above)              |
 
-Change them in desktop Settings → Account, Argus Server's Settings → Account &
-Remote, or with the `account` commands in `argus-host`.
+Change them in Argus Server's Settings → Account & Remote, or with the
+`account` commands in `argus-host`. Argus for Mac has the managed tunnel switch
+under Settings → Remote.

@@ -1387,44 +1387,6 @@ extension ArgusProtocol {
       }
     }
 
-    public struct CloseAgentPopoutParams: Codable, Sendable {
-      public var agentId: String
-
-      enum CodingKeys: String, CodingKey {
-        case agentId = "agentId"
-      }
-
-      public init(agentId: String) {
-        self.agentId = agentId
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(agentId, forKey: .agentId)
-      }
-    }
-
-    public struct CloseDevicePopoutParams: Codable, Sendable {
-      public var platform: PopoutPlatform
-      public var deviceKey: String
-
-      enum CodingKeys: String, CodingKey {
-        case platform = "platform"
-        case deviceKey = "deviceKey"
-      }
-
-      public init(platform: PopoutPlatform, deviceKey: String) {
-        self.platform = platform
-        self.deviceKey = deviceKey
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(platform, forKey: .platform)
-        try c.encode(deviceKey, forKey: .deviceKey)
-      }
-    }
-
     public struct CodeFormatParams: Codable, Sendable {
       public var id: String
       public var relativePath: String
@@ -7220,64 +7182,6 @@ extension ArgusProtocol {
       }
     }
 
-    public struct OpenAgentPopoutParams: Codable, Sendable {
-      public var agentId: String
-      public var sessionId: String
-      public var title: String?
-      public var cursorX: Double?
-      public var cursorY: Double?
-
-      enum CodingKeys: String, CodingKey {
-        case agentId = "agentId"
-        case sessionId = "sessionId"
-        case title = "title"
-        case cursorX = "cursorX"
-        case cursorY = "cursorY"
-      }
-
-      public init(agentId: String, sessionId: String, title: String? = nil, cursorX: Double? = nil, cursorY: Double? = nil) {
-        self.agentId = agentId
-        self.sessionId = sessionId
-        self.title = title
-        self.cursorX = cursorX
-        self.cursorY = cursorY
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(agentId, forKey: .agentId)
-        try c.encode(sessionId, forKey: .sessionId)
-        try c.encodeIfPresent(title, forKey: .title)
-        try c.encodeIfPresent(cursorX, forKey: .cursorX)
-        try c.encodeIfPresent(cursorY, forKey: .cursorY)
-      }
-    }
-
-    public struct OpenDevicePopoutParams: Codable, Sendable {
-      public var platform: PopoutPlatform
-      public var deviceKey: String
-      public var name: String?
-
-      enum CodingKeys: String, CodingKey {
-        case platform = "platform"
-        case deviceKey = "deviceKey"
-        case name = "name"
-      }
-
-      public init(platform: PopoutPlatform, deviceKey: String, name: String? = nil) {
-        self.platform = platform
-        self.deviceKey = deviceKey
-        self.name = name
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(platform, forKey: .platform)
-        try c.encode(deviceKey, forKey: .deviceKey)
-        try c.encodeIfPresent(name, forKey: .name)
-      }
-    }
-
     public struct OpenExternalUrlParams: Codable, Sendable {
       public var url: String
 
@@ -7582,39 +7486,6 @@ extension ArgusProtocol {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(agentId, forKey: .agentId)
         try c.encodeIfPresent(snapshot, forKey: .snapshot)
-      }
-    }
-
-    public struct PublishHandoffParams: Codable, Sendable {
-      public var sessionId: String?
-      public var agentId: String?
-      public var label: String?
-      public var projectName: String?
-      public var repoRoot: String?
-
-      enum CodingKeys: String, CodingKey {
-        case sessionId = "sessionId"
-        case agentId = "agentId"
-        case label = "label"
-        case projectName = "projectName"
-        case repoRoot = "repoRoot"
-      }
-
-      public init(sessionId: String? = nil, agentId: String? = nil, label: String? = nil, projectName: String? = nil, repoRoot: String? = nil) {
-        self.sessionId = sessionId
-        self.agentId = agentId
-        self.label = label
-        self.projectName = projectName
-        self.repoRoot = repoRoot
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(sessionId, forKey: .sessionId)
-        try c.encodeIfPresent(agentId, forKey: .agentId)
-        try c.encodeIfPresent(label, forKey: .label)
-        try c.encodeIfPresent(projectName, forKey: .projectName)
-        try c.encodeIfPresent(repoRoot, forKey: .repoRoot)
       }
     }
 
@@ -8682,44 +8553,6 @@ extension ArgusProtocol {
       }
     }
 
-    public struct ShowImageContextMenuParams: Codable, Sendable {
-      public var src: String
-      public var suggestedName: String?
-
-      enum CodingKeys: String, CodingKey {
-        case src = "src"
-        case suggestedName = "suggestedName"
-      }
-
-      public init(src: String, suggestedName: String? = nil) {
-        self.src = src
-        self.suggestedName = suggestedName
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(src, forKey: .src)
-        try c.encodeIfPresent(suggestedName, forKey: .suggestedName)
-      }
-    }
-
-    public struct ShowOpenDialogParams: Codable, Sendable {
-      public var title: String?
-
-      enum CodingKeys: String, CodingKey {
-        case title = "title"
-      }
-
-      public init(title: String? = nil) {
-        self.title = title
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encodeIfPresent(title, forKey: .title)
-      }
-    }
-
     public struct SimulatorButtonParams: Codable, Sendable {
       public var udid: String
       public var button: String
@@ -9584,23 +9417,6 @@ extension ArgusProtocol {
       }
     }
 
-    public struct UpdaterCheckParams: Codable, Sendable {
-      public var silent: Bool?
-
-      enum CodingKeys: String, CodingKey {
-        case silent = "silent"
-      }
-
-      public init(silent: Bool? = nil) {
-        self.silent = silent
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encodeIfPresent(silent, forKey: .silent)
-      }
-    }
-
     public struct UploadSessionAttachmentParams: Codable, Sendable {
       public var id: String
       public var name: String
@@ -9921,20 +9737,6 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.AndroidTouchParams
       public typealias Result = IgnoredResult
       public static let name = "android_touch"
-      public static let tier = "admin"
-    }
-
-    public enum AppCancelQuit: RemoteCommand {
-      public typealias Params = EmptyParams
-      public typealias Result = IgnoredResult
-      public static let name = "app_cancel_quit"
-      public static let tier = "admin"
-    }
-
-    public enum AppConfirmQuit: RemoteCommand {
-      public typealias Params = EmptyParams
-      public typealias Result = IgnoredResult
-      public static let name = "app_confirm_quit"
       public static let tier = "admin"
     }
 
@@ -10356,27 +10158,6 @@ extension ArgusProtocol {
       public typealias Result = IgnoredResult
       public static let name = "clear_session_setup_error"
       public static let tier = "admin"
-    }
-
-    public enum CloseAgentPopout: RemoteCommand {
-      public typealias Params = ArgusProtocol.CommandsTypes.CloseAgentPopoutParams
-      public typealias Result = IgnoredResult
-      public static let name = "close_agent_popout"
-      public static let tier = "host"
-    }
-
-    public enum CloseDevicePopout: RemoteCommand {
-      public typealias Params = ArgusProtocol.CommandsTypes.CloseDevicePopoutParams
-      public typealias Result = IgnoredResult
-      public static let name = "close_device_popout"
-      public static let tier = "admin"
-    }
-
-    public enum CloseWindow: RemoteCommand {
-      public typealias Params = EmptyParams
-      public typealias Result = IgnoredResult
-      public static let name = "close_window"
-      public static let tier = "host"
     }
 
     public enum CodeFormat: RemoteCommand {
@@ -12010,13 +11791,6 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
-    public enum ListPoppedOutAgents: RemoteCommand {
-      public typealias Params = EmptyParams
-      public typealias Result = [String]
-      public static let name = "list_popped_out_agents"
-      public static let tier = "admin"
-    }
-
     public enum ListProjects: RemoteCommand {
       public typealias Params = EmptyParams
       public typealias Result = [ArgusProtocol.ProjectEntry]
@@ -12416,20 +12190,6 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
-    public enum OpenAgentPopout: RemoteCommand {
-      public typealias Params = ArgusProtocol.CommandsTypes.OpenAgentPopoutParams
-      public typealias Result = IgnoredResult
-      public static let name = "open_agent_popout"
-      public static let tier = "host"
-    }
-
-    public enum OpenDevicePopout: RemoteCommand {
-      public typealias Params = ArgusProtocol.CommandsTypes.OpenDevicePopoutParams
-      public typealias Result = IgnoredResult
-      public static let name = "open_device_popout"
-      public static let tier = "admin"
-    }
-
     public enum OpenExternalUrl: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.OpenExternalUrlParams
       public typealias Result = IgnoredResult
@@ -12540,13 +12300,6 @@ extension ArgusProtocol {
       public typealias Result = IgnoredResult
       public static let name = "publish_agent_snapshot"
       public static let tier = "admin"
-    }
-
-    public enum PublishHandoff: RemoteCommand {
-      public typealias Params = ArgusProtocol.CommandsTypes.PublishHandoffParams
-      public typealias Result = IgnoredResult
-      public static let name = "publish_handoff"
-      public static let tier = "host"
     }
 
     public enum PushSessionBranch: RemoteCommand {
@@ -12728,13 +12481,6 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.RenameSessionBranchParams
       public typealias Result = IgnoredResult
       public static let name = "rename_session_branch"
-      public static let tier = "admin"
-    }
-
-    public enum RequestCameraAccess: RemoteCommand {
-      public typealias Params = EmptyParams
-      public typealias Result = ArgusProtocol.CameraAccessStatus
-      public static let name = "request_camera_access"
       public static let tier = "admin"
     }
 
@@ -12932,20 +12678,6 @@ extension ArgusProtocol {
       public typealias Result = IgnoredResult
       public static let name = "set_viewing_session"
       public static let tier = "monitor"
-    }
-
-    public enum ShowImageContextMenu: RemoteCommand {
-      public typealias Params = ArgusProtocol.CommandsTypes.ShowImageContextMenuParams
-      public typealias Result = IgnoredResult
-      public static let name = "show_image_context_menu"
-      public static let tier = "host"
-    }
-
-    public enum ShowOpenDialog: RemoteCommand {
-      public typealias Params = ArgusProtocol.CommandsTypes.ShowOpenDialogParams
-      public typealias Result = String?
-      public static let name = "show_open_dialog"
-      public static let tier = "host"
     }
 
     public enum SignalSourcesList: RemoteCommand {
@@ -13240,34 +12972,6 @@ extension ArgusProtocol {
       public typealias Result = IgnoredResult
       public static let name = "update_terminal_title"
       public static let tier = "admin"
-    }
-
-    public enum UpdaterCheck: RemoteCommand {
-      public typealias Params = ArgusProtocol.CommandsTypes.UpdaterCheckParams
-      public typealias Result = ArgusProtocol.UpdaterState
-      public static let name = "updater_check"
-      public static let tier = "host"
-    }
-
-    public enum UpdaterDownload: RemoteCommand {
-      public typealias Params = EmptyParams
-      public typealias Result = IgnoredResult
-      public static let name = "updater_download"
-      public static let tier = "host"
-    }
-
-    public enum UpdaterGetState: RemoteCommand {
-      public typealias Params = EmptyParams
-      public typealias Result = ArgusProtocol.UpdaterState
-      public static let name = "updater_get_state"
-      public static let tier = "admin"
-    }
-
-    public enum UpdaterQuitAndInstall: RemoteCommand {
-      public typealias Params = EmptyParams
-      public typealias Result = IgnoredResult
-      public static let name = "updater_quit_and_install"
-      public static let tier = "host"
     }
 
     public enum UploadSessionAttachment: RemoteCommand {

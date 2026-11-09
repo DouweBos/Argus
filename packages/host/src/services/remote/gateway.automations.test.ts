@@ -6,7 +6,7 @@
  * Asserted empirically: the family's events actually leave the host bus and
  * reach an admin connection, and a scoped grant reaches neither the commands
  * nor the events. That the commands are admin-tier and never host-only is
- * asserted in `electron/shellCommands.test.ts`.
+ * asserted in `commands/tiers.test.ts`.
  */
 
 import type { PairedDevice } from "./deviceStore";

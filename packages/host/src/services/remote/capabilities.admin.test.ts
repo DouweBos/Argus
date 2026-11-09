@@ -2,7 +2,7 @@
  * The admin tier: raw command passthrough for a paired Mac, bounded by the
  * registry's tier. monitor/control must stay on the strict allowlist. That the
  * real host-tier registrations match `HOST_ONLY_COMMANDS` is asserted in
- * `electron/shellCommands.test.ts`.
+ * `commands/tiers.test.ts`.
  */
 
 import type { GatewayContext } from "./capabilities";
@@ -12,10 +12,6 @@ import { COMMANDS, REMOTE_METHODS } from "@argus/remote-protocol";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-vi.mock("electron", () => ({
-  ipcMain: { handle: vi.fn() },
-  safeStorage: { isEncryptionAvailable: () => false },
-}));
 vi.mock("@argus/host/bus", () => ({ emitHostEvent: vi.fn() }));
 vi.mock("../../state", () => ({
   appState: {
@@ -73,7 +69,7 @@ const FIXTURES: [
   z.ZodType?,
 ][] = [
   ["list_projects", "admin", (args) => ({ args, ok: true })],
-  ["show_open_dialog", "host", () => ({ paths: [] })],
+  ["open_external_url", "host", () => undefined],
   [
     "boom",
     "admin",
@@ -156,7 +152,7 @@ describe("admin passthrough dispatch", () => {
 
   it("refuses host-only commands even for admin", async () => {
     await expect(
-      dispatch("show_open_dialog", {}, makeCtx(["monitor", "admin"])),
+      dispatch("open_external_url", {}, makeCtx(["monitor", "admin"])),
     ).rejects.toMatchObject({ code: "capability_denied" });
   });
 
@@ -167,7 +163,7 @@ describe("admin passthrough dispatch", () => {
       ["monitor", "control", "admin"],
     ] as const) {
       await expect(
-        dispatch("show_open_dialog", {}, makeCtx([...caps])),
+        dispatch("open_external_url", {}, makeCtx([...caps])),
       ).rejects.toMatchObject({ code: "capability_denied" });
     }
   });

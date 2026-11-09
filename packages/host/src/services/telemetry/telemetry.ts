@@ -1,5 +1,5 @@
 /**
- * Main-process telemetry. Sends anonymous feature-usage and crash/error events
+ * Host telemetry. Sends anonymous feature-usage and crash/error events
  * to PostHog. Privacy rules:
  *
  * - Distinct id is a random UUID stored under `~/.argus/telemetry-id`.
@@ -11,9 +11,8 @@
  *   anonymous heartbeat per launch (no baseProps merge, no errors, no
  *   feedback); `full` enables the whole event catalogue.
  * - Off when `POSTHOG_KEY` is not configured. The key is inlined into the
- *   main bundle at build time by `build-electron.mjs` via esbuild `define`
- *   (matching how Vite inlines `VITE_POSTHOG_KEY` for the renderer); reading
- *   `process.env` at runtime in a packaged Electron app would always be
+ *   host bundle at build time by `build-host.mjs` via esbuild `define`;
+ *   reading `process.env` at runtime in a packaged app would always be
  *   empty, which is exactly the bug this avoids.
  */
 import type {
@@ -49,7 +48,6 @@ function baseProps(): Record<string, boolean | number | string> {
     platform: process.platform,
     arch: process.arch,
     os_release: os.release(),
-    electron_version: process.versions.electron ?? "",
     node_version: process.versions.node,
   };
 }
@@ -208,7 +206,7 @@ export function captureWhenEnabled<N extends EventName>(
  * of users with a `$pageview` event, so the heartbeat has to be a
  * `$pageview` (not a custom event) to make presence-only users countable.
  *
- * Bypasses `baseProps()` so we don't leak OS / arch / electron version for
+ * Bypasses `baseProps()` so we don't leak OS / arch / Node version for
  * presence-only users — the only property attached is `app_version`,
  * which is the minimum useful signal for "are old builds still in the
  * wild?". The path is a fixed `argus:///` literal that contains no

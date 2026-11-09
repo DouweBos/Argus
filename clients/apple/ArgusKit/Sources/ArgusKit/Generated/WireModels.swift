@@ -3046,24 +3046,6 @@ extension ArgusProtocol {
     }
   }
 
-  public struct CameraAccessStatus: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let denied = CameraAccessStatus(rawValue: "denied")
-    public static let granted = CameraAccessStatus(rawValue: "granted")
-    public static let notDetermined = CameraAccessStatus(rawValue: "not-determined")
-    public static let restricted = CameraAccessStatus(rawValue: "restricted")
-    public static let unknown = CameraAccessStatus(rawValue: "unknown")
-  }
-
   public struct ChatHistoryEntryImportedFrom: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -11373,22 +11355,6 @@ extension ArgusProtocol {
     }
   }
 
-  public struct PopoutPlatform: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let android = PopoutPlatform(rawValue: "android")
-    public static let ios = PopoutPlatform(rawValue: "ios")
-    public static let video = PopoutPlatform(rawValue: "video")
-  }
-
   public struct PrereqId: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -17517,71 +17483,6 @@ extension ArgusProtocol {
       try c.encodeIfPresent(templateId, forKey: .templateId)
       try c.encodeIfPresent(lastRunAt, forKey: .lastRunAt)
       try c.encodeIfPresent(nextRunAt, forKey: .nextRunAt)
-    }
-  }
-
-  public struct UpdaterPhase: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let available = UpdaterPhase(rawValue: "available")
-    public static let checking = UpdaterPhase(rawValue: "checking")
-    public static let downloaded = UpdaterPhase(rawValue: "downloaded")
-    public static let downloading = UpdaterPhase(rawValue: "downloading")
-    public static let error = UpdaterPhase(rawValue: "error")
-    public static let idle = UpdaterPhase(rawValue: "idle")
-    public static let notAvailable = UpdaterPhase(rawValue: "not-available")
-  }
-
-  public struct UpdaterState: Codable, Sendable {
-    public var currentVersion: String
-    public var error: String?
-    public var phase: UpdaterPhase
-    public var progressPercent: Double
-    public var releaseNotes: String?
-    public var releaseDate: String?
-    public var updateVersion: String?
-    public var lastCheckedAt: Double?
-
-    enum CodingKeys: String, CodingKey {
-      case currentVersion = "currentVersion"
-      case error = "error"
-      case phase = "phase"
-      case progressPercent = "progressPercent"
-      case releaseNotes = "releaseNotes"
-      case releaseDate = "releaseDate"
-      case updateVersion = "updateVersion"
-      case lastCheckedAt = "lastCheckedAt"
-    }
-
-    public init(currentVersion: String, error: String? = nil, phase: UpdaterPhase, progressPercent: Double, releaseNotes: String? = nil, releaseDate: String? = nil, updateVersion: String? = nil, lastCheckedAt: Double? = nil) {
-      self.currentVersion = currentVersion
-      self.error = error
-      self.phase = phase
-      self.progressPercent = progressPercent
-      self.releaseNotes = releaseNotes
-      self.releaseDate = releaseDate
-      self.updateVersion = updateVersion
-      self.lastCheckedAt = lastCheckedAt
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(currentVersion, forKey: .currentVersion)
-      try c.encode(error, forKey: .error)
-      try c.encode(phase, forKey: .phase)
-      try c.encode(progressPercent, forKey: .progressPercent)
-      try c.encode(releaseNotes, forKey: .releaseNotes)
-      try c.encode(releaseDate, forKey: .releaseDate)
-      try c.encode(updateVersion, forKey: .updateVersion)
-      try c.encode(lastCheckedAt, forKey: .lastCheckedAt)
     }
   }
 

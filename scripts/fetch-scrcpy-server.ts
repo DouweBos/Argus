@@ -11,7 +11,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { get as httpsGet } from "node:https";
 import path from "node:path";
-import { error, log } from "../app/lib/logger";
+import { error, log } from "@argus/host/logger";
 
 // ---------------------------------------------------------------------------
 // Configuration — bump these when upgrading scrcpy
