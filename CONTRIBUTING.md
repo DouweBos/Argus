@@ -16,7 +16,7 @@ You need macOS 15+ on Apple Silicon, Xcode, [mise](https://mise.jdx.dev/) and th
 [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code).
 
 ```sh
-mise install        # node 24, pnpm 10
+mise install        # node 24, pnpm 12
 pnpm install
 pnpm build:bridge   # native simulator bridge
 ```

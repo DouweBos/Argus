@@ -3,3 +3,42 @@ packages:
   - "packages/*"
   # LAN web client — in the workspace so it can consume @argus/peacock.
   - "clients/argus-web"
+
+# Link packages from one shared store so a new worktree's install is near-instant.
+enableGlobalVirtualStore: true
+
+allowBuilds:
+  core-js: false
+  esbuild: true
+  node-pty: true
+  protobufjs: false
+  unrs-resolver: false
+
+# yaml-language-server imports this without declaring it; the global virtual store does not hoist it.
+packageExtensions:
+  yaml-language-server:
+    dependencies:
+      vscode-languageserver-protocol: "3.17.5"
+
+overrides:
+  "@babel/core": "^7.29.6"
+  "@humanfs/node": "^0.16.8"
+  baseline-browser-mapping: "^2.11.0"
+  browserslist: "^4.28.7"
+  flatted: "^3.4.2"
+  js-yaml@3: "^3.15.2"
+  js-yaml@4: "^4.3.2"
+  ip-address: "^10.7.4"
+  brace-expansion@1: "^1.1.21"
+  brace-expansion@5: "^5.0.12"
+
+# Security bumps taken inside pnpm's one-day release-age window; drop once they age out.
+minimumReleaseAgeExclude:
+  - "@typescript-eslint/project-service@8.72.2"
+  - "@typescript-eslint/scope-manager@8.72.2"
+  - "@typescript-eslint/tsconfig-utils@8.72.2"
+  - "@typescript-eslint/types@8.72.2"
+  - "@typescript-eslint/typescript-estree@8.72.2"
+  - "@typescript-eslint/utils@8.72.2"
+  - "@typescript-eslint/visitor-keys@8.72.2"
+  - vite@7.3.8

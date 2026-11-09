@@ -14,7 +14,7 @@ Argus for Mac replaced the Electron app in v0.72.0, and the Electron app has sin
 - `pnpm gen:protocol` — regenerate ArgusKit's Swift wire types (`ArgusKit/Sources/ArgusKit/Generated/`) from the command catalog
 - `pnpm dev:host` / `pnpm start:host` — the host core as a plain Node process (`dist-host/argus-host.js`, no Electron). Prints the gateway address; type `pair` to pair a device from the terminal
 - `pnpm storybook` — Peacock design system at :6006
-- Tooling via `mise.toml` (node 24, pnpm 10)
+- Tooling via `mise.toml` (node 24, pnpm 12)
 
 ## Architecture
 

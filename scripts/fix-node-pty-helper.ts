@@ -11,22 +11,25 @@
  * "works locally, fails in CI" — terminals, run commands and the setup
  * pipeline all gone, with nothing to go on. One chmod, every install.
  */
-import { chmodSync, existsSync, readdirSync, statSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  readdirSync,
+  realpathSync,
+  statSync,
+} from "node:fs";
 import { join } from "node:path";
 import { error, info } from "@argus/host/logger";
 
-const PNPM_STORE = join(import.meta.dirname, "..", "node_modules", ".pnpm");
+const ROOT = join(import.meta.dirname, "..");
 
-/** Every installed copy of node-pty — pnpm keys them by version. */
+/** Every installed copy of node-pty, which the global virtual store keeps outside the repo. */
 function nodePtyRoots(): string[] {
-  if (!existsSync(PNPM_STORE)) {
-    return [];
-  }
+  const links = [ROOT, join(ROOT, "packages", "host")]
+    .map((dir) => join(dir, "node_modules", "node-pty"))
+    .filter((link) => existsSync(link));
 
-  return readdirSync(PNPM_STORE)
-    .filter((name) => name.startsWith("node-pty@"))
-    .map((name) => join(PNPM_STORE, name, "node_modules", "node-pty"))
-    .filter((dir) => existsSync(dir));
+  return [...new Set(links.map((link) => realpathSync(link)))];
 }
 
 function helpersIn(nodePty: string): string[] {

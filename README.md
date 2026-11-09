@@ -15,7 +15,7 @@ Run five at once, watch them work on real devices, review the diffs, merge what 
 
 ![macOS 15+ · Apple Silicon](https://img.shields.io/badge/macOS-15%2B%20Apple%20Silicon-black)
 ![SwiftUI · Node host](https://img.shields.io/badge/SwiftUI-Node%20host-f05138)
-![Node 24 · pnpm 10](https://img.shields.io/badge/Node-24%20%C2%B7%20pnpm%2010-5fa04e)
+![Node 24 · pnpm 12](https://img.shields.io/badge/Node-24%20%C2%B7%20pnpm%2012-5fa04e)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-stream--json-d97757)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -103,7 +103,7 @@ Or hand a Mac mini the job with the headless server build.
 <summary><b>Prerequisites</b></summary>
 
 - macOS 15+ (Apple Silicon)
-- [mise](https://mise.jdx.dev/) — pins Node 24 and pnpm 10 (see `mise.toml`)
+- [mise](https://mise.jdx.dev/) — pins Node 24 and pnpm 12 (see `mise.toml`)
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) on your `PATH`, with your own
   subscription or API key
 - Xcode + iOS Simulators for the iOS features; Android SDK + an AVD for Android (optional)
