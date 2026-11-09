@@ -85,6 +85,9 @@ public struct MenuChip<Value: Hashable>: View {
   let runners: [MenuChip<String>.Option] = [
     .init(value: "", label: "Default", hint: "Use the computer's default"),
     .init(value: "codex", label: "Codex"),
+    .init(
+      value: "gemini", label: "Gemini CLI",
+      hint: "Gemini CLI isn't installed. Install it with `npm install -g @google/gemini-cli`.", disabled: true),
   ]
   ChipFlowLayout(spacing: 6, lineSpacing: 6) {
     MenuChip("Runner", selection: $runner, options: runners, icon: Icon.terminal)

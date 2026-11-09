@@ -178,7 +178,7 @@ new-agent picker.
 
 | Setting           | Default       | Description                                                                                                                                                                             |
 | ----------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Runner**        | `claude-code` | The CLI/agent that drives sessions: Claude Code or [Codex](#codex), plus any [custom runner](#custom-runners) you add.                                                                  |
+| **Runner**        | `claude-code` | The CLI/agent that drives sessions: Claude Code, [Codex](#codex) or an [ACP agent](#acp-agents), plus any [custom runner](#custom-runners) you add.                                     |
 | **Default model** | _(empty)_     | Optional model id passed to the runner — e.g. `claude-opus-4-7`. Leave blank to let the runner pick its own default. The new-agent picker starts on it when the agent uses this runner. |
 
 A runner whose CLI isn't installed on the computer stays in every runner
@@ -227,6 +227,42 @@ and approval policy:
 A few things stay Claude Code only, and are hidden on Codex chats: editing or
 forking from an earlier message, and side questions. Codex reports tokens
 but not spend, so a Codex chat's cost reads $0.
+
+### ACP agents
+
+Agents that speak the [Agent Client Protocol](https://agentclientprotocol.com)
+run through one shared runner. Install the agent's CLI and sign in with it
+once; Argus starts it in ACP mode and uses its login and settings as they are.
+
+| Runner          | Id            | CLI                      | Install                                           | Sign in           |
+| --------------- | ------------- | ------------------------ | ------------------------------------------------- | ----------------- |
+| **Gemini CLI**  | `gemini`      | `gemini --acp`           | `npm install -g @google/gemini-cli`               | run `gemini` once |
+| **Antigravity** | `antigravity` | `agy acp` (1.5 or newer) | the Antigravity CLI from antigravity.google       | `agy acp --login` |
+| **Kiro**        | `kiro`        | `kiro-cli acp`           | `curl -fsSL https://cli.kiro.dev/install \| bash` | `kiro-cli login`  |
+
+The chat works the same as on Claude Code: streamed replies and thinking, tool
+cards, the agent's plan as the todo list, permission prompts, interrupts, the
+model picker (the models the agent offers) and token usage where the agent
+reports it. ACP agents ask before acting, and Argus answers by mode:
+
+| Mode        | Goes through without asking                         | Asks before                       |
+| ----------- | --------------------------------------------------- | --------------------------------- |
+| **Ask**     | nothing                                             | everything the agent asks about   |
+| **Review**  | reads, searches and edits inside the worktree       | commands and anything else        |
+| **Auto**    | everything except file changes outside the worktree | file changes outside the worktree |
+| **Plan**    | reads and searches; changes are refused             | nothing                           |
+| **Trusted** | everything                                          | nothing                           |
+
+Plan mode switches the agent into its own plan mode when it has one. Picking
+**Always allow** on a prompt keeps the approval for the rest of the session
+(Kiro saves those workspace-wide, so there it only allows once).
+
+Things that differ from Claude Code, and are hidden on ACP chats: editing or
+forking from an earlier message, side questions and the effort picker. A
+message sent while the agent is busy waits for its turn to end. The Argus MCP
+tools reach agents that take HTTP MCP servers; agents that don't still run,
+without them. Resuming a chat needs the agent to support it; one that can't
+starts fresh and says so.
 
 ---
 

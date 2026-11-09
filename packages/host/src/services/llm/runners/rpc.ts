@@ -1,7 +1,7 @@
 /**
- * JSON-RPC peer for `codex app-server`: one JSON object per line over stdio,
- * `{ id, method, params }` without the `jsonrpc` field. Both sides send
- * requests — the server asks for approvals the same way we ask for turns.
+ * JSON-RPC peer over a child's stdio, one JSON object per line. Both sides
+ * send requests — the agent asks for approvals the way we ask for turns.
+ * `codex app-server` omits the `jsonrpc` field; ACP agents require it.
  */
 
 import readline from "node:readline";
@@ -22,10 +22,22 @@ export interface RpcNotification {
 
 interface Pending {
   resolve: (result: unknown) => void;
-  reject: (error: string) => void;
+  reject: (error: RpcError | string) => void;
 }
 
-export class CodexRpc {
+/** A JSON-RPC error reply; reads as its message where callers `String()` it. */
+export class RpcError {
+  constructor(
+    readonly code: number | null,
+    readonly message: string,
+  ) {}
+
+  toString(): string {
+    return this.message;
+  }
+}
+
+export class JsonRpcPeer {
   private nextId = 1;
   private readonly pending = new Map<RpcId, Pending>();
   private closed = false;
@@ -39,6 +51,9 @@ export class CodexRpc {
       /** A line that isn't JSON-RPC — logged, never fatal. */
       malformed: (line: string) => void;
     },
+    private readonly opts: { name: string; jsonrpc?: boolean } = {
+      name: "codex app-server",
+    },
   ) {
     const rl = readline.createInterface({ input: stdout, crlfDelay: Infinity });
     rl.on("line", (line) => this.onLine(line));
@@ -46,7 +61,7 @@ export class CodexRpc {
 
   request<T>(method: string, params: unknown): Promise<T> {
     if (this.closed) {
-      return Promise.reject(`codex app-server is not running (${method})`);
+      return Promise.reject(`${this.opts.name} is not running (${method})`);
     }
     const id = this.nextId++;
 
@@ -84,7 +99,8 @@ export class CodexRpc {
     if (this.closed || this.stdin.destroyed || this.stdin.writableEnded) {
       return;
     }
-    this.stdin.write(JSON.stringify(message) + "\n");
+    const framed = this.opts.jsonrpc ? { jsonrpc: "2.0", ...message } : message;
+    this.stdin.write(JSON.stringify(framed) + "\n");
   }
 
   private onLine(line: string): void {
@@ -96,7 +112,7 @@ export class CodexRpc {
       method?: string;
       params?: unknown;
       result?: unknown;
-      error?: { message?: string };
+      error?: { code?: number; message?: string };
     };
     try {
       msg = JSON.parse(line) as typeof msg;
@@ -129,7 +145,12 @@ export class CodexRpc {
     }
     this.pending.delete(msg.id);
     if (msg.error) {
-      pending.reject(msg.error.message ?? "codex app-server request failed");
+      pending.reject(
+        new RpcError(
+          msg.error.code ?? null,
+          msg.error.message ?? `${this.opts.name} request failed`,
+        ),
+      );
     } else {
       pending.resolve(msg.result);
     }

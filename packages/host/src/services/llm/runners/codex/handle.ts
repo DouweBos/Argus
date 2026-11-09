@@ -19,8 +19,8 @@ import type {
   CodexTurn,
   CodexUserInput,
 } from "./protocol";
-import type { RpcId, RpcNotification, RpcRequest } from "./rpc";
 import type { InitializeResponse } from "../claudeCode/protocol";
+import type { RpcId, RpcNotification, RpcRequest } from "../rpc";
 import type {
   ImageAttachment,
   LlmRunnerHandle,
@@ -35,9 +35,9 @@ import os from "node:os";
 import path from "node:path";
 import { info, warn } from "@argus/host/logger";
 import { toCanonicalPermissionMode } from "../claudeCode/permissionModes";
+import { JsonRpcPeer } from "../rpc";
 import { matchesDisallowed } from "./disallowed";
 import { PLAN_MODE_INSTRUCTIONS, toCodexPermissions } from "./permissionModes";
-import { CodexRpc } from "./rpc";
 import { CodexTranscript, fileChangeTool, toolUses } from "./translate";
 
 export const CODEX_RUNNER_ID = "codex";
@@ -65,7 +65,7 @@ interface PendingApproval {
 export class CodexHandle extends EventEmitter implements LlmRunnerHandle {
   readonly runnerId = CODEX_RUNNER_ID;
   readonly child: ChildProcess;
-  private readonly rpc: CodexRpc;
+  private readonly rpc: JsonRpcPeer;
   private readonly transcript = new CodexTranscript();
   private readonly agentId: string;
   private readonly preHook: PermissionPreHook | null;
@@ -94,7 +94,7 @@ export class CodexHandle extends EventEmitter implements LlmRunnerHandle {
     if (!opts.child.stdin || !opts.child.stdout) {
       throw `Failed to acquire stdio pipes for agent ${opts.agentId}`;
     }
-    this.rpc = new CodexRpc(opts.child.stdin, opts.child.stdout, {
+    this.rpc = new JsonRpcPeer(opts.child.stdin, opts.child.stdout, {
       notification: (n) => this.onNotification(n),
       request: (r) => this.onServerRequest(r),
       malformed: (l) => warn(`[agent:${this.agentId}] codex: ${l}`),

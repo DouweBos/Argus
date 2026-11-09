@@ -1,7 +1,7 @@
 /**
  * Runner registry.
  *
- * Built-in runners (Claude Code, Codex) register at module load; custom
+ * Built-in runners (Claude Code, Codex, the ACP agents) register at module load; custom
  * runners derived from them are layered on top. The agent service resolves a runner
  * by id (or falls back to the only registered one) without importing
  * runner-specific modules.
@@ -20,6 +20,8 @@ import {
   listCustomRunners,
   saveCustomRunner,
 } from "./customRunners/store";
+import { ACP_PRESETS } from "./runners/acp/presets";
+import { AcpRunner } from "./runners/acp/runner";
 import { ClaudeCodeRunner } from "./runners/claudeCode/runner";
 import { CodexRunner } from "./runners/codex/runner";
 import { DerivedRunner } from "./runners/derived";
@@ -177,4 +179,7 @@ export function deleteCustomRunnerAndSync(id: string): void {
 // Register built-in runners on module load, then layer the user's on top.
 registerRunner(new ClaudeCodeRunner());
 registerRunner(new CodexRunner());
+for (const preset of ACP_PRESETS) {
+  registerRunner(new AcpRunner(preset));
+}
 syncCustomRunners();

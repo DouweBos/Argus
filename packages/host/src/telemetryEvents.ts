@@ -60,7 +60,13 @@ type LspLanguage =
  * `telemetry_*`.
  */
 /** Built-in runners by id; a user's own runner is just `custom`. */
-export const TELEMETRY_RUNNERS = ["claude-code", "codex"] as const;
+export const TELEMETRY_RUNNERS = [
+  "claude-code",
+  "codex",
+  "gemini",
+  "antigravity",
+  "kiro",
+] as const;
 export type TelemetryRunner = (typeof TELEMETRY_RUNNERS)[number] | "custom";
 
 export interface EventMap {

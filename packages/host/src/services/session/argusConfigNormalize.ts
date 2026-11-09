@@ -108,7 +108,13 @@ export function normalizeToolsConfig(
  * fail — the resolver falls back to the app default — but we log a warning
  * so users notice typos before an agent fails to spawn.
  */
-const KNOWN_RUNNER_IDS = new Set<string>(["claude-code", "codex"]);
+const KNOWN_RUNNER_IDS = new Set<string>([
+  "claude-code",
+  "codex",
+  "gemini",
+  "antigravity",
+  "kiro",
+]);
 
 /**
  * Normalise the optional `llm` block. Both `runner` and `model` are

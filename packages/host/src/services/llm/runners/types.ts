@@ -6,7 +6,7 @@
  * own subprocess, wire protocol, transcript format, and capability set; the
  * agent service only sees the normalized handle.
  *
- * Built-ins: Claude Code and Codex. Their events share Claude Code's
+ * Built-ins: Claude Code, Codex and the ACP agents. Their events share Claude Code's
  * stream-json shape, which every transcript consumer reads.
  */
 
