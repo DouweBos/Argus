@@ -8,9 +8,8 @@ import { remote } from "./remote";
 import { review } from "./review";
 
 /**
- * `agent` is captured for regression cover only — it has no caption in the
- * site's sync script, so it never reaches the gallery. The `huddle` recording
- * shows the same transcript in the context that sells it.
+ * `agent` is the still hero: one whole turn next to the app on its simulator.
+ * The `huddle` recording tells the same task as a collaboration.
  */
 export const scenarios: Record<string, FixtureScenario> = {
   [parallel.id]: parallel,

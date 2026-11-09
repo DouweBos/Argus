@@ -53,7 +53,10 @@ export const MAC_SCENES: Record<string, MacScene> = {
     // The chat and the simulator, without the sidebar.
     crop: { x: 630, y: 186, w: 2550, h: 1794 },
   },
-  huddle: { clicks: [{ x: 590, y: 108 }] },
+  huddle: {
+    clicks: [{ x: 404, y: 182 }],
+    defaults: { "argus:contextCard.collapsed.agents": "YES" },
+  },
   // Home lists sessions, not agents; the Agents screen fills in row by row.
   // Five rows leave the window mostly empty: the clip ends below the sidebar's sessions.
   flock: {

@@ -1,51 +1,17 @@
 import type { FixtureEvent, FixtureResolver, FixtureScenario } from "../types";
-import type { LlmStreamEvent } from "@argus/host/services/agent/conversation/types";
-import { AGENT_ID, CAPABILITIES } from "./agent";
 import { AGENTS, BASE_CHANNELS, BASE_STORAGE, NOW } from "./aurora";
+import {
+  AGENT_ID,
+  CAPABILITIES,
+  devicePanel,
+  finished,
+  prompt,
+  say,
+  tool,
+  toolResult,
+} from "./stream";
 
 const ROOM_ID = "room_9f2c";
-const USAGE = { input_tokens: 18_432, output_tokens: 612 };
-
-/** A stream-json event, as the CLI would write it. */
-function ev(payload: LlmStreamEvent): FixtureEvent {
-  return {
-    channel: `agent:event:${AGENT_ID}`,
-    payload: JSON.stringify(payload),
-  };
-}
-
-function say(text: string): FixtureEvent {
-  return ev({
-    type: "assistant",
-    message: {
-      model: "claude-opus-5",
-      usage: USAGE,
-      content: [{ type: "text", text }],
-    },
-  });
-}
-
-function tool(
-  id: string,
-  name: string,
-  input: Record<string, unknown>,
-): FixtureEvent {
-  return ev({
-    type: "assistant",
-    message: {
-      model: "claude-opus-5",
-      usage: USAGE,
-      content: [{ type: "tool_use", id, name, input }],
-    },
-  });
-}
-
-function toolResult(id: string, content: string): FixtureEvent {
-  return ev({
-    type: "user",
-    message: { content: [{ type: "tool_result", tool_use_id: id, content }] },
-  });
-}
 
 /** What a huddle guest types reaches the desktop as a remote message. */
 function guestSays(author: string, message: string): FixtureEvent {
@@ -91,6 +57,9 @@ function rooms(list: unknown[]) {
 
 /** Where the agent already is by the time the recording starts. */
 const OPENING: FixtureEvent[] = [
+  prompt(
+    "Downloaded episodes spin forever in airplane mode. Make the player read from the download cache first.",
+  ),
   say(
     "Downloads stream straight from the network layer, so airplane mode drops them. I'll put a cache read in front of the fetch.",
   ),
@@ -109,7 +78,11 @@ const OPENING: FixtureEvent[] = [
       "        if let cached = await store.episode(id) {\n            return cached\n        }\n\n        return try await client.fetchEpisode(id)",
   }),
   toolResult("t2", "The file src/player/EpisodeLoader.swift has been updated."),
-].map((event, index) => ({ ...event, delayMs: 2 + index }));
+].map((event, index) => ({
+  ...event,
+  at: [0, 3, 5, 6, 14, 15][index],
+  delayMs: 2 + index,
+}));
 
 /**
  * The whole collaboration story: a designer is handed a link to one running
@@ -121,6 +94,7 @@ export const huddle: FixtureScenario = {
   id: "huddle",
   route: "/sessions/ses_offline/agents",
   activeAgents: { ses_offline: AGENT_ID },
+  deviceScreen: "aurora-downloads",
   storage: {
     ...BASE_STORAGE,
     "argus:last-capabilities": {
@@ -182,20 +156,13 @@ export const huddle: FixtureScenario = {
       holdSeconds: 4.4,
     },
     {
-      events: [
-        ev({
-          type: "result",
-          subtype: "success",
-          duration_ms: 42_000,
-          total_cost_usd: 0.19,
-          usage: USAGE,
-        }),
-      ],
+      events: [finished(42_000, 0.19)],
       holdSeconds: 3.6,
     },
   ],
   channels: {
     ...BASE_CHANNELS,
+    ...devicePanel("ses_offline"),
     list_agents: ((args) =>
       AGENTS.filter((a) => a.session_id === args.sessionId)) as FixtureResolver,
     huddle_list: [room([])],
