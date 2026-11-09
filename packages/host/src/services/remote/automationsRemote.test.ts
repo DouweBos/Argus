@@ -15,7 +15,7 @@ import {
   resetAutomationCache,
   updateRun,
 } from "../automation/manager";
-import { listRunners } from "../llm/registry";
+import { listRunners, registerRunner } from "../llm/registry";
 import {
   markRemoteRunRead,
   remoteRunners,
@@ -134,7 +134,7 @@ describe("the run a phone sees", () => {
 describe("the runners a phone sees", () => {
   afterEach(() => resetStartOptions());
 
-  it("carries the models a runner last reported, for a start before any agent", () => {
+  it("carries the models a runner last reported, for a start before any agent", async () => {
     const runner = listRunners()[0];
     expect(runner).toBeDefined();
     rememberStartOptions(runner.id, {
@@ -150,7 +150,9 @@ describe("the runners a phone sees", () => {
       ],
     });
 
-    const listed = remoteRunners().runners.find((r) => r.id === runner.id);
+    const listed = (await remoteRunners()).runners.find(
+      (r) => r.id === runner.id,
+    );
 
     expect(listed?.reported_models).toEqual([
       {
@@ -160,5 +162,25 @@ describe("the runners a phone sees", () => {
         supportedEffortLevels: ["low", "high"],
       },
     ]);
+  });
+
+  it("marks a runner whose cli is missing unavailable, with how to install it", async () => {
+    const base = listRunners()[0]!;
+    registerRunner({
+      ...base,
+      id: "missing-cli",
+      displayName: "Missing",
+      capabilities: () => base.capabilities(),
+      preflight: async () => ({ ok: false, reason: "Install missing" }),
+      spawn: base.spawn,
+      oneShot: base.oneShot,
+    });
+
+    const listed = (await remoteRunners()).runners.find(
+      (r) => r.id === "missing-cli",
+    );
+
+    expect(listed?.available).toBe(false);
+    expect(listed?.unavailable_reason).toBe("Install missing");
   });
 });

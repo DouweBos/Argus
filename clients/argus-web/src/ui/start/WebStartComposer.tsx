@@ -21,6 +21,7 @@ import {
 } from "../../lib/images";
 import type { RemoteSession } from "../../lib/protocol";
 import { useProjectsStore } from "../../stores/projects";
+import { runnerOption } from "../../stores/runnerSupport";
 import type { Started } from "../../stores/start";
 import { useStartComposer } from "./useStartComposer";
 
@@ -122,10 +123,7 @@ export function WebStartComposer({
                 muted={!c.runnerId}
                 options={[
                   { value: DEFAULT, name: "Default" },
-                  ...c.runners.map((r) => ({
-                    value: r.id,
-                    name: r.display_name,
-                  })),
+                  ...c.runners.map(runnerOption),
                 ]}
                 placement="below"
                 selected={[c.runnerId ?? DEFAULT]}

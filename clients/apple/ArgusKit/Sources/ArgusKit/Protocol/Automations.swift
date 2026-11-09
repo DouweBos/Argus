@@ -164,9 +164,17 @@ public struct RemoteRunner: Codable, Hashable, Sendable, Identifiable {
   public var supportsTranscriptFork: Bool?
   /// Side questions to a running agent; nil from older hosts, where every runner could.
   public var supportsSideQuestion: Bool?
+  /// False when its CLI isn't installed on the computer; nil from older hosts.
+  public var available: Bool?
+  /// How to install it, when unavailable.
+  public var unavailableReason: String?
+
+  /// Older hosts don't say, and every runner they listed could run.
+  public var isAvailable: Bool { available ?? true }
 
   enum CodingKeys: String, CodingKey {
-    case id, models
+    case id, models, available
+    case unavailableReason = "unavailable_reason"
     case reportedModels = "reported_models"
     case supportsTranscriptFork = "supports_transcript_fork"
     case supportsSideQuestion = "supports_side_question"

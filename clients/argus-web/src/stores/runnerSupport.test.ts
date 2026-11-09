@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RemoteRunner } from "../lib/protocol";
-import { runnerSupport } from "./runnerSupport";
+import { runnerOption, runnerSupport } from "./runnerSupport";
 
 const runner = (id: string, flags: Partial<RemoteRunner> = {}): RemoteRunner => ({
   id,
@@ -47,5 +47,36 @@ describe("runnerSupport", () => {
       transcriptFork: true,
       sideQuestion: true,
     });
+  });
+});
+
+describe("runnerOption", () => {
+  const base = {
+    is_custom: false,
+    default_model: null,
+    models: [],
+  };
+
+  it("disables a runner whose cli is missing and says how to install it", () => {
+    expect(
+      runnerOption({
+        ...base,
+        id: "gemini",
+        display_name: "Gemini CLI",
+        available: false,
+        unavailable_reason: "Install gemini",
+      }),
+    ).toEqual({
+      value: "gemini",
+      name: "Gemini CLI",
+      description: "Install gemini",
+      disabled: true,
+    });
+  });
+
+  it("keeps runners from older hosts pickable", () => {
+    expect(runnerOption({ ...base, id: "codex", display_name: "Codex" })).toEqual(
+      { value: "codex", name: "Codex" },
+    );
   });
 });

@@ -45,10 +45,15 @@
 
 /* Hover is a mouse affordance — on touch it sticks after a tap. */
 @media (hover: hover) and (pointer: fine) {
-  .option:hover {
+  .option:not(:disabled):hover {
     background: var(--surface-3);
     color: var(--text-primary);
   }
+}
+
+.disabled {
+  cursor: default;
+  opacity: 0.5;
 }
 
 .selected {

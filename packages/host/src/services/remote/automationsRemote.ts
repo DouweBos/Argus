@@ -51,7 +51,7 @@ import {
   saveScratchRunAsAutomation,
   startScratchRun,
 } from "../automation/scratch";
-import { listRunners } from "../llm/registry";
+import { listRunners, runnerAvailability } from "../llm/registry";
 import { describeSignalSources } from "../signals/registry";
 
 /** How many runs a client gets when it doesn't say. */
@@ -199,7 +199,9 @@ export async function remoteSignalSources(): Promise<{
 }
 
 /** Runners an automation may be pinned to, for the phone's editor. */
-export function remoteRunners(): { runners: RemoteRunner[] } {
+export async function remoteRunners(): Promise<{ runners: RemoteRunner[] }> {
+  const avail = await runnerAvailability();
+
   return {
     runners: listRunners().map((runner) => ({
       id: runner.id,
@@ -222,6 +224,8 @@ export function remoteRunners(): { runners: RemoteRunner[] } {
       })),
       supports_transcript_fork: runner.capabilities().supportsTranscriptFork,
       supports_side_question: runner.capabilities().supportsSideQuestion,
+      available: avail.get(runner.id)?.available ?? true,
+      unavailable_reason: avail.get(runner.id)?.unavailableReason ?? null,
     })),
   };
 }

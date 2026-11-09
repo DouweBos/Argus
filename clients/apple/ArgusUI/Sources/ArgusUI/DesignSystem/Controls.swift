@@ -204,11 +204,14 @@ public struct PickerSheet<Value: Hashable>: View {
     public var value: Value
     public var label: String
     public var hint: String?
+    /// Shown, but can't be picked; the hint says why.
+    public var disabled: Bool
 
-    public init(value: Value, label: String, hint: String? = nil) {
+    public init(value: Value, label: String, hint: String? = nil, disabled: Bool = false) {
       self.value = value
       self.label = label
       self.hint = hint
+      self.disabled = disabled
     }
   }
 
@@ -277,6 +280,8 @@ public struct PickerSheet<Value: Hashable>: View {
                 .contentShape(Rectangle())
               }
               .buttonStyle(.argusPlain)
+              .disabled(option.disabled)
+              .opacity(option.disabled ? 0.5 : 1)
               .listRowBackground(theme.bgSecondary)
             }
           }

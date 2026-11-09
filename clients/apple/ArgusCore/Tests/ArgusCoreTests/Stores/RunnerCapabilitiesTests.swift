@@ -38,4 +38,19 @@ struct RunnerCapabilitiesTests {
     #expect(store.supportsTranscriptFork(agentId: "gone"))
     #expect(store.supportsTranscriptFork(agentId: "unknown-agent"))
   }
+
+  @Test("a runner whose cli is missing decodes unavailable with its install hint; older hosts mean available")
+  func availability() throws {
+    let json = #"""
+      [{"id":"gemini","display_name":"Gemini CLI","is_custom":false,"models":[],"available":false,"unavailable_reason":"Install gemini"},
+       {"id":"old","display_name":"Old","is_custom":false,"models":[]},
+       {"id":"custom:x","display_name":"X","is_custom":true,"models":[],"available":true}]
+      """#
+    let runners = try JSONDecoder().decode([RemoteRunner].self, from: Data(json.utf8))
+    #expect(!runners[0].isAvailable)
+    #expect(runners[0].pickerHint == "Install gemini")
+    #expect(runners[1].isAvailable)
+    #expect(runners[1].pickerHint == nil)
+    #expect(runners[2].pickerHint == "Custom")
+  }
 }

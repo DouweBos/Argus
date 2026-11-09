@@ -161,7 +161,9 @@ public struct AutomationFields: View {
           MenuChip(
             "Runner", selection: runnerBinding,
             options: [.init(value: "", label: "Default", hint: "Use the computer's default")]
-              + runners.map { .init(value: $0.id, label: $0.displayName, hint: $0.isCustom ? "Custom" : nil) },
+              + runners.map {
+                .init(value: $0.id, label: $0.displayName, hint: $0.pickerHint, disabled: !$0.isAvailable)
+              },
             icon: Icon.terminal, showsTitle: true)
         }
         if offersAccount {

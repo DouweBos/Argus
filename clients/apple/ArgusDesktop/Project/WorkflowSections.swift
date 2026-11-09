@@ -64,7 +64,9 @@ struct LLMSection: View {
     Section {
       Picker("Runner", selection: $draft.llmRunner) {
         Text("Inherit app default").tag("")
-        ForEach(runners, id: \.id) { Text($0.label).tag($0.id) }
+        ForEach(runners, id: \.id) { runner in
+          Text(runner.label).tag(runner.id).disabled(!runner.available)
+        }
       }
     } footer: {
       Text("The CLI/agent that drives sessions. Unknown ids also fall back to the app default.")
@@ -78,11 +80,13 @@ struct LLMSection: View {
 
   /// Registered runners, plus a saved id this app doesn't know, so saving
   /// doesn't quietly change it.
-  private var runners: [(id: String, label: String)] {
-    var list = store.runners.map { (id: $0.id, label: $0.displayName) }
-    if list.isEmpty { list = [("claude-code", "Claude Code")] }
+  private var runners: [(id: String, label: String, available: Bool)] {
+    var list = store.runners.map {
+      (id: $0.id, label: $0.isAvailable ? $0.displayName : "\($0.displayName) (not installed)", available: $0.isAvailable)
+    }
+    if list.isEmpty { list = [("claude-code", "Claude Code", true)] }
     if !draft.llmRunner.isEmpty, !list.contains(where: { $0.id == draft.llmRunner }) {
-      list.append((draft.llmRunner, "\(draft.llmRunner) (unknown)"))
+      list.append((draft.llmRunner, "\(draft.llmRunner) (unknown)", true))
     }
     return list
   }

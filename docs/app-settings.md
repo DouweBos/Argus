@@ -181,6 +181,10 @@ new-agent picker.
 | **Runner**        | `claude-code` | The CLI/agent that drives sessions: Claude Code or [Codex](#codex), plus any [custom runner](#custom-runners) you add.                                                                  |
 | **Default model** | _(empty)_     | Optional model id passed to the runner — e.g. `claude-opus-4-7`. Leave blank to let the runner pick its own default. The new-agent picker starts on it when the agent uses this runner. |
 
+A runner whose CLI isn't installed on the computer stays in every runner
+picker, greyed out, with a line saying how to install it; agents can't start
+on it until it is.
+
 Resolution order for the runner (at session creation):
 
 1. Project default — the `llm.runner` field in

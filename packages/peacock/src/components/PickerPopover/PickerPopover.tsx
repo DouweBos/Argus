@@ -157,19 +157,31 @@ export interface PickerOptionProps {
   name: ReactNode;
   onSelect: () => void;
   selected?: boolean;
+  /** Listed but not pickable; say why in `description`. */
+  disabled?: boolean;
 }
 
-function Option({ description, name, onSelect, selected }: PickerOptionProps) {
+function Option({
+  description,
+  name,
+  onSelect,
+  selected,
+  disabled,
+}: PickerOptionProps) {
   return (
     <button
       type="button"
       role="option"
+      aria-disabled={disabled ?? false}
       aria-selected={selected ?? false}
-      className={`${styles.option} ${selected ? styles.selected : ""}`}
+      className={`${styles.option} ${selected ? styles.selected : ""} ${disabled ? styles.disabled : ""}`}
+      disabled={disabled}
       // mousedown, so a click never steals focus from the composer first.
       onMouseDown={(e) => {
         e.preventDefault();
-        onSelect();
+        if (!disabled) {
+          onSelect();
+        }
       }}
     >
       <span className={styles.label}>

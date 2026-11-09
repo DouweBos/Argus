@@ -59,6 +59,10 @@ type LspLanguage =
  * `agent_*`, `app_*`, `feedback_*`, `onboarding_*`, `session_*`,
  * `telemetry_*`.
  */
+/** Built-in runners by id; a user's own runner is just `custom`. */
+export const TELEMETRY_RUNNERS = ["claude-code", "codex"] as const;
+export type TelemetryRunner = (typeof TELEMETRY_RUNNERS)[number] | "custom";
+
 export interface EventMap {
   account_join_resolved: {
     action: "approved" | "denied";
@@ -148,7 +152,11 @@ export interface EventMap {
     /** Its prompt, and its subagents', carry the conductor guide. */
     conductor_guide: boolean;
     /** The harness it runs on; a user's own runner is just `custom`. */
-    runner: "claude-code" | "codex" | "custom";
+    runner: TelemetryRunner;
+  };
+  /** A spawn was refused because the runner's CLI isn't installed. */
+  runner_unavailable: {
+    runner: TelemetryRunner;
   };
   spare_discarded: {
     reason:

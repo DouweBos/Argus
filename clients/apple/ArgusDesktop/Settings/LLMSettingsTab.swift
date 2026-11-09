@@ -16,10 +16,12 @@ struct LLMSettingsTab: View {
       ) {
         if host.loaded {
           SettingsRow(
-            "Runner", description: "The CLI/agent that drives sessions. The runner is fixed once a session is created."
+            "Runner", description: runnerDescription
           ) {
             Picker("Runner", selection: runner) {
-              ForEach(runnerOptions, id: \.id) { Text($0.label).tag($0.id) }
+              ForEach(runnerOptions, id: \.id) { option in
+                Text(option.label).tag(option.id).disabled(!option.available)
+              }
             }
           }
           SettingsRow(
@@ -48,9 +50,19 @@ struct LLMSettingsTab: View {
   }
 
   /// Never empty: Claude Code until the host's list arrives.
-  private var runnerOptions: [(id: String, label: String)] {
+  private var runnerOptions: [(id: String, label: String, available: Bool)] {
     host.runners.isEmpty
-      ? [("claude-code", "Claude Code")] : host.runners.map { ($0.id, $0.displayName) }
+      ? [("claude-code", "Claude Code", true)]
+      : host.runners.map {
+        ($0.id, $0.isAvailable ? $0.displayName : "\($0.displayName) (not installed)", $0.isAvailable)
+      }
+  }
+
+  /// A picked runner whose CLI went missing says how to install it.
+  private var runnerDescription: String {
+    let picked = host.runners.first { $0.id == runner.wrappedValue }
+    if let picked, !picked.isAvailable, let reason = picked.unavailableReason { return reason }
+    return "The CLI/agent that drives sessions. The runner is fixed once a session is created."
   }
 
   private var runner: Binding<String> {

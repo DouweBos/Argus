@@ -12737,6 +12737,8 @@ extension ArgusProtocol {
     public var baseRunnerId: String?
     public var models: [RunnerModelOption]
     public var defaultModel: String?
+    public var available: Bool?
+    public var unavailableReason: String?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -12746,9 +12748,11 @@ extension ArgusProtocol {
       case baseRunnerId = "baseRunnerId"
       case models = "models"
       case defaultModel = "defaultModel"
+      case available = "available"
+      case unavailableReason = "unavailableReason"
     }
 
-    public init(id: String, displayName: String, capabilities: RunnerCapabilities, isCustom: Bool, baseRunnerId: String? = nil, models: [RunnerModelOption], defaultModel: String? = nil) {
+    public init(id: String, displayName: String, capabilities: RunnerCapabilities, isCustom: Bool, baseRunnerId: String? = nil, models: [RunnerModelOption], defaultModel: String? = nil, available: Bool? = nil, unavailableReason: String? = nil) {
       self.id = id
       self.displayName = displayName
       self.capabilities = capabilities
@@ -12756,6 +12760,8 @@ extension ArgusProtocol {
       self.baseRunnerId = baseRunnerId
       self.models = models
       self.defaultModel = defaultModel
+      self.available = available
+      self.unavailableReason = unavailableReason
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -12767,6 +12773,8 @@ extension ArgusProtocol {
       try c.encode(baseRunnerId, forKey: .baseRunnerId)
       try c.encode(models, forKey: .models)
       try c.encode(defaultModel, forKey: .defaultModel)
+      try c.encodeIfPresent(available, forKey: .available)
+      try c.encodeIfPresent(unavailableReason, forKey: .unavailableReason)
     }
   }
 
@@ -15309,6 +15317,8 @@ extension ArgusProtocol {
     public var reportedModels: [RemoteModelInfo]?
     public var supportsTranscriptFork: Bool?
     public var supportsSideQuestion: Bool?
+    public var available: Bool?
+    public var unavailableReason: String?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -15319,9 +15329,11 @@ extension ArgusProtocol {
       case reportedModels = "reported_models"
       case supportsTranscriptFork = "supports_transcript_fork"
       case supportsSideQuestion = "supports_side_question"
+      case available = "available"
+      case unavailableReason = "unavailable_reason"
     }
 
-    public init(id: String, displayName: String, isCustom: Bool, defaultModel: String? = nil, models: [RemoteRunnerModel], reportedModels: [RemoteModelInfo]? = nil, supportsTranscriptFork: Bool? = nil, supportsSideQuestion: Bool? = nil) {
+    public init(id: String, displayName: String, isCustom: Bool, defaultModel: String? = nil, models: [RemoteRunnerModel], reportedModels: [RemoteModelInfo]? = nil, supportsTranscriptFork: Bool? = nil, supportsSideQuestion: Bool? = nil, available: Bool? = nil, unavailableReason: String? = nil) {
       self.id = id
       self.displayName = displayName
       self.isCustom = isCustom
@@ -15330,6 +15342,8 @@ extension ArgusProtocol {
       self.reportedModels = reportedModels
       self.supportsTranscriptFork = supportsTranscriptFork
       self.supportsSideQuestion = supportsSideQuestion
+      self.available = available
+      self.unavailableReason = unavailableReason
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -15342,6 +15356,8 @@ extension ArgusProtocol {
       try c.encodeIfPresent(reportedModels, forKey: .reportedModels)
       try c.encodeIfPresent(supportsTranscriptFork, forKey: .supportsTranscriptFork)
       try c.encodeIfPresent(supportsSideQuestion, forKey: .supportsSideQuestion)
+      try c.encodeIfPresent(available, forKey: .available)
+      try c.encodeIfPresent(unavailableReason, forKey: .unavailableReason)
     }
   }
 

@@ -168,7 +168,7 @@ export function AutomationFields({
                 ...runners.map((r) => ({
                   value: r.id,
                   label: r.display_name,
-                  hint: r.is_custom ? "Custom" : undefined,
+                  ...runnerHint(r),
                 })),
               ]}
               title="Runner"
@@ -295,4 +295,16 @@ export function AutomationFields({
       </section>
     </div>
   );
+}
+
+/** A runner whose CLI is missing stays listed, disabled, saying how to install it. */
+function runnerHint(r: RemoteRunner): { hint?: string; disabled?: boolean } {
+  if (r.available === false) {
+    return {
+      hint: r.unavailable_reason ?? "Not installed on this computer",
+      disabled: true,
+    };
+  }
+
+  return { hint: r.is_custom ? "Custom" : undefined };
 }

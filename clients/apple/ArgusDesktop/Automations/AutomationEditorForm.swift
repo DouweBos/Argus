@@ -96,7 +96,10 @@ struct AutomationEditorForm: View {
     if !store.runners.isEmpty {
       Picker("Runner", selection: runnerBinding) {
         Text("Default").tag("")
-        ForEach(store.runners) { Text($0.displayName).tag($0.id) }
+        ForEach(store.runners) { runner in
+          Text(runner.displayName).tag(runner.id)
+            .disabled(!runner.isAvailable).help(runner.unavailableReason ?? "")
+        }
       }
     }
   }

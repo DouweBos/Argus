@@ -180,7 +180,9 @@
         PickerSheet(
           title: "Runner",
           options: [.init(value: "", label: "Default", hint: "Use the computer's default")]
-            + host.runners.map { .init(value: $0.id, label: $0.displayName, hint: $0.isCustom ? "Custom" : nil) },
+            + host.runners.map {
+              .init(value: $0.id, label: $0.displayName, hint: $0.pickerHint, disabled: !$0.isAvailable)
+            },
           selected: [composer.runner?.id ?? ""]
         ) { id in
           composer.setRunner(host.runners.first { $0.id == id })

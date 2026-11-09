@@ -44,6 +44,10 @@ export const RegisteredRunner = z.object({
   models: z.array(RunnerModelOption),
   /** Model applied when nothing else pins one. */
   defaultModel: z.string().nullable(),
+  /** False when the runner's CLI isn't installed; absent from older hosts. */
+  available: z.boolean().optional(),
+  /** How to install it, when unavailable. */
+  unavailableReason: z.string().nullable().optional(),
 });
 export type RegisteredRunner = z.infer<typeof RegisteredRunner>;
 

@@ -9,6 +9,7 @@
 
 import type {
   LlmRunner,
+  PreflightResult,
   RunnerCapabilities,
   RunnerModelOption,
 } from "./runners/types";
@@ -91,9 +92,60 @@ export interface RegisteredRunner {
   baseRunnerId: string | null;
   models: RunnerModelOption[];
   defaultModel: string | null;
+  /** False when the runner's CLI isn't installed; pickers show it disabled. */
+  available?: boolean;
+  /** How to install it, when unavailable. */
+  unavailableReason?: string | null;
 }
 
-export function describeRunners(): RegisteredRunner[] {
+export interface RunnerAvailability {
+  available: boolean;
+  unavailableReason: string | null;
+}
+
+/** Long enough that opening a picker twice doesn't re-probe, short enough to see an install. */
+const AVAILABILITY_TTL_MS = 15_000;
+const availability = new Map<
+  string,
+  { at: number; result: Promise<PreflightResult> }
+>();
+
+/** Whether each runner's CLI is installed, probed in parallel and cached briefly. */
+export async function runnerAvailability(
+  now = Date.now(),
+): Promise<Map<string, RunnerAvailability>> {
+  const all = listRunners();
+  const results = await Promise.all(
+    all.map(async (r) => {
+      let entry = availability.get(r.id);
+      if (!entry || now - entry.at > AVAILABILITY_TTL_MS) {
+        entry = {
+          at: now,
+          result: r
+            .preflight()
+            .catch((e): PreflightResult => ({ ok: false, reason: String(e) })),
+        };
+        availability.set(r.id, entry);
+      }
+
+      return [r.id, await entry.result] as const;
+    }),
+  );
+
+  return new Map(
+    results.map(([id, result]) => [
+      id,
+      {
+        available: result.ok,
+        unavailableReason: result.ok ? null : result.reason,
+      },
+    ]),
+  );
+}
+
+export async function describeRunners(): Promise<RegisteredRunner[]> {
+  const avail = await runnerAvailability();
+
   return listRunners().map((r) => ({
     id: r.id,
     displayName: r.displayName,
@@ -102,6 +154,8 @@ export function describeRunners(): RegisteredRunner[] {
     baseRunnerId: r.baseRunnerId ?? null,
     models: r.models?.() ?? [],
     defaultModel: r.defaultModel?.() ?? null,
+    available: avail.get(r.id)?.available ?? true,
+    unavailableReason: avail.get(r.id)?.unavailableReason ?? null,
   }));
 }
 

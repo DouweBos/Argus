@@ -27,6 +27,25 @@ export function runnerSupport(
   };
 }
 
+/** A runner as a picker row: disabled, with its install hint, when its CLI is missing. */
+export function runnerOption(r: RemoteRunner): {
+  value: string;
+  name: string;
+  description?: string;
+  disabled?: boolean;
+} {
+  if (r.available === false) {
+    return {
+      value: r.id,
+      name: r.display_name,
+      description: r.unavailable_reason ?? "Not installed on this computer",
+      disabled: true,
+    };
+  }
+
+  return { value: r.id, name: r.display_name };
+}
+
 export function useRunnerSupport(agentId: string): RunnerSupport {
   const ready = useConnectionStore((s) => s.connection === "ready");
   const loadRunners = useStartStore((s) => s.loadRunners);

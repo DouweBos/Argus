@@ -28,6 +28,7 @@ import type {
 import { appNavigate } from "../../routing/router";
 import { useConnectionStore } from "../../stores/connection";
 import { useProjectsStore } from "../../stores/projects";
+import { runnerOption } from "../../stores/runnerSupport";
 import { startFromIssues, useStartStore } from "../../stores/start";
 import { capture } from "../../telemetry/telemetry";
 import { useIssueSearch } from "./useIssueSearch";
@@ -247,10 +248,7 @@ export function IssueStartDialog({
                   muted={!runnerId}
                   options={[
                     { value: DEFAULT, name: "Default" },
-                    ...runners.map((r) => ({
-                      value: r.id,
-                      name: r.display_name,
-                    })),
+                    ...runners.map(runnerOption),
                   ]}
                   placement="below"
                   selected={[runnerId ?? DEFAULT]}

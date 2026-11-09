@@ -9,6 +9,8 @@ export interface MenuChipOption<V extends string = string> {
   label: string;
   /** A second line under the label in the menu. */
   hint?: string;
+  /** Listed but not pickable; `hint` says why. */
+  disabled?: boolean;
 }
 
 export interface MenuChipProps<V extends string = string> {
@@ -79,6 +81,7 @@ export function MenuChip<V extends string = string>({
           {options.map((option) => (
             <PickerPopover.Option
               description={option.hint}
+              disabled={option.disabled}
               key={option.value}
               name={option.label}
               selected={option.value === value}

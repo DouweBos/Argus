@@ -772,6 +772,10 @@ export const RemoteRunner = z.object({
   supports_transcript_fork: z.boolean().optional(),
   /** Side questions to a running agent; absent from older hosts. */
   supports_side_question: z.boolean().optional(),
+  /** False when its CLI isn't installed; absent from older hosts, where all were. */
+  available: z.boolean().optional(),
+  /** How to install it, when unavailable. */
+  unavailable_reason: z.string().nullable().optional(),
 });
 export type RemoteRunner = z.infer<typeof RemoteRunner>;
 

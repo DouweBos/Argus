@@ -7,6 +7,8 @@ export interface PickerChipOption {
   value: string;
   name: string;
   description?: string;
+  /** Listed but not pickable; `description` says why. */
+  disabled?: boolean;
 }
 
 export interface PickerChipProps {
@@ -82,6 +84,7 @@ export function PickerChip({
               <PickerPopover.Option
                 key={o.value}
                 description={o.description}
+                disabled={o.disabled}
                 name={o.name}
                 selected={selected.includes(o.value)}
                 onSelect={() => {

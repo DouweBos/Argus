@@ -131,3 +131,48 @@ export const WithStaticRowAndEmpty: Story = {
     );
   },
 };
+
+const RUNNERS = [
+  { value: "claude-code", name: "Claude Code" },
+  { value: "codex", name: "Codex" },
+  {
+    value: "gemini",
+    name: "Gemini CLI",
+    description: "Not installed — npm install -g @google/gemini-cli",
+    disabled: true,
+  },
+];
+
+/** A runner whose CLI is missing stays listed, greyed out, saying how to install it. */
+export const WithDisabled: Story = {
+  render: () => {
+    const ref = useRef<HTMLDivElement>(null);
+    const [open, setOpen] = useState(true);
+    const [runner, setRunner] = useState("claude-code");
+
+    return (
+      <Stage>
+        <div ref={ref}>
+          <Chip interactive onClick={() => setOpen((o) => !o)}>
+            {RUNNERS.find((r) => r.value === runner)?.name}
+          </Chip>
+          {open && (
+            <PickerPopover triggerRef={ref} onClose={() => setOpen(false)}>
+              <PickerPopover.Header>Runner</PickerPopover.Header>
+              {RUNNERS.map((r) => (
+                <PickerPopover.Option
+                  key={r.value}
+                  description={r.description}
+                  disabled={r.disabled}
+                  name={r.name}
+                  selected={r.value === runner}
+                  onSelect={() => setRunner(r.value)}
+                />
+              ))}
+            </PickerPopover>
+          )}
+        </div>
+      </Stage>
+    );
+  },
+};

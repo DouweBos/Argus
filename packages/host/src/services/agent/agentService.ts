@@ -44,6 +44,7 @@ import { hostPlatform } from "@argus/host/platform";
 import { argusHomeDir } from "../../lib/argusHome";
 import { checkoutRoot } from "../../lib/checkoutRoot";
 import { appState } from "../../state";
+import { TELEMETRY_RUNNERS, type TelemetryRunner } from "../../telemetryEvents";
 import {
   automationDisallowedTools,
   automationPermissionPreHook,
@@ -372,14 +373,12 @@ export async function startAgent(
   return agentInfoOf(agentSession);
 }
 
-function telemetryRunner(
-  runner: LlmRunner,
-): "claude-code" | "codex" | "custom" {
+function telemetryRunner(runner: LlmRunner): TelemetryRunner {
   if (runner.isCustom) {
     return "custom";
   }
 
-  return runner.id === "codex" ? "codex" : "claude-code";
+  return TELEMETRY_RUNNERS.find((id) => id === runner.id) ?? "claude-code";
 }
 
 function agentInfoOf(agent: AgentSession): AgentInfo {
@@ -763,6 +762,15 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
 
     return { kind: "handled" };
   };
+
+  // A missing CLI would otherwise surface as a bare ENOENT from the child.
+  const preflight = await runner.preflight();
+  if (!preflight.ok) {
+    telemetryCapture("runner_unavailable", {
+      runner: telemetryRunner(runner),
+    });
+    throw preflight.reason;
+  }
 
   // Spawn via the runner. The handle owns the child + readline + control
   // protocol; we subscribe to its events below.
