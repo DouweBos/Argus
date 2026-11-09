@@ -95,9 +95,7 @@ export function registerAutomationGithubTools(
     "search_github_artifact",
     "Search inside one workflow run artifact — device logs, test reports — without writing anything yourself. The host downloads it to a scratch dir, greps every text file, returns `file:line: text` for each match, and deletes it. Find artifact names with `github_get` on `repos/{owner}/{repo}/actions/runs/{id}/artifacts`.",
     {
-      repo: z
-        .string()
-        .describe("owner/name, e.g. 'acme/mobile-app'."),
+      repo: z.string().describe("owner/name, e.g. 'acme/mobile-app'."),
       run_id: z.string().describe("The workflow run id."),
       artifact: z
         .string()
