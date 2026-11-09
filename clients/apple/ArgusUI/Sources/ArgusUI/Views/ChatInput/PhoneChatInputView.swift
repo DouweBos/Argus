@@ -59,6 +59,9 @@
           if let footer { footer.padding(.horizontal, 12) }
         }
       }
+      // An iPad or unfolded phone keeps the Mac's column instead of stretching the card edge to edge.
+      .frame(maxWidth: ReadingColumn.maxWidth)
+      .frame(maxWidth: .infinity)
       .padding(.horizontal, 10)
       .padding(.top, 6)
       .padding(.bottom, 8)

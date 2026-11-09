@@ -13,8 +13,9 @@
   @MainActor
   @Suite("Phone composer snapshots", .serialized)
   struct PhoneComposerSnapshots {
-    /// iPhone SE (1st gen) / mini width, the common 390, and Pro Max.
-    private static let widths: [CGFloat] = [320, 390, 440]
+    /// Narrowest phone and iPad slide-over/windowed, the common 390, Pro Max, iPhone Duo unfolded
+    /// (portrait and landscape), iPad mini portrait, a windowed iPad, iPad Pro 13" landscape.
+    private static let widths: [CGFloat] = [320, 390, 440, 466, 678, 744, 1024, 1366]
 
     @Test("new session start composer")
     func startComposer() async throws {
@@ -67,7 +68,7 @@
       try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
       for width in widths {
       for style in [UIUserInterfaceStyle.dark, .light] {
-        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: width, height: 844))
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: width, height: width > 500 ? 1024 : 844))
         window.overrideUserInterfaceStyle = style
         window.rootViewController = UIHostingController(
           rootView: NavigationStack { content().navigationTitle("New Session").inlineNavigationTitle() }
