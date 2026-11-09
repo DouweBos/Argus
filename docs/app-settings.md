@@ -234,11 +234,12 @@ Agents that speak the [Agent Client Protocol](https://agentclientprotocol.com)
 run through one shared runner. Install the agent's CLI and sign in with it
 once; Argus starts it in ACP mode and uses its login and settings as they are.
 
-| Runner          | Id            | CLI                      | Install                                           | Sign in           |
-| --------------- | ------------- | ------------------------ | ------------------------------------------------- | ----------------- |
-| **Gemini CLI**  | `gemini`      | `gemini --acp`           | `npm install -g @google/gemini-cli`               | run `gemini` once |
-| **Antigravity** | `antigravity` | `agy acp` (1.5 or newer) | the Antigravity CLI from antigravity.google       | `agy acp --login` |
-| **Kiro**        | `kiro`        | `kiro-cli acp`           | `curl -fsSL https://cli.kiro.dev/install \| bash` | `kiro-cli login`  |
+| Runner          | Id            | CLI                      | Install                                           | Sign in               |
+| --------------- | ------------- | ------------------------ | ------------------------------------------------- | --------------------- |
+| **Gemini CLI**  | `gemini`      | `gemini --acp`           | `npm install -g @google/gemini-cli`               | run `gemini` once     |
+| **Antigravity** | `antigravity` | `agy acp` (1.5 or newer) | the Antigravity CLI from antigravity.google       | `agy acp --login`     |
+| **Kiro**        | `kiro`        | `kiro-cli acp`           | `curl -fsSL https://cli.kiro.dev/install \| bash` | `kiro-cli login`      |
+| **OpenCode**    | `opencode`    | `opencode acp`           | `npm install -g opencode-ai`                      | `opencode auth login` |
 
 The chat works the same as on Claude Code: streamed replies and thinking, tool
 cards, the agent's plan as the todo list, permission prompts, interrupts, the
@@ -255,7 +256,7 @@ reports it. ACP agents ask before acting, and Argus answers by mode:
 
 Plan mode switches the agent into its own plan mode when it has one. Picking
 **Always allow** on a prompt keeps the approval for the rest of the session
-(Kiro saves those workspace-wide, so there it only allows once).
+(Kiro and OpenCode save those project-wide, so there it only allows once).
 
 Things that differ from Claude Code, and are hidden on ACP chats: editing or
 forking from an earlier message, side questions and the effort picker. A

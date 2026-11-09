@@ -22,6 +22,7 @@ import type {
 } from "./models";
 import { warn } from "@argus/host/logger";
 import { isAutonomyLevel } from "../automation/guardrails";
+import { ACP_PRESETS } from "../llm/runners/acp/presets";
 
 /**
  * Normalise `workspace_env` from its possible JSON forms into an array.
@@ -108,12 +109,10 @@ export function normalizeToolsConfig(
  * fail — the resolver falls back to the app default — but we log a warning
  * so users notice typos before an agent fails to spawn.
  */
-const KNOWN_RUNNER_IDS = new Set<string>([
+export const KNOWN_RUNNER_IDS = new Set<string>([
   "claude-code",
   "codex",
-  "gemini",
-  "antigravity",
-  "kiro",
+  ...ACP_PRESETS.map((p) => p.id),
 ]);
 
 /**

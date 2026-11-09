@@ -453,8 +453,8 @@ the resolver falls back to the app default — handy if a runner is
 removed or renamed across releases.
 
 Built-in runners are `claude-code`, `codex` (see
-[Codex](./app-settings.md#codex)) and the ACP agents `gemini`, `antigravity`
-and `kiro` (see [ACP agents](./app-settings.md#acp-agents)); custom runners use their `custom:<slug>`
+[Codex](./app-settings.md#codex)) and the ACP agents `gemini`, `antigravity`,
+`kiro` and `opencode` (see [ACP agents](./app-settings.md#acp-agents)); custom runners use their `custom:<slug>`
 id. With nothing set at any level, sessions run on `claude-code`.
 
 ---
