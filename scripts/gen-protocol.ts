@@ -288,6 +288,12 @@ class Emitter {
   }
 
   private stripNull(schema: JsonSchema): JsonSchema | null {
+    // zod writes a nullable scalar as `type: ["string", "null"]`.
+    if (Array.isArray(schema.type) && schema.type.includes("null")) {
+      const rest = schema.type.filter((t) => t !== "null");
+
+      return rest.length === 1 ? { ...schema, type: rest[0] } : null;
+    }
     const union = schema.anyOf ?? schema.oneOf;
     if (!union || !union.some((s) => s.type === "null")) {
       return null;
@@ -578,8 +584,11 @@ function modelsFile(): string {
     a.localeCompare(b),
   )) {
     const json = toJson(schema);
-    const scoped = new Emitter(defsOf(json), name);
-    scoped.declareNamed(name, json);
+    const defs = defsOf(json);
+    // A registered schema comes back as a `$ref` to its own `$defs` entry.
+    const body = json.$ref === `#/$defs/${name}` ? defs[name] : json;
+    const scoped = new Emitter(defs, name);
+    scoped.declareNamed(name, body);
     emitter.append(scoped);
   }
 
