@@ -86,6 +86,8 @@ import {
   removeMcpSession,
   SPAWN_ID_HEADER,
 } from "./sessions";
+import { ArgusTaskStore } from "./taskStore";
+import { registerTaskTool } from "./taskTools";
 
 // ---------------------------------------------------------------------------
 // State
@@ -453,10 +455,17 @@ function localAgentHint(agentId: string): string | null {
 export function createMcpServer(
   callerAgentId: string | null = null,
 ): McpServer {
-  const server = new McpServer({
-    name: "argus",
-    version: "1.0.0",
-  });
+  const taskStore = new ArgusTaskStore();
+  const server = new McpServer(
+    { name: "argus", version: "1.0.0" },
+    {
+      capabilities: {
+        tasks: { list: {}, cancel: {}, requests: { tools: { call: {} } } },
+      },
+      taskStore,
+    },
+  );
+  server.server.onclose = () => taskStore.clear();
 
   // Wrap server.tool so every handler's thrown errors are logged before the
   // MCP SDK converts them into isError tool results. Without this, backend
@@ -1567,10 +1576,11 @@ export function createMcpServer(
   // wait_for_agent
   // -------------------------------------------------------------------------
 
-  server.tool(
-    "wait_for_agent",
-    "Block until a spawned agent finishes its current turn (becomes idle) or exits, then return its status and latest result summary. Returns immediately if the agent is already idle, stopped, or errored. Use this instead of polling agent_status in a loop.",
-    {
+  registerTaskTool(server, taskStore, {
+    name: "wait_for_agent",
+    description:
+      "Block until a spawned agent finishes its current turn (becomes idle) or exits, then return its status and latest result summary. Returns immediately if the agent is already idle, stopped, or errored. Use this instead of polling agent_status in a loop.",
+    shape: {
       agent_id: z.string().describe("The agent ID returned by spawn_agent"),
       timeout_seconds: z
         .number()
@@ -1579,7 +1589,8 @@ export function createMcpServer(
           "Maximum seconds to wait before timing out. Defaults to no timeout (wait indefinitely).",
         ),
     },
-    async ({ agent_id, timeout_seconds }, extra) => {
+    progress: ({ agent_id }) => `waiting for agent ${agent_id}`,
+    run: async ({ agent_id, timeout_seconds }) => {
       const hint = !appState.agents.has(agent_id)
         ? localAgentHint(agent_id)
         : null;
@@ -1590,26 +1601,6 @@ export function createMcpServer(
         };
       }
 
-      // Emit progress notifications periodically so the transport sees traffic
-      // while the wait blocks. Protects against intermediate idle timeouts
-      // even when the per-tool call timeout is disabled on the client.
-      const progressToken = extra?._meta?.progressToken;
-      let ticks = 0;
-      const keepalive = progressToken
-        ? setInterval(() => {
-            ticks += 1;
-            extra
-              .sendNotification({
-                method: "notifications/progress",
-                params: {
-                  progressToken,
-                  progress: ticks,
-                  message: `waiting for agent ${agent_id}`,
-                },
-              })
-              .catch(() => {});
-          }, 30_000)
-        : null;
       try {
         const { status, result } = await waitForAgent(
           agent_id,
@@ -1644,22 +1635,19 @@ export function createMcpServer(
           content: [{ type: "text" as const, text: String(e) }],
           isError: true,
         };
-      } finally {
-        if (keepalive) {
-          clearInterval(keepalive);
-        }
       }
     },
-  );
+  });
 
   // -------------------------------------------------------------------------
   // wait_for_any_agent
   // -------------------------------------------------------------------------
 
-  server.tool(
-    "wait_for_any_agent",
-    "Block until the FIRST of several agents finishes its current turn or exits, then return which one settled along with its status and result. Use this when you've fanned out to multiple children and want to react as soon as any one of them is ready — `wait_for_agent` only watches a single agent and would force you to pick one to block on. Returns immediately if any of the listed agents is already idle/stopped/errored.",
-    {
+  registerTaskTool(server, taskStore, {
+    name: "wait_for_any_agent",
+    description:
+      "Block until the FIRST of several agents finishes its current turn or exits, then return which one settled along with its status and result. Use this when you've fanned out to multiple children and want to react as soon as any one of them is ready — `wait_for_agent` only watches a single agent and would force you to pick one to block on. Returns immediately if any of the listed agents is already idle/stopped/errored.",
+    shape: {
       agent_ids: z
         .array(z.string())
         .min(1)
@@ -1671,25 +1659,9 @@ export function createMcpServer(
           "Maximum seconds to wait before timing out. Defaults to no timeout (wait indefinitely).",
         ),
     },
-    async ({ agent_ids, timeout_seconds }, extra) => {
-      const progressToken = extra?._meta?.progressToken;
-      let ticks = 0;
-      const keepalive = progressToken
-        ? setInterval(() => {
-            ticks += 1;
-            extra
-              .sendNotification({
-                method: "notifications/progress",
-                params: {
-                  progressToken,
-                  progress: ticks,
-                  message: `waiting for any of ${agent_ids.length} agents`,
-                },
-              })
-              .catch(() => {});
-          }, 30_000)
-        : null;
-
+    progress: ({ agent_ids }) =>
+      `waiting for any of ${agent_ids.length} agents`,
+    run: async ({ agent_ids, timeout_seconds }) => {
       try {
         const { agentId, status, result } = await waitForAnyAgent(
           agent_ids,
@@ -1724,13 +1696,9 @@ export function createMcpServer(
           content: [{ type: "text" as const, text: String(e) }],
           isError: true,
         };
-      } finally {
-        if (keepalive) {
-          clearInterval(keepalive);
-        }
       }
     },
-  );
+  });
 
   // -------------------------------------------------------------------------
   // send_agent_message
@@ -2364,10 +2332,11 @@ export function createMcpServer(
   // wait_for_terminal
   // -------------------------------------------------------------------------
 
-  server.tool(
-    "wait_for_terminal",
-    "Block until a terminal session (typically one started via `trigger_run`) emits output matching `until_pattern`, exits, or hits `timeout_ms`. Use this for: waiting for a dev server's 'ready'/'compiled' line before navigating, waiting for a one-shot command (tests, build, codegen run via a configured run command) to finish, or simply blocking until a process dies. Returns the reason for unblocking (`match` | `exit` | `timeout`), the exit code if exited, and the captured output snapshot. The pattern is matched against ANSI-stripped output. If the pattern is already present in already-captured output when you call, it returns immediately.",
-    {
+  registerTaskTool(server, taskStore, {
+    name: "wait_for_terminal",
+    description:
+      "Block until a terminal session (typically one started via `trigger_run`) emits output matching `until_pattern`, exits, or hits `timeout_ms`. Use this for: waiting for a dev server's 'ready'/'compiled' line before navigating, waiting for a one-shot command (tests, build, codegen run via a configured run command) to finish, or simply blocking until a process dies. Returns the reason for unblocking (`match` | `exit` | `timeout`), the exit code if exited, and the captured output snapshot. The pattern is matched against ANSI-stripped output. If the pattern is already present in already-captured output when you call, it returns immediately.",
+    shape: {
       terminal_session_id: z
         .string()
         .describe(
@@ -2387,7 +2356,7 @@ export function createMcpServer(
           "Maximum time to block, in milliseconds. Defaults to 30000 (30s). Capped at 600000 (10 min). Resolves with `reason: 'timeout'` if neither match nor exit happens in time.",
         ),
     },
-    async ({ terminal_session_id, until_pattern, timeout_ms }) => {
+    run: async ({ terminal_session_id, until_pattern, timeout_ms }) => {
       try {
         const result = await waitForTerminal(terminal_session_id, {
           untilPattern: until_pattern,
@@ -2428,7 +2397,7 @@ export function createMcpServer(
         };
       }
     },
-  );
+  });
 
   // -------------------------------------------------------------------------
   // check_conflicts
@@ -3047,14 +3016,15 @@ export function createMcpServer(
   // merge_session
   // -------------------------------------------------------------------------
 
-  server.tool(
-    "merge_session",
-    "Merge a session's branch into its base branch. Commits any staged changes first, checks for conflicts, then performs a --no-ff merge. The session's base branch was set when the worktree was created.",
-    {
+  registerTaskTool(server, taskStore, {
+    name: "merge_session",
+    description:
+      "Merge a session's branch into its base branch. Commits any staged changes first, checks for conflicts, then performs a --no-ff merge. The session's base branch was set when the worktree was created.",
+    shape: {
       session: z.string().describe("Session ID, branch name, or display name"),
       project_path: sessionProjectPathArg,
     },
-    async ({ session, project_path }) => {
+    run: async ({ session, project_path }) => {
       const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
@@ -3087,16 +3057,17 @@ export function createMcpServer(
         ],
       };
     },
-  );
+  });
 
   // -------------------------------------------------------------------------
   // complete_session
   // -------------------------------------------------------------------------
 
-  server.tool(
-    "complete_session",
-    'Finish off a child session in one shot: clean-merge it into base, then delete the worktree (and optionally the branch). Throws on conflict — call `attempt_merge` + `continue_merge` first if you need to resolve. Use this for the happy-path "child finished, ship it" flow at the end of a fan-out.',
-    {
+  registerTaskTool(server, taskStore, {
+    name: "complete_session",
+    description:
+      'Finish off a child session in one shot: clean-merge it into base, then delete the worktree (and optionally the branch). Throws on conflict — call `attempt_merge` + `continue_merge` first if you need to resolve. Use this for the happy-path "child finished, ship it" flow at the end of a fan-out.',
+    shape: {
       session: z.string().describe("Session ID, branch name, or display name"),
       project_path: sessionProjectPathArg,
       delete_branch: z
@@ -3106,7 +3077,7 @@ export function createMcpServer(
           "Also delete the merged branch (default: true — the branch is fully reachable from base after a successful merge so keeping it around is rarely useful).",
         ),
     },
-    async ({ session, project_path, delete_branch }) => {
+    run: async ({ session, project_path, delete_branch }) => {
       const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
@@ -3176,7 +3147,7 @@ export function createMcpServer(
         ],
       };
     },
-  );
+  });
 
   // -------------------------------------------------------------------------
   // push_notification

@@ -306,6 +306,18 @@ export interface EventMap {
     created: boolean;
     install: "downloaded" | "managed" | "override" | "path";
   };
+  mcp_task_finished: {
+    /** `task`: the client took a task handle and moved on; `blocking`: it waited in the call. */
+    mode: "blocking" | "task";
+    /** `cancelled`: the client cancelled the task or disconnected before it finished. */
+    outcome: "cancelled" | "completed" | "failed";
+    tool:
+      | "complete_session"
+      | "merge_session"
+      | "wait_for_agent"
+      | "wait_for_any_agent"
+      | "wait_for_terminal";
+  };
   onboarding_completed: undefined;
   proposal_start_failed: {
     stage: "creating_worktree" | "setting_up" | "starting_agent";

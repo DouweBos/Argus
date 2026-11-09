@@ -148,6 +148,12 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `session_merge_conflict` | host   | Merge stopped on conflicts       | `phase`, `conflicting_files` (count, not paths)                  |
 | `session_merge_aborted`  | host   | An in-progress merge was aborted | `kind: "rebase" \| "merge"`                                      |
 
+## Agent orchestration
+
+| Event               | Source | When                                                                                     | Extra props                                                                                                                                                                                                                                                                                                  |
+| ------------------- | ------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `mcp_task_finished` | host   | A long-running Argus MCP tool (waiting on an agent or terminal, merging a session) ended | `tool` (`wait_for_agent`, `wait_for_any_agent`, `wait_for_terminal`, `merge_session`, `complete_session`), `mode` (`task` — the agent got a task handle and kept working, `blocking` — it waited in the call), `outcome` (`completed`, `failed`, `cancelled` — the agent cancelled it or disconnected first) |
+
 ## Agents
 
 | Event                       | Source | When                                                                                                                                   | Extra props                                                                                                                                                                                                                                                       |
