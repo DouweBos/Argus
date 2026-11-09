@@ -17,6 +17,7 @@ struct RunScreen: View {
   @State private var saving = false
   @State private var confirmingDelete = false
   @State private var looked = false
+  @State private var opening = false
 
   private var detail: RemoteAutomationRunDetail? { store.detailByRun[runId] }
   /// The list entry follows live events; the detail is only as fresh as its last load.
@@ -168,16 +169,31 @@ struct RunScreen: View {
           .help("Create an automation from this run's playbook and scope")
       }
       if let session = hostSession {
-        // Straight to the run's agent; a session listed without it still opens on its agents.
-        Button { model.navigate(.session(id: session.id, agentId: run.hostAgentId)) } label: {
+        Button { openTranscript(run, in: session) } label: {
           Label("Open Transcript", systemImage: "text.bubble")
         }
         .labelStyle(.titleAndIcon)
+        .disabled(opening)
       }
       if run.isActive {
         Button("Cancel Run") { Task { await store.cancelRun(id: runId) } }
       } else {
         Button("Delete") { confirmingDelete = true }
+      }
+    }
+  }
+
+  /// Straight to the run's agent, resumed from its saved chat once it has stopped;
+  /// a session without either still opens on its agents.
+  private func openTranscript(_ run: RemoteAutomationRun, in session: RemoteSession) {
+    guard let agentId = run.hostAgentId else { return model.navigate(.session(id: session.id, agentId: nil)) }
+    opening = true
+    Task {
+      defer { opening = false }
+      switch await host.openAgent(agentId, in: session) {
+      case (let id, true)?: model.open(spawned: id, session: session.id)
+      case (let id, false)?: model.navigate(.session(id: session.id, agentId: id))
+      case nil: model.navigate(.session(id: session.id, agentId: nil))
       }
     }
   }

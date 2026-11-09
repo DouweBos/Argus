@@ -88,6 +88,22 @@ extension HostStore {
       mode: chat.permissionMode, effort: chat.effort)
   }
 
+  /// The agent a link names (an automation run's): itself while live, else its
+  /// saved chat resumed in a new agent. `spawned` when it had to be resumed.
+  public func openAgent(_ agentId: String, in session: RemoteSession) async -> (agentId: String, spawned: Bool)? {
+    await loadAgents(repoRoot: session.repoRoot)
+    let live = Set(agents(inSession: session).map(\.agentId))
+    if live.contains(agentId) { return (agentId, false) }
+    if let resumed = resumedAs[agentId], live.contains(resumed) { return (resumed, false) }
+    // The host lists only chats whose agent is gone.
+    await loadStoppedAgents(repoRoot: session.repoRoot)
+    guard let chat = stoppedByRepo[session.repoRoot]?.first(where: { $0.agentId == agentId }),
+      let agent = await resumeChat(chat, sessionId: session.id)
+    else { return nil }
+    resumedAs[agentId] = agent.agentId
+    return (agent.agentId, true)
+  }
+
   /// A stopped agent picks up again only once its runner reported a session to resume.
   public func canResume(agentId: String) -> Bool {
     statusByAgent[agentId]?.runnerSessionId != nil

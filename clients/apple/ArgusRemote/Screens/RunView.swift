@@ -18,6 +18,7 @@ struct RunView: View {
   /// The name being typed while promoting a quick run; nil when not saving.
   @State private var savingName: String?
   @State private var givingFeedback = false
+  @State private var opening = false
   @State private var confirmingDelete = false
 
   private var detail: RemoteAutomationRunDetail? { store.detailByRun[runId] }
@@ -86,6 +87,22 @@ struct RunView: View {
   }
 
   @ViewBuilder
+
+  /// The run's agent, resumed from its saved chat once it has stopped (control only),
+  /// so the button lands on a live agent rather than a dead end.
+  private func openAgent(_ agentId: String, run: RemoteAutomationRun) {
+    guard host.hasControl, let sessionId = run.hostSessionId else {
+      return router.push(.agent(id: agentId, label: run.automationName))
+    }
+    opening = true
+    Task {
+      defer { opening = false }
+      if host.session(id: sessionId) == nil { await host.adoptSession(id: sessionId) }
+      var opened: String?
+      if let session = host.session(id: sessionId) { opened = await host.openAgent(agentId, in: session)?.agentId }
+      router.push(.agent(id: opened ?? agentId, label: run.automationName))
+    }
+  }
   private func summary(_ run: RemoteAutomationRun) -> some View {
     Card {
       HStack(spacing: 8) {
@@ -107,9 +124,10 @@ struct RunView: View {
 
       FlowRow(spacing: 8) {
         if let agentId = run.hostAgentId {
-          Btn(label: "Open agent", tone: .secondary, small: true, icon: Icon.agent) {
-            router.push(.agent(id: agentId, label: run.automationName))
+          Btn(label: opening ? "Opening…" : "Open agent", tone: .secondary, small: true, icon: Icon.agent) {
+            openAgent(agentId, run: run)
           }
+          .disabled(opening)
         }
         if host.hasControl, run.isActive {
           Btn(label: "Cancel", tone: .danger, small: true) {

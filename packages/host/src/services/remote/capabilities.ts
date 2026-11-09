@@ -1064,6 +1064,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const agents = (limit === undefined ? index : index.slice(0, limit)).map(
       (e): RemoteStoppedAgent => ({
         history_id: e.id,
+        ...(e.agentId ? { agent_id: e.agentId } : {}),
         runner_session_id: e.sessionId,
         title: e.title,
         branch: e.sessionBranch,

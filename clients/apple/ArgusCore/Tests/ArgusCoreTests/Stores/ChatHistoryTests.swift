@@ -102,6 +102,35 @@ struct ChatHistoryTests {
     #expect(backend.params(.agentsSetEffort)?["level"] as? String == "high")
   }
 
+  @Test("a run's stopped agent opens resumed from its saved chat, once")
+  func openStoppedRunAgent() async throws {
+    let (store, backend) = await attached()
+    backend.reply(.agentsList, #"{"agents":[]}"#)
+    backend.reply(
+      .agentsStopped,
+      #"{"agents":[{"history_id":"h9","agent_id":"a-run","runner_session_id":"r-9","title":"run","branch":"feat/a","message_count":4,"started_at":0,"ended_at":1}]}"#)
+    backend.reply(.agentsSpawn, #"{"agent":{"agent_id":"a-1","session_id":"s-1","status":"idle","created_at":1}}"#)
+
+    let first = try #require(await store.openAgent("a-run", in: Self.session))
+    #expect(first.agentId == "a-1" && first.spawned)
+    #expect(backend.params(.agentsSpawn)?["resume_session_id"] as? String == "r-9")
+
+    backend.reply(.agentsList, #"{"agents":[{"agent_id":"a-1","session_id":"s-1","status":"idle","created_at":1}]}"#)
+    let again = try #require(await store.openAgent("a-run", in: Self.session))
+    #expect(again.agentId == "a-1" && !again.spawned)
+    #expect(backend.count(.agentsSpawn) == 1)
+  }
+
+  @Test("a run's live agent opens as is")
+  func openLiveRunAgent() async throws {
+    let (store, backend) = await attached()
+    backend.reply(.agentsList, #"{"agents":[{"agent_id":"a-run","session_id":"s-1","status":"running","created_at":1}]}"#)
+
+    let opened = try #require(await store.openAgent("a-run", in: Self.session))
+    #expect(opened.agentId == "a-run" && !opened.spawned)
+    #expect(backend.count(.agentsSpawn) == 0)
+  }
+
   @Test("a match splits around its hit by UTF-16 offsets")
   func matchParts() {
     let match = ChatHistoryMatch(role: .user, snippet: "👋 fix the bug", matchStart: 3, matchEnd: 6)

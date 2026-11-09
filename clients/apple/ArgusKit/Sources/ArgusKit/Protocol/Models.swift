@@ -221,6 +221,8 @@ public struct RemoteAgentStatus: Codable, Hashable, Sendable, Identifiable {
 /// `historyId` rather than an agent id — the agent process is long gone.
 public struct RemoteStoppedAgent: Codable, Hashable, Sendable, Identifiable {
   public var historyId: String
+  /// The agent that ran it; nil on older records.
+  public var agentId: String?
   public var runnerSessionId: String
   public var title: String
   public var branch: String
@@ -245,6 +247,7 @@ public struct RemoteStoppedAgent: Codable, Hashable, Sendable, Identifiable {
 
   enum CodingKeys: String, CodingKey {
     case historyId = "history_id"
+    case agentId = "agent_id"
     case runnerSessionId = "runner_session_id"
     case title, branch, description, model
     case messageCount = "message_count"

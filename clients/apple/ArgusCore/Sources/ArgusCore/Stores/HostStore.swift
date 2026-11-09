@@ -47,6 +47,8 @@ public final class HostStore {
   /// Linear and Figma as this computer has them connected; empty until loaded.
   public internal(set) var integrations: [ArgusProtocol.IntegrationStatus] = []
   public internal(set) var stoppedByRepo: [String: [RemoteStoppedAgent]] = [:]
+  /// Stopped agents a link already resumed, so opening it again doesn't resume a second copy.
+  var resumedAs: [String: String] = [:]
   public internal(set) var messagesByAgent: [String: [RemoteMessage]] = [:]
   /// Locally-appended user messages awaiting confirmation in the next snapshot.
   public internal(set) var optimisticByAgent: [String: [RemoteMessage]] = [:]

@@ -15683,6 +15683,7 @@ extension ArgusProtocol {
 
   public struct RemoteStoppedAgent: Codable, Sendable {
     public var historyId: String
+    public var agentId: String?
     public var runnerSessionId: String
     public var title: String
     public var branch: String
@@ -15699,6 +15700,7 @@ extension ArgusProtocol {
 
     enum CodingKeys: String, CodingKey {
       case historyId = "history_id"
+      case agentId = "agent_id"
       case runnerSessionId = "runner_session_id"
       case title = "title"
       case branch = "branch"
@@ -15714,8 +15716,9 @@ extension ArgusProtocol {
       case pinned = "pinned"
     }
 
-    public init(historyId: String, runnerSessionId: String, title: String, branch: String, description: String? = nil, model: String? = nil, messageCount: Int, startedAt: Double, endedAt: Double, importedFrom: RemoteStoppedAgentImportedFrom? = nil, runnerId: String? = nil, permissionMode: String? = nil, effort: String? = nil, pinned: Bool? = nil) {
+    public init(historyId: String, agentId: String? = nil, runnerSessionId: String, title: String, branch: String, description: String? = nil, model: String? = nil, messageCount: Int, startedAt: Double, endedAt: Double, importedFrom: RemoteStoppedAgentImportedFrom? = nil, runnerId: String? = nil, permissionMode: String? = nil, effort: String? = nil, pinned: Bool? = nil) {
       self.historyId = historyId
+      self.agentId = agentId
       self.runnerSessionId = runnerSessionId
       self.title = title
       self.branch = branch
@@ -15734,6 +15737,7 @@ extension ArgusProtocol {
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(historyId, forKey: .historyId)
+      try c.encodeIfPresent(agentId, forKey: .agentId)
       try c.encode(runnerSessionId, forKey: .runnerSessionId)
       try c.encode(title, forKey: .title)
       try c.encode(branch, forKey: .branch)

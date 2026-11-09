@@ -107,6 +107,8 @@ export type RemoteAgentStatus = z.infer<typeof RemoteAgentStatus>;
  */
 export const RemoteStoppedAgent = z.object({
   history_id: z.string(),
+  /** The agent that ran it, so a link to that agent can resume it. Absent on older records. */
+  agent_id: z.string().optional(),
   /** Runner session id, so a control client can resume the conversation. */
   runner_session_id: z.string(),
   title: z.string(),
