@@ -30,6 +30,8 @@ export interface FixtureHost {
   close: () => Promise<void>;
   /** A raw broadcast, as `emitHostEvent(channel, payload)` would send it. */
   ipc: (channel: string, payload: unknown) => void;
+  /** One media message (a device's stream), on the socket's media tag. */
+  media: (message: Buffer) => void;
   /** A typed event (`agent.transcript`, `sessions.changed`, …). */
   push: (event: string, agentId: string | null, payload: unknown) => void;
   /** Agents the app subscribed to; typed agent events only reach these. */
@@ -37,6 +39,7 @@ export interface FixtureHost {
 }
 
 const TAG_JSON = 0x00;
+const TAG_MEDIA = 0x01;
 
 function frame(envelope: unknown): Buffer {
   const json = Buffer.from(JSON.stringify(envelope));
@@ -177,6 +180,14 @@ export async function startFixtureHost(
         agent_id: null,
         payload: { channel, args: [payload] },
       }),
+    media: (message) => {
+      const head = Buffer.alloc(5);
+      head.writeUInt32BE(message.length + 1, 0);
+      head[4] = TAG_MEDIA;
+      for (const socket of sockets) {
+        socket.write(Buffer.concat([head, message]));
+      }
+    },
     push: (event, agentId, payload) =>
       send({ type: "evt", event, agent_id: agentId, payload }),
     close: () =>

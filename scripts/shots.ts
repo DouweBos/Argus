@@ -88,7 +88,8 @@ async function apply(shoot: Shoot, steps: Step[]): Promise<void> {
         throw new Error(`route ${step.path}: ${String(out.error)}`);
       }
     } else if (step.kind === "click") {
-      await sleep(600);
+      // A transcript row re-measures after the click before it; one landing mid-layout is lost.
+      await sleep(1200);
       // A list ignores clicks in a window that isn't key; key within this app only.
       await driver.run({ op: "makeKey", window: shoot.window });
       await driver.run({
@@ -166,13 +167,13 @@ async function capture(id: string, theme: string, app: string): Promise<void> {
   // Short: a Unix socket path is capped at 104 bytes.
   const work = fs.mkdtempSync(path.join(os.tmpdir(), "argus-shot-"));
   const home = path.join(work, "home");
-  const fixture = new MacFixture(scenario);
+  const fixture = new MacFixture(scenario, theme);
   await fixture.materialize(path.join(work, "wt"));
   const host = await startFixtureHost(home, themed(scenario, theme, fixture));
   fixture.attach(host);
   boot(scenario, fixture);
 
-  const running = await launchApp(app, home, work);
+  const running = await launchApp(app, home, work, scene.defaults);
   try {
     await waitForData(running);
     await running.driver.run({

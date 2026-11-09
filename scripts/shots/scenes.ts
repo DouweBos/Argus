@@ -24,6 +24,8 @@ export interface MacScene {
    * lookup, and the window size is fixed, so a point is the stable handle.
    */
   clicks?: { x: number; y: number }[];
+  /** Launch-argument defaults on top of the shared ones (a card folded away). */
+  defaults?: Record<string, string>;
   /** Scroll distance per renderer `scrollTo`; the Mac's sections are denser. */
   scrollScale?: number;
 }
@@ -38,8 +40,17 @@ export const MAC_SCENES: Record<string, MacScene> = {
     crop: { x: 1030, y: 112, w: 2170, h: 1328 },
   },
   remote: { scrollScale: 0.5 },
-  // The running turn folds into "Working…"; open it so the work shows.
-  agent: { clicks: [{ x: 590, y: 108 }] },
+  // The finished turn folds into "Worked for…"; open it so the work shows.
+  // The context card folds away so the chat and the simulator share the window.
+  agent: {
+    clicks: [
+      { x: 404, y: 202 },
+      { x: 389, y: 573 },
+    ],
+    defaults: { "argus:contextCard.collapsed.agents": "YES" },
+    // The chat and the simulator, without the sidebar.
+    crop: { x: 630, y: 186, w: 2550, h: 1794 },
+  },
   huddle: { clicks: [{ x: 590, y: 108 }] },
   // Home lists sessions, not agents; the Agents screen fills in row by row.
   flock: { routes: { "/": "/agents" } },

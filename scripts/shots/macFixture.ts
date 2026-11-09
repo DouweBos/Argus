@@ -11,6 +11,7 @@ import type { FixtureEvent, FixtureScenario } from "./fixture/types";
 import type { FixtureHost } from "./fixtureHost";
 import type { LlmStreamEvent } from "@argus/host/services/agent/conversation/types";
 import path, { basename } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { z } from "zod";
 import { addHostEventSink } from "@argus/host/bus";
 import {
@@ -41,6 +42,7 @@ import {
   type RemoteAgentStatus,
 } from "@argus/remote-protocol";
 import { automationReply } from "./automations";
+import { encodeStill } from "./deviceStream";
 import { cannedReply } from "./fixture/reply";
 import { materializeWorktree } from "./repos";
 import { conform } from "./synth";
@@ -79,8 +81,14 @@ export class MacFixture {
   /** Session id → the real repository standing in for its worktree. */
   private readonly worktrees = new Map<string, string>();
   private readonly untap: () => void;
+  private readonly timers: NodeJS.Timeout[] = [];
+  /** Where `FixtureEvent.at` counts from: just long enough ago for a whole turn. */
+  private readonly storyStart = Date.now() - 90_000;
 
-  constructor(private readonly scenario: FixtureScenario) {
+  constructor(
+    private readonly scenario: FixtureScenario,
+    private readonly theme = "dark",
+  ) {
     resetLive();
     // The host's live transcripts announce each change on the bus; forward
     // them the way the gateway does, to whoever follows the agent.
@@ -115,12 +123,30 @@ export class MacFixture {
   }
 
   dispose(): void {
+    this.timers.forEach(clearTimeout);
     this.untap();
     resetLive();
   }
 
-  /** Apply one scenario event: state first, then what the app would hear. */
+  /** Apply one scenario event at its story time, if it has one. */
   apply(event: FixtureEvent): void {
+    if (event.at === undefined) {
+      this.applyNow(event);
+
+      return;
+    }
+    const realNow = Date.now;
+    const at = this.storyStart + event.at * 1000;
+    Date.now = () => at;
+    try {
+      this.applyNow(event);
+    } finally {
+      Date.now = realNow;
+    }
+  }
+
+  /** State first, then what the app would hear. */
+  private applyNow(event: FixtureEvent): void {
     const { channel, payload } = event;
     const agentEvent = /^agent:event:(.+)$/.exec(channel)?.[1];
     if (agentEvent) {
@@ -141,8 +167,8 @@ export class MacFixture {
 
       return;
     }
-    // A guest's line reaches the agent as a user turn with its author.
-    const guestTo = /^agent:remote-message:(.+)$/.exec(channel)?.[1];
+    // What you type, or a guest's line with its author: a user turn either way.
+    const guestTo = /^agent:(?:remote|user)-message:(.+)$/.exec(channel)?.[1];
     if (guestTo) {
       const { author, message } = payload as {
         author?: string;
@@ -213,6 +239,8 @@ export class MacFixture {
       }
       case "agents.transcript":
         return this.transcript(params);
+      case "devices.watch":
+        return this.scenario.deviceScreen ? this.watch() : undefined;
       case "agents.capabilities":
         return {
           capabilities:
@@ -257,6 +285,36 @@ export class MacFixture {
             )
           : cannedReply(this.scenario, method, params);
     }
+  }
+
+  /**
+   * The scenario's still as the device's stream. Sent after the reply, and
+   * again a few times: the app only listens once `devices.watch` resolved.
+   */
+  private watch(): { stream_id: number } {
+    const streamId = 7;
+    const png = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "fixture/screens",
+      `${this.scenario.deviceScreen}@${this.theme}.png`,
+    );
+    const stream = encodeStill(png, streamId);
+    // Reported per push below; this only keeps an early failure from going unhandled.
+    stream.catch(() => undefined);
+    for (const delay of [300, 1000, 2500]) {
+      this.timers.push(
+        setTimeout(() => {
+          stream
+            .then(({ config, keyFrame }) => {
+              this.host?.media(config);
+              this.host?.media(keyFrame);
+            })
+            .catch((err: unknown) => this.mismatches.push(String(err)));
+        }, delay),
+      );
+    }
+
+    return { stream_id: streamId };
   }
 
   private transcript(params: Record<string, unknown>): unknown {

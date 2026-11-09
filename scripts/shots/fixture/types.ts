@@ -15,6 +15,11 @@ export type FixtureResolver = (args: Record<string, unknown>) => unknown;
 
 /** A backend event the scenario pushes once the app has subscribed. */
 export interface FixtureEvent {
+  /**
+   * Seconds into the scenario's story this happened: transcript timestamps
+   * read from it, so a turn says "Worked for 1m 14s" rather than "0s".
+   */
+  at?: number;
   channel: string;
   /**
    * Extra delay before this one fires. Per-agent listeners (`agent:event:<id>`)
@@ -60,6 +65,11 @@ export interface FixtureScenario {
    * is reproducible in a way a screen recording never is.
    */
   beats?: FixtureBeat[];
+  /**
+   * A still in `fixture/screens/` (`<name>@<theme>.png`) streamed as the
+   * picture of whichever device the app watches: the app the agents build.
+   */
+  deviceScreen?: string;
   /** IPC replies by channel, canned or resolved. Overrides the shared defaults. */
   channels: Record<string, unknown>;
   /**

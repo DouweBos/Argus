@@ -87,15 +87,15 @@ export async function launchApp(
   app: string,
   home: string,
   work: string,
+  defaults: Record<string, string> = {},
 ): Promise<RunningApp> {
   // Window frames, split widths and picks from an earlier run would leak in.
   await run("defaults", ["delete", BUNDLE_ID]).catch(() => undefined);
   const driver = new DevDriver(path.join(work, "driver"));
   const log = fs.openSync(path.join(work, "app.log"), "w");
-  const args = Object.entries(SEEDED_DEFAULTS).flatMap(([key, value]) => [
-    `-${key}`,
-    value,
-  ]);
+  const args = Object.entries({ ...SEEDED_DEFAULTS, ...defaults }).flatMap(
+    ([key, value]) => [`-${key}`, value],
+  );
   const child: ChildProcess = spawn(
     path.join(app, "Contents/MacOS/Argus"),
     args,

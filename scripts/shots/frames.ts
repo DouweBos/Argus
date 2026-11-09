@@ -66,17 +66,18 @@ export async function crop(
   area: Crop,
   out: string,
 ): Promise<void> {
-  await run("sips", [
-    "-c",
-    String(area.h),
-    String(area.w),
-    "--cropOffset",
-    String(area.y),
-    String(area.x),
+  // ffmpeg rather than sips: sips centres a crop whose offset is 0.
+  await run("ffmpeg", [
+    "-y",
+    "-loglevel",
+    "error",
+    "-i",
     source,
-    "--out",
-    out,
+    "-vf",
+    `crop=${area.w}:${area.h}:${area.x}:${area.y}`,
+    `${out}.tmp.png`,
   ]);
+  fs.renameSync(`${out}.tmp.png`, out);
 }
 
 /**

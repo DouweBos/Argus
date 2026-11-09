@@ -100,7 +100,7 @@ export function agent(task: Task, index: number) {
   return {
     agent_id: `agt_${task.id}`,
     created_at: NOW - (index + 1) * 6 * 60_000,
-    model: "claude-opus-5",
+    model: "claude-opus-5-5",
     parent_agent_id: null,
     permission_mode: "default",
     session_id: task.id,
