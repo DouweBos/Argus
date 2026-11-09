@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/DouweBos/Argus/security/advisories/new
+    about: Please report security issues privately, never in a public issue.
+  - name: Documentation
+    url: https://houwert.dev/argus/docs
+    about: Setup, project settings and feature guides.

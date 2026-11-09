@@ -1,0 +1,54 @@
+name: Bug report
+description: Something in Argus doesn't work the way it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Security issues go through [SECURITY.md](../blob/main/SECURITY.md), not here.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Create a session in …
+        2. …
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where
+      multiple: true
+      options:
+        - Argus for Mac
+        - iPhone app
+        - Web client
+        - Headless host / server
+        - iOS simulator / Android emulator
+        - Embedded browser
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Argus version
+      placeholder: e.g. 0.80.1
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: macOS, Xcode and Claude Code versions
+      placeholder: e.g. macOS 26.1, Xcode 26.1, Claude Code 2.1.0
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant log lines. Remove anything private (paths, repo names, tokens).
+      render: text
