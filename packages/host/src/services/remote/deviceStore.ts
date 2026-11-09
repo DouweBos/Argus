@@ -473,26 +473,3 @@ export async function saveAccountRecord(
   state.account = record;
   await writeState(state);
 }
-
-/**
- * Rotate the desktop static identity. QR-paired devices can no longer
- * authenticate the desktop (their pinned `ds_pub` is stale) and must re-pair,
- * so we clear them. Account devices survive: they re-read the key from the
- * log's `rotate` entry.
- */
-export async function rotateDesktopIdentity(): Promise<DesktopIdentity> {
-  const previous = await ensureState();
-  const created = freshState();
-  created.account = previous.account ?? null;
-  created.devices = Object.fromEntries(
-    Object.entries(previous.devices).filter(([, d]) => d.source === "account"),
-  );
-  await writeState(created);
-  cached = created;
-  emitDevicesChanged();
-
-  return {
-    priv: Buffer.from(created.ds_priv, "base64"),
-    pub: Buffer.from(created.ds_pub, "base64"),
-  };
-}
