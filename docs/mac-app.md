@@ -418,6 +418,11 @@ home. They are
 signed with your Apple Development identity: macOS refuses notifications to an
 ad-hoc signed app, and to one run from `/tmp`.
 
+Debug builds stay out of the keychain, so the stream of agent-built dev apps
+never prompts for the account's items: they start signed out and keep the
+account in memory. Set `ARGUS_KEYCHAIN=1` to restore and keep a dev build's
+sign-in like Release does.
+
 Debug builds carry the Sign in with Apple entitlement through Xcode's automatic
 signing (your Mac has to be registered with the team). Release builds are
 signed with Developer ID and no profile: Apple doesn't support Sign in with

@@ -102,16 +102,23 @@ final class DesktopModel {
   var tabs: [WindowTab] = WindowTab.restored()
   var activeTabId = WindowTab.localId
 
-  /// The keychain's, except under `ARGUS_NO_KEYCHAIN` (debug only): a build
-  /// signed differently from the one that sealed the vault makes macOS prompt
-  /// for it, and a throwaway run (`pnpm shots`) has no business reading it.
+  /// Debug builds stay out of the keychain unless `ARGUS_KEYCHAIN` is set: each
+  /// agent's build is signed anew, and macOS prompts every one for the account items.
+  private static var usesKeychain: Bool {
+    #if DEBUG
+      ProcessInfo.processInfo.environment["ARGUS_KEYCHAIN"] != nil
+    #else
+      true
+    #endif
+  }
+
   private static func accountVault() -> any AccountVaultStore {
     #if DEBUG
-      let environment = ProcessInfo.processInfo.environment
-      if let name = environment["ARGUS_ACCOUNT_FIXTURE"] { return MemoryAccountVault(fixtureVault(deviceName: name)) }
-      if environment["ARGUS_NO_KEYCHAIN"] != nil { return MemoryAccountVault() }
+      if let name = ProcessInfo.processInfo.environment["ARGUS_ACCOUNT_FIXTURE"] {
+        return MemoryAccountVault(fixtureVault(deviceName: name))
+      }
     #endif
-    return KeychainAccountVault()
+    return usesKeychain ? KeychainAccountVault() : MemoryAccountVault()
   }
 
   #if DEBUG
@@ -249,7 +256,7 @@ final class DesktopModel {
     viewedSessionChanged(from: nil)
     // Only the app running the host may put it on an account.
     if !isAttached { localAccountLink.backend = local }
-    Task { await account.start() }
+    Task { await account.start(restoringSession: Self.usesKeychain) }
     watchConnection(local)
   }
 

@@ -171,7 +171,8 @@ public final class AccountStore {
 
   /// Read back what this device already trusts, then reach the service. The
   /// hosts show from the cache straight away, so an offline launch still lists them.
-  public func start() async {
+  /// `restoringSession: false` leaves the auth provider (and its keychain) alone until a sign-in.
+  public func start(restoringSession: Bool = true) async {
     vault = await vaultStore.load()
     if let root = vault.root, case .ok(let verified) = AccountLog.verify(vault.entries, root: root),
       ownMemberLive(in: verified)
@@ -179,6 +180,10 @@ public final class AccountStore {
       state = verified
       phase = .ready
       publishHosts()
+    }
+    guard restoringSession else {
+      if phase == .loading { phase = .signedOut }
+      return
     }
     do {
       try await ensureConfigured()
