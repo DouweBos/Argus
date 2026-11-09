@@ -18,6 +18,7 @@ struct AutomationView: View {
 
   /// The memory sheet: `.some(nil)` adds one, `nil` is closed.
   @State private var openMemory: MemorySelection?
+  @State private var duplicating = false
 
   private struct MemorySelection: Identifiable {
     let memory: RemoteAutomationMemory?
@@ -47,6 +48,14 @@ struct AutomationView: View {
     .toolbar {
       if host.hasControl {
         ToolbarItem(placement: .topBarTrailing) {
+          Button {
+            duplicate()
+          } label: {
+            Label("Duplicate", systemImage: Icon.copy)
+          }
+          .disabled(duplicating || host.connection != .ready)
+        }
+        ToolbarItem(placement: .topBarTrailing) {
           NavigationLink(
             value: Route.automationEditor(id: automationId, label: automation?.name ?? label)
           ) {
@@ -62,6 +71,18 @@ struct AutomationView: View {
     }
     .sheet(item: $openMemory) { selection in
       MemoryEditorSheet(automationId: automationId, memory: selection.memory)
+    }
+  }
+
+  /// Opens the paused copy, ready to be edited for another project.
+  private func duplicate() {
+    duplicating = true
+    Task {
+      if let copy = await store.duplicate(id: automationId) {
+        let name = store.detailById[copy]?.name ?? label
+        router.push(.automation(id: copy, label: name))
+      }
+      duplicating = false
     }
   }
 

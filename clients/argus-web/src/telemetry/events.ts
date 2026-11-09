@@ -68,6 +68,7 @@ export type AutomationAction =
   | "delete"
   | "describe"
   | "disable"
+  | "duplicate"
   | "enable"
   | "regenerate"
   | "revise_playbook"

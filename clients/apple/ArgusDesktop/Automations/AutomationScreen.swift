@@ -26,6 +26,7 @@ private struct AutomationDetail: View {
   @State private var saved: RemoteAutomationDetail?
   @State private var saving = false
   @State private var confirmingDelete = false
+  @State private var duplicating = false
 
   private var automation: RemoteAutomation? {
     store.automations.first { $0.id == automationId }
@@ -121,6 +122,9 @@ private struct AutomationDetail: View {
       )
       .toggleStyle(.argusSwitch)
       AutomationRunButton(automationId: automationId)
+      Button("Duplicate") { duplicate() }
+        .disabled(duplicating)
+        .help("Make a paused copy to adapt, e.g. for another project")
       Button("Delete") { confirmingDelete = true }
       Button(saving ? "Saving…" : saved == draft ? "Saved" : "Save Changes") { save() }
         .keyboardShortcut("s", modifiers: .command)
@@ -144,6 +148,14 @@ private struct AutomationDetail: View {
         saved = detail
       }
       saving = false
+    }
+  }
+
+  private func duplicate() {
+    duplicating = true
+    Task {
+      await AutomationActions.duplicate(model, id: automationId)
+      duplicating = false
     }
   }
 

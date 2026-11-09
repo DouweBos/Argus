@@ -122,6 +122,26 @@ public final class AutomationsStore {
   /// Create when `id` is nil, otherwise patch. Returns the saved automation's
   /// id so a new one can be opened straight after.
   public func save(id: String?, input: RemoteAutomationInput) async -> String? {
+    await persist(id: id, input: input, action: id == nil ? .create : .save)
+  }
+
+  /// A paused copy — same playbook, trigger and projects, no memories or runs —
+  /// to adapt for another project. Returns the copy's id.
+  public func duplicate(id: String) async -> String? {
+    guard let source = await loadDetail(id: id) else {
+      error = "Couldn't read that automation to copy it."
+      return nil
+    }
+    var input = RemoteAutomationInput(source)
+    input.name = "\(source.name) copy"
+    input.enabled = false
+
+    return await persist(id: nil, input: input, action: .duplicate)
+  }
+
+  private func persist(
+    id: String?, input: RemoteAutomationInput, action: StoreEvent.AutomationAction
+  ) async -> String? {
     guard let backend = host.backend else { return nil }
     struct CreateParams: Encodable { let input: RemoteAutomationInput }
     struct UpdateParams: Encodable {
@@ -137,7 +157,7 @@ public final class AutomationsStore {
           try await backend.request(
             .automationsCreate, CreateParams(input: input), as: SaveResult.self)
         }
-      host.hooks.track(.automationEdited(action: id == nil ? .create : .save))
+      host.hooks.track(.automationEdited(action: action))
       detailById[result.detail.id] = result.detail
       await refresh()
 

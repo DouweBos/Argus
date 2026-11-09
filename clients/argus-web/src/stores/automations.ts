@@ -60,6 +60,8 @@ interface AutomationsState {
   loadQuickRuns: () => Promise<void>;
   /** Create when `id` is null; returns the saved id. Throws the computer's reason. */
   save: (id: string | null, draft: RemoteAutomationDetail) => Promise<string>;
+  /** A paused copy without memories or runs; returns its id, null on failure. */
+  duplicate: (id: string) => Promise<string | null>;
   setEnabled: (id: string, enabled: boolean) => Promise<void>;
   remove: (id: string) => Promise<boolean>;
   revisePlaybook: (
@@ -290,6 +292,35 @@ export const useAutomationsStore = create<AutomationsState>()((set, get) => {
       }));
 
       return result.automation.id;
+    },
+
+    duplicate: async (id) => {
+      try {
+        const source = get().detailById[id] ?? (await get().loadDetail(id));
+        if (!source) {
+          return null;
+        }
+        const { automation, detail } = await request(
+          transport(),
+          "automations.create",
+          {
+            input: draftToInput({
+              ...source,
+              name: `${source.name} copy`,
+              enabled: false,
+            }),
+          },
+        );
+        capture("web_automation_edited", { action: "duplicate" });
+        upsertAutomation(automation);
+        set((s) => ({ detailById: { ...s.detailById, [detail.id]: detail } }));
+
+        return automation.id;
+      } catch (err) {
+        fail("Couldn't duplicate that automation", err);
+
+        return null;
+      }
     },
 
     setEnabled: async (id, enabled) => {

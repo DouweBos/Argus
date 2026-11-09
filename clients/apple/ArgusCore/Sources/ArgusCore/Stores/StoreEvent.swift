@@ -43,6 +43,8 @@ public enum StoreEvent: Sendable, Equatable {
     case describe
     /// A shown draft drafted again from the same description.
     case regenerate
+    /// A paused copy of an existing automation.
+    case duplicate
   }
 
   /// What was done to a run.

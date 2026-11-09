@@ -76,6 +76,7 @@ export function AutomationScreen({ automationId }: { automationId: string }) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [revising, setRevising] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   useEffect(() => {
     if (!ready) {
@@ -137,6 +138,15 @@ export function AutomationScreen({ automationId }: { automationId: string }) {
     }
   };
 
+  const duplicate = async () => {
+    setDuplicating(true);
+    const copy = await store().duplicate(automationId);
+    setDuplicating(false);
+    if (copy) {
+      appNavigate({ name: "automation", automationId: copy });
+    }
+  };
+
   let saveLabel = "Saved";
   if (saving) {
     saveLabel = "Saving…";
@@ -162,6 +172,14 @@ export function AutomationScreen({ automationId }: { automationId: string }) {
                 {automation.enabled ? "Enabled" : "Paused"}
               </Toggle>
               <RunControl automation={automation} latest={latest} />
+              <Button
+                disabled={duplicating}
+                size="sm"
+                variant="ghost"
+                onClick={() => void duplicate()}
+              >
+                Duplicate
+              </Button>
               <Button
                 size="sm"
                 variant="ghost"

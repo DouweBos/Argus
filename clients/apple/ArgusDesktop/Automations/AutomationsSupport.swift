@@ -14,6 +14,12 @@ enum AutomationActions {
     model.navigate(.automation(id: id, runId: nil))
   }
 
+  /// Opens the paused copy straight away so it can be pointed elsewhere.
+  static func duplicate(_ model: DesktopModel, id: String) async {
+    guard let copy = await model.automations.duplicate(id: id) else { return }
+    model.navigate(.automation(id: copy, runId: nil))
+  }
+
   /// A quick run has no automation to hang off, so it opens under quick runs.
   static func openRun(_ model: DesktopModel, automationId: String, runId: String) {
     let quick = model.inbox.runs.contains { $0.id == runId && $0.scratch != nil }

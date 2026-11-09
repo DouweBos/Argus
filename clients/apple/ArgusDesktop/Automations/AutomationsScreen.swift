@@ -111,6 +111,7 @@ struct AutomationsScreen: View {
       if let id = ids.first {
         Button("Open") { model.navigate(.automation(id: id, runId: nil)) }
         Button("Run Now") { Task { await store.runNow(automationId: id) } }
+        Button("Duplicate") { Task { await AutomationActions.duplicate(model, id: id) } }
       }
     } primaryAction: { ids in
       if let id = ids.first { model.navigate(.automation(id: id, runId: nil)) }
