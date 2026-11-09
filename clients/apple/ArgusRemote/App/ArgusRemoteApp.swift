@@ -7,7 +7,15 @@ struct ArgusRemoteApp: App {
 
   var body: some Scene {
     WindowGroup {
-      RootView()
+      #if DEBUG
+        if GalleryMode.active {
+          GalleryRoot()
+        } else {
+          RootView()
+        }
+      #else
+        RootView()
+      #endif
     }
   }
 }

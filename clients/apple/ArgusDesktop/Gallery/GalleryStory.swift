@@ -76,21 +76,4 @@
       AutomationStories.all + ComposerStories.all + SessionStories.all + DiffReviewStories.all
     }
   }
-
-  /// Fixture JSON from plain dictionaries, in wire (snake_case) keys.
-  enum GalleryJSON {
-    static func encode(_ value: Any) -> String {
-      let data = try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys])
-      return data.flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
-    }
-
-    static func projects(_ names: [String]) -> String {
-      encode(["projects": names.map { ["repo_root": "/Users/dev/Projects/\($0)", "name": $0] }])
-    }
-
-    static let someProjects = [
-      "react-native-client", "Argus", "Maestro", "luma", "conductor", "houwert.dev",
-      "vizbee-chromecast-receiver", "apple-client", "Grove", "Charon", "web-tv-client", "iOS-App",
-    ]
-  }
 #endif

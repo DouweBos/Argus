@@ -229,6 +229,11 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		6A11E7000000000000000001 /* Gallery */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Gallery;
+			sourceTree = "<group>";
+		};
 		D7E500000000000000000003 /* ArgusDesktopTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ArgusDesktopTests;
@@ -444,6 +449,7 @@
 				38AF2122DBE897D9F8A04315 /* Stores */,
 				51086224F685027B0138C994 /* Views */,
 				FEED000100000000000000A6 /* Telemetry */,
+				6A11E7000000000000000001 /* Gallery */,
 				8346E6C1D03B823ABD7DCA02 /* ArgusRemote.entitlements */,
 				95ACC76BC6E417BE6A706B18 /* Info.plist */,
 			);
@@ -593,6 +599,9 @@
 			);
 			dependencies = (
 				4BCA19C70CB5094155DF75C2 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				6A11E7000000000000000001 /* Gallery */,
 			);
 			name = ArgusRemote;
 			packageProductDependencies = (

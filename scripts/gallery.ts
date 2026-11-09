@@ -5,6 +5,10 @@
  * ever showing. Or `--browse` to click through them live.
  *
  *   pnpm gallery [filter] [--theme dark|light] [--out <dir>] [--no-build] [--browse]
+ *   pnpm gallery [filter] --ios [--device "iPad Pro 13-inch (M5)"]  (default: iPhone 17)
+ *
+ * `--ios` renders the iOS app's stories (`clients/apple/ArgusRemote/Gallery/`,
+ * same ids as the Mac's) on a simulator of its own, through conductor.
  *
  * Prints one PNG path per line; `<out>/index.json` lists each story's
  * fixtures that went unanswered.
@@ -16,6 +20,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { renderIos } from "./galleryIos";
 
 const run = promisify(execFile);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -37,6 +42,9 @@ function parse(argv: string[]) {
     out: path.join(os.tmpdir(), "argus-gallery"),
     build: true,
     browse: false,
+    ios: false,
+    device: "iPhone 17",
+    outSet: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -44,6 +52,11 @@ function parse(argv: string[]) {
       options.themes = argv[++i] ?? options.themes;
     } else if (arg === "--out") {
       options.out = path.resolve(argv[++i] ?? options.out);
+      options.outSet = true;
+    } else if (arg === "--ios") {
+      options.ios = true;
+    } else if (arg === "--device") {
+      options.device = argv[++i] ?? options.device;
     } else if (arg === "--no-build") {
       options.build = false;
     } else if (arg === "--browse") {
@@ -103,6 +116,20 @@ async function build(): Promise<void> {
 
 async function main(): Promise<void> {
   const options = parse(process.argv.slice(2));
+  if (options.ios) {
+    await renderIos({
+      root: ROOT,
+      filter: options.filter,
+      themes: options.themes,
+      out: options.outSet
+        ? options.out
+        : path.join(os.tmpdir(), "argus-gallery-ios"),
+      build: options.build,
+      device: options.device,
+    });
+
+    return;
+  }
   if (options.build) {
     await build();
   }
