@@ -2,9 +2,9 @@
   import ArgusCore
   import SwiftUI
 
-  /// The strip under a phone start composer, as the Mac's: the project when
-  /// there's no session to pin it, where the agent works and the branch it
-  /// starts on, then the phone's runner and Linear issue chips. Only what applies shows.
+  /// The strip tucked under a phone start composer, as the Mac's: the project
+  /// when there's no session to pin it, where the agent works, the runner and
+  /// Linear issues on the left; the branch it starts on at the right.
   struct PhoneStartFooter: View {
     private enum Sheet: String, Identifiable {
       case base, existing, runner
@@ -19,34 +19,62 @@
     @State private var pickingIssues = false
 
     var body: some View {
-      VStack(alignment: .leading, spacing: 6) {
-        if !flow.issues.isEmpty { PickedIssueChips(issues: $flow.issues) }
-        ChipFlowLayout(spacing: 6, lineSpacing: 6) {
+      VStack(alignment: .leading, spacing: 4) {
+        if !flow.issues.isEmpty { PickedIssueChips(issues: $flow.issues).padding(.top, 6) }
+        HStack(spacing: 2) {
           if flow.picksProject, flow.repoRoot == nil || host.projects.count > 1 { projectMenu }
           if flow.issues.isEmpty, flow.options.count > 1 { workspaceMenu }
-          branchChip
-          if !host.runners.isEmpty {
-            Chip(label: composer.runner?.displayName ?? "Default runner", icon: Icon.terminal) { picker = .runner }
-              .accessibilityLabel("Runner: \(composer.runner?.displayName ?? "Default")")
-          }
-          if flow.repoRoot != nil, host.linearConnected {
-            Chip(label: flow.issues.isEmpty ? "Linear issue" : "Add issue", icon: Icon.issue) { pickingIssues = true }
-          }
+          if !host.runners.isEmpty { runnerPill }
+          if flow.repoRoot != nil, host.linearConnected { issuePill }
+          Spacer(minLength: 4)
+          branchPill
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
       }
+      .padding(.horizontal, 6)
+      .padding(.top, 1)
+      .frame(minHeight: TextScale.shared(38))
+      .background(theme.bgSecondary, in: shape)
+      .overlay { shape.strokeBorder(theme.border, lineWidth: 1) }
+      // Shares the card's bottom edge rather than doubling it.
+      .padding(.top, -1)
       .sheet(item: $picker) { picked($0) }
       .sheet(isPresented: $pickingIssues) { IssuePickerSheet(selection: $flow.issues) }
     }
 
+    private var shape: UnevenRoundedRectangle {
+      UnevenRoundedRectangle(bottomLeadingRadius: 14, bottomTrailingRadius: 14)
+    }
+
     /// Unpicked reads "Pick a project" until a project is chosen.
     private var projectMenu: some View {
-      let unpicked: [MenuChip<String>.Option] =
-        flow.repoRoot == nil ? [.init(value: "", label: "Pick a project")] : []
-      return MenuChip(
-        "Project", selection: projectRoot,
-        options: unpicked + host.projects.map { .init(value: $0.repoRoot, label: $0.name) },
-        icon: Icon.folder, tone: flow.repoRoot == nil ? .accent : nil)
+      Menu {
+        Picker("Project", selection: projectRoot) {
+          ForEach(host.projects, id: \.repoRoot) { Text($0.name).tag($0.repoRoot) }
+        }
+        .pickerStyle(.inline)
+      } label: {
+        ComposerPillLabel(
+          icon: Icon.folder, title: host.projects.first { $0.repoRoot == flow.repoRoot }?.name ?? "Pick a project",
+          accent: flow.repoRoot == nil)
+      }
+      .menuIndicator(.hidden)
+    }
+
+    /// Only the icon until a runner is picked, as the link pill does.
+    private var runnerPill: some View {
+      Button { picker = .runner } label: {
+        ComposerPillLabel(icon: Icon.terminal, title: composer.runner?.displayName, chevron: composer.runner != nil)
+      }
+      .buttonStyle(.argusPlain)
+      .accessibilityLabel("Runner: \(composer.runner?.displayName ?? "Default")")
+    }
+
+    private var issuePill: some View {
+      Button { pickingIssues = true } label: {
+        ComposerPillLabel(icon: Icon.issue, chevron: false)
+      }
+      .buttonStyle(.argusPlain)
+      .accessibilityLabel(flow.issues.isEmpty ? "Linear issue" : "Add issue")
     }
 
     private var projectRoot: Binding<String> {
@@ -70,10 +98,22 @@
     }
 
     private var workspaceMenu: some View {
-      MenuChip(
-        "Workspace", selection: kind,
-        options: flow.options.map { .init(value: $0, label: label($0), hint: hint($0)) },
-        icon: icon(flow.workspace.kind))
+      Menu {
+        Picker("Workspace", selection: kind) {
+          ForEach(flow.options, id: \.self) { option in
+            Button {} label: {
+              Label(label(option), systemImage: icon(option))
+              if let hint = hint(option) { Text(hint) }
+            }
+            .tag(option)
+          }
+        }
+        .pickerStyle(.inline)
+      } label: {
+        ComposerPillLabel(icon: icon(flow.workspace.kind), title: label(flow.workspace.kind))
+      }
+      .menuIndicator(.hidden)
+      .accessibilityLabel("Workspace: \(label(flow.workspace.kind))")
     }
 
     private var kind: Binding<StartWorkspace.Kind> {
@@ -89,20 +129,25 @@
     }
 
     @ViewBuilder
-    private var branchChip: some View {
+    private var branchPill: some View {
       switch flow.chosen {
       case .current:
         if let branch = flow.sessionId.flatMap(host.session(id:))?.branch {
-          Chip(label: branch, icon: Icon.branch, mono: true)
+          ComposerPillLabel(icon: Icon.branch, title: branch, chevron: false)
         }
       case .worktree:
-        Chip(label: flow.workspace.baseTitle, icon: Icon.branch) { picker = .base }
-          .accessibilityLabel("Base branch: \(flow.workspace.base ?? "Project default")")
+        Button { picker = .base } label: {
+          ComposerPillLabel(icon: Icon.branch, title: flow.workspace.baseTitle)
+        }
+        .buttonStyle(.argusPlain)
+        .accessibilityLabel("Base branch: \(flow.workspace.base ?? "Project default")")
       case .existing:
-        Chip(
-          label: flow.workspace.existingBranch ?? "Pick a branch", icon: Icon.branch,
-          tone: flow.workspace.existingBranch == nil ? .accent : nil
-        ) { picker = .existing }
+        Button { picker = .existing } label: {
+          ComposerPillLabel(
+            icon: Icon.branch, title: flow.workspace.existingBranch ?? "Pick a branch",
+            accent: flow.workspace.existingBranch == nil)
+        }
+        .buttonStyle(.argusPlain)
       }
     }
 

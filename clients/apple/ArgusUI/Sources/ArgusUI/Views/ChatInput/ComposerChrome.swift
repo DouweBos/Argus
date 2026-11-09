@@ -1,5 +1,4 @@
-#if os(macOS)
-  import SwiftUI
+import SwiftUI
 
   /// A composer setting as an inline pill: icon, value and a chevron, quiet until hovered.
   public struct ComposerPillLabel: View {
@@ -29,25 +28,38 @@
 
     public var body: some View {
       HStack(spacing: 5) {
-        Image(systemName: icon).font(.scaled(size: 11))
+        Image(systemName: icon).font(.scaled(size: Self.iconSize))
         if let title {
-          Text(title).font(.scaled(size: 12)).lineLimit(1)
+          Text(title).font(.scaled(size: Self.titleSize)).lineLimit(1)
         }
         if chevron {
-          Image(systemName: Icon.chevronDown).font(.scaled(size: 8, weight: .semibold))
+          Image(systemName: Icon.chevronDown).font(.scaled(size: Self.chevronSize, weight: .semibold))
             .opacity(!chevronOnHover || ((hovering || open) && isEnabled) ? 1 : 0)
         }
       }
       .foregroundStyle(
         !isEnabled ? theme.textMuted : accent ? theme.accent : hovering || open ? theme.text : theme.textSecondary)
       .padding(.horizontal, 7)
-      .frame(height: TextScale.shared(24))
+      .frame(height: TextScale.shared(Self.height))
       .background {
         if (hovering || open) && isEnabled { RoundedRectangle(cornerRadius: 6).fill(theme.selection) }
       }
       .contentShape(.rect(cornerRadius: 6))
       .onHover { hovering = $0 }
     }
+
+    // A finger needs a taller target than a pointer.
+    #if os(iOS)
+      static let height: CGFloat = 32
+      static let iconSize: CGFloat = 13
+      static let titleSize: CGFloat = 14
+      static let chevronSize: CGFloat = 9
+    #else
+      static let height: CGFloat = 24
+      static let iconSize: CGFloat = 11
+      static let titleSize: CGFloat = 12
+      static let chevronSize: CGFloat = 8
+    #endif
   }
 
   /// The hairline between two pills.
@@ -75,9 +87,9 @@
     var body: some View {
       Button(action: action) {
         Image(systemName: kind == .send ? "arrow.up" : "stop.fill")
-          .font(.scaled(size: kind == .send ? 12 : 9, weight: .bold))
+          .font(.scaled(size: (kind == .send ? 12 : 9) * Self.side / 26, weight: .bold))
           .foregroundStyle(foreground)
-          .frame(width: TextScale.shared(26), height: TextScale.shared(26))
+          .frame(width: TextScale.shared(Self.side), height: TextScale.shared(Self.side))
           .background(kind == .send && isEnabled ? theme.accent : theme.bgHover, in: Circle())
           .overlay(Circle().strokeBorder(isEnabled ? .clear : theme.border, lineWidth: 1))
           .contentShape(Circle())
@@ -86,10 +98,15 @@
       .accessibilityLabel(label)
     }
 
+    #if os(iOS)
+      static let side: CGFloat = 34
+    #else
+      static let side: CGFloat = 26
+    #endif
+
     /// Disabled drops to a solid muted fill; fading the accent left it unreadable on dark backgrounds.
     private var foreground: Color {
       guard isEnabled else { return theme.textMuted }
       return kind == .send ? theme.onAccent : theme.text
     }
   }
-#endif

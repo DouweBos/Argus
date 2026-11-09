@@ -9,10 +9,10 @@
     var id: String { rawValue }
   }
 
-  /// The phone composer's chips, in the Mac's order — model (and account),
-  /// effort, mode, linked projects — after the context meter. They wrap rather
-  /// than scroll, so none sits hidden past the edge.
-  struct PhoneComposerChips: View {
+  /// The pills along the phone composer's foot, as the Mac's: model (and
+  /// account), effort and permission mode drop a menu in place; linked projects
+  /// and side questions open a sheet. They wrap rather than scroll.
+  struct PhoneComposerPills: View {
     let composer: ComposerModel
     @Binding var picker: PhoneComposerPicker?
     @Environment(HostStore.self) private var host
@@ -20,35 +20,102 @@
     private var asked: Int { host.sideQuestionsByAgent[composer.agentId]?.count ?? 0 }
 
     var body: some View {
-      ChipFlowLayout(spacing: 6, lineSpacing: 6) {
-        if composer.contextTokens > 0 {
-          ContextMeter(tokens: composer.contextTokens, limit: composer.contextLimit)
-        }
-        Chip(label: composer.modelLabel, icon: Icon.agent) { picker = .model }
-        if composer.offersAccounts {
-          Chip(label: composer.accountLabel, icon: Icon.person) { picker = .account }
-        }
+      ChipFlowLayout(spacing: 2, lineSpacing: 2) {
+        modelMenu
         if !composer.effortLevels.isEmpty {
-          Chip(label: ComposerEffort.label(composer.effort), icon: Icon.clock) { picker = .effort }
+          ComposerPillDivider()
+          effortMenu
         }
-        Chip(
-          label: ComposerPermissionMode.label(composer.permissionMode), icon: Icon.lock,
-          tone: composer.permissionMode == .auto ? nil : .accent
-        ) { picker = .mode }
-        // Only the icon until something is linked, as on the Mac.
-        Chip(
-          label: composer.linkedProjects.isEmpty ? "" : "\(composer.linkedProjects.count) linked",
-          icon: Icon.link, tone: composer.linkedProjects.isEmpty ? nil : .accent
-        ) { picker = .project }
+        ComposerPillDivider()
+        modeMenu
+        ComposerPillDivider()
+        Button { picker = .project } label: {
+          ComposerPillLabel(
+            icon: Icon.link, title: composer.linkedProjects.isEmpty ? nil : "\(composer.linkedProjects.count) linked",
+            accent: !composer.linkedProjects.isEmpty, chevron: !composer.linkedProjects.isEmpty)
+        }
+        .buttonStyle(.argusPlain)
         .accessibilityLabel(composer.linkedProjects.isEmpty ? "Link project" : "\(composer.linkedProjects.count) linked")
         if composer.starter == nil && host.supportsSideQuestion(agentId: composer.agentId) {
-          Chip(label: asked == 0 ? "" : "\(asked)", icon: Icon.sideQuestion, tone: asked == 0 ? nil : .accent) {
-            picker = .sideQuestion
+          ComposerPillDivider()
+          Button { picker = .sideQuestion } label: {
+            ComposerPillLabel(
+              icon: Icon.sideQuestion, title: asked == 0 ? nil : "\(asked)", accent: asked > 0, chevron: false)
           }
+          .buttonStyle(.argusPlain)
           .accessibilityLabel("Side question")
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
+      .disabled(!composer.isEnabled)
+    }
+
+    private var modelMenu: some View {
+      Menu {
+        if composer.models.isEmpty {
+          Text("No agent has reported its models yet.")
+        } else {
+          Picker("Model", selection: Binding(get: { composer.pickedModel ?? "default" }, set: composer.setModel)) {
+            ForEach(composer.models, id: \.value) { model in
+              Button {} label: {
+                Text(model.displayName)
+                if !model.description.isEmpty { Text(model.description) }
+              }
+              .tag(model.value)
+            }
+          }
+          .pickerStyle(.inline)
+        }
+        if composer.offersAccounts {
+          Picker("Account", selection: Binding(get: { composer.accountId }, set: composer.setAccount)) {
+            Text("Follow computer default").tag(ComposerModel.followDefaultAccount)
+            ForEach(composer.accounts, id: \.id) { account in
+              Label(account.displayName, systemImage: Icon.person).tag(account.id)
+            }
+          }
+          .pickerStyle(.inline)
+        }
+      } label: {
+        ComposerPillLabel(icon: Icon.agent, title: composer.modelLabel)
+      }
+      .menuIndicator(.hidden)
+      .accessibilityLabel("Model: \(composer.modelLabel)")
+    }
+
+    private var effortMenu: some View {
+      Menu {
+        Picker("Effort", selection: Binding(get: { composer.effort }, set: composer.setEffort)) {
+          ForEach([String?.none] + composer.effortLevels.map(Optional.some), id: \.self) { level in
+            Text(ComposerEffort.label(level)).tag(level)
+          }
+        }
+        .pickerStyle(.inline)
+      } label: {
+        ComposerPillLabel(icon: Icon.clock, title: ComposerEffort.label(composer.effort))
+      }
+      .menuIndicator(.hidden)
+      .accessibilityLabel("Effort: \(ComposerEffort.label(composer.effort))")
+    }
+
+    private var modeMenu: some View {
+      Menu {
+        Picker("Permission mode", selection: Binding(get: { composer.permissionMode }, set: composer.setPermissionMode)) {
+          ForEach(RemotePermissionMode.allCases, id: \.self) { mode in
+            Button {} label: {
+              Text(ComposerPermissionMode.label(mode))
+              Text(ComposerPermissionMode.description(mode))
+            }
+            .tag(mode)
+          }
+        }
+        .pickerStyle(.inline)
+      } label: {
+        ComposerPillLabel(
+          icon: Icon.lock, title: ComposerPermissionMode.label(composer.permissionMode),
+          accent: composer.permissionMode != .auto)
+      }
+      .menuIndicator(.hidden)
+      .accessibilityLabel("Permission mode: \(ComposerPermissionMode.label(composer.permissionMode))")
     }
   }
 

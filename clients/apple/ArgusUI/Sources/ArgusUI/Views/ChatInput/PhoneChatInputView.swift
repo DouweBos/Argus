@@ -2,9 +2,10 @@
   import ArgusCore
   import SwiftUI
 
-  /// The phone chat input: menus and suggestions over the attachments, the
-  /// chip row of pickers, then the field with attach and send or queue. With a
-  /// starter it's a start composer, and a `composerFooter` sits under the field.
+  /// The phone chat input, the Mac's box: menus and suggestions above, then one
+  /// rounded card with the attachments, the field, and the agent's settings as
+  /// pills beside attach and send. With a starter it's a start composer, and a
+  /// `composerFooter` strip tucks under the card.
   struct PhoneChatInputView: View {
     @Environment(\.theme) private var theme
     @Environment(HostStore.self) private var host
@@ -53,17 +54,16 @@
           FollowUpSuggestionRow(items: composer.followUps) { composer.acceptFollowUp($0) }
         }
 
-        if !composer.images.isEmpty { attachmentStrip }
-
-        PhoneComposerChips(composer: composer, picker: $picker)
-        inputRow
-        if let footer { footer }
+        VStack(spacing: 0) {
+          box
+          if let footer { footer.padding(.horizontal, 12) }
+        }
       }
-      .padding(theme.space)
-      // The bar's own colour runs to the bottom edge, so it fills the
-      // home-indicator strip and stays continuous as the keyboard moves.
-      .background(theme.bgSecondary.ignoresSafeArea(edges: .bottom))
-      .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
+      .padding(.horizontal, 10)
+      .padding(.top, 6)
+      .padding(.bottom, 8)
+      // Runs to the bottom edge, so it fills the home-indicator strip as the keyboard moves.
+      .background(theme.bg.ignoresSafeArea(edges: .bottom))
       .task(id: composer.agentId) { await composer.load() }
       // Which affordances the agent's runner supports.
       .task { await host.loadRunners() }
@@ -81,14 +81,15 @@
       .sheet(item: $picker) { PhoneComposerPickerSheet(composer: composer, which: $0) }
     }
 
-    private var inputRow: some View {
-      HStack(alignment: .bottom, spacing: 6) {
-        if composer.offersImagesAndEffort {
-          IconBtn(systemName: Icon.plus, label: "Attach") { showingAttachMenu = true }
-            // On the button, so the menu's popover points at it rather than the composer's middle.
-            .phoneImageAttach(isPresented: $showingAttachMenu) { composer.attach($0, via: .imageAttach) }
-        }
+    private static let radius: CGFloat = 18
 
+    private var box: some View {
+      VStack(alignment: .leading, spacing: 0) {
+        if !composer.images.isEmpty {
+          attachmentStrip
+            .padding(.horizontal, 10)
+            .padding(.top, 10)
+        }
         ZStack(alignment: .topLeading) {
           PastingTextView(
             text: $composer.text, caret: $composer.caret, height: $inputHeight, controller: controller,
@@ -99,32 +100,56 @@
           if let ghost = placeholder {
             ghost
               .font(.scaled(size: 15))
-              .padding(.horizontal, 10)
+              .padding(.horizontal, 6)
               .padding(.vertical, 8)
               .allowsHitTesting(false)
           }
         }
         .frame(height: inputHeight)
-        .padding(.horizontal, 4)
-        .background(theme.bgTertiary)
-        .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
+        .padding(.horizontal, 8)
+        .padding(.top, 6)
+        HStack(alignment: .bottom, spacing: 4) {
+          PhoneComposerPills(composer: composer, picker: $picker)
+          actions
+        }
+        .padding(.leading, 6)
+        .padding(.trailing, 8)
+        .padding(.bottom, 8)
+      }
+      .background(theme.surface, in: .rect(cornerRadius: Self.radius))
+      .overlay { RoundedRectangle(cornerRadius: Self.radius).strokeBorder(theme.border, lineWidth: 1) }
+    }
 
+    /// Attach, then send — or, while the agent works, queue and stop.
+    private var actions: some View {
+      HStack(spacing: 6) {
+        if composer.contextTokens > 0 {
+          ContextMeter(tokens: composer.contextTokens, limit: composer.contextLimit)
+        }
+        if composer.offersImagesAndEffort {
+          Button { showingAttachMenu = true } label: { Label("Attach images", systemImage: Icon.paperclip) }
+            .buttonStyle(FlatIconButtonStyle(size: 34))
+            .disabled(!composer.isEnabled)
+            // On the button, so the menu's popover points at it rather than the composer's middle.
+            .phoneImageAttach(isPresented: $showingAttachMenu) { composer.attach($0, via: .imageAttach) }
+        }
         if composer.isRunning {
           if composer.hasContent {
-            IconBtn(systemName: Icon.send, label: "Queue message", tint: theme.accent) { composer.submit() }
+            ComposerRoundButton(kind: .send, label: "Queue message") { composer.submit() }
           }
-          IconBtn(systemName: Icon.stop, label: "Interrupt", tint: theme.error) { composer.interrupt() }
+          ComposerRoundButton(kind: .stop, label: "Interrupt") { composer.interrupt() }
         } else if composer.starting {
-          ProgressView().frame(width: IconBtn.side, height: IconBtn.side).accessibilityLabel("Starting")
+          ProgressView()
+            .frame(width: TextScale.shared(ComposerRoundButton.side), height: TextScale.shared(ComposerRoundButton.side))
+            .accessibilityLabel("Starting")
         } else {
-          let canSend = composer.isEnabled && composer.canSend(redirect: redirect)
-          IconBtn(
-            systemName: Icon.send, label: composer.starter == nil ? "Send" : "Start agent", tint: theme.accent
-          ) { composer.submit(redirect: redirect) }
-          .disabled(!canSend)
-          .opacity(canSend ? 1 : 0.4)
+          ComposerRoundButton(kind: .send, label: composer.starter == nil ? "Send" : "Start agent") {
+            composer.submit(redirect: redirect)
+          }
+          .disabled(!composer.isEnabled || !composer.canSend(redirect: redirect))
         }
       }
+      .frame(height: TextScale.shared(ComposerRoundButton.side))
     }
 
     private var attachmentStrip: some View {
@@ -134,7 +159,9 @@
     /// "Message" while empty; otherwise a command's argument hint or the rest of a follow-up, as ghost text.
     private var placeholder: Text? {
       if composer.text.isEmpty {
-        let ghost = (redirect ?? composer.starter)?.placeholder ?? "Message"
+        let ghost =
+          !composer.isEnabled
+          ? "Agent is not running" : (redirect ?? composer.starter)?.placeholder ?? "Ask anything, @ for files, / for commands"
         return Text(ghost).foregroundStyle(theme.textMuted)
       }
       guard let hint = composer.argumentHint else { return nil }
