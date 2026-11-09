@@ -31,3 +31,13 @@ guest or web page do more than its tier allows.
 
 Out of scope: what an agent you started does with the permissions you gave it, and issues in
 Claude Code itself (report those to Anthropic).
+
+### By design
+
+- A paired device reaches every project registered on that computer, not just one. Grants limit
+  what it may do (monitor, control), not which projects it sees. Huddle guests are the exception:
+  they only ever see the agent and device they were invited to.
+- A device with **control** can make an agent run commands on the computer. That's the feature;
+  only grant control to devices you'd trust at your keyboard.
+- With **Serve the web client on this network** turned on, the web client's page travels as plain
+  http on the local network. It's off by default, and the settings say so.
