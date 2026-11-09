@@ -617,7 +617,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_argus_json_generated` | A proposed `.argus.json` was saved, discarded, or couldn't be generated | `method` (`quick`, `claude`), `outcome` (`saved`, `discarded`, `failed`) |
 | `mac_project_settings_saved` | Project Settings was saved | `changed_bucket` (top-level `.argus.json` keys that changed: `0`, `1-9`, `10-99`, `100+`), `personal` (the branch prefix changed too), `success` |
 | `mac_settings_changed` | A setting was changed in the Settings window — which one, never its value | `section` (the Settings tab), `setting` (listed below) |
-| `mac_remote_setting_changed` | A Remote Access setting was changed (`setting` also `notify_when_focused`, `push_contact`) | `setting` (`enabled`, `managed_tunnel`, `legacy_tunnels`, `push`, …), `on` (toggles) |
+| `mac_remote_setting_changed` | A Remote Access setting was changed (`setting` also `notify_when_focused`, `lan_web_client`, `push_contact`) | `setting` (`enabled`, `managed_tunnel`, `legacy_tunnels`, `push`, …), `on` (toggles) |
 | `mac_pairing` | A device pairing moved on in the pairing sheet or the menu bar item's pairing window | `stage` (`started`, `confirmed`, `completed`, `cancelled`, `failed`), `client` (`desktop`, `mobile`, `web`, `unknown`) |
 | `mac_remote_device_managed` | A paired device's grants were changed, it was revoked, or sent a test push | `action` (`grants`, `revoke`, `test_push`), `success` |
 | `mac_huddle_used` | A huddle was started, blocked or ended, a guest let in or out, a chat message sent or the invite copied | `action` (`start`, `blocked`, `stop`, `approve`, `deny`, `remove`, `say`, `copy_invite`), `has_device` |

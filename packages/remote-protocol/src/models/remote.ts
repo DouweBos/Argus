@@ -119,6 +119,11 @@ export const RemoteStatus = z.object({
   legacyTunnels: z.array(LegacyTunnelState),
   /** Mirror notifications to devices even while the desktop window is focused. */
   notifyWhenFocused: z.boolean(),
+  /**
+   * Serve the web client to browsers connecting straight over the local
+   * network. Absent from an older host.
+   */
+  lanWebClient: z.boolean().optional(),
   devices: z.array(PairedDevice),
   /** Device IDs with a live connection right now. */
   connectedDeviceIds: z.array(z.string()),
@@ -129,6 +134,7 @@ export type RemoteStatus = z.infer<typeof RemoteStatus>;
 export const RemoteConfigPatch = z.object({
   enabled: z.boolean().optional(),
   notifyWhenFocused: z.boolean().optional(),
+  lanWebClient: z.boolean().optional(),
   /** Stop and forget every tunnel an earlier version configured. */
   retireLegacyTunnels: z.boolean().optional(),
 });

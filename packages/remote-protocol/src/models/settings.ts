@@ -102,6 +102,8 @@ export const AppSettings = z.object({
    * focused. Off by default.
    */
   remote_notify_when_focused: z.boolean().optional(),
+  /** Serve the web client to direct local-network browsers. Off by default. */
+  remote_lan_web_client: z.boolean().optional(),
   // Preferences both desktop apps (Electron and Argus for Mac) read and write.
   theme: z.enum(["dark", "light", "system"]).optional(),
   /** Accent and surface tint layered on the scheme. Absent means muted. */

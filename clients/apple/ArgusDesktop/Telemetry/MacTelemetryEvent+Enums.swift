@@ -33,6 +33,7 @@ extension MacTelemetryEvent {
     case managedTunnel = "managed_tunnel"
     case legacyTunnels = "legacy_tunnels"
     case notifyWhenFocused = "notify_when_focused"
+    case lanWebClient = "lan_web_client"
     case push
     case pushContact = "push_contact"
   }

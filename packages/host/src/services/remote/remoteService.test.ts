@@ -16,7 +16,11 @@ const settings = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
 /** URLs the probe should report as published-but-dead. */
 const reach = vi.hoisted(() => ({ unreachable: new Set<string>() }));
 const gateway = vi.hoisted(() => ({
-  starts: [] as { host: string; staticDir: string | null }[],
+  starts: [] as {
+    host: string;
+    staticDir: string | null;
+    lanWebClient?: () => boolean;
+  }[],
   stops: 0,
 }));
 const tunnels = vi.hoisted(() => {
@@ -218,6 +222,7 @@ describe("bind/serve matrix", () => {
     expect(gateway.starts.at(-1)).toEqual({
       host: "0.0.0.0",
       staticDir: WEB_DIR,
+      lanWebClient: expect.any(Function),
     });
   });
 
@@ -234,6 +239,15 @@ describe("bind/serve matrix", () => {
     await applyRemoteSettings();
 
     expect(gateway.starts).toHaveLength(before);
+  });
+
+  it("serves the bundle to direct local-network browsers only once opted in", async () => {
+    await applyRemoteSettings();
+    const lanWebClient = gateway.starts.at(-1)?.lanWebClient;
+    expect(lanWebClient?.()).toBe(false);
+
+    settings.value = { remote_enabled: true, remote_lan_web_client: true };
+    expect(lanWebClient?.()).toBe(true);
   });
 
   it("serves nothing when there is no bundle on disk", async () => {
@@ -268,6 +282,7 @@ describe("acquirePublicUrl", () => {
     expect(gateway.starts.at(-1)).toEqual({
       host: "127.0.0.1",
       staticDir: WEB_DIR,
+      lanWebClient: expect.any(Function),
     });
   });
 

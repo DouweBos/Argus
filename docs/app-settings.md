@@ -568,6 +568,7 @@ commands.
 | **Paired devices**                          | —       | Each shows its label, last-seen time and grants. **Control** lets it drive agents and land their work; **Admin** hands another Mac of yours the keyboard (see below). **Revoke** deletes its pinned key and drops any live session immediately. |
 | **Background push**                         | Off     | Wake paired phones and browsers with a real notification when they aren't connected. Nothing to configure.                                                                                                                                      |
 | **Notify my devices while I'm using Argus** | Off     | Mirror notifications to phones and browsers even when the Argus window is focused. Off ⇒ they stay quiet while you're at the desktop.                                                                                                           |
+| **Serve the web client on this network**    | Off     | Lets a browser on the same network load the web client at `http://<your-ip>:47615`. Plain http, so only on networks you trust; the tunnel and tailnet always serve it.                                                                          |
 | **Your name on a huddle invite**            | `""`    | The name in "… wants you to join". Empty falls back to the git `user.name` of the session you're sharing — set this if you commit under a name you don't go by.                                                                                 |
 
 ### Routes
@@ -776,12 +777,21 @@ focus.
 
 ### Web client on this network
 
-With remote access on, open `http://<your-ip>:47615` on any device on the same
-network — no app install, no tunnel. It still pairs and Noise-authenticates
-exactly like the phone, so being on the LAN grants no access on its own.
+Off by default. Turn on **Serve the web client on this network** (Settings →
+Remote Access), and a browser on the same network can open
+`http://<your-ip>:47615` — no app install, no tunnel. It still pairs and
+Noise-authenticates exactly like the phone, so being on the network grants no
+access on its own.
 
-The browser client itself is served over **every** way in, not just the LAN:
-the tailnet address or the managed tunnel's URL opens the same app in a browser. You can also reach
+Only turn it on for networks you trust. The page itself travels as plain http,
+so someone else on the network could swap in their own version of the web
+client and use the access your browser has been granted. The iPhone and Mac
+apps aren't affected: they never load code from the gateway. While it's off, a
+browser on the network gets a short page pointing it to the tunnel instead.
+
+Over the tunnel or the tailnet the browser client is always served, since
+those routes are encrypted: the tailnet address or the managed tunnel's URL
+opens the same app in a browser. You can also reach
 it from the Home screen's **Remote access** button. (Build the bundle once with `pnpm --filter argus-web build`.)
 
 **Pairing** shows a QR code (and a copy-paste code) plus a 6-digit confirmation

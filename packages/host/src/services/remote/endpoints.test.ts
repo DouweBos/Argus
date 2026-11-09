@@ -26,8 +26,13 @@ vi.mock("node:os", () => ({
   }),
 }));
 
-const { getEndpoints, isTailnetAddress, setGatewayOnLan, LOCAL_GATEWAY_PORT } =
-  await import("./endpoints");
+const {
+  getEndpoints,
+  isDirectLanPeer,
+  isTailnetAddress,
+  setGatewayOnLan,
+  LOCAL_GATEWAY_PORT,
+} = await import("./endpoints");
 
 const LAN_URL = `ws://192.168.1.79:${LOCAL_GATEWAY_PORT}`;
 const TAILNET_URL = `ws://100.88.1.2:${LOCAL_GATEWAY_PORT}`;
@@ -101,5 +106,20 @@ describe("isTailnetAddress", () => {
     expect(isTailnetAddress("100.63.255.255")).toBe(false);
     expect(isTailnetAddress("100.128.0.1")).toBe(false);
     expect(isTailnetAddress("10.0.0.4")).toBe(false);
+  });
+});
+
+describe("isDirectLanPeer", () => {
+  it("is true only for a peer on the local network itself", () => {
+    expect(isDirectLanPeer("192.168.1.20")).toBe(true);
+    expect(isDirectLanPeer("::ffff:10.0.0.4")).toBe(true);
+  });
+
+  it("is false for loopback, where the tunnels arrive, and the tailnet", () => {
+    expect(isDirectLanPeer("127.0.0.1")).toBe(false);
+    expect(isDirectLanPeer("::ffff:127.0.0.1")).toBe(false);
+    expect(isDirectLanPeer("::1")).toBe(false);
+    expect(isDirectLanPeer("100.101.102.103")).toBe(false);
+    expect(isDirectLanPeer(undefined)).toBe(false);
   });
 });

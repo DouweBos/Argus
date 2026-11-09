@@ -1633,6 +1633,7 @@ extension ArgusProtocol {
     public var remoteTunnelToken: String?
     public var remotePublicUrl: String?
     public var remoteNotifyWhenFocused: Bool?
+    public var remoteLanWebClient: Bool?
     public var theme: AppSettingsTheme?
     public var colorTheme: ColorTheme?
     public var importCliChats: Bool?
@@ -1672,6 +1673,7 @@ extension ArgusProtocol {
       case remoteTunnelToken = "remote_tunnel_token"
       case remotePublicUrl = "remote_public_url"
       case remoteNotifyWhenFocused = "remote_notify_when_focused"
+      case remoteLanWebClient = "remote_lan_web_client"
       case theme = "theme"
       case colorTheme = "color_theme"
       case importCliChats = "import_cli_chats"
@@ -1686,7 +1688,7 @@ extension ArgusProtocol {
       case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, warmAgents: Int? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, warmAgents: Int? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, remoteLanWebClient: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
       self.defaultLlm = defaultLlm
@@ -1712,6 +1714,7 @@ extension ArgusProtocol {
       self.remoteTunnelToken = remoteTunnelToken
       self.remotePublicUrl = remotePublicUrl
       self.remoteNotifyWhenFocused = remoteNotifyWhenFocused
+      self.remoteLanWebClient = remoteLanWebClient
       self.theme = theme
       self.colorTheme = colorTheme
       self.importCliChats = importCliChats
@@ -1753,6 +1756,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(remoteTunnelToken, forKey: .remoteTunnelToken)
       try c.encodeIfPresent(remotePublicUrl, forKey: .remotePublicUrl)
       try c.encodeIfPresent(remoteNotifyWhenFocused, forKey: .remoteNotifyWhenFocused)
+      try c.encodeIfPresent(remoteLanWebClient, forKey: .remoteLanWebClient)
       try c.encodeIfPresent(theme, forKey: .theme)
       try c.encodeIfPresent(colorTheme, forKey: .colorTheme)
       try c.encodeIfPresent(importCliChats, forKey: .importCliChats)
@@ -13573,17 +13577,20 @@ extension ArgusProtocol {
   public struct RemoteConfigPatch: Codable, Sendable {
     public var enabled: Bool?
     public var notifyWhenFocused: Bool?
+    public var lanWebClient: Bool?
     public var retireLegacyTunnels: Bool?
 
     enum CodingKeys: String, CodingKey {
       case enabled = "enabled"
       case notifyWhenFocused = "notifyWhenFocused"
+      case lanWebClient = "lanWebClient"
       case retireLegacyTunnels = "retireLegacyTunnels"
     }
 
-    public init(enabled: Bool? = nil, notifyWhenFocused: Bool? = nil, retireLegacyTunnels: Bool? = nil) {
+    public init(enabled: Bool? = nil, notifyWhenFocused: Bool? = nil, lanWebClient: Bool? = nil, retireLegacyTunnels: Bool? = nil) {
       self.enabled = enabled
       self.notifyWhenFocused = notifyWhenFocused
+      self.lanWebClient = lanWebClient
       self.retireLegacyTunnels = retireLegacyTunnels
     }
 
@@ -13591,6 +13598,7 @@ extension ArgusProtocol {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encodeIfPresent(enabled, forKey: .enabled)
       try c.encodeIfPresent(notifyWhenFocused, forKey: .notifyWhenFocused)
+      try c.encodeIfPresent(lanWebClient, forKey: .lanWebClient)
       try c.encodeIfPresent(retireLegacyTunnels, forKey: .retireLegacyTunnels)
     }
   }
@@ -15385,6 +15393,7 @@ extension ArgusProtocol {
     public var managedTunnel: ManagedTunnelState
     public var legacyTunnels: [LegacyTunnelState]
     public var notifyWhenFocused: Bool
+    public var lanWebClient: Bool?
     public var devices: [PairedDevice]
     public var connectedDeviceIds: [String]
 
@@ -15397,11 +15406,12 @@ extension ArgusProtocol {
       case managedTunnel = "managedTunnel"
       case legacyTunnels = "legacyTunnels"
       case notifyWhenFocused = "notifyWhenFocused"
+      case lanWebClient = "lanWebClient"
       case devices = "devices"
       case connectedDeviceIds = "connectedDeviceIds"
     }
 
-    public init(enabled: Bool, endpoints: [RemoteEndpoint], publicUrl: String? = nil, lanUrl: String? = nil, tailscaleUrl: String? = nil, managedTunnel: ManagedTunnelState, legacyTunnels: [LegacyTunnelState], notifyWhenFocused: Bool, devices: [PairedDevice], connectedDeviceIds: [String]) {
+    public init(enabled: Bool, endpoints: [RemoteEndpoint], publicUrl: String? = nil, lanUrl: String? = nil, tailscaleUrl: String? = nil, managedTunnel: ManagedTunnelState, legacyTunnels: [LegacyTunnelState], notifyWhenFocused: Bool, lanWebClient: Bool? = nil, devices: [PairedDevice], connectedDeviceIds: [String]) {
       self.enabled = enabled
       self.endpoints = endpoints
       self.publicUrl = publicUrl
@@ -15410,6 +15420,7 @@ extension ArgusProtocol {
       self.managedTunnel = managedTunnel
       self.legacyTunnels = legacyTunnels
       self.notifyWhenFocused = notifyWhenFocused
+      self.lanWebClient = lanWebClient
       self.devices = devices
       self.connectedDeviceIds = connectedDeviceIds
     }
@@ -15424,6 +15435,7 @@ extension ArgusProtocol {
       try c.encode(managedTunnel, forKey: .managedTunnel)
       try c.encode(legacyTunnels, forKey: .legacyTunnels)
       try c.encode(notifyWhenFocused, forKey: .notifyWhenFocused)
+      try c.encodeIfPresent(lanWebClient, forKey: .lanWebClient)
       try c.encode(devices, forKey: .devices)
       try c.encode(connectedDeviceIds, forKey: .connectedDeviceIds)
     }

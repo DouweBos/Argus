@@ -12,8 +12,9 @@
  *             with only a link can handshake. Served only while a room is open.
  *   GET /__argus/health — unauthenticated liveness probe, so a caller can tell
  *             a tunnel that published a URL from one that actually reaches us.
- *   GET *   — the static web client bundle (when a dir is configured), so a LAN
- *             browser can load the client from this same origin.
+ *   GET *   — the static web client bundle (when a dir is configured). Over a
+ *             tunnel or the tailnet always; to a direct local-network browser
+ *             only with `lanWebClient` on, since that hop is plain http.
  *
  * Opening a LAN port does NOT bypass auth: every socket still completes a Noise
  * handshake, and only pinned devices (or a valid pairing PSK) get through.
@@ -33,6 +34,7 @@ import {
   type DesktopIdentity,
   type PairedDevice,
 } from "./deviceStore";
+import { isDirectLanPeer } from "./endpoints";
 import {
   DeviceConnection,
   addConnection,
@@ -123,6 +125,27 @@ function serveStatic(
     ...(path.basename(file) === "sw.js" ? { "cache-control": "no-cache" } : {}),
   });
   createReadStream(file).pipe(res);
+}
+
+/** What a direct local-network browser sees while the web client is off for it. */
+const LAN_WEB_OFF_PAGE = `<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Argus</title>
+<h1>Argus</h1>
+<p>The web client isn't served on this network, because it would travel unencrypted.</p>
+<p>Open it through this computer's tunnel address or at houwert.dev/argus/app,
+or turn on <b>Web client on this network</b> in Argus under Settings, Remote Access.</p>
+`;
+
+function serveLanWebOff(res: ServerResponse): void {
+  res
+    .writeHead(403, {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'",
+    })
+    .end(LAN_WEB_OFF_PAGE);
 }
 
 /** Path a huddle guest reads the host's static public key from. */
@@ -319,6 +342,8 @@ export interface LocalGatewayOpts {
   host: string;
   /** Directory of the built web client to serve, or null to skip. */
   staticDir: string | null;
+  /** Whether a direct local-network browser may load the web client. */
+  lanWebClient?: () => boolean;
 }
 
 export function startLocalGateway(
@@ -339,7 +364,14 @@ export function startLocalGateway(
       } else if (req.method === "GET" && route === HOST_KEY_PATH) {
         serveHostKey(identity, res);
       } else if (opts.staticDir && req.method === "GET") {
-        serveStatic(opts.staticDir, req.url ?? "/", res);
+        if (
+          isDirectLanPeer(req.socket.remoteAddress) &&
+          !opts.lanWebClient?.()
+        ) {
+          serveLanWebOff(res);
+        } else {
+          serveStatic(opts.staticDir, req.url ?? "/", res);
+        }
       } else {
         res.writeHead(426).end("upgrade required");
       }

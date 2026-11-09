@@ -80,6 +80,20 @@ export function isTailnetAddress(address: string): boolean {
   return a === 100 && b >= 64 && b <= 127;
 }
 
+/**
+ * True for a peer that reached the gateway straight over the local network:
+ * not loopback (where the tunnels arrive) and not the tailnet (WireGuard
+ * already encrypts that hop).
+ */
+export function isDirectLanPeer(address: string | undefined): boolean {
+  const ip = (address ?? "").replace(/^::ffff:/, "");
+  if (ip === "" || ip === "::1" || ip.startsWith("127.")) {
+    return false;
+  }
+
+  return !isTailnetAddress(ip);
+}
+
 function ipv4Addresses(): string[] {
   const out: string[] = [];
   for (const addrs of Object.values(networkInterfaces())) {

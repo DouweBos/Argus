@@ -25,6 +25,7 @@ function status(over: Partial<RemoteStatus> = {}): RemoteStatus {
     managedTunnel: tunnel({}),
     legacyTunnels: [],
     notifyWhenFocused: false,
+    lanWebClient: false,
     devices: [],
     connectedDeviceIds: [],
     ...over,

@@ -21,8 +21,10 @@ pull requests, files, terminals, usage and more), milestone by milestone.
 
 ## Using it
 
-1. In Argus: **Settings → Remote Access** → enable, then turn on **Web client
-   on this network**. Argus shows a `http://<your-ip>:47615` address.
+1. In Argus: **Settings → Remote Access** → enable, then turn on **Serve the
+   web client on this network**. Argus shows a `http://<your-ip>:47615`
+   address. That page is plain http, so only do this on a network you trust;
+   the tunnel address always works without it.
 2. Open that address in a browser on another device on the same network.
 3. In Argus, **Start pairing** and paste the code into the web client (or open
    `<address>/#/pair/<code>`, which fills it in), then confirm the 6-digit code

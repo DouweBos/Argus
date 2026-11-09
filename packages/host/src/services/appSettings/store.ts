@@ -128,6 +128,12 @@ export interface AppSettings {
    * are already watching on screen.
    */
   remote_notify_when_focused?: boolean;
+  /**
+   * Serve the web client to browsers that connect straight over the local
+   * network. Off by default: that page travels as plain http, so anyone on the
+   * same network could tamper with it.
+   */
+  remote_lan_web_client?: boolean;
   // Preferences both desktop apps (Electron and Argus for Mac) read and
   // write, so switching apps keeps them.
   theme?: "dark" | "light" | "system";

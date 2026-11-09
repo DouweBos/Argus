@@ -57,7 +57,7 @@ private struct RemoteSettingsForm: View {
 
       SettingsGroup(
         "Addresses",
-        footer: "Synced to every paired device on connect, in the order they're tried. Argus also serves the web client to other devices on your Wi-Fi — open it in a browser and pair it like any other device."
+        footer: "Synced to every paired device on connect, in the order they're tried."
       ) {
         let endpoints = status.map(RemoteAccessLabels.orderedEndpoints) ?? []
         if endpoints.isEmpty {
@@ -71,8 +71,23 @@ private struct RemoteSettingsForm: View {
             }
           }
         }
-        if enabled, let status {
-          SettingsRow("Web client on this network") {
+      }
+
+      SettingsGroup(
+        "Web client on this network",
+        footer: "Lets a browser on your Wi-Fi open Argus at this Mac's local address and pair like any other device. The page travels unencrypted, so anyone on the same network could tamper with it: only turn this on for networks you trust. Over the tunnel or your tailnet the web client is always available."
+      ) {
+        SettingsToggleRow(
+          "Serve the web client on this network",
+          isOn: Binding(
+            get: { status?.lanWebClient ?? false },
+            set: { next in
+              Task { _ = await model.apply(.init(lanWebClient: next), setting: .lanWebClient, on: next) }
+            })
+        )
+        .disabled(model.busy || !enabled)
+        if enabled, let status, status.lanWebClient == true {
+          SettingsRow("Address") {
             Text(RemoteAccessLabels.webClientUrl(status.lanUrl)).textSelection(.enabled)
           }
         }

@@ -52,6 +52,7 @@ const STATUS = {
     url: "wss://argus-7f3a9c2e.houwert.dev",
   },
   notifyWhenFocused: false,
+  lanWebClient: false,
   publicUrl: "ws://192.168.1.24:47615",
   tailscaleUrl: "ws://100.101.42.7:47615",
 };

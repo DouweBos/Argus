@@ -35,7 +35,11 @@ import {
   startLegacyTunnels,
   type LegacyTunnelState,
 } from "./legacyTunnels";
-import { startLocalGateway, stopLocalGateway } from "./localGatewayServer";
+import {
+  startLocalGateway,
+  stopLocalGateway,
+  type LocalGatewayOpts,
+} from "./localGatewayServer";
 import {
   getManagedTunnelState,
   type ManagedTunnelState,
@@ -103,6 +107,8 @@ export interface RemoteStatus {
   legacyTunnels: LegacyTunnelState[];
   /** Mirror notifications to devices even while the desktop window is focused. */
   notifyWhenFocused: boolean;
+  /** Serve the web client to browsers connecting straight over the local network. */
+  lanWebClient?: boolean;
   devices: PairedDevice[];
   /** Device IDs with a live connection right now. */
   connectedDeviceIds: string[];
@@ -121,6 +127,7 @@ export async function getRemoteStatus(): Promise<RemoteStatus> {
     managedTunnel: getManagedTunnelState(),
     legacyTunnels: running ? legacyTunnelStates() : [],
     notifyWhenFocused: Boolean(settings.remote_notify_when_focused),
+    lanWebClient: Boolean(settings.remote_lan_web_client),
     devices: await listDevices(),
     connectedDeviceIds: getConnectedDeviceIds(),
   };
@@ -129,6 +136,7 @@ export async function getRemoteStatus(): Promise<RemoteStatus> {
 export async function setRemoteConfig(cfg: {
   enabled?: boolean;
   notifyWhenFocused?: boolean;
+  lanWebClient?: boolean;
   retireLegacyTunnels?: boolean;
 }): Promise<RemoteStatus> {
   const patch: Parameters<typeof saveAppSettings>[0] = {};
@@ -138,14 +146,17 @@ export async function setRemoteConfig(cfg: {
   if (cfg.notifyWhenFocused !== undefined) {
     patch.remote_notify_when_focused = cfg.notifyWhenFocused;
   }
+  if (cfg.lanWebClient !== undefined) {
+    patch.remote_lan_web_client = cfg.lanWebClient;
+  }
   if (Object.keys(patch).length > 0) {
     saveAppSettings(patch);
   }
   if (cfg.retireLegacyTunnels) {
     retireLegacyTunnels("user", { spareCloudflare: huddleOwnsCloudflare });
   }
-  // Only the master switch changes what runs; a notification preference
-  // mustn't bounce the gateway under connected phones.
+  // Only the master switch changes what runs; the other preferences are read
+  // per request, so they mustn't bounce the gateway under connected phones.
   if (cfg.enabled !== undefined) {
     await applyRemoteSettings();
   } else {
@@ -182,14 +193,16 @@ export function setRemoteStatusListener(cb: (() => void) | null): void {
 /**
  * Remote access listens on the local network so devices there connect directly
  * by IP; tunnels are for everyone else. A huddle shared with remote access off
- * stays on loopback — its guests only ever arrive through a tunnel. The bundle
- * is always served: over a tunnel the URL *is* the web client.
+ * stays on loopback — its guests only ever arrive through a tunnel. Over a
+ * tunnel or the tailnet the URL *is* the web client; a direct local-network
+ * browser gets it only once the user opts in.
  */
-function gatewayOpts(onLan: boolean): {
-  host: string;
-  staticDir: string | null;
-} {
-  return { host: onLan ? "0.0.0.0" : "127.0.0.1", staticDir: webClientDir };
+function gatewayOpts(onLan: boolean): LocalGatewayOpts {
+  return {
+    host: onLan ? "0.0.0.0" : "127.0.0.1",
+    staticDir: webClientDir,
+    lanWebClient: () => Boolean(loadAppSettings().remote_lan_web_client),
+  };
 }
 
 /** Tear down then, if enabled, bring up the local gateway. */
