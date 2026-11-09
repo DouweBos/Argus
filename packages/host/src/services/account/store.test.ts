@@ -7,21 +7,22 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  nodeHostPlatform,
-  resetHostPlatform,
-  setHostPlatform,
-} from "../../platform";
+import { nodeSecretStorage } from "../../lib/nodeSecretStorage";
+import { resetHostPlatform } from "../../platform";
 
 describe("account record", () => {
   let home: string;
   const prev = process.env.ARGUS_HOME;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     home = fs.mkdtempSync(path.join(os.tmpdir(), "argus-account-store-"));
     process.env.ARGUS_HOME = home;
     vi.resetModules();
-    setHostPlatform(nodeHostPlatform());
+    // After resetModules, so the modules under test see this platform.
+    const platform = await import("../../platform");
+    platform.setHostPlatform(
+      platform.nodeHostPlatform({ secretStorage: nodeSecretStorage("file") }),
+    );
   });
 
   afterEach(() => {

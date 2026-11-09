@@ -16,11 +16,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  nodeHostPlatform,
-  resetHostPlatform,
-  setHostPlatform,
-} from "../../platform";
+import { nodeSecretStorage } from "../../lib/nodeSecretStorage";
+import { resetHostPlatform } from "../../platform";
 import { FakeAccountService } from "./fakeAccountService";
 
 const PHONE_ID = "00000000-0000-4000-8000-0000000000b1";
@@ -45,7 +42,7 @@ describe("account managed tunnel", () => {
     bin: process.env.ARGUS_CLOUDFLARED_PATH,
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     home = fs.mkdtempSync(path.join(os.tmpdir(), "argus-account-tunnel-"));
     log = path.join(home, "launches.log");
     const bin = path.join(home, "cloudflared");
@@ -68,7 +65,11 @@ exec sleep 30
     process.env.ARGUS_ACCOUNT_URL = fake.baseUrl;
     vi.stubGlobal("fetch", fake.fetch);
     vi.resetModules();
-    setHostPlatform(nodeHostPlatform());
+    // After resetModules, so the modules under test see this platform.
+    const platform = await import("../../platform");
+    platform.setHostPlatform(
+      platform.nodeHostPlatform({ secretStorage: nodeSecretStorage("file") }),
+    );
   });
 
   afterEach(async () => {

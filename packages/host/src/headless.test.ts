@@ -115,7 +115,11 @@ describe("headless host", () => {
       reapOrphanedSpawnHelpers: async () => undefined,
     }));
     const platform = await import("./platform");
-    platform.setHostPlatform(platform.nodeHostPlatform());
+    const { nodeSecretStorage } = await import("./lib/nodeSecretStorage");
+    // As `argus-host` does: the gateway won't start without encryption.
+    platform.setHostPlatform(
+      platform.nodeHostPlatform({ secretStorage: nodeSecretStorage("file") }),
+    );
     const boot = await import("./boot");
     const registry = await import("./services/command/registry");
 

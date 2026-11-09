@@ -6,9 +6,9 @@
  * (mode 0600), like the MCP OAuth store. Public keys are not secret but live in
  * the same encrypted blob for simplicity.
  *
- * If secret storage is unavailable we fall back to plaintext
- * with a warning, matching the OAuth store — remote access still works, just
- * without at-rest encryption on that host.
+ * Writing refuses when secret storage is unavailable: the private key would
+ * otherwise sit on disk in plaintext. A plaintext store from an older version
+ * still reads, and is re-sealed the first time it loads on a host that can.
  */
 
 import type { AccountRecord } from "../account/store";
@@ -123,7 +123,10 @@ function freshState(): RemoteState {
  * can't be read throws: regenerating over it would silently replace the host's
  * identity and drop every pairing.
  */
-async function readState(): Promise<RemoteState | null> {
+async function readState(): Promise<{
+  state: RemoteState;
+  plaintext: boolean;
+} | null> {
   let raw: string;
   try {
     raw = await fs.readFile(storePath(), "utf-8");
@@ -152,7 +155,7 @@ async function readState(): Promise<RemoteState | null> {
     try {
       const json = secretStorageFor("remote_devices").decrypt(blob);
 
-      return JSON.parse(json) as RemoteState;
+      return { state: JSON.parse(json) as RemoteState, plaintext: false };
     } catch (err) {
       throw new Error(
         `failed to decrypt the remote device store: ${(err as Error).message}`,
@@ -160,26 +163,35 @@ async function readState(): Promise<RemoteState | null> {
     }
   }
 
-  return file.data as RemoteState;
+  return { state: file.data as RemoteState, plaintext: true };
 }
 
 async function writeState(state: RemoteState): Promise<void> {
   await fs.mkdir(argusDirPath(), { recursive: true });
-  let file: FileShape;
-  if (secretStorageFor("remote_devices").isAvailable()) {
-    const buf = secretStorageFor("remote_devices").encrypt(
-      JSON.stringify(state),
+  const storage = secretStorageFor("remote_devices");
+  if (!storage.isAvailable()) {
+    throw new Error(
+      "remote access needs secret storage to encrypt this host's identity, and none is available",
     );
-    file = { enc: true, data: buf.toString("base64") };
-  } else {
-    warn(
-      "[remote] secret storage unavailable — writing remote device store in plaintext",
-    );
-    file = { enc: false, data: state };
   }
+  const file: FileShape = {
+    enc: true,
+    data: storage.encrypt(JSON.stringify(state)).toString("base64"),
+  };
   await fs.writeFile(storePath(), JSON.stringify(file, null, 2), {
     mode: 0o600,
   });
+}
+
+/** An older version's plaintext store: encrypt it in place when this host can. */
+async function sealPlaintextStore(state: RemoteState): Promise<void> {
+  try {
+    await writeState(state);
+  } catch (err) {
+    warn(
+      `[remote] the remote device store is still unencrypted: ${(err as Error).message}`,
+    );
+  }
 }
 
 /** Listeners notified when the persisted device set changes (add/rename/revoke). */
@@ -220,9 +232,12 @@ async function ensureState(): Promise<RemoteState> {
 async function loadState(): Promise<RemoteState> {
   const existing = await readState();
   if (existing) {
-    cached = existing;
+    if (existing.plaintext) {
+      await sealPlaintextStore(existing.state);
+    }
+    cached = existing.state;
 
-    return existing;
+    return existing.state;
   }
   const created = freshState();
   await writeState(created);
