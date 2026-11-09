@@ -44,7 +44,13 @@ struct ProjectHeader: View {
     .frame(minHeight: TextScale.shared(24))
     .onHover { hovering = $0 }
     .opacity(root?.isUnavailable == true ? 0.5 : 1)
-    .help(project.repoRoot)
+    .hoverCard(placement: .trailing, onShow: {
+      MacTelemetry.capture(.projectHoverCardShown(hasSessions: !worktrees.isEmpty))
+    }) {
+      ProjectHoverCard(
+        project: project, root: root, git: git, rootAgents: rootAgents,
+        sessions: worktrees.map { SessionActivity(session: $0, agents: store.agents(inSession: $0)) })
+    }
     .task(id: root?.id) {
       guard let root, root.status == .ready, !root.isUnavailable else { return }
       await store.loadGitStatus(sessionId: root.id)

@@ -212,14 +212,26 @@ public struct UsageLimitsStrip: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
             }
-            ForEach(account.windows, id: \.id) { meter($0, now: context.date) }
+            ForEach(account.windows, id: \.id) { UsageMeterLine(window: $0, now: context.date) }
           }
         }
       }
     }
   }
+}
 
-  private func meter(_ window: ArgusProtocol.UsageLimitWindow, now: Date) -> some View {
+/// One plan window as a single line: label, reset, what's left, and a thin bar.
+public struct UsageMeterLine: View {
+  @Environment(\.theme) private var theme
+  let window: ArgusProtocol.UsageLimitWindow
+  let now: Date
+
+  public init(window: ArgusProtocol.UsageLimitWindow, now: Date) {
+    self.window = window
+    self.now = now
+  }
+
+  public var body: some View {
     let left = UsageLimitFormat.percentLeft(usedPercent: window.usedPercent)
     let tone: Tone =
       switch UsageLimitFormat.level(usedPercent: window.usedPercent) {
@@ -227,7 +239,7 @@ public struct UsageLimitsStrip: View {
       case .warning: .warning
       case .critical: .danger
       }
-    return VStack(alignment: .leading, spacing: 4) {
+    VStack(alignment: .leading, spacing: 4) {
       HStack(spacing: 6) {
         Text(window.label).foregroundStyle(theme.textMuted).lineLimit(1)
         if let reset = UsageLimitFormat.resetCaption(resetsAtMs: window.resetsAt, now: now) {

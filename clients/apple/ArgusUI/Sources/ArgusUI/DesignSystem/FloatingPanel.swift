@@ -5,6 +5,8 @@
   /// Where a floating panel hangs off its trigger; it flips when that side has no room.
   public enum FloatingPanelPlacement: Sendable {
     case below
+    /// Over the trigger, leading edges aligned; for triggers at a window's foot.
+    case above
     /// To the trigger's left, top edges aligned.
     case leading
     /// To the trigger's right, top edges aligned.
@@ -292,6 +294,11 @@
       case .below:
         let below = rect.minY - gap - content.height
         frame = CGRect(origin: CGPoint(x: rect.minX, y: below >= screen.minY ? below : rect.maxY + gap), size: content)
+      case .above:
+        let above = rect.maxY + gap
+        frame = CGRect(
+          origin: CGPoint(x: rect.minX, y: above + content.height <= screen.maxY ? above : rect.minY - gap - content.height),
+          size: content)
       case .leading:
         let left = rect.minX - 12 - content.width
         frame = CGRect(

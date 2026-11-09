@@ -267,6 +267,10 @@ enum MacTelemetryEvent {
   case sessionHoverCardShown(hasChanges: Bool, hasPullRequest: Bool)
   /// The pull request link in a session's hover card was clicked.
   case sessionHoverCardPullRequestOpened
+  /// A sidebar project's hover card opened.
+  case projectHoverCardShown(hasSessions: Bool)
+  /// The sidebar Usage button's session-limits card opened; `level` is the most severe session limit shown.
+  case usageHoverCardShown(level: String)
   /// An issue page's status or priority menu opened; the change itself is the host's `linear_issue_updated`.
   case issuePropertyMenuOpened(property: LinearIssueProperty.Kind, via: IssueMenuVia)
   /// A workspace issue search settled; once per term, never the term itself.
@@ -402,6 +406,8 @@ enum MacTelemetryEvent {
     case .contextCardUsed: "mac_context_card_used"
     case .sessionHoverCardShown: "mac_session_hover_card_shown"
     case .sessionHoverCardPullRequestOpened: "mac_session_hover_card_pull_request_opened"
+    case .projectHoverCardShown: "mac_project_hover_card_shown"
+    case .usageHoverCardShown: "mac_usage_hover_card_shown"
     case .issuePropertyMenuOpened: "mac_issue_property_menu_opened"
     case .issueSearched: "mac_issue_searched"
     case .homeUsageOpened: "mac_home_usage_opened"
@@ -521,6 +527,10 @@ enum MacTelemetryEvent {
       ["has_changes": hasChanges, "has_pull_request": hasPullRequest]
     case .sessionHoverCardPullRequestOpened:
       [:]
+    case .projectHoverCardShown(let hasSessions):
+      ["has_sessions": hasSessions]
+    case .usageHoverCardShown(let level):
+      ["level": level]
     case .issuePropertyMenuOpened(let property, let via):
       ["property": property.rawValue, "via": via.rawValue]
     case .issueSearched(let results):

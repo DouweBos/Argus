@@ -100,7 +100,8 @@ struct SidebarBottomBar: View {
           Label(destination.title, systemImage: destination.symbol)
         }
         .buttonStyle(FlatIconButtonStyle(selected: destination.isOn(model.route), size: 28))
-        .help(destination.help)
+        .modifier(UsageHover(enabled: destination.route == .usage(.limits) && !destination.isOn(model.route)))
+        .help(destination.route == .usage(.limits) ? "" : destination.help)
       }
       Spacer(minLength: 0)
       AttachedHostButton()
@@ -121,5 +122,25 @@ struct SidebarBottomBar: View {
     .buttonStyle(FlatIconButtonStyle(selected: model.route == .notifications, size: 28))
     .overlay(alignment: .topTrailing) { PillBadge(unseen).scaleEffect(0.85) }
     .help(unseen > 0 ? "Notifications — \(unseen) new (⌥⌘5)" : "Notifications (⌥⌘5)")
+  }
+}
+
+/// The Usage button's session-limits card; the screen itself needs no card.
+private struct UsageHover: ViewModifier {
+  @Environment(HostStore.self) private var store
+  let enabled: Bool
+
+  func body(content: Content) -> some View {
+    content
+      // Fetched as the pointer arrives; the host answers from its cache when it's fresh.
+      .onHover { inside in
+        guard inside, enabled, store.connection == .ready else { return }
+        Task { await store.loadUsageLimits() }
+      }
+      .hoverCard(placement: .above, enabled: enabled, onShow: {
+        MacTelemetry.capture(.usageHoverCardShown(level: UsageHoverCard.level(store.usageLimits)))
+      }) {
+        UsageHoverCard(limits: store.usageLimits, error: store.usageLimitsError)
+      }
   }
 }
