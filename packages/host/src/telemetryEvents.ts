@@ -68,6 +68,7 @@ export const TELEMETRY_RUNNERS = [
   "kiro",
   "opencode",
   "cursor",
+  "grok",
 ] as const;
 export type TelemetryRunner = (typeof TELEMETRY_RUNNERS)[number] | "custom";
 

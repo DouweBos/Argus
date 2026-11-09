@@ -454,7 +454,7 @@ removed or renamed across releases.
 
 Built-in runners are `claude-code`, `codex` (see
 [Codex](./app-settings.md#codex)) and the ACP agents `gemini`, `antigravity`,
-`kiro`, `opencode` and `cursor` (see [ACP agents](./app-settings.md#acp-agents)); custom runners use their `custom:<slug>`
+`kiro`, `opencode`, `cursor` and `grok` (see [ACP agents](./app-settings.md#acp-agents)); custom runners use their `custom:<slug>`
 id. With nothing set at any level, sessions run on `claude-code`.
 
 ---
