@@ -48,8 +48,12 @@ vi.mock("./gateway", () => ({
   },
 }));
 
-const { setPairingHandler, startLocalGateway, stopLocalGateway } =
-  await import("./localGatewayServer");
+const {
+  isAllowedOrigin,
+  setPairingHandler,
+  startLocalGateway,
+  stopLocalGateway,
+} = await import("./localGatewayServer");
 
 const desktop = generateKeypair();
 const identity: DesktopIdentity = { priv: desktop.priv, pub: desktop.pub };
@@ -235,6 +239,73 @@ describe("local gateway handshakes", () => {
 
       await expect(closed).resolves.toBe(1);
       expect(onData).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("the upgrade origin check", () => {
+    beforeEach(() => start());
+
+    /** Whether the upgrade went through with these headers. */
+    async function accepted(
+      path: string,
+      headers: Record<string, string>,
+    ): Promise<boolean> {
+      try {
+        (await open(path, headers)).close();
+
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    it("accepts native clients that send no Origin", async () => {
+      await expect(accepted("/device", {})).resolves.toBe(true);
+    });
+
+    it("accepts the web client served by this gateway", async () => {
+      const origin = `http://${new URL(url).host}`;
+
+      await expect(accepted("/device", { Origin: origin })).resolves.toBe(true);
+    });
+
+    it("accepts the hosted web client", async () => {
+      await expect(
+        accepted("/pair", { Origin: "https://houwert.dev" }),
+      ).resolves.toBe(true);
+    });
+
+    it("refuses a page on another site", async () => {
+      await expect(
+        open("/device", { Origin: "https://evil.example" }),
+      ).rejects.toThrow();
+      await expect(
+        open("/pair", { Origin: "https://evil.example" }),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe("isAllowedOrigin", () => {
+    it.each([
+      [undefined, ["127.0.0.1:8787"], true],
+      ["https://abc.trycloudflare.com", ["abc.trycloudflare.com"], true],
+      ["https://abc.trycloudflare.com", ["abc.trycloudflare.com:443"], true],
+      [
+        "https://mac.tail1234.ts.net",
+        ["127.0.0.1:8787", "mac.tail1234.ts.net"],
+        true,
+      ],
+      ["http://192.168.1.20:8787", ["192.168.1.20:8787"], true],
+      ["https://houwert.dev", ["argus-0123.houwert.dev"], true],
+      ["http://localhost:5173", ["argus-0123.houwert.dev"], true],
+      ["http://[::1]:5173", ["127.0.0.1:8787"], true],
+      ["https://evil.example", ["127.0.0.1:8787"], false],
+      ["https://houwert.dev.evil.example", ["127.0.0.1:8787"], false],
+      ["http://houwert.dev", ["127.0.0.1:8787"], false],
+      ["null", ["127.0.0.1:8787"], false],
+      ["https://evil.example", [undefined, undefined], false],
+    ] as const)("%s against %j → %s", (origin, hosts, allowed) => {
+      expect(isAllowedOrigin(origin, [...hosts])).toBe(allowed);
     });
   });
 });

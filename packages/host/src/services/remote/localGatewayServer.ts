@@ -391,6 +391,54 @@ function handlePairSocket(ws: WebSocket): void {
   ws.on("error", () => ws.close());
 }
 
+/** The hosted web client, which dials computers over their tunnels cross-origin. */
+const HOSTED_WEB_ORIGINS = new Set(["https://houwert.dev"]);
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+function hostnameOf(host: string | undefined): string | null {
+  if (!host) {
+    return null;
+  }
+  try {
+    return new URL(`http://${host.split(",")[0].trim()}`).hostname;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Cross-site WebSocket defense in depth; Noise auth is what actually keeps a
+ * foreign page out. Native clients send no Origin. A browser may come from
+ * this gateway's own web client (same host, possibly via a tunnel that sets
+ * X-Forwarded-Host), the hosted client, or a local dev server.
+ */
+export function isAllowedOrigin(
+  origin: string | undefined,
+  hosts: (string | undefined)[],
+): boolean {
+  if (origin === undefined) {
+    return true;
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(origin);
+  } catch {
+    return false;
+  }
+  if (HOSTED_WEB_ORIGINS.has(parsed.origin)) {
+    return true;
+  }
+  if (LOOPBACK_HOSTS.has(parsed.hostname)) {
+    return true;
+  }
+
+  return hosts.some((h) => hostnameOf(h) === parsed.hostname);
+}
+
+function headerValue(value: string[] | string | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 /** Interface the gateway is actually bound to, or null when it is not up. */
 let boundHost: string | null = null;
 
@@ -453,6 +501,16 @@ export function startLocalGateway(
     server.on("upgrade", (req, socket, head) => {
       const upgradePath = (req.url ?? "").split("?")[0];
       if (upgradePath !== "/device" && upgradePath !== "/pair") {
+        socket.destroy();
+
+        return;
+      }
+      if (
+        !isAllowedOrigin(req.headers.origin, [
+          req.headers.host,
+          headerValue(req.headers["x-forwarded-host"]),
+        ])
+      ) {
         socket.destroy();
 
         return;
