@@ -87,7 +87,7 @@ struct RuntimePanel: View {
     case .web:
       RuntimeBrowserView(sessionKey: sessionId ?? RuntimeModel.globalKey)
     case .ios where runtime.mode == .inspect && inspectorAvailable:
-      InspectionView(deviceKey: selectedDevice)
+      InspectionView(deviceKey: selectedDevice, sessionId: sessionId)
     case .ios where runtime.mode == .logs && logsAvailable,
       .android where runtime.mode == .logs && logsAvailable:
       RuntimeLogsView(deviceKey: selectedDevice ?? "")

@@ -34,6 +34,10 @@ Argus detects Android projects (Gradle, Expo, React Native, Flutter) on its own.
 - Per-session: the browser navigates to the session's allocated URL.
 - Agents can click, type, scroll, fill forms, and run JavaScript.
 - DevTools available on demand, per-session.
+- **Select element**: hover the page, click an element, and it lands in the
+  chat as a chip — its selector, React component, text, styles, bounds and a
+  cropped screenshot — so you can type "make this red". The device inspector's
+  **Attach to Chat** does the same for a view selected on a simulator.
 
 Point it at your dev server with `browser_url` in `.argus.json` (e.g.
 `"http://localhost:{PORT}"`).

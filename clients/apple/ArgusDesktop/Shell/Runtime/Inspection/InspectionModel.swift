@@ -1,5 +1,6 @@
 import AppKit
 import ArgusCore
+import ArgusUI
 import Foundation
 import Observation
 
@@ -158,6 +159,12 @@ final class InspectionModel {
     return try? await backend.request(
       ArgusProtocol.Commands.InspectionNodeProps.self,
       .init(deviceKey: deviceKey, nodeId: nodeId))
+  }
+
+  /// The selected node, its path and a crop of the snapshot, for the chat.
+  func pickedElement() -> PickedElement? {
+    guard let capture = active?.capture, let node = selectedNode else { return nil }
+    return PickedElement.device(node, path: capture.hierarchy.path(to: node.id), capture: capture)
   }
 
   // MARK: Selection

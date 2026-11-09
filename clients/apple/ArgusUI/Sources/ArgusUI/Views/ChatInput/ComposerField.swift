@@ -250,7 +250,7 @@
     override func paste(_ sender: Any?) {
       if let drop = Self.drop(from: .general, pasted: true) {
         switch drop {
-        case .images:
+        case .images, .element:
           onDrop?(drop)
           return
         // Finder copies carry the file's icon as an image; never attach that.

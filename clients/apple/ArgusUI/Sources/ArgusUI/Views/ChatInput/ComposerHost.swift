@@ -60,4 +60,5 @@ public protocol ComposerEditor: AnyObject {
 enum ComposerDrop {
   case images([PendingImage], pasted: Bool)
   case files([URL])
+  case element(PickedElement)
 }

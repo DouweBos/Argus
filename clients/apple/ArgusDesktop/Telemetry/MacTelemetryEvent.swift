@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import Foundation
 
 /// Every event the Mac app sends itself — the Swift analogue of
@@ -320,6 +321,8 @@ enum MacTelemetryEvent {
   case easSessionStartPrompted(outcome: EasPromptOutcome)
   case browserUsed(action: BrowserAction)
   case inspectionUsed(action: InspectionAction, success: Bool)
+  /// An element picked in the browser or the device inspector and attached to the chat.
+  case elementPicked(source: PickedElement.Source, success: Bool)
   /// A git action from the git panel; `scope` is `session` or `project`,
   /// `remote` when the session is on a paired host.
   case gitUsed(action: GitAction, scope: String, remote: Bool, success: Bool)
@@ -448,6 +451,7 @@ enum MacTelemetryEvent {
     case .easSessionStartPrompted: "mac_eas_session_start_prompted"
     case .browserUsed: "mac_browser_used"
     case .inspectionUsed: "mac_inspection_used"
+    case .elementPicked: "mac_element_picked"
     case .gitUsed: "mac_git_used"
     case .gitRecoveryUsed: "mac_git_recovery_used"
     case .gitViewPicked: "mac_git_view_picked"
@@ -608,6 +612,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue]
     case .inspectionUsed(let action, let success):
       ["action": action.rawValue, "success": success]
+    case .elementPicked(let source, let success):
+      ["source": source.rawValue, "success": success]
     case .gitUsed(let action, let scope, let remote, let success):
       ["action": action.rawValue, "scope": scope, "remote": remote, "success": success]
     case .gitRecoveryUsed(let kind, let action):

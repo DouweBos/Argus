@@ -9,7 +9,7 @@ extension ComposerModel {
     let typed = trimmedText
 
     // Handled here rather than sent to the CLI, as on the desktop.
-    if images.isEmpty, linkedProjects.isEmpty, let local = SlashCommandMenu.local(typed) {
+    if images.isEmpty, elements.isEmpty, linkedProjects.isEmpty, let local = SlashCommandMenu.local(typed) {
       clearComposer()
       switch local {
       case .togglePlan:
@@ -26,9 +26,16 @@ extension ComposerModel {
       return
     }
 
-    let display = typed.isEmpty && !images.isEmpty ? "(see attached images)" : typed
-    let body = display.isEmpty ? "" : LinkedProjects.buildPreamble(paths: linkedProjects, message: display)
-    let attachments = images.map(\.attachment)
+    var display = typed.isEmpty && !images.isEmpty ? "(see attached images)" : typed
+    var message = display
+    if !elements.isEmpty {
+      message = PickedElement.body(typed: display, elements: elements)
+      display = PickedElement.display(typed: display, elements: elements)
+    }
+    let body = message.isEmpty ? "" : LinkedProjects.buildPreamble(paths: linkedProjects, message: message)
+    // Shown instead of the context blocks; the preamble stays, the transcript draws it as chips.
+    let shown = elements.isEmpty ? nil : LinkedProjects.buildPreamble(paths: linkedProjects, message: display)
+    let attachments = elements.compactMap(\.crop) + images.map(\.attachment)
     if let target = sendTarget(redirect: redirect) {
       guard canSend(redirect: redirect) else { return }
       return start(with: target, body: body, display: display, images: attachments)
@@ -40,10 +47,10 @@ extension ComposerModel {
     Task {
       if queue {
         // The bubble keeps the preamble: the transcript draws it as linked-project chips.
-        await host.queueMessage(agentId: agentId, message: body, images: attachments, displayText: body)
+        await host.queueMessage(agentId: agentId, message: body, images: attachments, displayText: shown ?? body)
       } else {
         await host.sendMessage(
-          agentId: agentId, message: body, images: attachments, displayText: nil, isRetry: false)
+          agentId: agentId, message: body, images: attachments, displayText: shown, isRetry: false)
       }
     }
   }
@@ -78,6 +85,7 @@ extension ComposerModel {
     text = ""
     caret = 0
     images = []
+    elements = []
     preferences.remove(PreferenceKey.draft(agentId: agentId))
     draftImages.remove(agentId: agentId)
     if style == .desktop { editor?.focus() }
@@ -138,10 +146,22 @@ extension ComposerModel {
     draftImages.save(images.map(\.attachment), agentId: agentId)
   }
 
+  // MARK: Elements
+
+  public func attach(_ element: PickedElement) {
+    elements.append(element)
+  }
+
+  public func removeElement(_ id: UUID) {
+    elements.removeAll { $0.id == id }
+  }
+
   /// Image files attach; any other file becomes an `@`-mention at the caret.
   func receive(_ drop: ComposerDrop) {
     guard isEnabled else { return }
     switch drop {
+    case .element(let element):
+      attach(element)
     case .images(let pending, let pasted):
       attach(pending, via: pasted ? .imagePaste : .imageDrop)
     case .files(let urls):

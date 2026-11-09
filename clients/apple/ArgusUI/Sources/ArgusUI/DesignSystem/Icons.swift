@@ -54,6 +54,8 @@ public enum Icon {
   public static let pin = "pin"
   public static let pinSlash = "pin.slash"
   public static let web = "globe"
+  /// Pick an element on screen to attach to the chat.
+  public static let elementPick = "cursorarrow.rays"
   public static let eye = "eye"
   public static let copy = "doc.on.doc"
   public static let download = "square.and.arrow.down"

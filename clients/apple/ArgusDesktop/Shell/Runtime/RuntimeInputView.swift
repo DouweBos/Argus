@@ -39,6 +39,10 @@ struct RuntimeInputView: NSViewRepresentable {
   func updateNSView(_ view: InputNSView, context: Context) {
     view.onInput = onInput
     view.toolTip = toolTip
+    if view.tracksHover != tracksHover {
+      view.tracksHover = tracksHover
+      view.updateTrackingAreas()
+    }
   }
 
   final class InputNSView: NSView {

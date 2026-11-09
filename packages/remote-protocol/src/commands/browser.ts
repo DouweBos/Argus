@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { BrowserDevtools, BrowserPreset } from "../models/browser";
+import {
+  BrowserDevtools,
+  BrowserElement,
+  BrowserElementHit,
+  BrowserPreset,
+} from "../models/browser";
 import { type CommandSpec, NoParams, Void } from "./spec";
 
 const BrowserSession = z.object({ sessionId: z.string() });
@@ -63,6 +68,23 @@ export const BROWSER_COMMANDS = {
     tier: "host",
     params: BrowserSession,
     result: BrowserDevtools.nullable(),
+  },
+  /**
+   * The element at a point, for the picker's hover. `x`/`y` are 0–1 across
+   * the viewport, so callers needn't know its CSS size. Null over nothing.
+   */
+  browser_element_at: {
+    tier: "admin",
+    tool: "device-control",
+    params: BrowserSession.extend({ x: z.number(), y: z.number() }),
+    result: BrowserElementHit.nullable(),
+  },
+  /** The element at a point in full, with a cropped screenshot, to attach to chat. */
+  browser_pick_element: {
+    tier: "admin",
+    tool: "device-control",
+    params: BrowserSession.extend({ x: z.number(), y: z.number() }),
+    result: BrowserElement.nullable(),
   },
   /** Port of the local MJPEG server the screencast frames are served from. */
   browser_get_mjpeg_port: {

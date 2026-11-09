@@ -139,5 +139,13 @@ extension Inspection {
     public var nodeCount: Int
     /// Decoded PNG bytes; the overlay draws bare boxes without it.
     public var screenshot: Data?
+
+    public init(capturedAt: String, device: Device, hierarchy: Node, nodeCount: Int, screenshot: Data?) {
+      self.capturedAt = capturedAt
+      self.device = device
+      self.hierarchy = hierarchy
+      self.nodeCount = nodeCount
+      self.screenshot = screenshot
+    }
   }
 }

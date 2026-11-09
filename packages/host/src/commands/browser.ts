@@ -1,4 +1,8 @@
 import { browserDevtools } from "../services/browser/devtools";
+import {
+  browserElementAt,
+  browserPickElement,
+} from "../services/browser/elementPicker";
 import { getMjpegPort } from "../services/browser/mjpegServer";
 import {
   browserKeyboardEvent,
@@ -44,5 +48,11 @@ export function registerBrowserCommands(): void {
     browserUpdatePreset(p.sessionId, p.preset),
   );
   defineTypedCommand("browser_devtools", (p) => browserDevtools(p.sessionId));
+  defineTypedCommand("browser_element_at", (p) =>
+    browserElementAt(p.sessionId, p.x, p.y),
+  );
+  defineTypedCommand("browser_pick_element", (p) =>
+    browserPickElement(p.sessionId, p.x, p.y),
+  );
   defineTypedCommand("browser_get_mjpeg_port", () => getMjpegPort());
 }

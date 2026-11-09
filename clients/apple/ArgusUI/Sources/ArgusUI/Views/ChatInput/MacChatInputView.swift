@@ -83,8 +83,10 @@
     /// pills and the attach and send buttons.
     private var box: some View {
       VStack(alignment: .leading, spacing: 0) {
-        if !composer.images.isEmpty {
-          AttachmentStrip(images: composer.images) { composer.removeImage($0) }
+        if !composer.images.isEmpty || !composer.elements.isEmpty {
+          AttachmentStrip(
+            images: composer.images, elements: composer.elements, removeElement: composer.removeElement
+          ) { composer.removeImage($0) }
           .padding(.horizontal, 10)
           .padding(.top, 10)
         }

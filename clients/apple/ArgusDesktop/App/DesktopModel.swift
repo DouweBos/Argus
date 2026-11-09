@@ -2,6 +2,7 @@ import AppKit
 import ArgusAuth
 import ArgusCore
 import ArgusKit
+import ArgusUI
 import ArgusUpdate
 import Foundation
 import Observation
@@ -61,6 +62,8 @@ final class DesktopModel {
   var deletingSession: RemoteSession?
   /// Bumped to put the caret in the chat input in front (⌘L).
   var composerFocusRequest = 0
+  /// Elements picked in the runtime panel, by session, until its composer takes them.
+  var pickedElements: [String: [PickedElement]] = [:]
   /// The tab the Settings window shows.
   var settingsTab: SettingsTab = .general
   /// The project the Project Settings sheet is open for.

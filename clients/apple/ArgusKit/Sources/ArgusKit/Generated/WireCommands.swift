@@ -849,6 +849,31 @@ extension ArgusProtocol {
       }
     }
 
+    public struct BrowserElementAtParams: Codable, Sendable {
+      public var sessionId: String
+      public var x: Double
+      public var y: Double
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "sessionId"
+        case x = "x"
+        case y = "y"
+      }
+
+      public init(sessionId: String, x: Double, y: Double) {
+        self.sessionId = sessionId
+        self.x = x
+        self.y = y
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(x, forKey: .x)
+        try c.encode(y, forKey: .y)
+      }
+    }
+
     public struct BrowserKeyboardEventParamsType: RawRepresentable, Codable, Hashable, Sendable {
       public var rawValue: String
       public init(rawValue: String) { self.rawValue = rawValue }
@@ -953,6 +978,31 @@ extension ArgusProtocol {
         try c.encode(x, forKey: .x)
         try c.encode(y, forKey: .y)
         try c.encodeIfPresent(button, forKey: .button)
+      }
+    }
+
+    public struct BrowserPickElementParams: Codable, Sendable {
+      public var sessionId: String
+      public var x: Double
+      public var y: Double
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "sessionId"
+        case x = "x"
+        case y = "y"
+      }
+
+      public init(sessionId: String, x: Double, y: Double) {
+        self.sessionId = sessionId
+        self.x = x
+        self.y = y
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(x, forKey: .x)
+        try c.encode(y, forKey: .y)
       }
     }
 
@@ -9953,6 +10003,13 @@ extension ArgusProtocol {
       public static let tier = "host"
     }
 
+    public enum BrowserElementAt: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.BrowserElementAtParams
+      public typealias Result = ArgusProtocol.BrowserElementHit?
+      public static let name = "browser_element_at"
+      public static let tier = "admin"
+    }
+
     public enum BrowserGetMjpegPort: RemoteCommand {
       public typealias Params = EmptyParams
       public typealias Result = Double
@@ -9971,6 +10028,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.BrowserMouseEventParams
       public typealias Result = IgnoredResult
       public static let name = "browser_mouse_event"
+      public static let tier = "admin"
+    }
+
+    public enum BrowserPickElement: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.BrowserPickElementParams
+      public typealias Result = ArgusProtocol.BrowserElement?
+      public static let name = "browser_pick_element"
       public static let tier = "admin"
     }
 

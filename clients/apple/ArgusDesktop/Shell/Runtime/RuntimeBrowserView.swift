@@ -10,6 +10,7 @@ struct RuntimeBrowserView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var store
   @Environment(RuntimeModel.self) private var runtime
+  @Environment(DesktopModel.self) private var model
   /// The session id, or the global key when no session is open.
   let sessionKey: String
 
@@ -21,6 +22,7 @@ struct RuntimeBrowserView: View {
   @State private var stageSize = CGSize.zero
   @State private var detach: (() -> Void)?
   @State private var stopNav: (() -> Void)?
+  @State private var picker = BrowserElementPicker()
 
   private static let fallbackUrl = "https://houwert.dev/argus"
 
@@ -85,6 +87,7 @@ struct RuntimeBrowserView: View {
       .labelsHidden()
       .controlSize(.small)
       .fixedSize()
+      selectElementButton
       // Loopback URLs: only this Mac's own browser can be inspected from here.
       if browserHost == Hosts.local {
         navButton("DevTools", "hammer", enabled: true) { openDevTools() }
@@ -109,6 +112,22 @@ struct RuntimeBrowserView: View {
       else { return NSSound.beep() }
       DevToolsWindow.show(sessionKey: sessionId, url: url, title: title)
     }
+  }
+
+  /// Picks attach to this session's chat; the global browser has none.
+  private var chatSessionId: String? { sessionKey == RuntimeModel.globalKey ? nil : sessionKey }
+
+  private var selectElementButton: some View {
+    Button(action: picker.toggle) {
+      Image(systemName: Icon.elementPick)
+        .frame(width: 20, height: 20)
+        .foregroundStyle(picker.active ? theme.accent : theme.textSecondary)
+    }
+    .buttonStyle(.argusBorderless)
+    .disabled(!started || chatSessionId == nil || otherHolder != nil)
+    .help(picker.active ? "Cancel selecting (Esc)" : "Select an element to attach to the chat")
+    .accessibilityLabel("Select element")
+    .accessibilityAddTraits(picker.active ? .isSelected : [])
   }
 
   private func navButton(
@@ -138,7 +157,10 @@ struct RuntimeBrowserView: View {
       ZStack {
         theme.mediaBg
         RuntimeJpegView(handle: frame) { receiving = true }
-        RuntimeInputView(onInput: receive)
+        if picker.active, let hit = picker.hit {
+          BrowserPickHighlight(hit: hit, picture: geometry.pictureRect)
+        }
+        RuntimeInputView(tracksHover: picker.active, onInput: receive)
         if !started {
           VStack(spacing: 8) {
             Text("The browser isn't running")
@@ -171,11 +193,15 @@ struct RuntimeBrowserView: View {
 
   // MARK: Input
 
-  /// A stage point to viewport pixels of the letterboxed page.
-  private func viewport(_ point: CGPoint) -> CGPoint {
+  private var geometry: DeviceGeometry {
     let natural = frame.imageSize == .zero
       ? CGSize(width: preset.width, height: preset.height) : frame.imageSize
-    let geometry = DeviceGeometry(coded: natural, stage: stageSize)
+    return DeviceGeometry(coded: natural, stage: stageSize)
+  }
+
+  /// A stage point to viewport pixels of the letterboxed page.
+  private func viewport(_ point: CGPoint) -> CGPoint {
+    let natural = geometry.coded
     let normalized = geometry.normalize(point) ?? .zero
     return CGPoint(x: normalized.x * natural.width, y: normalized.y * natural.height)
   }
@@ -183,6 +209,7 @@ struct RuntimeBrowserView: View {
   private func receive(_ input: RuntimeInput) {
     guard otherHolder == nil, let backend = store.backend else { return }
     let sessionId = sessionKey
+    if picker.active { return pickInput(input, backend: backend) }
     switch input {
     case .pointer(let phase, let point, let secondary, _):
       let at = viewport(point)
@@ -215,6 +242,36 @@ struct RuntimeBrowserView: View {
           ArgusProtocol.Commands.BrowserKeyboardEvent.self,
           .init(sessionId: sessionId, type: down ? .down : .up, key: key))
       }
+    }
+  }
+
+  /// While selecting, hover and click go to the picker, not the page; the wheel still scrolls it.
+  private func pickInput(_ input: RuntimeInput, backend: any HostBackend) {
+    switch input {
+    case .hover(let point):
+      picker.hover(point.flatMap(geometry.normalize), backend: backend, sessionId: sessionKey)
+    case .pointer(.down, let point, _, _):
+      guard let at = geometry.normalize(point), let chat = chatSessionId, !picker.picking else { return }
+      Task {
+        if let element = await picker.pick(at: at, backend: backend, sessionId: sessionKey) {
+          model.attachToChat(element, sessionId: chat)
+        } else {
+          NSSound.beep()
+          MacTelemetry.capture(.elementPicked(source: .browser, success: false))
+        }
+      }
+    case .key(true, 53, _, _):
+      picker.cancel()
+    case .wheel(let point, let deltaX, let deltaY):
+      let at = viewport(point)
+      Task {
+        _ = try? await backend.request(
+          ArgusProtocol.Commands.BrowserWheelEvent.self,
+          .init(sessionId: sessionKey, x: at.x, y: at.y, deltaX: deltaX, deltaY: deltaY))
+      }
+      picker.hover(geometry.normalize(point), backend: backend, sessionId: sessionKey)
+    case .pointer, .key:
+      break
     }
   }
 
@@ -261,6 +318,7 @@ struct RuntimeBrowserView: View {
   }
 
   private func close() {
+    picker.cancel()
     detach?()
     detach = nil
     stopNav?()

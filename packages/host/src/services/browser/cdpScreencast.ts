@@ -22,6 +22,14 @@ interface ActiveScreencast {
   ws: Duplex;
   sessionId: string | null;
   closed: boolean;
+  /** Replies to `cdpCall`s, by request id. */
+  pending: Map<number, PendingCall>;
+  send?: (msg: string) => void;
+}
+
+interface PendingCall {
+  resolve: (result: Record<string, unknown>) => void;
+  reject: (error: Error) => void;
 }
 
 const screencasts = new Map<string, ActiveScreencast>();
@@ -259,6 +267,8 @@ export async function startScreencast(
     ws: null as unknown as Duplex,
     sessionId: null,
     closed: false,
+    pending: new Map(),
+    send: ws.send,
   };
   screencasts.set(sessionId, state);
 
@@ -268,6 +278,19 @@ export async function startScreencast(
     }
     try {
       const msg = JSON.parse(data);
+
+      const call =
+        typeof msg.id === "number" ? state.pending.get(msg.id) : undefined;
+      if (call) {
+        state.pending.delete(msg.id);
+        if (msg.error) {
+          call.reject(new Error(msg.error.message ?? "CDP call failed"));
+        } else {
+          call.resolve(msg.result ?? {});
+        }
+
+        return;
+      }
 
       if (msg.method === "Page.screencastFrame") {
         const jpeg = Buffer.from(msg.params.data, "base64");
@@ -306,6 +329,10 @@ export async function startScreencast(
   // Store close handle so we can tear down later.
   (state as { close?: () => void }).close = () => {
     state.closed = true;
+    for (const call of state.pending.values()) {
+      call.reject(new Error("The browser closed"));
+    }
+    state.pending.clear();
     ws.send(
       JSON.stringify({
         id: nextId++,
@@ -319,6 +346,42 @@ export async function startScreencast(
     `[cdp-screencast] Started for session ${sessionId} ` +
       `(port=${cdpPort}, target=${targetId})`,
   );
+}
+
+/**
+ * Send a CDP command over the session's screencast connection, which is
+ * attached to the page target. Rejects when the browser isn't streaming.
+ */
+export function cdpCall(
+  sessionId: string,
+  method: string,
+  params: Record<string, unknown> = {},
+  timeoutMs = 10_000,
+): Promise<Record<string, unknown>> {
+  const state = screencasts.get(sessionId);
+  if (!state || state.closed || !state.send) {
+    return Promise.reject(new Error("The browser isn't running"));
+  }
+  const id = nextId++;
+  const send = state.send;
+
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      state.pending.delete(id);
+      reject(new Error(`${method} timed out`));
+    }, timeoutMs);
+    state.pending.set(id, {
+      resolve: (result) => {
+        clearTimeout(timer);
+        resolve(result);
+      },
+      reject: (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    });
+    send(JSON.stringify({ id, method, params }));
+  });
 }
 
 /**

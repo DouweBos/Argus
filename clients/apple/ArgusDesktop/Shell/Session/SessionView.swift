@@ -354,6 +354,7 @@ struct AgentPane: View {
       if fresh { Color.clear.frame(maxHeight: .infinity) }
     }
     .environment(\.composerDropInbox, drops)
+    .receivesPickedElements(sessionId: sessionId, into: drops)
     .environment(\.composerFocusRequest, model.composerFocusRequest)
     .huddleAgent(agentId)
     .task {

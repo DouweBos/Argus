@@ -7,7 +7,10 @@ import SwiftUI
 struct InspectionView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var store
+  @Environment(DesktopModel.self) private var desktop
   let deviceKey: String?
+  /// Where Attach to Chat sends the selection; nil outside a session.
+  var sessionId: String?
 
   @State private var model = InspectionModel()
 
@@ -87,6 +90,16 @@ struct InspectionView: View {
         .fixedSize()
       }
       Spacer(minLength: 0)
+      if model.active != nil {
+        Button(action: attachSelection) { Label("Attach to Chat", systemImage: Icon.elementPick) }
+          .disabled(model.selectedNode == nil || sessionId == nil)
+          .help(
+            sessionId == nil
+              ? "Open a session to attach elements to its chat"
+              : model.selectedNode == nil
+                ? "Click an element on the screen, then attach it to the chat"
+                : "Attach the selected element to the chat")
+      }
       if let capture = model.active?.capture {
         Text(
           "\(capture.device.platform.uppercased()) · \(Inspection.format(capture.device.width)) × \(Inspection.format(capture.device.height)) · \(capture.nodeCount) nodes"
@@ -139,6 +152,11 @@ struct InspectionView: View {
     Binding(
       get: { model.active?.id ?? UUID() },
       set: { model.selectSnapshot($0) })
+  }
+
+  private func attachSelection() {
+    guard let sessionId, let element = model.pickedElement() else { return }
+    desktop.attachToChat(element, sessionId: sessionId)
   }
 
   private func inspect() {

@@ -135,18 +135,34 @@
     }
   }
 
-  struct AttachmentStrip: View {
+  /// The composer's picked elements and images, each with a remove button.
+  public struct AttachmentStrip: View {
     @Environment(\.theme) private var theme
     let images: [PendingImage]
+    var elements: [PickedElement] = []
+    var removeElement: (UUID) -> Void = { _ in }
     let remove: (UUID) -> Void
 
-    var body: some View {
+    public init(
+      images: [PendingImage], elements: [PickedElement] = [], removeElement: @escaping (UUID) -> Void = { _ in },
+      remove: @escaping (UUID) -> Void
+    ) {
+      self.images = images
+      self.elements = elements
+      self.removeElement = removeElement
+      self.remove = remove
+    }
+
+    public var body: some View {
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 8) {
+          ForEach(elements) { element in
+            removable(help: "Remove element", action: { removeElement(element.id) }) {
+              PickedElementChip(element: element)
+            }
+          }
           ForEach(images) { image in
-            // The button stays inside the item's frame: offset past it, the next
-            // thumbnail took its clicks, so only the last one could be removed.
-            ZStack(alignment: .topTrailing) {
+            removable(help: "Remove image", action: { remove(image.id) }) {
               Image(platformImage: image.preview)
                 .resizable()
                 .scaledToFill()
@@ -156,25 +172,80 @@
                   RoundedRectangle(cornerRadius: theme.radiusSmall)
                     .strokeBorder(theme.border, lineWidth: 1)
                 }
-                .padding(.top, 6)
-                .padding(.trailing, 6)
-              Button {
-                remove(image.id)
-              } label: {
-                Image(systemName: Icon.close)
-                  .font(.scaled(size: 8, weight: .bold))
-                  .foregroundStyle(theme.onAccent)
-                  .padding(4)
-                  .background(Circle().fill(theme.accent))
-                  .contentShape(Circle())
-              }
-              .buttonStyle(.argusPlain)
-              .help("Remove image")
-              .offset(x: 1, y: 1)
             }
           }
         }
       }
+    }
+
+    // The button stays inside the item's frame: offset past it, the next
+    // item took its clicks, so only the last one could be removed.
+    private func removable(
+      help: String, action: @escaping () -> Void, @ViewBuilder content: () -> some View
+    ) -> some View {
+      ZStack(alignment: .topTrailing) {
+        content()
+          .padding(.top, 6)
+          .padding(.trailing, 6)
+        Button(action: action) {
+          Image(systemName: Icon.close)
+            .font(.scaled(size: 8, weight: .bold))
+            .foregroundStyle(theme.onAccent)
+            .padding(4)
+            .background(Circle().fill(theme.accent))
+            .contentShape(Circle())
+        }
+        .buttonStyle(.argusPlain)
+        .help(help)
+        .offset(x: 1, y: 1)
+      }
+    }
+  }
+
+  /// A picked element in the composer: its crop, what it is and where it came from.
+  struct PickedElementChip: View {
+    @Environment(\.theme) private var theme
+    let element: PickedElement
+
+    private var preview: PlatformImage? {
+      element.crop.flatMap { Data(base64Encoded: $0.data) }.flatMap(PlatformImage.init(data:))
+    }
+
+    var body: some View {
+      HStack(spacing: 8) {
+        ZStack {
+          theme.bgTertiary
+          if let preview {
+            Image(platformImage: preview).resizable().scaledToFit()
+          } else {
+            Image(systemName: Icon.elementPick).foregroundStyle(theme.textMuted)
+          }
+        }
+        .frame(width: 44, height: 44)
+        .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall - 2))
+        VStack(alignment: .leading, spacing: 2) {
+          Text(element.title)
+            .font(.scaled(size: 12, design: .monospaced))
+            .foregroundStyle(theme.text)
+            .lineLimit(1)
+            .truncationMode(.middle)
+          Label(element.source == .browser ? "Browser element" : "Simulator element",
+                systemImage: element.source == .browser ? Icon.web : Icon.simulator)
+            .font(.scaled(size: 10))
+            .foregroundStyle(theme.textMuted)
+            .lineLimit(1)
+        }
+        .frame(maxWidth: 180, alignment: .leading)
+      }
+      .padding(6)
+      .frame(height: 56)
+      .background(theme.surface, in: .rect(cornerRadius: theme.radiusSmall))
+      .overlay {
+        RoundedRectangle(cornerRadius: theme.radiusSmall).strokeBorder(theme.border, lineWidth: 1)
+      }
+      .help(element.context)
+      .accessibilityElement(children: .combine)
+      .accessibilityLabel("Picked element \(element.title)")
     }
   }
 #endif

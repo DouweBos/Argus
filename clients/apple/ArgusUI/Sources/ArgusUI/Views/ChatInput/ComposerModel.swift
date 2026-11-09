@@ -38,6 +38,8 @@ public final class ComposerModel {
     didSet { if caret != oldValue { mentionMayHaveMoved() } }
   }
   public internal(set) var images: [PendingImage] = []
+  /// Picked in the browser or the device inspector; they live with the composer, not the saved draft.
+  public internal(set) var elements: [PickedElement] = []
   public internal(set) var linkedProjects: [String] = []
   /// Esc closes a menu until the text changes again.
   var dismissedText: String?
@@ -94,7 +96,7 @@ public final class ComposerModel {
     return host.capabilitiesByAgent[agentId] ?? .empty
   }
 
-  public var hasContent: Bool { !trimmedText.isEmpty || !images.isEmpty }
+  public var hasContent: Bool { !trimmedText.isEmpty || !images.isEmpty || !elements.isEmpty }
 
   var trimmedText: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
 

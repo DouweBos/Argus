@@ -28,6 +28,11 @@
       return true
     }
 
+    /// An element picked in the browser or the device inspector.
+    public func attach(_ element: PickedElement) {
+      deliver(.element(element))
+    }
+
     func deliver(_ drop: ComposerDrop) {
       pending.append(drop)
       generation += 1

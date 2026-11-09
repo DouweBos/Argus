@@ -65,6 +65,21 @@ struct ComposerModelTests {
     #expect(preferences.decode(PreferenceKey.linkedProjects(agentId: "a1"), as: [String].self) == nil)
   }
 
+  @Test("a picked element sends its context and crop; the bubble shows a chip instead")
+  func pickedElement() async throws {
+    let composer = model()
+    composer.attach(PickedElement(source: .browser, title: "button.save", context: "[ctx]", crop: .pixel))
+    #expect(composer.hasContent)
+    composer.text = "make this red"
+    composer.submit()
+    await settle()
+    let sent = try #require(host.sent.first)
+    #expect(sent.message == "make this red\n\n[ctx]")
+    #expect(sent.displayText == "make this red\n\n[Element: button.save]")
+    #expect(sent.images.count == 1)
+    #expect(composer.elements.isEmpty)
+  }
+
   @Test("/plan toggles plan mode and /model sets or opens the picker, never reaching the CLI")
   func localCommands() async {
     let composer = model()

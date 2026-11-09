@@ -37,6 +37,7 @@ struct SessionStartPane: View {
       }
     }
     .environment(\.composerDropInbox, drops)
+    .receivesPickedElements(sessionId: sessionId, into: drops)
     .environment(\.composerFocusRequest, model.composerFocusRequest)
   }
 }

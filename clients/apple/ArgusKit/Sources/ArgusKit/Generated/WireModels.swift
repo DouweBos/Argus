@@ -3006,6 +3006,138 @@ extension ArgusProtocol {
     }
   }
 
+  public struct BrowserElementViewport: Codable, Sendable {
+    public var width: Double
+    public var height: Double
+
+    enum CodingKeys: String, CodingKey {
+      case width = "width"
+      case height = "height"
+    }
+
+    public init(width: Double, height: Double) {
+      self.width = width
+      self.height = height
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(width, forKey: .width)
+      try c.encode(height, forKey: .height)
+    }
+  }
+
+  public struct BrowserElement: Codable, Sendable {
+    public var label: String
+    public var bounds: BrowserRect
+    public var viewport: BrowserElementViewport
+    public var selector: String
+    public var tagName: String
+    public var text: String?
+    public var attributes: [String: String]
+    public var styles: [String: String]
+    public var html: String
+    public var component: String?
+    public var source: String?
+    public var url: String
+    public var screenshot: String?
+
+    enum CodingKeys: String, CodingKey {
+      case label = "label"
+      case bounds = "bounds"
+      case viewport = "viewport"
+      case selector = "selector"
+      case tagName = "tagName"
+      case text = "text"
+      case attributes = "attributes"
+      case styles = "styles"
+      case html = "html"
+      case component = "component"
+      case source = "source"
+      case url = "url"
+      case screenshot = "screenshot"
+    }
+
+    public init(label: String, bounds: BrowserRect, viewport: BrowserElementViewport, selector: String, tagName: String, text: String? = nil, attributes: [String: String], styles: [String: String], html: String, component: String? = nil, source: String? = nil, url: String, screenshot: String? = nil) {
+      self.label = label
+      self.bounds = bounds
+      self.viewport = viewport
+      self.selector = selector
+      self.tagName = tagName
+      self.text = text
+      self.attributes = attributes
+      self.styles = styles
+      self.html = html
+      self.component = component
+      self.source = source
+      self.url = url
+      self.screenshot = screenshot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(label, forKey: .label)
+      try c.encode(bounds, forKey: .bounds)
+      try c.encode(viewport, forKey: .viewport)
+      try c.encode(selector, forKey: .selector)
+      try c.encode(tagName, forKey: .tagName)
+      try c.encodeIfPresent(text, forKey: .text)
+      try c.encode(attributes, forKey: .attributes)
+      try c.encode(styles, forKey: .styles)
+      try c.encode(html, forKey: .html)
+      try c.encodeIfPresent(component, forKey: .component)
+      try c.encodeIfPresent(source, forKey: .source)
+      try c.encode(url, forKey: .url)
+      try c.encodeIfPresent(screenshot, forKey: .screenshot)
+    }
+  }
+
+  public struct BrowserElementHitViewport: Codable, Sendable {
+    public var width: Double
+    public var height: Double
+
+    enum CodingKeys: String, CodingKey {
+      case width = "width"
+      case height = "height"
+    }
+
+    public init(width: Double, height: Double) {
+      self.width = width
+      self.height = height
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(width, forKey: .width)
+      try c.encode(height, forKey: .height)
+    }
+  }
+
+  public struct BrowserElementHit: Codable, Sendable {
+    public var label: String
+    public var bounds: BrowserRect
+    public var viewport: BrowserElementHitViewport
+
+    enum CodingKeys: String, CodingKey {
+      case label = "label"
+      case bounds = "bounds"
+      case viewport = "viewport"
+    }
+
+    public init(label: String, bounds: BrowserRect, viewport: BrowserElementHitViewport) {
+      self.label = label
+      self.bounds = bounds
+      self.viewport = viewport
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(label, forKey: .label)
+      try c.encode(bounds, forKey: .bounds)
+      try c.encode(viewport, forKey: .viewport)
+    }
+  }
+
   public struct BrowserPresetScreenPosition: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -3080,6 +3212,35 @@ extension ArgusProtocol {
       try c.encodeIfPresent(label, forKey: .label)
       try c.encodeIfPresent(userAgent, forKey: .userAgent)
       try c.encode(width, forKey: .width)
+    }
+  }
+
+  public struct BrowserRect: Codable, Sendable {
+    public var x: Double
+    public var y: Double
+    public var width: Double
+    public var height: Double
+
+    enum CodingKeys: String, CodingKey {
+      case x = "x"
+      case y = "y"
+      case width = "width"
+      case height = "height"
+    }
+
+    public init(x: Double, y: Double, width: Double, height: Double) {
+      self.x = x
+      self.y = y
+      self.width = width
+      self.height = height
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(x, forKey: .x)
+      try c.encode(y, forKey: .y)
+      try c.encode(width, forKey: .width)
+      try c.encode(height, forKey: .height)
     }
   }
 
