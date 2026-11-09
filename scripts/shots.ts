@@ -247,6 +247,9 @@ async function record(
     await apply(shoot, stepsFor(beat, scene));
     const file = path.join(work, `frame-${String(index).padStart(3, "0")}.png`);
     await stableCapture(shoot.window, file);
+    if (scene.frameCrop) {
+      await crop(file, scene.frameCrop, file);
+    }
     frames.push({ file, holdSeconds: beat.holdSeconds ?? 2 });
   }
   await stitch(frames, label.split("@")[1], path.join(OUT, `${label}.mp4`));

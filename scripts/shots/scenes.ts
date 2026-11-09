@@ -18,6 +18,8 @@ export interface MacScene {
   routes?: Record<string, string>;
   /** A second, cropped PNG (`<id>-detail@<theme>.png`), in captured pixels. */
   crop?: Crop;
+  /** Crops every recorded frame, so the clip and its poster are the crop. */
+  frameCrop?: Crop;
   /**
    * Window points clicked after the route, in order (a file to open, a fold to
    * expand). SwiftUI lists expose no accessibility labels to an in-process
@@ -53,7 +55,11 @@ export const MAC_SCENES: Record<string, MacScene> = {
   },
   huddle: { clicks: [{ x: 590, y: 108 }] },
   // Home lists sessions, not agents; the Agents screen fills in row by row.
-  flock: { routes: { "/": "/agents" } },
+  // Five rows leave the window mostly empty: the clip ends below the sidebar's sessions.
+  flock: {
+    routes: { "/": "/agents" },
+    frameCrop: { x: 0, y: 0, w: 3200, h: 856 },
+  },
 };
 
 /** Renderer settings sections → the Mac's `SettingsTab`. */
