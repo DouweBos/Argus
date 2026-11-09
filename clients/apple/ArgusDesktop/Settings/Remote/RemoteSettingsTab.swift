@@ -28,6 +28,9 @@ private struct RemoteSettingsForm: View {
   @Environment(\.theme) private var theme
   @Bindable var model: RemoteSettingsModel
   @AppStorage(HuddleDisplayName.key) private var huddleName = ""
+  /// Set once the user has confirmed what turning remote access on exposes.
+  @AppStorage("remoteAccessConsented") private var consented = false
+  @State private var confirmingEnable = false
 
   private var status: ArgusProtocol.RemoteStatus? { model.status }
   private var enabled: Bool { status?.enabled ?? false }
@@ -45,10 +48,25 @@ private struct RemoteSettingsForm: View {
                 tone: enabled ? RemoteAccessLabels.reachabilityTone(status) : .idle,
                 text: enabled ? RemoteAccessLabels.reachabilityLabel(status) : "off")
             }
-            Toggle("Enable remote access", isOn: toggle(\.enabled, .enabled) { .init(enabled: $0) })
+            Toggle("Enable remote access", isOn: enableBinding)
               .toggleStyle(.argusSwitch)
               .controlSize(.small)
               .disabled(model.busy || status == nil)
+              .confirmationDialog("Turn on remote access?", isPresented: $confirmingEnable, titleVisibility: .visible) {
+                Button("Turn On") {
+                  consented = true
+                  MacTelemetry.capture(.remoteAccessConsent(confirmed: true))
+                  setEnabled(true)
+                }
+                Button("Cancel", role: .cancel) {
+                  MacTelemetry.capture(.remoteAccessConsent(confirmed: false))
+                }
+              } message: {
+                Text(
+                  "Phones and browsers you pair will be able to reach this Mac on your network, over Tailscale and, once it's on your Argus account, from anywhere through its tunnel. Every connection is end-to-end encrypted and only paired devices get in. Remote access stays on across restarts until you turn it off."
+                )
+              }
+              .task(id: enabled) { if enabled { consented = true } }
           }
         }
       }
@@ -152,6 +170,23 @@ private struct RemoteSettingsForm: View {
   }
 
   /// A toggle bound to a status flag that writes through `remote_set_config`.
+  /// Turning remote access on asks once; turning it off never does.
+  private var enableBinding: Binding<Bool> {
+    Binding(
+      get: { enabled },
+      set: { next in
+        if next && !consented {
+          confirmingEnable = true
+        } else {
+          setEnabled(next)
+        }
+      })
+  }
+
+  private func setEnabled(_ on: Bool) {
+    Task { _ = await model.apply(.init(enabled: on), setting: .enabled, on: on) }
+  }
+
   private func toggle(
     _ key: KeyPath<ArgusProtocol.RemoteStatus, Bool>, _ setting: MacTelemetryEvent.RemoteSetting,
     _ patch: @escaping (Bool) -> ArgusProtocol.RemoteConfigPatch

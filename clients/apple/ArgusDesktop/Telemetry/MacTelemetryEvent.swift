@@ -354,6 +354,8 @@ enum MacTelemetryEvent {
   case settingsChanged(setting: SettingsField)
   /// A Remote Access setting was changed; `on` only for toggles.
   case remoteSettingChanged(setting: RemoteSetting, on: Bool?)
+  /// The one-time "Turn on remote access?" confirmation was answered.
+  case remoteAccessConsent(confirmed: Bool)
   /// A pairing moved on; `client` is the kind the device claimed, or `unknown`.
   case pairing(stage: PairingStage, client: String)
   case remoteDeviceManaged(action: RemoteDeviceAction, success: Bool)
@@ -459,6 +461,7 @@ enum MacTelemetryEvent {
     case .projectSettingsSaved: "mac_project_settings_saved"
     case .settingsChanged: "mac_settings_changed"
     case .remoteSettingChanged: "mac_remote_setting_changed"
+    case .remoteAccessConsent: "mac_remote_access_consent"
     case .pairing: "mac_pairing"
     case .remoteDeviceManaged: "mac_remote_device_managed"
     case .routeUpgraded: "mac_route_upgraded"
@@ -632,6 +635,8 @@ enum MacTelemetryEvent {
       ["section": setting.section.rawValue, "setting": setting.rawValue]
     case .remoteSettingChanged(let setting, let on):
       on.map { ["setting": setting.rawValue, "on": $0] } ?? ["setting": setting.rawValue]
+    case .remoteAccessConsent(let confirmed):
+      ["confirmed": confirmed]
     case .pairing(let stage, let client):
       ["stage": stage.rawValue, "client": client]
     case .remoteDeviceManaged(let action, let success):
