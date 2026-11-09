@@ -13,6 +13,8 @@ struct DiffTableView: NSViewRepresentable {
   var onAction: ((HunkAction, HunkData, [GroveKit.DiffLine]) -> Void)?
   /// Opens the file in the code view at a 1-based line of the new side.
   var openLine: ((Int) -> Void)?
+  /// Draft review comments: shown under their lines, added from the gutter's `+` or the menu.
+  var review: DiffReviewContext?
   @Environment(\.theme) private var theme
 
   func makeCoordinator() -> Coordinator { Coordinator() }
@@ -33,6 +35,8 @@ struct DiffTableView: NSViewRepresentable {
     table.delegate = context.coordinator
     table.menu = context.coordinator.menu
     table.coordinator = context.coordinator
+    table.addTrackingArea(
+      NSTrackingArea(rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: table))
     let scroll = NSScrollView()
     scroll.documentView = table
     scroll.hasVerticalScroller = true
@@ -47,6 +51,8 @@ struct DiffTableView: NSViewRepresentable {
     let coordinator = context.coordinator
     coordinator.onAction = onAction
     coordinator.openLine = openLine
+    coordinator.review = review
+    coordinator.theme = theme
     coordinator.update(diff: diff, layout: layout, actions: actions, palette: DiffPalette(theme))
     if coordinator.textScale.changed() { coordinator.table?.reloadData() }
   }
@@ -57,10 +63,16 @@ struct DiffTableView: NSViewRepresentable {
     var textScale = TextScaleTracker()
     var onAction: ((HunkAction, HunkData, [GroveKit.DiffLine]) -> Void)?
     var openLine: ((Int) -> Void)?
+    var review: DiffReviewContext?
+    var theme: Theme?
+    /// The open comment composer, if any.
+    var popover: NSPopover?
+    /// The row and side whose gutter shows the comment `+`.
+    var hover: (row: Int, side: DiffHoverSide)?
     private(set) var diff: DiffResult?
     private(set) var rows: [DiffRow] = []
-    private var layout: DiffLayout = .inline
-    private var gutters = DiffGutters.both
+    private(set) var layout: DiffLayout = .inline
+    private(set) var gutters = DiffGutters.both
     private var actions: DiffActions?
     private var palette: DiffPalette?
     private var signature: [String] = []
@@ -73,7 +85,10 @@ struct DiffTableView: NSViewRepresentable {
     func update(diff: DiffResult, layout: DiffLayout, actions: DiffActions?, palette: DiffPalette) {
       // Hunk ids change whenever their content does; the same diff keeps
       // its rows, scroll position and selection.
-      let next = [diff.filePath, layout.rawValue, "\(actions.map { "\($0)" } ?? "-")"] + diff.hunks.map(\.id)
+      let comments = review?.comments ?? []
+      let next =
+        [diff.filePath, layout.rawValue, "\(actions.map { "\($0)" } ?? "-")"] + diff.hunks.map(\.id)
+        + comments.map { "\($0.id)\u{0}\($0.body)" }
       let paletteChanged = palette != self.palette
       self.palette = palette
       guard next != signature || paletteChanged else { return }
@@ -83,7 +98,8 @@ struct DiffTableView: NSViewRepresentable {
       self.layout = layout
       self.actions = actions
       gutters = DiffRowBuilder.gutters(for: diff)
-      rows = DiffRowBuilder.rows(for: diff, layout: layout)
+      rows = DiffRowBuilder.rows(for: diff, layout: layout, comments: DiffReviewAnchors.anchors(comments, in: diff))
+      hover = nil
       guard let table else { return }
       if let column = table.tableColumns.first {
         let chars = layout == .inline ? DiffRowBuilder.widestLine(in: diff) : 0
@@ -100,13 +116,21 @@ struct DiffTableView: NSViewRepresentable {
     func numberOfRows(in tableView: NSTableView) -> Int { rows.count }
 
     func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
-      rows[row].kind == .header ? DiffMetrics.headerHeight : DiffMetrics.lineHeight
+      switch rows[row].kind {
+      case .header: DiffMetrics.headerHeight
+      case .comment(let id):
+        comment(id).map { DiffCommentMetrics.rowHeight(body: $0.body, width: cardWidth(for: $0)) } ?? 0
+      case .line, .pair: DiffMetrics.lineHeight
+      }
     }
 
     func tableView(_ tableView: NSTableView, isGroupRow row: Int) -> Bool { false }
 
     func tableView(_ tableView: NSTableView, shouldSelectRow row: Int) -> Bool {
-      rows[row].kind != .header
+      switch rows[row].kind {
+      case .header, .comment: false
+      case .line, .pair: true
+      }
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
@@ -122,9 +146,13 @@ struct DiffTableView: NSViewRepresentable {
           perform: { [weak self] action in self?.perform(action, hunkIndex: item.hunk) })
         return view
       }
+      if case .comment(let id) = item.kind {
+        return commentView(id, in: tableView)
+      }
       let view =
         tableView.makeView(withIdentifier: DiffLineView.identifier, owner: nil) as? DiffLineView ?? DiffLineView()
       view.configure(row: item, hunk: hunk, palette: palette, gutters: gutters)
+      view.hoverSide = hover?.row == row ? hover?.side : nil
       return view
     }
 
@@ -154,7 +182,7 @@ struct DiffTableView: NSViewRepresentable {
         switch rows[row].kind {
         case .line(let i): picked.append(i)
         case .pair(let left, let right): picked += [left, right].compactMap { $0 }
-        case .header: break
+        case .header, .comment: break
         }
       }
       return Set(picked).sorted().map { lines[$0] }.filter { $0.type != .context }
@@ -193,6 +221,10 @@ struct DiffTableView: NSViewRepresentable {
       copy.target = table
       menu.addItem(copy)
       guard clicked >= 0, clicked < rows.count else { return }
+      if let item = commentMenuItem(row: clicked) {
+        menu.insertItem(item, at: 0)
+        menu.insertItem(.separator(), at: 1)
+      }
       if openLine != nil, let line = newLine(at: clicked) {
         let open = NSMenuItem(title: "Open in Editor at Line", action: #selector(openAtLine(_:)), keyEquivalent: "")
         open.target = self
@@ -229,6 +261,7 @@ struct DiffTableView: NSViewRepresentable {
       case .header: index = hunk.lines.firstIndex { $0.newLineNumber != nil }
       case .line(let i): index = i
       case .pair(let left, let right): index = right ?? left
+      case .comment: return nil
       }
       guard let index else { return nil }
       if let number = hunk.lines[index].newLineNumber { return number }
@@ -259,7 +292,7 @@ struct DiffTableView: NSViewRepresentable {
         let item = rows[row]
         let lines = diff.hunks[item.hunk].lines
         switch item.kind {
-        case .header: return nil
+        case .header, .comment: return nil
         case .line(let i): return lines[i].content
         case .pair(let left, let right): return (right ?? left).map { lines[$0].content }
         }
@@ -273,11 +306,24 @@ final class DiffNSTableView: NSTableView {
   weak var coordinator: DiffTableView.Coordinator?
 
   override func mouseDown(with event: NSEvent) {
+    let point = convert(event.locationInWindow, from: nil)
+    let row = self.row(at: point)
     if event.modifierFlags.contains(.option) {
-      let row = self.row(at: convert(event.locationInWindow, from: nil))
       if row >= 0, coordinator?.optionClicked(row: row) == true { return }
     }
+    if row >= 0, coordinator?.gutterClicked(row: row, x: point.x) == true { return }
     super.mouseDown(with: event)
+  }
+
+  override func mouseMoved(with event: NSEvent) {
+    super.mouseMoved(with: event)
+    let point = convert(event.locationInWindow, from: nil)
+    coordinator?.mouseMoved(row: row(at: point), x: point.x)
+  }
+
+  override func mouseExited(with event: NSEvent) {
+    super.mouseExited(with: event)
+    coordinator?.mouseMoved(row: -1, x: 0)
   }
 
   @objc func copy(_ sender: Any?) {

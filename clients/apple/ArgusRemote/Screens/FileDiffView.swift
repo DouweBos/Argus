@@ -14,6 +14,16 @@ struct FileDiffView: View {
   @State private var file: DiffFile?
   @State private var loaded = false
   @State private var failure: String?
+  @State private var composing: Composing?
+
+  /// The comment sheet: a new comment on a line, or an edit of a draft.
+  private struct Composing: Identifiable {
+    let comment: DiffReviewComment
+    let isNew: Bool
+    var id: UUID { comment.id }
+  }
+
+  private var scope: String { mode == "branch" ? "changes on this branch" : "uncommitted changes" }
 
   var body: some View {
     Screen {
@@ -22,7 +32,19 @@ struct FileDiffView: View {
         if file.status == .renamed {
           MutedText("from \(file.oldPath)", lineLimit: 1)
         }
-        DiffHunksView(file: file, collapsesLongHunks: false)
+        if host.hasControl {
+          ReviewableDiffHunksView(
+            file: file, comments: host.reviews.comments(sessionId, path: file.displayPath),
+            onTapLine: { hunk, line in
+              if let draft = DiffReviewComment.draft(path: file.displayPath, hunk: hunk, line: line, scope: scope) {
+                composing = Composing(comment: draft, isNew: true)
+              }
+            },
+            onEdit: { composing = Composing(comment: $0, isNew: false) },
+            onDelete: { host.deleteReviewComment($0.id, sessionId: sessionId) })
+        } else {
+          DiffHunksView(file: file, collapsesLongHunks: false)
+        }
       } else if let failure {
         EmptyState(icon: Icon.warning, title: "Couldn't load changes", body: failure, selectable: true) {
           Btn(label: "Retry", tone: .secondary, small: true, icon: Icon.refresh) { Task { await refresh() } }
@@ -46,6 +68,24 @@ struct FileDiffView: View {
       }
     }
     .liveRefresh(enabled: host.connection == .ready, every: .seconds(5)) { await refresh() }
+    .sheet(item: $composing) { composing in
+      DiffCommentSheet(
+        title: composing.isNew ? "Line \(composing.comment.lines.lowerBound)" : "Edit comment",
+        submitTitle: composing.isNew ? "Add" : "Save", text: composing.comment.body
+      ) { body in
+        if composing.isNew {
+          var comment = composing.comment
+          comment.body = body
+          host.addReviewComment(comment, sessionId: sessionId)
+        } else {
+          host.reviews.update(composing.comment.id, body: body, sessionId: sessionId)
+        }
+      }
+    }
+    .diffReviewBar(sessionId: sessionId) { agentId in
+      let label = host.statusByAgent[agentId].map(Labels.agentName) ?? "Agent"
+      (stackPush ?? router.push)(.agent(id: agentId, label: label))
+    }
   }
 
   private func refresh() async {

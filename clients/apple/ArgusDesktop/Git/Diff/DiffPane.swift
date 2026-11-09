@@ -13,6 +13,8 @@ struct DiffPane: View {
   var onAction: ((HunkAction, HunkData, [GroveKit.DiffLine]) -> Void)?
   /// "Open in Editor at Line" on the rows: the new side's 1-based line.
   var openLine: ((Int) -> Void)?
+  /// Draft review comments on this file; nil where the diff can't take them.
+  var review: DiffReviewContext?
   var ignoreWhitespace: Binding<Bool>?
   /// Extra controls on the header's trailing side.
   var accessory: AnyView?
@@ -94,7 +96,7 @@ struct DiffPane: View {
       } else {
         DiffTableView(
           diff: diff, layout: DiffRowBuilder.isOneSided(diff) ? .inline : layout, actions: actions, onAction: onAction,
-          openLine: openLine)
+          openLine: openLine, review: review)
       }
     } else if isLoading {
       ProgressView().controlSize(.small)
@@ -172,6 +174,8 @@ struct FileDiffsView: View {
   var isLoading = false
   /// Context-menu extras per file (history, blame, restore, …).
   var fileMenu: ((FileDiff) -> AnyView)?
+  /// Review comments on the shown file, by its path; nil where the diffs can't take them.
+  var review: ((String) -> DiffReviewContext)?
   @State private var selected: String?
   @FocusState private var listFocused: Bool
 
@@ -208,7 +212,7 @@ struct FileDiffsView: View {
         if isLoading && files.isEmpty { ProgressView().controlSize(.small) }
       }
     } trailing: {
-      DiffPane(diff: current?.diff, path: current?.path, isLoading: isLoading)
+      DiffPane(diff: current?.diff, path: current?.path, isLoading: isLoading, review: current.flatMap { review?($0.path) })
     }
     .onChange(of: files.map(\.path), initial: true) { _, paths in
       if selected == nil || !paths.contains(selected ?? "") { selected = paths.first }

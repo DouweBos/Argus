@@ -67,6 +67,12 @@ developed, and an existing install updates into Argus for Mac by itself (see
   applying patches and an All Files list are in the working copy; when a git
   command fails, its banner offers the fix (pull then push, a lease-protected
   force push, publishing the branch, resolving conflicts, …).
+  Diffs in the working copy and in Compare take review comments: hover a line
+  and click its **+** (or right-click → **Add Comment…**; with lines selected,
+  the comment covers them all). The drafts sit under their lines until
+  **Send Review to Agent** at the bottom posts them to the session's agent as
+  one message, each with its file, lines and hunk. **Review** beside Commit asks
+  a new agent to review the changes before you commit.
 - **Pull Requests** at the foot of the sidebar: the pull requests that need you across
   your projects, each with its conversation, checks and changes, and opening
   a new one for a session's branch.

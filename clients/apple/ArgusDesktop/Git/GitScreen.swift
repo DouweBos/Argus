@@ -66,6 +66,7 @@ struct GitWorkspaceView: View {
           Rectangle().fill(theme.border).frame(height: 1)
           content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+          DiffReviewBar(sessionId: session.id)
         }
         .sessionContextCard(session, panel: .git, barHeight: GitTabBar.height)
       }

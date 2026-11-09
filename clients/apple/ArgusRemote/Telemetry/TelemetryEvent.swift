@@ -19,6 +19,7 @@ enum TelemetryEvent {
 
   /// What happened to an automation's memory.
   typealias MemoryAction = StoreEvent.MemoryAction
+  typealias DiffReviewAction = StoreEvent.DiffReviewAction
 
   /// What was done to an automation's definition.
   typealias AutomationAction = StoreEvent.AutomationAction
@@ -188,6 +189,8 @@ enum TelemetryEvent {
   /// `target` says whether the session's display name or its branch moved.
   case sessionRenamed(target: String)
   case memoryEdited(action: MemoryAction)
+  /// A diff review comment was added or deleted, the review sent or discarded, or an agent asked to review.
+  case diffReviewed(action: DiffReviewAction, comments: Int)
   /// The inbox's shortcut into the run a proposal came out of.
   case proposalOpenedAsRun
   /// A suggested reply filled the message field.
@@ -291,6 +294,7 @@ enum TelemetryEvent {
     case .branchActed: "ios_branch_acted"
     case .sessionRenamed: "ios_session_renamed"
     case .memoryEdited: "ios_memory_edited"
+    case .diffReviewed: "ios_diff_reviewed"
     case .proposalOpenedAsRun: "ios_proposal_opened"
     case .followUpUsed: "ios_follow_up_used"
     case .inputUsed: "ios_input_used"
@@ -396,6 +400,8 @@ enum TelemetryEvent {
       ["target": target]
     case .memoryEdited(let action):
       ["action": action.rawValue]
+    case .diffReviewed(let action, let comments):
+      ["action": action.rawValue, "comment_count": comments]
     case .settingChanged(let setting, let enabled):
       ["setting": setting.rawValue, "enabled": enabled]
     case .colorThemeChanged(let theme):

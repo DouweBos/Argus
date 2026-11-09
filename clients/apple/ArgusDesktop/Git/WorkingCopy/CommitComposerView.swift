@@ -5,6 +5,7 @@ import SwiftUI
 /// Subject, body and options over the Changes list, as Electron's CommitPanel,
 /// plus templates, gitmoji and the identity switcher, flat on the canvas.
 struct CommitComposerView: View {
+  @Environment(DesktopModel.self) private var model
   @Environment(\.theme) private var theme
   let workspace: GitWorkspace
   @State private var managingTemplates = false
@@ -65,6 +66,10 @@ struct CommitComposerView: View {
       HStack(spacing: 8) {
         IdentityMenu(workspace: workspace)
         Spacer(minLength: 4)
+        Button("Review") { Task { await model.requestCodeReview(session: workspace.sessionId) } }
+          .buttonStyle(.secondary)
+          .disabled(vm.changedCount == 0 && workspace.isProjectRoot)
+          .help("Ask a new agent to review these changes before you commit")
         Button(vm.commitButtonTitle, action: commit)
           .buttonStyle(AccentButtonStyle())
           .keyboardShortcut(.return, modifiers: .command)

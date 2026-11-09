@@ -12,6 +12,8 @@ enum DiffMetrics {
   static var headerHeight: CGFloat { TextScale.shared(28).rounded() }
   static var charWidth: CGFloat { ("M" as NSString).size(withAttributes: [.font: font]).width }
   static var gutterWidth: CGFloat { TextScale.shared(40).rounded() }
+  /// The gutter strip the comment `+` sits in, at a line's (or a split side's) leading edge.
+  static var commentButtonWidth: CGFloat { TextScale.shared(20).rounded() }
 
   /// Where a unified line's text starts, after its gutters.
   static func textX(gutters: DiffGutters) -> CGFloat {
@@ -29,6 +31,8 @@ struct DiffPalette: Equatable {
   let removedBackground: NSColor
   let headerBackground: NSColor
   let empty: NSColor
+  let accent: NSColor
+  let onAccent: NSColor
 
   init(_ theme: Theme) {
     text = NSColor(theme.text)
@@ -39,6 +43,8 @@ struct DiffPalette: Equatable {
     removedBackground = NSColor(theme.errorSoft)
     headerBackground = NSColor(theme.bgTertiary)
     empty = NSColor(theme.bgHover)
+    accent = NSColor(theme.accent)
+    onAccent = NSColor(theme.onAccent)
   }
 }
 
@@ -49,6 +55,10 @@ final class DiffLineView: NSView {
   private var lines: [GroveKit.DiffLine] = []
   private var palette: DiffPalette?
   private var gutters = DiffGutters.both
+  /// Where the comment `+` shows, while the pointer is over the line.
+  var hoverSide: DiffHoverSide? {
+    didSet { if hoverSide != oldValue { needsDisplay = true } }
+  }
 
   convenience init() {
     self.init(frame: .zero)
@@ -68,7 +78,7 @@ final class DiffLineView: NSView {
   override func draw(_ dirtyRect: NSRect) {
     guard let row, let palette else { return }
     switch row.kind {
-    case .header: break
+    case .header, .comment: break
     case .line(let i):
       let line = lines[i]
       let numbers: [Int?] =
@@ -87,6 +97,24 @@ final class DiffLineView: NSView {
       palette.muted.withAlphaComponent(0.3).setFill()
       NSRect(x: half, y: 0, width: 1, height: bounds.height).fill()
     }
+    if let hoverSide { drawCommentButton(at: hoverSide == .right ? floor(bounds.width / 2) : 0, palette: palette) }
+  }
+
+  /// The gutter's `+` for commenting on the line.
+  private func drawCommentButton(at x: CGFloat, palette: DiffPalette) {
+    let size = min(bounds.height - 2, DiffMetrics.commentButtonWidth - 4)
+    let rect = NSRect(x: x + 2, y: (bounds.height - size) / 2, width: size, height: size)
+    palette.accent.setFill()
+    NSBezierPath(roundedRect: rect, xRadius: 4, yRadius: 4).fill()
+    palette.onAccent.setStroke()
+    let plus = NSBezierPath()
+    plus.lineWidth = 1.5
+    let inset = size * 0.28
+    plus.move(to: NSPoint(x: rect.midX, y: rect.minY + inset))
+    plus.line(to: NSPoint(x: rect.midX, y: rect.maxY - inset))
+    plus.move(to: NSPoint(x: rect.minX + inset, y: rect.midY))
+    plus.line(to: NSPoint(x: rect.maxX - inset, y: rect.midY))
+    plus.stroke()
   }
 
   private func drawSide(

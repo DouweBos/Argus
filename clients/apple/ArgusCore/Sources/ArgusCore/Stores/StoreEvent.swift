@@ -96,6 +96,20 @@ public enum StoreEvent: Sendable, Equatable {
     case stashDrop = "stash_drop"
   }
 
+  /// What was done with a diff review.
+  public enum DiffReviewAction: String, Sendable {
+    /// A draft comment was added to a diff line.
+    case comment
+    /// A draft comment was deleted.
+    case delete
+    /// Every draft was sent to the agent as one message.
+    case send
+    /// Every draft was discarded unsent.
+    case discard
+    /// A fresh agent was asked to review the diff.
+    case requestReview = "request_review"
+  }
+
   /// How work leaves a session.
   public enum LandAction: String, Sendable {
     case commit
@@ -121,4 +135,6 @@ public enum StoreEvent: Sendable, Equatable {
   /// `target` says whether the session's display name or its branch moved.
   case sessionRenamed(target: String)
   case memoryEdited(action: MemoryAction)
+  /// `comments` is how many drafts the session holds once the action is done (sent: how many went).
+  case diffReviewed(action: DiffReviewAction, comments: Int)
 }

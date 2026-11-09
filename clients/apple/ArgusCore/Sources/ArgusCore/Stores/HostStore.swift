@@ -131,6 +131,9 @@ public final class HostStore {
   /// The most recent error worth showing, if any.
   public internal(set) var lastError: String?
 
+  /// Draft diff comments per session, until they're sent to an agent.
+  public let reviews = DiffReviewDrafts()
+
   // MARK: Collaborators
 
   public private(set) var backend: (any HostBackend)?

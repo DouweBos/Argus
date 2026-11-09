@@ -36,6 +36,11 @@ struct WorkingDiffView: View {
           Task { await WorkingCopyActions(workspace: workspace).hunk(action, hunk, lines) }
         },
         openLine: openLine,
+        review: vm.selectedEntry.map { entry in
+          DiffReviewContext.session(
+            workspace.sessionId, path: entry.path,
+            scope: vm.selectedSide == .staged ? "staged changes" : "uncommitted changes", store: model.store)
+        },
         ignoreWhitespace: Binding(
           get: { vm.ignoreWhitespace }, set: { on in Task { await vm.setIgnoreWhitespace(on) } }),
         accessory: vm.canSwitchDiffSide ? AnyView(sidePicker) : nil

@@ -74,6 +74,14 @@ struct ChangesView: View {
     .navigationTitle("Changes · \(label)")
     .navigationBarTitleDisplayMode(.inline)
     .screenBar {
+      if host.hasControl {
+        Button {
+          Task { await requestReview() }
+        } label: {
+          Label("Review code", systemImage: Icon.sideQuestion)
+        }
+        .disabled(files.isEmpty)
+      }
       if let stackPush {
         Button { stackPush(.stashes(sessionId: sessionId, label: label)) } label: {
           Label("Stashes & tags", systemImage: Icon.history)
@@ -85,11 +93,26 @@ struct ChangesView: View {
       }
     }
     .liveRefresh(enabled: host.connection == .ready, every: .seconds(5)) { await refresh() }
+    .diffReviewBar(sessionId: sessionId) { openAgent($0) }
     .onChange(of: mode) { _, _ in
       diff = nil
       failure = nil
       Task { await refresh() }
     }
+  }
+
+  /// A new agent, asked to review the session's diff before it's committed.
+  private func requestReview() async {
+    let session = host.session(id: sessionId)
+    let base = session?.kind == .worktree ? session?.baseBranch : nil
+    if let agentId = await host.requestCodeReview(sessionId: sessionId, baseBranch: base, defaults: AgentStartDefaults()) {
+      openAgent(agentId)
+    }
+  }
+
+  private func openAgent(_ agentId: String) {
+    let label = host.statusByAgent[agentId].map(Labels.agentName) ?? "Agent"
+    (stackPush ?? router.push)(.agent(id: agentId, label: label))
   }
 
   private func statusLine(_ status: RemoteGitStatus) -> String {

@@ -280,6 +280,8 @@ extension TelemetryEvent {
       self = .sessionRenamed(target: target)
     case .memoryEdited(let action):
       self = .memoryEdited(action: action)
+    case .diffReviewed(let action, let comments):
+      self = .diffReviewed(action: action, comments: comments)
     }
   }
 }

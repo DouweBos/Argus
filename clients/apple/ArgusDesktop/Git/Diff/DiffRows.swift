@@ -1,3 +1,4 @@
+import ArgusCore
 import Foundation
 import GroveKit
 
@@ -37,6 +38,8 @@ struct DiffRow: Equatable {
     case header
     case line(Int)
     case pair(left: Int?, right: Int?)
+    /// A draft review comment, under the line it's about.
+    case comment(UUID)
   }
 
   let hunk: Int
@@ -46,16 +49,28 @@ struct DiffRow: Equatable {
 /// Flattens a diff into rows once, so the table only looks rows up.
 @MainActor
 enum DiffRowBuilder {
-  static func rows(for diff: DiffResult, layout: DiffLayout) -> [DiffRow] {
+  static func rows(for diff: DiffResult, layout: DiffLayout, comments: [DiffReviewAnchors.Anchor] = []) -> [DiffRow] {
     var rows: [DiffRow] = []
-    rows.reserveCapacity(diff.hunks.reduce(0) { $0 + $1.lines.count + 1 })
+    rows.reserveCapacity(diff.hunks.reduce(0) { $0 + $1.lines.count + 1 } + comments.count)
     for (h, hunk) in diff.hunks.enumerated() {
       rows.append(DiffRow(hunk: h, kind: .header))
+      let under = Dictionary(grouping: comments.filter { $0.hunk == h }, by: \.line)
+      func commentRows(_ i: Int?) {
+        guard let i else { return }
+        rows.append(contentsOf: (under[i] ?? []).map { DiffRow(hunk: h, kind: .comment($0.comment)) })
+      }
       switch layout {
       case .inline:
-        for i in hunk.lines.indices { rows.append(DiffRow(hunk: h, kind: .line(i))) }
+        for i in hunk.lines.indices {
+          rows.append(DiffRow(hunk: h, kind: .line(i)))
+          commentRows(i)
+        }
       case .split:
-        rows.append(contentsOf: pairs(hunk.lines).map { DiffRow(hunk: h, kind: .pair(left: $0, right: $1)) })
+        for (left, right) in pairs(hunk.lines) {
+          rows.append(DiffRow(hunk: h, kind: .pair(left: left, right: right)))
+          commentRows(left)
+          if right != left { commentRows(right) }
+        }
       }
     }
     return rows

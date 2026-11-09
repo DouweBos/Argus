@@ -33,9 +33,13 @@ struct CompareView: View {
               .frame(maxWidth: .infinity)
           }
         } bottom: {
-          FileDiffsView(files: compare.files, isLoading: compare.isLoadingFiles) { file in
-            AnyView(fileMenu(file.path))
-          }
+          FileDiffsView(
+            files: compare.files, isLoading: compare.isLoadingFiles,
+            fileMenu: { file in AnyView(fileMenu(file.path)) },
+            review: { [model, workspace, left, right] path in
+              DiffReviewContext.session(
+                workspace.sessionId, path: path, scope: "diff from \(left) to \(right)", store: model.store)
+            })
         }
       }
     }
