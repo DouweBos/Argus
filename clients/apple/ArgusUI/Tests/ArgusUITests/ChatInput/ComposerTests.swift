@@ -196,23 +196,26 @@ struct ImageAttachmentsTests {
     #expect(pending.attachment.data == Self.pixel.base64EncodedString())
   }
 
-  @Test("anything else is re-encoded as PNG")
-  func reencode() throws {
-    let tiff = try #require(PlatformImage(data: Self.pixel)?.tiffRepresentation)
-    let pending = try #require(ImageAttachments.pending(data: tiff, type: .tiff))
-    #expect(pending.attachment.mediaType == "image/png")
-    #expect(Data(base64Encoded: pending.attachment.data)?.prefix(4) == Self.pixel.prefix(4))
-  }
+  // TIFF only comes from AppKit.
+  #if os(macOS)
+    @Test("anything else is re-encoded as PNG")
+    func reencode() throws {
+      let tiff = try #require(PlatformImage(data: Self.pixel)?.tiffRepresentation)
+      let pending = try #require(ImageAttachments.pending(data: tiff, type: .tiff))
+      #expect(pending.attachment.mediaType == "image/png")
+      #expect(Data(base64Encoded: pending.attachment.data)?.prefix(4) == Self.pixel.prefix(4))
+    }
 
-  @Test("unnamed bytes are typed by sniffing")
-  func sniffed() throws {
-    let png = try #require(ImageAttachments.pending(data: Self.pixel))
-    #expect(png.attachment.mediaType == "image/png")
-    #expect(png.attachment.data == Self.pixel.base64EncodedString())
-    let tiff = try #require(PlatformImage(data: Self.pixel)?.tiffRepresentation)
-    #expect(ImageAttachments.pending(data: tiff)?.attachment.mediaType == "image/png")
-    #expect(ImageAttachments.pending(data: Data("nope".utf8)) == nil)
-  }
+    @Test("unnamed bytes are typed by sniffing")
+    func sniffed() throws {
+      let png = try #require(ImageAttachments.pending(data: Self.pixel))
+      #expect(png.attachment.mediaType == "image/png")
+      #expect(png.attachment.data == Self.pixel.base64EncodedString())
+      let tiff = try #require(PlatformImage(data: Self.pixel)?.tiffRepresentation)
+      #expect(ImageAttachments.pending(data: tiff)?.attachment.mediaType == "image/png")
+      #expect(ImageAttachments.pending(data: Data("nope".utf8)) == nil)
+    }
+  #endif
 
   @Test("a camera photo goes out as JPEG, a pasted image as PNG")
   func photo() throws {

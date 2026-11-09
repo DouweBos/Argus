@@ -164,11 +164,12 @@
     }
 
     var body: some View {
-      VStack(spacing: 0) {
-        Color.clear
-          .frame(maxHeight: .infinity)
-          .overlay { title.padding(.horizontal, theme.space * 2) }
+      // Title and composer centred together, as on the Mac.
+      VStack(spacing: 18) {
+        Spacer(minLength: 0)
+        title.padding(.horizontal, theme.space * 2)
         PhoneChatInputView(composer: composer, controller: controller)
+        Spacer(minLength: 0)
       }
       .background(theme.bg.ignoresSafeArea())
       .environment(\.composerRedirect, flow.redirect(defaultMode: defaultMode))
@@ -210,10 +211,12 @@
     private var title: some View {
       VStack(spacing: 6) {
         if let project {
-          AgentStartHeading { Text(project.name).truncationMode(.middle) }
+          AgentStartHeading { projectName(project) }
         } else {
           AgentStartHeading()
-          if let session = flow.sessionId.flatMap(host.session(id:)) {
+          if flow.picksProject {
+            projectMenu { Text("Pick a project").font(.scaled(.subheadline)).foregroundStyle(theme.accent) }
+          } else if let session = flow.sessionId.flatMap(host.session(id:)) {
             Text(host.placeName(of: session)).font(.scaled(.footnote)).foregroundStyle(theme.textSecondary)
           }
         }
@@ -225,6 +228,31 @@
         }
       }
       .frame(maxWidth: .infinity)
+    }
+
+    /// The project a menu to start in another, as the Mac's title, when this start may pick one.
+    @ViewBuilder
+    private func projectName(_ project: RemoteProject) -> some View {
+      let name = Text(project.name).truncationMode(.middle)
+      if flow.picksProject, host.projects.count > 1 {
+        projectMenu { name.underline(pattern: .dot, color: theme.textMuted) }
+      } else {
+        name
+      }
+    }
+
+    private func projectMenu(@ViewBuilder label: () -> some View) -> some View {
+      Menu {
+        Picker("Project", selection: Binding(get: { flow.repoRoot ?? "" }, set: { if !$0.isEmpty { flow.pickProject($0) } })) {
+          ForEach(host.projects, id: \.repoRoot) { Text($0.name).tag($0.repoRoot) }
+        }
+        .pickerStyle(.inline)
+      } label: {
+        label()
+      }
+      .menuIndicator(.hidden)
+      .foregroundStyle(theme.text)
+      .accessibilityLabel("Project: \(project?.name ?? "none")")
     }
 
     private var caption: String? {

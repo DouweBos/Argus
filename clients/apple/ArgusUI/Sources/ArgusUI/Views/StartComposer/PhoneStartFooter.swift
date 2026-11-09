@@ -2,9 +2,9 @@
   import ArgusCore
   import SwiftUI
 
-  /// The strip tucked under a phone start composer, as the Mac's: the project
-  /// when there's no session to pin it, where the agent works, the runner and
-  /// Linear issues on the left; the branch it starts on at the right.
+  /// The strip tucked under a phone start composer, as the Mac's: where the
+  /// agent works, the runner and Linear issues on the left; the branch it starts
+  /// on at the right. The project is picked in the title, as on the Mac.
   struct PhoneStartFooter: View {
     private enum Sheet: String, Identifiable {
       case base, existing, runner
@@ -21,13 +21,18 @@
     var body: some View {
       VStack(alignment: .leading, spacing: 4) {
         if !flow.issues.isEmpty { PickedIssueChips(issues: $flow.issues).padding(.top, 6) }
-        HStack(spacing: 2) {
-          if flow.picksProject, flow.repoRoot == nil || host.projects.count > 1 { projectMenu }
-          if flow.issues.isEmpty, flow.options.count > 1 { workspaceMenu }
-          if !host.runners.isEmpty { runnerPill }
-          if flow.repoRoot != nil, host.linearConnected { issuePill }
-          Spacer(minLength: 4)
-          branchPill
+        // One line with the branch pushed right when it fits; otherwise the pills wrap, never cut off.
+        ViewThatFits(in: .horizontal) {
+          HStack(spacing: 2) {
+            pills
+            Spacer(minLength: 4)
+            branchPill.fixedSize()
+          }
+          ChipFlowLayout(spacing: 2, lineSpacing: 0) {
+            pills
+            branchPill
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
         }
       }
       .padding(.horizontal, 6)
@@ -41,23 +46,16 @@
       .sheet(isPresented: $pickingIssues) { IssuePickerSheet(selection: $flow.issues) }
     }
 
-    private var shape: UnevenRoundedRectangle {
-      UnevenRoundedRectangle(bottomLeadingRadius: 14, bottomTrailingRadius: 14)
+    /// Where it works, the runner and Linear issues.
+    @ViewBuilder
+    private var pills: some View {
+      if flow.issues.isEmpty, flow.options.count > 1 { workspaceMenu.fixedSize() }
+      if !host.runners.isEmpty { runnerPill.fixedSize() }
+      if flow.repoRoot != nil, host.linearConnected { issuePill.fixedSize() }
     }
 
-    /// Unpicked reads "Pick a project" until a project is chosen.
-    private var projectMenu: some View {
-      Menu {
-        Picker("Project", selection: projectRoot) {
-          ForEach(host.projects, id: \.repoRoot) { Text($0.name).tag($0.repoRoot) }
-        }
-        .pickerStyle(.inline)
-      } label: {
-        ComposerPillLabel(
-          icon: Icon.folder, title: host.projects.first { $0.repoRoot == flow.repoRoot }?.name ?? "Pick a project",
-          accent: flow.repoRoot == nil)
-      }
-      .menuIndicator(.hidden)
+    private var shape: UnevenRoundedRectangle {
+      UnevenRoundedRectangle(bottomLeadingRadius: 14, bottomTrailingRadius: 14)
     }
 
     /// Only the icon until a runner is picked, as the link pill does.
@@ -75,10 +73,6 @@
       }
       .buttonStyle(.argusPlain)
       .accessibilityLabel(flow.issues.isEmpty ? "Linear issue" : "Add issue")
-    }
-
-    private var projectRoot: Binding<String> {
-      Binding(get: { flow.repoRoot ?? "" }, set: { if !$0.isEmpty { flow.pickProject($0) } })
     }
 
     private var currentLabel: String {

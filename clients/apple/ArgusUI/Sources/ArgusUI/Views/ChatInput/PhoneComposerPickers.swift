@@ -11,7 +11,7 @@
 
   /// The pills along the phone composer's foot, as the Mac's: model (and
   /// account), effort and permission mode drop a menu in place; linked projects
-  /// and side questions open a sheet. They wrap rather than scroll.
+  /// and side questions open a sheet.
   struct PhoneComposerPills: View {
     let composer: ComposerModel
     @Binding var picker: PhoneComposerPicker?
@@ -20,15 +20,27 @@
     private var asked: Int { host.sideQuestionsByAgent[composer.agentId]?.count ?? 0 }
 
     var body: some View {
-      ChipFlowLayout(spacing: 2, lineSpacing: 2) {
-        modelMenu
+      // The Mac's pills on one line when they fit; then without chevrons and the "Claude"
+      // prefix; then wrapped, as the Mac's do, so none is ever cut off.
+      ViewThatFits(in: .horizontal) {
+        HStack(spacing: 2) { pills(compact: false) }
+        HStack(spacing: 2) { pills(compact: true) }
+        ChipFlowLayout(spacing: 4, lineSpacing: 0) { pills(compact: true, dividers: false) }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .disabled(!composer.isEnabled)
+    }
+
+    @ViewBuilder
+    private func pills(compact: Bool, dividers: Bool = true) -> some View {
+        modelMenu(compact: compact)
         if !composer.effortLevels.isEmpty {
-          ComposerPillDivider()
-          effortMenu
+          if dividers { ComposerPillDivider() }
+          effortMenu(compact: compact)
         }
-        ComposerPillDivider()
-        modeMenu
-        ComposerPillDivider()
+        if dividers { ComposerPillDivider() }
+        modeMenu(compact: compact)
+        if dividers { ComposerPillDivider() }
         Button { picker = .project } label: {
           ComposerPillLabel(
             icon: Icon.link, title: composer.linkedProjects.isEmpty ? nil : "\(composer.linkedProjects.count) linked",
@@ -37,7 +49,7 @@
         .buttonStyle(.argusPlain)
         .accessibilityLabel(composer.linkedProjects.isEmpty ? "Link project" : "\(composer.linkedProjects.count) linked")
         if composer.starter == nil && host.supportsSideQuestion(agentId: composer.agentId) {
-          ComposerPillDivider()
+          if dividers { ComposerPillDivider() }
           Button { picker = .sideQuestion } label: {
             ComposerPillLabel(
               icon: Icon.sideQuestion, title: asked == 0 ? nil : "\(asked)", accent: asked > 0, chevron: false)
@@ -45,12 +57,9 @@
           .buttonStyle(.argusPlain)
           .accessibilityLabel("Side question")
         }
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .disabled(!composer.isEnabled)
     }
 
-    private var modelMenu: some View {
+    private func modelMenu(compact: Bool) -> some View {
       Menu {
         if composer.models.isEmpty {
           Text("No agent has reported its models yet.")
@@ -76,13 +85,13 @@
           .pickerStyle(.inline)
         }
       } label: {
-        ComposerPillLabel(icon: Icon.agent, title: composer.modelLabel)
+        ComposerPillLabel(icon: Icon.agent, title: compact ? Self.short(composer.modelLabel) : composer.modelLabel, chevron: !compact)
       }
       .menuIndicator(.hidden)
       .accessibilityLabel("Model: \(composer.modelLabel)")
     }
 
-    private var effortMenu: some View {
+    private func effortMenu(compact: Bool) -> some View {
       Menu {
         Picker("Effort", selection: Binding(get: { composer.effort }, set: composer.setEffort)) {
           ForEach([String?.none] + composer.effortLevels.map(Optional.some), id: \.self) { level in
@@ -91,13 +100,13 @@
         }
         .pickerStyle(.inline)
       } label: {
-        ComposerPillLabel(icon: Icon.clock, title: ComposerEffort.label(composer.effort))
+        ComposerPillLabel(icon: Icon.clock, title: ComposerEffort.label(composer.effort), chevron: !compact)
       }
       .menuIndicator(.hidden)
       .accessibilityLabel("Effort: \(ComposerEffort.label(composer.effort))")
     }
 
-    private var modeMenu: some View {
+    private func modeMenu(compact: Bool) -> some View {
       Menu {
         Picker("Permission mode", selection: Binding(get: { composer.permissionMode }, set: composer.setPermissionMode)) {
           ForEach(RemotePermissionMode.allCases, id: \.self) { mode in
@@ -112,10 +121,17 @@
       } label: {
         ComposerPillLabel(
           icon: Icon.lock, title: ComposerPermissionMode.label(composer.permissionMode),
-          accent: composer.permissionMode != .auto)
+          accent: composer.permissionMode != .auto, chevron: !compact)
       }
       .menuIndicator(.hidden)
       .accessibilityLabel("Permission mode: \(ComposerPermissionMode.label(composer.permissionMode))")
+    }
+  }
+
+  extension PhoneComposerPills {
+    /// "Claude Opus 5.5" → "Opus 5.5": the family is the same for every pick.
+    static func short(_ label: String) -> String {
+      label.hasPrefix("Claude ") ? String(label.dropFirst("Claude ".count)) : label
     }
   }
 
