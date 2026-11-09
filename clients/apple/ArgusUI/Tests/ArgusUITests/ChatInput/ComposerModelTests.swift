@@ -208,6 +208,18 @@ struct ComposerModelTests {
     #expect(started.first?.model == nil)
   }
 
+  @Test("a picked runner drops the starter's default model, which belongs to the default runner")
+  func runnerDropsDefaultModel() {
+    let starter = ComposerStarter(defaultMode: "auto", defaultModel: "opus") { _ in true }
+    let composer = model(status: nil, starter: starter)
+    #expect(composer.pickedModel == "opus")
+    let json = #"{"id":"gemini","display_name":"Gemini CLI","is_custom":false,"models":[]}"#
+    composer.setRunner(try? JSONDecoder().decode(RemoteRunner.self, from: Data(json.utf8)))
+    #expect(composer.pickedModel == nil)
+    composer.setRunner(nil)
+    #expect(composer.pickedModel == "opus")
+  }
+
   @Test("an @ at the caret opens the menu; picking a file inserts it through the editor")
   func mention() async {
     let editor = FakeEditor()

@@ -28,9 +28,9 @@ extension HostStore {
     guard
       let agentId = await startAgent(
         sessionId: id, mode: request.permissionMode?.rawValue ?? defaults.mode,
-        model: request.model ?? defaults.model, runnerId: request.runnerId)
+        model: request.model(or: defaults), runnerId: request.runnerId)
     else { return nil }
-    if let effort = request.effort ?? defaults.effort { await setEffort(agentId: agentId, level: effort) }
+    if let effort = request.effort(or: defaults) { await setEffort(agentId: agentId, level: effort) }
     let hasMessage = !request.message.isEmpty || !request.images.isEmpty
     let send = hasMessage
       ? Task {
@@ -51,7 +51,7 @@ extension HostStore {
     request: ComposerStart, defaults: AgentStartDefaults,
     onSpawned: (@MainActor (_ agentId: String, _ sessionId: String) -> Void)? = nil
   ) async -> RemoteSession? {
-    let effort = request.effort ?? defaults.effort
+    let effort = request.effort(or: defaults)
     let hostStarts = request.images.isEmpty && effort == nil
     // The host's own start can't take `trusted`; nil leaves it to the host's default.
     let mode = request.permissionMode ?? defaults.mode.flatMap(RemotePermissionMode.init(rawValue:))
@@ -61,7 +61,7 @@ extension HostStore {
         useExistingBranch: existingBranch != nil ? true : nil,
         baseBranch: existingBranch == nil ? baseBranch : nil,
         prompt: hostStarts && !request.message.isEmpty ? request.message : nil,
-        model: request.model ?? defaults.model, permissionMode: mode, runnerId: request.runnerId)
+        model: request.model(or: defaults), permissionMode: mode, runnerId: request.runnerId)
     else { return nil }
     if !hostStarts {
       Task { await startWhenReady(session.id, request: request, defaults: defaults, onSpawned: onSpawned) }

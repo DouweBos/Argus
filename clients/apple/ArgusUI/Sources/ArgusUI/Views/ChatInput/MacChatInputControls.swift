@@ -2,13 +2,18 @@
   import ArgusCore
   import SwiftUI
 
-  /// The pills along the composer's foot: model (and account), effort,
-  /// permission mode and linked projects — each a dropdown over the agent's state.
+  /// The pills along the composer's foot: a start's runner, model (and account),
+  /// effort, permission mode and linked projects — each a dropdown over the agent's state.
   extension MacChatInputView {
     var controlRow: some View {
       // Wraps instead of growing: a fixed-size row widened the middle column
       // and squeezed the sidebar.
       ChipFlowLayout(spacing: 2) {
+        // First: the models and effort levels on offer depend on it.
+        if composer.starter != nil, host.runners.count > 1 {
+          runnerMenu
+          ComposerPillDivider()
+        }
         modelMenu
         if !composer.effortLevels.isEmpty {
           ComposerPillDivider()
@@ -57,6 +62,35 @@
       .buttonStyle(.argusPlain)
       .fixedSize()
       .help("Switch model")
+    }
+
+    /// Which CLI the started agent runs on; one whose CLI is missing is listed, disabled, with how to install it.
+    private var runnerMenu: some View {
+      ChromeMenuButton(edge: .above) {
+        ChromeMenuEntry.header("Runner")
+        ChromeMenuItem("Default", subtitle: "Use the computer's default", checked: composer.runner == nil) {
+          pickRunner(nil)
+        }
+        for runner in host.runners {
+          ChromeMenuItem(
+            runner.displayName, subtitle: runner.pickerHint, checked: runner.id == composer.runner?.id,
+            disabled: !runner.isAvailable
+          ) { pickRunner(runner) }
+        }
+      } label: { open in
+        ComposerPillLabel(
+          icon: Icon.terminal, title: composer.runner?.displayName ?? "Default runner",
+          accent: composer.runner != nil, open: open)
+      }
+      .buttonStyle(.argusPlain)
+      .fixedSize()
+      .help("The CLI the agent runs on")
+    }
+
+    private func pickRunner(_ runner: RemoteRunner?) {
+      guard runner?.id != composer.runner?.id else { return }
+      composer.setRunner(runner)
+      composer.onAffordance?(.runnerPicked)
     }
 
     private var permissionMenu: some View {

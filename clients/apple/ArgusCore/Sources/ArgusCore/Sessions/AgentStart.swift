@@ -44,3 +44,14 @@ public struct AgentStartDefaults: Sendable {
     self.effort = effort
   }
 }
+
+extension ComposerStart {
+  /// Settings' default model and effort belong to the default runner; another runner picks its own.
+  func model(or defaults: AgentStartDefaults) -> String? {
+    model ?? (runnerId == nil ? defaults.model : nil)
+  }
+
+  func effort(or defaults: AgentStartDefaults) -> String? {
+    effort ?? (runnerId == nil ? defaults.effort : nil)
+  }
+}

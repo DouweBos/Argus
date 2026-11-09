@@ -34,9 +34,10 @@ extension ComposerModel {
   /// A runner's declared models name no default of their own, so none is presumed.
   private var declaresModels: Bool { !(runner?.models.isEmpty ?? true) }
 
-  /// The model picked for the agent; nil is the CLI default.
+  /// The model picked for the agent; nil is the CLI default. The starter's
+  /// default belongs to the default runner, so a picked runner starts on its own.
   public var pickedModel: String? {
-    if let starter { return draftModel ?? starter.defaultModel }
+    if let starter { return draftModel ?? (runner == nil ? starter.defaultModel : nil) }
     return status?.model
   }
 

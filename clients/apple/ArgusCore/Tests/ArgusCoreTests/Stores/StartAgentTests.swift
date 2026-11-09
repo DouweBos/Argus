@@ -43,6 +43,18 @@ struct StartAgentTests {
     #expect(backend.calls("agents.send").first?.params["images"]?.arrayValue?.count == 1)
   }
 
+  @Test("a picked runner gets its own default model and effort, not Settings' Claude ones")
+  func pickedRunnerSkipsDefaultModel() async {
+    let (store, backend) = await store(.gateway)
+    let request = ComposerStart(message: "", displayText: "", runnerId: "gemini")
+    _ = await store.startAgent(
+      inSession: "s-1", with: request, defaults: AgentStartDefaults(model: "opus", effort: "high"))
+    let spawn = backend.calls("agents.spawn").first?.params
+    #expect(spawn?["model"] == nil || spawn?["model"] == .null)
+    #expect(spawn?["runner_id"] == .string("gemini"))
+    #expect(backend.calls("agents.set_effort").isEmpty)
+  }
+
   @Test("an empty request starts the agent without a message")
   func emptyStartSendsNothing() async {
     let (store, backend) = await store(.gateway)

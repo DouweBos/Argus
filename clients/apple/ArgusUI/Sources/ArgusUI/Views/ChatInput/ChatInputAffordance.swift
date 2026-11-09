@@ -13,4 +13,6 @@ public enum ChatInputAffordance: String, Sendable {
   case followUp = "follow_up"
   /// A side question's answer sent into the chat.
   case sideAnswerSent = "side_answer_sent"
+  /// A start composer's runner was picked.
+  case runnerPicked = "runner_picked"
 }

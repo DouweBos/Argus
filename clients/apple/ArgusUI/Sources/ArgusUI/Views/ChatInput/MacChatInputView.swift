@@ -68,6 +68,14 @@
       .task(id: composer.agentId) { await composer.load() }
       // Which affordances the agent's runner supports.
       .task { await host.loadRunners() }
+      // A start's runner pick: its models, and the host's warm agent on it.
+      .onChange(of: composer.runner?.id) { _, runnerId in
+        guard composer.starter != nil, let sessionId = composer.sessionId else { return }
+        Task {
+          await host.reportViewing(sessionId: sessionId, runnerId: runnerId)
+          await host.loadStartOptions(sessionId: sessionId, runnerId: runnerId)
+        }
+      }
       .limitHandoffOffer(agentId: composer.agentId, status: composer.status, into: $handoffAccounts)
       .onChange(of: focusRequest) { _, _ in controller.focus() }
       .onChange(of: composer.text) { _, value in

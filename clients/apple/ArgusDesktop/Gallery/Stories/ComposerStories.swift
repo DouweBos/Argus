@@ -12,9 +12,38 @@
             images: [], elements: [browser, browserNoReact, device, deviceNoCrop], remove: { _ in }
           )
           .padding(12)
-        }
+        },
+        GalleryStory(
+          "composer/start/runner", size: CGSize(width: 760, height: 0),
+          fixtures: [RemoteMethod.automationsRunners.rawValue: runners],
+          setup: { await $0.host.loadRunners() }
+        ) {
+          ChatInputView(startingIn: "s-1", starter: ComposerStarter(defaultMode: "auto") { _ in true })
+            .padding(.vertical, 12)
+        },
       ]
     }
+
+    /// Every built-in runner plus a gateway of the user's, half of their CLIs missing.
+    private static let runners = """
+      {"runners":[
+      {"id":"claude-code","display_name":"Claude Code","is_custom":false,"models":[],"available":true},
+      {"id":"codex","display_name":"Codex","is_custom":false,"models":[],"available":false,
+       "unavailable_reason":"Codex CLI (`codex`) not found on PATH. Install it with `npm install -g @openai/codex` and run `codex login`."},
+      {"id":"gemini","display_name":"Gemini CLI","is_custom":false,"models":[],"available":true},
+      {"id":"antigravity","display_name":"Antigravity","is_custom":false,"models":[],"available":false,
+       "unavailable_reason":"Antigravity isn't installed. Install the Antigravity CLI (`agy`, 1.5 or newer) from antigravity.google."},
+      {"id":"kiro","display_name":"Kiro","is_custom":false,"models":[],"available":false,
+       "unavailable_reason":"Kiro isn't installed. Install Kiro CLI with `curl -fsSL https://cli.kiro.dev/install | bash`."},
+      {"id":"opencode","display_name":"OpenCode","is_custom":false,"models":[],"available":true},
+      {"id":"cursor","display_name":"Cursor","is_custom":false,"models":[],"available":true},
+      {"id":"grok","display_name":"Grok Build","is_custom":false,"models":[],"available":false,
+       "unavailable_reason":"Grok Build isn't installed. Install it with `npm install -g @xai-official/grok`."},
+      {"id":"fx","display_name":"fx","is_custom":false,"models":[],"available":false,
+       "unavailable_reason":"fx isn't installed. Install it with `curl -fsSL https://fx.sh/setup.sh | bash`."},
+      {"id":"custom:gateway","display_name":"Team gateway","is_custom":true,"models":[],"available":true}
+      ]}
+      """
 
     private static var browser: PickedElement {
       PickedElement(

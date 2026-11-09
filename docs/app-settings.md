@@ -181,6 +181,10 @@ new-agent picker.
 | **Runner**        | `claude-code` | The CLI/agent that drives sessions: Claude Code, [Codex](#codex) or an [ACP agent](#acp-agents), plus any [custom runner](#custom-runners) you add.                                     |
 | **Default model** | _(empty)_     | Optional model id passed to the runner — e.g. `claude-opus-4-7`. Leave blank to let the runner pick its own default. The new-agent picker starts on it when the agent uses this runner. |
 
+To run one agent on another runner without changing this default, pick it in
+the start composer's **Runner** pill (Mac, iPhone and web); the model and
+effort pickers then offer that runner's own.
+
 A runner whose CLI isn't installed on the computer stays in every runner
 picker, greyed out, with a line saying how to install it; agents can't start
 on it until it is.
