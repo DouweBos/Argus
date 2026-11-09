@@ -366,9 +366,10 @@ and beta builds can break your install).
   discard. No session replay, no DOM autocapture, no prompts, no file
   contents, no project names — full audit in
   [Telemetry](/argus/docs/telemetry).
-- **No editor of its own.** Argus shows diffs, not a code editor — you
-  review and stage here and keep editing in the editor you already use.
-  The worktree is a normal directory on disk.
-- **No cloud service.** Remote access, huddles and the server app are
-  all your own machines talking to each other. There is no Argus
-  account and no server of ours in the path.
+- **Not your editor's replacement.** The code view, with language
+  servers, is there for quick reads and fixes; the worktree is a normal
+  directory on disk, one click away in VS Code, Cursor, Zed or Xcode.
+- **No cloud in the path.** Remote access, huddles and the server app
+  are your own machines talking to each other, end-to-end encrypted. An
+  [Argus account](/argus/docs/accounts) is optional: it only helps your
+  machines find each other.
