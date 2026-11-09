@@ -19,6 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     FirstMouse.install()
     SheetOutsideClick.install()
     HistoryInput.install(model)
+    CloseShortcut.install(model)
     #if DEBUG
       if let gallery = GalleryMode.kind {
         ShotsActiveAppearance.install()
