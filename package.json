@@ -1,8 +1,8 @@
 {
   "name": "argus",
   "description": "Agentic IDE for front-end development",
-  "author": "Houwert",
-  "license": "UNLICENSED",
+  "author": "Douwe Bos <douwe@douwebos.nl> (https://houwert.dev)",
+  "license": "MIT",
   "private": true,
   "repository": {
     "type": "git",

@@ -51,5 +51,7 @@
     "react-markdown": "^10.1.0",
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1"
-  }
+  },
+  "license": "MIT",
+  "author": "Douwe Bos <douwe@douwebos.nl> (https://houwert.dev)"
 }

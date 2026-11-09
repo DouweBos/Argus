@@ -47,5 +47,7 @@
     "yaml": "^2.8.3",
     "yaml-language-server": "1.24.0",
     "zod": "^4.3.6"
-  }
+  },
+  "license": "MIT",
+  "author": "Douwe Bos <douwe@douwebos.nl> (https://houwert.dev)"
 }
