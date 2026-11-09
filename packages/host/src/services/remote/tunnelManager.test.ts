@@ -79,4 +79,19 @@ describe("tunnel manager", () => {
     await until(() => !isAlive(pid), 1000);
     expect(getTunnelState("cloudflare").status).toBe("stopped");
   });
+
+  it("hands a named tunnel its token in the environment, never argv", async () => {
+    startTunnel({
+      provider: "cloudflare",
+      cloudflareMode: "token",
+      cloudflareToken: "secret-token",
+      localPort: 1,
+      bin: fakeBinary(REGISTERS),
+    });
+    await until(() => fs.existsSync(log));
+
+    expect(fs.readFileSync(log, "utf-8").trim()).toBe(
+      "secret-token|tunnel run",
+    );
+  });
 });

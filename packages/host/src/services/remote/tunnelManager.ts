@@ -228,6 +228,8 @@ interface Plan {
   presetUrl: string | null;
   /** Output signal that means "up" when no URL is discovered. */
   runningSignal: RegExp | null;
+  /** Extra environment; secrets go here, since argv shows up in `ps`. */
+  env?: Record<string, string>;
 }
 
 function planFor(opts: StartTunnelOpts): Plan {
@@ -244,7 +246,8 @@ function planFor(opts: StartTunnelOpts): Plan {
   if (opts.cloudflareMode === "token") {
     return {
       bin: opts.bin ?? "cloudflared",
-      args: ["tunnel", "run", "--token", opts.cloudflareToken ?? ""],
+      args: ["tunnel", "run"],
+      env: { TUNNEL_TOKEN: opts.cloudflareToken ?? "" },
       urlRe: null,
       presetUrl: opts.cloudflarePublicUrl
         ? httpsToWss(opts.cloudflarePublicUrl)
@@ -276,7 +279,10 @@ export function startTunnel(opts: StartTunnelOpts): void {
 
   let proc: ChildProcess;
   try {
-    proc = spawn(plan.bin, plan.args, { stdio: ["ignore", "pipe", "pipe"] });
+    proc = spawn(plan.bin, plan.args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, ...plan.env },
+    });
   } catch (e) {
     setState(provider, {
       status: "error",
