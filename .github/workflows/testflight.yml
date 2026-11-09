@@ -54,18 +54,6 @@ jobs:
           # Xcode 27 ships without it; SwiftTerm compiles Metal shaders.
           xcodebuild -downloadComponent MetalToolchain
 
-      - name: Let SwiftPM fetch Grove
-        # The private DouweBos/Grove package; a token read-only on Grove, for its URL alone.
-        env:
-          GROVE_TOKEN: ${{ secrets.GROVE_TOKEN }}
-        run: |
-          git config --global \
-            url."https://x-access-token:${GROVE_TOKEN}@github.com/DouweBos/Grove.git".insteadOf \
-            "https://github.com/DouweBos/Grove.git"
-          # No credential helper: git never asks the build keychain to store it.
-          git config --global credential.helper ""
-          echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
-
       # Shared with the Mac release: same Package.resolved, same clones.
       - name: Cache Swift packages
         uses: actions/cache@v4

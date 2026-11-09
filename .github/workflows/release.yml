@@ -159,21 +159,6 @@ jobs:
           # Xcode 27 ships without it; SwiftTerm compiles Metal shaders.
           xcodebuild -downloadComponent MetalToolchain
 
-      - name: Let SwiftPM fetch Grove
-        # Argus for Mac depends on the private DouweBos/Grove package; a fine-grained
-        # token (Contents: read on Grove only), used for its URL alone.
-        if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app != 'electron' }}
-        env:
-          GROVE_TOKEN: ${{ secrets.GROVE_TOKEN }}
-        run: |
-          git config --global \
-            url."https://x-access-token:${GROVE_TOKEN}@github.com/DouweBos/Grove.git".insteadOf \
-            "https://github.com/DouweBos/Grove.git"
-          # The token is in the URL: no credential helper, so git never asks the
-          # (build) keychain to store it, and never prompts.
-          git config --global credential.helper ""
-          echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
-
       # The tree-sitter grammars' full histories take ~8 minutes to clone cold.
       - name: Cache Swift packages
         if: ${{ steps.stage.outputs.has_changes == 'true' && github.event.inputs.app != 'electron' }}
