@@ -18,6 +18,7 @@ import {
   type EventEnvelope,
   type ResponseEnvelope,
 } from "./envelopes";
+import { parseInbound } from "./inbound";
 import {
   type ExternalStaticKey,
   NoiseHandshake,
@@ -90,6 +91,8 @@ export interface TransportHandlers {
   onMedia?: (bytes: Uint8Array) => void;
   /** Binary transfer message (after the transfer tag byte). */
   onXfer?: (bytes: Uint8Array) => void;
+  /** A decrypted JSON frame that wasn't a well-formed response or event; it was dropped. */
+  onMalformed?: () => void;
 }
 
 export class RemoteError extends Error {
@@ -370,10 +373,11 @@ export class Transport {
 
       return;
     }
-    let env: Envelope;
-    try {
-      env = JSON.parse(toUtf8(plain.subarray(1))) as Envelope;
-    } catch {
+    const env = parseInbound(toUtf8(plain.subarray(1)));
+    if (!env) {
+      // A buggy gateway must not take the tab down with a malformed frame.
+      this.handlers.onMalformed?.();
+
       return;
     }
     if (env.seq <= this.recvSeq) {
