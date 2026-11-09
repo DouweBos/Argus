@@ -92,6 +92,8 @@ Every Peacock component ships with a Storybook story covering meaningful states.
 
 **The Mac app is the desktop app.** Every desktop feature lands in `ArgusDesktop` (plus host commands), with the iPhone client in the same PR. Releases ship it with `fastlane mac mac_app_release` (the release workflow).
 
+**Design a screen, don't just expose its fields.** Before building UI, find the screen that already does the same job (picking projects, editing a playbook, a run history) and reuse its components — two screens choosing the same thing must look and work the same. Extract the shared piece rather than copying it. Lists get one row per item with an icon and a trailing control, never a column of controls inside a `LabeledContent`; the primary action goes in the toolbar, not a section header; long multi-selects get Select All / Clear. Then launch a dev build (`ARGUS_DEV_ROUTE`, `ARGUS_ATTACH_HOME=~/.argus`), screenshot the window and look at it with real data before calling it done — compiling is not a design review.
+
 **Mac app: everything clickable shows the pointing hand.** SwiftUI never does this on its own, so it goes through ArgusUI (`DesignSystem/Clickable.swift`):
 
 - `.buttonStyle(.argusPlain)` / `.argusBorderless` — never `.plain` / `.borderless`

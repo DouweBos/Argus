@@ -14,6 +14,7 @@ struct QuickRunView: View {
   @State private var name = ""
   @State private var playbook = ""
   @State private var repoRoots: [String] = []
+  @State private var sourceIds: [String] = []
   @State private var starting = false
 
   private var canRun: Bool {
@@ -43,6 +44,15 @@ struct QuickRunView: View {
           selection: $repoRoots,
           emptyMessage: "This computer has no projects registered.")
       }
+      if !store.sources.isEmpty {
+        Field(label: "Signal sources", caption: "What feeds the run its work.") {
+          ToggleList(
+            options: store.sources.map {
+              .init(id: $0.id, label: $0.label, hint: $0.available ? nil : "not configured")
+            },
+            selection: $sourceIds)
+        }
+      }
       if host.hasControl {
         Btn(label: starting ? "Starting…" : "Run once", icon: Icon.play) { run() }
           .disabled(!canRun)
@@ -51,7 +61,10 @@ struct QuickRunView: View {
     }
     .navigationTitle("Quick Run")
     .navigationBarTitleDisplayMode(.inline)
-    .task { await store.loadQuickRunsOverGateway() }
+    .task {
+      await store.loadQuickRunsOverGateway()
+      await store.loadSources()
+    }
     .refreshable { await store.loadQuickRunsOverGateway() }
     .liveRefresh(enabled: host.connection == .ready) { await store.loadQuickRunsOverGateway() }
   }
@@ -78,7 +91,7 @@ struct QuickRunView: View {
     Task {
       let runId = await store.runScratch(
         name: label, playbook: playbook, repoRoots: repoRoots,
-        sourceIds: [], model: nil, guardrails: RemoteAutomationGuardrails())
+        sourceIds: sourceIds, model: nil, guardrails: RemoteAutomationGuardrails())
       starting = false
       guard let runId else { return }
       playbook = ""

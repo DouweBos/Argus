@@ -57,36 +57,8 @@ struct AutomationEditorForm: View {
 
   @ViewBuilder
   private var scope: some View {
-    Section {
-      if host.projects.isEmpty, host.projectsLoaded { Text("No projects are open.").foregroundStyle(.secondary) }
-      ForEach(host.projects) { project in
-        Toggle(isOn: member(project.repoRoot, of: \.repoRoots)) {
-          Label(project.name, systemImage: "folder")
-        }
-        .help(HostScopedPath.path(project.repoRoot))
-      }
-    } header: {
-      ScopeHeader(
-        title: "Projects", selected: host.projects.filter { draft.repoRoots.contains($0.repoRoot) }.count,
-        total: host.projects.count)
-    } footer: {
-      Text("Repos the run may read.")
-    }
-    Section {
-      if store.sources.isEmpty { Text("None reported.").foregroundStyle(.secondary) }
-      ForEach(store.sources) { source in
-        Toggle(isOn: member(source.id, of: \.sourceIds)) {
-          Text(source.label)
-          if !source.available { Text("Not configured") }
-        }
-      }
-    } header: {
-      ScopeHeader(
-        title: "Signal sources", selected: store.sources.filter { draft.sourceIds.contains($0.id) }.count,
-        total: store.sources.count)
-    } footer: {
-      Text("What feeds the run its work.")
-    }
+    ProjectScopeSection(selection: $draft.repoRoots)
+    SourceScopeSection(selection: $draft.sourceIds)
   }
 
   @ViewBuilder
@@ -146,9 +118,7 @@ struct AutomationEditorForm: View {
 
   private var playbook: some View {
     Section {
-      TextEditor(text: $draft.playbook)
-        .font(.system(.body, design: .monospaced))
-        .frame(minHeight: 220)
+      PlaybookEditor(text: $draft.playbook)
       HStack {
         Spacer()
         Button("Rewrite with Claude…") { revising = true }
@@ -190,31 +160,6 @@ struct AutomationEditorForm: View {
 
   private func optional(_ path: WritableKeyPath<RemoteAutomationDetail, String?>) -> Binding<String> {
     Binding(get: { draft[keyPath: path] ?? "" }, set: { draft[keyPath: path] = $0 })
-  }
-
-  private func member(
-    _ value: String, of path: WritableKeyPath<RemoteAutomationDetail, [String]>
-  ) -> Binding<Bool> {
-    Binding(
-      get: { draft[keyPath: path].contains(value) },
-      set: { on in
-        draft[keyPath: path].removeAll { $0 == value }
-        if on { draft[keyPath: path].append(value) }
-      })
-  }
-}
-
-private struct ScopeHeader: View {
-  let title: String
-  let selected: Int
-  let total: Int
-
-  var body: some View {
-    HStack {
-      Text(title)
-      Spacer()
-      if total > 0 { Text("\(selected) of \(total)").monospacedDigit().foregroundStyle(.secondary) }
-    }
   }
 }
 
