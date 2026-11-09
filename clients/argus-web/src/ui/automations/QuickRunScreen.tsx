@@ -73,6 +73,14 @@ export function QuickRunScreen() {
               }
             : undefined
         }
+        onRunLater={
+          hasControl
+            ? async (spec, runAt) => {
+                const automationId = await store().scheduleScratch(spec, runAt);
+                appNavigate({ name: "automation", automationId });
+              }
+            : undefined
+        }
       />
     </div>
   );

@@ -26,6 +26,16 @@
   line-height: 1.55;
 }
 
+.later {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.later > :first-child {
+  flex: 1;
+}
+
 .error {
   margin: 0;
   font-size: 12px;

@@ -34,25 +34,55 @@ struct AutomationEditorForm: View {
 
   private var trigger: some View {
     Section {
-      Picker("Trigger", selection: $draft.triggerKind) {
+      Picker("Trigger", selection: triggerKind) {
         Text("Schedule").tag(RemoteAutomation.TriggerKind.schedule)
+        Text("Once").tag(RemoteAutomation.TriggerKind.once)
         Text("Manual").tag(RemoteAutomation.TriggerKind.manual)
       }
       .pickerStyle(.segmented)
       if draft.triggerKind == .schedule {
         TextField("Cron", text: optional(\.cron), prompt: Text("0 9 * * 1-5"))
           .font(.system(.body, design: .monospaced))
+      }
+      if draft.triggerKind == .once {
+        DatePicker("Run at", selection: onceDate, displayedComponents: [.date, .hourAndMinute])
+          .environment(\.timeZone, draft.timezone.flatMap(TimeZone.init(identifier:)) ?? .current)
+        if let error = draft.onceError { Text(error).foregroundStyle(.red) }
+      }
+      if draft.triggerKind != .manual {
         TextField("Timezone", text: optional(\.timezone), prompt: Text(TimeZone.current.identifier))
         if let preview = draft.schedulePreviewText() { SchedulePreviewRow(preview: preview) }
-        Toggle("Catch up after the computer was asleep", isOn: $draft.catchUp)
+        Toggle(
+          draft.triggerKind == .once
+            ? "Still run if the computer was asleep at that time" : "Catch up after the computer was asleep",
+          isOn: $draft.catchUp)
       }
     } header: {
       Text("Trigger")
     } footer: {
-      Text(
-        draft.triggerKind == .schedule
-          ? "Five fields: min hour dom mon dow." : "Only runs when someone presses Run now.")
+      switch draft.triggerKind {
+      case .schedule: Text("Five fields: min hour dom mon dow.")
+      case .once: Text("Runs once at this time, then pauses itself.")
+      case .manual: Text("Only runs when someone presses Run now.")
+      }
     }
+  }
+
+  /// Switching to Once starts at the next whole hour rather than an empty time.
+  private var triggerKind: Binding<RemoteAutomation.TriggerKind> {
+    Binding(
+      get: { draft.triggerKind },
+      set: { kind in
+        draft.triggerKind = kind
+        if kind == .once, draft.runAt == nil { draft.runAt = OnceTime.nextWholeHour(timezone: draft.timezone) }
+      })
+  }
+
+  /// The picker edits an instant; the wire keeps the wall clock in the trigger's zone.
+  private var onceDate: Binding<Date> {
+    Binding(
+      get: { draft.runAt.flatMap { OnceTime.date($0, timezone: draft.timezone) } ?? Date() },
+      set: { draft.runAt = OnceTime.string($0, timezone: draft.timezone) })
   }
 
   @ViewBuilder

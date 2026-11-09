@@ -52,34 +52,68 @@ public struct AutomationFields: View {
     }
   }
 
+  private var triggerCaption: String {
+    switch draft.triggerKind {
+    case .schedule: "5 fields: minute hour day-of-month month day-of-week."
+    case .once: "Runs once at this time, then pauses itself."
+    case .manual: "Only runs when someone presses Run now."
+    }
+  }
+
   private var trigger: some View {
-    Field(
-      label: "TRIGGER",
-      caption: draft.triggerKind == .schedule
-        ? "5 fields: minute hour day-of-month month day-of-week."
-        : "Only runs when someone presses Run now."
-    ) {
+    Field(label: "TRIGGER", caption: triggerCaption) {
       SegmentedControl(
         value: Binding(
           get: { draft.triggerKind },
-          set: { draft.triggerKind = $0 }),
-        options: [(.schedule, "Schedule"), (.manual, "Manual")])
+          set: { kind in
+            draft.triggerKind = kind
+            if kind == .once, draft.runAt == nil {
+              draft.runAt = OnceTime.nextWholeHour(timezone: draft.timezone)
+            }
+          }),
+        options: [(.schedule, "Schedule"), (.once, "Once"), (.manual, "Manual")])
 
       if draft.triggerKind == .schedule {
         ThemedTextField(
           placeholder: "0 9 * * 1-5",
           text: Binding(get: { draft.cron ?? "" }, set: { draft.cron = $0 }),
           mono: true, input: .code)
+      }
+      if draft.triggerKind == .once {
+        DatePicker("Run at", selection: onceDate, displayedComponents: [.date, .hourAndMinute])
+          .font(.scaled(size: 15))
+          .environment(\.timeZone, onceZone)
+        if let error = draft.onceError {
+          Text(error).font(.scaled(size: 13)).foregroundStyle(theme.error)
+        }
+      }
+      if draft.triggerKind != .manual {
         ThemedTextField(
           placeholder: TimeZone.current.identifier,
           text: Binding(get: { draft.timezone ?? "" }, set: { draft.timezone = $0 }),
           input: .code)
         if let preview = draft.schedulePreviewText() { schedulePreview(preview) }
-        Toggle("Catch up after the computer was asleep", isOn: $draft.catchUp)
-          .font(.scaled(size: 14))
-          .toggleStyle(.argusSwitch)
+        Toggle(
+          draft.triggerKind == .once
+            ? "Still run if the computer was asleep at that time"
+            : "Catch up after the computer was asleep",
+          isOn: $draft.catchUp
+        )
+        .font(.scaled(size: 14))
+        .toggleStyle(.argusSwitch)
       }
     }
+  }
+
+  private var onceZone: TimeZone {
+    draft.timezone.flatMap(TimeZone.init(identifier:)) ?? .current
+  }
+
+  /// The picker edits an instant; the wire keeps the wall clock in the trigger's zone.
+  private var onceDate: Binding<Date> {
+    Binding(
+      get: { draft.runAt.flatMap { OnceTime.date($0, timezone: draft.timezone) } ?? Date() },
+      set: { draft.runAt = OnceTime.string($0, timezone: draft.timezone) })
   }
 
   private func schedulePreview(_ preview: SchedulePreviewText) -> some View {

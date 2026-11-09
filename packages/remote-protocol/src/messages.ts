@@ -110,8 +110,10 @@ export const AutomationInput = z.object({
   name: z.string(),
   description: z.string(),
   enabled: z.boolean(),
-  trigger_kind: z.enum(["manual", "schedule"]),
+  trigger_kind: z.enum(["manual", "once", "schedule"]),
   cron: z.string(),
+  /** Local `YYYY-MM-DDTHH:mm` for `once`; optional so older clients still save. */
+  run_at: z.string().optional(),
   timezone: z.string(),
   catch_up: z.boolean(),
   repo_roots: z.array(z.string()),

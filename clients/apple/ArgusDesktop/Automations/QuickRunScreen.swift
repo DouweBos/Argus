@@ -28,6 +28,8 @@ private struct QuickRunComposer: View {
   @State private var repoRoots: [String] = []
   @State private var sourceIds: [String] = []
   @State private var starting = false
+  @State private var runLater = false
+  @State private var runAt = OnceTime.date(OnceTime.nextWholeHour(timezone: nil), timezone: nil) ?? Date()
 
   private var runs: [RemoteAutomationRun] { store.runs.filter(\.isQuick) }
   private var canRun: Bool { !starting && !playbook.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -48,6 +50,16 @@ private struct QuickRunComposer: View {
       ProjectScopeSection(
         selection: $repoRoots, footer: "Repos the run may read, at their own paths. It never writes to them.")
       SourceScopeSection(selection: $sourceIds)
+      Section {
+        Toggle("Run later", isOn: $runLater)
+        if runLater {
+          DatePicker("Run at", selection: $runAt, in: Date()..., displayedComponents: [.date, .hourAndMinute])
+        }
+      } header: {
+        Text("When")
+      } footer: {
+        if runLater { Text("Saved as an automation that runs once at this time, then pauses itself.") }
+      }
       history
     }
     .formStyle(.grouped)
@@ -56,11 +68,11 @@ private struct QuickRunComposer: View {
     .navigationSubtitle("A playbook, run once, against the projects you pick")
     .toolbar {
       ToolbarItem(placement: .primaryAction) {
-        Button(starting ? "Starting…" : "Run Once", systemImage: "play.fill") { run() }
+        Button(runButtonTitle, systemImage: runLater ? "clock" : "play.fill") { runLater ? schedule() : run() }
           .labelStyle(.titleAndIcon)
           .keyboardShortcut(.return, modifiers: .command)
           .disabled(!canRun)
-          .help("Run the playbook now (⌘↩)")
+          .help(runLater ? "Save it to run once at the time you picked (⌘↩)" : "Run the playbook now (⌘↩)")
       }
     }
     .task {
@@ -86,6 +98,26 @@ private struct QuickRunComposer: View {
         Spacer()
         Text(AutomationText.plural(runs.count, "run")).foregroundStyle(.secondary)
       }
+    }
+  }
+
+  private var runButtonTitle: String {
+    if starting { return runLater ? "Scheduling…" : "Starting…" }
+    return runLater ? "Run Later" : "Run Once"
+  }
+
+  private func schedule() {
+    starting = true
+    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    let zone = TimeZone.current.identifier
+    Task {
+      let id = await store.scheduleScratch(
+        name: trimmed.isEmpty ? "Quick run" : trimmed, playbook: playbook, repoRoots: repoRoots,
+        sourceIds: sourceIds, runAt: OnceTime.string(runAt, timezone: zone), timezone: zone)
+      starting = false
+      guard let id else { return }
+      playbook = ""
+      model.navigate(.automation(id: id, runId: nil))
     }
   }
 

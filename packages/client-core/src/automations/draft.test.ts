@@ -20,6 +20,22 @@ describe("automation drafts", () => {
     ).toBeNull();
   });
 
+  it("check a run-once time only when it would arm", () => {
+    const now = Date.parse("2026-11-10T08:30:00Z");
+    const once = {
+      ...draft,
+      trigger_kind: "once" as const,
+      run_at: "2026-11-10T08:00",
+    };
+    expect(draftScheduleError({ ...once, enabled: true }, now)).toMatch(
+      /passed/,
+    );
+    expect(draftScheduleError(once, now)).toBeNull();
+    expect(draftScheduleError({ ...once, run_at: null }, now)).not.toBeNull();
+    expect(draftToInput(once).run_at).toBe("2026-11-10T08:00");
+    expect(draftToInput(draft)).not.toHaveProperty("run_at");
+  });
+
   it("send trimmed fields and blank model as the default", () => {
     const input = draftToInput({
       ...draft,

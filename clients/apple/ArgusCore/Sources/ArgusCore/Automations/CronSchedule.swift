@@ -186,9 +186,15 @@ extension RemoteAutomationDetail {
     }
   }
 
-  /// Whether the trigger can be saved: manual, or a schedule that fires.
+  /// Why a run-once trigger can't be saved; nil for other kinds or a good time.
+  public var onceError: String? {
+    guard triggerKind == .once else { return nil }
+    return OnceTime.error(runAt, timezone: timezone, enabled: enabled)
+  }
+
+  /// Whether the trigger can be saved: manual, a schedule that fires, or a run-once time.
   public var hasValidTrigger: Bool {
     if case .failure = schedulePreview(count: 1) { return false }
-    return true
+    return onceError == nil
   }
 }

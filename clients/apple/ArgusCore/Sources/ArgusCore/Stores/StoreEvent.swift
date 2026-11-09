@@ -51,6 +51,8 @@ public enum StoreEvent: Sendable, Equatable {
   public enum RunAction: String, Sendable {
     case start
     case startScratch = "start_scratch"
+    /// A quick run set to run later, saved as a run-once automation.
+    case scheduleScratch = "schedule_scratch"
     case cancel
     case feedback
     case saveScratch = "save_scratch"

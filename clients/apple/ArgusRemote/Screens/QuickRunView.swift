@@ -16,6 +16,8 @@ struct QuickRunView: View {
   @State private var repoRoots: [String] = []
   @State private var sourceIds: [String] = []
   @State private var starting = false
+  @State private var runLater = false
+  @State private var runAt = OnceTime.date(OnceTime.nextWholeHour(timezone: nil), timezone: nil) ?? Date()
 
   private var canRun: Bool {
     host.hasControl && !playbook.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !starting
@@ -54,7 +56,19 @@ struct QuickRunView: View {
         }
       }
       if host.hasControl {
-        Btn(label: starting ? "Starting…" : "Run once", icon: Icon.play) { run() }
+        Field(
+          label: "When",
+          caption: runLater ? "Saved as an automation that runs once at this time, then pauses itself." : nil
+        ) {
+          Toggle("Run later", isOn: $runLater)
+            .font(.scaled(size: 15))
+            .toggleStyle(.argusSwitch)
+          if runLater {
+            DatePicker("Run at", selection: $runAt, in: Date()..., displayedComponents: [.date, .hourAndMinute])
+              .font(.scaled(size: 15))
+          }
+        }
+        Btn(label: buttonLabel, icon: Icon.play) { runLater ? schedule() : run() }
           .disabled(!canRun)
       }
       history
@@ -81,6 +95,27 @@ struct QuickRunView: View {
       NavigationLink(value: Route.run(id: run.id, label: run.automationName)) {
         RunRow(run: run, showName: true)
       }
+    }
+  }
+
+  private var buttonLabel: String {
+    if starting { return runLater ? "Scheduling…" : "Starting…" }
+    return runLater ? "Run later" : "Run once"
+  }
+
+  private func schedule() {
+    starting = true
+    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    let label = trimmed.isEmpty ? "Quick run" : trimmed
+    let zone = TimeZone.current.identifier
+    Task {
+      let id = await store.scheduleScratch(
+        name: label, playbook: playbook, repoRoots: repoRoots, sourceIds: sourceIds,
+        runAt: OnceTime.string(runAt, timezone: zone), timezone: zone)
+      starting = false
+      guard let id else { return }
+      playbook = ""
+      router.push(.automation(id: id, label: label))
     }
   }
 

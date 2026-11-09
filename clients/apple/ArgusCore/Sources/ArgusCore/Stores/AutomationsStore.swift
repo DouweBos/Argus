@@ -424,6 +424,32 @@ public final class AutomationsStore {
     }
   }
 
+  /// "Run later": a quick run saved as an enabled run-once automation, which
+  /// pauses itself once it has fired. Returns the automation's id.
+  public func scheduleScratch(
+    name: String, playbook: String, repoRoots: [String], sourceIds: [String] = [], runAt: String,
+    timezone: String = TimeZone.current.identifier
+  ) async -> String? {
+    guard let backend = host.backend else { return nil }
+    struct CreateParams: Encodable { let input: RemoteAutomationInput }
+    let detail = RemoteAutomationDetail(
+      name: name, enabled: true, triggerKind: .once, cron: nil, runAt: runAt, timezone: timezone,
+      catchUp: true, repoRoots: repoRoots, sourceIds: sourceIds, playbook: playbook, extraInstructions: "")
+    do {
+      let result = try await backend.request(
+        .automationsCreate, CreateParams(input: RemoteAutomationInput(detail)), as: SaveResult.self)
+      host.hooks.track(.runActed(action: .scheduleScratch))
+      detailById[result.detail.id] = result.detail
+      await refresh()
+
+      return result.detail.id
+    } catch {
+      fail("Couldn't schedule that run", error)
+
+      return nil
+    }
+  }
+
   /// Keep a one-off: promote it to an automation, prefilled from the run.
   public func saveScratchRun(runId: String, name: String) async -> String? {
     guard let backend = host.backend else { return nil }

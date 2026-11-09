@@ -2,7 +2,7 @@
  * Data types for automations — persisted "when X, do Y" objects and the runs
  * they produce.
  *
- * P1 deliberately carries only the clock: a `schedule` or `manual` trigger, a
+ * P1 deliberately carries only the clock: a `schedule`, `once` or `manual` trigger, a
  * playbook, and a report. The autonomy ladder, guardrails, signal sources and
  * proposals arrive with later phases; leaving them out keeps a run's blast
  * radius at zero.
@@ -12,6 +12,15 @@ import type { ReportBlock } from "@argus/remote-protocol";
 
 /** What causes an automation to fire. */
 export type AutomationTrigger =
+  | {
+      /** Fires once, then the automation pauses itself. */
+      kind: "once";
+      /** Local wall-clock `YYYY-MM-DDTHH:mm` in {@link timezone}. */
+      at: string;
+      timezone: string;
+      /** Still run when the host was asleep at {@link at}. */
+      catch_up: boolean;
+    }
   | {
       kind: "schedule";
       /** 5-field cron: `min hour dom mon dow`. See `cron.ts`. */
@@ -99,7 +108,7 @@ export interface Automation {
   created_at: number;
   updated_at: number;
   last_run_at: number | null;
-  /** Next scheduled fire, epoch ms. Null for manual triggers. */
+  /** Next scheduled fire, epoch ms. Null for manual triggers and paused ones. */
   next_run_at: number | null;
 }
 

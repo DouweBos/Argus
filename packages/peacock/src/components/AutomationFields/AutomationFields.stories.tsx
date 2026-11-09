@@ -45,6 +45,35 @@ export const Manual: Story = {
   ),
 };
 
+/** Fires once at a date and time, then pauses itself. */
+export const Once: Story = {
+  render: () => (
+    <Live
+      initial={{
+        ...FIXTURE_DETAIL,
+        trigger_kind: "once",
+        cron: null,
+        run_at: "2030-03-04T09:00",
+      }}
+    />
+  ),
+};
+
+/** Armed for a time that has already gone by. */
+export const OncePassed: Story = {
+  render: () => (
+    <Live
+      initial={{
+        ...FIXTURE_DETAIL,
+        enabled: true,
+        trigger_kind: "once",
+        cron: null,
+        run_at: "2020-01-01T09:00",
+      }}
+    />
+  ),
+};
+
 export const BadCron: Story = {
   render: () => <Live initial={{ ...FIXTURE_DETAIL, cron: "every morning" }} />,
 };

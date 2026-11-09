@@ -2,7 +2,9 @@
 export {
   computeNextRun,
   isValidCron,
+  onceInstant,
   parseCron,
+  parseLocalDateTime,
   zonedParts,
   zonedTimeToUtc,
   type CronFields,

@@ -17,6 +17,15 @@ export const AutomationTrigger = z.discriminatedUnion("kind", [
      */
     catch_up: z.boolean(),
   }),
+  z.object({
+    /** Fires once, then the automation pauses itself. */
+    kind: z.literal("once"),
+    /** Local wall-clock `YYYY-MM-DDTHH:mm` in `timezone`. */
+    at: z.string(),
+    timezone: z.string(),
+    /** Still run when the host was asleep at `at`. */
+    catch_up: z.boolean(),
+  }),
   z.object({ kind: z.literal("manual") }),
 ]);
 export type AutomationTrigger = z.infer<typeof AutomationTrigger>;

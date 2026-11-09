@@ -124,6 +124,21 @@ export const FIXTURE_AUTOMATIONS: RemoteAutomation[] = [
     next_run_at: null,
     running: false,
   },
+  {
+    id: "a3",
+    name: "Recheck CI",
+    description: "After the plan limit resets.",
+    enabled: true,
+    trigger_kind: "once",
+    cron: null,
+    run_at: "2030-03-04T09:00",
+    timezone: "Europe/Amsterdam",
+    autonomy: null,
+    projects: ["Argus"],
+    last_run_at: null,
+    next_run_at: Date.parse("2030-03-04T08:00:00Z"),
+    running: false,
+  },
 ];
 
 export function fixtureRun(

@@ -153,9 +153,17 @@ public enum Labels {
   public static func triggerLabel(_ automation: RemoteAutomation) -> String {
     switch automation.triggerKind {
     case .manual: "Manual"
+    case .once:
+      automation.runAt.flatMap { onceLabel($0, timezone: automation.timezone) } ?? "Once"
     case .schedule:
       automation.cron.map { cronLabel($0, timezone: automation.timezone) } ?? "Scheduled"
     }
+  }
+
+  /// "Once, Nov 10, 9:00 AM" — the wall-clock time read in the trigger's zone, shown in the viewer's.
+  public static func onceLabel(_ runAt: String, timezone: String?) -> String? {
+    guard let date = OnceTime.date(runAt, timezone: timezone) else { return nil }
+    return "Once, \(date.formatted(date: .abbreviated, time: .shortened))"
   }
 
   /// Counts up while a run is in flight, so it reads as live.

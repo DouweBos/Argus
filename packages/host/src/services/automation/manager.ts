@@ -9,6 +9,7 @@
 
 import type {
   Automation,
+  AutomationTrigger,
   AutomationRun,
   CreateAutomationInput,
   RunStatus,
@@ -21,7 +22,7 @@ import { emitHostEvent } from "@argus/host/bus";
 import { info, warn } from "@argus/host/logger";
 import { getClaudeAccount } from "../claudeAuth/accounts";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
-import { computeNextRun, isValidCron } from "./cron";
+import { computeNextRun, isValidCron, onceInstant } from "./cron";
 import { migrateSpendCeiling, normalizeGuardrails } from "./guardrails";
 import {
   disposeAutomationHostSession,
@@ -116,9 +117,7 @@ function buildAutomation(input: CreateAutomationInput): Automation {
   assertKnownAccount(input.claude_account_id);
   const now = Date.now();
   const trigger = input.trigger;
-  if (trigger.kind === "schedule" && !isValidCron(trigger.cron)) {
-    throw `Invalid cron expression: ${trigger.cron}`;
-  }
+  assertValidTrigger(trigger, input.enabled ?? false, now);
 
   const automation: Automation = {
     id: crypto.randomUUID(),
@@ -150,13 +149,41 @@ function buildAutomation(input: CreateAutomationInput): Automation {
   return automation;
 }
 
+/** How far in the past a one-time trigger may be armed: the scheduler's grace. */
+const ONCE_PAST_GRACE_MS = 2 * 60_000;
+
+function assertValidTrigger(
+  trigger: AutomationTrigger,
+  enabled: boolean,
+  now: number,
+): void {
+  if (trigger.kind === "schedule" && !isValidCron(trigger.cron)) {
+    throw `Invalid cron expression: ${trigger.cron}`;
+  }
+  if (trigger.kind !== "once") {
+    return;
+  }
+  const instant = onceInstant(trigger.at, trigger.timezone);
+  if (instant === null) {
+    throw `Invalid run-once time: ${trigger.at}`;
+  }
+  if (enabled && instant < now - ONCE_PAST_GRACE_MS) {
+    throw "That run-once time has already passed — pick a later one.";
+  }
+}
+
 /** The next fire for an automation, or null when it has no clock. */
 export function nextRunFor(
   automation: Automation,
   from: number,
 ): number | null {
-  if (!automation.enabled || automation.trigger.kind !== "schedule") {
+  if (!automation.enabled || automation.trigger.kind === "manual") {
     return null;
+  }
+  if (automation.trigger.kind === "once") {
+    // Not "after `from`": a missed one-time fire stays due so the scheduler
+    // can decide whether to catch it up.
+    return onceInstant(automation.trigger.at, automation.trigger.timezone);
   }
 
   try {
@@ -319,8 +346,14 @@ export function updateAutomation(
     assertKnownAccount(patch.claude_account_id);
   }
   const trigger = patch.trigger ?? automation.trigger;
-  if (trigger.kind === "schedule" && !isValidCron(trigger.cron)) {
-    throw `Invalid cron expression: ${trigger.cron}`;
+  // Only an edit to the clock or the switch can arm a one-time trigger that
+  // has already passed; anything else must still save.
+  if (patch.trigger !== undefined || patch.enabled !== undefined) {
+    assertValidTrigger(
+      trigger,
+      patch.enabled ?? automation.enabled,
+      Date.now(),
+    );
   }
 
   const hadInstructions = automation.extra_instructions.trim() !== "";
@@ -387,6 +420,15 @@ export function deleteAutomation(id: string): void {
 export function markAutomationFired(id: string, at: number): void {
   const automation = requireAutomation(id);
   automation.last_run_at = at;
+  persistAutomations();
+}
+
+/** A one-time trigger has had its moment: pause it so it never fires again. */
+export function retireOnceAutomation(id: string): void {
+  const automation = requireAutomation(id);
+  automation.enabled = false;
+  automation.next_run_at = null;
+  automation.updated_at = Date.now();
   persistAutomations();
 }
 

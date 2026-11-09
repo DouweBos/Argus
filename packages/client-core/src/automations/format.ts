@@ -12,6 +12,7 @@ import type {
 import { formatDuration } from "../transcript/workLog";
 import { computeNextRun, isValidCron } from "./cron";
 import { cronLabel } from "./cronLabel";
+import { onceInstant } from "./once";
 
 export type AutonomyLevel = "auto_merge" | "draft" | "pr" | "propose";
 
@@ -119,10 +120,20 @@ export function cronError(cron: string, timezone: string): string | null {
 
 /** One line for a list row: the schedule in words, or "Manual". */
 export function scheduleLabel(
-  automation: Pick<RemoteAutomation, "cron" | "trigger_kind">,
+  automation: Pick<
+    RemoteAutomation,
+    "cron" | "run_at" | "timezone" | "trigger_kind"
+  >,
 ): string {
   if (automation.trigger_kind === "manual") {
     return "Manual";
+  }
+  if (automation.trigger_kind === "once") {
+    const instant = automation.run_at
+      ? onceInstant(automation.run_at, automation.timezone || localTimezone())
+      : null;
+
+    return instant === null ? "Once" : `Once, ${formatTimestamp(instant)}`;
   }
 
   return automation.cron ? cronLabel(automation.cron) : "Scheduled";
@@ -183,7 +194,7 @@ export function nextRunLabel(
   >,
   now = Date.now(),
 ): string {
-  if (automation.trigger_kind !== "schedule") {
+  if (automation.trigger_kind === "manual") {
     return "Manual";
   }
   if (!automation.enabled) {

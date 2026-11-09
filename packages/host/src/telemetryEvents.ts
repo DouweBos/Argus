@@ -170,6 +170,9 @@ export interface EventMap {
   app_launched: undefined;
   app_quit: undefined;
   automation_extra_instructions_changed: { has_instructions: boolean };
+  automation_once_fired: {
+    outcome: "caught_up" | "missed" | "overlap" | "ran";
+  };
   automation_run_started: {
     /** `none` unpinned; otherwise whether the pinned account could run it. */
     account_pin: "missing" | "none" | "ok" | "reauth";

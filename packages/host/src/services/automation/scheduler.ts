@@ -8,17 +8,21 @@
  * - **No overlap.** A fire while the previous run is still going records a
  *   `skipped` run with the reason and moves the schedule on.
  *
+ * A one-time trigger follows the same rules, then pauses its automation.
+ *
  * It touches no window and no renderer — state changes go out on the host bus
  * — so a headless mini runs it unchanged.
  */
 
 import { info } from "@argus/host/logger";
 import { loadAppSettings } from "../appSettings/store";
+import { capture as telemetryCapture } from "../telemetry/telemetry";
 import {
   createRun,
   hasActiveRun,
   listAutomations,
   rescheduleAutomation,
+  retireOnceAutomation,
 } from "./manager";
 import { startAutomationRun } from "./runner";
 
@@ -66,7 +70,8 @@ export function tickAutomations(now: number = Date.now()): void {
   }
 
   for (const automation of listAutomations()) {
-    if (!automation.enabled || automation.trigger.kind !== "schedule") {
+    const { trigger } = automation;
+    if (!automation.enabled || trigger.kind === "manual") {
       continue;
     }
 
@@ -84,17 +89,31 @@ export function tickAutomations(now: number = Date.now()): void {
     // decision: fire once, or do not fire. The clock then moves to the next
     // window ahead of `now`, which is what makes a backfill impossible.
     const late = now - automation.next_run_at > LATE_GRACE_MS;
-    const reason = late
-      ? `catch-up (due ${new Date(automation.next_run_at).toISOString()})`
-      : `schedule ${formatLocalTime(automation.next_run_at, automation.trigger.timezone)}`;
+    const once = trigger.kind === "once";
+    const local = formatLocalTime(automation.next_run_at, trigger.timezone);
+    let reason = once ? `once ${local}` : `schedule ${local}`;
+    if (late) {
+      reason = `catch-up (due ${new Date(automation.next_run_at).toISOString()})`;
+    }
 
-    rescheduleAutomation(automation.id, now);
+    // A one-time trigger is spent whatever happens next: run, skip or miss.
+    if (once) {
+      retireOnceAutomation(automation.id);
+    } else {
+      rescheduleAutomation(automation.id, now);
+    }
 
-    if (late && !automation.trigger.catch_up) {
+    if (late && !trigger.catch_up) {
+      if (once) {
+        telemetryCapture("automation_once_fired", { outcome: "missed" });
+      }
       continue;
     }
 
     if (hasActiveRun(automation.id)) {
+      if (once) {
+        telemetryCapture("automation_once_fired", { outcome: "overlap" });
+      }
       // Never two hosts for one automation. The skip is recorded so the run
       // history explains the gap.
       createRun(
@@ -106,6 +125,11 @@ export function tickAutomations(now: number = Date.now()): void {
       continue;
     }
 
+    if (once) {
+      telemetryCapture("automation_once_fired", {
+        outcome: late ? "caught_up" : "ran",
+      });
+    }
     startAutomationRun(automation.id, reason);
   }
 }

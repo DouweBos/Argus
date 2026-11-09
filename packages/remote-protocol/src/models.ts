@@ -624,9 +624,12 @@ export const RemoteAutomation = z.object({
   name: z.string(),
   description: z.string(),
   enabled: z.boolean(),
-  trigger_kind: z.enum(["manual", "schedule"]),
-  /** 5-field cron and its IANA zone — only for `schedule`. */
+  trigger_kind: z.enum(["manual", "once", "schedule"]),
+  /** 5-field cron — only for `schedule`. */
   cron: z.string().nullable(),
+  /** Local `YYYY-MM-DDTHH:mm` — only for `once`. Missing from older hosts. */
+  run_at: z.string().nullable().optional(),
+  /** IANA zone `cron` or `run_at` is read in. */
   timezone: z.string().nullable(),
   /** The rung it runs at, or null when it inherits the host's default. */
   autonomy: z.enum(["auto_merge", "draft", "pr", "propose"]).nullable(),
@@ -807,8 +810,10 @@ export const RemoteAutomationDetail = z.object({
   name: z.string(),
   description: z.string(),
   enabled: z.boolean(),
-  trigger_kind: z.enum(["manual", "schedule"]),
+  trigger_kind: z.enum(["manual", "once", "schedule"]),
   cron: z.string().nullable(),
+  /** Local `YYYY-MM-DDTHH:mm` — only for `once`. Missing from older hosts. */
+  run_at: z.string().nullable().optional(),
   timezone: z.string().nullable(),
   catch_up: z.boolean(),
   /** Full repo paths — an editor has to write them back unchanged. */

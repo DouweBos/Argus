@@ -35,7 +35,13 @@ public enum RemoteAutonomy: String, Codable, Sendable, CaseIterable {
 
 public struct RemoteAutomation: Codable, Hashable, Sendable, Identifiable {
   public enum TriggerKind: String, Codable, Sendable {
-    case manual, schedule
+    case manual, once, schedule
+
+    /// A kind this build doesn't know reads as manual rather than failing the whole list.
+    public init(from decoder: Decoder) throws {
+      let raw = try decoder.singleValueContainer().decode(String.self)
+      self = TriggerKind(rawValue: raw) ?? .manual
+    }
   }
 
   public var id: String
@@ -43,8 +49,11 @@ public struct RemoteAutomation: Codable, Hashable, Sendable, Identifiable {
   public var description: String
   public var enabled: Bool
   public var triggerKind: TriggerKind
-  /// 5-field cron and its IANA zone — only for `.schedule`.
+  /// 5-field cron — only for `.schedule`.
   public var cron: String?
+  /// Local `YYYY-MM-DDTHH:mm` — only for `.once`. Nil from older computers.
+  public var runAt: String?
+  /// IANA zone `cron` or `runAt` is read in.
   public var timezone: String?
   /// Null means it inherits the computer's default rung.
   public var autonomy: RemoteAutonomy?
@@ -57,6 +66,7 @@ public struct RemoteAutomation: Codable, Hashable, Sendable, Identifiable {
   enum CodingKeys: String, CodingKey {
     case id, name, description, enabled, cron, timezone, autonomy, projects, running
     case triggerKind = "trigger_kind"
+    case runAt = "run_at"
     case lastRunAt = "last_run_at"
     case nextRunAt = "next_run_at"
   }
@@ -168,6 +178,8 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
   public var enabled: Bool
   public var triggerKind: RemoteAutomation.TriggerKind
   public var cron: String?
+  /// Local `YYYY-MM-DDTHH:mm` — only for `.once`.
+  public var runAt: String?
   public var timezone: String?
   public var catchUp: Bool
   /// Full repo paths: an editor has to write them back unchanged.
@@ -189,8 +201,8 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
   public init(
     id: String = "", name: String = "", description: String = "",
     enabled: Bool = true, triggerKind: RemoteAutomation.TriggerKind = .schedule,
-    cron: String? = "0 9 * * 1-5", timezone: String? = TimeZone.current.identifier,
-    catchUp: Bool = true, repoRoots: [String] = [], sourceIds: [String] = [],
+    cron: String? = "0 9 * * 1-5", runAt: String? = nil,
+    timezone: String? = TimeZone.current.identifier, catchUp: Bool = true, repoRoots: [String] = [], sourceIds: [String] = [],
     playbook: String = "", extraInstructions: String? = nil,
     autonomy: RemoteAutonomy? = nil, model: String? = nil,
     runner: String? = nil, claudeAccountId: String? = nil,
@@ -202,6 +214,7 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     self.enabled = enabled
     self.triggerKind = triggerKind
     self.cron = cron
+    self.runAt = runAt
     self.timezone = timezone
     self.catchUp = catchUp
     self.repoRoots = repoRoots
@@ -219,6 +232,7 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     case id, name, description, enabled, cron, timezone, playbook, autonomy, model, runner
     case guardrails
     case triggerKind = "trigger_kind"
+    case runAt = "run_at"
     case catchUp = "catch_up"
     case repoRoots = "repo_roots"
     case sourceIds = "source_ids"
@@ -235,6 +249,8 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
   public var enabled: Bool
   public var triggerKind: RemoteAutomation.TriggerKind
   public var cron: String
+  /// Sent only for `.once`, so an older computer never sees it.
+  public var runAt: String?
   public var timezone: String
   public var catchUp: Bool
   public var repoRoots: [String]
@@ -253,6 +269,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     enabled = detail.enabled
     triggerKind = detail.triggerKind
     cron = detail.cron ?? ""
+    runAt = detail.runAt
     timezone = detail.timezone ?? TimeZone.current.identifier
     catchUp = detail.catchUp
     repoRoots = detail.repoRoots
@@ -270,6 +287,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     case name, description, enabled, cron, timezone, playbook, autonomy, model, runner
     case guardrails
     case triggerKind = "trigger_kind"
+    case runAt = "run_at"
     case catchUp = "catch_up"
     case repoRoots = "repo_roots"
     case sourceIds = "source_ids"
@@ -286,6 +304,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     try c.encode(enabled, forKey: .enabled)
     try c.encode(triggerKind, forKey: .triggerKind)
     try c.encode(cron, forKey: .cron)
+    if triggerKind == .once { try c.encodeIfPresent(runAt, forKey: .runAt) }
     try c.encode(timezone, forKey: .timezone)
     try c.encode(catchUp, forKey: .catchUp)
     try c.encode(repoRoots, forKey: .repoRoots)

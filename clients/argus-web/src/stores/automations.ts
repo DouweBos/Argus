@@ -87,6 +87,16 @@ interface AutomationsState {
     repo_roots: string[];
     model: string | null;
   }) => Promise<RemoteAutomationRun>;
+  /** A quick run saved to fire once at `runAt`; resolves to the automation's id. */
+  scheduleScratch: (
+    spec: {
+      name: string;
+      playbook: string;
+      repo_roots: string[];
+      model: string | null;
+    },
+    runAt: string,
+  ) => Promise<string>;
   saveScratchRun: (runId: string, name: string) => Promise<string>;
   sendRunFeedback: (
     runId: string,
@@ -436,6 +446,33 @@ export const useAutomationsStore = create<AutomationsState>()((set, get) => {
         }));
       }
       background();
+    },
+
+    scheduleScratch: async (spec, runAt) => {
+      const result = await request(transport(), "automations.create", {
+        input: {
+          name: spec.name,
+          description: "",
+          enabled: true,
+          trigger_kind: "once",
+          cron: "",
+          run_at: runAt,
+          timezone: localTimezone(),
+          catch_up: true,
+          repo_roots: spec.repo_roots,
+          source_ids: [],
+          playbook: spec.playbook,
+          autonomy: null,
+          model: spec.model,
+          runner: null,
+          claude_account_id: null,
+          guardrails: DEFAULT_GUARDRAILS,
+        },
+      });
+      capture("web_run_acted", { action: "schedule_scratch" });
+      upsertAutomation(result.automation);
+
+      return result.automation.id;
     },
 
     runScratch: async (spec) => {

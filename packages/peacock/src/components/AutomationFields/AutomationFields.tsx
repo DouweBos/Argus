@@ -5,11 +5,6 @@ import {
   automationAccountOptions,
   type AutonomyLevel,
   type ClaudeAccountLike,
-  cronLabel,
-  draftScheduleError,
-  formatTimestamp,
-  localTimezone,
-  nextFireTimes,
   runnerTakesAccountPin,
 } from "@argus/client-core";
 import type {
@@ -17,20 +12,16 @@ import type {
   RemoteRunner,
   RemoteSignalSource,
 } from "@argus/remote-protocol";
-import { useMemo } from "react";
 import { OrganizationIcon, TerminalIcon } from "../../icons/Icons";
 import { Button } from "../Button/Button";
-import { CronSchedulePreview } from "../CronSchedulePreview/CronSchedulePreview";
 import { FormField } from "../FormField/FormField";
 import { Input, TextArea } from "../Input/Input";
 import { MenuChip } from "../MenuChip/MenuChip";
-import { SegmentedControl } from "../SegmentedControl/SegmentedControl";
 import { Toggle } from "../Toggle/Toggle";
 import { ToggleList, type ToggleListOption } from "../ToggleList/ToggleList";
 import styles from "./AutomationFields.module.css";
 import { GuardrailFields } from "./GuardrailFields";
-
-const PREVIEW_COUNT = 5;
+import { TriggerFields } from "./TriggerFields";
 
 export interface AutomationFieldsProps {
   draft: RemoteAutomationDetail;
@@ -68,18 +59,6 @@ export function AutomationFields({
   const patch = (value: Partial<RemoteAutomationDetail>) =>
     onChange({ ...draft, ...value });
 
-  const timezone = draft.timezone || localTimezone();
-  const scheduleError = draftScheduleError(draft);
-  const previewTimes = useMemo(
-    () =>
-      draft.trigger_kind === "schedule" && !scheduleError
-        ? nextFireTimes((draft.cron ?? "").trim(), timezone, PREVIEW_COUNT).map(
-            formatTimestamp,
-          )
-        : [],
-    [draft.trigger_kind, draft.cron, timezone, scheduleError],
-  );
-
   const runner = runners.find((r) => r.id === draft.runner);
   const declaredModels = runner?.models ?? [];
   // A pin is kept visible even with one account left, so it can be cleared.
@@ -116,69 +95,7 @@ export function AutomationFields({
 
       <section className={styles.group}>
         <h3 className={styles.heading}>Trigger</h3>
-        <SegmentedControl
-          options={[
-            { label: "Schedule", value: "schedule" as const },
-            { label: "Manual", value: "manual" as const },
-          ]}
-          value={draft.trigger_kind}
-          onChange={(trigger_kind) =>
-            patch({
-              trigger_kind,
-              cron: draft.cron ?? "0 9 * * 1-5",
-              timezone,
-            })
-          }
-        />
-        {draft.trigger_kind === "manual" ? (
-          <p className={styles.caption}>
-            Only runs when someone presses Run now.
-          </p>
-        ) : (
-          <div className={styles.schedule}>
-            <div className={styles.scheduleRow}>
-              <FormField
-                label="Cron"
-                helper={
-                  scheduleError
-                    ? "Five fields: min hour dom mon dow."
-                    : cronLabel((draft.cron ?? "").trim())
-                }
-                error={scheduleError ?? undefined}
-              >
-                <Input
-                  mono
-                  disabled={disabled}
-                  placeholder="0 9 * * 1-5"
-                  value={draft.cron ?? ""}
-                  onChange={(e) => patch({ cron: e.target.value })}
-                />
-              </FormField>
-              <FormField label="Timezone">
-                <Input
-                  mono
-                  disabled={disabled}
-                  placeholder={localTimezone()}
-                  value={draft.timezone ?? ""}
-                  onChange={(e) => patch({ timezone: e.target.value })}
-                />
-              </FormField>
-            </div>
-            <CronSchedulePreview
-              error={scheduleError}
-              timezone={timezone}
-              times={previewTimes}
-            />
-            <Toggle
-              checked={draft.catch_up}
-              disabled={disabled}
-              onChange={(catch_up) => patch({ catch_up })}
-            >
-              Catch up after the computer was asleep — fires once, never
-              backfills.
-            </Toggle>
-          </div>
-        )}
+        <TriggerFields disabled={disabled} draft={draft} onChange={patch} />
       </section>
 
       <section className={styles.group}>

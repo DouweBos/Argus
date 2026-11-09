@@ -2495,6 +2495,7 @@ extension ArgusProtocol {
       }
 
       public static let manual = AutomationsUpdateParamsPatchTriggerKind(rawValue: "manual")
+      public static let once = AutomationsUpdateParamsPatchTriggerKind(rawValue: "once")
       public static let schedule = AutomationsUpdateParamsPatchTriggerKind(rawValue: "schedule")
     }
 
@@ -2521,6 +2522,7 @@ extension ArgusProtocol {
       public var enabled: Bool?
       public var triggerKind: AutomationsUpdateParamsPatchTriggerKind?
       public var cron: String?
+      public var runAt: String?
       public var timezone: String?
       public var catchUp: Bool?
       public var repoRoots: [String]?
@@ -2539,6 +2541,7 @@ extension ArgusProtocol {
         case enabled = "enabled"
         case triggerKind = "trigger_kind"
         case cron = "cron"
+        case runAt = "run_at"
         case timezone = "timezone"
         case catchUp = "catch_up"
         case repoRoots = "repo_roots"
@@ -2552,12 +2555,13 @@ extension ArgusProtocol {
         case guardrails = "guardrails"
       }
 
-      public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, triggerKind: AutomationsUpdateParamsPatchTriggerKind? = nil, cron: String? = nil, timezone: String? = nil, catchUp: Bool? = nil, repoRoots: [String]? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutomationsUpdateParamsPatchAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails? = nil) {
+      public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, triggerKind: AutomationsUpdateParamsPatchTriggerKind? = nil, cron: String? = nil, runAt: String? = nil, timezone: String? = nil, catchUp: Bool? = nil, repoRoots: [String]? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutomationsUpdateParamsPatchAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails? = nil) {
         self.name = name
         self.description = description
         self.enabled = enabled
         self.triggerKind = triggerKind
         self.cron = cron
+        self.runAt = runAt
         self.timezone = timezone
         self.catchUp = catchUp
         self.repoRoots = repoRoots
@@ -2578,6 +2582,7 @@ extension ArgusProtocol {
         try c.encodeIfPresent(enabled, forKey: .enabled)
         try c.encodeIfPresent(triggerKind, forKey: .triggerKind)
         try c.encodeIfPresent(cron, forKey: .cron)
+        try c.encodeIfPresent(runAt, forKey: .runAt)
         try c.encodeIfPresent(timezone, forKey: .timezone)
         try c.encodeIfPresent(catchUp, forKey: .catchUp)
         try c.encodeIfPresent(repoRoots, forKey: .repoRoots)

@@ -65,9 +65,7 @@ function toRemoteAutomation(automation: Automation): RemoteAutomation {
     name: automation.name,
     description: automation.description,
     enabled: automation.enabled,
-    trigger_kind: trigger.kind,
-    cron: trigger.kind === "schedule" ? trigger.cron : null,
-    timezone: trigger.kind === "schedule" ? trigger.timezone : null,
+    ...wireTrigger(trigger),
     autonomy: automation.autonomy,
     projects: automation.scope.repo_roots.map((root) => path.basename(root)),
     last_run_at: automation.last_run_at,
@@ -118,10 +116,7 @@ function toRemoteAutomationDetail(
     name: automation.name,
     description: automation.description,
     enabled: automation.enabled,
-    trigger_kind: trigger.kind,
-    cron: trigger.kind === "schedule" ? trigger.cron : null,
-    timezone: trigger.kind === "schedule" ? trigger.timezone : null,
-    catch_up: trigger.kind === "schedule" ? trigger.catch_up : true,
+    ...wireTrigger(trigger),
     repo_roots: automation.scope.repo_roots,
     source_ids: automation.source_ids,
     playbook: automation.playbook,
@@ -134,16 +129,47 @@ function toRemoteAutomationDetail(
   };
 }
 
+/** The union, flattened into the wire's trigger fields. */
+function wireTrigger(trigger: Automation["trigger"]): {
+  catch_up: boolean;
+  cron: string | null;
+  run_at: string | null;
+  timezone: string | null;
+  trigger_kind: Automation["trigger"]["kind"];
+} {
+  return {
+    trigger_kind: trigger.kind,
+    cron: trigger.kind === "schedule" ? trigger.cron : null,
+    run_at: trigger.kind === "once" ? trigger.at : null,
+    timezone: trigger.kind === "manual" ? null : trigger.timezone,
+    catch_up: trigger.kind === "manual" ? true : trigger.catch_up,
+  };
+}
+
 /** The wire shape carries the trigger flat; the host keeps it as a union. */
 function toTrigger(input: AutomationInput): Automation["trigger"] {
-  return input.trigger_kind === "schedule"
-    ? {
+  switch (input.trigger_kind) {
+    case "schedule":
+      return {
         kind: "schedule",
         cron: input.cron,
         timezone: input.timezone,
         catch_up: input.catch_up,
+      };
+    case "once":
+      if (!input.run_at) {
+        throw "A run-once automation needs a date and time.";
       }
-    : { kind: "manual" };
+
+      return {
+        kind: "once",
+        at: input.run_at,
+        timezone: input.timezone,
+        catch_up: input.catch_up,
+      };
+    case "manual":
+      return { kind: "manual" };
+  }
 }
 
 function both(automation: Automation): {
@@ -256,18 +282,20 @@ export function updateRemoteAutomation(
 
   // The trigger is four wire fields; rebuild it from the current one so a
   // partial patch can change the cron without restating the timezone.
-  const schedule = current.trigger.kind === "schedule" ? current.trigger : null;
+  const clock = current.trigger.kind === "manual" ? null : current.trigger;
   const touchesTrigger =
     patch.trigger_kind !== undefined ||
     patch.cron !== undefined ||
+    patch.run_at !== undefined ||
     patch.timezone !== undefined ||
     patch.catch_up !== undefined;
   if (touchesTrigger) {
     update.trigger = toTrigger({
       trigger_kind: patch.trigger_kind ?? current.trigger.kind,
-      cron: patch.cron ?? schedule?.cron ?? "",
-      timezone: patch.timezone ?? schedule?.timezone ?? "UTC",
-      catch_up: patch.catch_up ?? schedule?.catch_up ?? true,
+      cron: patch.cron ?? (clock?.kind === "schedule" ? clock.cron : ""),
+      run_at: patch.run_at ?? (clock?.kind === "once" ? clock.at : undefined),
+      timezone: patch.timezone ?? clock?.timezone ?? "UTC",
+      catch_up: patch.catch_up ?? clock?.catch_up ?? true,
     } as AutomationInput);
   }
 
@@ -422,10 +450,7 @@ export async function remoteAutomationDraft(
       name: input.name,
       description: input.description ?? "",
       enabled: input.enabled ?? false,
-      trigger_kind: trigger.kind,
-      cron: trigger.kind === "schedule" ? trigger.cron : null,
-      timezone: trigger.kind === "schedule" ? trigger.timezone : null,
-      catch_up: trigger.kind === "schedule" ? trigger.catch_up : true,
+      ...wireTrigger(trigger),
       repo_roots: input.scope?.repo_roots ?? [],
       source_ids: input.source_ids ?? [],
       playbook: input.playbook,

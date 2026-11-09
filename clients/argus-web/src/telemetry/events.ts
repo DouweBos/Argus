@@ -59,6 +59,7 @@ export type RunAction =
   | "feedback"
   | "mark_read"
   | "save_scratch"
+  | "schedule_scratch"
   | "start"
   | "start_scratch";
 

@@ -46,6 +46,14 @@ Two behaviours matter more than the cron itself:
   is still going records a `skipped` run with the reason, and the schedule moves
   on. Two agents in one place is not a thing to design for.
 
+**Once** — a date and time, in an IANA timezone, at which the automation runs
+a single time: "re-check this PR's CI tomorrow at 9", "try again after my plan
+limit resets". It follows the same two rules as a schedule — a time slept
+through runs late only with **catch-up** on, and a run still going turns it
+into a `skipped` run — and then the automation pauses itself, whatever
+happened. It keeps the time, so the history still says when it was for; pick a
+new time and enable it to use it again. A time already gone cannot be armed.
+
 **Manual** — no clock at all. It only runs when you press **Run now**, which
 every automation supports regardless of its trigger.
 
@@ -105,6 +113,12 @@ It cannot ask for a higher rung, because there is no field in which to ask, and
 it has no runner of its own either: it runs on the app default.
 The MCP gate, the shell guard and the spend ceilings all see it as exactly what
 it is.
+
+**Run later** next to **Run once** takes a date and time instead. Something
+has to remember a run that hasn't happened yet, so this one is saved: it
+becomes an automation with a [once](#triggers) trigger, named after the quick
+run, which appears in the list until it fires and then pauses itself. Delete
+it from there, or edit its time, like any other.
 
 Quick runs are kept in the same history as everything else — they live at
 `/automations/quick`, open at `/automations/quick/runs/:runId`, and are swept
@@ -597,7 +611,7 @@ phone clears it on the computer too — there is one inbox, not two.
 
 A phone authors them too. Edit on an automation, and + on the automations
 list, open the same fields the desktop editor has: name, description, trigger
-(cron, timezone, catch-up), projects, signal sources, runner and model, autonomy, the
+(cron or a one-time date, timezone, catch-up), projects, signal sources, runner and model, autonomy, the
 guardrails and the playbook itself. Saving is explicit, and deleting asks
 first; past runs and their reports survive the automation. The automation's
 **Memories** are listed on it too: tap one to read it, and with control, edit

@@ -1,6 +1,11 @@
-import { describeError } from "@argus/client-core";
+import {
+  defaultOnceAt,
+  describeError,
+  localTimezone,
+  onceError,
+} from "@argus/client-core";
 import { type ReactNode, useState } from "react";
-import { PlayIcon } from "../../icons/Icons";
+import { ClockIcon, PlayIcon } from "../../icons/Icons";
 import { Banner } from "../Banner/Banner";
 import { Button } from "../Button/Button";
 import { FormField } from "../FormField/FormField";
@@ -21,6 +26,11 @@ export interface QuickRunViewProps {
   projects: ToggleListOption[];
   /** Starts the run; rejects with the computer's reason. Omit where this client may not spend. */
   onRun?: (spec: QuickRunSpec) => Promise<unknown>;
+  /**
+   * Saves the spec as an automation that runs once at `runAt` (local
+   * `YYYY-MM-DDTHH:mm` in this client's zone). Omit to hide "Run later".
+   */
+  onRunLater?: (spec: QuickRunSpec, runAt: string) => Promise<unknown>;
   /** Every quick run so far, usually a `RunHistory`. */
   history: ReactNode;
   error?: string | null;
@@ -35,6 +45,7 @@ export function QuickRunView({
   error,
   history,
   onRun,
+  onRunLater,
   projects,
 }: QuickRunViewProps) {
   const [name, setName] = useState("");
@@ -43,26 +54,42 @@ export function QuickRunView({
   const [repoRoots, setRepoRoots] = useState<string[]>([]);
   const [starting, setStarting] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  const [runAt, setRunAt] = useState(() => defaultOnceAt(localTimezone()));
 
-  const run = async () => {
-    if (!onRun) {
-      return;
-    }
+  const spec = (): QuickRunSpec => ({
+    name: name.trim() || "Quick run",
+    playbook,
+    repo_roots: repoRoots,
+    model: model.trim() || null,
+  });
+
+  const submit = async (action: () => Promise<unknown>) => {
     setStarting(true);
     setFailure(null);
     try {
-      await onRun({
-        name: name.trim() || "Quick run",
-        playbook,
-        repo_roots: repoRoots,
-        model: model.trim() || null,
-      });
+      await action();
       setPlaybook("");
     } catch (e) {
       setFailure(describeError(e));
     } finally {
       setStarting(false);
     }
+  };
+
+  const run = () => (onRun ? submit(() => onRun(spec())) : Promise.resolve());
+
+  const runLater = () => {
+    if (!onRunLater) {
+      return Promise.resolve();
+    }
+    const invalid = onceError(runAt, localTimezone());
+    if (invalid) {
+      setFailure(invalid);
+
+      return Promise.resolve();
+    }
+
+    return submit(() => onRunLater(spec(), runAt));
   };
 
   return (
@@ -128,6 +155,31 @@ export function QuickRunView({
               onChange={(e) => setModel(e.target.value)}
             />
           </FormField>
+          {onRunLater && (
+            <div className={styles.later}>
+              <FormField
+                helper="Saved as an automation that runs once at this time, then pauses."
+                label="Run later"
+              >
+                <Input
+                  type="datetime-local"
+                  value={runAt}
+                  onChange={(e) => setRunAt(e.target.value)}
+                />
+              </FormField>
+              <Button
+                disabled={starting || playbook.trim().length === 0}
+                leading={<ClockIcon size={11} />}
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  runLater().catch(() => undefined);
+                }}
+              >
+                Run later
+              </Button>
+            </div>
+          )}
           {failure && <p className={styles.error}>{failure}</p>}
         </div>
       </SectionPanel>

@@ -9,7 +9,7 @@ public enum AutomationText {
 
   /// What the list shows under "next run".
   public static func nextRun(_ automation: RemoteAutomation) -> String {
-    guard automation.triggerKind == .schedule else { return "Manual" }
+    guard automation.triggerKind != .manual else { return "Manual" }
     guard automation.enabled else { return "Paused" }
     guard let next = automation.nextRunAt else { return "—" }
     return "\(timestamp(next)) (\(Labels.until(next) ?? "now"))"

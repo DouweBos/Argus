@@ -79,3 +79,23 @@ struct SchedulePreviewTextTests {
     #expect(draft.hasValidTrigger)
   }
 }
+
+struct OnceTriggerTests {
+  @Test func readsTheWallClockInItsZoneAndRejectsArmedPastTimes() throws {
+    let at = try #require(OnceTime.date("2026-11-10T09:00", timezone: "Europe/Amsterdam"))
+    #expect(at == Date(timeIntervalSince1970: 1_794_297_600))
+    #expect(OnceTime.string(at, timezone: "Europe/Amsterdam") == "2026-11-10T09:00")
+    #expect(OnceTime.date("2026-02-30T09:00", timezone: "UTC") == nil)
+
+    var draft = RemoteAutomationDetail(enabled: false, extraInstructions: "")
+    draft.triggerKind = .once
+    draft.timezone = "UTC"
+    #expect(!draft.hasValidTrigger)
+    draft.runAt = "2001-01-01T09:00"
+    #expect(draft.hasValidTrigger)
+    draft.enabled = true
+    #expect(draft.onceError == "That time has already passed.")
+    draft.runAt = OnceTime.nextWholeHour(timezone: "UTC")
+    #expect(draft.hasValidTrigger)
+  }
+}

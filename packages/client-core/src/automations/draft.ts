@@ -9,6 +9,7 @@ import type {
   RemoteProject,
 } from "@argus/remote-protocol";
 import { cronError, DEFAULT_GUARDRAILS, localTimezone } from "./format";
+import { onceError } from "./once";
 
 export const DEFAULT_CRON = "0 9 * * 1-5";
 
@@ -29,6 +30,7 @@ export function newAutomationDraft(
     enabled: false,
     trigger_kind: "schedule",
     cron: DEFAULT_CRON,
+    run_at: null,
     timezone,
     catch_up: true,
     repo_roots: [],
@@ -51,6 +53,7 @@ export function draftToInput(draft: RemoteAutomationDetail): AutomationInput {
     enabled: draft.enabled,
     trigger_kind: draft.trigger_kind,
     cron: (draft.cron ?? DEFAULT_CRON).trim(),
+    ...(draft.trigger_kind === "once" && { run_at: draft.run_at ?? "" }),
     timezone: draft.timezone?.trim() || localTimezone(),
     catch_up: draft.catch_up,
     repo_roots: draft.repo_roots,
@@ -77,13 +80,29 @@ export function runnerTakesAccountPin(
   return !runnerId || runnerId === CLAUDE_CODE_RUNNER_ID;
 }
 
-/** Why the draft's schedule can't be saved, or null when it can. */
+/**
+ * Why the draft's schedule can't be saved, or null when it can. A paused
+ * run-once may keep a past time — it is only checked once it would arm.
+ */
 export function draftScheduleError(
-  draft: Pick<RemoteAutomationDetail, "cron" | "timezone" | "trigger_kind">,
+  draft: Pick<
+    RemoteAutomationDetail,
+    "cron" | "enabled" | "run_at" | "timezone" | "trigger_kind"
+  >,
+  now: number = Date.now(),
 ): string | null {
-  return draft.trigger_kind === "schedule"
-    ? cronError((draft.cron ?? "").trim(), draft.timezone || localTimezone())
-    : null;
+  const timezone = draft.timezone || localTimezone();
+  switch (draft.trigger_kind) {
+    case "schedule":
+      return cronError((draft.cron ?? "").trim(), timezone);
+    case "once": {
+      const error = onceError(draft.run_at ?? "", timezone, now);
+
+      return error && (draft.enabled || !draft.run_at) ? error : null;
+    }
+    case "manual":
+      return null;
+  }
 }
 
 /** Whether the editor differs from what the computer holds. */

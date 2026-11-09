@@ -33,7 +33,10 @@ export default meta;
 type Story = StoryObj<typeof QuickRunView>;
 
 export const Default: Story = {
-  args: { onRun: () => new Promise((r) => setTimeout(r, 600)) },
+  args: {
+    onRun: () => new Promise((r) => setTimeout(r, 600)),
+    onRunLater: () => new Promise((r) => setTimeout(r, 600)),
+  },
 };
 
 export const Refused: Story = {

@@ -44,6 +44,9 @@ function automationMeta(automation: RemoteAutomation): string {
     return "Manual — runs when someone presses Run now";
   }
   const schedule = scheduleLabel(automation);
+  if (automation.trigger_kind === "once") {
+    return automation.enabled ? schedule : `${schedule} · paused`;
+  }
 
   return automation.enabled
     ? `${schedule} · next ${nextRunLabel(automation)}`
