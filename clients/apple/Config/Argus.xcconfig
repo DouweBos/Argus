@@ -11,7 +11,11 @@ POSTHOG_HOST = https:$(SLASH)$(SLASH)eu.i.posthog.com
 // Server never check for updates, since they couldn't verify one.
 SPARKLE_PUBLIC_ED_KEY =
 
+// The maintainer's Apple team. Building yourself? Set your own in
+// `Argus.local.xcconfig` (below) instead of editing the project.
+DEVELOPMENT_TEAM = CKZT75PN5T
+
 // A gitignored `Argus.local.xcconfig` beside this file wins — included last so
-// its values override the defaults above — so a contributor can point their
-// own PostHog project at a local build without touching git.
+// its values override the defaults above — so a contributor can use their own
+// team or PostHog project without touching git.
 #include? "Argus.local.xcconfig"
