@@ -24,6 +24,7 @@ import {
   completeOnboarding,
   ensureArgusDir,
   getOnboardingState,
+  importConductorConfig,
   listExamples,
   readExistingArgusJson,
   refineArgusJsonWithClaude,
@@ -106,6 +107,9 @@ export function registerOnboardingCommands(): void {
   );
   defineTypedCommand("onboarding_suggest_argus_json", (p) =>
     suggestArgusJson(p.path),
+  );
+  defineTypedCommand("onboarding_import_conductor_config", (p) =>
+    importConductorConfig(p.path),
   );
   defineTypedCommand("onboarding_read_existing_argus_json", (p) =>
     readExistingArgusJson(p.path),

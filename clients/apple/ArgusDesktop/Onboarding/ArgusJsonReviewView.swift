@@ -43,6 +43,13 @@ struct ArgusJsonReviewView: View {
       )
       .foregroundStyle(theme.textSecondary)
       .fixedSize(horizontal: false, vertical: true)
+      if generator.conductor != nil {
+        option(
+          title: "Import from Conductor",
+          detail: "Use the setup script and run actions from this repo's Conductor settings. Argus fills in the CONDUCTOR_ variables they read, like CONDUCTOR_PORT.",
+          button: "Import from Conductor", busy: false, prominent: true
+        ) { _ in generator.importConductor() }
+      }
       option(
         title: "Quick generate",
         detail: "Inspect package.json, lockfiles, and platform dirs and write a sensible default. Fast, no network, no LLM.",
@@ -53,7 +60,7 @@ struct ArgusJsonReviewView: View {
         title: "Generate with Claude",
         detail: "Run the Claude CLI in this project to refine the config — it reads your scripts, native targets, and env files and produces a tailored result. Takes ~30–90s. Requires the claude CLI to be installed and authenticated.",
         button: generator.phase == .generatingClaude ? "Asking Claude…" : "Generate with Claude",
-        busy: generator.phase == .generatingClaude, prominent: true
+        busy: generator.phase == .generatingClaude, prominent: generator.conductor == nil
       ) { await generator.claude($0) }
     }
   }
@@ -81,15 +88,25 @@ struct ArgusJsonReviewView: View {
     }
   }
 
+  private var reviewIntro: String {
+    let tail = "Review the contents and save it to write the file to the repo root."
+    switch generator.source {
+    case .claude: return "Claude proposed the following .argus.json. \(tail)"
+    case .conductor: return "Argus turned your Conductor scripts into the following .argus.json. \(tail)"
+    case .quick: return "Argus inferred the following .argus.json from your project. \(tail)"
+    }
+  }
+
   private var reviewing: some View {
     VStack(alignment: .leading, spacing: 10) {
-      Text(
-        generator.source == .claude
-          ? "Claude proposed the following .argus.json. Review the contents and save it to write the file to the repo root."
-          : "Argus inferred the following .argus.json from your project. Review the contents and save it to write the file to the repo root."
-      )
-      .foregroundStyle(theme.textSecondary)
-      .fixedSize(horizontal: false, vertical: true)
+      Text(reviewIntro)
+        .foregroundStyle(theme.textSecondary)
+        .fixedSize(horizontal: false, vertical: true)
+      ForEach(generator.notes, id: \.self) { note in
+        Label(note, systemImage: "info.circle")
+          .foregroundStyle(theme.textSecondary)
+          .fixedSize(horizontal: false, vertical: true)
+      }
       if !generator.signals.isEmpty {
         FlowRow(spacing: 6, packed: true) {
           ForEach(Array(generator.signals.enumerated()), id: \.offset) { _, signal in

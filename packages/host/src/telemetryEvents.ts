@@ -201,6 +201,12 @@ export interface EventMap {
   color_theme_changed: {
     theme: "amber" | "ember" | "grove" | "iris" | "muted" | "ocean" | "rose";
   };
+  conductor_config_imported: {
+    format: "conductor_json" | "settings_toml";
+    has_setup: boolean;
+    note_count: number;
+    run_count: number;
+  };
   design_compared: {
     diff_bucket: "<2%" | "<10%" | "<30%" | ">=30%";
     matched: boolean;
@@ -321,7 +327,10 @@ export interface EventMap {
     has_explicit_branch: boolean;
     use_existing_branch: boolean;
   };
-  session_adopted: { setup_pending: boolean };
+  session_adopted: {
+    origin: "claude_code" | "conductor" | "other";
+    setup_pending: boolean;
+  };
   session_deleted: {
     delete_branch: boolean;
     kind: SessionKind;

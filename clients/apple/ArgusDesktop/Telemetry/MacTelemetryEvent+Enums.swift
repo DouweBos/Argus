@@ -20,6 +20,7 @@ extension MacTelemetryEvent {
   enum ArgusJsonMethod: String {
     case quick
     case claude
+    case conductor
   }
 
   enum ArgusJsonOutcome: String {

@@ -2,6 +2,7 @@ import type { Equal, Expect } from "./typeEquality";
 import type { ClaudeAccountsState as HostClaudeAccountsState } from "../services/claudeAuth/accountActions";
 import type { ClaudeAccount as HostClaudeAccount } from "../services/claudeAuth/accounts";
 import type { ClaudeAuthStatus as HostClaudeAuthStatus } from "../services/claudeAuth/claudeAuth";
+import type { ConductorImport as HostConductorImport } from "../services/onboarding/conductorConfig";
 import type { ExampleProject as HostExampleProject } from "../services/onboarding/examples";
 import type {
   ArgusConfigSuggestion as HostArgusConfigSuggestion,
@@ -13,6 +14,7 @@ import type {
 import type {
   ArgusConfigSuggestion,
   ClaudeAccount,
+  ConductorImport,
   ClaudeAccountsState,
   ClaudeAuthStatus,
   DetectedSignal,
@@ -29,6 +31,7 @@ export type OnboardingModelChecks = [
   Expect<Equal<DetectedSignal, HostDetectedSignal>>,
   Expect<Equal<ArgusConfigSuggestion, HostArgusConfigSuggestion>>,
   Expect<Equal<ExampleProject, HostExampleProject>>,
+  Expect<Equal<ConductorImport, HostConductorImport>>,
   Expect<Equal<ClaudeAuthStatus, HostClaudeAuthStatus>>,
   Expect<Equal<ClaudeAccount, HostClaudeAccount>>,
   Expect<Equal<ClaudeAccountsState, HostClaudeAccountsState>>,

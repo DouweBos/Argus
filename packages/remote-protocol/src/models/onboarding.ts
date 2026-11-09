@@ -99,6 +99,15 @@ export const ArgusConfigSuggestion = z.object({
 });
 export type ArgusConfigSuggestion = z.infer<typeof ArgusConfigSuggestion>;
 
+/** A repo's Conductor scripts turned into a `.argus.json`. */
+export const ConductorImport = z.object({
+  format: z.enum(["conductor_json", "settings_toml"]),
+  suggestion: ArgusConfigSuggestion,
+  /** What couldn't be carried over, worded for the user. */
+  notes: z.array(z.string()),
+});
+export type ConductorImport = z.infer<typeof ConductorImport>;
+
 export const ExampleProject = z.object({
   slug: z.string(),
   name: z.string(),

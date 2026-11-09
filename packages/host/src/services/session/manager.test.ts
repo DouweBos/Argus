@@ -312,6 +312,27 @@ describe("listSessions — a worktree made outside Argus", () => {
     ]);
   });
 
+  it("adopts Conductor's workspaces without owing setup", async () => {
+    vi.stubEnv("HOME", home);
+    argusConfig.commands = ["pnpm install"];
+    worktreePath = path.join(home, "conductor", "workspaces", "repo", "lisbon");
+    fs.mkdirSync(worktreePath, { recursive: true });
+    fs.writeFileSync(path.join(worktreePath, ".git"), "gitdir: elsewhere");
+    vi.mocked(git).mockImplementation(async (_cwd, args) =>
+      args[0] === "worktree" && args[1] === "list"
+        ? `worktree ${repoRoot}\nHEAD abc\nbranch refs/heads/main\n\n` +
+          `worktree ${worktreePath}\nHEAD abc\nbranch refs/heads/douwe/lisbon\n`
+        : "",
+    );
+
+    const listed = await listSessions(repoRoot);
+
+    expect(listed.map((s) => [s.path, s.display_name])).toEqual([
+      [worktreePath, "Lisbon"],
+    ]);
+    expect(listed[0].setup_pending).toBeFalsy();
+  });
+
   it("owes setup when the project has some, until it's marked ready", async () => {
     argusConfig.commands = ["pnpm install"];
     const [session] = await listSessions(repoRoot);

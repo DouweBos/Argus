@@ -21,7 +21,17 @@ final class ArgusJsonGenerator {
     case saved
   }
 
-  enum Source: String { case quick, claude }
+  enum Source: String {
+    case quick, claude, conductor
+
+    var telemetry: MacTelemetryEvent.ArgusJsonMethod {
+      switch self {
+      case .quick: .quick
+      case .claude: .claude
+      case .conductor: .conductor
+      }
+    }
+  }
 
   let repoRoot: String
   private(set) var phase = Phase.loading
@@ -30,6 +40,10 @@ final class ArgusJsonGenerator {
   private(set) var source = Source.quick
   private(set) var signals: [ArgusProtocol.DetectedSignal] = []
   private(set) var inferredFrom: [String] = []
+  /// The repo's Conductor scripts as a `.argus.json`, when it has any.
+  private(set) var conductor: ArgusProtocol.ConductorImport?
+  /// What the Conductor import couldn't carry over.
+  private(set) var notes: [String] = []
   private(set) var error: String?
 
   init(repoRoot: String) {
@@ -43,7 +57,23 @@ final class ArgusJsonGenerator {
     let found = try? await backend.request(
       ArgusProtocol.Commands.OnboardingReadExistingArgusJson.self, .init(path: repoRoot))
     existing = found ?? nil
+    if existing == nil {
+      conductor = (try? await backend.request(
+        ArgusProtocol.Commands.OnboardingImportConductorConfig.self, .init(path: repoRoot))) ?? nil
+    }
     phase = existing == nil ? .choosing : .existing
+  }
+
+  /// Conductor's setup script and run actions, already converted on load.
+  func importConductor() {
+    guard let conductor else { return }
+    error = nil
+    proposed = conductor.suggestion.config
+    signals = conductor.suggestion.signals
+    inferredFrom = conductor.suggestion.inferredFrom
+    notes = conductor.notes
+    source = .conductor
+    phase = .reviewing
   }
 
   /// Fast, no network: package.json, lockfiles, platform dirs.
@@ -85,7 +115,7 @@ final class ArgusJsonGenerator {
       try await backend.request(
         ArgusProtocol.Commands.WriteArgusConfig.self,
         .init(repoRoot: repoRoot, content: ConfigJSON.string(.object(proposed)) + "\n"))
-      MacTelemetry.capture(.argusJsonGenerated(method: source == .claude ? .claude : .quick, outcome: .saved))
+      MacTelemetry.capture(.argusJsonGenerated(method: source.telemetry, outcome: .saved))
       phase = .saved
     } catch {
       self.error = HostStore.describe(error)
@@ -94,8 +124,9 @@ final class ArgusJsonGenerator {
   }
 
   func discard() {
-    MacTelemetry.capture(.argusJsonGenerated(method: source == .claude ? .claude : .quick, outcome: .discarded))
+    MacTelemetry.capture(.argusJsonGenerated(method: source.telemetry, outcome: .discarded))
     proposed = nil
+    notes = []
     error = nil
     phase = .choosing
   }
@@ -106,6 +137,7 @@ final class ArgusJsonGenerator {
     proposed = suggestion.config
     signals = suggestion.signals
     inferredFrom = suggestion.inferredFrom
+    notes = []
   }
 
   private func fail(_ error: Error, method: MacTelemetryEvent.ArgusJsonMethod) {

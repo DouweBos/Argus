@@ -20,6 +20,7 @@ import { argusHomeDir } from "../../lib/argusHome";
 import { canonicalPath } from "../../lib/canonicalPath";
 import { loadAppSettings } from "../appSettings/store";
 import { loadUserProjectSettings } from "../userProjectSettings/store";
+import { isConductorWorkspacePath } from "./conductorWorkspaces";
 import {
   computeWorktreesRoot,
   isInsideRoot,
@@ -109,15 +110,34 @@ export function claudeWorktreesRoot(repoRoot: string): string {
 
 /**
  * True when the path sits under any root this repo's worktrees may use, or
- * Claude Code's own. That one is only adopted from: nothing else Argus does to
- * its roots (sidecars, old metadata) belongs inside a repo.
+ * Claude Code's or Conductor's own. Those are only adopted from: nothing else
+ * Argus does to its roots (sidecars, old metadata) belongs in them.
  * Compared canonically: git lists `/private/tmp/…` for a root set as `/tmp/…`.
  */
 export function isKnownWorktreePath(repoRoot: string, target: string): boolean {
   const real = canonicalPath(target);
+  if (isConductorWorkspacePath(real)) {
+    // Conductor clones repos under its root too; the checkout itself isn't one.
+    return real !== canonicalPath(repoRoot);
+  }
 
   return [
     ...worktreeRootsForRepo(repoRoot),
     claudeWorktreesRoot(repoRoot),
   ].some((root) => isInsideRoot(canonicalPath(root), real));
+}
+
+/** Which tool made a worktree Argus didn't. */
+export function adoptedWorktreeOrigin(
+  repoRoot: string,
+  target: string,
+): "claude_code" | "conductor" | "other" {
+  const real = canonicalPath(target);
+  if (isConductorWorkspacePath(real)) {
+    return "conductor";
+  }
+
+  return isInsideRoot(canonicalPath(claudeWorktreesRoot(repoRoot)), real)
+    ? "claude_code"
+    : "other";
 }

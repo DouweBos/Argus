@@ -83,7 +83,7 @@ import {
   pathAvailability,
 } from "./volumeAvailability";
 import { startWatcher } from "./watcher";
-import { isKnownWorktreePath } from "./worktreeLocation";
+import { adoptedWorktreeOrigin, isKnownWorktreePath } from "./worktreeLocation";
 
 // ---------------------------------------------------------------------------
 // add_repo_root / remove_repo_root
@@ -323,9 +323,13 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
       ws.setup_pending = existing.setup_pending;
     }
     if (adopted) {
+      const origin = adoptedWorktreeOrigin(repoRoot, ws.path);
       ws.display_name = humanizeBranchName(ws.branch);
-      ws.setup_pending = hasSetupSteps(repoRoot) || undefined;
+      // Conductor ran its own setup script in its workspaces.
+      ws.setup_pending =
+        (origin !== "conductor" && hasSetupSteps(repoRoot)) || undefined;
       telemetryCapture("session_adopted", {
+        origin,
         setup_pending: Boolean(ws.setup_pending),
       });
     }

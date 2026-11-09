@@ -13,6 +13,12 @@
           "summary": "Install Argus, open your first project, and spin up a session in under five minutes."
         },
         {
+          "slug": "coming-from-conductor",
+          "file": "coming-from-conductor.md",
+          "title": "Coming from Conductor",
+          "summary": "Bring your Conductor projects, workspaces and chats over: setup and run scripts become .argus.json."
+        },
+        {
           "slug": "concepts",
           "file": "concepts.md",
           "title": "Concepts",

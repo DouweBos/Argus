@@ -7047,6 +7047,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct OnboardingImportConductorConfigParams: Codable, Sendable {
+      public var path: String
+
+      enum CodingKeys: String, CodingKey {
+        case path = "path"
+      }
+
+      public init(path: String) {
+        self.path = path
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(path, forKey: .path)
+      }
+    }
+
     public struct OnboardingReadExistingArgusJsonParams: Codable, Sendable {
       public var path: String
 
@@ -12124,6 +12141,13 @@ extension ArgusProtocol {
       public typealias Params = EmptyParams
       public typealias Result = ArgusProtocol.OnboardingConfigFile
       public static let name = "onboarding_get_state"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingImportConductorConfig: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.OnboardingImportConductorConfigParams
+      public typealias Result = ArgusProtocol.ConductorImport?
+      public static let name = "onboarding_import_conductor_config"
       public static let tier = "admin"
     }
 

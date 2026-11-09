@@ -4171,6 +4171,46 @@ extension ArgusProtocol {
     public static let rose = ColorTheme(rawValue: "rose")
   }
 
+  public struct ConductorImportFormat: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let conductorJson = ConductorImportFormat(rawValue: "conductor_json")
+    public static let settingsToml = ConductorImportFormat(rawValue: "settings_toml")
+  }
+
+  public struct ConductorImport: Codable, Sendable {
+    public var format: ConductorImportFormat
+    public var suggestion: ArgusConfigSuggestion
+    public var notes: [String]
+
+    enum CodingKeys: String, CodingKey {
+      case format = "format"
+      case suggestion = "suggestion"
+      case notes = "notes"
+    }
+
+    public init(format: ConductorImportFormat, suggestion: ArgusConfigSuggestion, notes: [String]) {
+      self.format = format
+      self.suggestion = suggestion
+      self.notes = notes
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(format, forKey: .format)
+      try c.encode(suggestion, forKey: .suggestion)
+      try c.encode(notes, forKey: .notes)
+    }
+  }
+
   public struct ConductorLogEntry: Codable, Sendable {
     public var args: String
     public var command: String

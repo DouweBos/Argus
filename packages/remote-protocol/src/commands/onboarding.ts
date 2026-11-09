@@ -4,6 +4,7 @@ import {
   ClaudeAccountsState,
   ClaudeAuthStatus,
   ClaudeLoginUrl,
+  ConductorImport,
   ExampleProject,
   OkOrError,
   OnboardingConfigFile,
@@ -140,6 +141,12 @@ export const ONBOARDING_COMMANDS = {
     tier: "admin",
     params: RepoPath,
     result: ArgusConfigSuggestion,
+  },
+  /** Null when the repo has no Conductor config. */
+  onboarding_import_conductor_config: {
+    tier: "admin",
+    params: RepoPath,
+    result: ConductorImport.nullable(),
   },
   onboarding_read_existing_argus_json: {
     tier: "admin",

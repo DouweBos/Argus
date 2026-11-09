@@ -289,6 +289,10 @@ telemetry choice. Everything else happens in place.
   repositories you've used the Claude Code CLI in, with their chat count
   and last activity, and adds the ones you tick as projects. Their CLI
   chats then show up in each project's history.
+- **Import from Conductor** — a repository with Conductor settings gets
+  its setup script and run actions turned into `.argus.json`, and the
+  workspaces Conductor made show up as sessions. See
+  [Coming from Conductor](/argus/docs/coming-from-conductor).
 
 ---
 

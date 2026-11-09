@@ -1,7 +1,8 @@
 /**
  * Bring chats run with the plain Claude Code CLI — in a terminal or another
  * app — into each project's chat history, so they can be read and resumed.
- * Only the repo root's own transcripts count; Argus's worktrees have theirs.
+ * The repo root's transcripts count, and those of Conductor's workspaces;
+ * Argus's own worktrees have theirs.
  */
 
 import type { CliSession } from "./cliSession";
@@ -20,6 +21,7 @@ import {
 import { liveMeta } from "../agent/conversation/live";
 import { loadAppSettings } from "../appSettings/store";
 import { claudeProjectSlug } from "../llm/runners/claudeCode/transcriptFork";
+import { isConductorWorkspacePath } from "../session/conductorWorkspaces";
 import { capture } from "../telemetry/telemetry";
 import { isCliSessionId, readCliSession } from "./cliSession";
 import { isArgusHelperPrompt } from "./helperPrompts";
@@ -66,6 +68,21 @@ export interface ProjectImport {
 /** Transcripts judged on an earlier pass, by session id → mtime, so each is read once. */
 const judged = new Map<string, number>();
 
+/** The repo root, then the project's Conductor workspaces. */
+function transcriptDirs(repoRoot: string): string[] {
+  const workspaces = [...appState.sessions.values()]
+    .filter(
+      (s) =>
+        s.repo_root === repoRoot &&
+        s.kind === "worktree" &&
+        !!s.path &&
+        isConductorWorkspacePath(s.path),
+    )
+    .map((s) => s.path);
+
+  return [repoRoot, ...workspaces];
+}
+
 /** Import one project's new or grown CLI chats. */
 export async function importCliChats(
   repoRoot: string,
@@ -75,33 +92,35 @@ export async function importCliChats(
   if (!chatHistoryEnabled()) {
     return none;
   }
-  const dir = path.join(
-    os.homedir(),
-    ".claude",
-    "projects",
-    claudeProjectSlug(repoRoot),
-  );
-  let names: string[];
-  try {
-    names = (await fs.promises.readdir(dir)).filter((n) =>
-      n.endsWith(".jsonl"),
-    );
-  } catch {
-    return none;
-  }
   const files: { file: string; id: string; mtimeMs: number }[] = [];
-  for (const name of names) {
-    const id = name.slice(0, -".jsonl".length);
-    if (!isCliSessionId(id)) {
+  for (const cwd of transcriptDirs(repoRoot)) {
+    const dir = path.join(
+      os.homedir(),
+      ".claude",
+      "projects",
+      claudeProjectSlug(cwd),
+    );
+    let names: string[];
+    try {
+      names = (await fs.promises.readdir(dir)).filter((n) =>
+        n.endsWith(".jsonl"),
+      );
+    } catch {
       continue;
     }
-    try {
-      const { mtimeMs } = await fs.promises.stat(path.join(dir, name));
-      if (now - mtimeMs <= MAX_AGE_MS) {
-        files.push({ file: path.join(dir, name), id, mtimeMs });
+    for (const name of names) {
+      const id = name.slice(0, -".jsonl".length);
+      if (!isCliSessionId(id)) {
+        continue;
       }
-    } catch {
-      // Deleted mid-scan.
+      try {
+        const { mtimeMs } = await fs.promises.stat(path.join(dir, name));
+        if (now - mtimeMs <= MAX_AGE_MS) {
+          files.push({ file: path.join(dir, name), id, mtimeMs });
+        }
+      } catch {
+        // Deleted mid-scan.
+      }
     }
   }
   files.sort((a, b) => b.mtimeMs - a.mtimeMs);
