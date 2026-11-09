@@ -34,6 +34,9 @@ struct SessionSidebar: View {
               .tag(
                 SidebarItem.session(
                   id: group.id, label: group.label, repoRoot: project.repoRoot, projectName: project.name))
+              .contextMenu {
+                if let session = group.session { PullRequestWatchButton(session: session) }
+              }
           }
         } header: {
           header(project)

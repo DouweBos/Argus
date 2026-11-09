@@ -327,6 +327,22 @@ export interface EventMap {
       | "wait_for_terminal";
   };
   onboarding_completed: undefined;
+  pr_watch_ended: {
+    reason: "closed" | "merged" | "session_deleted" | "stopped";
+    wakes_bucket: "0" | "1" | "2-5" | "6+";
+  };
+  pr_watch_toggled: {
+    action: "start" | "stop";
+    via: "mcp" | "ui";
+    success: boolean;
+  };
+  pr_watch_woke: {
+    check_failed: boolean;
+    checks_passed: boolean;
+    comment: boolean;
+    conflict: boolean;
+    outcome: "no_agent" | "queued" | "sent";
+  };
   proposal_start_failed: {
     stage: "creating_worktree" | "setting_up" | "starting_agent";
   };

@@ -16,6 +16,7 @@ import { warn } from "@argus/host/logger";
 import { hostPlatform } from "../../platform";
 import { appState } from "../../state";
 import { isBranchProtected } from "../session/argusConfig";
+import { isPullRequestWatched } from "./prWatch/watched";
 import { getGithubSlugs } from "./pullRequests";
 
 const execFileAsync = promisify(execFile);
@@ -58,7 +59,11 @@ export function sessionPullRequest(
 
 /** The session with its cached PR attached, for listings. */
 export function withSessionPullRequest(session: Session): Session {
-  return { ...session, pull_request: sessionPullRequest(session.id) };
+  return {
+    ...session,
+    pull_request: sessionPullRequest(session.id),
+    pull_request_watched: isPullRequestWatched(session.id),
+  };
 }
 
 /** Sessions on a branch a PR could be opened from. */

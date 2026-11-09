@@ -76,6 +76,7 @@ import {
 import { registerAutomationTools } from "./automationTools";
 import { registerIntegrationTools } from "./integrationTools";
 import { findPastAgent, registerPastAgentTools } from "./pastAgentTools";
+import { registerPrWatchTools } from "./prWatchTools";
 import { isGitRepo, collectAllProjects } from "./projectDiscovery";
 import { ensureRepoRegistered } from "./projects";
 import {
@@ -3202,6 +3203,7 @@ export function createMcpServer(
   // advertised to everyone and refused later.
   registerAutomationTools(server, callerAgentId);
   registerPastAgentTools(server);
+  registerPrWatchTools(server, callerAgentId, resolveSession);
   registerIntegrationTools(server, callerAgentId);
 
   return server;

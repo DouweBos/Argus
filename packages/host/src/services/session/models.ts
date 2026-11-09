@@ -56,6 +56,8 @@ export interface Session {
   path: string;
   /** The branch's GitHub pull request; null when it has none or can't be looked up. */
   pull_request?: SessionPullRequest | null;
+  /** An agent is woken when this PR's checks fail or pass, it conflicts, or someone comments. */
+  pull_request_watched?: boolean;
   /** Absolute path to the repository root this session belongs to. */
   repo_root: string;
   /** Current lifecycle status. */

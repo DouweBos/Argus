@@ -175,6 +175,7 @@ export const REMOTE_METHODS = {
   /** Re-run or clear a failed setup. */
   "sessions.retry_setup": "control",
   "sessions.mark_ready": "control",
+  "sessions.watch_pull_request": "control",
   /** List a session's files for the @-mention picker. */
   "sessions.files": "control",
   /** Read a session file and search its worktree, for the read-only viewer.

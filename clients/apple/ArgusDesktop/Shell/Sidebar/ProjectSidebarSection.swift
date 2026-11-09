@@ -52,6 +52,7 @@ struct ProjectSidebarSection: View {
     Button("Project Settings…") { model.projectSettingsRepo = project.repoRoot }
     if let root {
       Button("Open in New Tab") { openInTab(root) }
+      PullRequestWatchButton(session: root)
     }
     if !worktrees.isEmpty {
       Button(collapsed ? "Expand" : "Collapse") { collapsed.toggle() }
@@ -62,6 +63,7 @@ struct ProjectSidebarSection: View {
     if !session.isUnavailable {
       Button("Open in New Tab") { openInTab(session) }
     }
+    PullRequestWatchButton(session: session)
     if session.kind == .worktree {
       Button("Delete Session…") { model.deletingSession = session }
     }

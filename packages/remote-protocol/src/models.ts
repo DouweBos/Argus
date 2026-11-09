@@ -56,6 +56,8 @@ export const RemoteSession = z.object({
   setup_pending: z.boolean().optional(),
   /** The branch's GitHub pull request, null when none. Absent on older hosts. */
   pull_request: SessionPullRequest.nullable().optional(),
+  /** An agent is woken on this PR's CI results, conflicts and comments. Absent on older hosts. */
+  pull_request_watched: z.boolean().optional(),
 });
 export type RemoteSession = z.infer<typeof RemoteSession>;
 

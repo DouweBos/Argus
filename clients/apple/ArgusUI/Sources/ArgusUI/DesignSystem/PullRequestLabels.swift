@@ -16,6 +16,11 @@ public enum PullRequestLabels {
     return "Pull request #\(pr.number) · \(state)"
   }
 
+  /// The state, plus that an agent is watching it.
+  public static func state(_ pr: RemoteSessionPullRequest, watching: Bool) -> String {
+    watching ? "\(state(pr)) · Watched" : state(pr)
+  }
+
   public static func reason(_ raw: String) -> String {
     switch raw {
     case "author": "Author"

@@ -340,6 +340,21 @@ extension HostStore {
     } catch { report(error, scope: "session:mark_ready") }
   }
 
+  /// Wake the session's agent on its PR's CI results, conflicts and comments, or stop.
+  /// The computer records it, so the phone sends no telemetry.
+  public func setPullRequestWatched(sessionId: String, repoRoot: String, watching: Bool) async {
+    guard let backend else { return }
+    struct Params: Encodable {
+      let session_id: String
+      let watching: Bool
+    }
+    do {
+      try await backend.request(
+        .sessionsWatchPullRequest, Params(session_id: sessionId, watching: watching), as: IgnoredResult.self)
+      await loadSessions(repoRoot: repoRoot)
+    } catch { report(error, scope: "session:watch_pull_request") }
+  }
+
   // MARK: Mentions
 
   public func listFiles(sessionId: String) async -> [String] {

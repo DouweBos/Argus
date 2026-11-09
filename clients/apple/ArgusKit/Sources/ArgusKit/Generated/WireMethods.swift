@@ -6570,6 +6570,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsWatchPullRequestParams: Codable, Sendable {
+      public var sessionId: String
+      public var watching: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case watching = "watching"
+      }
+
+      public init(sessionId: String, watching: Bool) {
+        self.sessionId = sessionId
+        self.watching = watching
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(watching, forKey: .watching)
+      }
+    }
+
+    public struct SessionsWatchPullRequestResult: Codable, Sendable {
+      public var watching: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case watching = "watching"
+      }
+
+      public init(watching: Bool) {
+        self.watching = watching
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(watching, forKey: .watching)
+      }
+    }
+
     public struct TerminalsListParams: Codable, Sendable {
       public var sessionId: String
 
@@ -7658,6 +7696,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsViewingParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsViewingResult
       public static let name = "sessions.viewing"
+    }
+
+    public enum SessionsWatchPullRequest: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsWatchPullRequestParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsWatchPullRequestResult
+      public static let name = "sessions.watch_pull_request"
     }
 
     public enum TerminalsList: RemoteCommand {

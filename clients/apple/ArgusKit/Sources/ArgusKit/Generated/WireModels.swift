@@ -15474,6 +15474,7 @@ extension ArgusProtocol {
     public var designRefs: [DesignRef]?
     public var setupPending: Bool?
     public var pullRequest: SessionPullRequest?
+    public var pullRequestWatched: Bool?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -15493,9 +15494,10 @@ extension ArgusProtocol {
       case designRefs = "design_refs"
       case setupPending = "setup_pending"
       case pullRequest = "pull_request"
+      case pullRequestWatched = "pull_request_watched"
     }
 
-    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil) {
+    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil) {
       self.id = id
       self.repoRoot = repoRoot
       self.kind = kind
@@ -15513,6 +15515,7 @@ extension ArgusProtocol {
       self.designRefs = designRefs
       self.setupPending = setupPending
       self.pullRequest = pullRequest
+      self.pullRequestWatched = pullRequestWatched
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -15534,6 +15537,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(designRefs, forKey: .designRefs)
       try c.encodeIfPresent(setupPending, forKey: .setupPending)
       try c.encodeIfPresent(pullRequest, forKey: .pullRequest)
+      try c.encodeIfPresent(pullRequestWatched, forKey: .pullRequestWatched)
     }
   }
 
@@ -16909,6 +16913,7 @@ extension ArgusProtocol {
     public var model: String?
     public var path: String
     public var pullRequest: SessionPullRequest?
+    public var pullRequestWatched: Bool?
     public var repoRoot: String
     public var runnerId: String?
     public var setupTerminalId: String?
@@ -16933,6 +16938,7 @@ extension ArgusProtocol {
       case model = "model"
       case path = "path"
       case pullRequest = "pull_request"
+      case pullRequestWatched = "pull_request_watched"
       case repoRoot = "repo_root"
       case runnerId = "runner_id"
       case setupTerminalId = "setup_terminal_id"
@@ -16942,7 +16948,7 @@ extension ArgusProtocol {
       case volume = "volume"
     }
 
-    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, branch: String, claudeAccountId: String? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, pullRequest: SessionPullRequest? = nil, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
+    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, branch: String, claudeAccountId: String? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
       self.availability = availability
       self.baseBranch = baseBranch
       self.branch = branch
@@ -16958,6 +16964,7 @@ extension ArgusProtocol {
       self.model = model
       self.path = path
       self.pullRequest = pullRequest
+      self.pullRequestWatched = pullRequestWatched
       self.repoRoot = repoRoot
       self.runnerId = runnerId
       self.setupTerminalId = setupTerminalId
@@ -16984,6 +16991,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(model, forKey: .model)
       try c.encode(path, forKey: .path)
       try c.encodeIfPresent(pullRequest, forKey: .pullRequest)
+      try c.encodeIfPresent(pullRequestWatched, forKey: .pullRequestWatched)
       try c.encode(repoRoot, forKey: .repoRoot)
       try c.encodeIfPresent(runnerId, forKey: .runnerId)
       try c.encodeIfPresent(setupTerminalId, forKey: .setupTerminalId)

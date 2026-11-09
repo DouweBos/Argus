@@ -57,6 +57,7 @@ public enum Icon {
   /// Pick an element on screen to attach to the chat.
   public static let elementPick = "cursorarrow.rays"
   public static let eye = "eye"
+  public static let eyeSlash = "eye.slash"
   public static let copy = "doc.on.doc"
   public static let download = "square.and.arrow.down"
   public static let share = "square.and.arrow.up"

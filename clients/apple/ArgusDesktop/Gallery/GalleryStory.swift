@@ -72,7 +72,7 @@
   }
 
   enum GalleryStories {
-    static var all: [GalleryStory] { AutomationStories.all + ComposerStories.all }
+    static var all: [GalleryStory] { AutomationStories.all + ComposerStories.all + SessionStories.all }
   }
 
   /// Fixture JSON from plain dictionaries, in wire (snake_case) keys.

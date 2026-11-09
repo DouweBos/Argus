@@ -89,6 +89,8 @@ export const Session = z.object({
    * isn't possible (no `gh`, signed out, not a GitHub remote).
    */
   pull_request: SessionPullRequest.nullish(),
+  /** An agent is woken when this PR's checks fail or pass, it conflicts, or someone comments. */
+  pull_request_watched: z.boolean().optional(),
   /** Absolute path to the repository root this session belongs to. */
   repo_root: z.string(),
   /**

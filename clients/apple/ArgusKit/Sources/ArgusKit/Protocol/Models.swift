@@ -67,6 +67,8 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var setupPending: Bool?
   /// The branch's GitHub pull request. Nil when it has none, and on older computers.
   public var pullRequest: RemoteSessionPullRequest?
+  /// An agent is woken on the PR's CI results, conflicts and comments. Nil on older computers.
+  public var pullRequestWatched: Bool?
 
   public var isUnavailable: Bool { availability == .unavailable }
   /// A scratch pad or automation run: its own folder, no project, no git.
@@ -87,6 +89,7 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case designRefs = "design_refs"
     case setupPending = "setup_pending"
     case pullRequest = "pull_request"
+    case pullRequestWatched = "pull_request_watched"
   }
 }
 

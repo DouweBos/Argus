@@ -49,6 +49,10 @@ import {
   startCliChatImport,
 } from "./services/externalChats/importer";
 import {
+  startPrWatches,
+  stopPrWatches,
+} from "./services/github/prWatch/watcher";
+import {
   startSessionPullRequests,
   stopSessionPullRequests,
 } from "./services/github/sessionPullRequests";
@@ -165,6 +169,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   restoreScratchPads();
   startVolumeWatcher();
   startSessionPullRequests();
+  startPrWatches();
 
   initAutomations();
   initAutomationOutcomes();
@@ -269,6 +274,7 @@ export function stopHostServices(): void {
   stopVolumeWatcher();
   stopAllBranchTracking();
   stopSessionPullRequests();
+  stopPrWatches();
   stopHostConversations();
   stopWarmPolicy();
   stopMcpServer();

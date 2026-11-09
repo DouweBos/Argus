@@ -27,6 +27,9 @@ struct ProjectView: View {
           NavigationLink(value: Route.session(id: group.id, label: group.label, repoRoot: repoRoot)) {
             sessionRow(group)
           }
+          .contextMenu {
+            if let session = group.session { PullRequestWatchButton(session: session) }
+          }
         }
       }
       stoppedSection

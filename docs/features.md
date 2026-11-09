@@ -241,6 +241,23 @@ terminals, merges — over the Model Context Protocol, so an agent can
 spawn and drive sibling sessions. Automation runs are gated: a `propose`
 automation is refused `create_session` and `spawn_agent`.
 
+### Watching a pull request
+
+An agent that opened a pull request can call `watch_pull_request` and end
+its turn. Argus checks the PR every two minutes and messages the agent when
+a check fails (with GitHub's failure annotations and the end of the failing
+job's log), when the checks that gate the merge all pass, when the branch
+conflicts with its base, or when someone comments or reviews. Your own
+comments don't count — the agent posts as you. Messages wait in the agent's
+queue if it is busy. Watching stops when the PR merges or closes, or when
+you turn it off.
+
+You can start or stop it yourself from the session's pull request icon in
+the sidebar (right-click it) or the session's menu on the phone. A watched
+PR shows an eye next to its icon. If no agent is running in the session when
+something changes, you get a notification instead. Watches live in memory,
+so restarting Argus ends them.
+
 ---
 
 ## Permissions

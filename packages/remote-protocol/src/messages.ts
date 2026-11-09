@@ -406,6 +406,11 @@ export const MethodParams = {
   "sessions.retry_setup": z.object({ id: z.string() }),
   /** Clear a failed setup and mark the session ready. */
   "sessions.mark_ready": z.object({ id: z.string() }),
+  /** Wake the session's agent on its PR's CI results, conflicts and comments, or stop. */
+  "sessions.watch_pull_request": z.object({
+    session_id: z.string(),
+    watching: z.boolean(),
+  }),
   "sessions.git_status": z.object({ session_id: z.string() }),
   "terminals.list": z.object({ session_id: z.string() }),
   "terminals.read": z.object({ terminal_id: z.string() }),
@@ -931,6 +936,7 @@ export const MethodResult = {
   "sessions.set_base_branch": z.object({ accepted: z.boolean() }),
   "sessions.retry_setup": z.object({ accepted: z.boolean() }),
   "sessions.mark_ready": z.object({ accepted: z.boolean() }),
+  "sessions.watch_pull_request": z.object({ watching: z.boolean() }),
   "sessions.git_status": z.object({ status: RemoteGitStatus }),
   "terminals.list": z.object({ terminals: z.array(RemoteTerminal) }),
   "terminals.read": RemoteTerminalOutput,

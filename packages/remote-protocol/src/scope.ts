@@ -174,6 +174,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.set_base_branch": DENIED,
   "sessions.retry_setup": DENIED,
   "sessions.mark_ready": DENIED,
+  // Wakes agents and spends turns on GitHub chatter: the engineer's call.
+  "sessions.watch_pull_request": DENIED,
   "sessions.checkout": DENIED,
   // Landing work is the engineer's call too — a guest reviews, never ships.
   "sessions.commit": DENIED,

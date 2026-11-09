@@ -136,6 +136,7 @@ import {
 } from "../deviceHosts/eas/registry";
 import { listDeviceHosts } from "../deviceHosts/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
+import { isPullRequestWatched } from "../github/prWatch/watched";
 import { sessionPullRequest } from "../github/sessionPullRequests";
 import { figmaFrameDetails } from "../integrations/figma/service";
 import { prepareIssueStart } from "../integrations/issueStart";
@@ -560,6 +561,7 @@ function toRemoteSession(s: Session): RemoteSession {
     design_refs: s.design_refs ?? null,
     setup_pending: s.setup_pending ?? false,
     pull_request: sessionPullRequest(s.id),
+    pull_request_watched: isPullRequestWatched(s.id),
   };
 }
 
@@ -1675,6 +1677,24 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     }
 
     return { accepted: true };
+  },
+
+  "sessions.watch_pull_request": async (params) => {
+    const { session_id, watching } = parse(
+      "sessions.watch_pull_request",
+      params,
+    );
+    requireSession(session_id);
+    // Loaded on use: the watcher wakes agents through the conversation stack.
+    const { unwatchPullRequest, watchPullRequest } =
+      await import("../github/prWatch/watcher");
+    if (watching) {
+      await control(() => watchPullRequest(session_id, { via: "ui" }));
+    } else {
+      await control(() => unwatchPullRequest(session_id, "ui"));
+    }
+
+    return { watching: isPullRequestWatched(session_id) };
   },
 
   "terminals.list": async (params) => {

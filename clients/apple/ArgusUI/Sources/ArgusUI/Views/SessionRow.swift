@@ -59,7 +59,10 @@ public struct SessionRow: View {
     } else {
       HStack(spacing: 8) {
         if let pullRequest = session.pullRequest {
-          PullRequestStateIcon(pullRequest, size: Self.prIconSize)
+          PullRequestStateIcon(pullRequest, size: Self.prIconSize, watching: session.pullRequestWatched == true)
+            #if os(macOS)
+              .contextMenu { PullRequestWatchButton(session: session) }
+            #endif
         }
         if detailed, let git, let additions = git.diffAdditions, let deletions = git.diffDeletions {
           ChangeCounts(additions: additions, deletions: deletions)

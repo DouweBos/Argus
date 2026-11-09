@@ -1,8 +1,9 @@
 import ArgusKit
 import SwiftUI
 
-/// GitHub's pull request icon in its state's colour, as Peacock's `PullRequestState` draws it.
-/// On the Mac it opens the PR; a phone row is one tap target, so there it is only a badge.
+/// GitHub's pull request icon in its state's colour, as Peacock's `PullRequestState` draws it,
+/// with an eye beside it while an agent watches the PR. On the Mac it opens the PR; a phone
+/// row is one tap target, so there it is only a badge.
 public struct PullRequestStateIcon: View {
   @Environment(\.theme) private var theme
   @Environment(\.openURL) private var openURL
@@ -11,11 +12,16 @@ public struct PullRequestStateIcon: View {
   var size: CGFloat
   /// Off when it sits inside something that already opens the PR.
   var opensPullRequest: Bool
+  var watching: Bool
 
-  public init(_ pullRequest: RemoteSessionPullRequest, size: CGFloat = 12, opensPullRequest: Bool = true) {
+  public init(
+    _ pullRequest: RemoteSessionPullRequest, size: CGFloat = 12, opensPullRequest: Bool = true,
+    watching: Bool = false
+  ) {
     self.pullRequest = pullRequest
     self.size = size
     self.opensPullRequest = opensPullRequest
+    self.watching = watching
   }
 
   public var body: some View {
@@ -41,11 +47,18 @@ public struct PullRequestStateIcon: View {
 
   private var icon: some View {
     let side = TextScale.shared(size) * dynamicType
-    return Image(octicon, bundle: .module)
-      .renderingMode(.template)
-      .resizable()
-      .frame(width: side, height: side)
-      .foregroundStyle(color)
+    return HStack(spacing: 2) {
+      Image(octicon, bundle: .module)
+        .renderingMode(.template)
+        .resizable()
+        .frame(width: side, height: side)
+        .foregroundStyle(color)
+      if watching {
+        Image(systemName: Icon.eye)
+          .font(.system(size: side * 0.75, weight: .medium))
+          .foregroundStyle(theme.textSecondary)
+      }
+    }
   }
 
   /// GitHub's own glyph per state, so a PR reads the same here as on github.com.
@@ -58,7 +71,7 @@ public struct PullRequestStateIcon: View {
     }
   }
 
-  private var label: String { PullRequestLabels.state(pullRequest) }
+  private var label: String { PullRequestLabels.state(pullRequest, watching: watching) }
 
   private var color: Color {
     switch pullRequest.state {
