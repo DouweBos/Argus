@@ -10,6 +10,7 @@ Argus gives every Claude Code agent its own git worktree and its own browser, iO
 emulator — then lets it click, tap, type and scroll through the app it just built.
 Run five at once, watch them work on real devices, review the diffs, merge what survives.
 
+<a href="https://houwert.dev/argus/updates/Argus-latest-arm64.dmg"><img alt="Download for macOS" src="https://img.shields.io/badge/Download-macOS%20·%20Apple%20Silicon-d97757?style=for-the-badge&logo=apple&logoColor=white" /></a>
 <a href="https://houwert.dev/argus"><img alt="Website" src="https://img.shields.io/badge/houwert.dev%2Fargus-website-4c6ef5?style=for-the-badge" /></a>
 <a href="https://houwert.dev/argus/docs"><img alt="Docs" src="https://img.shields.io/badge/docs-read-1f2937?style=for-the-badge" /></a>
 
@@ -22,8 +23,8 @@ Run five at once, watch them work on real devices, review the diffs, merge what 
 <br />
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="shots/out/flock-poster@dark.png" />
-  <img alt="Five agents running in parallel, each with its own worktree and its own reserved device" src="shots/out/flock-poster@light.png" />
+  <source media="(prefers-color-scheme: dark)" srcset="shots/out/agent@dark.png" />
+  <img alt="An agent in Argus for Mac: the prompt, its edit, the passing tests and the app running on an iPhone simulator beside the chat" src="shots/out/agent@light.png" />
 </picture>
 
 </div>
@@ -61,6 +62,27 @@ multi-repo products, and a built-in MCP server. See [`docs/features.md`](docs/fe
 
 ---
 
+## Watch it think, edit and test, live
+
+Every agent streams into its own tab: its reasoning, each file it reads, the diff it makes and the
+command it runs, as they happen. Answer a question, approve a tool call, or ask a side question
+without derailing the run. Nothing hides behind a spinner.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="shots/out/agent-detail@dark.png" />
+  <img alt="An agent's transcript: the prompt, a grep, a read, an inline diff, passing tests and the app running offline on the simulator beside it" src="shots/out/agent-detail@light.png" />
+</picture>
+
+## Five ideas at once, none waiting their turn
+
+Each session is its own git worktree with its own agent, terminals, port and device. Describe five
+things you've been putting off and they all start now, nothing stashed, nothing colliding.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="shots/out/flock-poster@dark.png" />
+  <img alt="Five agents running in parallel, each with its own worktree and its own reserved device" src="shots/out/flock-poster@light.png" />
+</picture>
+
 ## Read the diff, not the promise
 
 An agent telling you it worked is not evidence. Every session carries a full git client — file
@@ -95,9 +117,27 @@ Or hand a Mac mini the job with the headless server build.
   <img alt="Remote access: paired devices, two transports side by side, a Mac mini holding the admin grant" src="shots/out/remote-poster@light.png" />
 </picture>
 
+## Bring someone into one agent
+
+Send a link to a single agent. A designer opens it in a browser, reads the run already in flight and
+asks for a change, and the agent makes it while they watch. They never see the rest of your
+machine, and their access ends with the room.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="shots/out/huddle-poster@dark.png" />
+  <img alt="A huddle: a teammate joins one agent's run from a browser and steers it" src="shots/out/huddle-poster@light.png" />
+</picture>
+
 ---
 
-## Install
+## Download
+
+**[Download Argus for macOS](https://houwert.dev/argus/updates/Argus-latest-arm64.dmg)** (Apple
+Silicon, macOS 15+). It updates itself. Bring your own
+[Claude Code](https://docs.anthropic.com/en/docs/claude-code) subscription or API key; there's no
+Argus account to make. Then read [Getting started](https://houwert.dev/argus/docs/getting-started).
+
+## Build from source
 
 <details open>
 <summary><b>Prerequisites</b></summary>
