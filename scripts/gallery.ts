@@ -20,7 +20,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { renderIos } from "./galleryIos";
+import { checkoutTag, renderIos } from "./galleryIos";
 
 const run = promisify(execFile);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -39,7 +39,8 @@ function parse(argv: string[]) {
   const options = {
     filter: "",
     themes: "dark,light",
-    out: path.join(os.tmpdir(), "argus-gallery"),
+    // Per checkout, so agents in other worktrees never overwrite each other's shots.
+    out: path.join(os.tmpdir(), `argus-gallery-${checkoutTag(ROOT)}`),
     build: true,
     browse: false,
     ios: false,
@@ -123,7 +124,7 @@ async function main(): Promise<void> {
       themes: options.themes,
       out: options.outSet
         ? options.out
-        : path.join(os.tmpdir(), "argus-gallery-ios"),
+        : path.join(os.tmpdir(), `argus-gallery-ios-${checkoutTag(ROOT)}`),
       build: options.build,
       device: options.device,
     });

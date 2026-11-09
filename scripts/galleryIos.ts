@@ -1,12 +1,13 @@
 /**
  * The iOS half of `pnpm gallery --ios`: builds the Debug iOS app for the
  * simulator, boots a simulator of its own through conductor (created once,
- * named `argus-gallery-<type>`, never one of the user's), launches the app in
+ * per checkout and device type, never one of the user's), launches the app in
  * gallery mode and waits for `index.json`. Stories live in
  * `clients/apple/ArgusRemote/Gallery/`, with the same ids as the Mac's.
  */
 
 import { execFile } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -67,14 +68,25 @@ async function buildApp(root: string): Promise<string> {
   );
 }
 
-/** The gallery's own simulator for this device type, created on first use. */
+/** Short and stable per checkout: worktrees rendering at once each get their own simulator and output. */
+export function checkoutTag(root: string): string {
+  return crypto
+    .createHash("sha1")
+    .update(path.resolve(root))
+    .digest("hex")
+    .slice(0, 6);
+}
+
+/** The gallery's own simulator for this checkout and device type, created on first use. */
 async function simulator(
   deviceType: string,
+  root: string,
 ): Promise<{ id: string; name: string }> {
-  const name = `argus-gallery-${deviceType
+  const type = deviceType
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/-$/, "")}`;
+    .replace(/-$/, "");
+  const name = `argus-gallery-${type}-${checkoutTag(root)}`;
   const { stdout } = await run("xcrun", ["simctl", "list", "devices", "-j"]);
   const devices = Object.values(
     (
@@ -105,7 +117,7 @@ export async function renderIos(options: IosOptions): Promise<void> {
   if (!fs.existsSync(app)) {
     throw new Error("no iOS gallery build yet — drop --no-build");
   }
-  const sim = await simulator(options.device);
+  const sim = await simulator(options.device, options.root);
   await conductor([
     "start-device",
     "--platform",
