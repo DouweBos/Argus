@@ -220,7 +220,7 @@ async function resolveDevice(clientPub: string): Promise<{
 }
 
 function handleDeviceSocket(ws: WebSocket, identity: DesktopIdentity): void {
-  let handshake: NoiseHandshake | null = null;
+  let handshakeStarted = false;
   let connection: DeviceConnection | null = null;
 
   // Drop a socket that never completes the Noise handshake — no parking pre-auth.
@@ -239,7 +239,15 @@ function handleDeviceSocket(ws: WebSocket, identity: DesktopIdentity): void {
 
       return;
     }
-    handshake = new NoiseHandshake({
+    // One handshake per socket: a client can't send again before our reply,
+    // so a second pre-auth frame is junk and would race a second connection.
+    if (handshakeStarted) {
+      ws.close();
+
+      return;
+    }
+    handshakeStarted = true;
+    const handshake = new NoiseHandshake({
       role: "responder",
       staticKey: { priv: identity.priv, pub: identity.pub },
     });
@@ -255,7 +263,7 @@ function handleDeviceSocket(ws: WebSocket, identity: DesktopIdentity): void {
     );
     resolveDevice(clientPub)
       .then(({ device, refused }) => {
-        if (!handshake || refused) {
+        if (refused || ws.readyState !== ws.OPEN) {
           ws.close();
 
           return;
