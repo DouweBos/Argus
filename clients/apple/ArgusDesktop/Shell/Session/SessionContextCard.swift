@@ -28,12 +28,13 @@ struct SessionContextCard: View {
   @State private var peeking = false
   @State private var path: String?
   @State private var editors: [ArgusProtocol.EditorDescriptor] = []
-  @State private var pushing = false
-  @State private var pulling = false
-  @State private var merging = false
+  /// In-flight git actions and offered PR links, by session: the card outlives a switch to another one.
+  @State private var pushingIds: Set<String> = []
+  @State private var pullingIds: Set<String> = []
+  @State private var mergingIds: Set<String> = []
+  @State private var pullRequestURLs: [String: URL] = [:]
   /// Why the host would refuse a merge into the base branch; empty means it would go through.
   @State private var mergeBlockers: [String] = []
-  @State private var pullRequestURL: URL?
   @State private var renamingBranch = false
   @State private var showingChats = false
   @State private var chatCount: Int?
@@ -53,6 +54,9 @@ struct SessionContextCard: View {
   private var git: RemoteGitStatus? { store.gitStatusBySession[session.id] }
   private var ready: Bool { session.status == .ready && !session.isUnavailable }
   private var collapsed: Bool { roomToOpen ? savedCollapsed : !peeking }
+  private var pushing: Bool { pushingIds.contains(session.id) }
+  private var pulling: Bool { pullingIds.contains(session.id) }
+  private var merging: Bool { mergingIds.contains(session.id) }
 
   var body: some View {
     ContextCard(chrome: !collapsed) {
@@ -282,10 +286,10 @@ struct SessionContextCard: View {
     .disabled(pushing)
     .help(git?.upstream.map { ahead > 0 ? "Push \(ahead) commit\(ahead == 1 ? "" : "s") to \($0)" : "Up to date with \($0)" }
       ?? "Publish the branch")
-    if let pullRequestURL {
+    if let pullRequestURL = pullRequestURLs[session.id] {
       Button {
         NSWorkspace.shared.open(pullRequestURL)
-        self.pullRequestURL = nil
+        pullRequestURLs[session.id] = nil
       } label: {
         ContextCardRow(icon: "arrow.triangle.pull", title: "Create Pull Request")
       }
@@ -361,22 +365,24 @@ struct SessionContextCard: View {
 
   private func push() {
     MacTelemetry.capture(.contextCardUsed(action: .push))
-    pushing = true
+    let id = session.id
+    pushingIds.insert(id)
     Task {
-      let result = await store.push(sessionId: session.id)
-      pushing = false
-      pullRequestURL = result?.pr_url.flatMap(URL.init(string:))
+      let result = await store.push(sessionId: id)
+      pushingIds.remove(id)
+      pullRequestURLs[id] = result?.pr_url.flatMap(URL.init(string:))
     }
   }
 
   /// Fast-forwards when there's nothing local; otherwise rebases the unpushed commits onto upstream.
   private func pull() {
     MacTelemetry.capture(.contextCardUsed(action: .pull))
-    pulling = true
+    let id = session.id
+    pullingIds.insert(id)
     let strategy: HostStore.PullStrategy = (git?.ahead ?? 0) > 0 ? .rebase : .ffOnly
     Task {
-      _ = await store.pullCurrent(sessionId: session.id, strategy: strategy)
-      pulling = false
+      _ = await store.pullCurrent(sessionId: id, strategy: strategy)
+      pullingIds.remove(id)
     }
   }
 
@@ -388,11 +394,13 @@ struct SessionContextCard: View {
         buttons: [HostStore.MergeStrategy.keep.label, HostStore.MergeStrategy.squash.label])
     else { return }
     MacTelemetry.capture(.contextCardUsed(action: .merge))
-    merging = true
-    _ = await store.mergeIntoBase(sessionId: session.id, strategy: choice == 0 ? .keep : .squash)
-    await store.loadGitStatus(sessionId: session.id)
-    mergeBlockers = await store.mergeBlockers(sessionId: session.id)
-    merging = false
+    let id = session.id
+    mergingIds.insert(id)
+    defer { mergingIds.remove(id) }
+    _ = await store.mergeIntoBase(sessionId: id, strategy: choice == 0 ? .keep : .squash)
+    await store.loadGitStatus(sessionId: id)
+    let blockers = await store.mergeBlockers(sessionId: id)
+    if id == session.id { mergeBlockers = blockers }
   }
 
   private func reveal() {
