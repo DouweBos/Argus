@@ -122,9 +122,10 @@ class PairingSession {
     );
   }
 
-  private onData(bytes: Uint8Array, send: (out: Uint8Array) => void): void {
+  /** False when the frame is refused, so the gateway drops that socket. */
+  private onData(bytes: Uint8Array, send: (out: Uint8Array) => void): boolean {
     if (this.session || this.done) {
-      return;
+      return false;
     }
     const handshake = new NoiseHandshake({
       role: "responder",
@@ -136,7 +137,7 @@ class PairingSession {
       identity = handshake.readMessage(bytes);
     } catch {
       // Wrong PSK (or a MITM) — cannot complete. Wait for a legitimate client.
-      return;
+      return false;
     }
     const client = parseClientInfo(identity);
     const clientPub = Buffer.from(handshake.remoteStaticKey()).toString(
@@ -155,6 +156,8 @@ class PairingSession {
       last_seen: null,
     };
     this.cb.onSas(deriveSas(handshake.handshakeHash()), client);
+
+    return true;
   }
 
   async confirm(grants: DeviceGrants = {}): Promise<void> {

@@ -1,4 +1,5 @@
 import type { DesktopIdentity, PairedDevice } from "./deviceStore";
+import type { HandshakeRate } from "./localGatewayServer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import WebSocket from "ws";
 import { generateKeypair, NoiseHandshake } from "./noise";
@@ -47,7 +48,7 @@ vi.mock("./gateway", () => ({
   },
 }));
 
-const { startLocalGateway, stopLocalGateway } =
+const { setPairingHandler, startLocalGateway, stopLocalGateway } =
   await import("./localGatewayServer");
 
 const desktop = generateKeypair();
@@ -94,37 +95,146 @@ function framesUntilClose(ws: WebSocket): Promise<number> {
   return new Promise((resolve) => ws.once("close", () => resolve(frames)));
 }
 
-describe("local gateway pre-auth handshake", () => {
-  beforeEach(async () => {
+async function start(handshakeRate?: HandshakeRate): Promise<void> {
+  const port = await startLocalGateway(0, identity, {
+    host: "127.0.0.1",
+    staticDir: null,
+    handshakeRate,
+  });
+  url = `ws://127.0.0.1:${port}`;
+}
+
+/** Whether the server answered a paired device's handshake before closing. */
+async function deviceAnswered(): Promise<boolean> {
+  const client = generateKeypair();
+  enroll(client.pub);
+  const ws = await open("/device");
+  const outcome = new Promise<boolean>((resolve) => {
+    ws.once("message", () => resolve(true));
+    ws.once("close", () => resolve(false));
+  });
+  ws.send(handshakeMessage(client));
+  const answered = await outcome;
+  ws.close();
+
+  return answered;
+}
+
+describe("local gateway handshakes", () => {
+  beforeEach(() => {
     gatewayMock.added = 0;
     gatewayMock.removed = 0;
-    const port = await startLocalGateway(0, identity);
-    url = `ws://127.0.0.1:${port}`;
   });
 
-  afterEach(() => stopLocalGateway());
-
-  it("drops a socket that sends a second handshake before the reply", async () => {
-    const client = generateKeypair();
-    enroll(client.pub);
-    const ws = await open("/device");
-    const closed = framesUntilClose(ws);
-    ws.send(handshakeMessage(client));
-    ws.send(handshakeMessage(client));
-
-    await expect(closed).resolves.toBe(0);
-    expect(gatewayMock.added).toBe(0);
+  afterEach(() => {
+    setPairingHandler(null);
+    stopLocalGateway();
   });
 
-  it("still connects a paired device that sends one handshake", async () => {
-    const client = generateKeypair();
-    enroll(client.pub);
-    const ws = await open("/device");
-    const reply = new Promise((resolve) => ws.once("message", resolve));
-    ws.send(handshakeMessage(client));
+  describe("local gateway pre-auth handshake", () => {
+    beforeEach(() => start());
 
-    await expect(reply).resolves.toBeDefined();
-    expect(gatewayMock.added).toBe(1);
-    ws.close();
+    it("drops a socket that sends a second handshake before the reply", async () => {
+      const client = generateKeypair();
+      enroll(client.pub);
+      const ws = await open("/device");
+      const closed = framesUntilClose(ws);
+      ws.send(handshakeMessage(client));
+      ws.send(handshakeMessage(client));
+
+      await expect(closed).resolves.toBe(0);
+      expect(gatewayMock.added).toBe(0);
+    });
+
+    it("still connects a paired device that sends one handshake", async () => {
+      const client = generateKeypair();
+      enroll(client.pub);
+      const ws = await open("/device");
+      const reply = new Promise((resolve) => ws.once("message", resolve));
+      ws.send(handshakeMessage(client));
+
+      await expect(reply).resolves.toBeDefined();
+      expect(gatewayMock.added).toBe(1);
+      ws.close();
+    });
+  });
+
+  describe("handshake rate limit", () => {
+    it("refuses /device handshakes once the budget is spent", async () => {
+      await start({ burst: 2, perSecond: 0 });
+
+      await expect(deviceAnswered()).resolves.toBe(true);
+      await expect(deviceAnswered()).resolves.toBe(true);
+      await expect(deviceAnswered()).resolves.toBe(false);
+    });
+
+    it("refills the budget over time", async () => {
+      await start({ burst: 1, perSecond: 50 });
+
+      await expect(deviceAnswered()).resolves.toBe(true);
+      await new Promise((r) => setTimeout(r, 60));
+      await expect(deviceAnswered()).resolves.toBe(true);
+    });
+
+    it("shares one budget across /pair and /device", async () => {
+      await start({ burst: 1, perSecond: 0 });
+      setPairingHandler({ onData: () => false, onClose: () => {} });
+      const pair = await open("/pair");
+      const closed = framesUntilClose(pair);
+      pair.send(new Uint8Array(48));
+      await closed;
+
+      await expect(deviceAnswered()).resolves.toBe(false);
+    });
+
+    it("lets a phone dial every route at once", async () => {
+      await start();
+      const answers = await Promise.all(
+        Array.from({ length: 12 }, () => deviceAnswered()),
+      );
+
+      expect(answers.every(Boolean)).toBe(true);
+    });
+  });
+
+  describe("/pair attempts per socket", () => {
+    beforeEach(() => start());
+
+    it("drops the socket when the pairing session refuses its handshake", async () => {
+      const onData = vi.fn(() => false);
+      setPairingHandler({ onData, onClose: () => {} });
+      const ws = await open("/pair");
+      const closed = framesUntilClose(ws);
+      ws.send(new Uint8Array(48));
+
+      await expect(closed).resolves.toBe(0);
+      expect(onData).toHaveBeenCalledTimes(1);
+    });
+
+    it("drops the socket when no pairing is in progress", async () => {
+      const ws = await open("/pair");
+      const closed = framesUntilClose(ws);
+      ws.send(new Uint8Array(48));
+
+      await expect(closed).resolves.toBe(0);
+    });
+
+    it("hands the pairing session only the first frame", async () => {
+      const onData = vi.fn((_: Uint8Array, send: (out: Uint8Array) => void) => {
+        send(new Uint8Array([1]));
+
+        return true;
+      });
+      setPairingHandler({ onData, onClose: () => {} });
+      const ws = await open("/pair");
+      const reply = new Promise((resolve) => ws.once("message", resolve));
+      const closed = framesUntilClose(ws);
+      ws.send(new Uint8Array(48));
+      await reply;
+      ws.send(new Uint8Array(48));
+
+      await expect(closed).resolves.toBe(1);
+      expect(onData).toHaveBeenCalledTimes(1);
+    });
   });
 });

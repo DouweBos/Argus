@@ -47,7 +47,8 @@ import { NoiseHandshake } from "./noise";
 
 /** A /pair socket handler supplied by the active pairing session. */
 export interface PairingSocketHandler {
-  onData: (bytes: Uint8Array, send: (out: Uint8Array) => void) => void;
+  /** False when the frame was refused (wrong PSK, pairing taken), to drop the socket. */
+  onData: (bytes: Uint8Array, send: (out: Uint8Array) => void) => boolean;
   onClose: () => void;
 }
 
@@ -67,6 +68,44 @@ const MAX_CONNECTIONS = 64;
  * parking on the tunnel once it is.
  */
 const HUDDLE_JOIN_TIMEOUT_MS = 30_000;
+
+/**
+ * Global token bucket on handshake attempts across /device and /pair, so a
+ * reconnect loop can't burn CPU on DH. Sized so every route of several devices
+ * plus huddle guests dialing at once stays far below it.
+ */
+export interface HandshakeRate {
+  burst: number;
+  perSecond: number;
+}
+
+const DEFAULT_HANDSHAKE_RATE: HandshakeRate = { burst: 120, perSecond: 20 };
+
+let handshakeRate = DEFAULT_HANDSHAKE_RATE;
+let handshakeTokens = handshakeRate.burst;
+let handshakeRefilledAt = Date.now();
+
+function resetHandshakeBucket(rate: HandshakeRate): void {
+  handshakeRate = rate;
+  handshakeTokens = rate.burst;
+  handshakeRefilledAt = Date.now();
+}
+
+function takeHandshakeToken(): boolean {
+  const now = Date.now();
+  handshakeTokens = Math.min(
+    handshakeRate.burst,
+    handshakeTokens +
+      ((now - handshakeRefilledAt) / 1000) * handshakeRate.perSecond,
+  );
+  handshakeRefilledAt = now;
+  if (handshakeTokens < 1) {
+    return false;
+  }
+  handshakeTokens -= 1;
+
+  return true;
+}
 
 let httpServer: Server | null = null;
 let wss: WebSocketServer | null = null;
@@ -247,6 +286,11 @@ function handleDeviceSocket(ws: WebSocket, identity: DesktopIdentity): void {
       return;
     }
     handshakeStarted = true;
+    if (!takeHandshakeToken()) {
+      ws.close();
+
+      return;
+    }
     const handshake = new NoiseHandshake({
       role: "responder",
       staticKey: { priv: identity.priv, pub: identity.pub },
@@ -323,9 +367,22 @@ function handlePairSocket(ws: WebSocket): void {
   }, HANDSHAKE_TIMEOUT_MS);
   deadline.unref?.();
 
+  // The client sends exactly one handshake and then only listens, so any
+  // further frame — or a refused first one — ends the socket.
   ws.on("message", (raw: Buffer) => {
+    if (gotData) {
+      ws.close();
+
+      return;
+    }
     gotData = true;
-    pairingHandler?.onData(new Uint8Array(raw), (out) => send(ws, out));
+    const accepted =
+      takeHandshakeToken() &&
+      (pairingHandler?.onData(new Uint8Array(raw), (out) => send(ws, out)) ??
+        false);
+    if (!accepted) {
+      ws.close();
+    }
   });
   ws.on("close", () => {
     clearTimeout(deadline);
@@ -352,6 +409,8 @@ export interface LocalGatewayOpts {
   staticDir: string | null;
   /** Whether a direct local-network browser may load the web client. */
   lanWebClient?: () => boolean;
+  /** Handshake attempt budget; tests shrink it. */
+  handshakeRate?: HandshakeRate;
 }
 
 export function startLocalGateway(
@@ -359,6 +418,8 @@ export function startLocalGateway(
   identity: DesktopIdentity,
   opts: LocalGatewayOpts = { host: "127.0.0.1", staticDir: null },
 ): Promise<number> {
+  resetHandshakeBucket(opts.handshakeRate ?? DEFAULT_HANDSHAKE_RATE);
+
   return new Promise((resolve, reject) => {
     const server = createServer((req, res) => {
       const route = (req.url ?? "").split("?")[0];
