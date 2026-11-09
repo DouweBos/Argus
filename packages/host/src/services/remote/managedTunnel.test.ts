@@ -14,6 +14,7 @@ vi.mock("./tunnelManager", () => ({ notifyTunnelChange: () => {} }));
 const {
   getManagedTunnelState,
   getManagedTunnelUrl,
+  killManagedTunnelNow,
   runningToken,
   startManagedTunnel,
   stopManagedTunnel,
@@ -160,5 +161,30 @@ describe("managed tunnel supervisor", () => {
     await until(() => onExit.mock.calls.length === 1);
 
     expect(getManagedTunnelState().error).toMatch(/couldn't start cloudflared/);
+  });
+
+  // A host on its way out can't wait for an escalation timer.
+  it("kills a connector that ignores SIGTERM at once on a hard exit", async () => {
+    const pidFile = path.join(dir, "pid");
+    startManagedTunnel({
+      bin: fakeBinary(`trap '' TERM\necho $$ > "${pidFile}"\n${REGISTERS}`),
+      token: "tok",
+      url: URL,
+    });
+    await until(() => getManagedTunnelState().phase === "running");
+    const pid = Number(fs.readFileSync(pidFile, "utf-8"));
+
+    killManagedTunnelNow();
+
+    await until(() => {
+      try {
+        process.kill(pid, 0);
+
+        return false;
+      } catch {
+        return true;
+      }
+    }, 1000);
+    expect(runningToken()).toBeNull();
   });
 });

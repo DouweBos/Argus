@@ -223,3 +223,13 @@ function stopConnector(): void {
 export function stopManagedTunnel(): void {
   stopConnector();
 }
+
+/**
+ * For an exit that skips the orderly path: SIGKILL now, since an unref'd
+ * escalation timer never fires once the process is going away.
+ */
+export function killManagedTunnelNow(): void {
+  const proc = child;
+  stopConnector();
+  proc?.kill("SIGKILL");
+}

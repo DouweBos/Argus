@@ -59,6 +59,7 @@ import {
 } from "./services/lsp/watchedFiles";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { disconnectDevice } from "./services/remote/gateway";
+import { killManagedTunnelNow } from "./services/remote/managedTunnel";
 import { installRemoteStatusBroadcast } from "./services/remote/remoteAdmin";
 import {
   applyRemoteSettings,
@@ -66,6 +67,7 @@ import {
   setWebClientDir,
   stopRemote,
 } from "./services/remote/remoteService";
+import { killTunnelsNow } from "./services/remote/tunnelManager";
 import { restoreScratchPads } from "./services/scratchPad/manager";
 import { migrateLegacySecretStores } from "./services/secrets/legacyStores";
 import { stopAllBranchTracking } from "./services/session/branchTracker";
@@ -316,7 +318,9 @@ export function syncHostCleanup(): void {
     // Best-effort; we're on the way out.
   }
   try {
-    // Kill the tunnel child too, else cloudflared/tailscale orphans.
+    // SIGKILL the tunnel children, else cloudflared/tailscale orphans.
+    killTunnelsNow();
+    killManagedTunnelNow();
     stopRemote();
   } catch {
     // Best-effort; we're on the way out.

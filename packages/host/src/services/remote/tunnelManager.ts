@@ -350,6 +350,20 @@ export function markTunnelReachability(
   });
 }
 
+/**
+ * For an exit that skips the orderly path: SIGKILL every tunnel now, since the
+ * unref'd escalation in `stopTunnel` never fires once the process is going away.
+ */
+export function killTunnelsNow(): void {
+  const procs = [...runtimes.values()].flatMap((rt) =>
+    rt.child ? [rt.child] : [],
+  );
+  stopTunnel();
+  for (const proc of procs) {
+    proc.kill("SIGKILL");
+  }
+}
+
 /** Stop one provider, or every running tunnel when none is named. */
 export function stopTunnel(provider?: TunnelProvider): void {
   const targets = provider ? [provider] : [...runtimes.keys()];
