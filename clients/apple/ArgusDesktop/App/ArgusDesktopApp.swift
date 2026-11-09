@@ -36,6 +36,7 @@ struct ArgusDesktopApp: App {
     }
     // Room for the sidebar, the git panel's three columns and the runtime.
     .defaultSize(width: 1560, height: 960)
+    .defaultLaunchBehavior(GalleryMode.active ? .suppressed : .automatic)
     .commands {
       CommandGroup(after: .appInfo) {
         CheckForUpdatesCommand(model: delegate.model)
@@ -100,7 +101,10 @@ struct ArgusDesktopApp: App {
     .defaultSize(width: 380, height: 760)
     .restorationBehavior(.disabled)
 
-    MenuBarExtra(isInserted: MenuBarVisibility.binding(AppPreferences.shared, shown: showInMenuBar, via: .menuBar)) {
+    MenuBarExtra(
+      isInserted: MenuBarVisibility.binding(
+        AppPreferences.shared, shown: showInMenuBar && !GalleryMode.active, via: .menuBar)
+    ) {
       DesktopMenuContent(menuBar: delegate.model.menuBar)
     } label: {
       DesktopMenuLabel(menuBar: delegate.model.menuBar)

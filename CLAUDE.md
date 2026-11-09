@@ -14,6 +14,7 @@ Argus for Mac replaced the Electron app in v0.72.0, and the Electron app has sin
 - `pnpm gen:protocol` — regenerate ArgusKit's Swift wire types (`ArgusKit/Sources/ArgusKit/Generated/`) from the command catalog
 - `pnpm dev:host` / `pnpm start:host` — the host core as a plain Node process (`dist-host/argus-host.js`, no Electron). Prints the gateway address; type `pair` to pair a device from the terminal
 - `pnpm storybook` — Peacock design system at :6006
+- `pnpm gallery [filter] [--theme dark|light] [--no-build] [--browse]` — the Mac app's SwiftUI stories (`clients/apple/ArgusDesktop/Gallery/`) rendered to PNGs against fixtures, no host and no visible window; prints the paths. `--browse` opens them live
 - Tooling via `mise.toml` (node 24, pnpm 12)
 
 ## Architecture
@@ -92,7 +93,7 @@ Every Peacock component ships with a Storybook story covering meaningful states.
 
 **The Mac app is the desktop app.** Every desktop feature lands in `ArgusDesktop` (plus host commands), with the iPhone client in the same PR. Releases ship it with `fastlane mac mac_app_release` (the release workflow).
 
-**Design a screen, don't just expose its fields.** Before building UI, find the screen that already does the same job (picking projects, editing a playbook, a run history) and reuse its components — two screens choosing the same thing must look and work the same. Extract the shared piece rather than copying it. Lists get one row per item with an icon and a trailing control, never a column of controls inside a `LabeledContent`; the primary action goes in the toolbar, not a section header; long multi-selects get Select All / Clear. Then launch a dev build (`ARGUS_DEV_ROUTE`, `ARGUS_ATTACH_HOME=~/.argus`), screenshot the window and look at it with real data before calling it done — compiling is not a design review.
+**Design a screen, don't just expose its fields.** Before building UI, find the screen that already does the same job (picking projects, editing a playbook, a run history) and reuse its components — two screens choosing the same thing must look and work the same. Extract the shared piece rather than copying it. Lists get one row per item with an icon and a trailing control, never a column of controls inside a `LabeledContent`; the primary action goes in the toolbar, not a section header; long multi-selects get Select All / Clear. Then add or update its gallery story (`ArgusDesktop/Gallery/Stories/`, realistic fixtures — a dozen projects, a running and a failed run), run `pnpm gallery <id>` and look at both themes before calling it done — compiling is not a design review.
 
 **Mac app: everything clickable shows the pointing hand.** SwiftUI never does this on its own, so it goes through ArgusUI (`DesignSystem/Clickable.swift`):
 

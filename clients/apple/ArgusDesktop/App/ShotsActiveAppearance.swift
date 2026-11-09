@@ -9,6 +9,10 @@
   enum ShotsActiveAppearance {
     static func installIfConfigured() {
       guard ProcessInfo.processInfo.environment["ARGUS_SHOTS_ACTIVE"] != nil else { return }
+      install()
+    }
+
+    static func install() {
       // The public getters, and the private ones the titlebar and controls draw from.
       let window = [
         "isKeyWindow", "isMainWindow", "hasKeyAppearance", "hasMainAppearance", "_isKeyWindow",

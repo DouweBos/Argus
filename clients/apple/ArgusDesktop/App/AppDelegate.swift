@@ -19,6 +19,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     FirstMouse.install()
     SheetOutsideClick.install()
     HistoryInput.install(model)
+    #if DEBUG
+      if let gallery = GalleryMode.kind {
+        ShotsActiveAppearance.install()
+        switch gallery {
+        case .render:
+          NSApp.setActivationPolicy(.prohibited)
+          GalleryRenderer.run(model: model)
+        case .browse: GalleryBrowser.open(model: model)
+        }
+        return
+      }
+    #endif
     // Unit tests run inside the app; they must not start a host.
     if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil { return }
     // Another app taking over this Argus home asks us to quit with SIGTERM;

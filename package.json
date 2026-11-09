@@ -41,6 +41,7 @@
     "typecheck:host": "tsc -p packages/host/tsconfig.json --noEmit",
     "postinstall": "tsx scripts/fix-node-pty-helper.ts && tsx scripts/fetch-scrcpy-server.ts && tsx scripts/prepare-conductor.ts",
     "shots": "tsx scripts/shots.ts",
+    "gallery": "tsx scripts/gallery.ts",
     "gen:account-fixtures": "tsx scripts/gen-account-fixtures.ts",
     "typecheck": "pnpm typecheck:host && pnpm -r --filter=!@argus/host --filter=!@argus/remote-protocol typecheck"
   },
