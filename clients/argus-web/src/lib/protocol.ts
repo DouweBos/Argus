@@ -1,7 +1,7 @@
 /**
  * Wire types the client speaks, straight from `@argus/remote-protocol`'s
  * catalog. Types only: the bundle never ships zod, and nothing is validated
- * at runtime (decided in `plan/web-parity.md`).
+ * at runtime, which keeps the bundle small.
  */
 
 import type {

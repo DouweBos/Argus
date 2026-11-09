@@ -83,3 +83,6 @@ release-mac-server
 clients/apple/Config/Argus.local.xcconfig
 clients/argus-web/dist-hosted
 release-assets.txt
+
+# Local design notes (agents write plans here; not published)
+plan/

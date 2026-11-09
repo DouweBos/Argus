@@ -354,14 +354,6 @@ export default tseslint.config(
     },
   },
   {
-    // Slide decks: plain scripts loaded by an HTML page.
-    files: ["talks/**/*.js"],
-    languageOptions: {
-      globals: globals.browser,
-      sourceType: "script",
-    },
-  },
-  {
     files: ["build-electron.mjs", "build-host.mjs"],
     languageOptions: {
       globals: globals.node,

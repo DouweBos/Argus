@@ -1,7 +1,7 @@
 /**
  * The huddle room store: who is sharing what, with whom, and for how long.
  *
- * In memory only, on purpose (see `plan/huddle-rooms.md` §7). Nothing here is
+ * In memory only, on purpose. Nothing here is
  * written to `remote-devices.json` or anywhere else, so a crash or a quit ends
  * every share rather than leaving a live link behind, and a guest's ephemeral
  * key never becomes adopted hardware.

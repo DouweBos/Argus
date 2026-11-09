@@ -700,7 +700,7 @@ export class DeviceConnection implements DeviceMediaController {
    *
    * Presenting a valid token gets a guest a place in the queue and nothing
    * else — no agent, no transcript, no device — until the host approves them,
-   * which is what mints the grant (see `plan/huddle-rooms.md` §6).
+   * which is what mints the grant.
    */
   private handleHuddle(method: string, params: unknown): unknown {
     const guest = this.guest;

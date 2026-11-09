@@ -3,7 +3,7 @@ import XCTest
 
 @testable import ArgusEditor
 
-/// M0's budget for the engine (plan/code-editor.md §9). Numbers are printed so a run can be
+/// M0's budget for the engine. Numbers are printed so a run can be
 /// recorded; assertions use generous multiples so CI noise doesn't fail them.
 @MainActor
 final class PerformanceTests: XCTestCase {

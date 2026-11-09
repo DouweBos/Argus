@@ -136,7 +136,7 @@ Adding one (worked example: `automations.revise_playbook`):
 
 **Worktrees:** `~/.argus/worktrees/{RepoName}-argus-worktrees/{branch}/`. Post-`git worktree add` setup (copy dirs, symlink files, run commands) configured in `.argus.json`.
 
-**Plan files:** write to `plan/` in the repo root, never `docs/` (which is published to the website).
+**Plan files:** write to `plan/` in the repo root (gitignored, never published), never `docs/` (which is published to the website).
 
 **Commit when a thing is done.** Every feature, fix or refactor gets its own commit the moment it works — don't leave finished work sitting in the tree waiting for the end of the session. One commit per feature/fix, with its tests, docs and changeset in it, so each one stands alone and is revertable. Several unrelated changes already piled up in the tree → split them by hunk rather than committing one lump. Committing is not pushing: push only when asked.
 

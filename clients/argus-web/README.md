@@ -16,9 +16,8 @@ permission mode, effort), answer permission prompts, review changes, and
 watch and drive simulators; with **monitor** it watches and approves. It also
 hosts huddle guests (`#/huddle/<token>` links).
 
-`plan/web-parity.md` tracks the road to the iOS app and Argus for Mac's
-feature set (inbox, automations, pull requests, files, terminals, usage and
-more), milestone by milestone.
+The goal is parity with the iOS app and Argus for Mac (inbox, automations,
+pull requests, files, terminals, usage and more), milestone by milestone.
 
 ## Using it
 
