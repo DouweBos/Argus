@@ -69,6 +69,8 @@ public final class HostStore {
   /// Why a saved chat's transcript couldn't be read, so it isn't mistaken for an empty one.
   public internal(set) var transcriptErrorByAgent: [String: String] = [:]
   public internal(set) var gitStatusBySession: [String: RemoteGitStatus] = [:]
+  /// Sessions this client merged into their base, so their cards can offer deleting them.
+  public internal(set) var mergedSessionIds: Set<String> = []
   public internal(set) var prompts: [String: RemotePermissionRequest] = [:]
   /// Prompts this client just answered — clears the inline form instantly,
   /// before the round trip lands.

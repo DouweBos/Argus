@@ -195,6 +195,7 @@ extension HostStore {
         as: IgnoredResult.self)
       hooks.track(
         .workLanded(action: .merge, success: true, strategy: strategy.rawValue))
+      mergedSessionIds.insert(sessionId)
       await loadGitStatus(sessionId: sessionId)
 
       return true
@@ -264,6 +265,7 @@ extension HostStore {
       try await backend.request(
         .sessionsDelete, Params(id: id, delete_branch: deleteBranch),
         as: IgnoredResult.self)
+      mergedSessionIds.remove(id)
       await loadSessions(repoRoot: repoRoot)
       await loadAgents(repoRoot: repoRoot)
     } catch { report(error) }

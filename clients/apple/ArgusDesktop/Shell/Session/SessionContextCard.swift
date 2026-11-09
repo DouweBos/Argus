@@ -98,8 +98,11 @@ struct SessionContextCard: View {
       branchRow
       if ready, (git?.behind ?? 0) > 0 || pulling { pullRow }
       if ready { pushRow }
-      // An open PR is where the branch lands, so it replaces merging locally.
-      if let pr = session.pullRequest, pr.isOpen {
+      // Merged, the session's work is done: offer to clean it up instead.
+      if store.mergedSessionIds.contains(session.id) {
+        deleteRow
+      } else if let pr = session.pullRequest, pr.isOpen {
+        // An open PR is where the branch lands, so it replaces merging locally.
         pullRequestRow(pr)
       } else if ready, session.kind == .worktree, session.baseBranch != nil {
         mergeRow
@@ -300,6 +303,17 @@ struct SessionContextCard: View {
     .buttonStyle(ContextRowButtonStyle())
     .disabled(merging || !mergeBlockers.isEmpty)
     .help(mergeBlockers.isEmpty ? "Merge this branch into \(base)" : mergeBlockers.joined(separator: "\n"))
+  }
+
+  private var deleteRow: some View {
+    Button {
+      MacTelemetry.capture(.contextCardUsed(action: .deleteSession))
+      model.deletingSession = session
+    } label: {
+      ContextCardRow(icon: Icon.trash, title: "Delete Session…")
+    }
+    .buttonStyle(ContextRowButtonStyle())
+    .help("Merged into \(session.baseBranch ?? "base"). Delete the session and its worktree")
   }
 
   private func pullRequestRow(_ pr: RemoteSessionPullRequest) -> some View {

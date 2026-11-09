@@ -16,6 +16,8 @@ public struct LandWorkCard: View {
   let allowsAmend: Bool
   /// Called after anything that changes the tree, so the diff can reload.
   let onChanged: () async -> Void
+  /// Called once the session is deleted; offering that needs somewhere to go after.
+  let onDeleted: (() -> Void)?
 
   @State private var busy: String?
   @State private var blockers: [String] = []
@@ -23,16 +25,19 @@ public struct LandWorkCard: View {
   @State private var openingPullRequest = false
   @State private var changingBase = false
   @State private var note: String?
+  @State private var confirmingDelete = false
 
   private var status: RemoteGitStatus? { host.gitStatusBySession[sessionId] }
   private var hasUncommitted: Bool { (status?.dirtyCount ?? 0) > 0 }
 
   public init(
-    sessionId: String, allowsAmend: Bool = false, onChanged: @escaping () async -> Void
+    sessionId: String, allowsAmend: Bool = false, onChanged: @escaping () async -> Void,
+    onDeleted: (() -> Void)? = nil
   ) {
     self.sessionId = sessionId
     self.allowsAmend = allowsAmend
     self.onChanged = onChanged
+    self.onDeleted = onDeleted
   }
 
   public var body: some View {
@@ -89,6 +94,21 @@ public struct LandWorkCard: View {
           }
         }
       }
+
+      // Merged, the session's work is done: offer to clean it up.
+      if host.mergedSessionIds.contains(sessionId), onDeleted != nil {
+        Btn(label: "Delete session", tone: .danger, small: true, icon: Icon.trash) {
+          confirmingDelete = true
+        }
+        .disabled(busy != nil)
+      }
+    }
+    .confirmationDialog("Delete this session?", isPresented: $confirmingDelete, titleVisibility: .visible) {
+      Button("Delete session", role: .destructive) { delete(branch: false) }
+      Button("Delete session and branch", role: .destructive) { delete(branch: true) }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("It's merged into \(baseLabel). Its worktree is removed from your computer and its agents are shut down.")
     }
     // Two buttons, no default: a squash rewrites the commits the agent
     // wrote, which is not something to do on someone's behalf.
@@ -211,6 +231,16 @@ public struct LandWorkCard: View {
         ? "Squashed and merged into \(baseLabel)."
         : "Merged into \(baseLabel)."
       await finish()
+    }
+  }
+
+  private func delete(branch: Bool) {
+    guard let session else { return }
+    busy = "delete"
+    Task {
+      await host.deleteSession(id: session.id, repoRoot: session.repoRoot, deleteBranch: branch)
+      busy = nil
+      onDeleted?()
     }
   }
 

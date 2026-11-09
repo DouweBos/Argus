@@ -64,7 +64,11 @@ struct ChangesView: View {
       }
 
       if host.hasControl {
-        LandWorkCard(sessionId: sessionId, allowsAmend: true) { await refresh() }
+        LandWorkCard(sessionId: sessionId, allowsAmend: true) {
+          await refresh()
+        } onDeleted: {
+          router.popToRoot()
+        }
       }
     }
     .navigationTitle("Changes · \(label)")
