@@ -1,0 +1,2 @@
+# Argus's public Linear OAuth client ID (PKCE public client, no secret)
+89e04f30be3e8eb8bceb38dfe7e39fb5b85b5790:packages/host/src/services/integrations/oauth.ts:linear-client-secret:26

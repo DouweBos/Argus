@@ -17,6 +17,7 @@ Run five at once, watch them work on real devices, review the diffs, merge what 
 ![SwiftUI · Node host](https://img.shields.io/badge/SwiftUI-Node%20host-f05138)
 ![Node 24 · pnpm 10](https://img.shields.io/badge/Node-24%20%C2%B7%20pnpm%2010-5fa04e)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-stream--json-d97757)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 <br />
 
@@ -130,6 +131,11 @@ pnpm test           # vitest
 pnpm storybook      # Peacock design system at :6006
 pnpm shots          # regenerate the product screenshots (see below)
 ```
+
+The project is signed with the maintainer's Apple team. To build with your own team, or ad-hoc
+signed with no team at all, see [Building Argus for Mac](CONTRIBUTING.md#building-argus-for-mac-without-the-maintainers-apple-team).
+The simulator bridge relies on Apple's private CoreSimulator and SimulatorKit frameworks, so a new
+Xcode release can break it.
 
 The Electron app (`pnpm dev`, `pnpm build:app`) is deprecated: Argus for Mac replaced it in
 v0.72.0, and Electron installs update into it.
@@ -259,25 +265,26 @@ the website fails the build instead of rotting quietly. `--no-build` reuses the 
 
 ## Contributing
 
-We just welcomed our first collaborator, so Argus is officially a flock — two pairs of eyes and
-room for more.
-
-Argus is small, opinionated, and moving fast — which is the best time to join. Agent orchestration,
+Argus is small, opinionated, and moving fast, which makes it a good time to join. Agent orchestration,
 the simulator pipeline, a new MCP primitive, an icon in Peacock, a thoughtful bug report: all of it
 counts.
 
-A few ground rules (the full list is in `CLAUDE.md`):
+Start with [CONTRIBUTING.md](CONTRIBUTING.md) for setup, conventions and how PRs land; `CLAUDE.md`
+is the full map of the codebase. Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+Found a security issue? Report it privately, as described in [SECURITY.md](SECURITY.md).
 
-- **Peacock first.** All UI primitives come from [`@argus/peacock`](./packages/peacock). No inline
-  `<svg>` in `app/`, no Tailwind, no ad-hoc icon packs.
-- **Keep files focused.** ~500 LOC is the soft ceiling for a module, ~300 for a component. If it's
-  growing, split it.
-- **Typed commands everywhere.** Handlers in `packages/host/src/services/`, catalogued in
-  `packages/remote-protocol`, registered with `defineTypedCommand`; `pnpm gen:protocol` gives the
-  Swift clients the same types.
-- **Worktrees are sacred.** Changes to the worktree lifecycle touch real user repos. Tread lightly,
-  and test with a Debug build of Argus for Mac first.
-- **Tokens only.** No hardcoded colors — they silently break the opposite theme.
+## Telemetry and privacy
+
+Argus asks on first launch how much it may send. The floor is one anonymous heartbeat per launch
+(a random install id and the app version); opting in to full telemetry adds feature-usage events and
+scrubbed errors. Prompts, code, agent output, names, paths and URLs are never sent. Every event and
+property is listed in [`docs/telemetry-events.md`](docs/telemetry-events.md).
+
+Builds from source send nothing at all: the analytics key is only injected into official releases.
+
+## License
+
+[MIT](LICENSE) © Douwe Bos. Vendored third-party code keeps its own license, next to the code.
 
 ---
 
