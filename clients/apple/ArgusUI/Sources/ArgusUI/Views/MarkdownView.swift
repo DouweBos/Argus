@@ -161,9 +161,10 @@ private struct MarkdownTable: View {
 
   var body: some View {
     ScrollView(.horizontal, showsIndicators: false) {
-      VStack(alignment: .leading, spacing: 0) {
-        row(columns.map { $0 }, isHeader: true)
-        ForEach(Array(rows.enumerated()), id: \.offset) { index, cells in
+      // Columns as wide as their content, as on the Mac; a long cell wraps rather than pushing the rest off screen.
+      Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 0) {
+        row(columns, isHeader: true)
+        ForEach(Array(rows.enumerated()), id: \.offset) { _, cells in
           Divider().overlay(theme.borderSubtle)
           row(cells, isHeader: false)
         }
@@ -175,11 +176,11 @@ private struct MarkdownTable: View {
   }
 
   private func row(_ cells: [String], isHeader: Bool) -> some View {
-    HStack(alignment: .top, spacing: 0) {
+    GridRow(alignment: .top) {
       ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
         inline(cell)
           .font(.scaled(size: 13, weight: isHeader ? .semibold : .regular))
-          .frame(width: 160, alignment: .leading)
+          .frame(maxWidth: 240, alignment: .leading)
           .fixedSize(horizontal: false, vertical: true)
           .padding(.horizontal, 8)
           .padding(.vertical, 5)
