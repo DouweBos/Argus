@@ -1,10 +1,10 @@
 import ArgusUI
 import SwiftUI
 
-/// A session's stashes and tags. Applying, popping or dropping a stash needs
-/// control; tags are read-only here — creating and pushing them stays with
-/// the desktop's git views.
+/// A session's stashes and tags, as the Mac's stash list: long-press a stash
+/// for its menu, swipe to apply or drop. Tags are read-only here.
 struct StashesView: View {
+  @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
 
   let sessionId: String
@@ -18,34 +18,46 @@ struct StashesView: View {
   @State private var dropping: ArgusProtocol.GitStashEntry?
 
   var body: some View {
-    Screen {
+    List {
       if let note {
-        MutedText(note, lineLimit: 4)
+        Section { MutedText(note, lineLimit: 4) }
       }
-      if !loaded {
-        Loading(label: "Reading stashes…")
-      } else {
-        SectionHeader(title: "Stashes", count: stashes.count)
-        if stashes.isEmpty {
-          MutedText("Nothing stashed.")
-        }
+      Section("Stashes · \(stashes.count)") {
+        if stashes.isEmpty { MutedText("Nothing stashed.") }
         ForEach(stashes, id: \.hash) { stash in
-          stashCard(stash)
+          StashRow(stash: stash)
+            .opacity(busy == Int(stash.index) ? 0.5 : 1)
+            .contextMenu { if host.hasControl { menu(stash) } }
+            .swipeActions(edge: .leading) {
+              if host.hasControl {
+                Button("Apply", systemImage: Icon.download) { apply(Int(stash.index), drop: false) }
+                  .tint(theme.accent)
+              }
+            }
+            .swipeActions(edge: .trailing) {
+              // Asks first; a full swipe never drops on its own.
+              if host.hasControl {
+                Button("Drop", systemImage: Icon.trash) { dropping = stash }.tint(theme.error)
+              }
+            }
         }
-        SectionHeader(title: "Tags", count: tags.count)
-        if tags.isEmpty {
-          MutedText("No tags.")
-        }
+      }
+      Section("Tags · \(tags.count)") {
+        if tags.isEmpty { MutedText("No tags.") }
         ForEach(tags, id: \.name) { tag in
-          Card {
+          VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
               BodyText(tag.name, lineLimit: 1)
               if tag.pushed == false { Badge(label: "not pushed") }
             }
-            MutedText("\(String(tag.commitHash.prefix(7))) \(tag.subject)", lineLimit: 2)
+            MutedText("\(String(tag.commitHash.prefix(7))) \(tag.subject)", lineLimit: 1)
           }
         }
       }
+    }
+    .disabled(busy != nil)
+    .loadPhase(LoadPhase(loaded: loaded, error: nil, isEmpty: false), loading: "Reading stashes…") {
+      EmptyView()
     }
     .navigationTitle("Stashes & Tags · \(label)")
     .navigationBarTitleDisplayMode(.inline)
@@ -73,24 +85,14 @@ struct StashesView: View {
     }
   }
 
-  private func stashCard(_ stash: ArgusProtocol.GitStashEntry) -> some View {
+  @ViewBuilder
+  private func menu(_ stash: ArgusProtocol.GitStashEntry) -> some View {
     let index = Int(stash.index)
-    return Card {
-      HStack(spacing: 6) {
-        Badge(label: "stash@{\(index)}")
-        MutedText(Self.when(stash.date), lineLimit: 1)
-      }
-      BodyText(stash.message, lineLimit: 3)
-      if host.hasControl {
-        FlowRow(spacing: 8) {
-          Btn(label: "Apply", tone: .secondary, small: true) { apply(index, drop: false) }
-          Btn(label: "Pop", tone: .secondary, small: true) { apply(index, drop: true) }
-          Btn(label: "Drop", tone: .ghost, small: true) { dropping = stash }
-        }
-        .disabled(busy != nil)
-      }
-    }
-    .opacity(busy == index ? 0.5 : 1)
+    Button("Apply", systemImage: Icon.download) { apply(index, drop: false) }
+    Button("Pop", systemImage: Icon.download) { apply(index, drop: true) }
+    Button("Copy Message", systemImage: Icon.copy) { UIPasteboard.general.string = stash.message }
+    Divider()
+    Button("Drop…", systemImage: Icon.trash, role: .destructive) { dropping = stash }
   }
 
   /// Git's ISO date as "3h ago"; the raw string if it doesn't parse.
@@ -118,5 +120,34 @@ struct StashesView: View {
     stashes = listed
     tags = tagged
     loaded = true
+  }
+}
+
+/// A stash as the Mac lists it: the message, then its ref, branch and age.
+private struct StashRow: View {
+  @Environment(\.theme) private var theme
+  let stash: ArgusProtocol.GitStashEntry
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 3) {
+      BodyText(stash.message, lineLimit: 2)
+      HStack(spacing: 6) {
+        Text("stash@{\(Int(stash.index))}").font(.caption.monospaced())
+        if let branch = Self.branch(of: stash.message) {
+          Label(branch, systemImage: Icon.branch).labelStyle(.titleAndIcon)
+        }
+        Spacer(minLength: 4)
+        Text(StashesView.when(stash.date))
+      }
+      .font(.caption)
+      .foregroundStyle(theme.textSecondary)
+      .lineLimit(1)
+    }
+  }
+
+  /// Git names the branch in the message: "On main: …" or "WIP on main: …".
+  static func branch(of message: String) -> String? {
+    guard let match = message.firstMatch(of: /^(?:WIP on|On) ([^:]+):/) else { return nil }
+    return String(match.1)
   }
 }

@@ -24,6 +24,10 @@ c() { # c <hours ago> <author> <subject>
   GIT_COMMITTER_NAME="$2" GIT_COMMITTER_EMAIL="$(echo "$2" | tr 'A-Z ' 'a-z.')@example.com" GIT_COMMITTER_DATE="@$T +0000" \
   git commit -q -m "$3"
 }
+s() { # s <minutes ago> <message>
+  T=$((NOW - $1 * 60))
+  GIT_AUTHOR_DATE="@$T +0000" GIT_COMMITTER_DATE="@$T +0000" git stash push -q -m "$2"
+}
 git init -q --bare origin.git
 git init -q -b main luma; cd luma
 git config user.name "Maya Chen"; git config user.email maya.chen@example.com
@@ -119,11 +123,11 @@ printf 'export async function pair(code: string) {\n  return gateway.request("pa
 git add -A; c 3 "Maya Chen" "feat(remote): pair a phone over the gateway"
 git tag v0.72.1
 # Stashes, newest last.
-printf '\nexport const debugGateway = true\n' >> src/remote/pair.ts; git stash push -q -m "debug logging for the gateway"
+printf '\nexport const debugGateway = true\n' >> src/remote/pair.ts; s 150 "debug logging for the gateway"
 git checkout -q feat/merge-strategy
-printf '\n// TODO: picker in project settings\n' >> src/session/strategy.ts; git stash push -q -m "half-done strategy picker"
+printf '\n// TODO: picker in project settings\n' >> src/session/strategy.ts; s 120 "half-done strategy picker"
 git checkout -q main
-sed -i '' 's/--branch"/--branch", "--ahead-behind"/' src/git/status.ts; git stash push -q -m "try a shorter fetch interval"
+sed -i '' 's/--branch"/--branch", "--ahead-behind"/' src/git/status.ts; s 60 "try a shorter fetch interval"
 git fetch -q origin
 # The session's worktree, with work in progress.
 git worktree add -q ../luma-worktrees/feat/merge-strategy feat/merge-strategy
