@@ -170,26 +170,12 @@ private struct AutomationDetail: View {
 /// The track record, stated plainly: an automation that is wrong seven times
 /// out of ten should read as wrong here.
 private struct TrackRecordSection: View {
-  @Environment(\.theme) private var theme
   let calibration: ArgusProtocol.AutomationCalibration?
 
   var body: some View {
     if let calibration, calibration.sample > 0 {
       Section {
-        HStack(alignment: .top, spacing: 24) {
-          stat(
-            "Acceptance", calibration.acceptanceRate.map { "\(Int(($0 * 100).rounded()))%" } ?? "—",
-            "\(Int(calibration.accepted + calibration.autoStarted + calibration.resolved)) kept · "
-              + "\(Int(calibration.dismissed)) dismissed",
-            poor: (calibration.acceptanceRate ?? 1) < 0.5)
-          stat("Auto-started", "\(Int(calibration.autoStarted))")
-          stat("Waiting", "\(Int(calibration.pending))")
-          stat("Merged", "\(Int(calibration.merged))", "\(Int(calibration.abandoned)) abandoned")
-        }
-        ForEach(Array(calibration.dismissals.enumerated()), id: \.offset) { _, dismissal in
-          Label("\(dismissal.title) — \(dismissal.reason)", systemImage: "exclamationmark.triangle")
-            .foregroundStyle(theme.warning)
-        }
+        CalibrationStats(calibration)
       } header: {
         HStack {
           Text("Track record")
@@ -197,18 +183,6 @@ private struct TrackRecordSection: View {
           Text("last \(AutomationText.plural(Int(calibration.sample), "proposal"))")
             .foregroundStyle(.secondary)
         }
-      }
-    }
-  }
-
-  private func stat(_ label: String, _ value: String, _ delta: String? = nil, poor: Bool = false)
-    -> some View
-  {
-    VStack(alignment: .leading, spacing: 2) {
-      Text(label).font(.scaled(.caption)).foregroundStyle(.secondary)
-      Text(value).font(.scaled(.title3).weight(.semibold)).monospacedDigit()
-      if let delta {
-        Text(delta).font(.scaled(.caption)).foregroundStyle(poor ? theme.error : theme.textSecondary)
       }
     }
   }

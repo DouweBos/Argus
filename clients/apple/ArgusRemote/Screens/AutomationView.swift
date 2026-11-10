@@ -92,28 +92,8 @@ struct AutomationView: View {
   private var trackRecord: some View {
     if let record = store.calibrationById[automationId], record.sample > 0 {
       SectionHeader(title: "Track record", count: Int(record.sample))
-      Card {
-        if let rate = record.acceptanceRate {
-          BodyText("\(Int((rate * 100).rounded()))% kept")
-        } else {
-          BodyText("Nothing decided yet")
-        }
-        MutedText(Self.recordSummary(record), lineLimit: 3)
-        ForEach(Array(record.dismissals.prefix(3).enumerated()), id: \.offset) { _, dismissal in
-          MutedText("Dismissed “\(dismissal.title)”: \(dismissal.reason)", lineLimit: 2)
-        }
-      }
+      Card { CalibrationStats(record) }
     }
-  }
-
-  static func recordSummary(_ record: ArgusProtocol.AutomationCalibration) -> String {
-    let parts: [(Double, String)] = [
-      (record.accepted, "started"), (record.autoStarted, "auto-started"),
-      (record.resolved, "done by you"), (record.dismissed, "dismissed"),
-      (record.pending, "waiting"), (record.superseded, "replaced"),
-      (record.withdrawn, "withdrawn"),
-    ]
-    return parts.filter { $0.0 > 0 }.map { "\(Int($0.0)) \($0.1)" }.joined(separator: " · ")
   }
 
   @ViewBuilder
@@ -210,10 +190,21 @@ struct AutomationView: View {
           ? "Press Run now to see what it does."
           : "This device can watch automations but not start them.")
     } else {
-      SectionHeader(title: "Runs", count: items.count)
-      ForEach(items) { run in
-        NavigationLink(value: Route.run(id: run.id, label: automation.name)) {
-          RunRow(run: run)
+      SectionHeader(title: "Run history", count: items.count)
+      // One grouped card, as the Mac's run history section.
+      Card {
+        ForEach(Array(items.enumerated()), id: \.element.id) { index, run in
+          if index > 0 { Divider() }
+          NavigationLink(value: Route.run(id: run.id, label: automation.name)) {
+            HStack(spacing: 8) {
+              RunRow(run: run)
+              Image(systemName: "chevron.right")
+                .font(.scaled(size: 12, weight: .semibold))
+                .foregroundStyle(theme.textMuted)
+            }
+            .contentShape(.rect)
+          }
+          .buttonStyle(.argusPlain)
         }
       }
     }

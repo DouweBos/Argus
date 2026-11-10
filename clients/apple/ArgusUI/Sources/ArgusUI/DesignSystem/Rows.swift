@@ -177,9 +177,13 @@ public struct RunRow: View {
         }
       }
       Spacer(minLength: 6)
-      Text(Labels.runDuration(run))
-        .font(.scaled(size: 11, design: .monospaced))
-        .foregroundStyle(.secondary)
+      // Duration and cost, the Mac run history's two figures.
+      VStack(alignment: .trailing, spacing: 3) {
+        Text(Labels.runDuration(run))
+        if run.costUsd != nil { Text(Labels.runCost(run)) }
+      }
+      .font(.scaled(size: 11, design: .monospaced))
+      .foregroundStyle(.secondary)
     }
   }
 }
