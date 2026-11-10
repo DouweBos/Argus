@@ -88,6 +88,7 @@ struct RootView: View {
       // Moved tunnels, new computers and reconnected drives, picked up on the way back in.
       if phase == .active {
         app.recheckRoutes()
+        app.reportShares()
         Task { await app.account.refresh() }
         if app.host.connection == .ready {
           Task { await BackgroundRefresh.run { await app.host.refreshHeldLists() } }

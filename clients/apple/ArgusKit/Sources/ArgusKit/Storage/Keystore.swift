@@ -9,9 +9,12 @@ import Security
 public actor Keystore {
   private let service: String
   private let account = "argus.hosts"
+  /// Set: the items live in this shared group (an App Group), readable by the app's extensions.
+  private let accessGroup: String?
 
-  public init(service: String = "dev.houwert.argus") {
+  public init(service: String = "dev.houwert.argus", accessGroup: String? = nil) {
     self.service = service
+    self.accessGroup = accessGroup
   }
 
   public func load() -> PairedHosts {
@@ -84,11 +87,13 @@ public actor Keystore {
   // MARK: - Keychain
 
   private func baseQuery(account: String? = nil) -> [String: Any] {
-    [
+    var query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
       kSecAttrAccount as String: account ?? self.account,
     ]
+    if let accessGroup { query[kSecAttrAccessGroup as String] = accessGroup }
+    return query
   }
 
   private func read(account: String? = nil) -> Data? {

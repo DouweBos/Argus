@@ -48,11 +48,12 @@ extension HostStore {
   @discardableResult
   public func startInNewWorktree(
     repoRoot: String, baseBranch: String?, existingBranch: String? = nil,
-    request: ComposerStart, defaults: AgentStartDefaults,
+    request: ComposerStart, defaults: AgentStartDefaults, hostWaits: Bool = false,
     onSpawned: (@MainActor (_ agentId: String, _ sessionId: String) -> Void)? = nil
   ) async -> RemoteSession? {
     let effort = request.effort(or: defaults)
-    let hostStarts = request.images.isEmpty && effort == nil
+    // `hostWaits`: the caller goes away at once (a share sheet), so the computer starts it, effort aside.
+    let hostStarts = hostWaits || (request.images.isEmpty && effort == nil)
     // The host's own start can't take `trusted`; nil leaves it to the host's default.
     let mode = request.permissionMode ?? defaults.mode.flatMap(RemotePermissionMode.init(rawValue:))
     guard
@@ -61,7 +62,8 @@ extension HostStore {
         useExistingBranch: existingBranch != nil ? true : nil,
         baseBranch: existingBranch == nil ? baseBranch : nil,
         prompt: hostStarts && !request.message.isEmpty ? request.message : nil,
-        model: request.model(or: defaults), permissionMode: mode, runnerId: request.runnerId)
+        model: request.model(or: defaults), permissionMode: mode, runnerId: request.runnerId,
+        images: hostStarts && !request.images.isEmpty ? request.images : nil)
     else { return nil }
     if !hostStarts {
       Task { await startWhenReady(session.id, request: request, defaults: defaults, onSpawned: onSpawned) }

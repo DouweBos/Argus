@@ -5404,6 +5404,7 @@ extension ArgusProtocol {
       public var model: String?
       public var permissionMode: RemotePermissionMode?
       public var runnerId: String?
+      public var images: [RemoteImageAttachment]?
       public var linearIssue: String?
 
       enum CodingKeys: String, CodingKey {
@@ -5416,10 +5417,11 @@ extension ArgusProtocol {
         case model = "model"
         case permissionMode = "permission_mode"
         case runnerId = "runner_id"
+        case images = "images"
         case linearIssue = "linear_issue"
       }
 
-      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil, model: String? = nil, permissionMode: RemotePermissionMode? = nil, runnerId: String? = nil, linearIssue: String? = nil) {
+      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil, model: String? = nil, permissionMode: RemotePermissionMode? = nil, runnerId: String? = nil, images: [RemoteImageAttachment]? = nil, linearIssue: String? = nil) {
         self.repoRoot = repoRoot
         self.branch = branch
         self.description = description
@@ -5429,6 +5431,7 @@ extension ArgusProtocol {
         self.model = model
         self.permissionMode = permissionMode
         self.runnerId = runnerId
+        self.images = images
         self.linearIssue = linearIssue
       }
 
@@ -5443,6 +5446,7 @@ extension ArgusProtocol {
         try c.encodeIfPresent(model, forKey: .model)
         try c.encodeIfPresent(permissionMode, forKey: .permissionMode)
         try c.encodeIfPresent(runnerId, forKey: .runnerId)
+        try c.encodeIfPresent(images, forKey: .images)
         try c.encodeIfPresent(linearIssue, forKey: .linearIssue)
       }
     }

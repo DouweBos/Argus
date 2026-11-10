@@ -19,24 +19,36 @@ final class AppStore {
   // one file. Views read them; only the store's own extensions write them.
 
   /// QR pairings, from the keystore.
-  var pairedHosts: [DeviceIdentity] = []
+  var pairedHosts: [DeviceIdentity] = [] {
+    didSet { mirrorForShare() }
+  }
   /// Hosts on the signed-in account, rebuilt from its verified log. Their
   /// grants live here only: the host re-states them on every connect.
-  var accountHosts: [DeviceIdentity] = []
+  var accountHosts: [DeviceIdentity] = [] {
+    didSet { mirrorForShare() }
+  }
   /// Every computer this phone can reach, one row each.
   var hosts: [DeviceIdentity] { .merging(paired: pairedHosts, account: accountHosts) }
-  var activeHostId: String?
+  var activeHostId: String? {
+    didSet { mirrorForShare() }
+  }
   var identity: DeviceIdentity?
   /// False until the stored pairings have been read back from the keychain.
   var loaded = false
   var deviceName: String = UIDeviceName.current
-  var themePreference: ThemePreference = .system
-  var colorTheme: ColorTheme = .muted
+  var themePreference: ThemePreference = .system {
+    didSet { mirrorForShare() }
+  }
+  var colorTheme: ColorTheme = .muted {
+    didSet { mirrorForShare() }
+  }
   /// Opens Read calls that returned an image, so screenshots show without a tap.
   var autoExpandImageReads = false
   /// The mode new agents started from this phone begin in; nil leaves it to
   /// the computer, as the desktop's own default does for its agents.
-  var defaultPermissionMode: RemotePermissionMode?
+  var defaultPermissionMode: RemotePermissionMode? {
+    didSet { mirrorForShare() }
+  }
   /// Failures shown this launch, newest first — the phone's `/notifications`.
   let notifications = NotificationsLog()
   /// Mirrored from `Telemetry` so the Settings toggle has something to bind to.
@@ -65,6 +77,9 @@ final class AppStore {
   private var unsupportedSeen: Set<String> = []
   /// Keeps the connection on the best route that works; see `RouteSupervisor`.
   @ObservationIgnored private var routes: RouteSupervisor!
+  /// The last snapshot handed to the share extension, and the write in flight.
+  @ObservationIgnored private var mirroredShare: ShareSnapshot?
+  @ObservationIgnored private var shareMirror: Task<Void, Never>?
 
   init() {
     let prefs = Preferences()
@@ -131,6 +146,8 @@ final class AppStore {
     pairedHosts = stored.hosts
     activeHostId = stored.activeId
     loaded = true
+    mirrorForShare()
+    reportShares()
     // Set here, renamed from the account list, or renamed from another device.
     account.onNameChanged = { [weak self] name in self?.applyDeviceName(name) }
     // An account host connects once the account's log has listed it.
@@ -375,5 +392,33 @@ final class AppStore {
     defaultPermissionMode = mode
     preferences.set(mode?.rawValue, for: PreferenceKey.defaultPermissionMode)
     Telemetry.capture(.defaultChanged(setting: .permissionMode, value: mode?.rawValue ?? "computer"))
+  }
+
+  // MARK: Share extension
+
+  /// Hands the share extension the computers it may reach, in write order.
+  private func mirrorForShare() {
+    // Before the keychain is read, an empty list would wipe the last snapshot.
+    guard loaded else { return }
+    let snapshot = ShareSnapshot(
+      hosts: hosts, activeId: activeHostId, defaultPermissionMode: defaultPermissionMode?.rawValue,
+      theme: themePreference.rawValue, colorTheme: colorTheme.rawValue)
+    guard snapshot != mirroredShare else { return }
+    mirroredShare = snapshot
+    let previous = shareMirror
+    shareMirror = Task {
+      await previous?.value
+      await ShareHandoff().saveSnapshot(snapshot)
+    }
+  }
+
+  /// Shares that ended since the app last looked; the extension can't send telemetry itself.
+  func reportShares() {
+    for outcome in ShareHandoff().drainOutcomes() {
+      Telemetry.capture(
+        .shareFinished(
+          outcome: outcome.result.rawValue, hasImages: outcome.hasImages, hasLink: outcome.hasLink,
+          hasText: outcome.hasText, workspace: outcome.workspace ?? "none"))
+    }
   }
 }

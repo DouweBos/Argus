@@ -38,6 +38,7 @@ ArgusUI/              Swift package, iOS + macOS: the design system and the shar
 ArgusRemote/          The phone shell — App/, Screens/, Stores/ (`AppStore`: pairing,
                       endpoint racing, push, preferences), Telemetry/.
 NotificationService/  Notification Service Extension: opens sealed pushes.
+ShareExtension/       Share Extension: sends a screenshot, link or text into a new or existing session.
 Tools/                Interop vector generators (run against the TypeScript source).
 ArgusRemote.xcodeproj Checked in. Edit it in Xcode; there is no generator step.
 ```

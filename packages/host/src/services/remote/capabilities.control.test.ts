@@ -780,6 +780,33 @@ describe("sessions.create with a prompt", () => {
     expect(vi.mocked(startAgent).mock.calls[0]?.[0]).toBe("s2");
   });
 
+  it("hands the prompted agent the images sent with it", async () => {
+    const { createSession } = vi.mocked(await import("../session/manager"));
+    createSession.mockResolvedValueOnce({ id: "s6", status: "ready" } as never);
+    appState.sessions.set("s6", { id: "s6", status: "ready" } as never);
+    const images = [{ data: "aGk=", media_type: "image/png" }];
+
+    await dispatch(
+      "sessions.create",
+      {
+        repo_root: "/repo",
+        branch: "",
+        description: "",
+        prompt: "fix this layout",
+        images,
+      },
+      makeCtx(["monitor", "control"]),
+    );
+
+    await vi.waitFor(() =>
+      expect(sendAgentMessage).toHaveBeenCalledWith(
+        "a1",
+        "fix this layout",
+        images,
+      ),
+    );
+  });
+
   it("names the session from the prompt when the description is empty", async () => {
     const { createSession } = vi.mocked(await import("../session/manager"));
     createSession.mockResolvedValueOnce({ id: "s5", status: "ready" } as never);

@@ -340,9 +340,12 @@ end
 IOS_APP_ID       = "dev.houwert.argus.remote"
 IOS_EXTENSION_ID = "dev.houwert.argus.remote.NotificationService"
 IOS_WIDGETS_ID   = "dev.houwert.argus.remote.Widgets"
+IOS_SHARE_ID     = "dev.houwert.argus.remote.ShareExtension"
 # Target name => bundle id, for the App Store profiles each one signs with.
-IOS_TARGETS = { "ArgusRemote" => IOS_APP_ID, "ArgusNotificationService" => IOS_EXTENSION_ID,
-                "ArgusWidgets" => IOS_WIDGETS_ID }.freeze
+IOS_TARGETS = {
+  "ArgusRemote" => IOS_APP_ID, "ArgusNotificationService" => IOS_EXTENSION_ID,
+  "ArgusWidgets" => IOS_WIDGETS_ID, "ArgusShare" => IOS_SHARE_ID,
+}.freeze
 
 platform :ios do
   desc "One-time, local: create the iPhone app in App Store Connect and the App Store profiles TestFlight builds sign with. Logs in with your Apple ID (App Store Connect API keys can't create apps). Pass name: for the App Store name."

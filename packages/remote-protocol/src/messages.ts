@@ -352,6 +352,8 @@ export const MethodParams = {
     model: z.string().optional(),
     permission_mode: RemotePermissionMode.optional(),
     runner_id: z.string().optional(),
+    /** Sent with `prompt`, so a client that can't wait out setup (a share sheet) still attaches them. */
+    images: z.array(RemoteImageAttachment).max(20).optional(),
     /**
      * A Linear identifier (`ENG-123`) or issue URL. The host branches on
      * Linear's branch name, links the session to the issue and always starts

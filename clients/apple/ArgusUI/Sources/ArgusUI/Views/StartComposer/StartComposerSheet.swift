@@ -1,5 +1,6 @@
 #if os(iOS)
   import ArgusCore
+  import ArgusKit
   import SwiftUI
 
   /// Start an agent the way the Mac does: a new agent's empty screen, its
@@ -90,6 +91,8 @@
     let defaultMode: RemotePermissionMode?
     let issues: [HostStore.LinearIssue]
     let picksProject: Bool
+    /// Set by a caller that closes once started: the computer waits out a new worktree's setup.
+    let hostWaits: Bool
     let onAffordance: ((ChatInputAffordance) -> Void)?
     let onStarted: (StartComposerSheet.Started, StartComposerSheet.Submission) -> Void
 
@@ -100,6 +103,7 @@
       defaultMode: RemotePermissionMode? = nil,
       issues: [HostStore.LinearIssue] = [],
       picksProject: Bool = false,
+      hostWaits: Bool = false,
       onAffordance: ((ChatInputAffordance) -> Void)? = nil,
       onStarted: @escaping (StartComposerSheet.Started, StartComposerSheet.Submission) -> Void
     ) {
@@ -109,6 +113,7 @@
       self.defaultMode = defaultMode
       self.issues = issues
       self.picksProject = picksProject
+      self.hostWaits = hostWaits
       self.onAffordance = onAffordance
       self.onStarted = onStarted
     }
@@ -116,7 +121,20 @@
     public var body: some View {
       StartComposerContent(
         host: host, repoRoot: repoRoot, sessionId: sessionId, workspace: workspace, defaultMode: defaultMode,
-        issues: issues, picksProject: picksProject, onAffordance: onAffordance, onStarted: onStarted)
+        issues: issues, picksProject: picksProject, hostWaits: hostWaits, onAffordance: onAffordance,
+        onStarted: onStarted)
+    }
+  }
+
+  extension AgentStartPane {
+    /// Opens the pane on this draft, as if it had been typed and attached: how a share arrives.
+    public static func seedDraft(
+      text: String, images: [RemoteImageAttachment], repoRoot: String?, sessionId: String?,
+      preferences: Preferences = Preferences(), attachments: DraftAttachments = DraftAttachments()
+    ) {
+      let key = StartComposerContent.draftKey(repoRoot: repoRoot, sessionId: sessionId, issues: [])
+      preferences.set(text.isEmpty ? nil : text, for: PreferenceKey.draft(agentId: key))
+      attachments.save(images, agentId: key)
     }
   }
 
@@ -134,14 +152,14 @@
 
     init(
       host: HostStore, repoRoot: String?, sessionId: String?, workspace: StartWorkspace.Kind,
-      defaultMode: RemotePermissionMode?, issues: [HostStore.LinearIssue], picksProject: Bool,
+      defaultMode: RemotePermissionMode?, issues: [HostStore.LinearIssue], picksProject: Bool, hostWaits: Bool,
       onAffordance: ((ChatInputAffordance) -> Void)?,
       onStarted: @escaping (StartComposerSheet.Started, StartComposerSheet.Submission) -> Void
     ) {
       let flow = PhoneAgentStart(
         host: host, repoRoot: repoRoot, sessionId: sessionId, workspace: workspace,
         defaults: AgentStartDefaults(mode: defaultMode?.rawValue), issues: issues,
-        picksProject: picksProject && sessionId == nil, onStarted: onStarted)
+        picksProject: picksProject && sessionId == nil, hostWaits: hostWaits, onStarted: onStarted)
       let mode = (defaultMode ?? .auto).rawValue
       let starter = ComposerStarter(defaultMode: mode) { [weak flow] in await flow?.start($0) ?? false }
       let controller = PastingTextController()
@@ -157,7 +175,7 @@
     }
 
     /// The Mac's key for a session's start composer, so a draft survives closing this.
-    private static func draftKey(repoRoot: String?, sessionId: String?, issues: [HostStore.LinearIssue]) -> String {
+    fileprivate static func draftKey(repoRoot: String?, sessionId: String?, issues: [HostStore.LinearIssue]) -> String {
       if let issue = issues.first { return "start:issue:\(issue.id)" }
       if let sessionId { return ComposerStarter.draftKey(sessionId: sessionId) }
       return "start:repo:\(repoRoot ?? "")"

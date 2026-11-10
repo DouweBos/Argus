@@ -1519,6 +1519,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       model,
       permission_mode,
       runner_id,
+      images,
       linear_issue,
     } = parse("sessions.create", params);
     requireKnownRepoRoot(repo_root);
@@ -1563,6 +1564,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         model,
         permissionMode: permission_mode,
         runnerId: runner_id,
+        images,
       }).catch(() => {});
     }
 

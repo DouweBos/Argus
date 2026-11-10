@@ -240,6 +240,9 @@ enum TelemetryEvent {
   /// or `existing`; `changedWorkspace` says it isn't the one the sheet opened on.
   case agentStartSubmitted(
     workspace: String, changedWorkspace: Bool, hasImages: Bool, effortSet: Bool, changedProject: Bool)
+  /// A share into Argus ended. `outcome` is `started`, `cancelled`, `unreachable`
+  /// (cancelled with no computer reachable) or `unpaired`; `workspace` is where it started, else `none`.
+  case shareFinished(outcome: String, hasImages: Bool, hasLink: Bool, hasText: Bool, workspace: String)
   /// The warnings list was opened; `count` is how many it held.
   case warningsOpened(count: Int)
   /// One notification was swiped away, or the whole list cleared.
@@ -341,6 +344,7 @@ enum TelemetryEvent {
     case .appearanceChanged: "ios_appearance_changed"
     case .defaultChanged: "ios_default_changed"
     case .agentStartSubmitted: "ios_agent_start_submitted"
+    case .shareFinished: "ios_share_finished"
     case .warningsOpened: "ios_warnings_opened"
     case .notificationsCleared: "ios_notifications_cleared"
     case .mcpServersOpened: "ios_mcp_servers_opened"
@@ -460,6 +464,11 @@ enum TelemetryEvent {
       [
         "workspace": workspace, "changed_workspace": changedWorkspace, "has_images": hasImages,
         "effort_set": effortSet, "changed_project": changedProject,
+      ]
+    case .shareFinished(let outcome, let hasImages, let hasLink, let hasText, let workspace):
+      [
+        "outcome": outcome, "has_images": hasImages, "has_link": hasLink, "has_text": hasText,
+        "workspace": workspace,
       ]
     case .warningsOpened(let count):
       ["count": count]

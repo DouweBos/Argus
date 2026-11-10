@@ -11,7 +11,7 @@ extension HostStore {
     repoRoot: String, branch: String, description: String,
     useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil,
     model: String? = nil, permissionMode: RemotePermissionMode? = nil, runnerId: String? = nil,
-    linearIssue: String? = nil
+    linearIssue: String? = nil, images: [RemoteImageAttachment]? = nil
   ) async -> RemoteSession? {
     guard let backend else { return nil }
     struct Params: Encodable {
@@ -27,6 +27,7 @@ extension HostStore {
       let runner_id: String?
       /// The computer branches on Linear's name and puts the issue in front of `prompt`.
       let linear_issue: String?
+      let images: [RemoteImageAttachment]?
     }
     struct Result: Decodable { let session: RemoteSession }
     do {
@@ -36,7 +37,7 @@ extension HostStore {
           repo_root: repoRoot, branch: branch, description: description,
           use_existing_branch: useExistingBranch, base_branch: baseBranch, prompt: prompt,
           model: model, permission_mode: permissionMode?.rawValue, runner_id: runnerId,
-          linear_issue: linearIssue),
+          linear_issue: linearIssue, images: images),
         as: Result.self
       ).session
       creatingSessions[session.id] = session

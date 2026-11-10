@@ -21,12 +21,14 @@
 
     @ObservationIgnored private weak var host: HostStore?
     @ObservationIgnored private let defaults: AgentStartDefaults
+    /// The computer starts a new worktree's agent: nothing here stays to wait out setup.
+    @ObservationIgnored private let hostWaits: Bool
     @ObservationIgnored private let onStarted: (StartComposerSheet.Started, StartComposerSheet.Submission) -> Void
 
     init(
       host: HostStore, repoRoot: String?, sessionId: String?, workspace: StartWorkspace.Kind,
       defaults: AgentStartDefaults, issues: [HostStore.LinearIssue], picksProject: Bool = false,
-      onStarted: @escaping (StartComposerSheet.Started, StartComposerSheet.Submission) -> Void
+      hostWaits: Bool = false, onStarted: @escaping (StartComposerSheet.Started, StartComposerSheet.Submission) -> Void
     ) {
       self.host = host
       self.repoRoot = repoRoot
@@ -37,6 +39,7 @@
       self.openedOn = kind
       self.workspace = StartWorkspace(kind: kind)
       self.defaults = defaults
+      self.hostWaits = hostWaits
       self.issues = issues
       self.picksProject = picksProject
       self.onStarted = onStarted
@@ -131,7 +134,7 @@
       guard let repoRoot,
         let session = await host.startInNewWorktree(
           repoRoot: repoRoot, baseBranch: workspace.base, existingBranch: existing ? workspace.existingBranch : nil,
-          request: request, defaults: defaults)
+          request: request, defaults: defaults, hostWaits: hostWaits)
       else { return nil }
       return .session(session)
     }
