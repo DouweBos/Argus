@@ -26,7 +26,11 @@ struct BranchCompareView: View {
               MutedText("No shared history")
             }
             Spacer(minLength: 6)
-            if result.wouldConflict { Badge(label: "Conflicts likely", tone: .danger) }
+            if result.wouldConflict {
+              Badge(label: "Conflicts likely", tone: .danger)
+            } else if result.mergeBase != nil {
+              Badge(label: "Merges cleanly", tone: .success)
+            }
           }
         }
         side("Only on \(left)", result.leftOnly)
