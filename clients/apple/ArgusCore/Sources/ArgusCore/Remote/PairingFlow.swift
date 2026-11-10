@@ -3,7 +3,7 @@ import Foundation
 /// What a client says about itself in the pairing handshake. Its own claim:
 /// it decides what is offered, never what is allowed.
 extension PairingClientInfo {
-  /// "Argus Remote on iPhone", or just the product when it did not say.
+  /// "Argus on iPhone", or just the product when it did not say.
   public var label: String {
     device.map { "\(product) on \($0)" } ?? product
   }

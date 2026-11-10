@@ -717,7 +717,7 @@ one as if you were sitting at its keyboard, which is what the **Hosts** setting
 below attaches to. Tick it while confirming the pairing code, or on the device
 row afterwards. Admin implies control.
 
-The confirm screen names what is asking to pair — "Argus Remote on iPhone 17
+The confirm screen names what is asking to pair — "Argus on iPhone 17
 Pro", "Argus Web on iPad", "Argus for Mac" — and offers admin only to a desktop,
 because nothing else can act on it. What the client says about itself is its own
 claim rather than a verified fact, so it decides what is _offered_, never what

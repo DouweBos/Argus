@@ -77,7 +77,7 @@ function parseClientInfo(payload: Uint8Array): PairingClientInfo | null {
   }
 }
 
-/** "Argus Remote on iPhone", or just the product when it did not say. */
+/** "Argus on iPhone", or just the product when it did not say. */
 export function clientLabel(client: PairingClientInfo): string {
   return client.device
     ? `${client.product} on ${client.device}`

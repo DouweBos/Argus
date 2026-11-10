@@ -245,7 +245,7 @@
     private func pair(_ payload: PairingPayload, app: AppStore) {
       let client = PairingClient(
         payload: payload,
-        client: PairingClientInfo(product: "Argus Remote", kind: "mobile", device: "m65 dev"))
+        client: PairingClientInfo(product: "Argus", kind: "mobile", device: "m65 dev"))
       pairing = Task {
         for await event in await client.start() {
           if case .paired(let identity) = event {

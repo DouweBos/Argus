@@ -97,7 +97,7 @@ struct PairView: View {
       let client = PairingClient(
         payload: payload,
         client: PairingClientInfo(
-          product: "Argus Remote", kind: "mobile", device: UIDeviceName.current))
+          product: "Argus", kind: "mobile", device: UIDeviceName.current))
       self.client = client
       pump = Task {
         for await event in await client.start() {

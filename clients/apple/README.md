@@ -4,7 +4,7 @@ Two apps share this Xcode project and its packages: **ArgusRemote**, the iOS
 app described below, and **ArgusDesktop**, the native Mac app (beta) that
 bundles and supervises the Node host — see [`docs/mac-app.md`](../../docs/mac-app.md).
 
-## Argus Remote (iOS)
+## Argus for iPhone (iOS)
 
 Drive your Argus agents from an iPhone or iPad. Pairs with one or more
 desktops over an end-to-end-encrypted channel (Noise IK); the home screen

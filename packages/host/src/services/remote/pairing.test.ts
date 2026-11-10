@@ -186,7 +186,7 @@ describe("device pairing (IKpsk1 over local gateway)", () => {
       psk,
       new TextEncoder().encode(
         JSON.stringify({
-          product: "Argus Remote",
+          product: "Argus",
           kind: "mobile",
           device: "iPhone 17 Pro",
         }),
@@ -194,7 +194,7 @@ describe("device pairing (IKpsk1 over local gateway)", () => {
     );
     device.connect();
     await vi.waitFor(() => expect(client).not.toBeNull());
-    expect(client).toMatchObject({ kind: "mobile", product: "Argus Remote" });
+    expect(client).toMatchObject({ kind: "mobile", product: "Argus" });
 
     cancelPairing();
     device.close();

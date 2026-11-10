@@ -63,7 +63,7 @@ enum Telemetry {
     config.enableSwizzling = false
     config.preloadFeatureFlags = false
     config.personProfiles = .identifiedOnly
-    // Argus Remote is low volume — send each event as it happens rather than
+    // The iPhone app is low volume — send each event as it happens rather than
     // losing a batch when the phone is locked mid-flush.
     config.flushAt = 1
     config.getAnonymousId = { fallback in UUID(uuidString: distinctId) ?? fallback }

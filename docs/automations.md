@@ -596,7 +596,7 @@ Two things to know when the host is headless:
 
 ## From your phone
 
-[Argus Remote](../clients/apple/README.md) reaches the connected
+[The iPhone app](../clients/apple/README.md) reaches the connected
 computer's automations from the Automations button on its projects screen: the
 automations themselves, the recent runs across all of them, and one run with
 its report — structured blocks included. **Give feedback** on a finished run

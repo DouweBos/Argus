@@ -353,7 +353,7 @@ platform :ios do
   lane :testflight_setup do |options|
     produce(
       app_identifier: IOS_APP_ID,
-      app_name:       options.fetch(:name, "Argus Remote"),
+      app_name:       options.fetch(:name, "Argus"),
       language:       "en-US",
       sku:            "argus-remote",
       # The app's App ID exists already: development signing registered it.

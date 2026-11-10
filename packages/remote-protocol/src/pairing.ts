@@ -34,7 +34,7 @@ export type PairingClientKind = z.infer<typeof PairingClientKind>;
  * enforces. A client that sends nothing is shown as unknown.
  */
 export const PairingClientInfo = z.object({
-  /** The product, for the human: "Argus Remote", "Argus for Mac". */
+  /** The product, for the human: "Argus" (the iPhone app), "Argus for Mac". */
   product: z.string().max(64),
   kind: PairingClientKind,
   /** What it runs on, when the client knows: "iPhone 17 Pro", "Safari". */

@@ -78,11 +78,11 @@ struct RemoteAccessLabelsTests {
 }
 
 struct PairingFlowTests {
-  private let phone = PairingClientInfo(product: "Argus Remote", kind: "mobile", device: "iPhone")
+  private let phone = PairingClientInfo(product: "Argus", kind: "mobile", device: "iPhone")
   private let mac = PairingClientInfo(product: "Argus for Mac", kind: "desktop")
 
   @Test func labelsTheClient() {
-    #expect(phone.label == "Argus Remote on iPhone")
+    #expect(phone.label == "Argus on iPhone")
     #expect(mac.label == "Argus for Mac")
   }
 
