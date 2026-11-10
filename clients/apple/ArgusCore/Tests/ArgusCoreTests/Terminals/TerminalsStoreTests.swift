@@ -108,4 +108,19 @@ struct TerminalsStoreTests {
     #expect(store.tabs("s1").map(\.title) == ["Setup", "Logs"])
     #expect(store.active("s1")?.id == "t1")
   }
+
+  @Test func writesReachTheHostInTheOrderTheyWereTyped() async {
+    let backend = RecordingBackend()
+    let store = makeStore(backend)
+    let chunks = ["\u{1b}[200~", "echo pasted"] + (0..<40).map { "\($0)" } + ["\u{1b}[201~"]
+    for chunk in chunks { store.write("t1", Data(chunk.utf8)) }
+    #expect(await eventually { backend.calls("terminal_write").count == chunks.count })
+    let sent = backend.calls("terminal_write").compactMap { call -> String? in
+      guard case .object(let params) = call.params, let data = params["data"]?.stringValue,
+        let bytes = Data(base64Encoded: data)
+      else { return nil }
+      return String(decoding: bytes, as: UTF8.self)
+    }
+    #expect(sent == chunks)
+  }
 }

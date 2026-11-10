@@ -73,6 +73,8 @@ public final class TerminalsStore {
   @ObservationIgnored private var feeds: [String: TerminalFeed] = [:]
   @ObservationIgnored private var sinks: [String: @MainActor (TerminalFeed.Output) -> Void] = [:]
   @ObservationIgnored private var revealNonce = 0
+  /// Each terminal's last write: a paste is three writes (bracket, text, bracket) that must land in order.
+  @ObservationIgnored private var writeTails: [String: Task<Void, Never>] = [:]
 
   public init(backend: @escaping @MainActor () -> (any HostBackend)?) {
     self.backend = backend
@@ -288,7 +290,9 @@ public final class TerminalsStore {
 
   public func write(_ terminalId: String, _ bytes: Data) {
     guard let backend = backend() else { return }
-    Task {
+    let previous = writeTails[terminalId]
+    writeTails[terminalId] = Task {
+      await previous?.value
       _ = try? await backend.request(
         ArgusProtocol.Commands.TerminalWrite.self,
         .init(sessionId: terminalId, data: bytes.base64EncodedString()))
