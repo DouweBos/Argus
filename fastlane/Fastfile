@@ -368,13 +368,16 @@ platform :ios do
       require "produce/group"
       Produce::Group.new.associate(nil, [IOS_APP_GROUP])
     end
-    match(type: "appstore", platform: "ios", app_identifier: IOS_TARGETS.values, readonly: false)
+    # The Matchfile skips profiles for the Mac's Developer ID cert; every iPhone target needs one.
+    match(type: "appstore", platform: "ios", app_identifier: IOS_TARGETS.values, readonly: false,
+          skip_provisioning_profiles: false)
   end
 
   desc "Build the iPhone app and upload it to TestFlight. The Release workflow runs it in parallel with the Mac build, so both share a version and build number. Needs the profiles from testflight_setup."
   lane :testflight do
     api_key = load_app_store_connect_api_key
-    match(type: "appstore", platform: "ios", app_identifier: IOS_TARGETS.values, readonly: true, api_key: api_key)
+    match(type: "appstore", platform: "ios", app_identifier: IOS_TARGETS.values, readonly: true, api_key: api_key,
+          skip_provisioning_profiles: false)
 
     root = File.expand_path("..", __dir__)
     out = File.join(root, "release-ios")
