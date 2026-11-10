@@ -1,7 +1,7 @@
 #if os(macOS)
   import SwiftUI
 
-  /// A keyboard-driven list above the input; the highlighted row follows ↑/↓
+  /// A keyboard-driven list floating above the input; the highlighted row follows ↑/↓
   /// and stays scrolled into view.
   private struct SuggestionList<Item: Identifiable, Row: View>: View {
     @Environment(\.theme) private var theme
@@ -57,6 +57,8 @@
       .overlay {
         RoundedRectangle(cornerRadius: theme.radiusSmall).strokeBorder(theme.border, lineWidth: 1)
       }
+      // It floats over the chat, as the context card does.
+      .shadow(color: .black.opacity(theme.scheme == .dark ? 0.35 : 0.08), radius: 12, y: 4)
     }
   }
 

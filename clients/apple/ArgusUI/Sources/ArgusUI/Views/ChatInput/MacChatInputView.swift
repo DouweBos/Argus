@@ -46,17 +46,13 @@
         if !handoffAccounts.isEmpty {
           LimitHandoffCard(agentId: composer.agentId, accounts: handoffAccounts) { handoffAccounts = [] }
         }
-        if !composer.slashItems.isEmpty {
-          SlashSuggestionList(items: composer.slashItems, selected: composer.menuIndex) { composer.acceptSlash($0) }
-        } else if !composer.mentionItems.isEmpty {
-          MentionSuggestionList(
-            header: composer.mentionHeader, items: composer.mentionItems, selected: composer.menuIndex
-          ) { composer.acceptMention($0) }
-        } else if !composer.hasContent, !composer.followUps.isEmpty {
+        if composer.slashItems.isEmpty, composer.mentionItems.isEmpty, !composer.hasContent,
+          !composer.followUps.isEmpty
+        {
           FollowUpSuggestionRow(items: composer.followUps) { composer.acceptFollowUp($0) }
         }
         VStack(spacing: 0) {
-          box
+          box.overlay(alignment: .top) { suggestions }
           if let footer {
             footer.padding(.horizontal, 14)
           }
@@ -85,6 +81,21 @@
       .onChange(of: dropInbox?.generation) { _, _ in
         (dropInbox?.take() ?? []).forEach(composer.receive)
       }
+    }
+
+    /// The `/` and `@` menus float above the box like a popover, so opening one
+    /// moves neither the box nor what's around it.
+    @ViewBuilder private var suggestions: some View {
+      Group {
+        if !composer.slashItems.isEmpty {
+          SlashSuggestionList(items: composer.slashItems, selected: composer.menuIndex) { composer.acceptSlash($0) }
+        } else if !composer.mentionItems.isEmpty {
+          MentionSuggestionList(
+            header: composer.mentionHeader, items: composer.mentionItems, selected: composer.menuIndex
+          ) { composer.acceptMention($0) }
+        }
+      }
+      .alignmentGuide(.top) { $0[.bottom] + 6 }
     }
 
     // MARK: Box
