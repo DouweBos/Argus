@@ -1,3 +1,4 @@
+import AppKit
 import ArgusCore
 import ArgusUI
 import SwiftUI
@@ -17,7 +18,13 @@ struct CodeSearchView: View {
       Rectangle().fill(theme.border).frame(height: 1)
       results
     }
-    .onChange(of: code.searchFocusRequest, initial: true) { focused = true }
+    // The editor's text view keeps AppKit's focus, which wins over a field focused
+    // while it's still appearing: take it once the field is on screen.
+    .task(id: code.searchFocusRequest) {
+      await Task.yield()
+      NSApp.keyWindow?.makeFirstResponder(nil)
+      focused = true
+    }
     .onChange(of: code.searchForm.query) { _, query in search.schedule(query) }
   }
 
