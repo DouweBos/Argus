@@ -55,32 +55,48 @@ struct PullRequestsView: View {
   }
 }
 
-/// One PR in the list: what it is, its review state, and why you're seeing it.
+/// One PR in the list, as the Mac shows it: what it is, its review state,
+/// who and where, and why you're seeing it.
 struct PullRequestRow: View {
+  @Environment(\.theme) private var theme
   let pullRequest: RemotePullRequest
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 4) {
-      HStack(spacing: 6) {
-        BodyText(pullRequest.title, lineLimit: 2)
-        Spacer(minLength: 4)
-        if pullRequest.isDraft {
-          Badge(label: "Draft", tone: .muted)
+    HStack(alignment: .top, spacing: 10) {
+      Image(systemName: Icon.pullRequest)
+        .foregroundStyle(pullRequest.isDraft ? theme.textMuted : theme.success)
+        .padding(.top, 2)
+      VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+          BodyText(pullRequest.title, lineLimit: 2)
+          Spacer(minLength: 4)
+          if pullRequest.isDraft {
+            Badge(label: "Draft", tone: .muted)
+          }
+          if let decision = pullRequest.reviewDecision, let review = PullRequestLabels.review(decision) {
+            Badge(label: review.label, tone: review.tone)
+          }
         }
-        if let decision = pullRequest.reviewDecision, let review = PullRequestLabels.review(decision) {
-          Badge(label: review.label, tone: review.tone)
-        }
-      }
-      MutedText(
-        "\(pullRequest.repo) #\(pullRequest.number) · updated \(PullRequestLabels.relative(pullRequest.updatedAt))",
-        lineLimit: 1)
-      if !pullRequest.reasons.isEmpty {
+        MutedText(meta, lineLimit: 2)
         HStack(spacing: 4) {
           ForEach(pullRequest.reasons, id: \.self) { reason in
             Badge(label: PullRequestLabels.reason(reason), tone: PullRequestLabels.reasonTone(reason))
           }
+          HStack(spacing: 3) {
+            Image(systemName: Icon.branch)
+            Text(pullRequest.headRef)
+          }
+            .font(.caption.monospaced())
+            .foregroundStyle(theme.textSecondary)
+            .lineLimit(1)
+            .truncationMode(.middle)
         }
       }
     }
+  }
+
+  private var meta: String {
+    let author = pullRequest.author.map { "by \($0)" } ?? "unknown author"
+    return "\(pullRequest.repo) #\(pullRequest.number) · \(author) · updated \(PullRequestLabels.relative(pullRequest.updatedAt))"
   }
 }
