@@ -1,13 +1,45 @@
 import ArgusUI
 import SwiftUI
 
-/// Settings → Account, signed in: who is waiting to join, and the devices on
-/// the account with rename and remove.
-struct AccountMembersSection: View {
+/// Settings → Account, signed in: who is waiting to join, each reviewed with a code.
+struct AccountRequestsGroup: View {
+  @Environment(\.theme) private var theme
+  @Environment(AppStore.self) private var app
+  @State private var reviewing: AccountJoinRequestInfo?
+
+  private var account: AccountStore { app.account }
+
+  var body: some View {
+    if !account.requests.isEmpty {
+      SettingsGroup(
+        "Waiting to join",
+        footer: "Approve only a device or computer you just signed in on or started linking. You'll compare a code on both screens."
+      ) {
+        ForEach(account.requests) { request in
+          let member = request.subject?.member
+          AccountMemberRow(
+            icon: AccountMemberText.icon(member), tint: theme.accent, name: member?.name ?? "Unknown",
+            detail: AccountMemberText.kind(member)
+          ) {
+            Btn(label: "Deny", tone: .ghost, small: true, hugs: true) {
+              Task { await account.deny(request.requestId) }
+            }
+            Btn(label: "Review", small: true, hugs: true) { reviewing = request }
+          }
+        }
+      }
+      .sheet(item: $reviewing) { request in
+        ApproveJoinView(request: request).environment(app)
+      }
+    }
+  }
+}
+
+/// Settings → Account, signed in: the devices on the account, with rename and remove.
+struct AccountDevicesGroup: View {
   @Environment(\.theme) private var theme
   @Environment(AppStore.self) private var app
 
-  @State private var reviewing: AccountJoinRequestInfo?
   @State private var removing: AccountMember?
   @State private var renaming: AccountMember?
   @State private var draft = ""
@@ -16,24 +48,32 @@ struct AccountMembersSection: View {
   private var devices: [AccountMember] { account.members.filter { $0.role == .device } }
 
   var body: some View {
-    if !account.requests.isEmpty {
-      Field(
-        label: "Waiting to join",
-        caption: "Approve only a device or computer you just signed in on or started linking."
-      ) {
-        ForEach(account.requests) { request in
-          requestRow(request)
+    SettingsGroup("Devices", footer: "Removing a device disconnects it from every computer on your account.") {
+      ForEach(devices, id: \.id) { device in
+        let isSelf = device.id == account.memberId
+        AccountMemberRow(
+          icon: AccountMemberText.icon(device), tint: theme.textSecondary,
+          name: isSelf ? "\(device.name) (this phone)" : device.name,
+          detail: AccountMemberText.detail(device, code: account.approvalCode(for: device.id))
+        ) {
+          Menu {
+            Button("Rename…", systemImage: "pencil") {
+              draft = device.name
+              renaming = device
+            }
+            if !isSelf {
+              Button("Remove…", systemImage: "trash", role: .destructive) { removing = device }
+            }
+          } label: {
+            Image(systemName: "ellipsis.circle")
+              .font(.scaled(size: 17))
+              .foregroundStyle(theme.textSecondary)
+              .frame(width: 32, height: 32)
+              .contentShape(.rect)
+              .accessibilityLabel("Manage \(device.name)")
+          }
         }
       }
-    }
-
-    Field(label: "Devices") {
-      ForEach(devices, id: \.id) { device in
-        deviceRow(device)
-      }
-    }
-    .sheet(item: $reviewing) { request in
-      ApproveJoinView(request: request).environment(app)
     }
     .alert(
       "Remove “\(removing?.name ?? "")” from your account?",
@@ -55,49 +95,35 @@ struct AccountMembersSection: View {
       Button("Rename") { Task { await account.rename(memberId: member.id, to: draft) } }
     }
   }
+}
 
-  private func requestRow(_ request: AccountJoinRequestInfo) -> some View {
-    let member = request.subject?.member
-    return Card {
-      HStack(spacing: 8) {
-        Image(systemName: AccountMemberText.icon(member)).foregroundStyle(theme.accent)
-        VStack(alignment: .leading, spacing: 2) {
-          BodyText(member?.name ?? "Unknown", lineLimit: 1)
-          MutedText(AccountMemberText.kind(member), lineLimit: 1)
-        }
-        Spacer(minLength: 6)
-        Btn(label: "Deny", tone: .ghost, small: true, hugs: true) {
-          Task { await account.deny(request.requestId) }
-        }
-        Btn(label: "Review", small: true, hugs: true) { reviewing = request }
-      }
-    }
-  }
+/// A device or computer on the account: its kind's symbol, name and detail, then its actions.
+private struct AccountMemberRow<Actions: View>: View {
+  @Environment(\.theme) private var theme
+  let icon: String
+  let tint: Color
+  let name: String
+  let detail: String
+  @ViewBuilder let actions: Actions
 
-  private func deviceRow(_ device: AccountMember) -> some View {
-    let isSelf = device.id == account.memberId
-    return Card {
-      HStack(spacing: 8) {
-        Image(systemName: AccountMemberText.icon(device)).foregroundStyle(theme.textSecondary)
-        VStack(alignment: .leading, spacing: 2) {
-          BodyText(isSelf ? "\(device.name) (this phone)" : device.name, lineLimit: 1)
-          MutedText(AccountMemberText.detail(device, code: account.approvalCode(for: device.id)), lineLimit: 1)
-        }
-        Spacer(minLength: 6)
-        Menu {
-          Button("Rename…", systemImage: "pencil") {
-            draft = device.name
-            renaming = device
-          }
-          if !isSelf {
-            Button("Remove…", systemImage: "trash", role: .destructive) { removing = device }
-          }
-        } label: {
-          Image(systemName: "ellipsis.circle")
-            .foregroundStyle(theme.textSecondary)
-            .accessibilityLabel("Manage \(device.name)")
-        }
+  var body: some View {
+    HStack(spacing: 10) {
+      Image(systemName: icon)
+        .font(.scaled(size: 15))
+        .foregroundStyle(tint)
+        .frame(width: TextScale.shared(24))
+      VStack(alignment: .leading, spacing: 2) {
+        Text(name)
+          .font(.scaled(size: 15))
+          .foregroundStyle(theme.text)
+          .lineLimit(1)
+        Text(detail)
+          .font(.scaled(size: 13))
+          .foregroundStyle(theme.textSecondary)
+          .lineLimit(1)
       }
+      Spacer(minLength: 6)
+      actions
     }
   }
 }

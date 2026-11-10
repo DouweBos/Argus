@@ -4,7 +4,7 @@ import UIKit
 import UserNotifications
 
 /// A settings sub-page. The phone's own pages first, then the computer's.
-enum SettingsPage: String, Hashable {
+enum SettingsPane: String, Hashable {
   case name, appearance, alerts, privacy
   case connection, agents, automations
   case deviceHosts = "device_hosts"
@@ -51,7 +51,7 @@ enum SettingsPage: String, Hashable {
 }
 
 extension View {
-  func settingsPage(_ page: SettingsPage) -> some View {
+  func settingsPage(_ page: SettingsPane) -> some View {
     navigationTitle(page.title).navigationBarTitleDisplayMode(.inline)
   }
 }

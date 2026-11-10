@@ -6,13 +6,32 @@ import SwiftUI
 public enum SettingsLayout {
   /// The content column's width at most.
   public static let columnWidth: CGFloat = 720
-  static let rowPadding = EdgeInsets(top: 11, leading: 14, bottom: 11, trailing: 14)
+  public static let rowPadding = EdgeInsets(top: 11, leading: 14, bottom: 11, trailing: 14)
+  /// A phone's width can't spare the Mac's wide margins.
+  #if os(iOS)
+    static let pageInset: CGFloat = 16
+  #else
+    static let pageInset: CGFloat = 28
+  #endif
+}
+
+extension ContainerValues {
+  /// The row pads itself, so a whole-row button or link takes the full width.
+  @Entry var settingsRowFlush = false
+}
+
+extension View {
+  /// A group row that brings its own padding: a link or button filling the row.
+  public func settingsRowFlush() -> some View {
+    containerValue(\.settingsRowFlush, true)
+  }
 }
 
 // MARK: - Page
 
 /// The scrolling column every settings section sits in.
 public struct SettingsPage<Content: View>: View {
+  @Environment(\.theme) private var theme
   let content: Content
 
   public init(@ViewBuilder content: () -> Content) {
@@ -23,11 +42,15 @@ public struct SettingsPage<Content: View>: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 26) { content }
         .frame(maxWidth: SettingsLayout.columnWidth, alignment: .leading)
-        .padding(.horizontal, 28)
+        .padding(.horizontal, SettingsLayout.pageInset)
         .padding(.vertical, 24)
         .frame(maxWidth: .infinity)
     }
     .scrollContentBackground(.hidden)
+    #if os(iOS)
+      .scrollDismissesKeyboard(.interactively)
+      .background(theme.bg.ignoresSafeArea())
+    #endif
   }
 }
 
@@ -70,11 +93,12 @@ public struct SettingsGroup<Content: View, Accessory: View>: View {
                 SettingsHairline()
               }
               row
-                .padding(SettingsLayout.rowPadding)
+                .padding(row.containerValues.settingsRowFlush ? EdgeInsets() : SettingsLayout.rowPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
           }
           .background(theme.surface, in: .rect(cornerRadius: theme.radiusSmall + 2))
+          .clipShape(.rect(cornerRadius: theme.radiusSmall + 2))
           .overlay(RoundedRectangle(cornerRadius: theme.radiusSmall + 2).strokeBorder(theme.border))
         }
       }
@@ -184,10 +208,18 @@ public struct SettingsRow<Control: View, Detail: View>: View {
         label
         control.labelsHidden().frame(maxWidth: .infinity, alignment: .leading)
       } else {
-        HStack(alignment: .center, spacing: 16) {
-          label.frame(minWidth: 160, maxWidth: .infinity, alignment: .leading)
-          control.labelsHidden().fixedSize()
-        }
+        #if os(iOS)
+          // A phone narrower than label and control together stacks them.
+          SettingsRowLayout(minLabel: 120, spacing: 12) {
+            label
+            control.labelsHidden().fixedSize()
+          }
+        #else
+          HStack(alignment: .center, spacing: 16) {
+            label.frame(minWidth: 160, maxWidth: .infinity, alignment: .leading)
+            control.labelsHidden().fixedSize()
+          }
+        #endif
       }
       detail
     }
@@ -221,6 +253,125 @@ extension SettingsRow where Control == EmptyView, Detail == EmptyView {
   public init(_ title: String, description: String? = nil) {
     self.init(title, description: description, control: { EmptyView() }) { EmptyView() }
   }
+}
+
+/// Label then control side by side when the control leaves the label
+/// `minLabel` points, else the control under the label.
+struct SettingsRowLayout: SwiftUI.Layout {
+  var minLabel: CGFloat
+  var spacing: CGFloat
+
+  private func sideBySide(_ width: CGFloat, _ control: CGSize) -> Bool {
+    width - control.width - spacing >= minLabel
+  }
+
+  func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+    guard subviews.count == 2 else { return .zero }
+    let width = proposal.width ?? 320
+    let control = subviews[1].sizeThatFits(.unspecified)
+    if sideBySide(width, control) {
+      let label = subviews[0].sizeThatFits(ProposedViewSize(width: width - control.width - spacing, height: nil))
+      return CGSize(width: width, height: max(label.height, control.height))
+    }
+    let label = subviews[0].sizeThatFits(ProposedViewSize(width: width, height: nil))
+    return CGSize(width: width, height: label.height + 8 + min(control.height, .greatestFiniteMagnitude))
+  }
+
+  func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+    guard subviews.count == 2 else { return }
+    let control = subviews[1].sizeThatFits(.unspecified)
+    if sideBySide(bounds.width, control) {
+      let labelWidth = bounds.width - control.width - spacing
+      subviews[0].place(
+        at: CGPoint(x: bounds.minX, y: bounds.midY), anchor: .leading,
+        proposal: ProposedViewSize(width: labelWidth, height: nil))
+      subviews[1].place(at: CGPoint(x: bounds.maxX, y: bounds.midY), anchor: .trailing, proposal: .unspecified)
+    } else {
+      let label = subviews[0].sizeThatFits(ProposedViewSize(width: bounds.width, height: nil))
+      subviews[0].place(
+        at: CGPoint(x: bounds.minX, y: bounds.minY), anchor: .topLeading,
+        proposal: ProposedViewSize(width: bounds.width, height: nil))
+      subviews[1].place(
+        at: CGPoint(x: bounds.minX, y: bounds.minY + label.height + 8), anchor: .topLeading,
+        proposal: ProposedViewSize(width: min(control.width, bounds.width), height: nil))
+    }
+  }
+}
+
+/// A row that opens something: icon, title, an optional value, a chevron.
+/// Pads itself, so put it in a group with `.settingsRowFlush()` and the whole row is the target.
+public struct SettingsLinkRow<Leading: View>: View {
+  @Environment(\.theme) private var theme
+  let title: String
+  let value: String?
+  let leading: Leading
+
+  public init(_ title: String, value: String? = nil, @ViewBuilder leading: () -> Leading) {
+    self.title = title
+    self.value = value
+    self.leading = leading()
+  }
+
+  public var body: some View {
+    HStack(spacing: 12) {
+      leading
+      Text(title)
+        .font(.scaled(size: 15))
+        .foregroundStyle(theme.text)
+        .layoutPriority(1)
+      Spacer(minLength: 8)
+      if let value {
+        Text(value)
+          .font(.scaled(size: 15))
+          .foregroundStyle(theme.textSecondary)
+          .lineLimit(1)
+      }
+      Image(systemName: "chevron.right")
+        .font(.scaled(size: 12, weight: .semibold))
+        .foregroundStyle(theme.textMuted)
+    }
+    .padding(SettingsLayout.rowPadding)
+    .frame(minHeight: 44)
+    .contentShape(.rect)
+  }
+}
+
+extension SettingsLinkRow where Leading == SettingsRowIcon {
+  public init(_ title: String, systemImage: String, value: String? = nil) {
+    self.init(title, value: value) { SettingsRowIcon(systemImage) }
+  }
+}
+
+/// A row's leading symbol, in a fixed column so titles line up.
+public struct SettingsRowIcon: View {
+  @Environment(\.theme) private var theme
+  let systemImage: String
+
+  public init(_ systemImage: String) { self.systemImage = systemImage }
+
+  public var body: some View {
+    Image(systemName: systemImage)
+      .font(.scaled(size: 15))
+      .foregroundStyle(theme.textSecondary)
+      .frame(width: TextScale.shared(24))
+  }
+}
+
+/// A whole-row button or link in a settings group: a quiet fill while pressed.
+public struct SettingsRowButtonStyle: ButtonStyle {
+  @Environment(\.theme) private var theme
+
+  public init() {}
+
+  public func makeBody(configuration: Configuration) -> some View {
+    configuration.label
+      .background(configuration.isPressed ? theme.bgHover : Color.clear)
+      .clickable()
+  }
+}
+
+extension ButtonStyle where Self == SettingsRowButtonStyle {
+  public static var settingsRow: SettingsRowButtonStyle { SettingsRowButtonStyle() }
 }
 
 /// A setting that's on or off, drawn as a small switch.

@@ -20,20 +20,26 @@ struct AccountView: View {
 
   private var account: AccountStore { app.account }
 
-  var body: some View {
-    Screen {
-      switch account.phase {
-      case .loading, .settingUp:
-        Loading(label: account.phase == .loading ? "Checking your account…" : "Setting up your account…")
-      // Signing in keeps the form, so a web sign-in that comes back shows where it left.
-      case .signedOut, .signingIn:
-        signIn.disabled(account.phase == .signingIn)
-      case .awaitingApproval:
-        awaitingApproval
-      case .ready:
-        signedIn
+  @ViewBuilder private var content: some View {
+    if account.phase == .ready {
+      SettingsPage { signedIn }
+    } else {
+      Screen {
+        switch account.phase {
+        case .loading, .settingUp:
+          Loading(label: account.phase == .loading ? "Checking your account…" : "Setting up your account…")
+        // Signing in keeps the form, so a web sign-in that comes back shows where it left.
+        case .signedOut, .signingIn:
+          signIn.disabled(account.phase == .signingIn)
+        case .awaitingApproval, .ready:
+          awaitingApproval
+        }
       }
     }
+  }
+
+  var body: some View {
+    content
     .navigationTitle("Account")
     .navigationBarTitleDisplayMode(.inline)
     .sheet(isPresented: $resetting) {
@@ -164,73 +170,102 @@ struct AccountView: View {
   // MARK: Signed in
 
   @ViewBuilder private var signedIn: some View {
-    profileHeader
+    SettingsGroup {
+      AccountProfileSummary(account: account, avatarSize: 48)
+    }
 
-    Field(
-      label: "Safety code",
-      caption: "The same on every device on your account. If one ever shows a different code, it's looking at a different account."
+    AccountRequestsGroup()
+
+    SettingsGroup(
+      "Safety code",
+      footer: "The same on every device on your account. If one ever shows a different code, it's looking at a different account."
     ) {
       Text(account.safetyCode ?? "—")
-        .font(.title3.weight(.semibold).monospaced())
+        .font(.scaled(size: 20, weight: .semibold, design: .monospaced))
         .foregroundStyle(theme.text)
         .textSelection(.enabled)
+      if let logError = account.logError {
+        Label(
+          "The account service sent changes that don't check out (\(logError.rawValue)). Nothing was applied.",
+          systemImage: Icon.warning
+        )
+        .font(.scaled(size: 13))
+        .foregroundStyle(theme.error)
+      }
     }
 
-    if let logError = account.logError {
-      Banner(
-        text: "The account service sent changes that don't check out (\(logError.rawValue)). Nothing was applied.",
-        tone: .danger)
-    }
-
-    Field(label: "Computers") {
+    SettingsGroup(
+      "Computers",
+      footer: "A computer that hasn't checked in for 15 minutes shows as offline; it's still tried at its last addresses."
+    ) {
       if account.hosts.isEmpty {
-        MutedText("No computers yet. Run `argus-host login`, or Sign in in Argus on the computer, and add the code it shows.")
+        Text("No computers yet. Run `argus-host login`, or Sign in in Argus on the computer, and add the code it shows.")
+          .font(.scaled(size: 13))
+          .foregroundStyle(theme.textSecondary)
       }
       ForEach(account.hosts) { host in
         hostRow(host)
       }
-      Btn(label: "Add a computer", icon: "plus") { router.push(.addComputer) }
+      Button { router.push(.addComputer) } label: {
+        SettingsLinkRow("Add a Computer", systemImage: Icon.plus)
+      }
+      .buttonStyle(.settingsRow)
+      .settingsRowFlush()
     }
 
-    AccountMembersSection()
+    AccountDevicesGroup()
 
-    if let error = account.error {
-      Banner(text: error, tone: .danger)
+    SettingsGroup(footer: "Takes this phone off the account and deletes its account key. Computers you paired with a QR code keep working.") {
+      HStack {
+        Spacer()
+        Btn(label: "Sign Out…", tone: .danger, small: true, hugs: true) { confirmingSignOut = true }
+      }
+      if let error = account.error {
+        Label(error, systemImage: Icon.warning)
+          .font(.scaled(size: 13))
+          .foregroundStyle(theme.error)
+      }
     }
 
-    Field(label: "Sign out", caption: "Takes this phone off the account. QR pairings keep working.") {
-      Btn(label: "Sign out", tone: .danger) { confirmingSignOut = true }
-    }
-
-    Field(
-      label: "Reset account",
-      caption: "Only when every other device and computer on your account is lost. Everything leaves the account and has to join again."
+    SettingsGroup(
+      "Reset account",
+      footer: "Only when every other device and computer on your account is lost. Everything leaves the account and has to join again."
     ) {
-      Btn(label: "Reset account…", tone: .ghost) { resetting = true }
+      HStack {
+        Spacer()
+        Btn(label: "Reset Account…", tone: .secondary, small: true, hugs: true) { resetting = true }
+      }
     }
   }
 
   private func hostRow(_ host: AccountStore.Host) -> some View {
-    Card {
-      HStack(spacing: 8) {
-        Image(systemName: Icon.desktop)
-          .foregroundStyle(host.online ? theme.success : theme.textSecondary)
-        VStack(alignment: .leading, spacing: 2) {
-          BodyText(host.name, lineLimit: 1)
-          MutedText(AccountPresenceText.text(online: host.online, lastSeen: host.lastSeen), lineLimit: 1)
+    HStack(spacing: 10) {
+      StatusDot(tone: host.online ? .success : .muted, pulse: false)
+        .frame(width: TextScale.shared(24))
+      VStack(alignment: .leading, spacing: 2) {
+        Text(host.name)
+          .font(.scaled(size: 15))
+          .foregroundStyle(theme.text)
+          .lineLimit(1)
+        Text(AccountPresenceText.text(online: host.online, lastSeen: host.lastSeen))
+          .font(.scaled(size: 13))
+          .foregroundStyle(theme.textSecondary)
+          .lineLimit(1)
+      }
+      Spacer(minLength: 6)
+      Menu {
+        Button("Rename…", systemImage: "pencil") {
+          draft = host.name
+          renaming = host
         }
-        Spacer(minLength: 6)
-        Menu {
-          Button("Rename…", systemImage: "pencil") {
-            draft = host.name
-            renaming = host
-          }
-          Button("Remove…", systemImage: "trash", role: .destructive) { removing = host }
-        } label: {
-          Image(systemName: "ellipsis.circle")
-            .foregroundStyle(theme.textSecondary)
-            .accessibilityLabel("Manage \(host.name)")
-        }
+        Button("Remove…", systemImage: "trash", role: .destructive) { removing = host }
+      } label: {
+        Image(systemName: "ellipsis.circle")
+          .font(.scaled(size: 17))
+          .foregroundStyle(theme.textSecondary)
+          .frame(width: 32, height: 32)
+          .contentShape(.rect)
+          .accessibilityLabel("Manage \(host.name)")
       }
     }
   }

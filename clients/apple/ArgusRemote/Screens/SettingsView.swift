@@ -66,7 +66,7 @@ struct SettingsView: View {
     }
   }
 
-  private func row(_ page: SettingsPage, value: String? = nil) -> some View {
+  private func row(_ page: SettingsPane, value: String? = nil) -> some View {
     NavigationLink(value: Route.settingsPage(page)) {
       LabeledContent {
         if let value { Text(value).lineLimit(1) }

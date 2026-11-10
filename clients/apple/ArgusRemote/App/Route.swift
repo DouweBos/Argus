@@ -62,7 +62,7 @@ enum Route: Hashable {
   case run(id: String, label: String)
   case settings
   /// One page of Settings.
-  case settingsPage(SettingsPage)
+  case settingsPage(SettingsPane)
   /// Warnings and errors shown this launch, as the desktop's `/notifications`.
   case notifications
   case computers
