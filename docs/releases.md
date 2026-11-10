@@ -18,7 +18,8 @@ same version and build number.
 
 2. When ready to ship, go to **Actions → Release → Run workflow** on `main`.
    The workflow will:
-   - Run `changeset version` to bump `package.json` + write `CHANGELOG.md`.
+   - Run `changeset version` to bump `package.json` + write `CHANGELOG.md`
+     (`scripts/release-version.sh`).
    - If nothing changed (no pending changesets), exit cleanly. Otherwise:
    - Commit `chore: release vX.Y.Z`, tag `vX.Y.Z`, push both back to `main`.
    - Build, sign with Developer ID, notarize via App Store Connect API, staple.
@@ -37,9 +38,13 @@ and the phone. The App Store only takes plain `x.y.z` versions, so a beta or
 alpha cut reaches TestFlight as its base version (`0.75.0-beta.1` uploads as
 `0.75.0`); the build number still tells them apart.
 
-Nothing is tagged or published until both builds pass. The TestFlight upload
-happens just before tagging, so a run that fails after it leaves a TestFlight
-build with no matching GitHub release.
+The two apps build in parallel, as a `mac` and an `ios` leg of one matrix job.
+Each leg applies the changesets itself (`scripts/release-version.sh`); on the
+same commit that always gives the same version. A `publish` job runs once both
+legs have passed: it tags (and on production pushes the version commit), then
+creates the GitHub release from the Mac leg's assets. A failed leg cancels the
+other and nothing is tagged — but if the iPhone leg had already uploaded, that
+TestFlight build stays.
 
 ## iPhone setup
 

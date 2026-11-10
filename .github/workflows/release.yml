@@ -1,5 +1,10 @@
 name: Release
 
+# Ships Argus for Mac (GitHub release + Sparkle feeds) and the iPhone app
+# (TestFlight) from one run: both legs build in parallel with the same version
+# (package.json after changesets) and build number (run number + 2000).
+# Nothing is tagged or published until both have passed.
+
 on:
   workflow_dispatch:
     inputs:
@@ -18,23 +23,25 @@ concurrency:
   group: release-${{ github.event.inputs.channel || 'production' }}
   cancel-in-progress: false
 
+env:
+  CHANNEL: ${{ github.event.inputs.channel || 'production' }}
+
 jobs:
-  release:
-    # Argus for Mac and the iPhone app build with Xcode 27 (its SDK is what development uses).
+  build:
+    # Both apps build with Xcode 27 (its SDK is what development uses).
     runs-on: xcode-27
-    timeout-minutes: 150
-    permissions:
-      contents: write
-      id-token: write
+    timeout-minutes: 120
     # Production and beta cuts must come from main; alpha can come from any branch.
     if: ${{ github.event.inputs.channel == 'alpha' || github.ref == 'refs/heads/main' }}
-    env:
-      CHANNEL: ${{ github.event.inputs.channel || 'production' }}
+    strategy:
+      # One failed leg cancels the other: there is no half release.
+      fail-fast: true
+      matrix:
+        platform: [mac, ios]
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_TOKEN }}
 
       - uses: jdx/mise-action@v2
 
@@ -42,105 +49,37 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Apply changesets
-        run: |
-          if [ "$CHANNEL" = "production" ]; then
-            pnpm changeset version
-          else
-            # Pre-release versioning: enter pre-release mode, run version, then
-            # exit without committing the exit. The source branch's changeset
-            # state stays untouched — the bumped version + tag only live in
-            # tag-space. CHANGELOG.md may pick up a pre-release header which
-            # we restore at the end of this step.
-            git checkout CHANGELOG.md || true
-            pnpm changeset pre enter "$CHANNEL"
-            pnpm changeset version
-            pnpm changeset pre exit
-            # Don't commit the .changeset/pre.json side files.
-            git checkout .changeset/pre.json 2>/dev/null || true
-            rm -f .changeset/pre.json
-
-            # changeset always restarts the pre-release counter at 0 because
-            # the source branch never carries pre.json forward. Bump the
-            # trailing index past any existing v<base>-<channel>.N tag so we
-            # don't collide with prior alpha/beta cuts of the same base.
-            git fetch --tags --quiet
-            BUMPED=$(node -p "require('./package.json').version")
-            BASE="${BUMPED%-*}"
-            HIGHEST=$(git tag -l "v${BASE}-${CHANNEL}.*" \
-              | sed -n "s/^v${BASE}-${CHANNEL}\.\([0-9][0-9]*\)$/\1/p" \
-              | sort -n | tail -1)
-            if [ -n "$HIGHEST" ]; then
-              NEXT=$((HIGHEST + 1))
-              NEW_VERSION="${BASE}-${CHANNEL}.${NEXT}"
-              echo "Bumping ${BUMPED} → ${NEW_VERSION} (highest existing tag: v${BASE}-${CHANNEL}.${HIGHEST})"
-              node -e "const fs=require('fs');const p=require('./package.json');p.version='${NEW_VERSION}';fs.writeFileSync('./package.json',JSON.stringify(p,null,2)+'\n');"
-            else
-              echo "No existing v${BASE}-${CHANNEL}.* tag — keeping ${BUMPED}"
-            fi
-          fi
-
-      - name: Extract release notes
-        id: notes
-        run: |
-          version=$(node -p "require('./package.json').version")
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          # Pull the top section of CHANGELOG.md (everything between the first
-          # '## ' heading and the next one) into release-notes.md.
-          awk '
-            /^## / { if (found) exit; found=1; next }
-            found { print }
-          ' CHANGELOG.md > release-notes.md
-
-      # Commits the version bump locally only: nothing is tagged or pushed until
-      # the build has passed (see "Tag and push"), so a failed run leaves no trace.
-      - name: Stage release
-        id: stage
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          if [ "$CHANNEL" = "production" ]; then
-            git add -A
-            if git diff --staged --quiet; then
-              echo "No changesets to release"
-              echo "has_changes=false" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            git commit -m "chore: release v${VERSION}"
-          fi
-          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+        id: version
+        run: scripts/release-version.sh "$CHANNEL"
 
       - name: Install fastlane
-        if: steps.stage.outputs.has_changes == 'true'
+        if: steps.version.outputs.has_changes == 'true'
         run: bundle install
 
       - name: Create build keychain
-        if: steps.stage.outputs.has_changes == 'true'
+        if: steps.version.outputs.has_changes == 'true'
         env:
           MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
         run: |
-          KEYCHAIN_PATH="$HOME/Library/Keychains/build.keychain-db"
           security create-keychain -p "$MATCH_KEYCHAIN_PASSWORD" build.keychain
           security set-keychain-settings -lut 21600 build.keychain
           security unlock-keychain -p "$MATCH_KEYCHAIN_PASSWORD" build.keychain
           # Prepend build.keychain to the search list so match can find installed certs
           security list-keychains -d user -s build.keychain $(security list-keychains -d user | tr -d '"')
           security default-keychain -s build.keychain
-          echo "Keychain ready at $KEYCHAIN_PATH"
 
       - name: Encode match git auth
-        if: steps.stage.outputs.has_changes == 'true'
+        if: steps.version.outputs.has_changes == 'true'
         env:
           MATCH_GIT_PAT: ${{ secrets.MATCH_GIT_PAT }}
         run: |
           # match needs base64("user:token") for the HTTPS Authorization header.
-          # Store the raw PAT as a secret and encode it here so rotation is trivial.
           AUTH=$(printf '%s' "x-access-token:${MATCH_GIT_PAT}" | base64 | tr -d '\n')
           echo "::add-mask::$AUTH"
           echo "MATCH_GIT_BASIC_AUTHORIZATION=$AUTH" >> "$GITHUB_ENV"
 
       - name: Select Xcode 27.2
+        if: steps.version.outputs.has_changes == 'true'
         run: |
           sudo xcode-select -s /Applications/Xcode_27.2.app
           xcodebuild -version
@@ -149,31 +88,28 @@ jobs:
 
       # The tree-sitter grammars' full histories take ~8 minutes to clone cold.
       - name: Cache Swift packages
-        if: steps.stage.outputs.has_changes == 'true'
+        if: steps.version.outputs.has_changes == 'true'
         uses: actions/cache@v4
         with:
           path: ~/spm-clones
-          key: spm-${{ hashFiles('clients/apple/**/Package.resolved') }}
-          restore-keys: spm-
+          key: spm-${{ matrix.platform }}-${{ hashFiles('clients/apple/**/Package.resolved') }}
+          restore-keys: |
+            spm-${{ matrix.platform }}-
+            spm-
 
-      - name: Run fastlane release
-        if: steps.stage.outputs.has_changes == 'true'
+      - name: Build
+        if: steps.version.outputs.has_changes == 'true'
         env:
-          # --- Signing (match) ---
+          # --- Signing (match); MATCH_GIT_BASIC_AUTHORIZATION comes from the step above ---
           MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          # MATCH_GIT_BASIC_AUTHORIZATION is set in $GITHUB_ENV by the
-          # "Encode match git auth" step above from the raw MATCH_GIT_PAT secret.
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_KEYCHAIN_NAME: build.keychain
           MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
 
-          # --- Notarization (App Store Connect API key) ---
+          # --- Notarization and TestFlight (App Store Connect API key) ---
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
-
-          # --- GitHub release publisher ---
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
           # --- Telemetry (PostHog) ---
           # Inlined at build time: `build-host.mjs` passes `POSTHOG_*` to
@@ -182,8 +118,8 @@ jobs:
           POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
           POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
 
-          # This version's CHANGELOG section, for the Sparkle appcast's notes
-          # and the cutover feed Electron installs read.
+          # This version's CHANGELOG section: the Sparkle appcast's notes, the
+          # cutover feed Electron installs read, and TestFlight's "What to Test".
           ARGUS_RELEASE_NOTES_FILE: ${{ github.workspace }}/release-notes.md
 
           # --- Sparkle ---
@@ -194,39 +130,70 @@ jobs:
           FASTLANE_HIDE_CHANGELOG: "1"
           CI: "true"
           NODE_OPTIONS: "--max-old-space-size=8192"
-          # The cached package clones.
           SPM_CLONE_DIR: /Users/runner/spm-clones
+          PLATFORM: ${{ matrix.platform }}
         run: |
-          bundle exec fastlane mac mac_app_release \
-            allow_dirty:true \
-            allow_any_branch:true \
-            publish:false \
-            channel:${{ env.CHANNEL }}
+          if [ "$PLATFORM" = "mac" ]; then
+            bundle exec fastlane mac mac_app_release \
+              allow_dirty:true allow_any_branch:true publish:false channel:"$CHANNEL"
+            # The publish job uploads these once both legs have passed.
+            mkdir -p release-dist
+            while IFS= read -r asset; do [ -n "$asset" ] && cp "$asset" release-dist/; done < release-assets.txt
+          else
+            bundle exec fastlane ios testflight
+          fi
 
-      # Same run, so the same package.json version and GITHUB_RUN_NUMBER build number as the Mac build.
-      # Before tagging, so a failed iPhone build leaves no release behind either.
-      - name: Upload the iPhone app to TestFlight
-        if: steps.stage.outputs.has_changes == 'true'
-        env:
-          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_KEYCHAIN_NAME: build.keychain
-          MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
-          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
-          ARGUS_RELEASE_NOTES_FILE: ${{ github.workspace }}/release-notes.md
-          SPM_CLONE_DIR: /Users/runner/spm-clones
-          FASTLANE_SKIP_UPDATE_CHECK: "1"
-          FASTLANE_HIDE_CHANGELOG: "1"
-          CI: "true"
-        run: bundle exec fastlane ios testflight
+      - name: Keep the Mac release assets
+        if: steps.version.outputs.has_changes == 'true' && matrix.platform == 'mac'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-release
+          path: release-dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      # Publishing needs no Ruby: skip compiling it on Linux.
+      - uses: jdx/mise-action@v2
+        with:
+          install_args: node pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Same commit, same tags: the version both build legs shipped.
+      - name: Apply changesets
+        id: version
+        run: scripts/release-version.sh "$CHANNEL"
+
+      - name: Fetch the Mac release assets
+        if: steps.version.outputs.has_changes == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: mac-release
+          path: release-dist
 
       - name: Tag and push
-        if: steps.stage.outputs.has_changes == 'true'
+        if: steps.version.outputs.has_changes == 'true'
         env:
-          VERSION: ${{ steps.stage.outputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ "$CHANNEL" = "production" ]; then
+            git add -A -- . ':!release-notes.md' ':!release-dist'
+            git commit -m "chore: release v${VERSION}"
+          fi
           # The tag names the commit that was built, even if main moved meanwhile.
           git tag "v${VERSION}"
           git push origin "v${VERSION}"
@@ -241,18 +208,15 @@ jobs:
           fi
 
       - name: Publish release
-        if: steps.stage.outputs.has_changes == 'true'
+        if: steps.version.outputs.has_changes == 'true'
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          VERSION: ${{ steps.stage.outputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           flags=(--verify-tag --title "v${VERSION}")
           [ "$CHANNEL" = "production" ] || flags+=(--prerelease)
           if [ -s release-notes.md ]; then flags+=(--notes-file release-notes.md); else flags+=(--notes ""); fi
-          # macOS ships bash 3.2: no mapfile.
-          assets=()
-          while IFS= read -r line; do [ -n "$line" ] && assets+=("$line"); done < release-assets.txt
-          gh release create "v${VERSION}" "${flags[@]}" "${assets[@]}"
+          gh release create "v${VERSION}" "${flags[@]}" release-dist/*
 
       - name: Notify houwert.dev to sync changelogs
         # Fires a repository_dispatch on DouweBos/houwert.dev so its
@@ -263,10 +227,10 @@ jobs:
         # `Actions: Read and write` on DouweBos/houwert.dev. Skipped silently
         # if not configured. Pre-releases skip this — beta/alpha builds
         # don't belong in the public changelog.
-        if: ${{ steps.stage.outputs.has_changes == 'true' && env.CHANNEL == 'production' }}
+        if: ${{ steps.version.outputs.has_changes == 'true' && env.CHANNEL == 'production' }}
         env:
           GH_TOKEN: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
-          VERSION: ${{ steps.stage.outputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           if [ -z "$GH_TOKEN" ]; then
             echo "WEBSITE_DISPATCH_TOKEN not set — skipping website notify"

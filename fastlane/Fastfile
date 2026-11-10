@@ -371,7 +371,7 @@ platform :ios do
     match(type: "appstore", platform: "ios", app_identifier: IOS_TARGETS.values, readonly: false)
   end
 
-  desc "Build the iPhone app and upload it to TestFlight. The Release workflow runs it after the Mac build, so both share a version and build number. Needs the profiles from testflight_setup."
+  desc "Build the iPhone app and upload it to TestFlight. The Release workflow runs it in parallel with the Mac build, so both share a version and build number. Needs the profiles from testflight_setup."
   lane :testflight do
     api_key = load_app_store_connect_api_key
     match(type: "appstore", platform: "ios", app_identifier: IOS_TARGETS.values, readonly: true, api_key: api_key)
