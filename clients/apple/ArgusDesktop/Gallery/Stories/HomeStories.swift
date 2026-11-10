@@ -24,6 +24,12 @@
         ) { SidebarView() },
         setup("sessions/setup/progress", "s-setup"),
         setup("sessions/setup/failed", "s-failed"),
+        GalleryStory(
+          "sessions/context-card", size: CGSize(width: 900, height: 700), fixtures: GalleryFixtures.home,
+          setup: load
+        ) {
+          Color.clear.sessionContextCard(GalleryFixtures.argusSession("s-long"), panel: .agents)
+        },
       ]
     }
 

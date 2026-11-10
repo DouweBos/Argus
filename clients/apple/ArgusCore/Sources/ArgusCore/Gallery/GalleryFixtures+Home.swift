@@ -162,6 +162,9 @@ extension GalleryFixtures {
       ArgusProtocol.Commands.AutomationRunsList.name: GalleryJSON.encode(runs),
       RemoteMethod.sessionsGitStatus.rawValue: gitStatus(ahead: 0),
       "integrations.list": GalleryJSON.encode(["integrations": []]),
+      RemoteMethod.devicesList.rawValue: GalleryJSON.encode(["devices": []]),
+      RemoteMethod.sessionsMergeBlockers.rawValue: GalleryJSON.encode(["blockers": []]),
+      ArgusProtocol.Commands.ListEditors.name: "[]",
     ]
     let sessions: [String: [[String: Any]]] = [
       "Argus": argusSessions,

@@ -16,6 +16,11 @@
         },
         setup("sessions/setup/progress", "s-setup"),
         setup("sessions/setup/failed", "s-failed"),
+        GalleryStory("sessions/context-card", fixtures: GalleryFixtures.home, setup: load) {
+          SessionDetailsView(
+            session: GalleryFixtures.argusSession("s-long"), agentId: "a-perm", open: { _ in }, newAgent: {},
+            deleted: {})
+        },
       ]
     }
 
