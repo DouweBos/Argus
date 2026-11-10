@@ -1,13 +1,14 @@
 import ArgusKit
 import UserNotifications
+import WidgetKit
 
 /// Opens the sealed payload the desktop sent through the push relay.
 ///
 /// Pushes arrive sealed — the relay that forwards them can't read them — so
 /// what Apple delivers is a placeholder plus an encrypted blob. This swaps in
 /// the real title, body and quick actions before anything reaches the lock
-/// screen. It shares an App Group with the app purely to read the key the app
-/// minted; an extension is a separate process and can't see the app's storage.
+/// screen. It shares an App Group with the app to read the key the app minted
+/// and to update the widgets' snapshot; an extension can't see the app's storage.
 final class NotificationService: UNNotificationServiceExtension {
   private var contentHandler: ((UNNotificationContent) -> Void)?
   private var bestAttempt: UNMutableNotificationContent?
@@ -53,6 +54,11 @@ final class NotificationService: UNNotificationServiceExtension {
     info[NotificationUserInfoKey.kind] = opened.kind
     info.removeValue(forKey: "e")
     content.userInfo = info
+
+    // The app may not be running: flag or clear the agent on the widgets now.
+    if WidgetSnapshotStore.update({ $0.apply(pushKind: opened.kind, agentId: opened.agentId) }) {
+      WidgetCenter.shared.reloadAllTimelines()
+    }
 
     contentHandler(content)
   }

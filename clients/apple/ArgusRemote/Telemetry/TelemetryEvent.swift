@@ -51,6 +51,17 @@ enum TelemetryEvent {
     /// Siri, the Shortcuts app or an App Shortcut.
     case shortcut
     case spotlight
+    /// A Home Screen or Lock Screen widget.
+    case widget
+    /// The Control Center control.
+    case control
+
+    init(_ source: WidgetLink.Source) {
+      switch source {
+      case .widget: self = .widget
+      case .control: self = .control
+      }
+    }
   }
 
   /// An App Intent, run from Siri, Shortcuts or Spotlight.
@@ -288,6 +299,8 @@ enum TelemetryEvent {
   case linkOpened(screen: String, via: LinkSource, fallback: Bool)
   /// An App Intent finished; `success` false when it threw or found nothing to act on.
   case intentRun(intent: IntentKind, success: Bool)
+  /// Once a launch: how many of each widget and control are placed, to see whether they are used.
+  case widgetsInstalled(agents: Int, inbox: Int, usage: Int, controls: Int)
 
   var name: String {
     switch self {
@@ -353,6 +366,7 @@ enum TelemetryEvent {
     case .routeUpgraded: "ios_route_upgraded"
     case .linkOpened: "ios_link_opened"
     case .intentRun: "ios_intent_run"
+    case .widgetsInstalled: "ios_widgets_installed"
     }
   }
 
@@ -473,6 +487,8 @@ enum TelemetryEvent {
       ["screen": screen, "via": via.rawValue, "fallback": fallback]
     case .intentRun(let intent, let success):
       ["intent": intent.rawValue, "success": success]
+    case .widgetsInstalled(let agents, let inbox, let usage, let controls):
+      ["agents": agents, "inbox": inbox, "usage": usage, "controls": controls]
     }
   }
 

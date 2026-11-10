@@ -73,8 +73,10 @@ struct RootView: View {
       NotificationRouter.shared.open(ArgusLocation(route: target.route, host: target.hostId), via: .spotlight)
     }
     .onOpenURL { url in
+      let via = WidgetLink.source(of: url).map(TelemetryEvent.LinkSource.init) ?? .link
+      if WidgetLink.isNewAgent(url) { return NotificationRouter.shared.openNewAgent(via: via) }
       guard let location = ArgusLocation(deepLink: url) else { return }
-      NotificationRouter.shared.open(location)
+      NotificationRouter.shared.open(location, via: via)
     }
     .preferredColorScheme(app.themePreference.colorScheme)
     // Asked before pairing, so nothing is sent on a choice not yet made.
@@ -129,6 +131,7 @@ struct RootView: View {
       await proposals?.refresh()
       await automations?.refresh()
     }
+    .modifier(WidgetSync(app: app, proposals: proposals))
     // Whether Linear is connected decides if Issues is listed at all.
     .task(id: app.host.connection == .ready) {
       guard app.host.connection == .ready else { return }

@@ -66,6 +66,7 @@ final class NotificationRouter: NSObject {
     case .agent(let id, let label): open(agentId: id, label: label)
     case .handoff(let handoff): open(handoff)
     case .link(let location, let via): open(location, via: via)
+    case .newAgent(let via): openNewAgent(via: via)
     }
   }
 
@@ -99,6 +100,20 @@ final class NotificationRouter: NSObject {
     }
     let hostId = location.host.flatMap { id in app.hosts.first { $0.deviceId == id }?.deviceId }
     open(location.route, on: hostId, hints: RouteHints(), via: via)
+  }
+
+  /// The new-agent composer on the last active project, from the Control Center control.
+  func openNewAgent(via: TelemetryEvent.LinkSource) {
+    guard ready, let app, let router else {
+      pendingOpen = .newAgent(via: via)
+      return
+    }
+    guard !app.hosts.isEmpty else {
+      app.host.showError("Pair a computer before starting an agent.")
+      return
+    }
+    Telemetry.capture(.linkOpened(screen: Route.newSession(repoRoot: nil).pattern, via: via, fallback: false))
+    router.open(.newSession(repoRoot: nil), in: .home)
   }
 
   private func open(_ route: ArgusRoute, on hostId: String?, hints: RouteHints, via: TelemetryEvent.LinkSource) {
@@ -138,6 +153,7 @@ private enum PendingOpen {
   case agent(id: String, label: String)
   case handoff(Handoff)
   case link(ArgusLocation, via: TelemetryEvent.LinkSource)
+  case newAgent(via: TelemetryEvent.LinkSource)
 }
 
 /// UIKit asserts its completion handlers run on the main thread; the `async`

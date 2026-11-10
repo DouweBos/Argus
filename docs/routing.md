@@ -129,6 +129,9 @@ it can:
   A link opened right after launch waits (up to a few seconds) for the
   computer's first project list before it falls back. Handoff from the
   desktop goes through the same mapping.
+  `/sessions/new`, which the Control Center control opens, shows the
+  new-agent composer on the last active project. Links from widgets and the
+  control carry `?src=widget` / `?src=control`.
 
   The phone's tabs are the Mac's top-level destinations that fit five:
   Home (`/`), Inbox (`/inbox`), Agents (`/agents`), Automations
