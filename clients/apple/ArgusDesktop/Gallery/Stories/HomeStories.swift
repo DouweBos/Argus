@@ -30,6 +30,13 @@
         ) {
           Color.clear.sessionContextCard(GalleryFixtures.argusSession("s-long"), panel: .agents)
         },
+        GalleryStory(
+          "sessions/context-card-setup-pending", size: CGSize(width: 900, height: 700),
+          fixtures: GalleryFixtures.home, setup: load
+        ) {
+          Color.clear.sessionContextCard(
+            GalleryFixtures.argusSession("s-long", overrides: ["setup_pending": true]), panel: .agents)
+        },
         // Mac only: the phone starts a session from its composer, and deletes through a confirmation dialog.
         GalleryStory(
           "sessions/new-sheet", size: CGSize(width: 480, height: 560), fixtures: GalleryFixtures.home, setup: load

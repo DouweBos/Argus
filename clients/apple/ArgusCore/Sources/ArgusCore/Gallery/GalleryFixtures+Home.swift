@@ -229,7 +229,13 @@ extension GalleryFixtures {
 extension GalleryFixtures {
   /// One of Argus's fixture sessions, decoded, for a component that takes one.
   public static func argusSession(_ id: String) -> RemoteSession {
-    let json = argusSessions.first { $0["id"] as? String == id } ?? argusSessions[0]
+    argusSession(id, overrides: [:])
+  }
+
+  /// A fixture session with some fields changed, e.g. `["setup_pending": true]`.
+  public static func argusSession(_ id: String, overrides: [String: Any]) -> RemoteSession {
+    var json = argusSessions.first { $0["id"] as? String == id } ?? argusSessions[0]
+    json.merge(overrides) { _, new in new }
     return try! ProtocolCodec.decoder.decode(RemoteSession.self, from: Data(GalleryJSON.encode(json).utf8))
   }
 }

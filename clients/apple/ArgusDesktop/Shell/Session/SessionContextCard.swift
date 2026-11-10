@@ -85,6 +85,7 @@ struct SessionContextCard: View {
 
   @ViewBuilder private var details: some View {
     ContextCardDivider()
+    if session.setupPending == true, !session.isUnavailable { SetupContextRow(session: session) }
     machineRow
     if isLocal, let path, let editor = preferredEditor { editorRow(path: path, editor: editor) }
     // Run and share belong to the agent view; Code and Git have their own tools.
