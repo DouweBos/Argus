@@ -93,6 +93,7 @@ struct ProjectView: View {
       await refreshGitStatus()
     }
     .liveRefresh(enabled: host.connection == .ready) { await refresh() }
+    .loadsOffline { await refresh() }
     // Git state is fetched per session rather than polled, so it goes stale
     // while the phone is locked.
     .onResume(connected: host.connection == .ready) { await refreshGitStatus() }

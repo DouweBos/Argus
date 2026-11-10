@@ -49,6 +49,7 @@ struct PullRequestsView: View {
     }
     .navigationTitle("Pull Requests")
     .refreshable { await store.refresh() }
+    .loadsOffline { await store.refresh() }
     .liveRefresh(enabled: host.connection == .ready, every: .seconds(30)) {
       await store.refresh()
     }

@@ -93,6 +93,7 @@ struct ChangesView: View {
       }
     }
     .liveRefresh(enabled: host.connection == .ready, every: .seconds(5)) { await refresh() }
+    .loadsOffline { await refresh() }
     .diffReviewBar(sessionId: sessionId) { openAgent($0) }
     .onChange(of: mode) { _, _ in
       diff = nil

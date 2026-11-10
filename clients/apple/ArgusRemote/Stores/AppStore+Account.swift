@@ -45,7 +45,7 @@ extension AppStore {
 
   /// Hand the connected computer account entries it hasn't seen (§5.5).
   func syncAccount() async {
-    guard let backend = host.backend else { return }
+    guard let backend = host.liveBackend else { return }
     await account.sync(over: .backend(backend))
   }
 
@@ -72,6 +72,7 @@ extension AppStore {
     guard let current = accountHosts.first(where: { $0.deviceId == activeId }) else {
       // Taken off the account (or signed out): it can't be reached any more.
       if previous.contains(where: { $0.deviceId == activeId }) {
+        forgetOffline(hostId: activeId)
         await disconnect()
         clearHostData()
         identity = nil
@@ -82,7 +83,7 @@ extension AppStore {
     }
     let moved = previous.first { $0.deviceId == activeId }?.endpoints != current.endpoints
     // First listed after launch, or its tunnel moved while we couldn't reach it.
-    if host.backend == nil || (moved && host.connection == .offline) {
+    if host.liveBackend == nil || (moved && host.connection == .offline) {
       await connect(to: current)
     }
   }
@@ -90,7 +91,7 @@ extension AppStore {
   /// Put the connected QR-paired computer on the account: it starts its code
   /// link and hands the code over, then it's approved like a typed one.
   func addConnectedHostToAccount() async {
-    guard let backend = host.backend else { return }
+    guard let backend = host.liveBackend else { return }
     do {
       let result = try await backend.request(
         .accountRequestLink, EmptyParams(), as: ArgusProtocol.MethodsTypes.AccountRequestLinkResult.self)

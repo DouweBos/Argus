@@ -3,7 +3,7 @@ import Foundation
 /// A message this client could not hand to the computer. It keeps the body it
 /// would have sent — preamble and attachments included — so retrying is one
 /// tap rather than retyping.
-public struct FailedSend: Identifiable, Sendable, Equatable {
+public struct FailedSend: Identifiable, Sendable, Equatable, Codable {
   public var id: String
   public var body: String
   public var displayText: String?

@@ -68,6 +68,7 @@ struct FileDiffView: View {
       }
     }
     .liveRefresh(enabled: host.connection == .ready, every: .seconds(5)) { await refresh() }
+    .loadsOffline { await refresh() }
     .sheet(item: $composing) { composing in
       DiffCommentSheet(
         title: composing.isNew ? "Line \(composing.comment.lines.lowerBound)" : "Edit comment",

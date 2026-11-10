@@ -66,7 +66,7 @@ extension AppStore {
   func setPushEnabled(_ enabled: Bool) async {
     pushEnabled = enabled
     preferences.set(enabled ? "on" : "off", for: PreferenceKey.pushEnabled)
-    if let backend = host.backend {
+    if let backend = host.liveBackend {
       if enabled {
         await registerPush(backend)
       } else {
@@ -110,7 +110,7 @@ extension AppStore {
   func applyDeviceName(_ name: String) {
     deviceName = name
     preferences.set(name, for: PreferenceKey.deviceName)
-    guard let backend = host.backend else { return }
+    guard let backend = host.liveBackend else { return }
     struct Params: Encodable { let name: String }
     Task {
       _ = try? await backend.request(.deviceRename, Params(name: name), as: IgnoredResult.self)

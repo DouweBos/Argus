@@ -136,10 +136,20 @@ public final class HostStore {
   /// Draft diff comments per session, until they're sent to an agent.
   public let reviews = DiffReviewDrafts()
 
+  /// While offline, when the oldest saved answer on screen was saved; nil
+  /// while everything shown came from the connection.
+  public internal(set) var savedAsOf: Date?
+  /// Replies waiting for the connection, per agent; see `HostStore+Offline`.
+  public internal(set) var outboxByAgent: [String: [FailedSend]] = [:]
+
   // MARK: Collaborators
 
-  public private(set) var backend: (any HostBackend)?
+  public internal(set) var backend: (any HostBackend)?
   @ObservationIgnored public var hooks: HostStoreHooks
+  /// The phone's saved answers and outbox for this computer; the Mac has neither.
+  var savedAnswers: SavedAnswers?
+  @ObservationIgnored var outbox: Outbox?
+  @ObservationIgnored var outboxFlushing = false
 
   @ObservationIgnored private var pump: Task<Void, Never>?
   /// Sessions created here that the host doesn't list yet (still setting up).
@@ -195,8 +205,9 @@ public final class HostStore {
     pump?.cancel()
     // An error from while offline (the toast hides then) is about the connection this one replaces.
     if connection == .offline { lastError = nil }
-    self.backend = backend
+    self.backend = wrapForOffline(backend)
     connection = .ready
+    savedAsOf = nil
     // A new connection numbers its events from scratch.
     queueSeq = [:]
     let stream = await backend.events()
@@ -209,6 +220,7 @@ public final class HostStore {
       }
     }
     followAgents()
+    flushOutbox()
   }
 
   /// Drop the backend. Data stays until `reset()`, so a reconnect to the same
@@ -220,7 +232,7 @@ public final class HostStore {
     refetchTimers.removeAll()
     forgetTranscriptSync()
     await backend?.disconnect()
-    backend = nil
+    backend = savedAnswers.map(offlineBackend)
     connection = .offline
   }
 
@@ -232,6 +244,11 @@ public final class HostStore {
 
   /// Forget everything fetched from the current computer.
   public func reset() {
+    if liveBackend == nil { backend = nil }
+    savedAnswers = nil
+    outbox = nil
+    savedAsOf = nil
+    outboxByAgent = [:]
     creatingSessions = [:]
     projects = []
     projectsLoaded = false
@@ -302,7 +319,9 @@ public final class HostStore {
       connection = state
       if changed { hooks.connectionChanged(state) }
       // Subscriptions belong to a connection; a fresh one starts with none.
+      if state == .ready { savedAsOf = nil }
       if reconnected {
+        flushOutbox()
         resyncTranscripts()
         resyncQueues()
         followAgents()

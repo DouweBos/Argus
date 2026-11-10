@@ -152,7 +152,7 @@ final class AppStore {
   /// the user asking us to try again.
   func selectHost(_ deviceId: String) async {
     guard let identity = hosts.first(where: { $0.deviceId == deviceId }) else { return }
-    if deviceId == activeHostId, host.backend != nil, host.connection != .offline { return }
+    if deviceId == activeHostId, host.liveBackend != nil, host.connection != .offline { return }
     Telemetry.capture(.hostSwitched(hostCount: hosts.count))
 
     // Adopt the target before any awaiting, so a screen pushed on the same
@@ -192,13 +192,14 @@ final class AppStore {
     if activeHostId == deviceId {
       // Best-effort: the computer should stop pushing to a phone that just
       // dropped its key, but an offline unpair must still succeed locally.
-      _ = try? await host.backend?.request(
+      _ = try? await host.liveBackend?.request(
         .deviceUnregisterPush, EmptyParams(), as: IgnoredResult.self)
       await disconnect()
       clearHostData()
     }
     agentHosts.forget(hostId: deviceId)
     SessionSpotlight.forget(hostId: deviceId)
+    forgetOffline(hostId: deviceId)
     let state = await keystore.remove(deviceId: deviceId)
     pairedHosts = state.hosts
     activeHostId = state.activeId
@@ -218,6 +219,10 @@ final class AppStore {
     let generation = connectGeneration
     host.beginConnecting()
     routes.suspend()
+    // Whatever was saved shows while the connection is raced, and if it never comes.
+    await host.openOffline(
+      saved: SavedAnswers.forHost(identity.deviceId), outbox: Outbox.forHost(identity.deviceId))
+    guard generation == connectGeneration else { return }
 
     do {
       let attempt = try await EndpointRacer.connectBest(identity: identity)
@@ -256,7 +261,7 @@ final class AppStore {
   func recheckRoutes() {
     routes.recheck()
     // A socket that died while suspended still reads as ready until something fails on it.
-    if let gateway = host.backend as? GatewayBackend {
+    if let gateway = host.liveBackend as? GatewayBackend {
       Task { await gateway.transport.checkAlive() }
     }
   }
@@ -268,7 +273,7 @@ final class AppStore {
     guard let identity = currentIdentity else { return false }
     let backend = GatewayBackend(transport: attempt.transport)
     if identity.isAccountHost { account.setConnectionFailing(false) }
-    guard host.backend != nil else {
+    guard host.liveBackend != nil else {
       // The connect that failed, reaching it now: the full post-connect run.
       connectGeneration += 1
       await host.attach(backend)
@@ -319,6 +324,12 @@ final class AppStore {
       }
       self.identity = hosts.first { $0.deviceId == identity.deviceId } ?? self.identity
     }
+  }
+
+  /// A computer this phone can no longer reach keeps nothing of it here.
+  func forgetOffline(hostId: String) {
+    SavedAnswers.remove(hostId: hostId)
+    Outbox.remove(hostId: hostId)
   }
 
   func clearHostData() {

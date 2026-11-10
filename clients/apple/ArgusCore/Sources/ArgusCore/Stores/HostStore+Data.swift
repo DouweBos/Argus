@@ -20,7 +20,7 @@ extension HostStore {
   }
 
   public func loadRecentAgents() async {
-    guard let backend else { return }
+    guard let backend, !holdsFresher(recentAgentsLoaded) else { return }
     struct Result: Decodable { let agents: [RemoteAgentStatus] }
     guard let result = try? await backend.request(
       .agentsList, EmptyParams(), as: Result.self) else { return }
@@ -135,7 +135,7 @@ extension HostStore {
   }
 
   public func loadAgents(repoRoot: String) async {
-    guard let backend else { return }
+    guard let backend, !holdsFresher(agentsByRepo[repoRoot] != nil) else { return }
     struct Params: Encodable {
       var repo_root: String?
       var session_id: String?
@@ -159,7 +159,7 @@ extension HostStore {
   }
 
   public func loadAgentStatus(agentId: String) async {
-    guard let backend else { return }
+    guard let backend, !holdsFresher(statusByAgent[agentId] != nil) else { return }
     struct Params: Encodable { let agent_id: String }
     struct Result: Decodable { let agent: RemoteAgentStatus }
     do {
@@ -231,7 +231,7 @@ extension HostStore {
   }
 
   public func loadTranscript(agentId key: String, before: Double? = nil) async {
-    guard let backend else { return }
+    guard let backend, !holdsFresher(before == nil && messagesByAgent[key] != nil) else { return }
 
     struct LiveParams: Encodable {
       let agent_id: String

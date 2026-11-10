@@ -110,7 +110,7 @@ struct RootView: View {
     // Floated rather than stacked: a transient state should not resize the
     // whole layout on its way in and out.
     .overlay(alignment: .top) {
-      if app.identity != nil, app.host.connection == .offline {
+      if app.identity != nil, app.host.connection == .offline || app.host.savedAsOf != nil {
         reconnectingPill
           .transition(.move(edge: .top).combined(with: .opacity))
       }
@@ -159,11 +159,14 @@ struct RootView: View {
   /// Small, quiet, and out of the way — it retries on its own, so this is a
   /// status, not something to act on.
   private var reconnectingPill: some View {
-    HStack(spacing: 7) {
-      StatusDot(tone: .warning, pulse: true)
-      Text("Reconnecting…")
-        .font(.footnote.weight(.medium))
-        .foregroundStyle(.secondary)
+    // What's on screen came from the phone's saved copy: say how old it is.
+    TimelineView(.periodic(from: .now, by: 30)) { context in
+      HStack(spacing: 7) {
+        StatusDot(tone: .warning, pulse: true)
+        Text(app.host.savedAsOf.map { Self.savedLabel($0, now: context.date) } ?? "Reconnecting…")
+          .font(.footnote.weight(.medium))
+          .foregroundStyle(.secondary)
+      }
     }
     .padding(.horizontal, 13)
     .padding(.vertical, 8)
@@ -171,7 +174,18 @@ struct RootView: View {
     .overlay(Capsule().strokeBorder(theme.border, lineWidth: 0.5))
     .shadow(color: .black.opacity(0.25), radius: 10, y: 3)
     .padding(.top, 6)
-    .accessibilityLabel("Reconnecting to \(app.identity?.label ?? "your computer")")
+    .accessibilityLabel(
+      app.host.savedAsOf == nil
+        ? "Reconnecting to \(app.identity?.label ?? "your computer")"
+        : "Showing what was saved on this phone. Reconnecting to \(app.identity?.label ?? "your computer")")
+    .onChange(of: app.host.savedAsOf == nil, initial: true) { _, live in
+      guard !live, let savedAt = app.host.savedAsOf else { return }
+      Telemetry.capture(.savedShown(age: Date().timeIntervalSince(savedAt)))
+    }
+  }
+
+  static func savedLabel(_ savedAt: Date, now: Date) -> String {
+    "Saved · \(Labels.timeAgo(savedAt.timeIntervalSince1970 * 1000, now: now))"
   }
 
   /// Sidebar beside detail. The sidebar lists sections, then each project's

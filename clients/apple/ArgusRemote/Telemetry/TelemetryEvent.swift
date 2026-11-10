@@ -36,6 +36,9 @@ enum TelemetryEvent {
   /// What was done to a branch.
   typealias BranchAction = StoreEvent.BranchAction
 
+  /// What happened to a reply written while offline.
+  typealias OfflineReplyAction = StoreEvent.OfflineReplyAction
+
   /// Where the design viewer was opened from.
   enum DesignSource: String {
     /// A Figma link in an issue.
@@ -217,6 +220,9 @@ enum TelemetryEvent {
   case memoryEdited(action: MemoryAction)
   /// A diff review comment was added or deleted, the review sent or discarded, or an agent asked to review.
   case diffReviewed(action: DiffReviewAction, comments: Int)
+  /// The computer was out of reach and the phone showed what it had saved; `age` in seconds.
+  case savedShown(age: TimeInterval)
+  case offlineReply(action: OfflineReplyAction)
   /// The inbox's shortcut into the run a proposal came out of.
   case proposalOpenedAsRun
   /// A suggested reply filled the message field.
@@ -325,6 +331,8 @@ enum TelemetryEvent {
     case .sessionRenamed: "ios_session_renamed"
     case .memoryEdited: "ios_memory_edited"
     case .diffReviewed: "ios_diff_reviewed"
+    case .savedShown: "ios_saved_shown"
+    case .offlineReply: "ios_offline_reply"
     case .proposalOpenedAsRun: "ios_proposal_opened"
     case .followUpUsed: "ios_follow_up_used"
     case .inputUsed: "ios_input_used"
@@ -434,6 +442,10 @@ enum TelemetryEvent {
       ["action": action.rawValue]
     case .diffReviewed(let action, let comments):
       ["action": action.rawValue, "comment_count": comments]
+    case .savedShown(let age):
+      ["age_bucket": Self.ageBucket(age)]
+    case .offlineReply(let action):
+      ["action": action.rawValue]
     case .settingChanged(let setting, let enabled):
       ["setting": setting.rawValue, "enabled": enabled]
     case .colorThemeChanged(let theme):
@@ -504,6 +516,14 @@ enum TelemetryEvent {
 
   /// Message length as a bucket — the length itself is close enough to the
   /// content to be worth rounding off.
+  private static func ageBucket(_ seconds: TimeInterval) -> String {
+    switch seconds {
+    case ..<3600: "under_1h"
+    case ..<86_400: "under_1d"
+    default: "over_1d"
+    }
+  }
+
   private static func bucket(_ length: Int) -> String {
     switch length {
     case ..<50: "xs"

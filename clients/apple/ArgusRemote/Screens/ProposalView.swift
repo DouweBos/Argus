@@ -53,6 +53,7 @@ struct ProposalView: View {
     .navigationTitle(proposal?.title ?? "Proposal")
     .navigationBarTitleDisplayMode(.inline)
     .refreshable { await proposals.load(id: proposalId) }
+    .loadsOffline { await proposals.load(id: proposalId) }
     .liveRefresh(enabled: host.connection == .ready, every: .seconds(5)) {
       await proposals.load(id: proposalId)
       looked = true

@@ -37,6 +37,24 @@ public struct LiveRefresh: ViewModifier {
   }
 }
 
+/// Load once from the computer's saved answers while it can't be reached —
+/// the counterpart of a `liveRefresh` that only polls while connected.
+public struct OfflineLoad: ViewModifier {
+  @Environment(HostStore.self) private var host
+  public let action: () async -> Void
+
+  public init(action: @escaping () async -> Void) {
+    self.action = action
+  }
+
+  public func body(content: Content) -> some View {
+    content.task(id: host.readsSaved) {
+      guard host.readsSaved else { return }
+      await BackgroundRefresh.run(action)
+    }
+  }
+}
+
 /// Re-fetch whatever only ever arrives over the socket: once when the app
 /// returns to the foreground, and again when a connection dropped by the lock
 /// screen comes back, since a request sent mid-reconnect answers nothing.
@@ -66,6 +84,10 @@ public struct ResumeTask: ViewModifier {
 }
 
 extension View {
+  public func loadsOffline(_ action: @escaping () async -> Void) -> some View {
+    modifier(OfflineLoad(action: action))
+  }
+
   public func onResume(
     enabled: Bool = true, connected: Bool, _ action: @escaping () async -> Void
   ) -> some View {

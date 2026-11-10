@@ -60,6 +60,14 @@ public enum StoreEvent: Sendable, Equatable {
     case markRead = "mark_read"
   }
 
+  /// What happened to a reply written while offline.
+  public enum OfflineReplyAction: String, Sendable {
+    case queued
+    /// Sent once the connection came back.
+    case replayed
+    case discarded
+  }
+
   /// How an inbox proposal was answered.
   public enum ProposalAction: String, Sendable {
     case accept
@@ -137,4 +145,5 @@ public enum StoreEvent: Sendable, Equatable {
   case memoryEdited(action: MemoryAction)
   /// `comments` is how many drafts the session holds once the action is done (sent: how many went).
   case diffReviewed(action: DiffReviewAction, comments: Int)
+  case offlineReply(action: OfflineReplyAction)
 }

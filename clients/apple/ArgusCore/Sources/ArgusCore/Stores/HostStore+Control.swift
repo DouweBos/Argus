@@ -12,6 +12,9 @@ extension HostStore {
     agentId: String, message: String, images: [RemoteImageAttachment] = [],
     displayText: String? = nil, isRetry: Bool = false
   ) async {
+    if shouldHoldReply {
+      return holdReply(agentId: agentId, message: message, displayText: displayText, images: images)
+    }
     let localId = appendOptimistic(agentId: agentId, text: displayText ?? message, images: images)
     // No socket at all still has to land somewhere the user can see and retry,
     // or the message is gone the moment the lock screen took the connection.
@@ -128,6 +131,10 @@ extension HostStore {
   public func queueMessage(
     agentId: String, message: String, images: [RemoteImageAttachment], displayText: String
   ) async {
+    // Sent as a plain message on reconnect: the computer queues one that arrives mid-turn.
+    if shouldHoldReply {
+      return holdReply(agentId: agentId, message: message, displayText: displayText, images: images)
+    }
     guard let backend else {
       failedByAgent[agentId, default: []].append(
         FailedSend(
@@ -173,7 +180,7 @@ extension HostStore {
   }
 
   public func loadQueue(agentId: String) async {
-    guard let backend else { return }
+    guard let backend, !holdsFresher(queuedByAgent[agentId] != nil) else { return }
     struct Params: Encodable { let agent_id: String }
     struct Result: Decodable { let messages: [RemoteQueuedMessage] }
     guard
@@ -281,7 +288,8 @@ extension HostStore {
     let prompt = prompts.removeValue(forKey: key)
     answered.insert(key)
 
-    guard let backend else {
+    // Offline, the answer waits for the connection like a notification's does.
+    guard let backend, !shouldHoldReply else {
       hooks.decisionUndelivered(agentId, toolUseId, decision)
       return
     }

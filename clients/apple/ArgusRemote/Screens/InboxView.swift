@@ -44,6 +44,7 @@ struct InboxView: View {
     .navigationTitle("Inbox")
     .refreshable { await refresh() }
     .liveRefresh(enabled: host.connection == .ready) { await refresh() }
+    .loadsOffline { await refresh() }
     .task {
       while !Task.isCancelled {
         try? await Task.sleep(for: .seconds(60))

@@ -124,6 +124,13 @@ ciphertext.
 - **Phone or tablet** — the web client is one column on a phone and
   splits into a two-pane layout on an iPad or a desktop browser, with the
   session list beside whatever you have open.
+- **Offline reading** — the iPhone app keeps the transcripts, changes
+  and diffs, pull requests and inbox you looked at last, encrypted on the
+  phone and unreadable while it's locked. With the computer out of reach
+  (asleep, or you're on a train) they stay readable, even after a
+  restart, under a "Saved · 12m ago" pill. Replies and permission answers
+  wait on the phone and go out when the connection is back. Unpairing a
+  computer deletes what was saved from it.
 - **Handoff** — the iPhone app and the Mac advertise whatever session
   you have open to each other, so you can pick an agent up on the phone
   from the lock screen and put it back down on the Mac from the Dock.

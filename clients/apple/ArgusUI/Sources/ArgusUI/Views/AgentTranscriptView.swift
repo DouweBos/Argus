@@ -79,6 +79,7 @@ public struct AgentTranscriptView: View {
           TranscriptPrompts(agentKey: agentKey, pending: pendingCalls)
 
           queued
+          waiting
           notSent
 
           Color.clear.frame(height: 1).id(Self.bottomAnchor)
@@ -231,6 +232,18 @@ public struct AgentTranscriptView: View {
     }
   }
 
+  /// Written while the computer was out of reach; sent when it's back.
+  @ViewBuilder
+  private var waiting: some View {
+    let items = host.outboxByAgent[agentKey] ?? []
+    if !items.isEmpty {
+      SectionHeader(title: "Waiting for connection", count: items.count)
+      ForEach(items) { item in
+        FailedSendCard(agentKey: agentKey, item: item, waiting: true)
+      }
+    }
+  }
+
   @ViewBuilder
   private var queued: some View {
     let items = host.queuedByAgent[agentKey] ?? []
@@ -282,6 +295,8 @@ public struct FailedSendCard: View {
 
   let agentKey: String
   let item: FailedSend
+  /// In the outbox: it goes on its own once connected, so there is nothing to retry.
+  var waiting = false
 
   /// The attachments travel with the card as base64, so they are seeded into
   /// the same cache the transcript reads and render through the usual thumbnail.
@@ -298,22 +313,29 @@ public struct FailedSendCard: View {
     }
   }
 
-  public init(agentKey: String, item: FailedSend) {
+  public init(agentKey: String, item: FailedSend, waiting: Bool = false) {
     self.agentKey = agentKey
     self.item = item
+    self.waiting = waiting
   }
 
   public var body: some View {
     Card {
       HStack(alignment: .top, spacing: 8) {
-        Badge(label: "Not sent", tone: .danger)
+        Badge(label: waiting ? "Waiting" : "Not sent", tone: waiting ? .warning : .danger)
         BodyText(item.text)
         Spacer(minLength: 4)
-        IconBtn(systemName: Icon.refresh, label: "Send again", size: 13) {
-          Task { await host.retryFailed(agentId: agentKey, id: item.id) }
-        }
-        IconBtn(systemName: Icon.close, label: "Discard message", size: 13) {
-          host.discardFailed(agentId: agentKey, id: item.id)
+        if waiting {
+          IconBtn(systemName: Icon.close, label: "Don't send", size: 13) {
+            host.discardHeld(agentId: agentKey, id: item.id)
+          }
+        } else {
+          IconBtn(systemName: Icon.refresh, label: "Send again", size: 13) {
+            Task { await host.retryFailed(agentId: agentKey, id: item.id) }
+          }
+          IconBtn(systemName: Icon.close, label: "Discard message", size: 13) {
+            host.discardFailed(agentId: agentKey, id: item.id)
+          }
         }
       }
       if !attachmentIds.isEmpty {
