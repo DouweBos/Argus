@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.30.0
+
+### Minor Changes
+
+- e43d856: Runner pickers show a runner whose CLI isn't installed as unavailable, with how to install it, instead of letting an agent fail to start on it.
+
 ## 0.29.0
 
 ### Minor Changes
