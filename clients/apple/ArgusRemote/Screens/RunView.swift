@@ -112,11 +112,10 @@ struct RunView: View {
       }
       MutedText(run.triggerReason)
 
-      HStack(spacing: 16) {
-        figure("Started", Labels.timeAgo(run.startedAt))
-        figure("Duration", Labels.runDuration(run))
-        figure("Cost", Labels.runCost(run))
-      }
+      RunFigures([
+        ("Started", Labels.timeAgo(run.startedAt)), ("Duration", Labels.runDuration(run)),
+        ("Cost", Labels.runCost(run)),
+      ])
 
       if let error = run.error, !error.isEmpty {
         Banner(text: error, tone: .danger)
@@ -160,23 +159,25 @@ struct RunView: View {
     }
   }
 
-  private func figure(_ label: String, _ value: String) -> some View {
-    VStack(alignment: .leading, spacing: 2) {
-      Text(label).font(.caption2).foregroundStyle(theme.textMuted)
-      MonoText(text: value, size: 13, color: theme.text)
-    }
-  }
-
+  /// In a card under its header, as on the Mac.
   @ViewBuilder
   private var report: some View {
-    if let blocks = detail?.reportBlocks, !blocks.isEmpty {
-      SectionHeader(title: "Report")
-      ReportBlocksView(blocks: blocks, onOpenInbox: { router.push(.inbox) })
-    } else if let markdown = detail?.reportMarkdown, !markdown.isEmpty {
-      SectionHeader(title: "Report")
-      MarkdownView(text: markdown)
-    } else if detail != nil {
-      MutedText("This run wrote no report.")
+    if detail != nil || run?.isActive == true {
+      Card {
+        SectionHeader(title: "Report")
+        if let blocks = detail?.reportBlocks, !blocks.isEmpty {
+          ReportBlocksView(blocks: blocks, onOpenInbox: { router.push(.inbox) })
+        } else if let markdown = detail?.reportMarkdown, !markdown.isEmpty {
+          MarkdownView(text: markdown)
+        } else if run?.isActive == true {
+          HStack(spacing: 8) {
+            ProgressView().controlSize(.small)
+            MutedText("The report appears when the run finishes.")
+          }
+        } else {
+          MutedText("This run wrote no report.")
+        }
+      }
     }
   }
 
@@ -185,17 +186,18 @@ struct RunView: View {
   @ViewBuilder
   private var feedbackLog: some View {
     if let notes = detail?.feedback, !notes.isEmpty {
-      SectionHeader(title: "Feedback")
-      ForEach(notes) { entry in
-        Card {
-          HStack(spacing: 8) {
-            MonoText(text: Labels.timeAgo(entry.createdAt), size: 11, color: theme.textMuted)
-            if entry.allowClearing {
-              Badge(label: "could remove proposals", tone: .warning)
+      Card {
+        SectionHeader(title: "Feedback", count: notes.count)
+        ForEach(notes) { entry in
+          VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+              MonoText(text: Labels.timeAgo(entry.createdAt), size: 11, color: theme.textMuted)
+              if entry.allowClearing {
+                Badge(label: "could remove proposals", tone: .warning)
+              }
             }
-            Spacer(minLength: 0)
+            MarkdownView(text: entry.note)
           }
-          MarkdownView(text: entry.note)
         }
       }
     }

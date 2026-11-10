@@ -103,19 +103,11 @@ struct RunScreen: View {
   }
 
   private func stats(_ run: RemoteAutomationRun) -> some View {
-    HStack(alignment: .top, spacing: 28) {
-      stat("Duration", Labels.runDuration(run))
-      stat("Cost", Labels.runCost(run))
-      stat("Finished", run.finishedAt.map(AutomationText.timestamp) ?? "—")
-      stat("Host session", hostSession.map { $0.displayName ?? $0.branch } ?? "—")
-    }
-  }
-
-  private func stat(_ label: String, _ value: String) -> some View {
-    VStack(alignment: .leading, spacing: 2) {
-      Text(label).font(.scaled(.caption)).foregroundStyle(theme.textMuted)
-      Text(value).font(.scaled(.title3).weight(.semibold)).monospacedDigit().textSelection(.enabled)
-    }
+    RunFigures([
+      ("Duration", Labels.runDuration(run)), ("Cost", Labels.runCost(run)),
+      ("Finished", run.finishedAt.map(AutomationText.timestamp) ?? "—"),
+      ("Host session", hostSession.map { $0.displayName ?? $0.branch } ?? "—"),
+    ])
   }
 
   @ViewBuilder
