@@ -2,7 +2,7 @@ name: TestFlight
 
 # Builds the iPhone app (clients/apple, scheme ArgusRemote) and uploads it to
 # TestFlight. Version: package.json's without any pre-release suffix; build:
-# the commit count, so every upload is newer than the last.
+# the workflow run number + 2000, so every upload is newer than the last.
 
 on:
   workflow_dispatch:

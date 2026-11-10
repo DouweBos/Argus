@@ -10,6 +10,16 @@ TEAM_ID      = "CKZT75PN5T"
 MAC_APP_BUNDLE_ID = "dev.houwert.argus"
 SIGN_IDENTITY_RELEASE = "Douwe Bos (#{TEAM_ID})"
 
+# Commit-count builds reached 1837; the offset keeps run-number builds above them.
+BUILD_NUMBER_OFFSET = 2000
+
+# Sparkle and TestFlight order builds by CFBundleVersion: the workflow's run number keeps it growing.
+def ci_build_number
+  run = ENV["GITHUB_RUN_NUMBER"].to_s
+  UI.user_error!("GITHUB_RUN_NUMBER is not set: release builds come from the GitHub workflow") if run.empty?
+  (run.to_i + BUILD_NUMBER_OFFSET).to_s
+end
+
 platform :mac do
   desc "Sync the Developer ID Application cert from the match repo. Pass generate:true on first run to create and upload a new cert."
   lane :certs do |options|
@@ -116,8 +126,7 @@ platform :mac do
     match(**match_options)
 
     version = read_package_version
-    # Sparkle orders builds by CFBundleVersion, so it has to grow with every release.
-    build_number = sh("git rev-list --count HEAD", log: false).strip
+    build_number = ci_build_number
     UI.success("Releasing #{app_name} v#{version} (#{build_number}) on #{feed_channel}")
 
     root = File.expand_path("..", __dir__)
@@ -350,7 +359,7 @@ platform :ios do
     project = File.join(root, "clients/apple/ArgusRemote.xcodeproj")
     # App Store versions are plain x.y.z; TestFlight orders builds by the build number.
     version = read_package_version.sub(/-.*\z/, "")
-    build_number = sh("git rev-list --count HEAD", log: false).strip
+    build_number = ci_build_number
 
     # Development builds sign automatically; App Store builds sign with match's profiles.
     IOS_TARGETS.each do |target, bundle_id|
