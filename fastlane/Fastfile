@@ -341,6 +341,7 @@ IOS_APP_ID       = "dev.houwert.argus.remote"
 IOS_EXTENSION_ID = "dev.houwert.argus.remote.NotificationService"
 IOS_WIDGETS_ID   = "dev.houwert.argus.remote.Widgets"
 IOS_SHARE_ID     = "dev.houwert.argus.remote.ShareExtension"
+IOS_APP_GROUP    = "group.dev.houwert.argus"
 # Target name => bundle id, for the App Store profiles each one signs with.
 IOS_TARGETS = {
   "ArgusRemote" => IOS_APP_ID, "ArgusNotificationService" => IOS_EXTENSION_ID,
@@ -355,9 +356,18 @@ platform :ios do
       app_name:       options.fetch(:name, "Argus Remote"),
       language:       "en-US",
       sku:            "argus-remote",
-      # The App IDs exist already: development signing registered them.
+      # The app's App ID exists already: development signing registered it.
       skip_devcenter: true,
     )
+    # Extensions added later (widgets, share) may not have App IDs yet; all share the app's group.
+    IOS_TARGETS.each do |target, bundle_id|
+      next if bundle_id == IOS_APP_ID
+      produce(app_identifier: bundle_id, app_name: "Argus #{target.delete_prefix('Argus')}",
+              skip_itc: true, enable_services: { app_group: "on" })
+      # fastlane has no action for this; `produce` above left Produce.config on this bundle id.
+      require "produce/group"
+      Produce::Group.new.associate(nil, [IOS_APP_GROUP])
+    end
     match(type: "appstore", platform: "ios", app_identifier: IOS_TARGETS.values, readonly: false)
   end
 
