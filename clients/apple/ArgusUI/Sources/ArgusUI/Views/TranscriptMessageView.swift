@@ -47,12 +47,17 @@ public struct TranscriptMessageView: View {
           .foregroundStyle(.tertiary)
         }
       }
-      if !isUser { Spacer(minLength: 24) }
+      // A reply fills the column, as on the Mac; only a sent message is inset.
+      .frame(maxWidth: isUser ? nil : .infinity, alignment: .leading)
     }
   }
 
+  private var settledCalls: [RemoteToolCall] {
+    message.toolCalls.filter { !host.isToolCallPending(agentKey: agentKey, call: $0) }
+  }
+
   private var hasBubbleContent: Bool {
-    !textBlocks.isEmpty || !message.toolCalls.isEmpty
+    !textBlocks.isEmpty || !settledCalls.isEmpty
   }
 
   private var bubble: some View {
@@ -67,22 +72,15 @@ public struct TranscriptMessageView: View {
         .contentShape(.rect)
         .messageMenu(menu, for: message)
       }
-      ForEach(message.toolCalls) { call in
+      // A call waiting on a decision sits at the transcript's foot (`TranscriptPrompts`), as on the Mac.
+      ForEach(settledCalls) { call in
         ToolCallCard(agentKey: agentKey, call: call, depth: 0)
-        if host.isToolCallPending(agentKey: agentKey, call: call) {
-          PendingCallForm(agentKey: agentKey, call: call)
-        }
       }
     }
-    .padding(message.toolCalls.isEmpty ? 11 : 6)
-    .background(isUser ? theme.accentSoft : theme.bgSecondary)
+    // A sent message is a quiet fill; a reply is plain text on the canvas, as on the Mac.
+    .padding(isUser ? 11 : 0)
+    .background(isUser ? theme.accentSoft : .clear)
     .clipShape(RoundedRectangle(cornerRadius: theme.radius))
-    // A sent message is a quiet fill, as on the Mac; only the reply keeps a hairline.
-    .overlay {
-      if !isUser {
-        RoundedRectangle(cornerRadius: theme.radius).stroke(theme.border, lineWidth: 0.5)
-      }
-    }
   }
 
   @ViewBuilder

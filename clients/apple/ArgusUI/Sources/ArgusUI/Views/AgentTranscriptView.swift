@@ -47,17 +47,6 @@ public struct AgentTranscriptView: View {
         LazyVStack(alignment: .leading, spacing: 10) {
           topSentinel
 
-          if let tasks = host.tasksByAgent[agentKey], !tasks.isEmpty {
-            TaskListView(
-              title: "Tasks",
-              items: tasks.map { ($0.activeForm ?? $0.subject, $0.status, $0.owner) })
-          }
-          if let todos = host.todosByAgent[agentKey], !todos.isEmpty {
-            TaskListView(
-              title: "Todos",
-              items: todos.map { ($0.activeForm ?? $0.content, $0.status, nil) })
-          }
-
           ForEach(items(messages)) { item in
             switch item {
             case .message(let message):
@@ -76,11 +65,27 @@ public struct AgentTranscriptView: View {
             pendingToolInput: nil,
             hasPendingPermission: hasPendingPermission)
 
+          // Under the turn, as on the Mac: what the agent is doing, then what it's waiting on.
+          if let tasks = host.tasksByAgent[agentKey], !tasks.isEmpty {
+            TaskListView(
+              title: "Tasks",
+              items: tasks.map { ($0.activeForm ?? $0.subject, $0.status, $0.owner) })
+          }
+          if let todos = host.todosByAgent[agentKey], !todos.isEmpty {
+            TaskListView(
+              title: "Todos",
+              items: todos.map { ($0.activeForm ?? $0.content, $0.status, nil) })
+          }
+          TranscriptPrompts(agentKey: agentKey, pending: pendingCalls)
+
           queued
           notSent
 
           Color.clear.frame(height: 1).id(Self.bottomAnchor)
         }
+        // The composer's column: an iPad reads the chat as the Mac does, not edge to edge.
+        .frame(maxWidth: ReadingColumn.maxWidth)
+        .frame(maxWidth: .infinity)
         .padding(theme.space)
       }
       .onChange(of: messages.count) { _, count in
@@ -210,6 +215,8 @@ public struct AgentTranscriptView: View {
       message.toolCalls.contains { host.hasPendingCall(agentKey: agentKey, in: $0) }
     }
   }
+
+  private var pendingCalls: [RemoteToolCall] { host.pendingCalls(agentKey: agentKey, in: messages) }
 
   /// Messages that never reached the computer. They sit below the queue
   /// because the queue is the computer's record and this is the absence of one.
