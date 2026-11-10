@@ -3,25 +3,43 @@
   import ArgusUI
   import SwiftUI
 
+  /// Automations, runs, the inbox, proposals, notifications and usage — the
+  /// same ids and fixtures as the iOS gallery's `AutomationStories`.
   enum AutomationStories {
+    private static let screen = CGSize(width: 1000, height: 900)
+
     static var all: [GalleryStory] {
       [
         GalleryStory(
-          "automations/quick-run", size: CGSize(width: 1000, height: 900), chrome: true,
-          fixtures: fixtures(runs: [run("q1", status: "running", ago: 2, cost: nil)])
-        ) {
-          QuickRunScreen(runId: nil)
-        },
+          "automations/list", size: CGSize(width: 1100, height: 560), chrome: true, fixtures: fixtures,
+          setup: attachModel
+        ) { AutomationsScreen() },
         GalleryStory(
-          "automations/quick-run/empty", size: CGSize(width: 1000, height: 900), chrome: true,
-          fixtures: fixtures(runs: [])
-        ) {
-          QuickRunScreen(runId: nil)
+          "automations/list/empty", size: CGSize(width: 1000, height: 560), chrome: true,
+          fixtures: GalleryFixtures.automations(empty: true), setup: attachModel
+        ) { AutomationsScreen() },
+        GalleryStory(
+          "automations/detail", size: CGSize(width: 1000, height: 2400), chrome: true, fixtures: fixtures,
+          setup: attachModel
+        ) { AutomationScreen(automationId: GalleryFixtures.triageId, runId: nil) },
+        GalleryStory(
+          "automations/run", size: screen, chrome: true, fixtures: fixtures, setup: attachModel
+        ) { AutomationScreen(automationId: "deps", runId: "r-deps-1") },
+        GalleryStory(
+          "automations/quick-run", size: CGSize(width: 1000, height: 1100), chrome: true, fixtures: fixtures,
+          setup: attachModel
+        ) { QuickRunScreen(runId: nil) },
+        GalleryStory(
+          "automations/quick-run/empty", size: screen, chrome: true,
+          fixtures: GalleryFixtures.automations(empty: true), setup: attachModel
+        ) { QuickRunScreen(runId: nil) },
+        GalleryStory("automations/describe", size: CGSize(width: 620, height: 0), fixtures: fixtures) {
+          DescribeAutomationSheet()
         },
-        GalleryStory("automations/project-scope", size: CGSize(width: 640, height: 640), fixtures: fixtures(runs: [])) {
+        GalleryStory("automations/project-scope", size: CGSize(width: 640, height: 640), fixtures: fixtures) {
           ScopeForm(picked: ["/Users/dev/Projects/Argus"])
         },
-        GalleryStory("automations/run-history-row", size: CGSize(width: 720, height: 300), fixtures: fixtures(runs: [])) {
+        GalleryStory("automations/run-history-row", size: CGSize(width: 720, height: 300), fixtures: fixtures) {
           Form {
             Section("Run history") {
               RunHistoryRow(run: decoded(run("a", status: "running", ago: 1, cost: nil)), title: "Quick run") {}
@@ -33,21 +51,48 @@
           }
           .formStyle(.grouped)
         },
+        GalleryStory("inbox", size: CGSize(width: 1000, height: 1500), chrome: true, fixtures: fixtures, setup: attachModel) {
+          InboxScreen()
+        },
+        GalleryStory(
+          "inbox/empty", size: CGSize(width: 1000, height: 560), chrome: true,
+          fixtures: GalleryFixtures.automations(empty: true), setup: attachModel
+        ) { InboxScreen() },
+        GalleryStory("inbox/proposal", size: screen, chrome: true, fixtures: fixtures, setup: attachModel) {
+          ProposalScreen(proposalId: "p-crash")
+        },
+        GalleryStory(
+          "notifications", size: CGSize(width: 900, height: 480), chrome: true,
+          setup: { GalleryFixtures.notifications(into: $0.model.notificationsLog) }
+        ) { NotificationsScreen() },
+        GalleryStory(
+          "notifications/empty", size: CGSize(width: 900, height: 480), chrome: true,
+          setup: { $0.model.notificationsLog.clear() }
+        ) { NotificationsScreen() },
+        GalleryStory("usage/limits", size: screen, chrome: true, fixtures: GalleryFixtures.usage) {
+          UsageScreen(tab: .limits, range: nil)
+        },
+        GalleryStory("usage/cost", size: screen, chrome: true, fixtures: GalleryFixtures.usage) {
+          UsageScreen(tab: .cost, range: nil)
+        },
       ]
     }
 
-    private static func fixtures(runs: [[String: Any]]) -> [String: String] {
-      [
-        RemoteMethod.projectsList.rawValue: GalleryJSON.projects(GalleryJSON.someProjects),
-        RemoteMethod.automationsList.rawValue: GalleryJSON.encode(["automations": []]),
-        RemoteMethod.automationsRuns.rawValue: GalleryJSON.encode(["runs": runs]),
-        RemoteMethod.automationsSources.rawValue: GalleryJSON.encode([
-          "sources": [
-            ["id": "github", "label": "GitHub issues and PRs", "mode": "native", "available": true],
-            ["id": "linear", "label": "Linear", "mode": "agent", "available": false],
-          ]
-        ]),
-      ]
+    private static var fixtures: [String: String] { GalleryFixtures.automations() }
+
+    /// Some Mac screens read the app model's stores (the inbox, automation
+    /// names) rather than the environment's, so they get the fixtures too.
+    @MainActor
+    private static func attachModel(_ stage: GalleryStage) async {
+      let model = stage.model
+      await model.store.attach(stage.backend)
+      await model.store.refreshProjects()
+      for project in model.store.projects { await stage.host.loadSessions(repoRoot: project.repoRoot) }
+      model.automations.clear()
+      model.inbox.clear()
+      await model.automations.refresh()
+      await model.inbox.refresh()
+      await stage.automations.refresh()
     }
 
     private static func run(
