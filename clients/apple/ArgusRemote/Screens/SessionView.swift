@@ -95,7 +95,10 @@ struct SessionView: View {
     HStack(spacing: 0) {
       VStack(spacing: 0) {
         if showsTabs { tabBar }
-        if let session, !session.isUnavailable, session.status == .error || session.setupPending == true {
+        // A failed setup with no agent to show takes the whole screen, as on the Mac.
+        if let session, !session.isUnavailable,
+          session.status == .error ? focusedAgentId != nil : session.setupPending == true
+        {
           setupBanner(session)
         }
         content
@@ -216,8 +219,12 @@ struct SessionView: View {
       startPane(session)
     } else if let id = focusedAgentId {
       AgentView(agentId: id, label: title).id(id)
-    } else if let session, session.status == .initializing || session.status == .deleting {
+    } else if let session, session.status == .initializing {
+      centered { SetupProgressCard(session: session) }
+    } else if let session, session.status == .deleting {
       setupProgress(session)
+    } else if let session, session.status == .error, !session.isUnavailable {
+      centered { SetupFailedRow(session: session).frame(maxWidth: .infinity, alignment: .leading).card() }
     } else if showsStart, let session {
       startPane(session)
     } else {
@@ -259,7 +266,15 @@ struct SessionView: View {
     .padding(theme.space)
   }
 
-  /// A bar while the computer sets the session up or removes it; a spinner until there is a count.
+  /// The Mac's setup cards: a readable width, in the middle of the screen.
+  private func centered(@ViewBuilder _ card: () -> some View) -> some View {
+    card()
+      .frame(maxWidth: 520)
+      .padding(theme.space)
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+
+  /// A bar while the computer removes the session; a spinner until there is a count.
   private func setupProgress(_ session: RemoteSession) -> some View {
     VStack(spacing: 12) {
       if let fraction = session.progress?.fraction {
