@@ -266,8 +266,11 @@ struct SettingsRowLayout: SwiftUI.Layout {
   }
 
   func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-    guard subviews.count == 2 else { return .zero }
     let width = proposal.width ?? 320
+    guard subviews.count == 2 else {
+      let label = subviews.first?.sizeThatFits(ProposedViewSize(width: width, height: nil)) ?? .zero
+      return CGSize(width: width, height: label.height)
+    }
     let control = subviews[1].sizeThatFits(.unspecified)
     if sideBySide(width, control) {
       let label = subviews[0].sizeThatFits(ProposedViewSize(width: width - control.width - spacing, height: nil))
@@ -278,7 +281,11 @@ struct SettingsRowLayout: SwiftUI.Layout {
   }
 
   func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-    guard subviews.count == 2 else { return }
+    guard subviews.count == 2 else {
+      subviews.first?.place(
+        at: bounds.origin, anchor: .topLeading, proposal: ProposedViewSize(width: bounds.width, height: nil))
+      return
+    }
     let control = subviews[1].sizeThatFits(.unspecified)
     if sideBySide(bounds.width, control) {
       let labelWidth = bounds.width - control.width - spacing

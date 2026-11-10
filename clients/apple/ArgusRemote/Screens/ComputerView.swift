@@ -19,15 +19,17 @@ struct ComputerView: View {
   }
 
   var body: some View {
-    Screen {
-      guard let computer else {
-        return AnyView(
-          VStack(alignment: .leading, spacing: theme.space) {
-            MutedText("This computer is no longer paired.")
-            Btn(label: "Back", tone: .secondary) { router.popToRoot() }
-          })
+    SettingsPage {
+      if let computer {
+        content(computer)
+      } else {
+        SettingsGroup {
+          Text("This computer is no longer paired.")
+            .font(.scaled(size: 13))
+            .foregroundStyle(theme.textSecondary)
+          Btn(label: "Back", tone: .secondary, small: true, hugs: true) { router.popToRoot() }
+        }
       }
-      return AnyView(content(computer))
     }
     .navigationTitle(computer?.label ?? "Computer")
     .navigationBarTitleDisplayMode(.inline)
@@ -60,65 +62,76 @@ struct ComputerView: View {
   private func content(_ computer: DeviceIdentity) -> some View {
     let active = computer.deviceId == app.activeHostId
 
-    Field(label: "Connection") {
-      HStack(spacing: 8) {
+    SettingsGroup("Connection") {
+      SettingsRow(active ? host.connection.label : "Not connected", description: GrantLabel.text(computer.capabilities)) {
         if active {
-          Badge(label: host.connection.label, tone: host.connection.tone)
+          StatusDot(tone: host.connection == .ready ? .success : .warning, pulse: false)
         } else {
-          Badge(label: "Not connected")
-        }
-        MutedText(GrantLabel.text(computer.capabilities))
-      }
-      if !active {
-        Btn(label: "Connect and open projects") {
-          Task {
-            await app.selectHost(computer.deviceId)
-            router.popToRoot()
+          Btn(label: "Connect", small: true, hugs: true) {
+            Task {
+              await app.selectHost(computer.deviceId)
+              router.popToRoot()
+            }
           }
         }
+      }
+      if let presence = app.presence(of: computer) {
+        SettingsRow(
+          "Argus Account",
+          description: "On your Argus account, so it connects without a QR code. "
+            + AccountPresenceText.text(online: presence.online, lastSeen: presence.lastSeen)
+        )
       }
     }
 
     if active, !host.integrations.isEmpty {
-      Field(
-        label: "Integrations",
-        caption: "Connect or disconnect them in Argus on the computer; their keys never leave it."
+      SettingsGroup(
+        "Integrations",
+        footer: "Connect or disconnect them in Argus on the computer; their keys never leave it."
       ) {
         IntegrationStatusRows(integrations: host.integrations)
       }
     }
 
-    if let presence = app.presence(of: computer) {
-      Field(label: "Account", caption: "On your Argus account, so it connects without a QR code.") {
-        MutedText(AccountPresenceText.text(online: presence.online, lastSeen: presence.lastSeen))
-      }
-    }
-
     if !computer.isAccountHost {
-      nameField(computer)
+      SettingsGroup("Name", footer: "Only shown on this phone.") {
+        SettingsRow("Name", stacked: true) {
+          HStack(spacing: 8) {
+            ThemedTextField(placeholder: "Computer name", text: $name, input: .name) { save(computer) }
+            Btn(label: saved ? "Saved" : "Save", tone: .secondary, small: true, hugs: true) { save(computer) }
+              .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || name == computer.label)
+          }
+        }
+      }
     }
 
     if app.account.isSignedIn, computer.accountHostId == nil {
-      Field(
-        label: "Your account",
-        caption: "Add it to your Argus account so your other devices reach it without a QR code, and from anywhere through its own tunnel. Confirm the code on the computer too."
+      SettingsGroup(
+        "Your account",
+        footer: "Add it to your Argus account so your other devices reach it without a QR code, and from anywhere through its own tunnel. Confirm the code on the computer too."
       ) {
-        Btn(label: "Add to your account", tone: .secondary) {
-          router.push(.addComputer)
-          Task { await app.addConnectedHostToAccount() }
+        SettingsRow("Add to your account") {
+          Btn(label: "Add", tone: .secondary, small: true, hugs: true) {
+            router.push(.addComputer)
+            Task { await app.addConnectedHostToAccount() }
+          }
+          .disabled(!active || host.connection != .ready)
         }
-        .disabled(!active || host.connection != .ready)
       }
     }
 
-    Field(
-      label: "Addresses",
-      caption:
+    SettingsGroup(
+      "Addresses",
+      footer:
         "Every route this computer advertised: Wi-Fi, Tailscale when both devices are on your tailnet, and the tunnel it gets from your Argus account. The simplest one that answers wins, and a better one is picked up when your network changes."
     ) {
       ForEach(computer.candidateEndpoints, id: \.url) { endpoint in
         HStack(spacing: 8) {
-          BodyText(DeviceIdentity.gatewayHost(endpoint.url), lineLimit: 1)
+          Text(DeviceIdentity.gatewayHost(endpoint.url))
+            .font(.scaled(size: 14, design: .monospaced))
+            .foregroundStyle(theme.text)
+            .lineLimit(1)
+            .truncationMode(.middle)
           Spacer(minLength: 6)
           if endpoint.url == computer.url, active, host.connection == .ready {
             Badge(label: "In use", tone: .success)
@@ -128,53 +141,43 @@ struct ComputerView: View {
       }
     }
 
-    Field(label: "Gateway") {
+    SettingsGroup("Gateway") {
       // Account computers carry a synthetic `account:<id>` device id; show the host's own id.
       if computer.isAccountHost, let hostId = computer.accountHostId {
-        MutedText("Computer \(hostId.prefix(8)) on your Argus account")
+        SettingsRow("Computer", description: "\(hostId.prefix(8)) on your Argus account")
       } else {
-        MutedText("Device \(computer.deviceId.prefix(8))")
+        SettingsRow("Device", description: String(computer.deviceId.prefix(8)))
       }
       if let pairedAt = computer.pairedAt {
-        MutedText(
-          "Paired \(Date(timeIntervalSince1970: pairedAt / 1000).formatted(date: .abbreviated, time: .omitted))"
-        )
+        SettingsRow(
+          "Paired",
+          description: Date(timeIntervalSince1970: pairedAt / 1000).formatted(date: .abbreviated, time: .omitted))
       }
     }
 
     if computer.isAccountHost {
-      Field(
-        label: "Remove from account",
-        caption: "Every device on your account stops connecting to it. Link it again with a new code."
-      ) {
-        Btn(label: "Remove from account", tone: .danger) {
-          guard let id = computer.accountHostId else { return }
-          Task {
-            await app.account.remove(memberId: id)
-            router.popToRoot()
+      SettingsGroup(footer: "Every device on your account stops connecting to it. Link it again with a new code.") {
+        HStack {
+          Spacer()
+          Btn(label: "Remove from Account…", tone: .danger, small: true, hugs: true) {
+            guard let id = computer.accountHostId else { return }
+            Task {
+              await app.account.remove(memberId: id)
+              router.popToRoot()
+            }
           }
         }
       }
     } else {
-      unpairField
-    }
-  }
-
-  @ViewBuilder private func nameField(_ computer: DeviceIdentity) -> some View {
-    Field(label: "Name", caption: "Only shown on this phone.") {
-      ThemedTextField(placeholder: "Computer name", text: $name, input: .name) { save(computer) }
-      Btn(label: saved ? "Saved" : "Save", tone: .secondary, small: true) { save(computer) }
-        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || name == computer.label)
-    }
-  }
-
-  @ViewBuilder private var unpairField: some View {
-    Field(
-      label: "Unpair",
-      caption:
-        "Removes this computer's key from the phone. Nothing on the computer changes — revoke the device there to cut it off for good."
-    ) {
-      Btn(label: "Unpair this computer", tone: .danger) { confirmingUnpair = true }
+      SettingsGroup(
+        footer:
+          "Removes this computer's key from the phone. Nothing on the computer changes — revoke the device there to cut it off for good."
+      ) {
+        HStack {
+          Spacer()
+          Btn(label: "Unpair…", tone: .danger, small: true, hugs: true) { confirmingUnpair = true }
+        }
+      }
     }
   }
 
