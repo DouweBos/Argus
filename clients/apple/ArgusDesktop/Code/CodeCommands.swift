@@ -56,6 +56,28 @@ struct EditorCommandButton: View {
   }
 }
 
+/// File ▸ Save and Save All for the code view, as menu items so ⌘S reaches them from the editor.
+struct CodeSaveCommands: View {
+  let model: DesktopModel
+
+  var body: some View {
+    let code = model.activeCodeSession
+    let path = model.activeCodePath
+    Button("Save") {
+      guard let code, let path else { return }
+      Task { await code.save(path) }
+    }
+    .keyboardShortcut("s", modifiers: .command)
+    .disabled(code == nil || path == nil)
+    Button("Save All") {
+      guard let code else { return }
+      Task { _ = await code.saveAll() }
+    }
+    .keyboardShortcut("s", modifiers: [.command, .option])
+    .disabled(code == nil)
+  }
+}
+
 extension DesktopModel {
   var activeCodeSession: CodeSession? {
     guard case .sessionCode(let id, _, _) = route else { return nil }

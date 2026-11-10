@@ -51,6 +51,9 @@ struct ArgusDesktopApp: App {
       CommandGroup(after: .newItem) {
         ProjectCommands(model: delegate.model)
       }
+      CommandGroup(replacing: .saveItem) {
+        CodeSaveCommands(model: delegate.model)
+      }
       CommandGroup(after: .sidebar) {
         NavigationCommands(model: delegate.model)
       }
