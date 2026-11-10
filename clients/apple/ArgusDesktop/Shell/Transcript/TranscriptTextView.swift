@@ -368,13 +368,8 @@ private final class BlockLayoutFragment: NSTextLayoutFragment {
     let lines = textLineFragments.reduce(CGRect.null) { $0.union($1.typographicBounds) }
     guard !lines.isNull else { return .zero }
     let width = textLayoutManager?.textContainer?.size.width ?? layoutFragmentFrame.width
-    let paragraphStyle = textLineFragments.first.flatMap {
-      $0.attributedString.attribute(.paragraphStyle, at: $0.characterRange.location, effectiveRange: nil)
-        as? NSParagraphStyle
-    }
-    let top = lines.minY + (paragraphStyle?.paragraphSpacingBefore ?? 0) - 7
-    let bottom = lines.minY + lines.height - (paragraphStyle?.paragraphSpacing ?? 0) + 7
-    return CGRect(x: -layoutFragmentFrame.minX, y: top, width: min(width, 100_000), height: bottom - top)
+    // The lines' bounds already sit inside the paragraph's spacing before and after.
+    return CGRect(x: -layoutFragmentFrame.minX, y: lines.minY - 7, width: min(width, 100_000), height: lines.height + 14)
   }
 
   override var renderingSurfaceBounds: CGRect {
