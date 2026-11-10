@@ -158,6 +158,25 @@ describe("code_format", () => {
     expect(output.timedOut).toBe(true);
   });
 
+  it("answers at the timeout even when a child keeps the pipes open", async () => {
+    // Like `npx prettier`: the wrapper dies, its child lives on holding stdout.
+    const grandchild = `require("child_process").spawn(process.execPath, ["-e", "setTimeout(() => {}, 3000)"], { stdio: "inherit" }); setTimeout(() => {}, 10000)`;
+    const started = Date.now();
+    const output = await runFormatter(
+      {
+        formatter: "prettier",
+        command: process.execPath,
+        args: ["-e", grandchild],
+        cwd: worktree,
+        env: { ELECTRON_RUN_AS_NODE: "1" },
+      },
+      "",
+      200,
+    );
+    expect(output.timedOut).toBe(true);
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+
   const swiftFormat = (() => {
     try {
       return execFileSync("xcrun", ["--find", "swift-format"], {

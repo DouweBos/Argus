@@ -97,7 +97,10 @@ extension CodeSession {
     guard let store, let file = files[path], let document = file.document, !file.isSaving else { return false }
     file.isSaving = true
     defer { file.isSaving = false }
-    let format = await self.format(path, trigger: .save)
+    // Formatting must never cost the save: past the limit, write the text as it is.
+    let format = await Self.bounded(Self.formatOnSaveLimit, fallback: CodeFormatOutcome()) {
+      await self.format(path, trigger: .save)
+    }
     let text = document.textForSaving()
     let version = document.version
     let request = file.disk.saveRequest
@@ -129,6 +132,30 @@ extension CodeSession {
     } catch {
       store.host.report(error, scope: "code.save")
       return false
+    }
+  }
+
+  /// A bit over the host's own 5s formatter limit, so its answer wins when it gives one.
+  static let formatOnSaveLimit: Duration = .seconds(7)
+
+  /// `operation`'s result, or `fallback` once `limit` passes; a late result is dropped and
+  /// the operation's task cancelled, so it can tell it was too late.
+  static func bounded<T: Sendable>(_ limit: Duration, fallback: T, _ operation: @escaping @MainActor () async -> T) async -> T {
+    let once = BoundedOnce()
+    return await withCheckedContinuation { continuation in
+      let work = Task { @MainActor in
+        let value = await operation()
+        guard !once.done else { return }
+        once.done = true
+        continuation.resume(returning: value)
+      }
+      Task { @MainActor in
+        try? await Task.sleep(for: limit)
+        guard !once.done else { return }
+        once.done = true
+        work.cancel()
+        continuation.resume(returning: fallback)
+      }
     }
   }
 
@@ -248,4 +275,9 @@ extension CodeSession {
     }
     applySettings()
   }
+}
+
+/// Whichever of `bounded`'s work and timer finishes first; both run on the main actor.
+@MainActor private final class BoundedOnce {
+  var done = false
 }

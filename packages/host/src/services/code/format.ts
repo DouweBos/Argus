@@ -39,6 +39,14 @@ export function runFormatter(
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill("SIGKILL");
+      // A wrapper (npx, a shim) can leave a child holding the pipes open, and then
+      // "close" never comes: answer now rather than hang the editor's save.
+      resolve({
+        code: null,
+        stdout: "",
+        stderr: Buffer.concat(err).toString("utf8"),
+        timedOut,
+      });
     }, timeoutMs);
     child.stdout.on("data", (chunk: Buffer) => {
       size += chunk.length;

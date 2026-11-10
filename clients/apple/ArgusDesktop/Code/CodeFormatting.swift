@@ -69,8 +69,8 @@ final class CodeFormatting {
     if let result, result.formatter != .none {
       let status = CodeFormatStatus(formatter: result.formatter, error: result.error)
       var outcome = CodeFormatOutcome(formatter: Self.telemetryName(result.formatter), status: status)
-      // Typing while it ran: this text is stale, keep the user's.
-      if let formatted = result.formatted, document.version == version {
+      // Typing while it ran: this text is stale, keep the user's. Cancelled: the save gave up on it.
+      if let formatted = result.formatted, document.version == version, !Task.isCancelled {
         let edits = FormatDiff.edits(from: text, to: formatted).map { range, replacement in
           (EditorRange(start: document.position(of: range.location), end: document.position(of: NSMaxRange(range))), replacement)
         }
@@ -79,7 +79,9 @@ final class CodeFormatting {
       }
       return outcome
     }
-    guard mode == .always, await languageServer(session, path, document) else { return CodeFormatOutcome() }
+    guard mode == .always, !Task.isCancelled, await languageServer(session, path, document) else {
+      return CodeFormatOutcome()
+    }
     return CodeFormatOutcome(formatter: .lsp, changed: true)
   }
 

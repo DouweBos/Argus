@@ -121,3 +121,21 @@ struct FormatOnSaveSettingTests {
     #expect(AppPreferences(defaults: store).editorFormatOnSave == .never)
   }
 }
+
+@MainActor
+struct FormatOnSaveLimitTests {
+  @Test func aFormatterThatNeverAnswersDoesNotHoldUpTheSave() async {
+    let started = ContinuousClock.now
+    let value = await CodeSession.bounded(.milliseconds(50), fallback: "saved as typed") {
+      try? await Task.sleep(for: .seconds(30))
+      return "formatted"
+    }
+    #expect(value == "saved as typed")
+    #expect(ContinuousClock.now - started < .seconds(5))
+  }
+
+  @Test func aFormatterThatAnswersInTimeIsUsed() async {
+    let value = await CodeSession.bounded(.seconds(5), fallback: "saved as typed") { "formatted" }
+    #expect(value == "formatted")
+  }
+}
