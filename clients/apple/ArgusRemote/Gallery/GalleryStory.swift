@@ -87,7 +87,7 @@
 
   enum GalleryStories {
     static var all: [GalleryStory] {
-      ComposerStories.all
+      ComposerStories.all + SettingsStories.all
     }
   }
 #endif

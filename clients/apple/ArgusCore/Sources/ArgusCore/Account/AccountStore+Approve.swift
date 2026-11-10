@@ -16,6 +16,7 @@ extension AccountStore {
   /// Re-read who is waiting. Requests whose keys don't vouch for themselves,
   /// and this device's own, are never shown.
   public func refreshRequests() async {
+    guard !galleryFrozen else { return }
     guard phase == .ready, let keys = vault.keys else {
       if !requests.isEmpty { requests = [] }
       return

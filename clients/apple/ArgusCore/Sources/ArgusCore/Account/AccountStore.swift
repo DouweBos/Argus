@@ -131,6 +131,8 @@ public final class AccountStore {
   /// The push token to keep registered with the account, and what was last sent.
   @ObservationIgnored var pushToken: AccountPushToken?
   @ObservationIgnored var pushFingerprint: String?
+  /// Filled by a gallery story: never reaches the keychain or the service.
+  @ObservationIgnored var galleryFrozen = false
 
   /// - Parameters:
   ///   - deviceKind: `ios` or `mac`, as the log names this device.
@@ -206,7 +208,7 @@ public final class AccountStore {
 
   /// The app came to the foreground: pick up new entries and moved addresses.
   public func refresh() async {
-    guard phase == .ready else { return }
+    guard phase == .ready, !galleryFrozen else { return }
     refreshProfile()
     if await dropLostSession() { return }
     if await checkForReset() { return }
@@ -256,6 +258,7 @@ public final class AccountStore {
 
   /// The configured auth provider, before a sign-in button is shown.
   public func prepare() async {
+    guard !galleryFrozen else { return }
     try? await ensureConfigured()
   }
 

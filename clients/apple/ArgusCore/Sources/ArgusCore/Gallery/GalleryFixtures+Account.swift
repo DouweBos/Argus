@@ -1,0 +1,91 @@
+import ArgusKit
+import Foundation
+
+/// An Argus account as a gallery story shows it, the same on the Mac and the phone.
+public struct GalleryAccount: Sendable {
+  public var phase: AccountStore.Phase
+  /// `ios` or `mac`: which device on the account is this one.
+  public var selfKind: String
+  public var requests: Bool
+  public var error: String?
+
+  public init(phase: AccountStore.Phase = .ready, selfKind: String, requests: Bool = true, error: String? = nil) {
+    self.phase = phase
+    self.selfKind = selfKind
+    self.requests = requests
+    self.error = error
+  }
+}
+
+extension AccountStore {
+  /// Fills the store for a gallery story; it never reaches the keychain or the service after.
+  public func galleryFill(_ fixture: GalleryAccount) {
+    galleryFrozen = true
+    configured = true
+    phase = fixture.phase
+    error = fixture.error
+    guard fixture.phase == .ready || fixture.phase == .awaitingApproval else { return }
+    profile = AccountProfile(firstName: "Alex", lastName: "Rivera", email: "alex.rivera@example.com")
+    let members = GalleryFixtures.accountMembers
+    let selfId = members.first { $0.role == .device && $0.kind == fixture.selfKind }?.id ?? ""
+    vault = AccountVault(
+      keys: AccountDeviceKeys(
+        memberId: selfId, signSeed: "", signPub: "", noisePriv: "", noisePub: "", kind: fixture.selfKind, name: "",
+        createdAt: 0),
+      presence: GalleryFixtures.accountPresence(now: now()),
+      localHostId: fixture.selfKind == "mac" ? "h-local" : nil)
+    guard fixture.phase == .ready else { return }
+    state = AccountLogState(
+      accountId: "acct-gallery", epoch: 1, genesisHash: "5f2c9e81b07a4d6e93c1a2b4f8d0e7c6",
+      head: AccountHead(seq: members.count, hash: "h"),
+      members: Dictionary(
+        uniqueKeysWithValues: members.map {
+          ($0.id, AccountMemberState(member: $0, live: true, requestId: "", sasCommit: "", addedBy: $0.id))
+        }))
+    publishHosts()
+    if fixture.requests {
+      requests = [
+        AccountJoinRequestInfo(
+          requestId: "r1", kind: "device",
+          subject: AccountRequestSubject(
+            device: .device(
+              id: "d-new", kind: "ios", signPub: "", noisePub: "", name: "Alex's iPad mini", createdAt: 0),
+            proofs: [:]))
+      ]
+    }
+  }
+}
+
+extension GalleryFixtures {
+  static let accountMembers: [AccountMember] = {
+    let day = 86_400_000.0
+    let start = 1_760_000_000_000.0
+    func host(_ id: String, _ name: String, _ platform: String, _ age: Double) -> AccountMember {
+      AccountMember(
+        id: id, role: .host, platform: platform, signPub: "", noisePub: "", name: name,
+        createdAt: start + age * day)
+    }
+    func device(_ id: String, _ kind: String, _ name: String, _ age: Double) -> AccountMember {
+      .device(id: id, kind: kind, signPub: "", noisePub: "", name: name, createdAt: start + age * day)
+    }
+    return [
+      host("h-local", "Alex's MacBook Pro", "darwin", 0),
+      device("d-mac", "mac", "Alex's MacBook Pro", 0),
+      device("d-ios", "ios", "Alex's iPhone", 1),
+      host("h-studio", "Studio Mac mini", "darwin", 3),
+      host("h-build", "build-box-ubuntu-24-04-ci-runner", "linux", 9),
+      device("d-ipad", "ios", "iPad Pro", 12),
+      device("d-web", "web", "Chrome on the studio display", 20),
+    ]
+  }()
+
+  static func accountPresence(now: Date) -> [String: AccountCachedPresence] {
+    let ms = now.timeIntervalSince1970 * 1000
+    let lan = RemoteEndpoint(kind: .lan, url: "ws://192.168.1.24:7421", priority: 0)
+    return [
+      "h-local": AccountCachedPresence(ts: ms, lastSeen: ms - 20_000, endpoints: [lan]),
+      "h-studio": AccountCachedPresence(ts: ms, lastSeen: ms - 45_000, endpoints: [lan]),
+      "h-build": AccountCachedPresence(ts: ms, lastSeen: ms - 3 * 3_600_000, endpoints: []),
+    ]
+  }
+}

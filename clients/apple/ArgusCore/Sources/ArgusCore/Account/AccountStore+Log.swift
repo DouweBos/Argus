@@ -78,7 +78,7 @@ extension AccountStore {
   /// Online is recomputed against now even when the fetch fails, so a host
   /// that went quiet stops showing as online.
   public func refreshDirectory() async {
-    guard phase == .ready, let current = state else { return }
+    guard phase == .ready, !galleryFrozen, let current = state else { return }
     guard let records = try? await client.directory() else {
       publishHosts()
       return
