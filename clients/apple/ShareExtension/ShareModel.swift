@@ -3,13 +3,6 @@ import Foundation
 import LocalAuthentication
 import Observation
 
-/// Where a share goes on the stack: a project's sessions, then the composer.
-enum ShareDestination: Hashable {
-  case project(repoRoot: String)
-  /// No session: a new worktree off the project.
-  case compose(repoRoot: String, sessionId: String?)
-}
-
 /// The share extension's state: the shared items, the computers the app
 /// mirrored, and a connection of its own to the one picked.
 @MainActor

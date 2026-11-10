@@ -10,6 +10,7 @@ struct SharedItems {
   var texts: [String] = []
 
   var draft: String { SharedPrompt.draft(links: links, texts: texts) }
+  var summary: ShareSummary { ShareSummary(images: images, hasLink: hasLink, hasText: hasText) }
   var isEmpty: Bool { images.isEmpty && links.isEmpty && texts.isEmpty }
   var hasLink: Bool { !links.isEmpty || texts.contains(where: SharedPrompt.isLink) }
   var hasText: Bool { texts.contains { !SharedPrompt.isLink($0.trimmingCharacters(in: .whitespacesAndNewlines)) } }

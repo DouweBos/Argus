@@ -88,7 +88,7 @@
   enum GalleryStories {
     static var all: [GalleryStory] {
       ComposerStories.all + SettingsStories.all + DeviceStories.all + FileStories.all + HomeStories.all + AutomationStories.all
-        + GitStories.all + TranscriptStories.all
+        + GitStories.all + TranscriptStories.all + ShareStories.all
     }
   }
 #endif
