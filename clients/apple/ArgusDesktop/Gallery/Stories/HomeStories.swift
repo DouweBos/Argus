@@ -22,7 +22,17 @@
         GalleryStory(
           "sessions/sidebar", size: CGSize(width: 280, height: 1000), fixtures: GalleryFixtures.home, setup: load
         ) { SidebarView() },
+        setup("sessions/setup/progress", "s-setup"),
+        setup("sessions/setup/failed", "s-failed"),
       ]
+    }
+
+    /// A session's pane while its worktree is set up, or after that failed.
+    private static func setup(_ id: String, _ session: String) -> GalleryStory {
+      GalleryStory(id, size: CGSize(width: 900, height: 480), fixtures: GalleryFixtures.home, setup: load) {
+        let session = GalleryFixtures.argusSession(session)
+        SessionSetupView(session: session, progress: session.progress)
+      }
     }
 
     @MainActor static func load(_ stage: GalleryStage) async {

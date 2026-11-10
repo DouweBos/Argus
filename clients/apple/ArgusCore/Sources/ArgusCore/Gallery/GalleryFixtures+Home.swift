@@ -49,7 +49,7 @@ extension GalleryFixtures {
       session("s-merged", branch: "linear-picker", name: "Linear issue picker", pr: (398, "merged")),
       session(
         "s-setup", branch: "gallery-stories", name: "Gallery stories for sessions", status: "initializing",
-        extra: ["setup_pending": true, "progress": ["current": 3, "total": 5]]),
+        extra: ["progress": ["current": 3, "total": 5]]),
       session(
         "s-failed", branch: "pnpm-upgrade", name: "Upgrade pnpm", status: "error",
         extra: ["setup_error": "pnpm install exited with code 1: ERR_PNPM_OUTDATED_LOCKFILE Cannot install with \"frozen-lockfile\""]),
@@ -215,5 +215,13 @@ extension GalleryFixtures {
       await host.loadSessions(repoRoot: project.repoRoot)
       await host.loadAgents(repoRoot: project.repoRoot)
     }
+  }
+}
+
+extension GalleryFixtures {
+  /// One of Argus's fixture sessions, decoded, for a component that takes one.
+  public static func argusSession(_ id: String) -> RemoteSession {
+    let json = argusSessions.first { $0["id"] as? String == id } ?? argusSessions[0]
+    return try! ProtocolCodec.decoder.decode(RemoteSession.self, from: Data(GalleryJSON.encode(json).utf8))
   }
 }

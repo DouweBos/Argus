@@ -14,7 +14,16 @@
         GalleryStory("sessions/sidebar", fixtures: GalleryFixtures.home, setup: load) {
           ProjectView(repoRoot: GalleryFixtures.argusRoot, name: "Argus")
         },
+        setup("sessions/setup/progress", "s-setup"),
+        setup("sessions/setup/failed", "s-failed"),
       ]
+    }
+
+    /// A session's screen while its worktree is set up, or after that failed.
+    private static func setup(_ id: String, _ session: String) -> GalleryStory {
+      GalleryStory(id, fixtures: GalleryFixtures.home, setup: load) {
+        SessionView(sessionId: session, label: "Session", repoRoot: GalleryFixtures.argusRoot)
+      }
     }
 
     @MainActor static func load(_ stage: GalleryStage) async {
