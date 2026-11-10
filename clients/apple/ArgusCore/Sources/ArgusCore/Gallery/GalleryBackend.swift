@@ -2,7 +2,8 @@ import ArgusKit
 import Foundation
 
 /// A `HostBackend` answering from wire-format JSON fixtures keyed by method or
-/// command name, for the Mac and iOS galleries. Anything unanswered fails and is
+/// command name, for the Mac and iOS galleries. `name?param=value` answers just
+/// the requests with that string param (`sessions.list?repo_root=/…`), ahead of `name`. Anything unanswered fails and is
 /// remembered, so a story's missing data shows up in the gallery's manifest
 /// instead of as a blank screen.
 public final class GalleryBackend: HostBackend, @unchecked Sendable {
@@ -32,18 +33,23 @@ public final class GalleryBackend: HostBackend, @unchecked Sendable {
   public func request<Params: Encodable & Sendable, Result: Decodable & Sendable>(
     _ method: RemoteMethod, _ params: Params, as: Result.Type
   ) async throws -> Result {
-    try answer(method.rawValue, as: Result.self)
+    try answer(method.rawValue, params, as: Result.self)
   }
 
   public func request<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async throws -> C.Result {
-    try answer(C.name, as: C.Result.self)
+    try answer(C.name, params, as: C.Result.self)
   }
 
   public func subscribe(agentId: String, on: Bool) async {}
   public func disconnect() async {}
 
-  private func answer<Result: Decodable>(_ name: String, as: Result.Type) throws -> Result {
-    guard let json = replies[name] else {
+  private func answer<Result: Decodable>(_ name: String, _ params: some Encodable, as: Result.Type) throws -> Result {
+    let fields = (try? ProtocolCodec.encoder.encode(params))
+      .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
+    let keyed = fields.sorted { $0.key < $1.key }.compactMap { key, value in
+      (value as? String).flatMap { replies["\(name)?\(key)=\($0)"] }
+    }
+    guard let json = keyed.first ?? replies[name] else {
       _ = lock.withLock { misses.insert(name) }
       throw Unanswered(name: name)
     }

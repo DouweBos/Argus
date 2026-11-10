@@ -36,14 +36,16 @@
   @MainActor
   final class GalleryStage {
     let model: DesktopModel
-    let host = HostStore()
+    /// The model's own store, so views reading `model.store` (inbox, automations, hosts) see the fixtures too.
+    var host: HostStore { model.store }
     let automations: AutomationsStore
     let backend: GalleryBackend
 
     init(story: GalleryStory, model: DesktopModel) async {
       self.model = model
       backend = GalleryBackend(story.fixtures)
-      automations = AutomationsStore(host: host)
+      model.store.reset()
+      automations = AutomationsStore(host: model.store)
       host.capabilities = ["monitor", "control", "admin"]
       await host.attach(backend)
       if story.fixtures[RemoteMethod.projectsList.rawValue] != nil { await host.refreshProjects() }
@@ -74,7 +76,7 @@
   enum GalleryStories {
     static var all: [GalleryStory] {
       AutomationStories.all + ComposerStories.all + SessionStories.all + DiffReviewStories.all
-        + SettingsStories.all
+        + SettingsStories.all + HomeStories.all
     }
   }
 #endif
