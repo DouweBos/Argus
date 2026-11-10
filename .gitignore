@@ -87,3 +87,6 @@ release-assets.txt
 
 # Local design notes (agents write plans here; not published)
 plan/
+
+# TypeScript incremental build state (composite tsconfig.node.json)
+*.tsbuildinfo
