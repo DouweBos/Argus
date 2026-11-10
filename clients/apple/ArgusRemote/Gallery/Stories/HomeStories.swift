@@ -14,6 +14,13 @@
         GalleryStory("sessions/sidebar", fixtures: GalleryFixtures.home, setup: load) {
           ProjectView(repoRoot: GalleryFixtures.argusRoot, name: "Argus")
         },
+        // The iPad's sidebar, at the width a split view gives it, against the Mac's `sessions/sidebar`.
+        GalleryStory("sessions/sidebar/ipad", chrome: false, fixtures: GalleryFixtures.home, setup: load) {
+          HStack(spacing: 0) {
+            SessionSidebar().frame(width: 320)
+            Spacer(minLength: 0)
+          }
+        },
         setup("sessions/setup/progress", "s-setup"),
         setup("sessions/setup/failed", "s-failed"),
         GalleryStory("sessions/context-card", fixtures: GalleryFixtures.home, setup: load) {
