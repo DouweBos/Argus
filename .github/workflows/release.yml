@@ -20,9 +20,9 @@ concurrency:
 
 jobs:
   release:
-    # Argus for Mac builds with Xcode 27 (its SDK is what development uses).
+    # Argus for Mac and the iPhone app build with Xcode 27 (its SDK is what development uses).
     runs-on: xcode-27
-    timeout-minutes: 90
+    timeout-minutes: 150
     permissions:
       contents: write
       id-token: write
@@ -202,6 +202,25 @@ jobs:
             allow_any_branch:true \
             publish:false \
             channel:${{ env.CHANNEL }}
+
+      # Same run, so the same package.json version and GITHUB_RUN_NUMBER build number as the Mac build.
+      # Before tagging, so a failed iPhone build leaves no release behind either.
+      - name: Upload the iPhone app to TestFlight
+        if: steps.stage.outputs.has_changes == 'true'
+        env:
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_KEYCHAIN_NAME: build.keychain
+          MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+          ARGUS_RELEASE_NOTES_FILE: ${{ github.workspace }}/release-notes.md
+          SPM_CLONE_DIR: /Users/runner/spm-clones
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+          FASTLANE_HIDE_CHANGELOG: "1"
+          CI: "true"
+        run: bundle exec fastlane ios testflight
 
       - name: Tag and push
         if: steps.stage.outputs.has_changes == 'true'

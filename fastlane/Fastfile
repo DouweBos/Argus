@@ -371,7 +371,7 @@ platform :ios do
     match(type: "appstore", platform: "ios", app_identifier: IOS_TARGETS.values, readonly: false)
   end
 
-  desc "Build the iPhone app and upload it to TestFlight. Needs the profiles from testflight_setup."
+  desc "Build the iPhone app and upload it to TestFlight. The Release workflow runs it after the Mac build, so both share a version and build number. Needs the profiles from testflight_setup."
   lane :testflight do
     api_key = load_app_store_connect_api_key
     match(type: "appstore", platform: "ios", app_identifier: IOS_TARGETS.values, readonly: true, api_key: api_key)
@@ -380,7 +380,7 @@ platform :ios do
     out = File.join(root, "release-ios")
     FileUtils.rm_rf(out)
     project = File.join(root, "clients/apple/ArgusRemote.xcodeproj")
-    # App Store versions are plain x.y.z; TestFlight orders builds by the build number.
+    # App Store versions are plain x.y.z, so a beta or alpha cut drops its suffix; the build number still tells them apart.
     version = read_package_version.sub(/-.*\z/, "")
     build_number = ci_build_number
 

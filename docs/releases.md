@@ -1,7 +1,9 @@
 # Releasing Argus
 
-Cuts a signed + notarized arm64 build of Argus for Mac (`fastlane mac
-mac_app_release`) and uploads it to a GitHub release.
+One workflow ships both apps: a signed + notarized arm64 build of Argus for
+Mac (`fastlane mac mac_app_release`) uploaded to a GitHub release, and the
+iPhone app (`fastlane ios testflight`) uploaded to TestFlight. Both carry the
+same version and build number.
 
 ## TL;DR
 
@@ -20,10 +22,40 @@ mac_app_release`) and uploads it to a GitHub release.
    - If nothing changed (no pending changesets), exit cleanly. Otherwise:
    - Commit `chore: release vX.Y.Z`, tag `vX.Y.Z`, push both back to `main`.
    - Build, sign with Developer ID, notarize via App Store Connect API, staple.
+   - Build the iPhone app, sign it with the App Store profiles and upload it to
+     TestFlight, with the CHANGELOG section as "What to Test".
    - Publish a GitHub release with the `.dmg`, the `.zip` and the Sparkle
      appcasts, and the CHANGELOG section as the release body.
 
 3. Send the `.dmg` link to friends.
+
+## Version and build numbers
+
+Both apps get `package.json`'s version and the same build number, the
+workflow's run number + 2000, so `0.75.0 (2042)` names the same code on the Mac
+and the phone. The App Store only takes plain `x.y.z` versions, so a beta or
+alpha cut reaches TestFlight as its base version (`0.75.0-beta.1` uploads as
+`0.75.0`); the build number still tells them apart.
+
+Nothing is tagged or published until both builds pass. The TestFlight upload
+happens just before tagging, so a run that fails after it leaves a TestFlight
+build with no matching GitHub release.
+
+## iPhone setup
+
+Once, locally, and again after adding an iPhone target (an extension, a new
+bundle id in `IOS_TARGETS`):
+
+```
+MATCH_GIT_URL=https://github.com/DouweBos/apple-certificates.git \
+  bundle exec fastlane ios testflight_setup
+```
+
+It creates the App Store Connect app, registers any missing extension App IDs
+in the `group.dev.houwert.argus` App Group, and writes the App Store profiles
+the release workflow signs with. Testers are managed in App Store Connect →
+TestFlight: internal testers get every build once Apple has processed it;
+external groups need a Beta App Review first.
 
 ## Local release (escape hatch)
 
@@ -48,7 +80,7 @@ and variables → Actions**:
 | Secret                                | Used for                                                                                                                                                                                                                                                          |
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `MATCH_GIT_URL`                       | HTTPS URL of the `apple-certificates` repo (e.g. `https://github.com/DouweBos/apple-certificates.git`)                                                                                                                                                            |
-| `MATCH_GIT_BASIC_AUTHORIZATION`       | Base64 of `username:personal_access_token` for the cert repo (PAT needs `repo` read)                                                                                                                                                                              |
+| `MATCH_GIT_PAT`                       | Personal access token with read access to the cert repo; the workflow encodes it for match                                                                                                                                                                        |
 | `MATCH_PASSWORD`                      | The shared password the cert repo is encrypted with                                                                                                                                                                                                               |
 | `MATCH_KEYCHAIN_PASSWORD`             | Any random string — used to unlock the throwaway CI keychain                                                                                                                                                                                                      |
 | `APP_STORE_CONNECT_API_KEY_ID`        | Key ID of the App Store Connect API key (e.g. `ABCD1234`)                                                                                                                                                                                                         |
