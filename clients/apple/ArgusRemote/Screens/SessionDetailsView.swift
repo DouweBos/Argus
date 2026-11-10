@@ -20,6 +20,11 @@ struct SessionDetailsView: View {
   @State private var renaming: RenameKind?
   @State private var renameValue = ""
   @State private var confirmingDelete = false
+  @State private var pulling = false
+  @State private var pushing = false
+  /// GitHub's "create a pull request" link, when the last push printed one.
+  @State private var createPullRequestURL: URL?
+  @Environment(\.openURL) private var openURL
 
   enum RenameKind { case name, branch }
 
@@ -42,6 +47,7 @@ struct SessionDetailsView: View {
   var body: some View {
     List {
       summary
+      if ready, !session.isOutsideProjects { gitSection }
       if ready { work }
       references
       agentSection
@@ -90,11 +96,11 @@ struct SessionDetailsView: View {
       VStack(alignment: .leading, spacing: 4) {
         Text(label).font(.scaled(.headline)).foregroundStyle(theme.text)
         if !session.isOutsideProjects {
-          Label {
+          // Not a `Label`: a list gives its icon a row-sized column, too wide under a title.
+          HStack(spacing: 6) {
+            Image(systemName: Icon.branch)
             Text(git?.branch ?? session.branch).font(.scaled(.footnote).monospaced()).lineLimit(1)
               .truncationMode(.middle)
-          } icon: {
-            Image(systemName: Icon.branch)
           }
           .font(.scaled(.footnote))
           .foregroundStyle(theme.textSecondary)
@@ -120,17 +126,62 @@ struct SessionDetailsView: View {
     }
   }
 
-  private var work: some View {
+  /// The Mac context card's git rows: pull, push, the pull request, the changes.
+  private var gitSection: some View {
     Section {
-      row("Changes", icon: Icon.changes, to: .changes(sessionId: session.id, label: label)) {
-        if let additions = git?.diffAdditions, let deletions = git?.diffDeletions,
-          ChangeCounts.hasChanges(additions: additions, deletions: deletions)
-        {
-          ChangeCounts(additions: additions, deletions: deletions)
-        } else if let dirty = git?.dirtyCount, dirty > 0 {
-          Text("\(dirty)").font(.scaled(.footnote).monospacedDigit()).foregroundStyle(theme.textSecondary)
+      if control, (git?.behind ?? 0) > 0 || pulling {
+        rowButton(pulling ? "Pulling…" : "Pull", icon: "icloud.and.arrow.down") { pull() } trailing: {
+          count("↓", git?.behind ?? 0)
+        }
+        .disabled(pulling)
+      }
+      if control {
+        let ahead = git?.ahead ?? 0
+        rowButton(pushing ? "Pushing…" : "Push", icon: "icloud.and.arrow.up") { push() } trailing: {
+          count("↑", ahead)
+        }
+        .foregroundStyle(ahead == 0 ? theme.textMuted : theme.text)
+        .disabled(pushing)
+      }
+      if let url = createPullRequestURL {
+        rowButton("Create pull request", icon: Icon.pullRequest, chevron: true) {
+          openURL(url)
+          createPullRequestURL = nil
         }
       }
+      if let pr = session.pullRequest, pr.isOpen {
+        rowButton("Pull request #\(pr.number)", icon: Icon.pullRequest, chevron: true) {
+          Telemetry.capture(.sessionUsed(action: .openPullRequest))
+          openPullRequest(pr)
+        } trailing: {
+          if pr.state == .draft { MutedText("Draft") }
+        }
+      }
+      changesRow
+    }
+  }
+
+  private var changesRow: some View {
+    row("Changes", icon: Icon.changes, to: .changes(sessionId: session.id, label: label)) {
+      if let additions = git?.diffAdditions, let deletions = git?.diffDeletions,
+        ChangeCounts.hasChanges(additions: additions, deletions: deletions)
+      {
+        ChangeCounts(additions: additions, deletions: deletions)
+      } else if let dirty = git?.dirtyCount, dirty > 0 {
+        Text("\(dirty)").font(.scaled(.footnote).monospacedDigit()).foregroundStyle(theme.textSecondary)
+      }
+    }
+  }
+
+  @ViewBuilder private func count(_ arrow: String, _ value: Int) -> some View {
+    if value > 0 {
+      Text("\(arrow)\(value)").font(.scaled(.footnote).monospacedDigit()).foregroundStyle(theme.textSecondary)
+    }
+  }
+
+  private var work: some View {
+    Section {
+      if session.isOutsideProjects { changesRow }
       if control {
         row("Open file", icon: Icon.file, to: .quickOpen(sessionId: session.id, label: label))
         row("Search files", icon: Icon.search, to: .fileSearch(sessionId: session.id, label: label))
@@ -273,6 +324,34 @@ struct SessionDetailsView: View {
       open(.device(id: only.id, platform: only.platform, name: only.name, isTv: only.isTv))
     } else {
       open(.devices)
+    }
+  }
+
+  /// In the app when the link names a GitHub pull request, else in the browser.
+  private func openPullRequest(_ pr: RemoteSessionPullRequest) {
+    let parts = URL(string: pr.url)?.pathComponents.filter { $0 != "/" } ?? []
+    if parts.count >= 4, parts[2] == "pull" {
+      open(.pullRequest(repo: "\(parts[0])/\(parts[1])", number: pr.number, label: "#\(pr.number)"))
+    } else if let url = URL(string: pr.url) {
+      openURL(url)
+    }
+  }
+
+  private func push() {
+    pushing = true
+    Task {
+      let result = await host.push(sessionId: session.id)
+      pushing = false
+      createPullRequestURL = result?.pr_url.flatMap(URL.init(string:))
+    }
+  }
+
+  /// Fast-forwards when there's nothing local; otherwise rebases the unpushed commits onto upstream.
+  private func pull() {
+    pulling = true
+    Task {
+      _ = await host.pullCurrent(sessionId: session.id, strategy: (git?.ahead ?? 0) > 0 ? .rebase : .ffOnly)
+      pulling = false
     }
   }
 

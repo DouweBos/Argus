@@ -131,6 +131,8 @@ enum TelemetryEvent {
     case closeAgentTab = "close_agent_tab"
     /// A "New agent" tab was opened, from the tab strip's `+` or the details.
     case newAgentTab = "new_agent_tab"
+    /// The session's pull request was opened from its details.
+    case openPullRequest = "open_pull_request"
   }
 
   /// Where the New Session composer was opened from.
