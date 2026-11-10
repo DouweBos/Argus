@@ -61,7 +61,7 @@ public struct AutomationFields: View {
   }
 
   private var trigger: some View {
-    Field(label: "TRIGGER", caption: triggerCaption) {
+    Field(label: "Trigger", caption: triggerCaption) {
       SegmentedControl(
         value: Binding(
           get: { draft.triggerKind },
@@ -129,13 +129,13 @@ public struct AutomationFields: View {
 
   private var scope: some View {
     Field(label: "Scope", caption: "Repos the run may read, and what feeds it work.") {
-      SubLabel("Projects")
       ToggleList(
+        title: "Projects",
         options: Self.projectOptions(host.projects, picked: draft.repoRoots),
         selection: $draft.repoRoots,
         emptyMessage: "This computer has no projects registered.")
-      SubLabel("Signal sources")
       ToggleList(
+        title: "Signal sources",
         options: sources.map {
           .init(id: $0.id, label: $0.label, hint: $0.available ? nil : "not configured")
         },
@@ -146,7 +146,7 @@ public struct AutomationFields: View {
 
   private var behaviour: some View {
     Field(
-      label: "BEHAVIOUR",
+      label: "Behaviour",
       caption: draft.autonomy?.caption
         ?? "Autonomy is a ceiling request — the computer takes the lowest of this, "
         + "its own default and the project's cap."
@@ -231,9 +231,10 @@ public struct AutomationFields: View {
   /// lists — so one can be switched off rather than silently kept.
   public static func projectOptions(_ projects: [RemoteProject], picked: [String]) -> [ToggleList.Option] {
     let known = Set(projects.map(\.repoRoot))
-    return projects.map { .init(id: $0.repoRoot, label: $0.name) }
+    return projects.map { .init(id: $0.repoRoot, label: $0.name, icon: "folder") }
       + picked.filter { !known.contains($0) }.map {
-        .init(id: $0, label: ($0 as NSString).lastPathComponent, hint: "not open on this computer")
+        .init(
+          id: $0, label: ($0 as NSString).lastPathComponent, hint: "not open on this computer", icon: "folder")
       }
   }
 
@@ -274,17 +275,5 @@ public struct AutomationFields: View {
 
   private var modelBinding: Binding<String> {
     Binding(get: { draft.model ?? "" }, set: { draft.model = $0.isEmpty ? nil : $0 })
-  }
-}
-
-/// A sub-heading inside a `Field`, for a field that holds two lists.
-private struct SubLabel: View {
-  @Environment(\.theme) private var theme
-  let text: String
-
-  init(_ text: String) { self.text = text }
-
-  var body: some View {
-    Text(text).font(.scaled(size: 13, weight: .medium)).foregroundStyle(theme.textSecondary)
   }
 }

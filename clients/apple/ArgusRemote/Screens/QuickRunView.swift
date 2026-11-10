@@ -40,15 +40,15 @@ struct QuickRunView: View {
           placeholder: "Summarise what landed on each project this week.", text: $playbook,
           multiline: true, lines: 6...24, mono: true)
       }
-      Field(label: "Projects") {
+      Field(label: "Scope", caption: "Repos the run may read, and what feeds it work.") {
         ToggleList(
+          title: "Projects",
           options: AutomationFields.projectOptions(host.projects, picked: repoRoots),
           selection: $repoRoots,
           emptyMessage: "This computer has no projects registered.")
-      }
-      if !store.sources.isEmpty {
-        Field(label: "Signal sources", caption: "What feeds the run its work.") {
+        if !store.sources.isEmpty {
           ToggleList(
+            title: "Signal sources",
             options: store.sources.map {
               .init(id: $0.id, label: $0.label, hint: $0.available ? nil : "not configured")
             },
