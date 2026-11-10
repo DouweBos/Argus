@@ -66,16 +66,18 @@ struct NameSettingsPage: View {
   @State private var saved = false
 
   var body: some View {
-    Form {
-      Section {
-        TextField("This \(deviceNoun)'s name", text: $name)
-          .textInputAutocapitalization(.words)
-          .onSubmit(save)
-        Button(saved ? "Saved" : "Save", action: save)
-          .disabled(!nameIsSavable)
-      } footer: {
-        Text(
-          "How your computers and your Argus account list this \(deviceNoun). Changing it renames it on the account too.")
+    SettingsPage {
+      SettingsGroup(
+        "This \(deviceNoun)",
+        footer: "How your computers and your Argus account list this \(deviceNoun). Changing it renames it on the account too."
+      ) {
+        SettingsRow("Name", stacked: true) {
+          HStack(spacing: 8) {
+            ThemedTextField(placeholder: "This \(deviceNoun)'s name", text: $name, input: .name) { save() }
+            Btn(label: saved ? "Saved" : "Save", tone: .secondary, small: true, hugs: true, action: save)
+              .disabled(!nameIsSavable)
+          }
+        }
       }
     }
     .settingsPage(.name)
@@ -104,33 +106,22 @@ struct AppearanceSettingsPage: View {
   @Environment(AppStore.self) private var app
 
   var body: some View {
-    Form {
-      Section("Colour scheme") {
+    SettingsPage {
+      VStack(alignment: .leading, spacing: 8) {
+        SettingsGroupTitle("Colour scheme")
         ColorSchemeCards(
           selection: Binding(get: { app.themePreference }, set: { app.setThemePreference($0) }),
           colorTheme: app.colorTheme)
-        .padding(.vertical, 4)
       }
-      Section {
-        ColorThemeCards(
-          selection: Binding(get: { app.colorTheme }, set: { app.setColorTheme($0) }))
-        .padding(.vertical, 4)
-      } header: {
-        Text("Colour theme")
-      } footer: {
-        Text("The accent used for buttons, links and selection.")
+      VStack(alignment: .leading, spacing: 8) {
+        SettingsGroupTitle("Colour theme")
+        ColorThemeCards(selection: Binding(get: { app.colorTheme }, set: { app.setColorTheme($0) }))
       }
-      Section {
-        Toggle(
+      SettingsGroup("Transcript") {
+        SettingsToggleRow(
           "Expand image reads",
-          isOn: Binding(
-            get: { app.autoExpandImageReads }, set: { app.setAutoExpandImageReads($0) })
-        )
-        .toggleStyle(.argusSwitch)
-      } header: {
-        Text("Transcript")
-      } footer: {
-        Text("Open Read tool calls that returned an image, so screenshots show without a tap.")
+          description: "Open Read tool calls that returned an image, so screenshots show without a tap.",
+          isOn: Binding(get: { app.autoExpandImageReads }, set: { app.setAutoExpandImageReads($0) }))
       }
     }
     .settingsPage(.appearance)
@@ -143,33 +134,25 @@ struct AlertsSettingsPage: View {
   @State private var status: UNAuthorizationStatus = .notDetermined
 
   var body: some View {
-    Form {
-      Section {
-        LabeledContent("Notifications", value: statusLabel)
-        if status == .denied {
-          // Only iOS can undo a denial, so send them there rather than
-          // leaving a dead button behind.
-          Button("Open iOS Settings") {
-            guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-            openURL(url)
+    SettingsPage {
+      SettingsGroup(footer: "Get alerted when an agent finishes or needs approval.") {
+        SettingsRow("Notifications", description: statusLabel) {
+          if status == .denied {
+            // Only iOS can undo a denial, so send them there rather than
+            // leaving a dead button behind.
+            Btn(label: "Open iOS Settings", tone: .secondary, small: true, hugs: true) {
+              guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+              openURL(url)
+            }
+          } else if status == .notDetermined {
+            Btn(label: "Enable", small: true, hugs: true, action: enable)
           }
-        } else if status == .notDetermined {
-          Button("Enable", action: enable)
         }
-      } footer: {
-        Text("Get alerted when an agent finishes or needs approval.")
-      }
-
-      Section {
-        Toggle(
-          "Background push",
+        SettingsToggleRow(
+          "Background push", description: app.pushState.explanation,
           isOn: Binding(
             get: { app.pushEnabled },
-            set: { enabled in Task { await app.setPushEnabled(enabled) } })
-        )
-        .toggleStyle(.argusSwitch)
-      } footer: {
-        Text(app.pushState.explanation)
+            set: { enabled in Task { await app.setPushEnabled(enabled) } }))
       }
     }
     .settingsPage(.alerts)
@@ -198,19 +181,15 @@ struct PrivacySettingsPage: View {
   @Environment(AppStore.self) private var app
 
   var body: some View {
-    Form {
-      Section {
-        Toggle(
+    SettingsPage {
+      SettingsGroup("Privacy") {
+        SettingsToggleRow(
           "Anonymous usage & crash reports",
+          description:
+            "Off, Argus sends one anonymous heartbeat per launch so we can count installs. On, it also sends which screens you open, which actions you take, and crash reports — never prompts, project names, branches or paths.",
           isOn: Binding(
             get: { app.telemetryMode == .full },
-            set: { app.setTelemetryMode($0 ? .full : .presence) })
-        )
-        .toggleStyle(.argusSwitch)
-      } footer: {
-        Text(
-          "Off, Argus sends one anonymous heartbeat per launch so we can count installs. On, it also sends which screens you open, which actions you take, and crash reports — never prompts, project names, branches or paths."
-        )
+            set: { app.setTelemetryMode($0 ? .full : .presence) }))
       }
     }
     .settingsPage(.privacy)

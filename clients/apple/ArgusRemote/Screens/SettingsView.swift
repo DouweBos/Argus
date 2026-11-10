@@ -5,19 +5,28 @@ import UIKit
 /// Settings as a list of pages, grouped like the Mac's: this phone, the
 /// computer it's connected to, and the computers it knows.
 struct SettingsView: View {
+  @Environment(\.theme) private var theme
   @Environment(AppStore.self) private var app
   @Environment(HostStore.self) private var host
 
   var body: some View {
-    Form {
-      Section {
-        NavigationLink(value: Route.account) {
-          AccountProfileSummary(account: app.account, avatarSize: 52)
+    SettingsPage {
+      SettingsGroup {
+        link(.account) {
+          HStack(spacing: 12) {
+            AccountProfileSummary(account: app.account, avatarSize: 48)
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+              .font(.scaled(size: 12, weight: .semibold))
+              .foregroundStyle(theme.textMuted)
+          }
+          .padding(SettingsLayout.rowPadding)
+          .contentShape(.rect)
         }
         .accessibilityHint("Opens your Argus account")
       }
 
-      Section(UIDevice.current.userInterfaceIdiom == .pad ? "This iPad" : "This iPhone") {
+      SettingsGroup(UIDevice.current.userInterfaceIdiom == .pad ? "This iPad" : "This iPhone") {
         row(.name, value: app.deviceName)
         row(.appearance, value: app.themePreference.label)
         row(.alerts)
@@ -25,38 +34,26 @@ struct SettingsView: View {
       }
 
       if let identity = app.identity {
-        Section(identity.label) {
+        SettingsGroup(identity.label) {
           row(.connection, value: host.connection.label)
           row(.agents)
           row(.automations)
-          NavigationLink(value: Route.claudeAccounts) {
-            Label("Claude Accounts", systemImage: Icon.person)
-          }
-          NavigationLink(value: Route.usage) {
-            Label("Usage", systemImage: Icon.usage)
-          }
+          link(.claudeAccounts) { SettingsLinkRow("Claude Accounts", systemImage: Icon.person) }
+          link(.usage) { SettingsLinkRow("Usage", systemImage: Icon.usage) }
           if !host.deviceHosts.isEmpty {
             row(.deviceHosts, value: "\(host.deviceHosts.count)")
           }
         }
       }
 
-      Section {
+      SettingsGroup(footer: "Pair with as many computers as you like; the app talks to one at a time.") {
         if app.hosts.isEmpty {
-          NavigationLink(value: Route.pair) {
-            Label("Pair a Computer", systemImage: Icon.plus)
-          }
+          link(.pair) { SettingsLinkRow("Pair a Computer", systemImage: Icon.plus) }
         } else {
-          NavigationLink(value: Route.computers) {
-            LabeledContent {
-              Text("\(app.hosts.count)")
-            } label: {
-              Label("Computers", systemImage: Icon.desktop)
-            }
+          link(.computers) {
+            SettingsLinkRow("Computers", systemImage: Icon.desktop, value: "\(app.hosts.count)")
           }
         }
-      } footer: {
-        Text("Pair with as many computers as you like; the app talks to one at a time.")
       }
     }
     .navigationTitle("Settings")
@@ -67,12 +64,12 @@ struct SettingsView: View {
   }
 
   private func row(_ page: SettingsPane, value: String? = nil) -> some View {
-    NavigationLink(value: Route.settingsPage(page)) {
-      LabeledContent {
-        if let value { Text(value).lineLimit(1) }
-      } label: {
-        Label(page.title, systemImage: page.symbol)
-      }
-    }
+    link(.settingsPage(page)) { SettingsLinkRow(page.title, systemImage: page.symbol, value: value) }
+  }
+
+  private func link(_ route: Route, @ViewBuilder label: () -> some View) -> some View {
+    NavigationLink(value: route, label: label)
+      .buttonStyle(.settingsRow)
+      .settingsRowFlush()
   }
 }
