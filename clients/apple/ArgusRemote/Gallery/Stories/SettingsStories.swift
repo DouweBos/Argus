@@ -19,6 +19,7 @@
         GalleryStory("settings/device-hosts", fixtures: GalleryFixtures.deviceHosts, setup: connect) {
           DeviceHostsSettingsPage()
         },
+        GalleryStory("settings/computer", fixtures: computerFixtures, setup: connect) { ComputerStory() },
         account("signed-in", GalleryAccount(selfKind: "ios")),
         account("signed-out", GalleryAccount(phase: .signedOut, selfKind: "ios")),
         account("awaiting-approval", GalleryAccount(phase: .awaitingApproval, selfKind: "ios")),
@@ -35,10 +36,30 @@
       await stage.host.refreshDeviceHosts()
     }
 
+    private static var computerFixtures: [String: String] {
+      GalleryFixtures.deviceHosts.merging([
+        RemoteMethod.integrationsList.rawValue: GalleryJSON.encode([
+          "integrations": [
+            ["id": "github", "connected": true, "needsReauth": false, "oauthAvailable": true, "account": ["name": "alex-rivera"]],
+            ["id": "linear", "connected": false, "needsReauth": false, "oauthAvailable": true],
+          ]
+        ])
+      ]) { $1 }
+    }
+
     private static func account(_ state: String, _ fixture: GalleryAccount) -> GalleryStory {
       GalleryStory("settings/account/\(state)", setup: { stage in stage.app.account.galleryFill(fixture) }) {
         AccountView()
       }
+    }
+  }
+
+  /// The connected computer's own page.
+  private struct ComputerStory: View {
+    @Environment(AppStore.self) private var app
+
+    var body: some View {
+      ComputerView(deviceId: app.activeHostId ?? "")
     }
   }
 #endif

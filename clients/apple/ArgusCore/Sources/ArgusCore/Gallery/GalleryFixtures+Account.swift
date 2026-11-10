@@ -62,11 +62,12 @@ extension GalleryFixtures {
     let start = 1_760_000_000_000.0
     func host(_ id: String, _ name: String, _ platform: String, _ age: Double) -> AccountMember {
       AccountMember(
-        id: id, role: .host, platform: platform, signPub: "", noisePub: "", name: name,
+        id: id, role: .host, platform: platform, signPub: "sign-\(id)", noisePub: "noise-\(id)", name: name,
         createdAt: start + age * day)
     }
     func device(_ id: String, _ kind: String, _ name: String, _ age: Double) -> AccountMember {
-      .device(id: id, kind: kind, signPub: "", noisePub: "", name: name, createdAt: start + age * day)
+      .device(
+        id: id, kind: kind, signPub: "sign-\(id)", noisePub: "noise-\(id)", name: name, createdAt: start + age * day)
     }
     return [
       host("h-local", "Alex's MacBook Pro", "darwin", 0),
