@@ -35,11 +35,12 @@ extension GalleryFixtures {
     fixtures[RemoteMethod.agentsTranscript.rawValue] = GalleryJSON.encode(transcriptPage(state))
     fixtures[RemoteMethod.agentsQueueList.rawValue] = GalleryJSON.encode([
       "messages": state == .working
-        ? [["id": "q1", "text": "Then run the gallery for both themes and post the paths.", "queued_at": t(40)]]
+        ? [["id": "q1", "text": "Then run the gallery for both themes and post the paths.", "queued_at": t(30)]]
         : []
     ])
     fixtures[RemoteMethod.agentsMcpStatus.rawValue] = GalleryJSON.encode(mcpStatus)
     fixtures[RemoteMethod.sessionsViewing.rawValue] = "{}"
+    fixtures[RemoteMethod.sessionsList.rawValue] = GalleryJSON.encode(["sessions": [Any]()])
     fixtures[RemoteMethod.sessionsFiles.rawValue] = GalleryJSON.encode(["files": [
       "clients/apple/ArgusUI/Sources/ArgusUI/Views/AgentTranscriptView.swift",
       "clients/apple/ArgusUI/Sources/ArgusUI/DesignSystem/ReadingColumn.swift",
@@ -98,7 +99,7 @@ extension GalleryFixtures {
       "agent_id": transcriptAgent, "session_id": transcriptSession, "session_label": "Cap the iPad transcript",
       "project_name": "Argus", "title": "Cap the iPad transcript", "status": status,
       "model": "claude-opus-5-5", "context_window": 200_000, "permission_mode": "default",
-      "created_at": t(0), "last_activity_at": t(60), "runner_id": "claude-code",
+      "created_at": t(0), "last_activity_at": t(31), "runner_id": "claude-code",
       "runner_session_id": "6c1f0a52-3c1e-4c0e-9d57-6b0e1d1f2a11",
     ]
     switch state {
@@ -352,7 +353,11 @@ extension GalleryFixtures {
   // MARK: Builders
 
   /// Minutes after the chat started, in epoch milliseconds.
-  private static func t(_ minutes: Double) -> Double { 1_762_768_800_000 + minutes * 60_000 }
+  /// Minute 0 is 32 minutes ago, so a running turn's "Working for" reads like a real one.
+  private static func t(_ minutes: Double) -> Double {
+    let start = (Date().timeIntervalSince1970 / 60).rounded(.down) - 32
+    return (start + minutes) * 60_000
+  }
 
   private static func user(_ id: String, _ minute: Double, _ text: String) -> [String: Any] {
     ["id": id, "role": "user", "text_blocks": [text], "tool_calls": [], "timestamp": t(minute)]
