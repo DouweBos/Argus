@@ -13,8 +13,22 @@ same version and build number.
    pnpm changeset
    ```
 
-   Pick a bump (patch/minor/major) for `argus`, write a one-line summary, commit
-   the generated `.changeset/*.md` file alongside the change.
+   Pick a bump (patch/minor/major) for `argus`, write a one-line summary, and
+   name the app it's for in the frontmatter, then commit the `.changeset/*.md`
+   file alongside the change:
+
+   ```
+   ---
+   "argus": minor
+   # platforms: ios
+   ---
+
+   Share a screenshot from any app straight into Argus.
+   ```
+
+   `mac`, `ios`, or `mac, ios` for a change both apps get. It's a comment
+   because changesets reads every frontmatter key as a package; `pnpm lint`
+   fails a changeset without one.
 
 2. When ready to ship, go to **Actions → Release → Run workflow** on `main`.
    The workflow will:
@@ -45,6 +59,20 @@ legs have passed: it tags (and on production pushes the version commit), then
 creates the GitHub release from the Mac leg's assets. A failed leg cancels the
 other and nothing is tagged — but if the iPhone leg had already uploaded, that
 TestFlight build stays.
+
+## Release notes per app
+
+`CHANGELOG.md` and the GitHub release list every change. Each app's own notes
+only list its entries: the Mac's Sparkle update and Electron cutover feed get
+the `mac` ones, TestFlight's "What to Test" the `ios` ones. The changelog
+generator (`scripts/changesets/changelog.ts`) marks each entry with its
+platforms, and `scripts/changesets/release-notes.ts` splits the notes and
+strips the markers again before anything is committed.
+
+A release with no `ios` entries skips the iPhone leg: nothing is uploaded to
+TestFlight, and the phone simply has no build with that version and build
+number. A release with only `ios` entries still ships the Mac, with the full
+notes.
 
 ## iPhone setup
 

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Applies pending changesets for a release channel and writes this version's
-# CHANGELOG section to release-notes.md. Every job of a release run calls it on
-# the same commit, so each gets the same version without passing files around.
-# Writes `version` and `has_changes` to $GITHUB_OUTPUT.
+# notes: all of them, the Mac's and the iPhone's. Every job of a release run
+# calls it on the same commit, so each gets the same version without passing
+# files around.
+# Writes `version`, `has_changes` and `build` (for the leg named by $PLATFORM) to $GITHUB_OUTPUT.
 set -euo pipefail
 
 CHANNEL="${1:?usage: release-version.sh production|beta|alpha}"
@@ -12,6 +13,7 @@ if [ "$CHANNEL" = "production" ]; then
   if git diff --quiet; then
     echo "No changesets to release"
     echo "has_changes=false" >> "$GITHUB_OUTPUT"
+    echo "build=false" >> "$GITHUB_OUTPUT"
     exit 0
   fi
 else
@@ -39,10 +41,19 @@ else
   fi
 fi
 
-# The top section of CHANGELOG.md: everything between the first two '## ' headings.
-awk '/^## / { if (found) exit; found=1; next } found { print }' CHANGELOG.md > release-notes.md
+# release-notes.md, -mac.md and -ios.md, and CHANGELOG.md without the platform markers.
+pnpm exec tsx scripts/changesets/release-notes.ts
+# A release with only iPhone changes still ships the Mac app: give it the full notes.
+[ -s release-notes-mac.md ] || cp release-notes.md release-notes-mac.md
 
 VERSION=$(node -p "require('./package.json').version")
 echo "Releasing v${VERSION} on ${CHANNEL}"
 echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 echo "has_changes=true" >> "$GITHUB_OUTPUT"
+# Whether $PLATFORM (a build leg) has anything to ship: the iPhone sits out a release with no iPhone changes.
+if [ "${PLATFORM:-}" = "ios" ] && [ ! -s release-notes-ios.md ]; then
+  echo "No iPhone changes in v${VERSION}: skipping TestFlight"
+  echo "build=false" >> "$GITHUB_OUTPUT"
+else
+  echo "build=true" >> "$GITHUB_OUTPUT"
+fi

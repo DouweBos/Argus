@@ -127,7 +127,7 @@ Adding one (worked example: `automations.revise_playbook`):
 - The scope is the area, not the path — existing ones include `remote`, `ios`, `peacock`, `llm`, `terminal`, `automations`, `devices`, `push`, `settings`, `mcp`, `web`. Reuse one before inventing another; drop it entirely when a change is genuinely repo-wide.
 - The type has to match the changeset: a `feat` is a `minor`, a `fix` is a `patch`, and anything with no changeset should not be a `feat` or a `fix`.
 
-**Changesets:** every user-visible change gets one in `.changeset/`. Written for end users: 1–2 short sentences, present tense, no internals/file paths/type names. Bump `argus` for app changes, `@argus/peacock` for public design-system changes. `patch` for fixes, `minor` for new behavior. Skip for pure refactors/tests/tooling.
+**Changesets:** every user-visible change gets one in `.changeset/`. Written for end users: 1–2 short sentences, present tense, no internals/file paths/type names. Bump `argus` for app changes, `@argus/peacock` for public design-system changes. `patch` for fixes, `minor` for new behavior. Skip for pure refactors/tests/tooling. Name the app it's for with a `# platforms: mac`, `ios` or `mac, ios` comment in the frontmatter (a comment, since changesets reads keys as packages): the Mac update and TestFlight each get only their own entries, and `pnpm lint` fails a changeset without one.
 
 **Telemetry: a feature ships with the events that measure it.** Every user-facing behaviour you add or change gets events in the same commit — "there is no event for it yet" is a gap to close, not a reason to skip it. Ask what question the event answers ("is this used?", "does it fail?") and send the smallest thing that answers it.
 

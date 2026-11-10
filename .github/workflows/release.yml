@@ -50,14 +50,16 @@ jobs:
 
       - name: Apply changesets
         id: version
+        env:
+          PLATFORM: ${{ matrix.platform }}
         run: scripts/release-version.sh "$CHANNEL"
 
       - name: Install fastlane
-        if: steps.version.outputs.has_changes == 'true'
+        if: steps.version.outputs.build == 'true'
         run: bundle install
 
       - name: Create build keychain
-        if: steps.version.outputs.has_changes == 'true'
+        if: steps.version.outputs.build == 'true'
         env:
           MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
         run: |
@@ -69,7 +71,7 @@ jobs:
           security default-keychain -s build.keychain
 
       - name: Encode match git auth
-        if: steps.version.outputs.has_changes == 'true'
+        if: steps.version.outputs.build == 'true'
         env:
           MATCH_GIT_PAT: ${{ secrets.MATCH_GIT_PAT }}
         run: |
@@ -79,7 +81,7 @@ jobs:
           echo "MATCH_GIT_BASIC_AUTHORIZATION=$AUTH" >> "$GITHUB_ENV"
 
       - name: Select Xcode 27.2
-        if: steps.version.outputs.has_changes == 'true'
+        if: steps.version.outputs.build == 'true'
         run: |
           sudo xcode-select -s /Applications/Xcode_27.2.app
           xcodebuild -version
@@ -88,7 +90,7 @@ jobs:
 
       # The tree-sitter grammars' full histories take ~8 minutes to clone cold.
       - name: Cache Swift packages
-        if: steps.version.outputs.has_changes == 'true'
+        if: steps.version.outputs.build == 'true'
         uses: actions/cache@v4
         with:
           path: ~/spm-clones
@@ -98,7 +100,7 @@ jobs:
             spm-
 
       - name: Build
-        if: steps.version.outputs.has_changes == 'true'
+        if: steps.version.outputs.build == 'true'
         env:
           # --- Signing (match); MATCH_GIT_BASIC_AUTHORIZATION comes from the step above ---
           MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
@@ -118,9 +120,9 @@ jobs:
           POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
           POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
 
-          # This version's CHANGELOG section: the Sparkle appcast's notes, the
-          # cutover feed Electron installs read, and TestFlight's "What to Test".
-          ARGUS_RELEASE_NOTES_FILE: ${{ github.workspace }}/release-notes.md
+          # This app's entries of this version's CHANGELOG section: the Sparkle
+          # appcast's notes and the Electron cutover feed, or TestFlight's "What to Test".
+          ARGUS_RELEASE_NOTES_FILE: ${{ github.workspace }}/release-notes-${{ matrix.platform }}.md
 
           # --- Sparkle ---
           SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
@@ -144,7 +146,7 @@ jobs:
           fi
 
       - name: Keep the Mac release assets
-        if: steps.version.outputs.has_changes == 'true' && matrix.platform == 'mac'
+        if: steps.version.outputs.build == 'true' && matrix.platform == 'mac'
         uses: actions/upload-artifact@v4
         with:
           name: mac-release
@@ -191,7 +193,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if [ "$CHANNEL" = "production" ]; then
-            git add -A -- . ':!release-notes.md' ':!release-dist'
+            git add -A -- . ':!release-notes*.md' ':!release-dist'
             git commit -m "chore: release v${VERSION}"
           fi
           # The tag names the commit that was built, even if main moved meanwhile.
