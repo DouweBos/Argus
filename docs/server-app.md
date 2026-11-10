@@ -64,7 +64,8 @@ entitlement (it never signs in with Apple; it links to the account with a code).
 `mac_server_release` archives the Release build, exports it for Developer ID,
 notarizes and staples it, zips it as `Argus-Server-<version>-arm64.zip`, writes
 the Sparkle appcast for its channel (`argus-server-latest.xml`,
-`argus-server-beta.xml` or `argus-server-alpha.xml`) and uploads both to the
+`argus-server-beta.xml` or `argus-server-alpha.xml`) plus every less stable
+one, so beta installs get production builds, and uploads them to the
 version's GitHub release, where `houwert.dev/argus/updates/` serves them. It
 needs `SPARKLE_PUBLIC_ED_KEY` (baked into the build) and
 `SPARKLE_ED_PRIVATE_KEY` (signs the appcast) next to the usual App Store

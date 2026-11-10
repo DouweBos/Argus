@@ -192,13 +192,19 @@ platform :mac do
     sh(["ditto", "-c", "-k", "--keepParent", app, zip].shelljoin)
 
     # One appcast per channel, kept next to the release assets; the current one
-    # is fetched first so older builds stay listed.
+    # is fetched first so older builds stay listed. A release also lands in every
+    # less stable channel's feed, so beta and alpha installs get production builds.
     feeds = File.join(out, "feeds")
     FileUtils.mkdir_p(feeds)
     FileUtils.cp(zip, feeds)
-    appcast_name = "#{product}-#{feed_channel}.xml"
-    appcast = File.join(feeds, appcast_name)
-    sh("curl -fsSL https://houwert.dev/argus/updates/#{appcast_name} -o #{appcast.shellescape} || rm -f #{appcast.shellescape}")
+    channels = %w[latest beta alpha]
+    appcasts = channels.drop(channels.index(feed_channel)).map do |c|
+      name = "#{product}-#{c}.xml"
+      path = File.join(out, "appcasts", name)
+      FileUtils.mkdir_p(File.dirname(path))
+      sh("curl -fsSL https://houwert.dev/argus/updates/#{name} -o #{path.shellescape} || rm -f #{path.shellescape}")
+      path
+    end
     # Sparkle's update window shows these; the lane's own CHANGELOG section, embedded.
     notes_html = File.join(feeds, "#{File.basename(zip, ".zip")}.html")
     sh("cd .. && pnpm exec tsx scripts/release-notes-html.ts #{release_notes_file.shellescape} #{notes_html.shellescape}")
@@ -206,13 +212,15 @@ platform :mac do
     File.write(key_file, private_key)
     at_exit { File.delete(key_file) if File.exist?(key_file) }
     generate_appcast = File.join(packages, "artifacts/sparkle/Sparkle/bin/generate_appcast")
-    sh([
-      generate_appcast, "--ed-key-file", key_file,
-      "--download-url-prefix", "https://houwert.dev/argus/updates/",
-      "--embed-release-notes",
-      "-o", appcast, feeds,
-    ].shelljoin)
-    assets = [zip, appcast]
+    appcasts.each do |appcast|
+      sh([
+        generate_appcast, "--ed-key-file", key_file,
+        "--download-url-prefix", "https://houwert.dev/argus/updates/",
+        "--embed-release-notes",
+        "-o", appcast, feeds,
+      ].shelljoin)
+    end
+    assets = [zip, *appcasts]
 
     # Named like the Electron app's was, so the website's `Argus-latest-arm64.dmg` link keeps resolving.
     if dmg_name

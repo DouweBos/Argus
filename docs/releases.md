@@ -20,8 +20,8 @@ mac_app_release`) and uploads it to a GitHub release.
    - If nothing changed (no pending changesets), exit cleanly. Otherwise:
    - Commit `chore: release vX.Y.Z`, tag `vX.Y.Z`, push both back to `main`.
    - Build, sign with Developer ID, notarize via App Store Connect API, staple.
-   - Publish a GitHub release with the `.dmg`, the `.zip` and the channel's
-     Sparkle appcast, and the CHANGELOG section as the release body.
+   - Publish a GitHub release with the `.dmg`, the `.zip` and the Sparkle
+     appcasts, and the CHANGELOG section as the release body.
 
 3. Send the `.dmg` link to friends.
 
@@ -71,6 +71,8 @@ The release workflow takes a **channel** input: `production`, `beta`, or `alpha`
 | `production` | `main` only | `v0.20.0`         | `argus-mac-latest.xml` | no               | yes (default)       | Pushes commit + tag, syncs `houwert.dev` |
 | `beta`       | `main` only | `v0.20.0-beta.0`  | `argus-mac-beta.xml`   | yes              | yes                 | Pushes tag only; nothing else            |
 | `alpha`      | any branch  | `v0.20.0-alpha.0` | `argus-mac-alpha.xml`  | yes              | no — manual install | Pushes tag only; nothing else            |
+
+A release is listed in its own channel's feed and every less stable one: a production cut also goes into the beta and alpha feeds, a beta cut into the alpha feed. Beta installs therefore update to a production build once it outpaces the latest beta.
 
 **Production** cuts are the public releases — they push the changeset version-bump commit + tag to `main` and notify `houwert.dev` so the marketing site rebuilds its public changelog.
 
