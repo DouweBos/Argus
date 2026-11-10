@@ -23,9 +23,9 @@ public struct AgentMcpServersView: View {
 
   public var body: some View {
     content
-      .task(id: agentId) {
-        await host.loadMcpServers(agentId: agentId)
+      .task(id: host.mcpServersKey(agentId: agentId)) {
         if host.claudeAccounts == nil { await host.refreshClaudeAccounts() }
+        await host.followMcpServers(agentId: agentId)
       }
   }
 

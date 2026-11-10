@@ -31,7 +31,7 @@ struct McpContextRow: View {
     }
     .buttonStyle(ContextRowButtonStyle(selected: open))
     .help(help)
-    .task(id: agentId) { await store.loadMcpServers(agentId: agentId) }
+    .task(id: store.mcpServersKey(agentId: agentId)) { await store.followMcpServers(agentId: agentId) }
     .popover(isPresented: $open, arrowEdge: .leading) {
       AgentMcpServersView(agentId: agentId)
         .frame(width: 320)
