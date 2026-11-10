@@ -158,28 +158,16 @@ private struct HomeProjectCard: View {
   var body: some View {
     let agents = store.agentsByRepo[project.repoRoot] ?? []
     let sessions = (store.sessionsByRepo[project.repoRoot] ?? []).filter { $0.kind == .worktree }
-    VStack(alignment: .leading, spacing: 8) {
-      HStack {
-        ProjectBadge(project.name, key: project.repoRoot, size: 20)
-        Text(project.name).font(.scaled(size: 14, weight: .semibold)).lineLimit(1)
-        if model.host(ofProject: project.repoRoot) != Hosts.local { HostBadge(hostId: model.host(ofProject: project.repoRoot)) }
-        Spacer()
-        Button {
-          model.newSessionProject = project
-        } label: {
-          Image(systemName: "plus")
-        }
-        .buttonStyle(.argusBorderless)
-        .help("New session in \(project.name)")
+    ProjectCard(project: project, agents: agents, sessions: sessions.count, highlighted: hovering) {
+      if model.host(ofProject: project.repoRoot) != Hosts.local { HostBadge(hostId: model.host(ofProject: project.repoRoot)) }
+      Button {
+        model.newSessionProject = project
+      } label: {
+        Image(systemName: "plus")
       }
-      Text(HostScopedPath.path(project.repoRoot)).font(.scaled(.caption)).foregroundStyle(theme.textMuted).lineLimit(1).truncationMode(.middle)
-      ProjectActivityLine(agents: agents, sessions: sessions.count)
+      .buttonStyle(.argusBorderless)
+      .help("New session in \(project.name)")
     }
-    .padding(12)
-    .background(hovering ? theme.bgHover : theme.bgSecondary)
-    .clipShape(RoundedRectangle(cornerRadius: theme.radius))
-    .overlay(RoundedRectangle(cornerRadius: theme.radius).stroke(theme.borderSubtle))
-    .contentShape(Rectangle())
     .onHover { hovering = $0 }
     .onTapGesture { Task { await model.openProjectRoot(project.repoRoot) } }
     .clickable()

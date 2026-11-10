@@ -9,9 +9,14 @@ struct ProjectsView: View {
   @Environment(AppStore.self) private var app
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
+  @Environment(\.stackPush) private var stackPush
 
   @State private var openingPad = false
   @State private var padToDelete: RemoteSession?
+  @State private var width: CGFloat = 0
+
+  /// As wide as the Mac's home column gets; past that the margins grow.
+  private static let maxWidth: CGFloat = 960
 
   private static let recentAgentLimit = 5
 
@@ -50,6 +55,8 @@ struct ProjectsView: View {
         Btn(label: "Pair a computer", icon: Icon.plus, hugs: true) { router.push(.pair) }
       }
     }
+    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+    .contentMargins(.horizontal, width > Self.maxWidth + 80 ? (width - Self.maxWidth) / 2 : nil, for: .scrollContent)
     .navigationTitle("Home")
     .toolbar {
       // The Mac sidebar's New Session, on the project last worked in.
@@ -112,39 +119,40 @@ struct ProjectsView: View {
       }
     } else {
       Section("Projects") {
-        ForEach(host.projects) { project in
-          NavigationLink(value: Route.project(repoRoot: project.repoRoot, name: project.name)) {
-            projectRow(project)
-          }
-          .swipeActions {
-            if host.hasControl {
-              Button("New session", systemImage: Icon.plus) { newSession(in: project) }
-                .tint(theme.accent)
-            }
-          }
-          .contextMenu {
-            if host.hasControl {
-              Button("New session…", systemImage: Icon.plus) { newSession(in: project) }
-            }
-          }
+        // The Mac's card grid: one column on a phone, more as the width allows.
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: 12)], spacing: 12) {
+          ForEach(host.projects) { projectCard($0) }
         }
+        .listRowInsets(EdgeInsets())
+        .listRowBackground(Color.clear)
       }
     }
   }
 
-  /// The Mac's project card in a row: badge and name, then each agent as a
-  /// dot, the counts, and when it last moved.
-  private func projectRow(_ project: RemoteProject) -> some View {
-    let agents = host.agents(inProject: project.repoRoot)
-    let sessions = (host.sessionsByRepo[project.repoRoot] ?? []).count { $0.kind == .worktree }
-    return HStack(alignment: .firstTextBaseline, spacing: 10) {
-      ProjectBadge(project.name, key: project.repoRoot, size: 22)
-      VStack(alignment: .leading, spacing: 4) {
-        Text(project.name).fontWeight(.medium).lineLimit(1)
-        ProjectActivityLine(agents: agents, sessions: sessions)
+  private func projectCard(_ project: RemoteProject) -> some View {
+    ProjectCard(
+      project: project, agents: host.agents(inProject: project.repoRoot),
+      sessions: (host.sessionsByRepo[project.repoRoot] ?? []).count { $0.kind == .worktree }
+    ) {
+      if host.hasControl {
+        Button { newSession(in: project) } label: {
+          Image(systemName: Icon.plus).frame(width: 32, height: 32).contentShape(Rectangle())
+        }
+        .buttonStyle(.argusPlain)
+        .foregroundStyle(theme.accent)
+        .padding(-8)
+        .accessibilityLabel("New session in \(project.name)")
       }
     }
-    .padding(.vertical, 2)
+    .onTapGesture { (stackPush ?? router.push)(.project(repoRoot: project.repoRoot, name: project.name)) }
+    .accessibilityElement(children: .contain)
+    .accessibilityLabel("Project \(project.name)")
+    .accessibilityAddTraits(.isButton)
+    .contextMenu {
+      if host.hasControl {
+        Button("New session…", systemImage: Icon.plus) { newSession(in: project) }
+      }
+    }
   }
 
   /// Agents across every project: the ones still working, or waiting on you,
