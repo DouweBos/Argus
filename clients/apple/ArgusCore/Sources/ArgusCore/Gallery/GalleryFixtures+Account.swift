@@ -89,3 +89,21 @@ extension GalleryFixtures {
     ]
   }
 }
+
+extension GalleryFixtures {
+  /// A connected computer's device hosts: two SSH Macs, one unreachable, and an EAS host.
+  public static var deviceHosts: [String: String] {
+    [
+      RemoteMethod.deviceHostsList.rawValue: GalleryJSON.encode([
+        "hosts": [
+          ["id": "ssh-studio", "label": "Studio Mac mini", "status": "connected", "kind": "ssh"],
+          ["id": "ssh-lab", "label": "lab-mac-pro-simulator-farm.local", "status": "unreachable", "kind": "ssh"],
+          [
+            "id": "eas", "label": "EAS Simulator", "status": "connected", "kind": "eas", "running_sessions": 1,
+            "max_sessions": 2,
+          ],
+        ]
+      ])
+    ]
+  }
+}
