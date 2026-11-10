@@ -55,6 +55,12 @@
       // Lets `.task`s load from the fixtures and the layout settle.
       try? await Task.sleep(for: .milliseconds(700))
 
+      // AppKit lists (an `NSTableView`) only tile their rows in a display pass, which a window below the desktop never gets.
+      window.layoutIfNeeded()
+      window.display()
+      try? await Task.sleep(for: .milliseconds(100))
+      window.display()
+
       let slug = story.id.replacingOccurrences(of: "/", with: "-")
       let file = out.appendingPathComponent("\(slug).\(theme).png")
       if !capture(window, to: file) { snapshot(hosting, to: file) }
