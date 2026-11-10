@@ -191,9 +191,10 @@ extension GalleryFixtures {
 
   private static func ctaJSON(_ p: Proposal) -> [String: Any] {
     switch p.cta {
-    case "open_url": ["kind": "open_url", "label": "Open in Linear", "url": p.source?.url ?? ""]
-    case "delete_branch": ["kind": "delete_branch", "label": "Delete branches", "branch": "feature/old"]
-    default: ["kind": "start_session", "label": "Start a session"]
+    case "open_url": ["kind": "open_url", "label": "Open in Linear", "url": p.source?.url ?? "", "force": false]
+    case "delete_branch":
+      ["kind": "delete_branch", "label": "Delete branches", "branch": "feature/old", "force": false]
+    default: ["kind": "start_session", "label": "Start a session", "force": false]
     }
   }
 
@@ -440,15 +441,16 @@ extension GalleryFixtures {
     ]
     let costs = [3.1, 7.4, 2.2, 0.4, 9.8, 12.6, 5.3]
     let summary: [String: Any] = [
-      "range": "7d", "since": now - 7 * day, "until": now, "bucket": "day", "sessions": 64,
+      "range": "30d", "since": now - 30 * day, "until": now, "bucket": "day", "sessions": 64,
       "tokens": [
         "processed": 182_400_000, "input": 1_200_000, "cache_read": 168_000_000, "cache_write": 11_000_000,
         "output": 2_200_000,
       ],
       "cost": ["total": 40.8, "input": 3.6, "cache_read": 16.8, "cache_write": 13.7, "output": 6.7],
       "cache_savings_usd": 151.2,
-      "series": costs.enumerated().map { index, cost in
-        ["start": now - Double(7 - index) * day, "tokens": cost * 4_400_000, "cost_usd": cost]
+      "series": (0..<30).map { index in
+        let cost = costs[index % costs.count] * (0.6 + Double(index % 5) * 0.1)
+        return ["start": now - Double(30 - index) * day, "tokens": cost * 4_400_000, "cost_usd": cost]
       },
       "models": [
         ["model": "claude-opus-5-5", "tokens": 121_000_000, "cost_usd": 31.2, "priced": true],
