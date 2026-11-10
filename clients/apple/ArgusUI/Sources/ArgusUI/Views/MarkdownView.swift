@@ -68,6 +68,8 @@ public struct MarkdownView: View {
               .foregroundStyle(theme.textMuted)
             inline(item).font(.scaled(size: baseSize))
           }
+          // Wraps rather than truncating when a lazy stack offers it one line's height.
+          .fixedSize(horizontal: false, vertical: true)
         }
       }
     case .table(let columns, let rows):
