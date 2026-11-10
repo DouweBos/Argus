@@ -1,4 +1,5 @@
 import ArgusUI
+import CoreSpotlight
 import LocalAuthentication
 import SwiftUI
 
@@ -10,7 +11,7 @@ import SwiftUI
 struct RootView: View {
   @Environment(\.colorScheme) private var systemScheme
   @Environment(\.horizontalSizeClass) private var sizeClass
-  @State private var app = AppStore()
+  @State private var app = AppRuntime.app
   @State private var router = Router()
   @State private var automations: AutomationsStore?
   @State private var proposals: ProposalsStore?
@@ -40,6 +41,7 @@ struct RootView: View {
         .overlay { ImageViewerOverlay { Telemetry.capture(.imageViewerUsed(action: $0)) } }
         // A device waiting to join the account is announced wherever the user is.
         .modifier(JoinRequestPrompt())
+        .modifier(SpotlightIndexing())
         .environment(app)
         .environment(app.host)
         .environment(\.autoExpandImageReads, app.autoExpandImageReads)
@@ -63,6 +65,12 @@ struct RootView: View {
     .onContinueUserActivity(Handoff.activityType) { activity in
       guard let handoff = Handoff(userInfo: activity.userInfo) else { return }
       NotificationRouter.shared.open(handoff)
+    }
+    .onContinueUserActivity(CSSearchableItemActionType) { activity in
+      guard let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String,
+        let target = SessionSpotlight.location(forItem: id)
+      else { return }
+      NotificationRouter.shared.open(ArgusLocation(route: target.route, host: target.hostId), via: .spotlight)
     }
     .onOpenURL { url in
       guard let location = ArgusLocation(deepLink: url) else { return }

@@ -48,6 +48,19 @@ enum TelemetryEvent {
   enum LinkSource: String {
     case link
     case handoff
+    /// Siri, the Shortcuts app or an App Shortcut.
+    case shortcut
+    case spotlight
+  }
+
+  /// An App Intent, run from Siri, Shortcuts or Spotlight.
+  enum IntentKind: String {
+    case startAgent = "start_agent"
+    case sendMessage = "send_message"
+    case approveRequest = "approve_request"
+    case agentsNeedingMe = "agents_needing_me"
+    case runAutomation = "run_automation"
+    case openSession = "open_session"
   }
 
   enum Setting: String {
@@ -273,6 +286,8 @@ enum TelemetryEvent {
   /// An `argus://` link or a Handoff opened a screen; `screen` is its route pattern,
   /// `fallback` that the phone has no such screen and opened its parent.
   case linkOpened(screen: String, via: LinkSource, fallback: Bool)
+  /// An App Intent finished; `success` false when it threw or found nothing to act on.
+  case intentRun(intent: IntentKind, success: Bool)
 
   var name: String {
     switch self {
@@ -337,6 +352,7 @@ enum TelemetryEvent {
     case .accountReset: "ios_account_reset"
     case .routeUpgraded: "ios_route_upgraded"
     case .linkOpened: "ios_link_opened"
+    case .intentRun: "ios_intent_run"
     }
   }
 
@@ -455,6 +471,8 @@ enum TelemetryEvent {
       ["from": from.rawValue, "to": to.rawValue]
     case .linkOpened(let screen, let via, let fallback):
       ["screen": screen, "via": via.rawValue, "fallback": fallback]
+    case .intentRun(let intent, let success):
+      ["intent": intent.rawValue, "success": success]
     }
   }
 

@@ -56,6 +56,8 @@ final class AppStore {
   let pendingDecisions = PendingDecisionStore()
   let agentHosts = AgentHostIndex()
 
+  /// The one launch-time load, shared by the UI and an intent run in the background.
+  @ObservationIgnored private var started: Task<Void, Never>?
   /// Bumped on every connect so a probe that finishes after the user switched
   /// computers can't clobber the newer connection.
   private var connectGeneration = 0
@@ -108,7 +110,13 @@ final class AppStore {
 
   // MARK: Lifecycle
 
+  /// Idempotent: the unlocked UI and a Siri or Shortcuts run may both ask.
   func initialize() async {
+    if started == nil { started = Task { await load() } }
+    await started?.value
+  }
+
+  private func load() async {
     telemetryMode = Telemetry.currentMode
     pushEnabled = preferences.string(PreferenceKey.pushEnabled) != "off"
     deviceName = UIDeviceName.stored(preferences)
@@ -190,6 +198,7 @@ final class AppStore {
       clearHostData()
     }
     agentHosts.forget(hostId: deviceId)
+    SessionSpotlight.forget(hostId: deviceId)
     let state = await keystore.remove(deviceId: deviceId)
     pairedHosts = state.hosts
     activeHostId = state.activeId

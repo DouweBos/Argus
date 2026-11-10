@@ -65,7 +65,7 @@ final class NotificationRouter: NSObject {
     switch pending {
     case .agent(let id, let label): open(agentId: id, label: label)
     case .handoff(let handoff): open(handoff)
-    case .link(let location): open(location)
+    case .link(let location, let via): open(location, via: via)
     }
   }
 
@@ -86,11 +86,11 @@ final class NotificationRouter: NSObject {
     open(route, on: host.deviceId, hints: hints, via: .handoff)
   }
 
-  /// An `argus://` link. `?host=` picks the paired computer it names; a link
-  /// naming none, or one this phone doesn't know, reads from the current one.
-  func open(_ location: ArgusLocation) {
+  /// An `argus://` link, a Spotlight result or an Open intent. `?host=` picks the
+  /// paired computer it names; none, or one this phone doesn't know, reads from the current one.
+  func open(_ location: ArgusLocation, via: TelemetryEvent.LinkSource = .link) {
     guard ready, let app else {
-      pendingOpen = .link(location)
+      pendingOpen = .link(location, via: via)
       return
     }
     guard !app.hosts.isEmpty else {
@@ -98,7 +98,7 @@ final class NotificationRouter: NSObject {
       return
     }
     let hostId = location.host.flatMap { id in app.hosts.first { $0.deviceId == id }?.deviceId }
-    open(location.route, on: hostId, hints: RouteHints(), via: .link)
+    open(location.route, on: hostId, hints: RouteHints(), via: via)
   }
 
   private func open(_ route: ArgusRoute, on hostId: String?, hints: RouteHints, via: TelemetryEvent.LinkSource) {
@@ -137,7 +137,7 @@ final class NotificationRouter: NSObject {
 private enum PendingOpen {
   case agent(id: String, label: String)
   case handoff(Handoff)
-  case link(ArgusLocation)
+  case link(ArgusLocation, via: TelemetryEvent.LinkSource)
 }
 
 /// UIKit asserts its completion handlers run on the main thread; the `async`

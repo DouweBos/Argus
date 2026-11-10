@@ -251,6 +251,21 @@ extension HostStore {
 
   // MARK: Permissions
 
+  /// The agent's open permission prompt, subscribing just long enough for the
+  /// gateway to replay it — it only takes answers to prompts it forwarded here.
+  public func awaitPendingPrompt(agentId: String, timeout: Duration = .seconds(4)) async -> RemotePermissionRequest? {
+    func current() -> RemotePermissionRequest? { prompts.values.first { $0.agentId == agentId } }
+    if let prompt = current() { return prompt }
+    let alreadyWatched = watchedAgents.contains(agentId)
+    if !alreadyWatched { await watchAgent(agentId, on: true) }
+    let deadline = ContinuousClock.now.advanced(by: timeout)
+    while current() == nil, ContinuousClock.now < deadline { try? await Task.sleep(for: .milliseconds(150)) }
+    let prompt = current()
+    // The replay registered the prompt with this connection; the subscription can go.
+    if !alreadyWatched { await watchAgent(agentId, on: false) }
+    return prompt
+  }
+
   /// `alwaysAllow` is an "Always allow" rule for the rest of the session. The
   /// gateway derives the same rule itself, so a phone only asks for one.
   public func respond(

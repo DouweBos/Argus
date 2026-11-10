@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1A7E00000000000000000011 /* IntentRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7E00000000000000000010 /* IntentRuntime.swift */; };
+		1A7E00000000000000000021 /* IntentEntities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7E00000000000000000020 /* IntentEntities.swift */; };
+		1A7E00000000000000000031 /* AgentSessionEntities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7E00000000000000000030 /* AgentSessionEntities.swift */; };
+		1A7E00000000000000000041 /* SessionSpotlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7E00000000000000000040 /* SessionSpotlight.swift */; };
+		1A7E00000000000000000051 /* AgentIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7E00000000000000000050 /* AgentIntents.swift */; };
+		1A7E00000000000000000061 /* AppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7E00000000000000000060 /* AppShortcuts.swift */; };
 		0C2CEA8B85053A238EB47BA7 /* AutomationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4510F50B6943CA7B6707AABE /* AutomationsView.swift */; };
 		0DAAD89A3BF90D72CFF2E3A9 /* ArgusNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4B819AF7F05F8000A0B5D08A /* ArgusNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1346FB8C6E0119391A82DC4B /* NotificationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E2171FDF4B199BD1A0795D6 /* NotificationRouter.swift */; };
@@ -139,6 +145,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1A7E00000000000000000010 /* IntentRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentRuntime.swift; sourceTree = "<group>"; };
+		1A7E00000000000000000020 /* IntentEntities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentEntities.swift; sourceTree = "<group>"; };
+		1A7E00000000000000000030 /* AgentSessionEntities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentSessionEntities.swift; sourceTree = "<group>"; };
+		1A7E00000000000000000040 /* SessionSpotlight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionSpotlight.swift; sourceTree = "<group>"; };
+		1A7E00000000000000000050 /* AgentIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentIntents.swift; sourceTree = "<group>"; };
+		1A7E00000000000000000060 /* AppShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppShortcuts.swift; sourceTree = "<group>"; };
 		000942DD08EA0A5619FDAD77 /* AppStore+Push.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStore+Push.swift"; sourceTree = "<group>"; };
 		0E2171FDF4B199BD1A0795D6 /* NotificationRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationRouter.swift; sourceTree = "<group>"; };
 		0EF27D5904269DE56D427462 /* StashesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StashesView.swift; sourceTree = "<group>"; };
@@ -433,6 +445,19 @@
 			path = Stores;
 			sourceTree = "<group>";
 		};
+		1A7E0000000000000000A000 /* Intents */ = {
+			isa = PBXGroup;
+			children = (
+				1A7E00000000000000000010 /* IntentRuntime.swift */,
+				1A7E00000000000000000020 /* IntentEntities.swift */,
+				1A7E00000000000000000030 /* AgentSessionEntities.swift */,
+				1A7E00000000000000000040 /* SessionSpotlight.swift */,
+				1A7E00000000000000000050 /* AgentIntents.swift */,
+				1A7E00000000000000000060 /* AppShortcuts.swift */,
+			);
+			path = Intents;
+			sourceTree = "<group>";
+		};
 		51086224F685027B0138C994 /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -448,6 +473,7 @@
 				26C51FB4782FB6B8B8DC3671 /* Screens */,
 				38AF2122DBE897D9F8A04315 /* Stores */,
 				51086224F685027B0138C994 /* Views */,
+				1A7E0000000000000000A000 /* Intents */,
 				FEED000100000000000000A6 /* Telemetry */,
 				6A11E7000000000000000001 /* Gallery */,
 				8346E6C1D03B823ABD7DCA02 /* ArgusRemote.entitlements */,
@@ -896,6 +922,12 @@
 				18E1680F774BE67751984A6B /* InboxView.swift in Sources */,
 				A02801135DF7D4CE5879D439 /* LockScreen.swift in Sources */,
 				801B94D184E882085D5A21C1 /* HardwareKeyCatcher.swift in Sources */,
+				1A7E00000000000000000011 /* IntentRuntime.swift in Sources */,
+				1A7E00000000000000000021 /* IntentEntities.swift in Sources */,
+				1A7E00000000000000000031 /* AgentSessionEntities.swift in Sources */,
+				1A7E00000000000000000041 /* SessionSpotlight.swift in Sources */,
+				1A7E00000000000000000051 /* AgentIntents.swift in Sources */,
+				1A7E00000000000000000061 /* AppShortcuts.swift in Sources */,
 				1346FB8C6E0119391A82DC4B /* NotificationRouter.swift in Sources */,
 				A279FDAB48CC421077ED1C7A /* DevDriver.swift in Sources */,
 				C230860282D4938F66D435CF /* PairView.swift in Sources */,
