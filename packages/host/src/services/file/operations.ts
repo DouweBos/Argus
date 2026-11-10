@@ -281,23 +281,38 @@ export async function listPath(absPath: string): Promise<DirEntry[]> {
   return entries;
 }
 
+/** Finder litter: ignored everywhere, worth nothing in a file tree. */
+const JUNK_FILES = new Set([".DS_Store"]);
+
 /**
- * List all files in a session using `git ls-files`.
- *
- * Returns tracked files plus untracked non-ignored files, sorted
- * alphabetically. Falls back to an empty array if the git command fails.
+ * Every file in a session, sorted: tracked, untracked, and ignored ones like
+ * `.env` that people still open. A wholly ignored folder (`node_modules/`,
+ * `.build/`) is skipped rather than walked.
  */
 export async function listSessionFiles(id: string): Promise<string[]> {
   const root = sessionPath(id);
 
-  const [tracked, untracked] = await Promise.all([
+  const [tracked, untracked, ignored] = await Promise.all([
     git(root, ["ls-files"]).catch(() => ""),
     git(root, ["ls-files", "--others", "--exclude-standard"]).catch(() => ""),
+    git(root, [
+      "ls-files",
+      "--others",
+      "--ignored",
+      "--exclude-standard",
+      "--directory",
+      "--no-empty-directory",
+    ]).catch(() => ""),
   ]);
 
   const parse = (out: string) => out.split("\n").filter((l) => l.length > 0);
+  const ignoredFiles = parse(ignored).filter(
+    (f) => !f.endsWith("/") && !JUNK_FILES.has(path.basename(f)),
+  );
 
-  const allFiles = [...new Set([...parse(tracked), ...parse(untracked)])];
+  const allFiles = [
+    ...new Set([...parse(tracked), ...parse(untracked), ...ignoredFiles]),
+  ];
   allFiles.sort((a, b) => a.localeCompare(b));
 
   return allFiles;

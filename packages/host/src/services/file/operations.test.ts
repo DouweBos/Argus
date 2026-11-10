@@ -19,7 +19,8 @@ vi.mock("../../state", () => ({
 vi.mock("../session/git", () => ({ git: vi.fn(async () => "") }));
 
 const { appState } = await import("../../state");
-const { readFile, resolveMentionPath, writeFile } =
+const { git } = await import("../session/git");
+const { listSessionFiles, readFile, resolveMentionPath, writeFile } =
   await import("./operations");
 
 const WORKTREE = path.join(os.tmpdir(), "argus-mention-session");
@@ -112,5 +113,33 @@ describe("read/write containment", () => {
     await expect(
       fs.promises.readFile(path.join(worktree, "nested/deep/file.txt"), "utf8"),
     ).resolves.toBe("written");
+  });
+});
+
+describe("listSessionFiles", () => {
+  beforeEach(() => {
+    appState.sessions.clear();
+    appState.sessions.set("s1", { path: WORKTREE } as never);
+  });
+
+  it("lists ignored files like .env, but not ignored folders or Finder litter", async () => {
+    vi.mocked(git).mockImplementation(async (_root, args) => {
+      if (args.includes("--ignored")) {
+        return ".env\nnode_modules/\napps/web/.env.local\n.DS_Store\n";
+      }
+      if (args.includes("--others")) {
+        return "notes.md\n";
+      }
+
+      return "package.json\nsrc/index.ts\n";
+    });
+
+    await expect(listSessionFiles("s1")).resolves.toEqual([
+      ".env",
+      "apps/web/.env.local",
+      "notes.md",
+      "package.json",
+      "src/index.ts",
+    ]);
   });
 });
