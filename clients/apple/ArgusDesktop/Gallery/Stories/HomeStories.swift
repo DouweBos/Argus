@@ -30,6 +30,17 @@
         ) {
           Color.clear.sessionContextCard(GalleryFixtures.argusSession("s-long"), panel: .agents)
         },
+        // Mac only: the phone starts a session from its composer, and deletes through a confirmation dialog.
+        GalleryStory(
+          "sessions/new-sheet", size: CGSize(width: 480, height: 560), fixtures: GalleryFixtures.home, setup: load
+        ) {
+          NewSessionSheet(project: GalleryFixtures.argusProject) { _ in }
+        },
+        GalleryStory(
+          "sessions/delete-sheet", size: CGSize(width: 420, height: 0), fixtures: GalleryFixtures.home, setup: load
+        ) {
+          DeleteSessionSheet(session: GalleryFixtures.argusSession("s-long")) {}
+        },
       ]
     }
 

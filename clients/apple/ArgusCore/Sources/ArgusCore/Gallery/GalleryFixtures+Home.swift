@@ -165,6 +165,11 @@ extension GalleryFixtures {
       RemoteMethod.devicesList.rawValue: GalleryJSON.encode(["devices": []]),
       RemoteMethod.sessionsMergeBlockers.rawValue: GalleryJSON.encode(["blockers": []]),
       ArgusProtocol.Commands.ListEditors.name: "[]",
+      RemoteMethod.sessionsBranches.rawValue: GalleryJSON.encode([
+        "branches": ["main", "release/0.80", "watch-pr-tool", "linear-picker"].map {
+          ["name": $0, "scope": "local", "is_current": $0 == "main", "ahead": 0, "behind": 0]
+        }
+      ]),
     ]
     let sessions: [String: [[String: Any]]] = [
       "Argus": argusSessions,
@@ -226,5 +231,12 @@ extension GalleryFixtures {
   public static func argusSession(_ id: String) -> RemoteSession {
     let json = argusSessions.first { $0["id"] as? String == id } ?? argusSessions[0]
     return try! ProtocolCodec.decoder.decode(RemoteSession.self, from: Data(GalleryJSON.encode(json).utf8))
+  }
+}
+
+extension GalleryFixtures {
+  public static var argusProject: RemoteProject {
+    try! ProtocolCodec.decoder.decode(
+      RemoteProject.self, from: Data(GalleryJSON.encode(["repo_root": argusRoot, "name": "Argus"]).utf8))
   }
 }
