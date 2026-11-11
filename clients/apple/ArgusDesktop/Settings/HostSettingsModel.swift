@@ -68,3 +68,10 @@ final class HostSettingsModel {
     }
   }
 }
+
+#if DEBUG
+  extension HostSettingsModel {
+    /// Gallery stories render the Settings tabs without a host.
+    func galleryFill(_ settings: ArgusProtocol.AppSettings) { self.settings = settings }
+  }
+#endif
