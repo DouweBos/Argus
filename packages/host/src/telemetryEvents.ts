@@ -122,6 +122,11 @@ export interface EventMap {
     on: boolean;
     surface: "server_tray" | "terminal";
   };
+  /** The Stop gate sent an agent back to re-verify; fires once the block resolves. */
+  agent_done_gate: {
+    /** It gathered new evidence before stopping again. */
+    reverified: boolean;
+  };
   agent_exited: {
     duration_ms: number;
     exit_code: number;
