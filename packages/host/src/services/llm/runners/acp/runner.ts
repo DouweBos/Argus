@@ -63,7 +63,7 @@ export class AcpRunner implements LlmRunner {
     return {
       installCommand: this.preset.installCommand ?? null,
       installUrl: this.preset.installUrl ?? null,
-      loginCommand: this.preset.loginCommand,
+      loginCommand: this.preset.loginCommand ?? null,
     };
   }
 
