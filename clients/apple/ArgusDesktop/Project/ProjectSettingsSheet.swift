@@ -111,6 +111,8 @@ struct ProjectSettingsSheet: View {
       .disabled(!settings.loaded || settings.saving)
     }
     .padding(14)
+    // The grouped form above paints the window background; the sheet's own darker bg showed through here.
+    .background(Color(nsColor: .windowBackgroundColor))
   }
 }
 
