@@ -36,7 +36,6 @@ import {
   ensureWebBrowserForAgent,
   emitMcpSystemMessage,
 } from "../agent/claude";
-import { readConversation } from "../agent/conversation/live";
 import { forgetAutomationSession } from "../automation/ownedSessions";
 import { sendPushNotification } from "../notifications/push";
 import { createSession, deleteSession, listSessions } from "../session/manager";
@@ -93,6 +92,7 @@ import {
 } from "./sessions";
 import { ArgusTaskStore } from "./taskStore";
 import { registerTaskTool } from "./taskTools";
+import { localAgentHint, registerTranscriptTools } from "./transcriptTools";
 
 // ---------------------------------------------------------------------------
 // State
@@ -471,28 +471,6 @@ function resolveRepoRoot(projectPath?: string): string {
   }
 
   return appState.repoRoots.values().next().value as string;
-}
-
-/**
- * Argus `spawn_agent` ids are UUIDs (`crypto.randomUUID()`); the built-in
- * `Agent` tool's background subagents (local_agents) use a dash-less `a…` hex
- * id. When an unknown id looks like the latter, return an explanatory hint so
- * the caller reaches for the right API instead of a bare "not found".
- */
-function localAgentHint(agentId: string): string | null {
-  const isUuid =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      agentId,
-    );
-  if (isUuid) {
-    return null;
-  }
-
-  return (
-    `\`${agentId}\` is not an Argus \`spawn_agent\` agent. It looks like a ` +
-    `background Agent-tool subagent (local_agent), which Argus doesn't track — ` +
-    `use the \`Agent\` tool's returned result or \`TaskOutput\` to read its final report.`
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1864,142 +1842,6 @@ export function createMcpServer(
   );
 
   // -------------------------------------------------------------------------
-  // read_agent_transcript
-  // -------------------------------------------------------------------------
-
-  server.tool(
-    "read_agent_transcript",
-    "Read the conversation transcript of another agent — the messages it sent and received, including its tool calls and their outputs. Use this to review what a child agent actually did before merging or to debug why a child got stuck. Returns the live in-memory snapshot if the agent is still active, falling back to the on-disk chat history for completed agents. `get_agent_result` only returns the final summary; this returns the full conversation. For long sessions, use `tail_messages`, `head_messages`, or `offset`+`limit` to pull a subset into your own context. The response includes `total_messages`, `start_index`, and `end_index` (half-open, end-exclusive) so you can paginate across follow-up calls.",
-    {
-      agent_id: z.string().describe("The agent ID returned by spawn_agent"),
-      tail_messages: z
-        .number()
-        .int()
-        .optional()
-        .describe(
-          "Return only the last N messages. Defaults to 50 when no other slicing param is given. Pass 0 for the full transcript. Ignored if `head_messages` or `offset` is set.",
-        ),
-      head_messages: z
-        .number()
-        .int()
-        .nonnegative()
-        .optional()
-        .describe(
-          "Return only the first N messages of the conversation. Useful for inspecting the initial prompt and early planning steps. Ignored if `offset` is set.",
-        ),
-      offset: z
-        .number()
-        .int()
-        .optional()
-        .describe(
-          "Start index of the slice to return. 0 is the first message. Negative values count from the end (e.g. -20 starts 20 messages before the end). Combine with `limit` to page through the transcript.",
-        ),
-      limit: z
-        .number()
-        .int()
-        .nonnegative()
-        .optional()
-        .describe(
-          "Maximum number of messages to return starting from `offset`. Defaults to all messages from `offset` onward. Only used when `offset` is set.",
-        ),
-    },
-    async ({ agent_id, tail_messages, head_messages, offset, limit }) => {
-      let conv: { messages?: unknown[]; title?: string } | null;
-      try {
-        conv = readConversation(agent_id);
-      } catch {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Failed to parse transcript snapshot for agent ${agent_id}.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-      if (!conv) {
-        const agentSession = appState.agents.get(agent_id);
-        if (agentSession) {
-          return {
-            content: [
-              {
-                type: "text" as const,
-                text: `Agent ${agent_id} has not published a transcript snapshot yet — wait for it to produce messages and try again, or open its tab in the UI.`,
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text:
-                localAgentHint(agent_id) ??
-                `No transcript available for agent ${agent_id}. The agent has stopped and its in-memory snapshot was released; use \`get_agent_result\` for the final result summary instead.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      const agentSession = appState.agents.get(agent_id);
-      const sessionMeta = agentSession
-        ? appState.sessions.get(agentSession.sessionId)
-        : undefined;
-      const messages = Array.isArray(conv.messages) ? conv.messages : [];
-      const total = messages.length;
-
-      let startIndex = 0;
-      let endIndex = total;
-      if (offset !== undefined) {
-        const normalizedOffset =
-          offset < 0 ? Math.max(0, total + offset) : Math.min(offset, total);
-        startIndex = normalizedOffset;
-        endIndex =
-          limit === undefined
-            ? total
-            : Math.min(total, normalizedOffset + Math.max(0, limit));
-      } else if (head_messages !== undefined) {
-        startIndex = 0;
-        endIndex = Math.min(total, head_messages);
-      } else {
-        const tail =
-          tail_messages === undefined ? 50 : Math.max(0, tail_messages);
-        startIndex = tail > 0 && total > tail ? total - tail : 0;
-        endIndex = total;
-      }
-
-      const trimmed = messages.slice(startIndex, endIndex);
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(
-              {
-                agent_id,
-                session_id: agentSession?.sessionId ?? null,
-                branch: sessionMeta?.branch ?? null,
-                title: conv.title ?? null,
-                total_messages: total,
-                start_index: startIndex,
-                end_index: endIndex,
-                returned_messages: trimmed.length,
-                messages: trimmed,
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
-    },
-  );
-
-  // -------------------------------------------------------------------------
   // list_run_commands
   // -------------------------------------------------------------------------
 
@@ -3240,6 +3082,7 @@ export function createMcpServer(
   // advertised to everyone and refused later.
   registerAutomationTools(server, callerAgentId);
   registerPastAgentTools(server);
+  registerTranscriptTools(server);
   registerPrWatchTools(server, callerAgentId, resolveSession);
   registerIntegrationTools(server, callerAgentId);
 

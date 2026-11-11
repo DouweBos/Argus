@@ -225,6 +225,10 @@ export interface EventMap {
   };
   agent_nudged: { critical: boolean; tagged: boolean };
   agent_stopped: undefined;
+  agent_transcript_read: {
+    has_subagents: boolean;
+    target: "agent" | "subagent";
+  };
   app_error: { message: string; scope: string };
   app_launched: undefined;
   app_quit: undefined;
@@ -322,6 +326,11 @@ export interface EventMap {
     success: boolean;
   };
   integration_reauth_needed: { service: "figma" | "linear" };
+  issue_designs_resolved: {
+    failed: number;
+    resolved: number;
+    skipped: number;
+  };
   issue_filed_from_device: { has_screenshot: boolean };
   issue_report_posted: { has_screenshots: boolean; trigger: "merge" | "pr" };
   linear_issue_updated: { field: "comment" | "priority" | "status" };
