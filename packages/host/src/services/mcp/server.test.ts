@@ -621,6 +621,8 @@ describe("spawn_agent", () => {
       undefined,
       undefined,
       undefined,
+      true,
+      undefined,
     );
     expect(mockSendAgentMessage).toHaveBeenCalledWith(
       "agent-42",
@@ -662,7 +664,52 @@ describe("spawn_agent", () => {
       undefined,
       undefined,
       undefined,
+      true,
+      undefined,
     );
+  });
+
+  it("spawns with device control off for this agent only", async () => {
+    appState.sessions.set("ws-1", mockSession());
+    mockStartAgent.mockResolvedValue({
+      agent_id: "agent-42",
+      session_id: "ws-1",
+      status: "running",
+      parent_agent_id: null,
+      created_at: 1_700_000_000_000,
+      model: null,
+      runner_id: "claude-code",
+    });
+
+    await client.callTool({
+      name: "spawn_agent",
+      arguments: {
+        session: "ws-1",
+        project_path: "/projects/frontend",
+        prompt: "Review the diff",
+        tools: { disabled: ["device-control"] },
+      },
+    });
+    expect(mockStartAgent.mock.calls[0].at(-1)).toEqual({
+      disabledTools: ["device-control"],
+    });
+  });
+
+  it("refuses devices for an agent without device control", async () => {
+    appState.sessions.set("ws-1", mockSession());
+    const result = await client.callTool({
+      name: "spawn_agent",
+      arguments: {
+        session: "ws-1",
+        project_path: "/projects/frontend",
+        prompt: "Test it",
+        devices: ["iPhone 17"],
+        tools: { disabled: ["device-control"] },
+      },
+    });
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain("not both");
+    expect(mockStartAgent).not.toHaveBeenCalled();
   });
 
   it("resumes a past agent on its runner session and runner", async () => {
@@ -712,6 +759,8 @@ describe("spawn_agent", () => {
       undefined,
       undefined,
       "claude-code",
+      true,
+      undefined,
     );
   });
 

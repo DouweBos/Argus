@@ -173,7 +173,9 @@ in particular.
 ## `related_projects` — cross-repo agent work
 
 Other repos that agents in this project may spawn worktrees in.
-Surfaced via the `list_projects` MCP tool.
+Surfaced via the `list_projects` MCP tool, and listed in every agent's system
+prompt with the related repo's run commands and worktrees, so an agent starts
+e.g. the backend's dev server with `trigger_run` rather than from Bash.
 
 ```jsonc
 "related_projects": [
@@ -474,6 +476,8 @@ Effective enable = the user has the tool on **and** this list doesn't contain it
 Edit via **Project Settings → Tools** — the dialog lists every tool and toggles them straight into this field. The list is checked into `.argus.json` so the mask travels with the repo.
 
 Valid ids: `device-recording`, `device-inspector`, `device-control`, `device-debug`. Unknown ids are ignored (no error, no warning) so the field tolerates renames across releases.
+
+An orchestrating agent can narrow this further for one child: `spawn_agent`, `spawn_agents_batch` and `create_session` take the same shape as `tools`, so `{ "disabled": ["device-control"] }` runs a deliberate no-device agent — no device guide in its prompt, and `conductor` and `design_compare` refused.
 
 ---
 

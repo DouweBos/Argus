@@ -171,6 +171,14 @@ export interface EventMap {
     warm: boolean;
     /** Its prompt, and its subagents', carry the conductor guide. */
     conductor_guide: boolean;
+    /** Its prompt carries the Linear / Figma tools section (an integration is connected). */
+    integrations_guide: boolean;
+    /** Devices its spawner handed it (`spawn_agent` `devices`); 0 for a warm spare. */
+    attached_device_count: number;
+    /** Related projects (and their run commands) its prompt lists. */
+    related_project_count: number;
+    /** Its spawner turned device control off for it (`tools.disabled`). */
+    device_control_off: boolean;
     /** The harness it runs on; a user's own runner is just `custom`. */
     runner: TelemetryRunner;
   };

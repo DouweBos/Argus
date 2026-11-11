@@ -27,6 +27,7 @@
 import type { ConversationMessage } from "./conversation/types";
 import type {
   AgentInfo,
+  AgentProfile,
   AgentResult,
   AgentSession,
   AgentStatusValue,
@@ -74,7 +75,18 @@ import { sessionRunnerId } from "../session/models";
 import { simulatorPool } from "../simulator/pool";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { loadConversationByRunnerSession } from "./chatHistory";
-import { injectDeviceFlag, isConductorInvocation } from "./conductorInjection";
+import {
+  CONDUCTOR_DISALLOWED,
+  denyConductor,
+  injectDeviceFlag,
+  isConductorInvocation,
+} from "./conductorInjection";
+import {
+  buildIntegrationsSection,
+  buildRelatedProjectsSection,
+  connectedIntegrations,
+  relatedProjectsContext,
+} from "./contextPrompt";
 import {
   contextWindowFromModelUsage,
   rememberContextWindow,
@@ -116,6 +128,12 @@ export async function ensureSimulatorForAgent(
   const existing = simulatorPool.getReservedUdid(agentId);
   if (existing) {
     return existing;
+  }
+  const attached = appState.agents
+    .get(agentId)
+    ?.profile?.devices?.find((d) => d.platform === "ios");
+  if (attached) {
+    return attached.id;
   }
 
   return simulatorPool.acquireSimulator(agentId, repoRoot);
@@ -294,6 +312,7 @@ export async function startAgent(
   presetAgentId?: string,
   runnerIdOverride?: string,
   allowSpare = true,
+  profile?: AgentProfile,
 ): Promise<AgentInfo> {
   const argusSession = liveSession(sessionId);
   const previous = reuseAgentId ? appState.agents.get(reuseAgentId) : null;
@@ -312,6 +331,7 @@ export async function startAgent(
     !resumeSessionId &&
     !appendSystemPrompt &&
     !platformsOverride?.length &&
+    !profile &&
     plan.permissionMode !== "trusted" &&
     plan.permissionMode !== "bypassPermissions";
   if (spareable && hasSpare(sessionId)) {
@@ -340,6 +360,7 @@ export async function startAgent(
     platformsOverride,
     parentAgentId,
     previous,
+    profile,
     reused: Boolean(reuseAgentId),
     register: true,
   });
@@ -353,6 +374,12 @@ export async function startAgent(
       session_kind: argusSession.kind,
       warm: false,
       conductor_guide: agentSession.conductorGuide === true,
+      integrations_guide: agentSession.integrationsGuide === true,
+      attached_device_count: agentSession.profile?.devices?.length ?? 0,
+      related_project_count: agentSession.relatedProjectCount ?? 0,
+      device_control_off: Boolean(
+        agentSession.profile?.disabledTools?.includes("device-control"),
+      ),
       runner: telemetryRunner(agentSession.runner),
     });
   }
@@ -439,6 +466,10 @@ function announceStart(
     session_kind: argusSession.kind,
     warm: true,
     conductor_guide: agent.conductorGuide === true,
+    integrations_guide: agent.integrationsGuide === true,
+    attached_device_count: 0,
+    related_project_count: agent.relatedProjectCount ?? 0,
+    device_control_off: false,
     runner: telemetryRunner(agent.runner),
   });
   emitAgentStatus(agent.agentId, agent.status);
@@ -573,6 +604,8 @@ interface SpawnArgs {
   parentAgentId?: string;
   /** The slot a respawn reuses; its counters carry over. */
   previous?: AgentSession | null;
+  /** Defaults to the previous spawn's, so a respawn keeps its devices. */
+  profile?: AgentProfile;
   reused: boolean;
   /** Listed in `appState.agents` before its first event lands; a spare stays out. */
   register: boolean;
@@ -591,6 +624,8 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     previous,
   } = args;
   const { runner, accountId } = args.plan;
+  const profile = args.profile ?? previous?.profile;
+  const attachedDevices = profile?.devices ?? [];
   const sessionId = argusSession.id;
   const worktreePath = argusSession.path;
 
@@ -650,20 +685,35 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   }
   const iosReservation = appState.simulatorReservations.get(agentId) ?? null;
   const browserSession = appState.browserSessions.get(sessionId) ?? null;
-  const runtimeSection = deviceControlEnabled(projectTools)
+  const deviceControl = deviceControlEnabled(
+    projectTools,
+    profile?.disabledTools,
+  );
+  const runtimeSection = deviceControl
     ? buildRuntimeSection({
         platforms: resolveRuntimePlatforms({
           override: platformsOverride,
           repoRoot: argusSession.repo_root,
           hasIosReservation: iosReservation !== null,
           hasBrowserSession: browserSession !== null,
+          attachedDevices,
         }),
         iosReservation,
+        attachedDevices,
         androidDevices: [...appState.androidDevices.values()],
         browserSession,
         browserUrl,
       })
     : null;
+  const integrationsSection = buildIntegrationsSection({
+    ...connectedIntegrations(),
+    deviceControl,
+  });
+  const relatedProjects = relatedProjectsContext(argusSession.repo_root);
+  const relatedSection = buildRelatedProjectsSection(relatedProjects);
+  const subagentContext = [runtimeSection, integrationsSection, relatedSection]
+    .filter(Boolean)
+    .join("\n\n");
 
   const systemPrompt = getSystemPromptForKind(argusSession.kind);
   const projectContext = `## Current Project\n\nYou are working in **${argusSession.repo_root}**. When using MCP tools that accept a \`project_path\` parameter, always pass \`${argusSession.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.\n\nYour own agent ID is \`${agentId}\`. The Argus MCP already knows who you are, so you normally don't need to pass it — \`parent_agent_id\` on \`spawn_agent\`/\`create_session\`/\`send_agent_message\` defaults to you automatically.`;
@@ -671,6 +721,8 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     systemPrompt,
     projectContext,
     runtimeSection,
+    integrationsSection,
+    relatedSection,
     appendSystemPrompt,
   ]
     .filter(Boolean)
@@ -692,6 +744,9 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
       return null;
     }
     const cmd = (req.input.command as string) ?? "";
+    if (!deviceControl && isConductorInvocation(cmd)) {
+      return denyConductor(req);
+    }
     if (!isConductorInvocation(cmd) || cmd.includes("--device")) {
       return null;
     }
@@ -782,12 +837,15 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     permissionMode: plan.permissionMode,
     resumeRef: resumeSessionId ?? null,
     systemPrompt: combinedPrompt,
-    subagentContext: runtimeSection ?? undefined,
+    subagentContext: subagentContext || undefined,
     mcpServers,
     debugLogPath,
     env,
     permissionPreHook,
-    disallowedTools: automationDisallowedTools(sessionId),
+    disallowedTools: [
+      ...automationDisallowedTools(sessionId),
+      ...(deviceControl ? [] : [CONDUCTOR_DISALLOWED]),
+    ],
   });
 
   // Construct the AgentSession now so event handlers can mutate it. The
@@ -818,6 +876,9 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     permissionMode: plan.permissionMode,
     accountId,
     conductorGuide: runtimeSection !== null,
+    integrationsGuide: integrationsSection !== null,
+    relatedProjectCount: relatedProjects.length,
+    profile,
   };
   if (args.register) {
     appState.agents.set(agentId, agentSession);

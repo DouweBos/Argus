@@ -93,6 +93,11 @@ While Linear is connected, every agent gets three Argus tools:
 They use Argus's connection, so agents don't need a Linear MCP server of
 their own.
 
+While Linear or Figma is connected, every agent's system prompt also says when
+to use these tools: read the ticket and its linked frames before coding, and
+run `design_compare` after the last code change (left out when device control
+is off for the agent).
+
 ## Reporting back
 
 When a session's work lands, Argus comments on its issue. The comment has the

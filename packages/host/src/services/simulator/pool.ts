@@ -13,6 +13,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { info } from "@argus/host/logger";
 import { appState, type SimulatorReservation } from "../../state";
+import { attachedUdids } from "../agent/agentDevices";
 import { execConductor } from "../conductor/logger";
 import { bootSimulator, listSimulators } from "./ios";
 
@@ -234,6 +235,9 @@ class SimulatorPool {
     const reservedUdids = new Set<string>();
     for (const r of appState.simulatorReservations.values()) {
       reservedUdids.add(r.udid);
+    }
+    for (const udid of attachedUdids()) {
+      reservedUdids.add(udid);
     }
 
     // Try to find a free (unreserved) project simulator.

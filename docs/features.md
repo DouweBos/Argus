@@ -248,6 +248,12 @@ terminals, merges — over the Model Context Protocol, so an agent can
 spawn and drive sibling sessions. Automation runs are gated: a `propose`
 automation is refused `create_session` and `spawn_agent`.
 
+An orchestrator can hand a child agent its own devices for the run —
+`spawn_agent`, `spawn_agents_batch` and `create_session` take `devices`
+(simulator UDIDs or names, Android serials), so one child can test on an
+iPhone and an iPad at once. The child's system prompt lists every device it
+holds, and no other agent is given them until it ends.
+
 ### Watching a pull request
 
 An agent that opened a pull request can call `watch_pull_request` and end

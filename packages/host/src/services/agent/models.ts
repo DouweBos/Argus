@@ -4,6 +4,7 @@
 
 import type { InitializeResponse } from "../llm/runners/claudeCode/protocol";
 import type { LlmRunner, LlmRunnerHandle } from "../llm/runners/types";
+import type { ToolId } from "../tools/types";
 
 // ---------------------------------------------------------------------------
 // AgentStatus
@@ -181,6 +182,27 @@ export interface AgentSession {
   accountId?: string;
   /** Spawned with the conductor guide in its prompt and its subagents'. */
   conductorGuide?: boolean;
+  /** Spawned with the ticket and design tools section in its prompt. */
+  integrationsGuide?: boolean;
+  /** Related projects its prompt lists. */
+  relatedProjectCount?: number;
+  /** What its spawner asked for beyond the defaults; a respawn keeps it. */
+  profile?: AgentProfile;
+}
+
+/** A device handed to an agent at spawn, besides any pool reservation. */
+export interface AttachedDevice {
+  platform: "android" | "ios";
+  /** Simulator UDID or Android serial. */
+  id: string;
+  name: string;
+}
+
+/** Per-agent spawn options that outlive the first spawn. */
+export interface AgentProfile {
+  devices?: AttachedDevice[];
+  /** Tools off for this agent on top of the app and project masks, e.g. `device-control`. */
+  disabledTools?: ToolId[];
 }
 
 // ---------------------------------------------------------------------------

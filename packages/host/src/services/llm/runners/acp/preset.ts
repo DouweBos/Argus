@@ -21,8 +21,8 @@ export interface AcpPreset {
   installCommand?: string;
   /** Where to install it from when there's no command. */
   installUrl?: string;
-  /** What the picker's Sign in runs in a terminal. */
-  loginCommand: string;
+  /** What the picker's Sign in runs in a terminal; absent for a user's own agent. */
+  loginCommand?: string;
   /** Auth method to call when `session/new` says it needs one. */
   authMethodId?: string | (() => string);
   /** The agent's own mode id for an Argus mode (first one it offers wins). */

@@ -22,6 +22,7 @@ import { z } from "zod";
 import { emitHostEvent } from "@argus/host/bus";
 import { createLogger, info } from "@argus/host/logger";
 import { appState } from "../../state";
+import { resolveDeviceRefs } from "../agent/agentDevices";
 import { resolveAttachments, mcpAttachmentSchema } from "../agent/attachments";
 import {
   startAgent,
@@ -67,6 +68,7 @@ import {
   waitForTerminal,
 } from "../terminal/multiplexer";
 import { stopTerminalGracefully } from "../terminal/stop";
+import { TOOL_IDS, type ToolId } from "../tools/types";
 import { worktreePurposeForCaller } from "./automationCaller";
 import {
   automationMergeBlock,
@@ -282,6 +284,20 @@ function findSession(
  * Returns the spawned agent info on success. Throws on session-ready timeout
  * or agent startup failure — callers translate that into MCP error content.
  */
+const devicesArg = z
+  .array(z.string())
+  .optional()
+  .describe(
+    "Devices to hand this agent for the run — simulator UDIDs or names, Android serials (from `conductor list-devices`). Its system prompt lists them and no other agent gets them; use it for a device matrix such as an iPhone plus an iPad instead of naming UDIDs in the prompt.",
+  );
+
+const toolsArg = z
+  .object({ disabled: z.array(z.enum(TOOL_IDS)).optional() })
+  .optional()
+  .describe(
+    'Tool profile for this agent: `{ disabled: ["device-control"] }` runs it without devices — no device guide in its prompt, `conductor` and `design_compare` refused. On top of the app and project Tools settings, which it can only narrow.',
+  );
+
 async function spawnAgentInSession(
   sessionId: string,
   prompt: string,
@@ -298,6 +314,10 @@ async function spawnAgentInSession(
     parentAgentId?: string;
     resumeSessionId?: string;
     runnerId?: string;
+    /** UDIDs, serials or names to hand the agent besides its pool simulator. */
+    devices?: string[];
+    /** Tools off for this agent only, on top of the app and project masks. */
+    tools?: { disabled?: ToolId[] };
     sourceTool: "create_session" | "spawn_agent" | "spawn_agents_batch";
   },
 ): Promise<{
@@ -307,6 +327,18 @@ async function spawnAgentInSession(
   parent_agent_id?: string;
 }> {
   await waitForSessionReady(sessionId);
+  const disabledTools = opts.tools?.disabled ?? [];
+  if (disabledTools.includes("device-control") && opts.devices?.length) {
+    throw "Pass `devices` or turn `device-control` off, not both.";
+  }
+  const devices = await resolveDeviceRefs(opts.devices ?? []);
+  const profile =
+    devices.length > 0 || disabledTools.length > 0
+      ? {
+          ...(devices.length > 0 ? { devices } : {}),
+          ...(disabledTools.length > 0 ? { disabledTools } : {}),
+        }
+      : undefined;
 
   const agentInfo = await startAgent(
     sessionId,
@@ -319,6 +351,8 @@ async function spawnAgentInSession(
     undefined,
     undefined,
     opts.runnerId,
+    true,
+    profile,
   );
 
   emitHostEvent("agent:started", {
@@ -690,6 +724,8 @@ export function createMcpServer(
         .describe(
           "Runtime platforms for the spawned agent. Ignored when `prompt` is omitted. See spawn_agent.",
         ),
+      devices: devicesArg,
+      tools: toolsArg,
       parent_agent_id: z
         .string()
         .optional()
@@ -712,6 +748,8 @@ export function createMcpServer(
       permission_mode,
       model,
       platforms,
+      devices,
+      tools,
       parent_agent_id,
       attachments,
     }) => {
@@ -787,6 +825,8 @@ export function createMcpServer(
             model,
             permission_mode,
             platforms,
+            devices,
+            tools,
             parentAgentId: parent_agent_id ?? callerAgentId ?? undefined,
             sourceTool: "create_session",
           });
@@ -927,6 +967,8 @@ export function createMcpServer(
         .describe(
           "Runtime platforms this child agent should target (e.g. ['ios']). Narrows the system prompt so the agent only sees iOS/Android/Web sections relevant to its task. Defaults to the project's `.argus.json` `platforms` field, or all three if unset.",
         ),
+      devices: devicesArg,
+      tools: toolsArg,
       parent_agent_id: z
         .string()
         .optional()
@@ -948,6 +990,8 @@ export function createMcpServer(
       permission_mode,
       model,
       platforms,
+      devices,
+      tools,
       parent_agent_id,
       attachments,
     }) => {
@@ -1020,6 +1064,8 @@ export function createMcpServer(
           model,
           permission_mode,
           platforms,
+          devices,
+          tools,
           parentAgentId: parent_agent_id ?? callerAgentId ?? undefined,
           resumeSessionId: past?.sessionId,
           runnerId: past?.runnerId,
@@ -1091,6 +1137,8 @@ export function createMcpServer(
               .array(z.enum(["ios", "android", "web"]))
               .optional()
               .describe("Runtime platforms this agent targets"),
+            devices: devicesArg,
+            tools: toolsArg,
             model: z
               .string()
               .optional()
@@ -1250,6 +1298,8 @@ export function createMcpServer(
             model: spec.model,
             permission_mode,
             platforms: spec.platforms,
+            devices: spec.devices,
+            tools: spec.tools,
             parentAgentId: parent_agent_id ?? callerAgentId ?? undefined,
             sourceTool: "spawn_agents_batch",
           });

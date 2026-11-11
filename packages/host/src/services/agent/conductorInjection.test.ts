@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { injectDeviceFlag, isConductorInvocation } from "./conductorInjection";
+import { describe, expect, it, vi } from "vitest";
+import {
+  denyConductor,
+  injectDeviceFlag,
+  isConductorInvocation,
+} from "./conductorInjection";
 
 const UDID = "1ACFD403-01F8-4258-A3CB-6FCFDE0C3108";
 
@@ -62,5 +66,24 @@ describe("injectDeviceFlag", () => {
   it("is a no-op when conductor only appears in a path", () => {
     const cmd = "git -C /Users/me/Work/Projects/conductor log --oneline -10";
     expect(injectDeviceFlag(cmd, UDID)).toBe(cmd);
+  });
+});
+
+describe("denyConductor", () => {
+  it("answers the request with a deny that says why", () => {
+    const approveRaw = vi.fn();
+    expect(
+      denyConductor({
+        toolName: "Bash",
+        toolUseId: "t1",
+        input: { command: "npx conductor inspect" },
+        rawRequest: { request_id: "r1" },
+        approveRaw,
+      }),
+    ).toEqual({ kind: "handled" });
+    const sent = JSON.parse(approveRaw.mock.calls[0][0] as string);
+    expect(sent.response.request_id).toBe("r1");
+    expect(sent.response.response.behavior).toBe("deny");
+    expect(sent.response.response.message).toMatch(/device control is off/i);
   });
 });

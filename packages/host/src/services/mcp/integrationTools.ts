@@ -40,8 +40,17 @@ export function registerIntegrationTools(
   }
   if (figmaApi()) {
     registerFigmaTools(server);
-    registerDesignLoopTools(server, callerAgentId);
+    if (!deviceControlOffFor(callerAgentId)) {
+      registerDesignLoopTools(server, callerAgentId);
+    }
   }
+}
+
+/** Its spawner ran it without devices, so there's nothing to compare against. */
+function deviceControlOffFor(callerAgentId: string | null): boolean {
+  const agent = callerAgentId ? appState.agents.get(callerAgentId) : undefined;
+
+  return Boolean(agent?.profile?.disabledTools?.includes("device-control"));
 }
 
 /** The calling agent's worktree and the simulator it holds, if any. */

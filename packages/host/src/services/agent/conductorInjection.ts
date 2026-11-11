@@ -1,3 +1,32 @@
+import type { PermissionPreHook } from "../llm/runners/types";
+
+/** The runner-enforced refusal for an agent spawned with device control off. */
+export const CONDUCTOR_DISALLOWED = "Bash(conductor:*)";
+
+/** Refuse a conductor command the runner's own rule didn't catch (`npx conductor`, `cd x && conductor`). */
+export function denyConductor(req: Parameters<PermissionPreHook>[0]): {
+  kind: "handled";
+} {
+  const requestId =
+    (req.rawRequest as { request_id?: string } | undefined)?.request_id ?? "";
+  req.approveRaw(
+    JSON.stringify({
+      type: "control_response",
+      response: {
+        subtype: "success",
+        request_id: requestId,
+        response: {
+          behavior: "deny",
+          message:
+            "Device control is off for this agent: it was started for a run without devices, so don't use conductor.",
+        },
+      },
+    }),
+  );
+
+  return { kind: "handled" };
+}
+
 /**
  * Match a `conductor` invocation as a command head: at the start of the line
  * or after a shell separator (`;`, `&&`, `||`, `|`, `` ` ``, `$(`), optionally

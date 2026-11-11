@@ -4,6 +4,7 @@
  * its system prompt) and to every subagent it spawns (via `SubagentStart`).
  */
 
+import type { AttachedDevice } from "./models";
 import type {
   AndroidDeviceSession,
   BrowserSession,
@@ -16,6 +17,8 @@ import { toolEnabled } from "../tools/state";
 export interface RuntimeContext {
   platforms: ReadonlySet<RuntimePlatform>;
   iosReservation: SimulatorReservation | null;
+  /** Handed to the agent at spawn, on top of the reservation. */
+  attachedDevices: AttachedDevice[];
   androidDevices: AndroidDeviceSession[];
   browserSession: BrowserSession | null;
   browserUrl: string | null;
@@ -32,13 +35,15 @@ export const CONDUCTOR_GUIDE = [
   "- The devices below are the user's live views. Don't erase, delete or shut them down, don't use `--clear-state` / `--clear-keychain` on them unless asked, and never touch another agent's device. For destructive experiments, boot your own with `conductor start-device` and stop it when you're done.",
 ].join("\n");
 
-/** The guide ships unless device control is off in Tools, app-wide or for this project. */
+/** The guide ships unless device control is off in Tools — app-wide, for this project, or for this agent. */
 export function deviceControlEnabled(
   projectTools: { disabled?: string[] } | null | undefined,
+  agentDisabled: readonly string[] = [],
 ): boolean {
   return (
     toolEnabled("device-control") &&
-    !(projectTools?.disabled ?? []).includes("device-control")
+    !(projectTools?.disabled ?? []).includes("device-control") &&
+    !agentDisabled.includes("device-control")
   );
 }
 
@@ -52,6 +57,7 @@ export function resolveRuntimePlatforms(opts: {
   repoRoot: string;
   hasIosReservation: boolean;
   hasBrowserSession: boolean;
+  attachedDevices?: AttachedDevice[];
 }): Set<RuntimePlatform> {
   const platforms = new Set<RuntimePlatform>(
     opts.override?.length ? opts.override : detectRepoPlatforms(opts.repoRoot),
@@ -61,6 +67,9 @@ export function resolveRuntimePlatforms(opts: {
   }
   if (opts.hasBrowserSession) {
     platforms.add("web");
+  }
+  for (const d of opts.attachedDevices ?? []) {
+    platforms.add(d.platform);
   }
 
   return platforms;
@@ -88,7 +97,13 @@ export function buildRuntimeSection(ctx: RuntimeContext): string | null {
     CONDUCTOR_GUIDE,
   ];
   if (platforms.has("ios")) {
-    lines.push("", ...iosLines(ctx.iosReservation));
+    lines.push(
+      "",
+      ...iosLines(
+        ctx.iosReservation,
+        ctx.attachedDevices.filter((d) => d.platform === "ios"),
+      ),
+    );
   }
   if (platforms.has("tvos")) {
     lines.push(
@@ -99,7 +114,13 @@ export function buildRuntimeSection(ctx: RuntimeContext): string | null {
     );
   }
   if (platforms.has("android")) {
-    lines.push("", ...androidLines(ctx.androidDevices));
+    lines.push(
+      "",
+      ...androidLines(
+        ctx.androidDevices,
+        ctx.attachedDevices.filter((d) => d.platform === "android"),
+      ),
+    );
   }
   if (platforms.has("ios") || platforms.has("android")) {
     lines.push(
@@ -114,25 +135,58 @@ export function buildRuntimeSection(ctx: RuntimeContext): string | null {
   return lines.join("\n");
 }
 
-function iosLines(reservation: SimulatorReservation | null): string[] {
-  const head = ["### iOS simulator", ""];
-  if (!reservation) {
-    return [
-      ...head,
-      "A simulator is reserved for you the first time you run `conductor` without `--device` — you don't need `start-device` for it.",
-    ];
-  }
-
-  return [
-    ...head,
-    `Your simulator is **${reservation.deviceName}** (UDID \`${reservation.udid}\`, also \`$CONDUCTOR_IOS_DEVICE_ID\`), reserved for this agent. \`conductor\` targets it when you pass no \`--device\`.`,
-    `Tools outside conductor must name it, or they install on whichever simulator booted first and collide with other agents: \`pnpm ios --device "${reservation.deviceName}"\`, \`xcodebuild -destination 'id=${reservation.udid}'\`.`,
-  ];
+function attachedLine(d: AttachedDevice): string {
+  return `- **${d.name}**: \`conductor <command> --device ${d.id}\``;
 }
 
-function androidLines(devices: AndroidDeviceSession[]): string[] {
+function iosLines(
+  reservation: SimulatorReservation | null,
+  attached: AttachedDevice[],
+): string[] {
+  const head = [
+    attached.length > 0 ? "### iOS simulators" : "### iOS simulator",
+    "",
+  ];
+  const lines: string[] = [];
+  if (reservation) {
+    lines.push(
+      `Your simulator is **${reservation.deviceName}** (UDID \`${reservation.udid}\`, also \`$CONDUCTOR_IOS_DEVICE_ID\`), reserved for this agent. \`conductor\` targets it when you pass no \`--device\`.`,
+    );
+  } else if (attached.length === 0) {
+    lines.push(
+      "A simulator is reserved for you the first time you run `conductor` without `--device` — you don't need `start-device` for it.",
+    );
+  }
+  if (attached.length > 0) {
+    lines.push(
+      reservation
+        ? "Also yours, for this run — always pass `--device`:"
+        : `Yours for this run — \`conductor\` without \`--device\` targets **${attached[0].name}**:`,
+      ...attached.map(attachedLine),
+    );
+  }
+  const fallback = attached.at(0);
+  const named = reservation
+    ? { name: reservation.deviceName, udid: reservation.udid }
+    : fallback && { name: fallback.name, udid: fallback.id };
+  if (named) {
+    lines.push(
+      `Tools outside conductor must name a device, or they install on whichever simulator booted first and collide with other agents: \`pnpm ios --device "${named.name}"\`, \`xcodebuild -destination 'id=${named.udid}'\`.`,
+    );
+  }
+
+  return [...head, ...lines];
+}
+
+function androidLines(
+  devices: AndroidDeviceSession[],
+  attached: AttachedDevice[],
+): string[] {
   const head = ["### Android emulator", ""];
-  if (devices.length === 0) {
+  const shared = devices.filter(
+    (d) => !attached.some((a) => a.id === d.serial),
+  );
+  if (shared.length === 0 && attached.length === 0) {
     return [
       ...head,
       "Find a booted device with `conductor list-devices` and target it with `--device <serial>`.",
@@ -141,7 +195,13 @@ function androidLines(devices: AndroidDeviceSession[]): string[] {
 
   return [
     ...head,
-    ...devices.map(
+    ...(attached.length > 0
+      ? ["Yours for this run:", ...attached.map(attachedLine)]
+      : []),
+    ...(attached.length > 0 && shared.length > 0
+      ? ["Also open in Argus:"]
+      : []),
+    ...shared.map(
       (d) =>
         `- **${d.deviceName}** (${d.type}): \`conductor <command> --device ${d.serial}\``,
     ),
