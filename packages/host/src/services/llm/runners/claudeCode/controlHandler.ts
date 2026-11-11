@@ -92,7 +92,14 @@ export class ControlHandler {
   /** Text every subagent gets at start, via the `SubagentStart` hook. */
   private subagentContext: string | null = null;
 
-  constructor(private readonly agentId: string) {}
+  /**
+   * @param stopGate answers the `Stop` hook: a reason keeps the agent going,
+   *   `null` lets it stop. Absent means no `Stop` hook is registered.
+   */
+  constructor(
+    private readonly agentId: string,
+    private readonly stopGate?: (stopHookActive: boolean) => string | null,
+  ) {}
 
   // -------------------------------------------------------------------------
   // Initialize: send capabilities request, handle response
@@ -122,11 +129,16 @@ export class ControlHandler {
     }
     // `--append-system-prompt` only reaches the main loop; Agent-tool and
     // Workflow subagents get this through a hook answered over stdio instead.
+    const hooks: Record<string, unknown> = {};
     if (subagentContext) {
       this.subagentContext = subagentContext;
-      request.hooks = {
-        SubagentStart: [{ hookCallbackIds: [SUBAGENT_CONTEXT_HOOK_ID] }],
-      };
+      hooks.SubagentStart = [{ hookCallbackIds: [SUBAGENT_CONTEXT_HOOK_ID] }];
+    }
+    if (this.stopGate) {
+      hooks.Stop = [{ hookCallbackIds: [STOP_GATE_HOOK_ID] }];
+    }
+    if (Object.keys(hooks).length > 0) {
+      request.hooks = hooks;
     }
 
     return JSON.stringify({
@@ -238,6 +250,16 @@ export class ControlHandler {
     const payload = request.request;
 
     if (payload.subtype === "hook_callback") {
+      if (payload.callback_id === STOP_GATE_HOOK_ID) {
+        const reason =
+          this.stopGate?.(payload.input.stop_hook_active === true) ?? null;
+
+        return buildHookResult(
+          request.request_id,
+          reason ? { decision: "block", reason } : {},
+        );
+      }
+
       return buildHookResponse(
         request.request_id,
         payload.callback_id === SUBAGENT_CONTEXT_HOOK_ID
@@ -515,23 +537,30 @@ export class ControlHandler {
 // ---------------------------------------------------------------------------
 
 export const SUBAGENT_CONTEXT_HOOK_ID = "argus_subagent_context";
+export const STOP_GATE_HOOK_ID = "argus_stop_gate";
 
 /** Answer a hook callback; no context is an empty, no-op hook result. */
 function buildHookResponse(requestId: string, context: string | null): string {
+  return buildHookResult(
+    requestId,
+    context
+      ? {
+          hookSpecificOutput: {
+            hookEventName: "SubagentStart",
+            additionalContext: context,
+          },
+        }
+      : {},
+  );
+}
+
+function buildHookResult(
+  requestId: string,
+  result: Record<string, unknown>,
+): string {
   const response: ControlResponse = {
     type: "control_response",
-    response: {
-      subtype: "success",
-      request_id: requestId,
-      response: context
-        ? {
-            hookSpecificOutput: {
-              hookEventName: "SubagentStart",
-              additionalContext: context,
-            },
-          }
-        : {},
-    },
+    response: { subtype: "success", request_id: requestId, response: result },
   };
 
   return JSON.stringify(response);
