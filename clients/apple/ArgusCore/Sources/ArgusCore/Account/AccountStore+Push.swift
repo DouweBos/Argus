@@ -87,7 +87,8 @@ extension AccountStore {
   /// join: for a background wake-up with no UI. False when not on an account.
   public func resumeForWake() async -> Bool {
     vault = await vaultStore.load()
-    guard let root = vault.root, case .ok(let verified) = AccountLog.verify(vault.entries, root: root),
+    guard vault.signedOut != true, let root = vault.root,
+      case .ok(let verified) = AccountLog.verify(vault.entries, root: root),
       ownMemberLive(in: verified)
     else { return false }
     state = verified

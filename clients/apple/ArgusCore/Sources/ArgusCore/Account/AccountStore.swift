@@ -176,8 +176,8 @@ public final class AccountStore {
   /// `restoringSession: false` leaves the auth provider (and its keychain) alone until a sign-in.
   public func start(restoringSession: Bool = true) async {
     vault = await vaultStore.load()
-    if let root = vault.root, case .ok(let verified) = AccountLog.verify(vault.entries, root: root),
-      ownMemberLive(in: verified)
+    if vault.signedOut != true, let root = vault.root,
+      case .ok(let verified) = AccountLog.verify(vault.entries, root: root), ownMemberLive(in: verified)
     {
       state = verified
       phase = .ready
@@ -342,6 +342,10 @@ public final class AccountStore {
           return
         }
       }
+      if vault.signedOut != nil {
+        vault.signedOut = nil
+        await vaultStore.save(vault)
+      }
       phase = .ready
       publishHosts()
       if let provider { onEvent(.signedIn(provider: provider, firstDevice: firstDevice)) }
@@ -447,7 +451,7 @@ public final class AccountStore {
       _ = try await client.account()
       return false
     } catch AccountServiceError.notSignedIn {
-      await forgetAccount()
+      await forgetAccount(keepingKeys: true)
       error = AccountServiceError.notSignedIn.message
       onEvent(.sessionLost)
       return true
@@ -456,8 +460,14 @@ public final class AccountStore {
     }
   }
 
-  func forgetAccount() async {
-    vault = .empty
+  /// `keepingKeys`: a lost session, not a sign-out. The keys stay on the account, so
+  /// signing back in resumes this device; another account's sign-in still wipes them.
+  func forgetAccount(keepingKeys: Bool = false) async {
+    if keepingKeys {
+      vault.signedOut = true
+    } else {
+      vault = .empty
+    }
     await vaultStore.save(vault)
     state = nil
     hosts = []

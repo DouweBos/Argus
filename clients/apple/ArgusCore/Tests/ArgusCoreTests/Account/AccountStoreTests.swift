@@ -138,8 +138,36 @@ struct AccountStoreTests {
     #expect(store.phase == .signedOut)
     #expect(store.error == AccountServiceError.notSignedIn.message)
     #expect(events == [.sessionLost])
-    #expect(await memory.load().root == nil)
+    // The keys stay, flagged: signing back in resumes them rather than asking to join.
+    let kept = await memory.load()
+    #expect(kept.root == state.root)
+    #expect(kept.keys == phone.deviceKeys)
+    #expect(kept.signedOut == true)
     #expect(service.batches.isEmpty)
+  }
+
+  @Test("signing back in after a lost session resumes the device, no join to approve")
+  func resumeAfterLostSession() async throws {
+    let phone = TestKey(1)
+    let g = genesis(phone)
+    let state = try #require(AccountLog.verify([g]).state)
+    service.seed([g])
+    let (store, memory) = makeStore(vault: AccountVault(keys: phone.deviceKeys, root: state.root, entries: [g]))
+    await store.start()
+    #expect(store.phase == .signedOut)
+
+    // A relaunch while still signed out stays out, and doesn't report the loss again.
+    let (relaunched, relaunchedVault) = makeStore(vault: await memory.load())
+    var events: [AccountStore.Event] = []
+    relaunched.onEvent = { events.append($0) }
+    await relaunched.start()
+    #expect(relaunched.phase == .signedOut)
+    #expect(events.isEmpty)
+
+    await relaunched.signIn(with: .github)
+    #expect(relaunched.phase == .ready)
+    #expect(relaunched.join == .idle)
+    #expect(await relaunchedVault.load().signedOut == nil)
   }
 
   @Test("a retry after a failed account setup sets it up without signing in again")
