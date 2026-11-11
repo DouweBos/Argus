@@ -68,6 +68,7 @@ struct LLMSection: View {
           Text(runner.label).tag(runner.id).disabled(!runner.available)
         }
       }
+      RunnerSetupMenu(flows: store.runners.compactMap(RunnerSetupFlow.init), window: .projectSettings)
     } footer: {
       Text("The CLI/agent that drives sessions. Unknown ids also fall back to the app default.")
     }

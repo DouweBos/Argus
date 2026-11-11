@@ -11,6 +11,7 @@
   struct MacChatInputView: View {
     @Environment(\.theme) var theme
     @Environment(HostStore.self) var host
+    @Environment(\.runnerSetup) var runnerSetup
     @Environment(\.composerTyping) var composerTyping
     @Environment(\.composerDropInbox) var dropInbox
     @Environment(\.composerFocusRequest) var focusRequest

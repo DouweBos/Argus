@@ -168,12 +168,35 @@ public struct RemoteRunner: Codable, Hashable, Sendable, Identifiable {
   public var available: Bool?
   /// How to install it, when unavailable.
   public var unavailableReason: String?
+  /// How Argus installs its CLI and signs in to it; nil when it can't.
+  public var setup: Setup?
+
+  /// The commands behind a runner's Install and Sign in.
+  public struct Setup: Codable, Hashable, Sendable {
+    public var installCommand: String?
+    public var installUrl: String?
+    public var loginCommand: String?
+
+    public init(installCommand: String? = nil, installUrl: String? = nil, loginCommand: String? = nil) {
+      self.installCommand = installCommand
+      self.installUrl = installUrl
+      self.loginCommand = loginCommand
+    }
+
+    public var canInstall: Bool { installCommand != nil || installUrl != nil }
+
+    enum CodingKeys: String, CodingKey {
+      case installCommand = "install_command"
+      case installUrl = "install_url"
+      case loginCommand = "login_command"
+    }
+  }
 
   /// Older hosts don't say, and every runner they listed could run.
   public var isAvailable: Bool { available ?? true }
 
   enum CodingKeys: String, CodingKey {
-    case id, models, available
+    case id, models, available, setup
     case unavailableReason = "unavailable_reason"
     case reportedModels = "reported_models"
     case supportsTranscriptFork = "supports_transcript_fork"

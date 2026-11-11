@@ -231,6 +231,16 @@ export interface PreflightFail {
 }
 export type PreflightResult = PreflightFail | PreflightOk;
 
+/** How a runner's CLI gets onto a computer and signed in, for the picker's setup. */
+export interface RunnerSetup {
+  /** Shell command that installs the CLI, when there is one. */
+  installCommand: string | null;
+  /** Page to install it from, when it has no command. */
+  installUrl: string | null;
+  /** Shell command that signs in, run in a terminal after installing. */
+  loginCommand: string | null;
+}
+
 export interface OneShotArgs {
   prompt: string;
   timeoutMs?: number;
@@ -284,6 +294,8 @@ export interface LlmRunner {
   /** Optional: model used when no level of the cascade pinned one. */
   defaultModel?: () => string | null;
   preflight: () => Promise<PreflightResult>;
+  /** Optional: how to install and sign in, when Argus can do it for you. */
+  setup?: () => RunnerSetup;
   spawn: (args: LlmRunnerSpawnArgs) => Promise<LlmRunnerHandle>;
   /** One-shot title/slug invocation (replaces direct claudePrint). */
   oneShot: (args: OneShotArgs) => Promise<string | null>;

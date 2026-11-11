@@ -101,6 +101,7 @@ struct AutomationEditorForm: View {
             .disabled(!runner.isAvailable).help(runner.unavailableReason ?? "")
         }
       }
+      RunnerSetupMenu(flows: store.runners.compactMap(RunnerSetupFlow.init), window: .main)
     }
   }
 

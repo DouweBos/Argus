@@ -30,6 +30,7 @@ import type {
 import type { IPty } from "node-pty";
 import type * as NodePty from "node-pty";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { emitHostEvent } from "@argus/host/bus";
 import { warn } from "@argus/host/logger";
@@ -341,6 +342,28 @@ function buildWorkspaceEnv(
 // IPC-facing functions
 // ---------------------------------------------------------------------------
 
+/** `env` without undefined values (node-pty's posix_spawnp fails on them), as a terminal. */
+function ptyEnv(env: NodeJS.ProcessEnv): Record<string, string> {
+  const clean: Record<string, string> = {};
+  for (const [k, v] of Object.entries(env)) {
+    if (v !== undefined) {
+      clean[k] = v;
+    }
+  }
+  // Advertise 24-bit color support so TUIs (nvim, bat, fzf, delta, …) enable
+  // truecolor rendering. `TERM` is set to xterm-256color below via node-pty.
+  if (!clean.COLORTERM) {
+    clean.COLORTERM = "truecolor";
+  }
+  // Let tools identify the host terminal (git config hints, shell rc logic,
+  // etc.). Distinct from `TERM`, which describes capabilities.
+  if (!clean.TERM_PROGRAM) {
+    clean.TERM_PROGRAM = "Argus";
+  }
+
+  return clean;
+}
+
 /**
  * A session terminal's environment: the host's, with the session's Claude
  * account and workspace env on top.
@@ -350,24 +373,7 @@ export function terminalEnv(ws: Session): Record<string, string> {
   // undefined entries from process.env to avoid posix_spawnp failures. The
   // account overlay makes `claude` in this terminal use the same account as
   // the session's agents.
-  const cleanEnv: Record<string, string> = {};
-  for (const [k, v] of Object.entries(
-    envForAccount(resolveAccountForSession(ws)),
-  )) {
-    if (v !== undefined) {
-      cleanEnv[k] = v;
-    }
-  }
-  // Advertise 24-bit color support so TUIs (nvim, bat, fzf, delta, …) enable
-  // truecolor rendering. `TERM` is set to xterm-256color below via node-pty.
-  if (!cleanEnv.COLORTERM) {
-    cleanEnv.COLORTERM = "truecolor";
-  }
-  // Let tools identify the host terminal (git config hints, shell rc logic,
-  // etc.). Distinct from `TERM`, which describes capabilities.
-  if (!cleanEnv.TERM_PROGRAM) {
-    cleanEnv.TERM_PROGRAM = "Argus";
-  }
+  const cleanEnv = ptyEnv(envForAccount(resolveAccountForSession(ws)));
   Object.assign(
     cleanEnv,
     buildWorkspaceEnv(ws.id, ws.kind, ws.env_index ?? undefined, ws.repo_root),
@@ -431,18 +437,57 @@ export function createTerminal(
   } else if (command) {
     spawnWith = commandShell(command);
   }
-  const [program, args] = spawnWith;
+
+  return spawnTerminal({
+    owner: sessionId,
+    cwd,
+    env: terminalEnv(ws),
+    spawnWith,
+    title,
+  });
+}
+
+/**
+ * A terminal no session owns, e.g. one installing a runner's CLI: it runs
+ * `command` in the home directory with the host's environment, and ends on
+ * an exit-status line like a run command.
+ */
+export function createHostTerminal(
+  owner: string,
+  command: string,
+  title: string,
+): string {
+  sweepExitedTerminals();
+
+  return spawnTerminal({
+    owner,
+    cwd: os.homedir(),
+    env: ptyEnv(process.env),
+    spawnWith: commandShell(command),
+    title,
+    runTitle: title,
+  });
+}
+
+function spawnTerminal(opts: {
+  owner: string;
+  cwd: string;
+  env: Record<string, string>;
+  spawnWith: [string, string[]];
+  title?: string;
+  runTitle?: string;
+}): string {
+  const { owner: sessionId, cwd, title } = opts;
+  const [program, args] = opts.spawnWith;
 
   const terminalId = crypto.randomUUID();
-
-  const cleanEnv = terminalEnv(ws);
 
   const ptyProcess: IPty = pty.spawn(program, args, {
     name: "xterm-256color",
     cols: 80,
     rows: 24,
     cwd,
-    env: cleanEnv,
+    env: opts.env,
   });
   recordPty(ptyProcess.pid);
 
@@ -474,6 +519,7 @@ export function createTerminal(
     pid: ptyProcess.pid,
     sessionId,
     title,
+    runTitle: opts.runTitle,
     outputLog: "",
     outputTotalBytes: 0,
     outputDroppedBytes: 0,

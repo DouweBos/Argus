@@ -12,6 +12,7 @@ import type {
   PreflightResult,
   RunnerCapabilities,
   RunnerModelOption,
+  RunnerSetup,
 } from "./runners/types";
 import { warn } from "@argus/host/logger";
 import {
@@ -98,6 +99,8 @@ export interface RegisteredRunner {
   available?: boolean;
   /** How to install it, when unavailable. */
   unavailableReason?: string | null;
+  /** How Argus installs and signs in to it; absent when it can't. */
+  setup?: RunnerSetup | null;
 }
 
 export interface RunnerAvailability {
@@ -111,6 +114,11 @@ const availability = new Map<
   string,
   { at: number; result: Promise<PreflightResult> }
 >();
+
+/** Drop a runner's cached probe, so the next read sees an install that just finished. */
+export function forgetRunnerAvailability(runnerId: string): void {
+  availability.delete(runnerId);
+}
 
 /** Whether each runner's CLI is installed, probed in parallel and cached briefly. */
 export async function runnerAvailability(
@@ -158,6 +166,7 @@ export async function describeRunners(): Promise<RegisteredRunner[]> {
     defaultModel: r.defaultModel?.() ?? null,
     available: avail.get(r.id)?.available ?? true,
     unavailableReason: avail.get(r.id)?.unavailableReason ?? null,
+    setup: r.setup?.() ?? null,
   }));
 }
 

@@ -44,6 +44,8 @@ final class DesktopModel {
   let localAccountLink = LocalHostAccountLink()
   /// The menu-bar item, when Settings shows it.
   let menuBar = MenuBarModel()
+  /// Installing and signing in to a runner's CLI from its picker entry.
+  let runnerSetup = RunnerSetupModel()
   /// Sparkle, on the channel the host's `updater_channel` names.
   let updater = StandardUpdater(feed: UpdateFeed(product: "argus-mac", channel: .latest))
   /// Every request, routed to the host that owns its subject.
@@ -207,6 +209,7 @@ final class DesktopModel {
     hosts.onRouteUpgraded = { from, to in MacTelemetry.capture(.routeUpgraded(from: from, to: to)) }
     wireAccount()
     menuBar.install(on: self)
+    runnerSetup.install(on: self)
   }
 
   func start() {

@@ -3,6 +3,8 @@ import {
   CustomRunner,
   CustomRunnerPreset,
   RegisteredRunner,
+  RunnerSetupStarted,
+  RunnerSetupStep,
 } from "../models/llm";
 import { type CommandSpec, NoParams, Void } from "./spec";
 
@@ -20,6 +22,16 @@ export const LLM_COMMANDS = {
     tier: "admin",
     params: z.object({ agentId: z.string(), runnerId: z.string() }),
     result: z.null(),
+  },
+  /**
+   * Install a runner's CLI or sign in to it, in a terminal of its own (or the
+   * install page, for a CLI with no command). The runner is re-probed and
+   * `llm:runners_changed` fires once the terminal exits.
+   */
+  llm_runner_setup: {
+    tier: "admin",
+    params: z.object({ runnerId: z.string(), step: RunnerSetupStep }),
+    result: RunnerSetupStarted,
   },
   llm_list_custom_runners: {
     tier: "admin",

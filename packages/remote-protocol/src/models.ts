@@ -785,6 +785,15 @@ export const RemoteRunner = z.object({
   available: z.boolean().optional(),
   /** How to install it, when unavailable. */
   unavailable_reason: z.string().nullable().optional(),
+  /** How Argus installs and signs in to it; absent when it can't. */
+  setup: z
+    .object({
+      install_command: z.string().nullable(),
+      install_url: z.string().nullable(),
+      login_command: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 export type RemoteRunner = z.infer<typeof RemoteRunner>;
 

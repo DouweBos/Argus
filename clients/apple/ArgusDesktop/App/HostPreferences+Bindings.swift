@@ -31,6 +31,9 @@ extension HostPreferences {
           if case .string(let model) = llm["model"] { prefs.defaultLlmModel = model } else {
             prefs.defaultLlmModel = ""
           }
+          if case .string(let runner) = llm["runner"] { prefs.defaultLlmRunner = runner } else {
+            prefs.defaultLlmRunner = ""
+          }
         }),
       Binding(
         slot: .setting("custom_editors"), read: { json(prefs.customEditors) },

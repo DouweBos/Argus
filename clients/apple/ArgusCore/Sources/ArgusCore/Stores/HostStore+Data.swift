@@ -53,7 +53,13 @@ extension HostStore {
   /// shared by every spawn sheet. Older computers don't answer, which leaves
   /// the list empty and the picker hidden.
   public func loadRunners() async {
-    guard let backend, runners.isEmpty else { return }
+    guard runners.isEmpty else { return }
+    await reloadRunners()
+  }
+
+  /// The list again, after a runner's CLI was installed or signed in to.
+  public func reloadRunners() async {
+    guard let backend else { return }
     struct Result: Decodable { let runners: [RemoteRunner] }
     guard let result = try? await backend.request(
       .automationsRunners, EmptyParams(), as: Result.self) else { return }

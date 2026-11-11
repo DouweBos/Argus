@@ -27,6 +27,8 @@ struct SettingsWindow: View {
     .navigationTitle(model.settingsTab.title)
     .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
     .environment(host)
+    .modifier(RunnerSetupPresenter(window: .settings))
+    .onChange(of: model.runnerSetup.revision) { Task { await host.loadRunners() } }
     // Settings that live on a host are the shown host's.
     .task(id: SettingsLoadKey(ready: model.store.connection == .ready, host: model.hosts.focused)) {
       guard model.store.connection == .ready else { return }

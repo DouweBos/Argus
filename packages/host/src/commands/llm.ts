@@ -7,6 +7,7 @@ import {
   describeRunners,
   saveCustomRunnerAndSync,
 } from "../services/llm/registry";
+import { startRunnerSetup } from "../services/llm/runnerSetup";
 
 export function registerLlmCommands(): void {
   defineTypedCommand("llm_list_runners", () => describeRunners());
@@ -15,6 +16,9 @@ export function registerLlmCommands(): void {
 
     return null;
   });
+  defineTypedCommand("llm_runner_setup", (p) =>
+    startRunnerSetup(p.runnerId, p.step),
+  );
   defineTypedCommand("llm_list_custom_runners", () => listCustomRunners());
   defineTypedCommand(
     "llm_list_custom_runner_presets",

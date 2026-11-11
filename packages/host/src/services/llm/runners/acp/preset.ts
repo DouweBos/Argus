@@ -17,6 +17,12 @@ export interface AcpPreset {
   installHint: string;
   /** How to sign in, shown when the agent says it isn't. */
   loginHint: string;
+  /** What the picker's Install runs in a terminal; absent when there's only a page. */
+  installCommand?: string;
+  /** Where to install it from when there's no command. */
+  installUrl?: string;
+  /** What the picker's Sign in runs in a terminal. */
+  loginCommand: string;
   /** Auth method to call when `session/new` says it needs one. */
   authMethodId?: string | (() => string);
   /** The agent's own mode id for an Argus mode (first one it offers wins). */

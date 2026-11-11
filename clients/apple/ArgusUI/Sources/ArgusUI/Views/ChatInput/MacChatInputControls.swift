@@ -64,7 +64,8 @@
       .help("Switch model")
     }
 
-    /// Which CLI the started agent runs on; one whose CLI is missing is listed, disabled, with how to install it.
+    /// Which CLI the started agent runs on; one whose CLI is missing opens its setup, or is
+    /// listed disabled with how to install it where setup can't run.
     private var runnerMenu: some View {
       ChromeMenuButton(edge: .above) {
         ChromeMenuEntry.header("Runner")
@@ -72,10 +73,13 @@
           pickRunner(nil)
         }
         for runner in host.runners {
+          let installable = runnerSetup != nil && RunnerSetupAction.offers(runner)
           ChromeMenuItem(
-            runner.displayName, subtitle: runner.pickerHint, checked: runner.id == composer.runner?.id,
-            disabled: !runner.isAvailable
-          ) { pickRunner(runner) }
+            runner.displayName, subtitle: installable ? "Not installed · Install…" : runner.pickerHint,
+            checked: runner.id == composer.runner?.id, disabled: !runner.isAvailable && !installable
+          ) {
+            if runner.isAvailable { pickRunner(runner) } else { runnerSetup?(runner) }
+          }
         }
       } label: { open in
         ComposerPillLabel(

@@ -82,6 +82,8 @@ final class AppPreferences {
 
   /// The host's `default_llm.model`, which Settings → LLM edits; empty means the runner's own default.
   var defaultLlmModel = ""
+  /// The host's `default_llm.runner`; empty means Claude Code.
+  var defaultLlmRunner = ""
 
   var customEditors: [CustomEditor] {
     didSet {

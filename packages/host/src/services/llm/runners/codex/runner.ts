@@ -12,6 +12,7 @@ import type {
   LlmRunnerSpawnArgs,
   OneShotArgs,
   PreflightResult,
+  RunnerSetup,
   RunnerCapabilities,
 } from "../types";
 import { execFile, spawn } from "node:child_process";
@@ -54,6 +55,14 @@ export class CodexRunner implements LlmRunner {
     } catch {
       return { ok: false, reason: NOT_FOUND };
     }
+  }
+
+  setup(): RunnerSetup {
+    return {
+      installCommand: "npm install -g @openai/codex",
+      installUrl: null,
+      loginCommand: "codex login",
+    };
   }
 
   async spawn(args: LlmRunnerSpawnArgs): Promise<LlmRunnerHandle> {

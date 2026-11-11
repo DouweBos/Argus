@@ -6344,6 +6344,27 @@ extension ArgusProtocol {
       }
     }
 
+    public struct LlmRunnerSetupParams: Codable, Sendable {
+      public var runnerId: String
+      public var step: RunnerSetupStep
+
+      enum CodingKeys: String, CodingKey {
+        case runnerId = "runnerId"
+        case step = "step"
+      }
+
+      public init(runnerId: String, step: RunnerSetupStep) {
+        self.runnerId = runnerId
+        self.step = step
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(runnerId, forKey: .runnerId)
+        try c.encode(step, forKey: .step)
+      }
+    }
+
     public struct LlmSaveCustomRunnerParamsRunner: Codable, Sendable {
       public var id: String?
       public var displayName: String?
@@ -11993,6 +12014,13 @@ extension ArgusProtocol {
       public typealias Params = EmptyParams
       public typealias Result = [ArgusProtocol.RegisteredRunner]
       public static let name = "llm_list_runners"
+      public static let tier = "admin"
+    }
+
+    public enum LlmRunnerSetup: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LlmRunnerSetupParams
+      public typealias Result = ArgusProtocol.RunnerSetupStarted
+      public static let name = "llm_runner_setup"
       public static let tier = "admin"
     }
 

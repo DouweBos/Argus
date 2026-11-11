@@ -27,6 +27,8 @@ export const GEMINI_PRESET: AcpPreset = {
   args: async (binPath) => [await acpFlag(binPath)],
   installHint: "Install it with `npm install -g @google/gemini-cli`.",
   loginHint: "Run `gemini` in a terminal once to sign in.",
+  installCommand: "npm install -g @google/gemini-cli",
+  loginCommand: "gemini",
   authMethodId: () =>
     process.env.GEMINI_API_KEY ? "gemini-api-key" : "oauth-personal",
   // Argus answers Gemini's approval requests; trusted skips them outright.

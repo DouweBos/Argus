@@ -7,6 +7,8 @@ export const FX_PRESET: AcpPreset = {
   args: ["acp"],
   installHint: "Install it with `curl -fsSL https://fx.sh/setup.sh | bash`.",
   loginHint: "Run `fx` in a terminal once to sign in.",
+  installCommand: "curl -fsSL https://fx.sh/setup.sh | bash",
+  loginCommand: "fx",
   // `ask` makes it ask, so Argus's mode decides; trusted lets it run (`code` before 0.0.14).
   modeIds: {
     ask: "ask",

@@ -22,6 +22,7 @@ const PRESET: AcpPreset = {
   args: [],
   installHint: "",
   loginHint: "Run `fake login`.",
+  loginCommand: "fake login",
 };
 
 /** A scripted ACP agent: records what it's sent, answers what it's asked. */

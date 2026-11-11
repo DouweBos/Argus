@@ -70,6 +70,7 @@ struct MainWindow: View {
     }
     .modifier(ProjectFlows())
     .modifier(HandoffActivity())
+    .modifier(RunnerSetupPresenter(window: .main))
     .sheet(item: projectSettingsRepo) { repo in
       ProjectSettingsSheet(repoRoot: repo.path)
     }

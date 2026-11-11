@@ -1,5 +1,6 @@
 #if DEBUG
   import ArgusCore
+  import ArgusKit
   import ArgusUI
   import SwiftUI
 
@@ -48,7 +49,30 @@
         ) {
           DeleteSessionSheet(session: GalleryFixtures.argusSession("s-long")) {}
         },
+        // Mac only: installers and sign-in run in a terminal on this Mac, which the phone can't drive.
+        runnerSetup("runners/setup-installing", installed: false, phase: .running(terminalId: "gallery-setup")),
+        runnerSetup("runners/setup-sign-in", installed: true, phase: .finished(terminalId: "gallery-setup", exitCode: 0)),
+        runnerSetup("runners/setup-failed", installed: false, phase: .finished(terminalId: "gallery-setup", exitCode: 1)),
+        runnerSetup(
+          "runners/setup-page", runner: "Antigravity", setup: .init(installUrl: "https://antigravity.google", loginCommand: "agy acp --login"),
+          installed: false, phase: .openedPage(url: "https://antigravity.google")),
       ]
+    }
+
+    /// The runner setup sheet at one point of Install → Sign in.
+    private static func runnerSetup(
+      _ id: String, runner: String = "Gemini CLI",
+      setup: RemoteRunner.Setup = .init(installCommand: "npm install -g @google/gemini-cli", loginCommand: "gemini"),
+      installed: Bool, phase: RunnerSetupFlow.Phase
+    ) -> GalleryStory {
+      GalleryStory(id, size: CGSize(width: 640, height: 480), fixtures: GalleryFixtures.home) {
+        let model = RunnerSetupModel()
+        var flow = RunnerSetupFlow(runnerId: "gemini", displayName: runner, setup: setup, installed: installed)
+        flow.step = .install
+        flow.phase = phase
+        model.flow = flow
+        return RunnerSetupSheet(setup: model)
+      }
     }
 
     /// A session's pane while its worktree is set up, or after that failed.

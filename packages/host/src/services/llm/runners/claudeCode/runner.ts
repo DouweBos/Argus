@@ -13,6 +13,7 @@ import type {
   OneShotArgs,
   ForkTranscriptArgs,
   PreflightResult,
+  RunnerSetup,
   RunnerCapabilities,
 } from "../types";
 import { spawn, execFile } from "node:child_process";
@@ -65,6 +66,15 @@ export class ClaudeCodeRunner implements LlmRunner {
         reason: `Claude Code CLI (\`${CLAUDE_BIN}\`) not found on PATH. Install it first: https://docs.anthropic.com/en/docs/claude-code`,
       };
     }
+  }
+
+  setup(): RunnerSetup {
+    return {
+      installCommand: "npm install -g @anthropic-ai/claude-code",
+      installUrl: null,
+      // Signing in goes through Settings → Accounts, which keeps one config per account.
+      loginCommand: null,
+    };
   }
 
   async spawn(args: LlmRunnerSpawnArgs): Promise<LlmRunnerHandle> {

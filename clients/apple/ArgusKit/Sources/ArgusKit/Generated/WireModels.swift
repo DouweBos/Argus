@@ -12768,6 +12768,7 @@ extension ArgusProtocol {
     public var defaultModel: String?
     public var available: Bool?
     public var unavailableReason: String?
+    public var setup: RunnerSetup?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -12779,9 +12780,10 @@ extension ArgusProtocol {
       case defaultModel = "defaultModel"
       case available = "available"
       case unavailableReason = "unavailableReason"
+      case setup = "setup"
     }
 
-    public init(id: String, displayName: String, capabilities: RunnerCapabilities, isCustom: Bool, baseRunnerId: String? = nil, models: [RunnerModelOption], defaultModel: String? = nil, available: Bool? = nil, unavailableReason: String? = nil) {
+    public init(id: String, displayName: String, capabilities: RunnerCapabilities, isCustom: Bool, baseRunnerId: String? = nil, models: [RunnerModelOption], defaultModel: String? = nil, available: Bool? = nil, unavailableReason: String? = nil, setup: RunnerSetup? = nil) {
       self.id = id
       self.displayName = displayName
       self.capabilities = capabilities
@@ -12791,6 +12793,7 @@ extension ArgusProtocol {
       self.defaultModel = defaultModel
       self.available = available
       self.unavailableReason = unavailableReason
+      self.setup = setup
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -12804,6 +12807,7 @@ extension ArgusProtocol {
       try c.encode(defaultModel, forKey: .defaultModel)
       try c.encodeIfPresent(available, forKey: .available)
       try c.encodeIfPresent(unavailableReason, forKey: .unavailableReason)
+      try c.encodeIfPresent(setup, forKey: .setup)
     }
   }
 
@@ -15366,6 +15370,31 @@ extension ArgusProtocol {
     }
   }
 
+  public struct RemoteRunnerSetup: Codable, Sendable {
+    public var installCommand: String?
+    public var installUrl: String?
+    public var loginCommand: String?
+
+    enum CodingKeys: String, CodingKey {
+      case installCommand = "install_command"
+      case installUrl = "install_url"
+      case loginCommand = "login_command"
+    }
+
+    public init(installCommand: String? = nil, installUrl: String? = nil, loginCommand: String? = nil) {
+      self.installCommand = installCommand
+      self.installUrl = installUrl
+      self.loginCommand = loginCommand
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(installCommand, forKey: .installCommand)
+      try c.encode(installUrl, forKey: .installUrl)
+      try c.encode(loginCommand, forKey: .loginCommand)
+    }
+  }
+
   public struct RemoteRunner: Codable, Sendable {
     public var id: String
     public var displayName: String
@@ -15377,6 +15406,7 @@ extension ArgusProtocol {
     public var supportsSideQuestion: Bool?
     public var available: Bool?
     public var unavailableReason: String?
+    public var setup: RemoteRunnerSetup?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -15389,9 +15419,10 @@ extension ArgusProtocol {
       case supportsSideQuestion = "supports_side_question"
       case available = "available"
       case unavailableReason = "unavailable_reason"
+      case setup = "setup"
     }
 
-    public init(id: String, displayName: String, isCustom: Bool, defaultModel: String? = nil, models: [RemoteRunnerModel], reportedModels: [RemoteModelInfo]? = nil, supportsTranscriptFork: Bool? = nil, supportsSideQuestion: Bool? = nil, available: Bool? = nil, unavailableReason: String? = nil) {
+    public init(id: String, displayName: String, isCustom: Bool, defaultModel: String? = nil, models: [RemoteRunnerModel], reportedModels: [RemoteModelInfo]? = nil, supportsTranscriptFork: Bool? = nil, supportsSideQuestion: Bool? = nil, available: Bool? = nil, unavailableReason: String? = nil, setup: RemoteRunnerSetup? = nil) {
       self.id = id
       self.displayName = displayName
       self.isCustom = isCustom
@@ -15402,6 +15433,7 @@ extension ArgusProtocol {
       self.supportsSideQuestion = supportsSideQuestion
       self.available = available
       self.unavailableReason = unavailableReason
+      self.setup = setup
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -15416,6 +15448,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(supportsSideQuestion, forKey: .supportsSideQuestion)
       try c.encodeIfPresent(available, forKey: .available)
       try c.encodeIfPresent(unavailableReason, forKey: .unavailableReason)
+      try c.encodeIfPresent(setup, forKey: .setup)
     }
   }
 
@@ -16753,6 +16786,67 @@ extension ArgusProtocol {
       try c.encode(displayName, forKey: .displayName)
       try c.encodeIfPresent(description, forKey: .description)
     }
+  }
+
+  public struct RunnerSetup: Codable, Sendable {
+    public var installCommand: String?
+    public var installUrl: String?
+    public var loginCommand: String?
+
+    enum CodingKeys: String, CodingKey {
+      case installCommand = "installCommand"
+      case installUrl = "installUrl"
+      case loginCommand = "loginCommand"
+    }
+
+    public init(installCommand: String? = nil, installUrl: String? = nil, loginCommand: String? = nil) {
+      self.installCommand = installCommand
+      self.installUrl = installUrl
+      self.loginCommand = loginCommand
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(installCommand, forKey: .installCommand)
+      try c.encode(installUrl, forKey: .installUrl)
+      try c.encode(loginCommand, forKey: .loginCommand)
+    }
+  }
+
+  public struct RunnerSetupStarted: Codable, Sendable {
+    public var terminalId: String?
+    public var openedUrl: String?
+
+    enum CodingKeys: String, CodingKey {
+      case terminalId = "terminalId"
+      case openedUrl = "openedUrl"
+    }
+
+    public init(terminalId: String? = nil, openedUrl: String? = nil) {
+      self.terminalId = terminalId
+      self.openedUrl = openedUrl
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(terminalId, forKey: .terminalId)
+      try c.encode(openedUrl, forKey: .openedUrl)
+    }
+  }
+
+  public struct RunnerSetupStep: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let install = RunnerSetupStep(rawValue: "install")
+    public static let login = RunnerSetupStep(rawValue: "login")
   }
 
   public struct RunTerminalResultDependenciesItem: Codable, Sendable {

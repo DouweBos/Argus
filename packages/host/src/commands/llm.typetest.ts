@@ -8,6 +8,7 @@ import type { RegisteredRunner as HostRegisteredRunner } from "../services/llm/r
 import type {
   RunnerCapabilities as HostRunnerCapabilities,
   RunnerModelOption as HostRunnerModelOption,
+  RunnerSetup as HostRunnerSetup,
 } from "../services/llm/runners/types";
 import type {
   CustomRunner,
@@ -17,12 +18,14 @@ import type {
   RegisteredRunner,
   RunnerCapabilities,
   RunnerModelOption,
+  RunnerSetup,
 } from "@argus/remote-protocol";
 
 export type LlmModelChecks = [
   Expect<Equal<RunnerCapabilities, HostRunnerCapabilities>>,
   Expect<Equal<RunnerModelOption, HostRunnerModelOption>>,
   Expect<Equal<RegisteredRunner, HostRegisteredRunner>>,
+  Expect<Equal<RunnerSetup, HostRunnerSetup>>,
   Expect<Equal<CustomRunnerModel, HostCustomRunnerModel>>,
   Expect<Equal<CustomRunner, HostCustomRunner>>,
   Expect<Equal<CustomRunnerPreset, HostCustomRunnerPreset>>,

@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusKit
 import ArgusUI
 import SwiftUI
 
@@ -14,6 +15,7 @@ struct SetupCards: View {
       ForEach(Array(checks.cards.enumerated()), id: \.offset) { _, card in
         cardView(card)
       }
+      DefaultRunnerCard()
     }
     .task(id: model.store.connection == .ready) {
       guard model.store.connection == .ready, let backend = model.backend else { return }
@@ -77,6 +79,37 @@ struct SetupCards: View {
   private func fix(_ id: PrereqId) {
     guard let backend = model.backend else { return }
     Task { await checks.fix(backend, id) }
+  }
+}
+
+/// The default runner's CLI is missing: install it from here. Claude Code has
+/// its own card above.
+private struct DefaultRunnerCard: View {
+  @Environment(DesktopModel.self) private var model
+  @Environment(HostStore.self) private var store
+
+  private var runner: RemoteRunner? {
+    let id = AppPreferences.shared.defaultLlmRunner
+    guard !id.isEmpty, id != "claude-code" else { return nil }
+    return store.runners.first { $0.id == id && RunnerSetupAction.offers($0) }
+  }
+
+  var body: some View {
+    Group {
+      if let runner {
+        SetupCard(
+          tone: .warning, title: "\(runner.displayName) isn't installed.",
+          text: "It's your default runner, so new agents can't start until it is."
+        ) {
+          Button("Install") { model.runnerSetup.begin(runner) }
+            .buttonStyle(.borderedProminent)
+        }
+      }
+    }
+    .task(id: store.connection == .ready) {
+      guard store.connection == .ready else { return }
+      await store.loadRunners()
+    }
   }
 }
 

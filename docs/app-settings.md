@@ -187,7 +187,13 @@ effort pickers then offer that runner's own.
 
 A runner whose CLI isn't installed on the computer stays in every runner
 picker, greyed out, with a line saying how to install it; agents can't start
-on it until it is.
+on it until it is. On the Mac, pick it anyway (or use **Set Up a Runner…**
+beside the picker) to install it without leaving Argus: **Install** runs its
+install command from the table below in a terminal you can watch and answer,
+then **Sign In** runs its sign-in command the same way. A CLI that only has
+an install page (Antigravity) opens that page instead; **Check Again** once
+it's installed. The picker enables the runner as soon as Argus finds it.
+When your default runner isn't installed, Home shows a card to install it.
 
 Resolution order for the runner (at session creation):
 
@@ -236,7 +242,8 @@ but not spend, so a Codex chat's cost reads $0.
 
 Agents that speak the [Agent Client Protocol](https://agentclientprotocol.com)
 run through one shared runner. Install the agent's CLI and sign in with it
-once; Argus starts it in ACP mode and uses its login and settings as they are.
+once (from its picker entry, or yourself with the commands below); Argus starts
+it in ACP mode and uses its login and settings as they are.
 
 | Runner          | Id            | CLI                      | Install                                           | Sign in                               |
 | --------------- | ------------- | ------------------------ | ------------------------------------------------- | ------------------------------------- |

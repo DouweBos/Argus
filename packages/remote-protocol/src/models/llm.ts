@@ -26,6 +26,28 @@ export const RunnerModelOption = z.object({
 });
 export type RunnerModelOption = z.infer<typeof RunnerModelOption>;
 
+/** How the picker installs a runner's CLI and signs in to it. */
+export const RunnerSetup = z.object({
+  /** Shell command that installs the CLI, when there is one. */
+  installCommand: z.string().nullable(),
+  /** Page to install it from when there's no command. */
+  installUrl: z.string().nullable(),
+  /** Shell command that signs in, run in a terminal. */
+  loginCommand: z.string().nullable(),
+});
+export type RunnerSetup = z.infer<typeof RunnerSetup>;
+
+/** Which half of a runner's setup to run. */
+export const RunnerSetupStep = z.enum(["install", "login"]);
+export type RunnerSetupStep = z.infer<typeof RunnerSetupStep>;
+
+/** A setup step started: its terminal, or the page opened instead. */
+export const RunnerSetupStarted = z.object({
+  terminalId: z.string().nullable(),
+  openedUrl: z.string().nullable(),
+});
+export type RunnerSetupStarted = z.infer<typeof RunnerSetupStarted>;
+
 /** A registered LLM runner — the subset of the host's runner the UI needs. */
 export const RegisteredRunner = z.object({
   /** Stable id, e.g. `"claude-code"`. */
@@ -48,6 +70,8 @@ export const RegisteredRunner = z.object({
   available: z.boolean().optional(),
   /** How to install it, when unavailable. */
   unavailableReason: z.string().nullable().optional(),
+  /** How Argus installs and signs in to it; absent when it can't. */
+  setup: RunnerSetup.nullable().optional(),
 });
 export type RegisteredRunner = z.infer<typeof RegisteredRunner>;
 

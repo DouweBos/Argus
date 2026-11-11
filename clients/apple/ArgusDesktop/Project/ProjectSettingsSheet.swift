@@ -36,6 +36,7 @@ struct ProjectSettingsSheet: View {
     }
     .frame(width: 920, height: 660)
     .background(theme.bg)
+    .modifier(RunnerSetupPresenter(window: .projectSettings))
     .task {
       guard let backend = model.backend else { return }
       await model.store.loadRunners()

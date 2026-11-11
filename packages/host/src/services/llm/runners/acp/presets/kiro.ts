@@ -8,6 +8,8 @@ export const KIRO_PRESET: AcpPreset = {
   installHint:
     "Install Kiro CLI with `curl -fsSL https://cli.kiro.dev/install | bash`.",
   loginHint: "Run `kiro-cli login` in a terminal to sign in.",
+  installCommand: "curl -fsSL https://cli.kiro.dev/install | bash",
+  loginCommand: "kiro-cli login",
   // Kiro saves "always allow" as a workspace-wide rule.
   noAlwaysAllow: true,
   // Autopilot runs without asking; off, Kiro asks and Argus decides.

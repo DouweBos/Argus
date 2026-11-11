@@ -24,4 +24,14 @@ describe("built-in runners", () => {
     );
     expect(incomplete.map((p) => p.id)).toEqual([]);
   });
+
+  it("each ACP preset can be installed and signed in to from the picker", () => {
+    const missing = ACP_PRESETS.filter(
+      (p) =>
+        !(p.installCommand || p.installUrl) ||
+        !p.loginCommand ||
+        (p.installCommand && !p.installHint.includes(p.installCommand)),
+    );
+    expect(missing.map((p) => p.id)).toEqual([]);
+  });
 });

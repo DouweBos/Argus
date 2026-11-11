@@ -15,6 +15,7 @@ import type {
   OneShotArgs,
   PreflightResult,
   RunnerCapabilities,
+  RunnerSetup,
 } from "../types";
 import { spawn } from "node:child_process";
 import { info } from "@argus/host/logger";
@@ -55,6 +56,14 @@ export class AcpRunner implements LlmRunner {
     return {
       ok: false,
       reason: `${this.displayName} isn't installed. ${this.preset.installHint}`,
+    };
+  }
+
+  setup(): RunnerSetup {
+    return {
+      installCommand: this.preset.installCommand ?? null,
+      installUrl: this.preset.installUrl ?? null,
+      loginCommand: this.preset.loginCommand,
     };
   }
 

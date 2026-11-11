@@ -18,10 +18,13 @@ struct LLMSettingsTab: View {
           SettingsRow(
             "Runner", description: runnerDescription
           ) {
-            Picker("Runner", selection: runner) {
-              ForEach(runnerOptions, id: \.id) { option in
-                Text(option.label).tag(option.id).disabled(!option.available)
+            HStack(spacing: 8) {
+              Picker("Runner", selection: runner) {
+                ForEach(runnerOptions, id: \.id) { option in
+                  Text(option.label).tag(option.id).disabled(!option.available)
+                }
               }
+              RunnerSetupMenu(flows: host.runners.compactMap(RunnerSetupFlow.init), window: .settings)
             }
           }
           SettingsRow(

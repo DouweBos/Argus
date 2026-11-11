@@ -17,6 +17,7 @@ import type {
   CreateAutomationInput,
   UpdateAutomationInput,
 } from "../automation/models";
+import type { RunnerSetup } from "../llm/runners/types";
 import type {
   AutomationInput,
   RemoteAutomation,
@@ -198,6 +199,18 @@ export async function remoteSignalSources(): Promise<{
   return { sources: await describeSignalSources() };
 }
 
+function remoteSetup(setup: RunnerSetup | undefined): RemoteRunner["setup"] {
+  if (!setup) {
+    return null;
+  }
+
+  return {
+    install_command: setup.installCommand,
+    install_url: setup.installUrl,
+    login_command: setup.loginCommand,
+  };
+}
+
 /** Runners an automation may be pinned to, for the phone's editor. */
 export async function remoteRunners(): Promise<{ runners: RemoteRunner[] }> {
   const avail = await runnerAvailability();
@@ -226,6 +239,7 @@ export async function remoteRunners(): Promise<{ runners: RemoteRunner[] }> {
       supports_side_question: runner.capabilities().supportsSideQuestion,
       available: avail.get(runner.id)?.available ?? true,
       unavailable_reason: avail.get(runner.id)?.unavailableReason ?? null,
+      setup: remoteSetup(runner.setup?.()),
     })),
   };
 }

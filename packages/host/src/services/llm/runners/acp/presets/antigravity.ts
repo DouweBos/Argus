@@ -8,6 +8,8 @@ export const ANTIGRAVITY_PRESET: AcpPreset = {
   installHint:
     "Install the Antigravity CLI (`agy`, 1.5 or newer) from antigravity.google.",
   loginHint: "Run `agy acp --login` in a terminal to sign in.",
+  installUrl: "https://antigravity.google",
+  loginCommand: "agy acp --login",
   authMethodId: "oauth-personal",
   // It offers `session/load` but only `session/resume` keeps the conversation.
   resumeVia: "resume",

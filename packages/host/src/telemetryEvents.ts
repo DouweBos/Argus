@@ -178,6 +178,11 @@ export interface EventMap {
   runner_unavailable: {
     runner: TelemetryRunner;
   };
+  runner_setup: {
+    runner: TelemetryRunner;
+    step: "install" | "login";
+    outcome: "failed" | "opened_page" | "succeeded";
+  };
   spare_discarded: {
     reason:
       | "account"
