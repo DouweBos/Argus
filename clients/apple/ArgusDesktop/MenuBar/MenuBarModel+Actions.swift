@@ -40,7 +40,7 @@ extension MenuBarModel {
       showSettings(.account)
     case .checkForUpdates:
       track(.checkForUpdates)
-      model.updater.check()
+      model.checkForUpdates()
     case .toggleOpenAtLogin:
       setOpenAtLogin(loginState == .off || loginState == .unavailable)
     case .openLoginItemsSettings:

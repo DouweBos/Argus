@@ -32,3 +32,38 @@ struct UpdateFeedTests {
 }
 
 private final class Marker {}
+
+@MainActor
+struct UpdateChannelSyncTests {
+  private struct Down: Error {}
+
+  @Test func aFailedReadKeepsTheChannelAndALaterOneFollowsTheHost() async {
+    var feed = UpdateFeed(product: "argus-mac", channel: .latest)
+    var answer: String?? = nil
+    var logged = 0
+    let sync = UpdateChannelSync(
+      load: {
+        guard let answer else { throw Down() }
+        return answer
+      },
+      apply: { feed.channel = $0 },
+      log: { _ in logged += 1 })
+
+    #expect(await sync.sync() == false)
+    #expect(feed.channel == .latest)
+    #expect(logged == 1)
+
+    answer = .some("beta")
+    #expect(await sync.sync())
+    #expect(feed.url.lastPathComponent == "argus-mac-beta.xml")
+
+    answer = .some(nil)
+    await sync.sync()
+    #expect(feed.channel == .latest)
+  }
+
+  @Test func onlyTheChannelKeyTriggersAResync() {
+    #expect(UpdateChannelSync.affects(settings: ["theme", "updater_channel"]))
+    #expect(!UpdateChannelSync.affects(settings: ["theme"]))
+  }
+}

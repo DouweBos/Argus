@@ -43,7 +43,7 @@ extension ServerModel {
     case .account(let account):
       runAccount(account)
     case .checkForUpdates:
-      updater.check()
+      checkForUpdates()
     case .downloadUpdate:
       updater.download()
     case .installUpdate:

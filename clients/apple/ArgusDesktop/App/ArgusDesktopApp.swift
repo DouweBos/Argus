@@ -158,7 +158,7 @@ private struct CheckForUpdatesCommand: View {
 
   var body: some View {
     if model.updater.isConfigured {
-      Button("Check for Updates…") { model.updater.check() }
+      Button("Check for Updates…") { model.checkForUpdates() }
         .disabled(!model.updater.canCheck)
     }
   }

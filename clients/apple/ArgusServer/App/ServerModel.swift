@@ -160,9 +160,7 @@ final class ServerModel {
   private func reconnected() async {
     guard let backend else { return }
     await ServerTelemetry.attach(backend)
-    let settings = try? await backend.request(ArgusProtocol.Commands.GetAppSettings.self, EmptyParams())
-    autoInstall = settings?.serverAutoInstallUpdates == true
-    updater.feed.channel = UpdateChannel(setting: settings?.updaterChannel?.rawValue)
+    await syncSettings()
     legacySecrets = (try? await backend.request(ArgusProtocol.Commands.LegacySecretStores.self, EmptyParams())) ?? []
     await refreshRemote()
     await refreshAgents()
@@ -176,6 +174,11 @@ final class ServerModel {
     switch channel {
     case "remote:status":
       if let next = try? ProtocolCodec.convert(arg, to: ArgusProtocol.RemoteStatus.self) { remote = next }
+    case "prefs:changed":
+      let keys = arg["settings"]?.arrayValue?.compactMap(\.stringValue) ?? []
+      if UpdateChannelSync.affects(settings: keys) || keys.contains("server_auto_install_updates") {
+        Task { await syncSettings() }
+      }
     default:
       if accountMenu.handle(channel: channel, payload: arg) { return }
       if pairing.handle(channel: channel, payload: arg), case .confirming(let sas, _) = pairing.flow.phase {
@@ -271,6 +274,29 @@ final class ServerModel {
       as: ArgusProtocol.AppSettings.self)
     autoInstall = saved?.serverAutoInstallUpdates ?? autoInstall
     maybeAutoInstall()
+  }
+
+  /// The host's update channel and auto-install; a failed read keeps the last
+  /// values and is retried on reconnect, settings change and manual check.
+  private func syncSettings() async {
+    await UpdateChannelSync(
+      load: { [weak self, backend] in
+        guard let backend else { throw UpdateChannelSync.NotConnected() }
+        let settings = try await backend.request(ArgusProtocol.Commands.GetAppSettings.self, EmptyParams())
+        self?.autoInstall = settings.serverAutoInstallUpdates == true
+        return settings.updaterChannel?.rawValue
+      },
+      apply: { [updater] in updater.feed.channel = $0 },
+      log: { NSLog("[argus] couldn't read the update channel: %@", HostStore.describe($0)) }
+    ).sync()
+  }
+
+  /// Re-reads the channel first, so a manual check never uses a stale feed.
+  func checkForUpdates() {
+    Task {
+      await syncSettings()
+      updater.check()
+    }
   }
 
   func setUpdateChannel(_ channel: UpdateChannel) async {

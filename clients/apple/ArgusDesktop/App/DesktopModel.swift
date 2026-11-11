@@ -333,6 +333,7 @@ final class DesktopModel {
     #if DEBUG
       applyDevRoute()
     #endif
+    await syncUpdateChannel()
     await applyLaunchRoute()
     resolvePendingLocation()
     await menuBar.reconnected()
@@ -344,7 +345,6 @@ final class DesktopModel {
     guard !launchRouteApplied, let backend = localBackend else { return }
     launchRouteApplied = true
     let settings = try? await backend.request(ArgusProtocol.Commands.GetAppSettings.self, EmptyParams())
-    updater.feed.channel = UpdateChannel(setting: settings?.updaterChannel?.rawValue)
     guard settings?.launchRoute == .inbox, route == .home, pendingLocation == nil else { return }
     route = .inbox
   }
@@ -391,6 +391,7 @@ final class DesktopModel {
       guard case .object(let fields) = change, case .array(let list)? = fields[field] else { return [] }
       return list.compactMap { if case .string(let key) = $0 { key } else { nil } }
     }
+    if UpdateChannelSync.affects(settings: keys("settings")) { await syncUpdateChannel() }
     await HostPreferences.shared.hostChanged(settings: keys("settings"), uiState: keys("ui_state"))
     runtime.reloadPersisted()
     panels.reloadPersisted()
