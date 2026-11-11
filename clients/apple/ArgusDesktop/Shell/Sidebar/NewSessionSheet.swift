@@ -80,7 +80,7 @@ struct NewSessionSheet: View {
             Toggle("Verify", isOn: $verify)
           } footer: {
             Text(
-              "Starts on /implement-ticket: the agent checks every acceptance criterion on the project's devices, compares with Figma, runs its checks and reports with evidence."
+              "Starts on /implement-ticket: the agent checks every acceptance criterion on the devices the ticket calls for, compares with Figma, runs its checks and reports with evidence."
             )
             .foregroundStyle(.secondary)
           }
