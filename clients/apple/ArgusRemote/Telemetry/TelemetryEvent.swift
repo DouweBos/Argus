@@ -259,6 +259,8 @@ enum TelemetryEvent {
   case newSessionOpened(source: NewSessionSource)
   /// A turn's folded work was opened in a chat; `working` says the agent was still on it.
   case transcriptWorkLogOpened(working: Bool)
+  /// An Argus command's playbook was opened under its message; `command` is the Argus command's name.
+  case transcriptPlaybookOpened(command: String)
   /// A message's menu was used; `success` says the host took the edit or fork (always true for copy).
   case messageAction(action: MessageAction, role: MessageRole, success: Bool)
   /// A session's saved chats were searched (first keystroke) or one was deleted.
@@ -353,6 +355,7 @@ enum TelemetryEvent {
     case .homeUsed: "ios_home_used"
     case .newSessionOpened: "ios_new_session_opened"
     case .transcriptWorkLogOpened: "ios_transcript_work_log_opened"
+    case .transcriptPlaybookOpened: "ios_transcript_playbook_opened"
     case .messageAction: "ios_message_action"
     case .chatHistoryUsed: "ios_chat_history_used"
     case .fileViewed: "ios_file_viewed"
@@ -476,6 +479,8 @@ enum TelemetryEvent {
       ["scope": scope.rawValue]
     case .transcriptWorkLogOpened(let working):
       ["working": working]
+    case .transcriptPlaybookOpened(let command):
+      ["command": command]
     case .messageAction(let action, let role, let success):
       ["action": action.rawValue, "role": role.rawValue, "success": success]
     case .chatHistoryUsed(let action):

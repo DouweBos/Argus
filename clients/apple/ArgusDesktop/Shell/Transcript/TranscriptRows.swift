@@ -34,7 +34,7 @@ struct TranscriptMessageRow: View, Equatable {
   }
 
   /// A sent message's bubble takes at most this share of the column.
-  private static let bubbleFraction: CGFloat = 0.7
+  static let bubbleFraction: CGFloat = 0.7
   private static let bubblePadding = EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
 
   /// How wide a user bubble lays out in a column this wide.
@@ -62,7 +62,9 @@ struct TranscriptMessageRow: View, Equatable {
       badges
       chips
       images
-      if let text = model.text(for: message) {
+      if let command = message.command {
+        commandBody(command)
+      } else if let text = model.text(for: message) {
         textView(text)
       }
       ForEach(calls) { call in
@@ -71,14 +73,41 @@ struct TranscriptMessageRow: View, Equatable {
     }
   }
 
-  private func textView(_ text: TranscriptRendered) -> some View {
+  /// A command: its chip, its notes, and for an Argus command the playbook the agent got.
+  private func commandBody(_ command: RemoteMessageCommand) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      CommandChip(command: command)
+      if let text = model.text(for: message) {
+        messageText(text, fills: command.playbook != nil)
+      }
+      if let playbook = command.playbook {
+        PlaybookDisclosure(command: command, messageId: message.id) {
+          TranscriptMessageText(rendered: model.playbook(playbook, for: message.id), unit: nil)
+        }
+      }
+    }
+    // A playbook needs the room; a bare runner command hugs its chip.
+    .frame(maxWidth: command.playbook != nil ? .infinity : nil, alignment: .leading)
+    .padding(isUser ? Self.bubblePadding : EdgeInsets())
+    .background {
+      if isUser {
+        RoundedRectangle(cornerRadius: theme.radius).fill(theme.bgSecondary)
+      }
+    }
+  }
+
+  private func messageText(_ text: TranscriptRendered, fills: Bool) -> some View {
     let unit = TranscriptModel.textUnit(message.id)
     let current = model.currentHit.flatMap { $0.unitId == unit ? $0.range : nil }
     return TranscriptMessageText(
       rendered: text, unit: message.id, highlights: model.hitsByUnit[unit] ?? [], current: current,
-      revealToken: current == nil ? 0 : model.pendingReveal, fills: !isUser,
+      revealToken: current == nil ? 0 : model.pendingReveal, fills: fills,
       onRevealed: { model.revealedToken = $0 }
     )
+  }
+
+  private func textView(_ text: TranscriptRendered) -> some View {
+    messageText(text, fills: !isUser)
     .padding(isUser ? Self.bubblePadding : EdgeInsets())
     .background {
       if isUser {

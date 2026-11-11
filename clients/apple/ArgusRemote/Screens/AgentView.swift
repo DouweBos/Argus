@@ -47,6 +47,8 @@ struct AgentView: View {
         Telemetry.capture(.transcriptWorkLogOpened(working: working))
       }
       .environment(\.messageMenu, messageMenu)
+      .environment(\.openIssue) { router.push(.issue(ref: $0)) }
+      .environment(\.playbookOpened) { Telemetry.capture(.transcriptPlaybookOpened(command: $0.telemetryName)) }
       if isGone {
         stoppedFooter
       } else if host.hasControl {

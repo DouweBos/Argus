@@ -57,6 +57,15 @@ final class TranscriptSessions {
     return session
   }
 
+  #if DEBUG
+    /// A gallery story starts from no kept transcripts, so its setup's session is the one the pane claims.
+    func forgetAll() {
+      sessions = [:]
+      owners = [:]
+      recent = []
+    }
+  #endif
+
   private func touch(_ key: String) {
     recent.removeAll { $0 == key }
     recent.append(key)

@@ -76,6 +76,8 @@ public enum Icon {
   public static let design = "paintbrush.pointed"
   public static let compare = "square.split.2x1"
   public static let openExternal = "arrow.up.forward.square"
+  /// A slash command sent to an agent.
+  public static let slashCommand = "slash.circle"
   public static let warning = "exclamationmark.triangle"
   public static let mcp = "server.rack"
   public static let setup = "wrench.and.screwdriver"

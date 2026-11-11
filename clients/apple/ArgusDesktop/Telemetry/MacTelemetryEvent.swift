@@ -294,6 +294,8 @@ enum MacTelemetryEvent {
   case transcriptCopied(span: CopySpan)
   /// A turn's folded work log was opened; `working` is whether the agent was still at it.
   case transcriptWorkLogOpened(working: Bool)
+  /// An Argus command's playbook was opened under its message; `command` is the Argus command's name.
+  case transcriptPlaybookOpened(command: String)
   /// The image viewer was opened, paged, or an image copied, saved or opened in Preview from it.
   case imageViewerUsed(action: ImageViewerAction)
   /// The first layer picked in a design viewer frame, on its render or in its layer list.
@@ -438,6 +440,7 @@ enum MacTelemetryEvent {
     case .transcriptFindUsed: "mac_transcript_find_used"
     case .transcriptCopied: "mac_transcript_copied"
     case .transcriptWorkLogOpened: "mac_transcript_work_log_opened"
+    case .transcriptPlaybookOpened: "mac_transcript_playbook_opened"
     case .imageViewerUsed: "mac_image_viewer_used"
     case .designLayerSelected: "mac_design_layer_selected"
     case .messageAction: "mac_message_action"
@@ -584,6 +587,8 @@ enum MacTelemetryEvent {
       ["span": span.rawValue]
     case .transcriptWorkLogOpened(let working):
       ["working": working]
+    case .transcriptPlaybookOpened(let command):
+      ["command": command]
     case .imageViewerUsed(let action):
       ["action": action.rawValue]
     case .designLayerSelected(let source):

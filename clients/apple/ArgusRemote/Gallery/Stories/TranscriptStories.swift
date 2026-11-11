@@ -14,6 +14,12 @@
             .inlineNavigationTitle()
         }
       } + [
+        GalleryStory("transcript/command-playbook", fixtures: GalleryFixtures.transcript(.command)) {
+          AgentView(agentId: GalleryFixtures.transcriptAgent, label: "Wrap the session tabs")
+            .navigationTitle("Wrap the session tabs")
+            .inlineNavigationTitle()
+            .environment(\.toolCardExpansion, openPlaybook)
+        },
         GalleryStory("agent/mcp-servers", fixtures: GalleryFixtures.transcript(.idle)) {
           AgentMcpServersView(agentId: GalleryFixtures.transcriptAgent)
             .frame(maxHeight: .infinity, alignment: .top)
@@ -35,8 +41,14 @@
     static let states: [(String, GalleryFixtures.TranscriptState)] = [
       ("idle", .idle), ("working", .working), ("permission", .permission), ("question", .question),
       ("plan", .plan), ("subagents", .subagents), ("stopped", .stopped), ("limit", .limit), ("empty", .empty),
-      ("handoff", .handoff),
+      ("handoff", .handoff), ("command", .command),
     ]
+
+    @MainActor private static var openPlaybook: ToolCardExpansion {
+      let expansion = ToolCardExpansion()
+      expansion.expanded[PlaybookDisclosure<EmptyView>.key(GalleryFixtures.commandMessageId)] = true
+      return expansion
+    }
 
     private static let waiting = [
       FailedSend(

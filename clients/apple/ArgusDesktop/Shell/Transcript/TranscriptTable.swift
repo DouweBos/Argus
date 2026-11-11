@@ -281,7 +281,9 @@ class TranscriptHoverCell: NSTableCellView {
     var frame = TranscriptTextCell.textFrame(in: bounds, reserve: reserve)
     frame.origin.y = max(frame.minY, visibleRect.minY + 4)
     // Your own message's bubble hugs the right edge; the bar sits beside it, not on it.
-    if hover.message.role == .user, let text = hover.model.text(for: hover.message) {
+    if hover.message.role == .user, hover.message.command?.playbook != nil {
+      frame.size.width -= (frame.width * TranscriptMessageRow.bubbleFraction).rounded(.down) + 6
+    } else if hover.message.role == .user, let text = hover.model.text(for: hover.message) {
       frame.size.width -= TranscriptMessageRow.bubbleWidth(of: text, in: frame.width) + 6
     }
     hoverBar.show(hover.message, model: hover.model, environment: hover.environment, in: frame)

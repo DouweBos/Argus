@@ -66,7 +66,7 @@ final class TranscriptModel {
 
   /// The message's text as it's laid out, cached until its blocks or the text scale change.
   func text(for message: RemoteMessage) -> TranscriptRendered? {
-    let blocks = message.displayBlocks
+    let blocks = message.bodyBlocks
     guard !blocks.isEmpty else { return nil }
     let scale = TextScale.shared.factor
     if let cached = rendered.object(forKey: message.id as NSString), cached.source == blocks, cached.scale == scale {
@@ -77,6 +77,18 @@ final class TranscriptModel {
       ? TranscriptMarkdown.render(userText: blocks.joined(separator: "\n\n"))
       : TranscriptMarkdown.render(markdown: blocks.joined(separator: "\n\n"))
     rendered.setObject(Rendered(source: blocks, scale: scale, text: text), forKey: message.id as NSString)
+    return text
+  }
+
+  /// An Argus command's playbook, laid out like a reply; the prompt never changes, so cached by message.
+  func playbook(_ prompt: String, for messageId: String) -> TranscriptRendered {
+    let key = "playbook:\(messageId)" as NSString
+    let scale = TextScale.shared.factor
+    if let cached = rendered.object(forKey: key), cached.source == [prompt], cached.scale == scale {
+      return cached.text
+    }
+    let text = TranscriptMarkdown.render(markdown: prompt)
+    rendered.setObject(Rendered(source: [prompt], scale: scale, text: text), forKey: key)
     return text
   }
 
