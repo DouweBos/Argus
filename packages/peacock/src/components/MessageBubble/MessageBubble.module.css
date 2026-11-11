@@ -217,6 +217,19 @@
   z-index: 2;
 }
 
+/* A rich body (a slash command) in the same bubble, minus pre-wrap. */
+.userContent {
+  background: var(--accent-overlay-md);
+  border: 1px solid var(--accent-overlay-xl);
+  border-radius: 16px 16px 4px 16px;
+  padding: 10px 16px;
+  color: var(--text-primary);
+  max-width: 75%;
+  min-width: 0;
+  position: relative;
+  z-index: 2;
+}
+
 .userAttachments {
   display: flex;
   flex-wrap: wrap;

@@ -68,6 +68,7 @@ export * from "./components/ContextMenu/ContextMenu";
 export * from "./components/CopyField/CopyField";
 export * from "./components/CronSchedulePreview/CronSchedulePreview";
 export * from "./components/Disclosure/Disclosure";
+export * from "./components/CommandMessage/CommandMessage";
 export * from "./components/DeviceClaimBar/DeviceClaimBar";
 export * from "./components/DeviceControlOverlay/DeviceControlOverlay";
 export * from "./components/DeviceDriverBadge/DeviceDriverBadge";

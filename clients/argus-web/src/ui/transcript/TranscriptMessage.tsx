@@ -24,6 +24,7 @@ import {
 import type { RemoteMessage, RemoteToolCall } from "../../lib/protocol";
 import { usePromptsStore } from "../../stores/prompts";
 import { Mermaid } from "../Mermaid";
+import { CommandContent } from "./CommandContent";
 import { type ImageBlock, mcpLabel, toToolCallData } from "./toolCallData";
 
 // Deny messages mirror the desktop's ToolCallCard so the agent gets the same
@@ -220,6 +221,14 @@ export const TranscriptMessage = memo(function TranscriptMessage({
       timestamp={msg.timestamp}
       toolOnly={blocks.length === 0 && !!toolCalls}
       textBlocks={blocks}
+      content={
+        msg.command && (
+          <CommandContent
+            command={msg.command}
+            renderMarkdown={renderMarkdown}
+          />
+        )
+      }
       renderMarkdown={renderMarkdown}
       toolCalls={toolCalls}
       images={images}

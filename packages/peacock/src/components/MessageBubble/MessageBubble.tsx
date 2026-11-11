@@ -26,6 +26,8 @@ export interface MessageBubbleProps {
   toolOnly?: boolean;
   /** Visible text blocks — trimmed/filtered by the consumer. */
   textBlocks: string[];
+  /** Drawn in place of `textBlocks` for a user or MCP message, e.g. a `CommandMessage`. */
+  content?: ReactNode;
   /** Render user/system/mcp plain text (linkified on desktop). Default: raw. */
   renderText?: (text: string) => ReactNode;
   /** Render assistant markdown. Default: Peacock Markdown. */
@@ -117,6 +119,7 @@ export function MessageBubble({
   messageId,
   toolOnly,
   textBlocks,
+  content,
   mcp,
   author,
   actions,
@@ -141,11 +144,12 @@ export function MessageBubble({
             <span className={styles.mcpLabel}>{mcp.label}</span>
           </div>
           <Container className={styles.mcpBody}>
-            {textBlocks.map((text, i) => (
-              <p key={i} className={styles.mcpText}>
-                {renderText(text)}
-              </p>
-            ))}
+            {content ??
+              textBlocks.map((text, i) => (
+                <p key={i} className={styles.mcpText}>
+                  {renderText(text)}
+                </p>
+              ))}
           </Container>
           {images && images.length > 0 && (
             <Attachments
@@ -184,14 +188,20 @@ export function MessageBubble({
             {actions}
           </HoverActionBar>
         )}
-        {textBlocks.length > 0 && (
+        {content ? (
           <Container className={styles.userTextWrap}>
-            {textBlocks.map((text, i) => (
-              <p key={i} className={styles.userText} data-bubble-text="">
-                {renderText(text)}
-              </p>
-            ))}
+            <div className={styles.userContent}>{content}</div>
           </Container>
+        ) : (
+          textBlocks.length > 0 && (
+            <Container className={styles.userTextWrap}>
+              {textBlocks.map((text, i) => (
+                <p key={i} className={styles.userText} data-bubble-text="">
+                  {renderText(text)}
+                </p>
+              ))}
+            </Container>
+          )
         )}
         {chips && <div className={styles.userLinkedProjects}>{chips}</div>}
         {images && images.length > 0 && (
