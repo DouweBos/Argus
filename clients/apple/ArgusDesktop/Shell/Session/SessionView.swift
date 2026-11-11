@@ -334,6 +334,8 @@ struct AgentPane: View {
   /// Images and files dropped on the transcript go to the composer.
   @State private var drops = ComposerDropInbox()
   @State private var dropTargeted = false
+  /// The composer's `/` or `@` menu is open and floats where the start title is.
+  @State private var menuOpen = false
   @State private var loaded = false
   @State private var workspace = StartWorkspace()
 
@@ -358,7 +360,7 @@ struct AgentPane: View {
           }
         }
         .overlay(alignment: .bottom) {
-          if fresh { AgentStartTitle(sessionId: sessionId).padding(.bottom, 18) }
+          if fresh { AgentStartTitle(sessionId: sessionId).padding(.bottom, 18).opacity(menuOpen ? 0 : 1) }
         }
       HuddleTypingBar(agentId: agentId)
       ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
@@ -368,6 +370,7 @@ struct AgentPane: View {
       // Shares the height with the transcript above, which centres the composer.
       if fresh { Color.clear.frame(maxHeight: .infinity) }
     }
+    .onPreferenceChange(ComposerMenuOpenKey.self) { menuOpen = $0 }
     .environment(\.composerDropInbox, drops)
     .receivesPickedElements(sessionId: sessionId, into: drops)
     .environment(\.composerFocusRequest, model.composerFocusRequest)

@@ -64,6 +64,7 @@
       .readingColumn()
       .padding(.top, 6)
       .padding(.bottom, 14)
+      .preference(key: ComposerMenuOpenKey.self, value: !composer.slashItems.isEmpty || !composer.mentionItems.isEmpty)
       .task(id: composer.agentId) { await composer.load() }
       // Which affordances the agent's runner supports.
       .task { await host.loadRunners() }
@@ -187,5 +188,11 @@
         finish(panel.runModal())
       }
     }
+  }
+  /// Whether the composer's `/` or `@` menu is open: the menu floats over what's above the
+  /// composer, and a start screen hides its title (a native menu control draws over it) meanwhile.
+  public struct ComposerMenuOpenKey: SwiftUI.PreferenceKey {
+    public static let defaultValue = false
+    public static func reduce(value: inout Bool, nextValue: () -> Bool) { value = value || nextValue() }
   }
 #endif
