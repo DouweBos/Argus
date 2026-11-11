@@ -1,4 +1,4 @@
-/** `.argus.json` (checked in) and the per-developer project settings beside it. */
+/** Project config (a checked-in `.argus.json` plus the layer stored on the host) and per-developer project settings. */
 
 import { z } from "zod";
 import { ReleaseNotePatternConfig } from "./releaseNotes";
@@ -182,6 +182,19 @@ export type ArgusConfig = z.infer<typeof ArgusConfig>;
  * Per-developer, per-project preferences, stored in the user's home
  * directory rather than the repo.
  */
+/** A project's effective config and where its top-level keys come from. */
+export const ProjectConfig = z.object({
+  /** The effective config, in `.argus.json` format. */
+  config: z.record(z.string(), z.unknown()),
+  /** Whether the repo has a checked-in `.argus.json`. */
+  repo_file: z.boolean(),
+  /** Top-level keys the checked-in `.argus.json` sets. */
+  repo_keys: z.array(z.string()),
+  /** Top-level keys stored on this machine, layered over the repo's. */
+  host_keys: z.array(z.string()),
+});
+export type ProjectConfig = z.infer<typeof ProjectConfig>;
+
 export const UserProjectSettings = z.object({
   /** Required prefix applied to newly created branches. Empty disables it. */
   branch_prefix: z.string().optional(),

@@ -148,6 +148,7 @@ export const ONBOARDING_COMMANDS = {
     params: RepoPath,
     result: ConductorImport.nullable(),
   },
+  /** The effective config, or null when neither the repo nor the host has one. */
   onboarding_read_existing_argus_json: {
     tier: "admin",
     params: RepoPath,
@@ -158,7 +159,7 @@ export const ONBOARDING_COMMANDS = {
     params: RepoPath.extend({ config: ArgusConfigBlob }),
     result: ArgusConfigBlob,
   },
-  /** Writes `.argus.json` to the repo root (backing up any existing one). */
+  /** Stores the config as the project's config on the host; never writes the repo. */
   onboarding_write_argus_json: {
     tier: "admin",
     params: RepoPath.extend({ config: ArgusConfigBlob }),

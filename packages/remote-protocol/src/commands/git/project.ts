@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   ArgusConfig,
   MoveWorktreesPlan,
+  ProjectConfig,
   MoveWorktreesResult,
   PushSessionBranchResult,
   ReleaseNotePatternConfig,
@@ -21,12 +22,30 @@ const WorktreesMove = RepoRoot.extend({
 });
 
 export const GIT_PROJECT_COMMANDS = {
+  /** The effective config: the checked-in `.argus.json` with the host's layer merged over it. */
   read_argus_config: { tier: "admin", params: RepoRoot, result: ArgusConfig },
-  /** `content` is the raw `.argus.json` text; the host rejects invalid JSON. */
-  write_argus_config: {
+  get_project_config: {
+    tier: "admin",
+    params: RepoRoot,
+    result: ProjectConfig,
+  },
+  /** Stores the keys of `config` that differ from the checked-in `.argus.json`. Never writes the repo. */
+  save_project_config: {
+    tier: "admin",
+    params: RepoRoot.extend({ config: z.record(z.string(), z.unknown()) }),
+    result: ProjectConfig,
+  },
+  /** The effective config as `.argus.json` text. */
+  export_project_config: {
+    tier: "admin",
+    params: RepoRoot,
+    result: z.string(),
+  },
+  /** Validates `.argus.json` text and replaces the host's layer with it. */
+  import_project_config: {
     tier: "admin",
     params: RepoRoot.extend({ content: z.string() }),
-    result: Void,
+    result: ProjectConfig,
   },
   get_user_project_settings: {
     tier: "admin",

@@ -1,9 +1,9 @@
 /**
  * Per-developer, per-project settings stored at `~/.argus/user-project-settings.json`.
  *
- * Unlike `.argus.json` (which is checked in and shared across the team), this
- * file holds personal preferences keyed by repo root path. It is never written
- * into the repository, so each developer keeps their own values.
+ * Holds personal preferences keyed by repo root path, plus the project config
+ * layered over a checked-in `.argus.json` (`argus_config`). It is never
+ * written into the repository, so each developer keeps their own values.
  */
 
 import fs from "node:fs";
@@ -60,9 +60,16 @@ export interface UserProjectSettings {
   previous_worktrees_roots?: string[];
 }
 
+/** A project's `.argus.json`-format config layered over the repo's own. Host-only. */
+export type HostArgusConfig = Record<string, unknown>;
+
+interface StoredProject extends UserProjectSettings {
+  argus_config?: HostArgusConfig;
+}
+
 interface UserProjectSettingsFile {
   version: number;
-  projects: Record<string, UserProjectSettings>;
+  projects: Record<string, StoredProject>;
 }
 
 function filePath(): string {
@@ -113,9 +120,29 @@ function writeAll(file: UserProjectSettingsFile): void {
 
 /** Load the personal settings for a single project. Always returns an object. */
 export function loadUserProjectSettings(repoRoot: string): UserProjectSettings {
-  const file = readAll();
+  const { argus_config: _, ...settings } = readAll().projects[repoRoot] ?? {};
 
-  return file.projects[repoRoot] ?? {};
+  return settings;
+}
+
+/** The project's config stored on this machine; undefined until one is saved. */
+export function loadHostArgusConfig(
+  repoRoot: string,
+): HostArgusConfig | undefined {
+  return readAll().projects[repoRoot]?.argus_config;
+}
+
+/** Replace the project's stored config. An empty object still counts as stored. */
+export function saveHostArgusConfig(
+  repoRoot: string,
+  config: HostArgusConfig,
+): void {
+  const file = readAll();
+  file.projects[repoRoot] = {
+    ...(file.projects[repoRoot] ?? {}),
+    argus_config: config,
+  };
+  writeAll(file);
 }
 
 /**
@@ -129,7 +156,8 @@ export function saveUserProjectSettings(
 ): UserProjectSettings {
   const file = readAll();
   const current = file.projects[repoRoot] ?? {};
-  const next: UserProjectSettings = { ...current, ...settings };
+  const { argus_config: _, ...previous } = current;
+  const next: UserProjectSettings = { ...previous, ...settings };
 
   if (next.branch_prefix === "" || next.branch_prefix === undefined) {
     delete next.branch_prefix;
@@ -197,7 +225,7 @@ export function saveUserProjectSettings(
     }
   }
 
-  file.projects[repoRoot] = next;
+  file.projects[repoRoot] = { ...next, argus_config: current.argus_config };
   writeAll(file);
   invalidateWorktreeLocationCache(repoRoot);
 

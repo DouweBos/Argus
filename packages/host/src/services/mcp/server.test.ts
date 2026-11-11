@@ -49,7 +49,7 @@ vi.mock("../session/sessionOps", () => ({
   getSessionConflicts: vi.fn(),
   mergeSessionIntoBase: vi.fn(),
   readArgusConfig: vi.fn(),
-  writeArgusConfig: vi.fn(),
+  addRelatedProject: vi.fn(),
 }));
 
 vi.mock("../agent/claude", () => ({
@@ -98,7 +98,7 @@ const {
   getSessionConflicts,
   mergeSessionIntoBase,
   readArgusConfig,
-  writeArgusConfig,
+  addRelatedProject,
 } = await import("../session/sessionOps");
 const { startAgent, sendAgentMessage, listAgents } =
   await import("../agent/claude");
@@ -121,7 +121,7 @@ const mockListSessions = vi.mocked(listSessions);
 const mockGetSessionConflicts = vi.mocked(getSessionConflicts);
 const mockMergeSessionIntoBase = vi.mocked(mergeSessionIntoBase);
 const mockReadArgusConfig = vi.mocked(readArgusConfig);
-const mockWriteArgusConfig = vi.mocked(writeArgusConfig);
+const mockAddRelatedProject = vi.mocked(addRelatedProject);
 const mockStartAgent = vi.mocked(startAgent);
 const mockSendAgentMessage = vi.mocked(sendAgentMessage);
 const mockLoadHistoryIndex = vi.mocked(loadHistoryIndex);
@@ -302,7 +302,7 @@ describe("add_related_project", () => {
     });
     expect(result.isError).toBeFalsy();
     expect(textOf(result)).toContain("already listed");
-    expect(mockWriteArgusConfig).not.toHaveBeenCalled();
+    expect(mockAddRelatedProject).not.toHaveBeenCalled();
   });
 
   it("adds a new related project and writes config", async () => {
@@ -333,10 +333,10 @@ describe("add_related_project", () => {
     };
     expect(parsed.added.path).toBe("../backend");
     expect(parsed.added.description).toBe("Backend API");
-    expect(mockWriteArgusConfig).toHaveBeenCalledWith(
-      "/projects/frontend",
-      expect.any(String),
-    );
+    expect(mockAddRelatedProject).toHaveBeenCalledWith("/projects/frontend", {
+      path: "../backend",
+      description: "Backend API",
+    });
   });
 });
 

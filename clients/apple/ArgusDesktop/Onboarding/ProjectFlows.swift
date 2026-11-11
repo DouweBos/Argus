@@ -58,7 +58,7 @@ struct ProjectFlows: ViewModifier {
   }
 #endif
 
-/// Add Project: register the folder, offer a `.argus.json` when it has none,
+/// Add Project: register the folder, offer a project config when it has none,
 /// then open it.
 private struct AddProjectSheet: View {
   let path: String

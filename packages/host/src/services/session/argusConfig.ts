@@ -1,245 +1,81 @@
 /**
- * Loading `.argus.json`: read, parse, merge `.argus.local.json` on top.
+ * A project's effective config: the checked-in `.argus.json` (if any) with
+ * the config stored on this machine layered over it. Everything that reads
+ * project config goes through `loadArgusConfig`.
  *
  * Split out of `setup.ts` — the setup pipeline needs a terminal and the
- * terminal needs the config, so keeping both in one file was a cycle. The
- * per-field normalizers live in `argusConfigNormalize.ts`.
+ * terminal needs the config, so keeping both in one file was a cycle.
  */
 
 import fs from "node:fs";
 import path from "node:path";
+import { info, warn } from "@argus/host/logger";
+import { emitHostEvent } from "../../bus";
+import { appState } from "../../state";
+import { capture } from "../telemetry/telemetry";
 import {
-  normalizeAutoFetchMinutes,
-  normalizeBrowserPresets,
-  normalizeDefaultBaseBranch,
-  normalizeLlmConfig,
-  normalizeProjectAutomations,
-  normalizeProtectedBranches,
-  normalizeRelatedProjects,
-  normalizeReleaseNotePatterns,
-  normalizeRunCommands,
-  normalizeSetupEntries,
-  normalizeSimulatorDeeplinks,
-  normalizeToolsConfig,
-  normalizeVerifyConfig,
-  normalizeWorkspaceEnv,
-} from "./argusConfigNormalize";
+  type HostArgusConfig,
+  loadHostArgusConfig,
+  saveHostArgusConfig,
+} from "../userProjectSettings/store";
 import {
-  type BrowserPresetConfig,
-  defaultArgusConfig,
-  type LlmConfig,
-  type RelatedProject,
-  type ReleaseNotePatternConfig,
-  type SetupConfig,
-  type SetupCopyEntry,
-  type ArgusConfig,
-  setupEntryPath,
-} from "./models";
+  applyDefaults,
+  mergeConfig,
+  parseArgusConfig,
+} from "./argusConfigParse";
+import { type ArgusConfig, defaultArgusConfig } from "./models";
+
+type RawConfig = Record<string, unknown>;
+
+/** A project's config as the Project Settings sheet shows it. */
+export interface ProjectConfig {
+  /** The effective config, in `.argus.json` format. */
+  config: RawConfig;
+  /** Whether the repo has a checked-in `.argus.json`. */
+  repo_file: boolean;
+  /** Top-level keys the checked-in `.argus.json` sets. */
+  repo_keys: string[];
+  /** Top-level keys stored on this machine. */
+  host_keys: string[];
+}
+
+/** Every key `parseArgusConfig` owns, by the name it has in the parsed config. */
+const CONFIG_KEYS = new Set(Object.keys(defaultArgusConfig()));
+
+/** `workspace_port_env` is the old name of `workspace_env`. */
+function configKey(key: string): string {
+  return key === "workspace_port_env" ? "workspace_env" : key;
+}
 
 // ---------------------------------------------------------------------------
-// Config loading
+// Loading
 // ---------------------------------------------------------------------------
 
 /**
- * Load `.argus.json` from `repoRoot`, then merge `.argus.local.json`
- * on top if it exists. Returns a default (empty) config if neither file exists.
+ * The effective config for a repo root or one of its worktrees: the dir's
+ * `.argus.json` with the project's stored config merged over it. Returns the
+ * default (empty) config if neither exists.
  */
-export function loadArgusConfig(repoRoot: string): ArgusConfig {
-  const configPath = path.join(repoRoot, ".argus.json");
-  let config: ArgusConfig = defaultArgusConfig();
+export function loadArgusConfig(dir: string): ArgusConfig {
+  const root = projectRootFor(dir);
+  const repoRaw = readRepoRaw(dir);
+  let config = repoRaw ? parseRepo(repoRaw, dir) : defaultArgusConfig();
 
-  if (fs.existsSync(configPath)) {
+  const hostRaw = hostLayer(root);
+  if (hostRaw) {
     try {
-      const raw = fs.readFileSync(configPath, "utf8");
-      config = parseArgusConfig(raw, repoRoot);
+      config = mergeConfig(config, parseArgusConfig(hostRaw, root));
     } catch (e) {
-      throw `Failed to read/parse .argus.json: ${e}`;
-    }
-  }
-
-  const localPath = path.join(repoRoot, ".argus.local.json");
-  if (fs.existsSync(localPath)) {
-    try {
-      const raw = fs.readFileSync(localPath, "utf8");
-      const local = parseArgusConfig(raw, repoRoot);
-      config = mergeConfig(config, local);
-    } catch (e) {
-      throw `Failed to read/parse .argus.local.json: ${e}`;
+      throw `Failed to read the project config stored on this Mac: ${e}`;
     }
   }
 
   return applyDefaults(config);
 }
 
-/** Defaults go on after the merge, so a local file that omits a key doesn't override the team's value. */
-function applyDefaults(config: ArgusConfig): ArgusConfig {
-  return {
-    ...config,
-    single_runtime: config.single_runtime ?? false,
-    auto_continue_on_limit: config.auto_continue_on_limit ?? false,
-  };
-}
-
-/**
- * Parse raw JSON into a `ArgusConfig`. The `run` field must be an array of
- * `RunCommand` objects — the old string / single-object form is rejected.
- */
-function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
-  const parsed = JSON.parse(raw) as Record<string, unknown>;
-
-  const setup = (parsed.setup as Partial<SetupConfig>) ?? {};
-  const run = normalizeRunCommands(parsed.run, repoRoot);
-
-  return {
-    setup: {
-      copy: normalizeSetupEntries(setup.copy, repoRoot, "setup.copy"),
-      symlink: normalizeSetupEntries(setup.symlink, repoRoot, "setup.symlink"),
-      commands: (setup.commands as string[]) ?? [],
-    },
-    terminals: (parsed.terminals as ArgusConfig["terminals"]) ?? [],
-    workspace_env: normalizeWorkspaceEnv(
-      parsed.workspace_env ?? parsed.workspace_port_env,
-    ),
-    run,
-    related_projects: normalizeRelatedProjects(parsed.related_projects),
-    browser_url: (parsed.browser_url as string) ?? null,
-    browser_presets: normalizeBrowserPresets(parsed.browser_presets),
-    protected_branches: normalizeProtectedBranches(parsed.protected_branches),
-    default_base_branch: normalizeDefaultBaseBranch(parsed.default_base_branch),
-    single_runtime:
-      parsed.single_runtime != null ? Boolean(parsed.single_runtime) : null,
-    auto_continue_on_limit:
-      parsed.auto_continue_on_limit != null
-        ? Boolean(parsed.auto_continue_on_limit)
-        : null,
-    release_note_patterns: normalizeReleaseNotePatterns(
-      parsed.release_note_patterns,
-      repoRoot,
-    ),
-    simulator_deeplinks: normalizeSimulatorDeeplinks(
-      parsed.simulator_deeplinks,
-      repoRoot,
-    ),
-    auto_fetch_minutes: normalizeAutoFetchMinutes(parsed.auto_fetch_minutes),
-    llm: normalizeLlmConfig(parsed.llm, repoRoot),
-    tools: normalizeToolsConfig(parsed.tools),
-    automations: normalizeProjectAutomations(parsed.automations),
-    verify: normalizeVerifyConfig(parsed.verify),
-  };
-}
-
-/**
- * Merge a local config on top of a base config.
- *
- * - `setup.copy`, `setup.symlink`, `setup.commands` — concatenated (deduped).
- * - `terminals` — concatenated.
- * - `workspace_env` — local replaces base if present.
- * - `run` — local replaces base if present.
- */
-function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
-  function dedupExtend(target: string[], source: string[]): string[] {
-    const result = [...target];
-    for (const item of source) {
-      if (!result.includes(item)) {
-        result.push(item);
-      }
-    }
-
-    return result;
-  }
-
-  // Setup entries dedupe by path (so a `.argus.local.json` override that adds
-  // an `exclude` to an entry from the base config replaces the base entry
-  // instead of producing two copies of the same path).
-  function dedupExtendSetup(
-    target: SetupCopyEntry[],
-    source: SetupCopyEntry[],
-  ): SetupCopyEntry[] {
-    const sourcePaths = new Set(source.map(setupEntryPath));
-    const result = target.filter((e) => !sourcePaths.has(setupEntryPath(e)));
-
-    return [...result, ...source];
-  }
-
-  return {
-    setup: {
-      copy: dedupExtendSetup(base.setup.copy, local.setup.copy),
-      symlink: dedupExtendSetup(base.setup.symlink, local.setup.symlink),
-      commands: dedupExtend(base.setup.commands, local.setup.commands),
-    },
-    terminals: [...base.terminals, ...local.terminals],
-    workspace_env:
-      local.workspace_env.length > 0 ? local.workspace_env : base.workspace_env,
-    run: local.run.length > 0 ? local.run : base.run,
-    related_projects: dedupRelatedProjects(
-      base.related_projects ?? [],
-      local.related_projects ?? [],
-    ),
-    browser_url: local.browser_url ?? base.browser_url,
-    browser_presets: dedupBrowserPresets(
-      base.browser_presets,
-      local.browser_presets,
-    ),
-    protected_branches:
-      local.protected_branches.length > 0
-        ? local.protected_branches
-        : base.protected_branches,
-    default_base_branch:
-      local.default_base_branch ?? base.default_base_branch ?? null,
-    single_runtime: local.single_runtime ?? base.single_runtime,
-    auto_continue_on_limit:
-      local.auto_continue_on_limit ?? base.auto_continue_on_limit,
-    release_note_patterns: dedupReleaseNotePatterns(
-      base.release_note_patterns,
-      local.release_note_patterns,
-    ),
-    simulator_deeplinks:
-      local.simulator_deeplinks.length > 0
-        ? local.simulator_deeplinks
-        : base.simulator_deeplinks,
-    auto_fetch_minutes:
-      local.auto_fetch_minutes ?? base.auto_fetch_minutes ?? null,
-    llm: mergeLlmConfig(base.llm ?? null, local.llm ?? null),
-    tools: local.tools ?? base.tools ?? null,
-    automations: local.automations ?? base.automations ?? null,
-    verify: local.verify ?? base.verify ?? null,
-  };
-}
-
-/** Per-field override: local wins on `runner`/`model` if set. */
-function mergeLlmConfig(
-  base: LlmConfig | null,
-  local: LlmConfig | null,
-): LlmConfig | null {
-  if (!base && !local) {
-    return null;
-  }
-  const runner = local?.runner ?? base?.runner ?? null;
-  const model = local?.model ?? base?.model ?? null;
-  if (runner == null && model == null) {
-    return null;
-  }
-
-  return {
-    ...(runner != null ? { runner } : {}),
-    ...(model != null ? { model } : {}),
-  };
-}
-
-/** Merge release-note pattern lists, deduplicating by glob (local wins on collision). */
-function dedupReleaseNotePatterns(
-  base: ReleaseNotePatternConfig[],
-  local: ReleaseNotePatternConfig[],
-): ReleaseNotePatternConfig[] {
-  const localGlobs = new Set(local.map((p) => p.glob));
-  const result = base.filter((p) => !localGlobs.has(p.glob));
-
-  return [...result, ...local];
-}
-
 /**
  * Return true when `branch` is listed as a protected branch in the project's
- * `.argus.json`. Used to gate the direct merge flow.
+ * config. Used to gate the direct merge flow.
  */
 export function isBranchProtected(
   repoRoot: string,
@@ -249,38 +85,231 @@ export function isBranchProtected(
     return false;
   }
   try {
-    const config = loadArgusConfig(repoRoot);
-
-    return config.protected_branches.includes(branch);
+    return loadArgusConfig(repoRoot).protected_branches.includes(branch);
   } catch {
     return false;
   }
 }
 
-/** Merge related project lists, deduplicating by path. */
-function dedupRelatedProjects(
-  base: RelatedProject[],
-  local: RelatedProject[],
-): RelatedProject[] {
-  const seen = new Set(base.map((p) => p.path));
-  const result = [...base];
-  for (const p of local) {
-    if (!seen.has(p.path)) {
-      seen.add(p.path);
-      result.push(p);
+/** A worktree's project root, so it shares its project's stored config. */
+function projectRootFor(dir: string): string {
+  const resolved = path.resolve(dir);
+  for (const session of appState.sessions.values()) {
+    if (session.path && path.resolve(session.path) === resolved) {
+      return session.repo_root;
     }
   }
+
+  return dir;
+}
+
+function readRepoRaw(dir: string): RawConfig | null {
+  const configPath = path.join(dir, ".argus.json");
+  if (!fs.existsSync(configPath)) {
+    return null;
+  }
+  try {
+    return asObject(JSON.parse(fs.readFileSync(configPath, "utf8")));
+  } catch (e) {
+    throw `Failed to read/parse .argus.json: ${e}`;
+  }
+}
+
+function parseRepo(raw: RawConfig, dir: string): ArgusConfig {
+  try {
+    return parseArgusConfig(raw, dir);
+  } catch (e) {
+    throw `Failed to read/parse .argus.json: ${e}`;
+  }
+}
+
+function asObject(value: unknown): RawConfig {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw "expected a JSON object";
+  }
+
+  return value as RawConfig;
+}
+
+/**
+ * The project's stored config. A project with a `.argus.local.json` and
+ * nothing stored yet has that file imported once, after which it's ignored.
+ */
+function hostLayer(root: string): HostArgusConfig | undefined {
+  const stored = loadHostArgusConfig(root);
+  if (stored !== undefined) {
+    return stored;
+  }
+
+  const localPath = path.join(root, ".argus.local.json");
+  if (!fs.existsSync(localPath)) {
+    return undefined;
+  }
+  let local: RawConfig;
+  try {
+    local = asObject(JSON.parse(fs.readFileSync(localPath, "utf8")));
+    parseArgusConfig(local, root);
+  } catch (e) {
+    warn(`Not importing ${localPath}: ${e}`);
+    capture("project_config_local_migrated", { success: false });
+
+    return undefined;
+  }
+  saveHostArgusConfig(root, local);
+  info(
+    `Imported ${localPath} into the project config stored on this Mac; the file is no longer read`,
+  );
+  capture("project_config_local_migrated", { success: true });
+
+  return local;
+}
+
+// ---------------------------------------------------------------------------
+// The layers, for Project Settings
+// ---------------------------------------------------------------------------
+
+/** The effective config and where each top-level key comes from. */
+export function getProjectConfig(repoRoot: string): ProjectConfig {
+  const repoRaw = readRepoRaw(repoRoot);
+  const hostRaw = hostLayer(repoRoot) ?? {};
+  const effective = loadArgusConfig(repoRoot);
+
+  return {
+    config: {
+      ...unknownKeys(repoRaw ?? {}),
+      ...unknownKeys(hostRaw),
+      ...toRaw(effective),
+    },
+    repo_file: repoRaw !== null,
+    repo_keys: Object.keys(repoRaw ?? {}).map(configKey),
+    host_keys: Object.keys(hostRaw).map(configKey),
+  };
+}
+
+/**
+ * Store `desired` as this project's config. Only the top-level keys that
+ * differ from the checked-in `.argus.json` are stored, so the team's later
+ * changes to the rest still come through.
+ */
+export function saveProjectConfig(
+  repoRoot: string,
+  desired: RawConfig,
+): ProjectConfig {
+  const wanted = applyDefaults(parseArgusConfig(desired, repoRoot));
+  const repoRaw = readRepoRaw(repoRoot);
+  const repo = applyDefaults(
+    repoRaw ? parseRepo(repoRaw, repoRoot) : defaultArgusConfig(),
+  );
+
+  const layer: RawConfig = {};
+  for (const [key, value] of Object.entries(desired)) {
+    if (value === null || value === undefined) {
+      continue;
+    }
+    const field = configKey(key) as keyof ArgusConfig;
+    const same = CONFIG_KEYS.has(field)
+      ? sameJson(wanted[field], repo[field])
+      : repoRaw !== null && sameJson(value, repoRaw[key]);
+    if (!same) {
+      layer[key] = value;
+    }
+  }
+
+  saveHostArgusConfig(repoRoot, layer);
+  emitHostEvent("argus_config:changed", { repoRoot });
+
+  return getProjectConfig(repoRoot);
+}
+
+/** The effective config as `.argus.json` text. */
+export function exportProjectConfig(repoRoot: string): string {
+  const project = getProjectConfig(repoRoot);
+  capture("project_config_transferred", {
+    action: "export",
+    outcome: "success",
+    repo_file: project.repo_file,
+  });
+
+  return `${JSON.stringify(project.config, null, 2)}\n`;
+}
+
+/** Replace this project's stored config with an `.argus.json`-format file's contents. */
+export function importProjectConfig(
+  repoRoot: string,
+  content: string,
+): ProjectConfig {
+  const repoFile = fs.existsSync(path.join(repoRoot, ".argus.json"));
+  const fail = (outcome: "invalid_config" | "invalid_json", e: unknown) => {
+    capture("project_config_transferred", {
+      action: "import",
+      outcome,
+      repo_file: repoFile,
+    });
+
+    return outcome === "invalid_json"
+      ? `Not a valid .argus.json: ${e}`
+      : `Invalid project config: ${e}`;
+  };
+
+  let parsed: RawConfig;
+  try {
+    parsed = asObject(JSON.parse(content));
+  } catch (e) {
+    throw fail("invalid_json", e);
+  }
+  try {
+    parseArgusConfig(parsed, repoRoot);
+  } catch (e) {
+    throw fail("invalid_config", e);
+  }
+
+  const result = saveProjectConfig(repoRoot, parsed);
+  capture("project_config_transferred", {
+    action: "import",
+    outcome: "success",
+    repo_file: repoFile,
+  });
 
   return result;
 }
 
-/** Merge browser preset lists, deduplicating by id (local wins on collision). */
-function dedupBrowserPresets(
-  base: BrowserPresetConfig[],
-  local: BrowserPresetConfig[],
-): BrowserPresetConfig[] {
-  const localIds = new Set(local.map((p) => p.id));
-  const result = base.filter((p) => !localIds.has(p.id));
+/** Keys Argus doesn't read, kept so they survive a round trip. */
+function unknownKeys(raw: RawConfig): RawConfig {
+  return Object.fromEntries(
+    Object.entries(raw).filter(([key]) => !CONFIG_KEYS.has(configKey(key))),
+  );
+}
 
-  return [...result, ...local];
+/** A parsed config in `.argus.json` format, without empty or default values. */
+function toRaw(config: ArgusConfig): RawConfig {
+  const out: RawConfig = {};
+  const setup = Object.fromEntries(
+    Object.entries(config.setup).filter(([, v]) => !isEmpty(v)),
+  );
+  if (!isEmpty(setup)) {
+    out.setup = setup;
+  }
+  for (const [key, value] of Object.entries(config)) {
+    if (key === "setup" || isEmpty(value) || value === false) {
+      continue;
+    }
+    out[key] = value;
+  }
+
+  return out;
+}
+
+function isEmpty(value: unknown): boolean {
+  if (value === null || value === undefined) {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.length === 0;
+  }
+
+  return typeof value === "object" && Object.keys(value).length === 0;
+}
+
+function sameJson(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 }

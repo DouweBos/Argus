@@ -1,4 +1,10 @@
 import { defineTypedCommand } from "../../services/command/registry";
+import {
+  exportProjectConfig,
+  getProjectConfig,
+  importProjectConfig,
+  saveProjectConfig,
+} from "../../services/session/argusConfig";
 import { reconfigureRepoAutoFetch } from "../../services/session/autoFetch";
 import { loadCommandMetrics } from "../../services/session/commandMetrics";
 import {
@@ -15,7 +21,6 @@ import {
   readArgusConfig,
   rebaseSessionOnBase,
   setSessionBaseBranch,
-  writeArgusConfig,
 } from "../../services/session/sessionOps";
 import {
   executeWorktreeMove,
@@ -33,8 +38,15 @@ import {
 
 export function registerGitProjectCommands(): void {
   defineTypedCommand("read_argus_config", (p) => readArgusConfig(p.repoRoot));
-  defineTypedCommand("write_argus_config", (p) =>
-    writeArgusConfig(p.repoRoot, p.content),
+  defineTypedCommand("get_project_config", (p) => getProjectConfig(p.repoRoot));
+  defineTypedCommand("save_project_config", (p) =>
+    saveProjectConfig(p.repoRoot, p.config),
+  );
+  defineTypedCommand("export_project_config", (p) =>
+    exportProjectConfig(p.repoRoot),
+  );
+  defineTypedCommand("import_project_config", (p) =>
+    importProjectConfig(p.repoRoot, p.content),
   );
   defineTypedCommand("get_user_project_settings", (p) =>
     loadUserProjectSettings(p.repoRoot),

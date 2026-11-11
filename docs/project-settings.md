@@ -1,39 +1,76 @@
-# Project settings — `.argus.json`
+# Project settings
 
-Per-project settings live in `.argus.json` at the repo root. This file
-is checked into the repository, so the whole team shares the same
-configuration.
+Each project's settings are stored by Argus on this Mac — you never have to
+create, edit or commit a file in your repo. If the repo has a checked-in
+`.argus.json`, Argus reads it too and layers this Mac's settings over it, so a
+team can share a baseline while each person keeps their own changes.
 
-A second file, `.argus.local.json` (gitignored), is merged on top of
-`.argus.json` for personal overrides — handy when you want to add a run
-target locally without dirtying the team config.
+|                          | Lives at                                            | Shared?         | Use for                                       |
+| ------------------------ | --------------------------------------------------- | --------------- | --------------------------------------------- |
+| Project config           | this Mac (`$ARGUS_HOME/user-project-settings.json`) | no              | everything below; what Project Settings saves |
+| `.argus.json` (optional) | repo root                                           | yes (commit it) | a team baseline, read-only to Argus           |
 
-|                     | Lives at  | Shared?             | Use for                                                        |
-| ------------------- | --------- | ------------------- | -------------------------------------------------------------- |
-| `.argus.json`       | repo root | yes (commit it)     | setup, run commands, related projects, anything the team needs |
-| `.argus.local.json` | repo root | **no** (gitignored) | personal run targets, local-only env, experiments              |
+The effective config is the checked-in `.argus.json` (if any) with this
+Mac's config merged over it:
+
+- `setup.copy` / `setup.symlink` — combined, deduplicated by path (an entry
+  on this Mac replaces the repo's entry for the same path, e.g. to add an
+  `exclude`). `setup.commands` and `terminals` are combined without repeats.
+- `related_projects` (by path), `browser_presets` (by id) and
+  `release_note_patterns` (by glob) are combined; this Mac wins on a
+  collision.
+- `run`, `workspace_env`, `protected_branches` and `simulator_deeplinks` —
+  this Mac's list replaces the repo's when it has entries.
+- Everything else (`browser_url`, `llm`, `tools`, `automations`, `verify`,
+  …) — this Mac's value wins when set.
+
+Because lists from the repo are combined rather than replaced, an entry that
+comes from the checked-in `.argus.json` can't be removed on this Mac — change
+the file for that.
 
 For app-level (machine-local) preferences, see
 [app-settings.md](./app-settings.md).
+
+### Migrating from `.argus.local.json`
+
+`.argus.local.json` is retired. The first time Argus reads a project that has
+one and no settings stored on this Mac yet, it imports the file into this
+Mac's project config (and logs that it did). After that the file is ignored —
+delete it whenever you like.
 
 ---
 
 ## Where to edit
 
-Two ways to change project settings:
+Open **Project Settings** from a project's menu in the sidebar → _Project
+Settings…_. Sections cover Setup, Workspace env, Run commands, Terminals,
+Browser, Deep links, Branch protection, Release notes, Agent, LLM, Verify,
+Related projects, Automations and Tools, plus the personal Branch prefix and
+Worktree location (see
+[per-project personal settings](./app-settings.md#per-project-personal-settings))
+and a JSON preview of the effective config.
 
-1. **In-app — Project Settings.** Open it from a project's menu in the
-   sidebar → _Project Settings…_. Sections cover Setup, Workspace env,
-   Run commands, Terminals, Browser, Deep links, Branch protection,
-   Release notes, Agent, LLM, Related projects, Automations and Tools,
-   plus the personal Branch prefix and Worktree location (stored outside
-   the repo, see
-   [per-project personal settings](./app-settings.md#per-project-personal-settings)) and a JSON-preview
-   tab for the exact payload that will be saved. Reads and writes `.argus.json` directly;
-   saving changes only the fields the dialog edits, so other keys and
-   `.argus.local.json` overrides stay where they are.
-2. **Hand-edit `.argus.json`** at the repo root. The dialog re-reads
-   on next open, so the two stay in sync.
+The sheet always shows the effective config. When the repo has a checked-in
+`.argus.json`, each section notes whether its values come from that file or
+were changed on this Mac. **Saving never writes the repo**: Argus stores the
+top-level keys that differ from the checked-in `.argus.json` on this Mac, so
+the team's later changes to everything else still come through.
+
+### Export and import
+
+- **Export…** saves the effective config as a file in `.argus.json` format —
+  to share it, check it in as a team baseline, or move it to another Mac.
+- **Import…** reads such a file, validates it the same way Argus validates
+  `.argus.json`, and — after you confirm — replaces this Mac's config for the
+  project with it. A checked-in `.argus.json` is left as it is.
+
+Both are host commands too (`export_project_config`, `import_project_config`,
+alongside `get_project_config` and `save_project_config`), so they can be
+scripted. Project settings aren't shown on the iPhone, so these aren't
+exposed over the remote gateway.
+
+Onboarding's "generate a config" step and the `add_related_project` agent
+tool also save to this Mac, never to the repo.
 
 | Field                                       | Editable in dialog?     |
 | ------------------------------------------- | ----------------------- |
@@ -278,7 +315,7 @@ directly — instead they surface a _Push & open PR_ flow.
 "protected_branches": ["main", "master", "release/*"]
 ```
 
-The default `.argus.json` Argus generates includes `["main", "master"]`.
+The default config Argus generates includes `["main", "master"]`.
 
 ---
 
@@ -424,7 +461,7 @@ auto-fetch entirely (the default).
 
 The field can also be changed from **Git Settings** in the project's
 git panel — the change takes effect immediately for all open sessions
-and is written back to `.argus.json`.
+and is saved to the project config on this Mac.
 
 > Note: `suppress_lfs_warning` is the personal counterpart that lives
 > in `~/.argus/user-project-settings.json`. It hides the git-lfs
@@ -442,7 +479,7 @@ overrides and your app-level default in the resolver cascade:
 
 The **runner** is bound at session creation and immutable for the
 session's lifetime. The **model** is re-resolved every time an agent
-spawns, so changing it in `.argus.json` takes effect on the next agent.
+spawns, so changing it in Project Settings takes effect on the next agent.
 
 ```jsonc
 "llm": {
@@ -475,7 +512,7 @@ Tools (Device recording, Device control, Device debug, UI inspector) are an opt-
 
 Effective enable = the user has the tool on **and** this list doesn't contain it. The mask is one-way: a project cannot force-enable a tool a developer has turned off in their personal settings.
 
-Edit via **Project Settings → Tools** — the dialog lists every tool and toggles them straight into this field. The list is checked into `.argus.json` so the mask travels with the repo.
+Edit via **Project Settings → Tools** — the dialog lists every tool and toggles them straight into this field. Put it in a checked-in `.argus.json` to have the mask travel with the repo.
 
 Valid ids: `device-recording`, `device-inspector`, `device-control`, `device-debug`. Unknown ids are ignored (no error, no warning) so the field tolerates renames across releases.
 
@@ -545,7 +582,7 @@ throwaway one for each other form factor the change affects.
   (a proxy with latency, a mock server flag). Omit it to skip the loading-state
   check.
 
-A `verify` block in `.argus.local.json` replaces the team's block as a whole.
+A `verify` block set on this Mac replaces the checked-in block as a whole.
 Edit via **Project Settings → Verify**.
 
 ---

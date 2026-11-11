@@ -22,8 +22,44 @@
         customRunner("gateway", gatewayDraft),
         verify("empty", ArgusConfigDraft()),
         verify("filled", verifyDraft),
+        projectSheet("mac-only", repoFile: false, section: .setup),
+        projectSheet("layered", repoFile: true, section: .setup),
+        projectSheet("overridden", repoFile: true, section: .run),
       ]
     }
+
+    /// A project's config: setup from the checked-in `.argus.json`, run commands changed on this Mac.
+    private static func projectSheet(
+      _ state: String, repoFile: Bool, section: ProjectSettingsSection
+    ) -> GalleryStory {
+      let root = "/Users/sam/Projects/storefront"
+      return GalleryStory("project-settings/sheet/\(state)", size: CGSize(width: 920, height: 660)) {
+        let settings = ProjectSettingsModel(repoRoot: root)
+        settings.galleryFill(
+          .init(
+            config: projectConfig,
+            repoFile: repoFile,
+            repoKeys: repoFile ? ["setup", "run", "protected_branches"] : [],
+            hostKeys: repoFile ? ["run", "browser_url"] : Array(projectConfig.keys)),
+          branchPrefix: "sam/")
+        return ProjectSettingsSheet(repoRoot: root, settings: settings, section: section)
+      }
+    }
+
+    private static let projectConfig: [String: JSONValue] = [
+      "setup": .object([
+        "copy": .array([.string("node_modules"), .string("ios/Pods")]),
+        "symlink": .array([.string(".env.local")]),
+        "commands": .array([.string("pnpm install --frozen-lockfile")]),
+      ]),
+      "run": .array([
+        .object(["title": .string("Web"), "command": .string("pnpm dev"), "restartOnRerun": .bool(true)]),
+        .object(["title": .string("iOS"), "command": .string("pnpm ios"), "requires": .array([.string("Web")])]),
+        .object(["title": .string("Storybook"), "command": .string("pnpm storybook")]),
+      ]),
+      "browser_url": .string("http://localhost:3000"),
+      "protected_branches": .array([.string("main"), .string("release")]),
+    ]
 
     private static var verifyDraft: ArgusConfigDraft {
       var draft = ArgusConfigDraft()

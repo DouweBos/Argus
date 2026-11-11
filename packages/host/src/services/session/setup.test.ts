@@ -1,5 +1,15 @@
 import fs from "node:fs";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import os from "node:os";
+import path from "node:path";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+  beforeEach,
+} from "vitest";
 import { loadArgusConfig } from "./argusConfig";
 
 // Mock fs so we don't hit the real filesystem
@@ -27,8 +37,18 @@ const mockExistsSync = vi.mocked(fs.existsSync);
 const mockReadFileSync = vi.mocked(fs.readFileSync);
 
 describe("loadArgusConfig", () => {
+  // `.argus.local.json` fixtures are imported into the host's store on load.
+  beforeAll(() => {
+    vi.stubEnv(
+      "ARGUS_HOME",
+      fs.mkdtempSync(path.join(os.tmpdir(), "argus-setup-")),
+    );
+  });
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+  afterAll(() => {
+    vi.unstubAllEnvs();
   });
 
   it("returns default config when no files exist", () => {

@@ -7,6 +7,7 @@ struct SectionIntro: View {
   let title: String
   let text: String
   @Environment(\.theme) private var theme
+  @Environment(\.configSourceNote) private var sourceNote
 
   var body: some View {
     Section {
@@ -16,6 +17,7 @@ struct SectionIntro: View {
         Text(title).font(.scaled(.title3).weight(.semibold)).foregroundStyle(theme.text)
         Text(text).font(.scaled(.callout)).foregroundStyle(theme.textSecondary)
           .fixedSize(horizontal: false, vertical: true)
+        if let sourceNote { sourceNote.padding(.top, 2) }
       }
       .textCase(nil)
       .padding(.bottom, 4)
@@ -78,4 +80,34 @@ extension Array {
     guard indices.contains(index), indices.contains(target) else { return }
     swapAt(index, target)
   }
+}
+
+/// Where a section's values come from, shown under its intro.
+struct ConfigSourceNote: View {
+  let source: ConfigSource
+  let repoFile: Bool
+  @Environment(\.theme) private var theme
+
+  var body: some View {
+    if let text {
+      Label(text, systemImage: source == .repo ? "doc.text" : "laptopcomputer")
+        .font(.scaled(.caption))
+        .foregroundStyle(theme.textMuted)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+  }
+
+  private var text: String? {
+    switch source {
+    case .repo: "From the checked-in .argus.json. Changes you save are stored on this Mac, layered over it."
+    case .overridden: "Changed on this Mac, over the checked-in .argus.json."
+    case .mac: repoFile ? "Set on this Mac only; the checked-in .argus.json doesn't set it." : nil
+    case .unset: nil
+    }
+  }
+}
+
+extension EnvironmentValues {
+  /// The open section's config source, for `SectionIntro`.
+  @Entry var configSourceNote: ConfigSourceNote?
 }

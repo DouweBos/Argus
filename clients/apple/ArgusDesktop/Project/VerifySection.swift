@@ -9,7 +9,7 @@ struct VerifySection: View {
   var body: some View {
     SectionIntro(
       title: "Verify",
-      text: "How an agent proves its work here: the checks that must pass after its last change, how it signs in and how to slow the backend down for loading states. The agent picks its devices from the ticket. Saved to .argus.json and shared with the team."
+      text: "How an agent proves its work here: the checks that must pass after its last change, how it signs in and how to slow the backend down for loading states. The agent picks its devices from the ticket."
     )
     StringListEditor(
       label: "Checks", items: $draft.verifyChecks, placeholder: "pnpm lint",

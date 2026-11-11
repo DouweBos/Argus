@@ -1,9 +1,10 @@
 import ArgusCore
 import ArgusUI
 import SwiftUI
+import UniformTypeIdentifiers
 
-/// Project Settings: the project's `.argus.json` plus its personal settings,
-/// in the desktop dialog's sections.
+/// Project Settings: the project's config (stored on this Mac, over a
+/// checked-in `.argus.json` if any) plus its personal settings.
 struct ProjectSettingsSheet: View {
   let repoRoot: String
   @Environment(DesktopModel.self) private var model
@@ -12,9 +13,12 @@ struct ProjectSettingsSheet: View {
   @State private var settings: ProjectSettingsModel
   @State private var section = ProjectSettingsSection.setup
 
-  init(repoRoot: String) {
+  @State private var confirmingImport: String?
+
+  init(repoRoot: String, settings: ProjectSettingsModel? = nil, section: ProjectSettingsSection = .setup) {
     self.repoRoot = repoRoot
-    _settings = State(initialValue: ProjectSettingsModel(repoRoot: repoRoot))
+    _settings = State(initialValue: settings ?? ProjectSettingsModel(repoRoot: repoRoot))
+    _section = State(initialValue: section)
   }
 
   var body: some View {
@@ -38,9 +42,23 @@ struct ProjectSettingsSheet: View {
     .background(theme.bg)
     .modifier(RunnerSetupPresenter(window: .projectSettings))
     .task {
-      guard let backend = model.backend else { return }
+      guard !settings.loaded, let backend = model.backend else { return }
       await model.store.loadRunners()
       await settings.load(backend)
+    }
+    .confirmationDialog(
+      "Replace this project's config on this Mac?",
+      isPresented: Binding(get: { confirmingImport != nil }, set: { if !$0 { confirmingImport = nil } })
+    ) {
+      Button("Replace", role: .destructive) {
+        guard let content = confirmingImport, let backend = model.backend else { return }
+        Task { await settings.importConfig(content, backend) }
+      }
+    } message: {
+      Text(
+        settings.isDirty
+          ? "The imported file replaces the config stored on this Mac, and your unsaved changes are discarded."
+          : "The imported file replaces the config stored on this Mac. A checked-in .argus.json is left as it is.")
     }
     .onAppear { MacTelemetry.capture(.screenViewed(screen: "/project-settings")) }
     #if DEBUG
@@ -68,7 +86,17 @@ struct ProjectSettingsSheet: View {
       VStack(alignment: .leading, spacing: 2) {
         Text(URL(fileURLWithPath: repoRoot).lastPathComponent).font(.scaled(.headline))
         Text(HostScopedPath.path(repoRoot)).font(.scaled(.caption)).foregroundStyle(theme.textMuted).lineLimit(1).truncationMode(.middle)
+        Label(storedLabel, systemImage: "laptopcomputer").font(.scaled(.caption)).foregroundStyle(theme.textMuted)
       }
+      Button("Import…", action: importFile)
+        .padding(.leading, 12)
+        .buttonStyle(.argusBorderless)
+        .disabled(!settings.loaded || settings.transferring)
+        .help("Replace this project's config on this Mac with an .argus.json file")
+      Button("Export…", action: exportFile)
+        .buttonStyle(.argusBorderless)
+        .disabled(!settings.loaded || settings.transferring || settings.isDirty)
+        .help(settings.isDirty ? "Save your changes before exporting" : "Save the effective config as an .argus.json file")
       Spacer()
       if let error = settings.error {
         Text(error).font(.scaled(.caption)).foregroundStyle(theme.error).lineLimit(2)
@@ -83,6 +111,43 @@ struct ProjectSettingsSheet: View {
       .disabled(!settings.loaded || settings.saving)
     }
     .padding(14)
+  }
+}
+
+extension ProjectSettingsSheet {
+  private var storedLabel: String {
+    settings.repoFile ? "Saved on this Mac, over the checked-in .argus.json" : "Saved on this Mac"
+  }
+
+  private func importFile() {
+    let panel = NSOpenPanel()
+    panel.allowedContentTypes = [.json]
+    panel.allowsMultipleSelection = false
+    panel.showsHiddenFiles = true
+    panel.message = "Choose an .argus.json to use as this project's config on this Mac."
+    guard panel.runModal() == .OK, let url = panel.url else { return }
+    do {
+      confirmingImport = try String(contentsOf: url, encoding: .utf8)
+    } catch {
+      settings.error = "Couldn't read \(url.lastPathComponent): \(error.localizedDescription)"
+    }
+  }
+
+  private func exportFile() {
+    guard let backend = model.backend else { return }
+    Task {
+      guard let text = await settings.exportText(backend) else { return }
+      let panel = NSSavePanel()
+      panel.allowedContentTypes = [.json]
+      panel.nameFieldStringValue = "\(URL(fileURLWithPath: repoRoot).lastPathComponent).argus.json"
+      panel.message = "Export this project's effective config in .argus.json format."
+      guard panel.runModal() == .OK, let url = panel.url else { return }
+      do {
+        try text.write(to: url, atomically: true, encoding: .utf8)
+      } catch {
+        settings.error = "Couldn't write \(url.lastPathComponent): \(error.localizedDescription)"
+      }
+    }
   }
 }
 
@@ -139,6 +204,27 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
     }
   }
 
+  /// The config keys the section edits; empty for personal and reference sections.
+  var configKeys: [String] {
+    switch self {
+    case .setup: ["setup"]
+    case .workspaceEnv: ["workspace_env"]
+    case .run: ["run", "single_runtime"]
+    case .terminals: ["terminals"]
+    case .browser: ["browser_url", "browser_presets"]
+    case .deeplinks: ["simulator_deeplinks"]
+    case .branchProtection: ["protected_branches", "default_base_branch", "auto_fetch_minutes"]
+    case .releaseNotes: ["release_note_patterns"]
+    case .agent: ["auto_continue_on_limit"]
+    case .llm: ["llm"]
+    case .verify: ["verify"]
+    case .relatedProjects: ["related_projects"]
+    case .automations: ["automations"]
+    case .tools: ["tools"]
+    case .branchPrefix, .worktreeLocation, .preview: []
+    }
+  }
+
   static let groups: [(title: String, sections: [ProjectSettingsSection])] = [
     ("Workspace", [.setup, .workspaceEnv]),
     ("Runtime", [.run, .terminals, .browser, .deeplinks]),
@@ -149,9 +235,14 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
 }
 
 /// The selected section's header and form.
-private struct ProjectSettingsDetail: View {
+struct ProjectSettingsDetail: View {
   let section: ProjectSettingsSection
   @Bindable var settings: ProjectSettingsModel
+
+  private var sourceNote: ConfigSourceNote? {
+    section.configKeys.isEmpty
+      ? nil : ConfigSourceNote(source: settings.source(of: section.configKeys), repoFile: settings.repoFile)
+  }
 
   var body: some View {
     Form {
@@ -177,6 +268,7 @@ private struct ProjectSettingsDetail: View {
     }
     .formStyle(.grouped)
     .toggleStyle(.argusSwitch)
+    .environment(\.configSourceNote, sourceNote)
     .id(section)
   }
 }

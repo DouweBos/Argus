@@ -1,13 +1,13 @@
 /**
- * Inference + write support for generating `.argus.json` during onboarding.
- * Never auto-commits — only writes to the repo root. If a file already exists,
- * callers must decide whether to back up with `.argus.json.bak`.
+ * Inference + save support for generating a project config during onboarding.
+ * The result is stored on this machine, never written into the repo.
  */
 
 import type { ArgusConfigSuggestion, DetectedSignal } from "./types";
 import type { RuntimePlatform } from "../session/models";
 import fs from "node:fs";
 import path from "node:path";
+import { getProjectConfig, saveProjectConfig } from "../session/argusConfig";
 
 interface PackageJsonShape {
   dependencies?: Record<string, string>;
@@ -502,26 +502,24 @@ function detectFlutter(ctx: DetectionContext): void {
   }
 }
 
-/** Write `.argus.json` to the repo root. Does NOT commit. */
+/** Store a generated config as the project's config on this machine. Never writes the repo. */
 export function writeArgusJson(
   repoRoot: string,
   config: Record<string, unknown>,
 ): void {
-  const configPath = path.join(repoRoot, ".argus.json");
-  if (fs.existsSync(configPath)) {
-    fs.copyFileSync(configPath, `${configPath}.bak`);
-  }
-  fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+  saveProjectConfig(repoRoot, config);
 }
 
+/** The project's effective config, or null when neither the repo nor this machine has one. */
 export function readExistingArgusJson(
   repoRoot: string,
 ): Record<string, unknown> | null {
-  const configPath = path.join(repoRoot, ".argus.json");
   try {
-    const raw = fs.readFileSync(configPath, "utf8");
+    const project = getProjectConfig(repoRoot);
 
-    return JSON.parse(raw) as Record<string, unknown>;
+    return project.repo_file || project.host_keys.length > 0
+      ? project.config
+      : null;
   } catch {
     return null;
   }

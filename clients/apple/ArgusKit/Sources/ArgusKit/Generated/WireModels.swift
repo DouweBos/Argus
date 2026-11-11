@@ -11872,6 +11872,35 @@ extension ArgusProtocol {
     }
   }
 
+  public struct ProjectConfig: Codable, Sendable {
+    public var config: [String: JSONValue]
+    public var repoFile: Bool
+    public var repoKeys: [String]
+    public var hostKeys: [String]
+
+    enum CodingKeys: String, CodingKey {
+      case config = "config"
+      case repoFile = "repo_file"
+      case repoKeys = "repo_keys"
+      case hostKeys = "host_keys"
+    }
+
+    public init(config: [String: JSONValue], repoFile: Bool, repoKeys: [String], hostKeys: [String]) {
+      self.config = config
+      self.repoFile = repoFile
+      self.repoKeys = repoKeys
+      self.hostKeys = hostKeys
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(config, forKey: .config)
+      try c.encode(repoFile, forKey: .repoFile)
+      try c.encode(repoKeys, forKey: .repoKeys)
+      try c.encode(hostKeys, forKey: .hostKeys)
+    }
+  }
+
   public struct ProjectEntry: Codable, Sendable {
     public var description: String
     public var path: String

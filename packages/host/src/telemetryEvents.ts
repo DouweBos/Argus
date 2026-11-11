@@ -401,6 +401,12 @@ export interface EventMap {
       | "wait_for_terminal";
   };
   onboarding_completed: undefined;
+  project_config_local_migrated: { success: boolean };
+  project_config_transferred: {
+    action: "export" | "import";
+    outcome: "invalid_config" | "invalid_json" | "success";
+    repo_file: boolean;
+  };
   pr_watch_ended: {
     reason: "closed" | "merged" | "session_deleted" | "stopped";
     wakes_bucket: "0" | "1" | "2-5" | "6+";

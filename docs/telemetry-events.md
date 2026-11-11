@@ -305,6 +305,13 @@ or server messages. `language` is one of `typescript`, `json`, `css`, `html`,
 | ---------------------- | ------ | -------------------------------- | ----------- |
 | `onboarding_completed` | host   | First-launch onboarding finished | —           |
 
+## Project config
+
+| Event                           | Source | When                                                                                                                                                      | Extra props                                                                                                                                   |
+| ------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `project_config_transferred`    | host   | A project's config was exported, or a file was imported into it (from Project Settings or the `export_project_config` / `import_project_config` commands) | `action` (`export`, `import`), `outcome` (`success`, `invalid_json`, `invalid_config`), `repo_file` (the repo has a checked-in `.argus.json`) |
+| `project_config_local_migrated` | host   | A project's `.argus.local.json` was imported into the config stored on this Mac, once, the first time it was read                                         | `success` (false when the file was invalid and was skipped)                                                                                   |
+
 ## Feedback
 
 | Event           | Source | When                                                  | Extra props                                         |

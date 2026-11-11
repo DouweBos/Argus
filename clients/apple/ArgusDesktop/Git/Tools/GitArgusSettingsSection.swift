@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Argus's per-project git preferences: branch prefix, LFS banners and
 /// archived branches are personal (`user-project-settings.json`); auto-fetch
-/// is shared through `.argus.json`.
+/// is part of the project config.
 struct GitArgusSettingsSection: View {
   @Environment(HostStore.self) private var store
   let workspace: GitWorkspace
@@ -44,7 +44,7 @@ struct GitArgusSettingsSection: View {
     } header: {
       Text("Argus")
     } footer: {
-      Text(error ?? "Auto-fetch runs git fetch --prune in the background and is shared through .argus.json; the rest stays on this Mac.")
+      Text(error ?? "Auto-fetch runs git fetch --prune in the background and is part of the project's config; the rest is personal.")
         .foregroundStyle(.secondary)
     }
     .task { await load() }
@@ -129,33 +129,23 @@ struct GitArgusSettingsSection: View {
     }
   }
 
-  /// `.argus.json` is rewritten with only `auto_fetch_minutes` changed, so
-  /// keys this build doesn't model survive. The host shares this disk.
+  /// The project's config is saved with only `auto_fetch_minutes` changed,
+  /// so keys this build doesn't model survive.
   private func saveAutoFetch(_ next: AutoFetch) {
     let previous = autoFetch
     autoFetch = next
     Task {
-      let path = (repoRoot as NSString).appendingPathComponent(".argus.json")
-      var json: [String: Any] = [:]
-      if let data = FileManager.default.contents(atPath: path) {
-        guard let parsed = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
-          autoFetch = previous
-          error = ".argus.json isn't valid JSON; fix it before changing auto-fetch."
-          return
-        }
-        json = parsed
-      }
-      json["auto_fetch_minutes"] = next == .off ? nil : next.rawValue
-      guard
-        let data = try? JSONSerialization.data(
-          withJSONObject: json, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]),
-        let content = String(data: data, encoding: .utf8)
-      else { return }
       let minutes: Double? = next == .off ? nil : Double(next.rawValue)
-      let wrote = await workspace.host(
-        ArgusProtocol.Commands.WriteArgusConfig.self, .init(repoRoot: repoRoot, content: content + "\n"),
+      guard
+        var config = await workspace.host(
+          ArgusProtocol.Commands.GetProjectConfig.self, .init(repoRoot: repoRoot), label: "Saving auto-fetch")?
+          .config
+      else { return autoFetch = previous }
+      config["auto_fetch_minutes"] = minutes.map(JSONValue.number)
+      let saved = await workspace.host(
+        ArgusProtocol.Commands.SaveProjectConfig.self, .init(repoRoot: repoRoot, config: config),
         label: "Saving auto-fetch")
-      guard wrote != nil else { return autoFetch = previous }
+      guard saved != nil else { return autoFetch = previous }
       await workspace.host(
         ArgusProtocol.Commands.GitReconfigureAutoFetch.self, .init(repoRoot: repoRoot, minutes: minutes),
         label: "Saving auto-fetch", track: .config)

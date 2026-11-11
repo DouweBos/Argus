@@ -1,4 +1,5 @@
 import type { Equal, Expect } from "./typeEquality";
+import type { ProjectConfig as HostProjectConfig } from "../services/session/argusConfig";
 import type {
   BisectStatus as HostBisectStatus,
   BisectStep as HostBisectStep,
@@ -109,6 +110,7 @@ import type {
   SessionReleaseNotesResult,
   SimulatorDeeplinkConfig,
   SshKey,
+  ProjectConfig,
   UserProjectSettings,
   WorktreeLocationProbe,
   WorktreeStorage,
@@ -154,6 +156,7 @@ export type GitModelChecks = [
   Expect<Equal<ReleaseNoteEntry, HostReleaseNoteEntry>>,
   Expect<Equal<SessionReleaseNotesResult, HostSessionReleaseNotesResult>>,
   Expect<Equal<UserProjectSettings, HostUserProjectSettings>>,
+  Expect<Equal<ProjectConfig, HostProjectConfig>>,
   Expect<Equal<MoveWorktreesPlan, HostMoveWorktreesPlan>>,
   Expect<Equal<MoveWorktreesResult, HostMoveWorktreesResult>>,
   Expect<Equal<WorktreeStorage, HostWorktreeStorage>>,

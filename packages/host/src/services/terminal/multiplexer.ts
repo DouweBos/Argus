@@ -854,7 +854,7 @@ export function resolveRunCommand(
 
   const config = loadArgusConfig(ws.repo_root);
   if (!config.run || config.run.length === 0) {
-    throw "No 'run' commands configured in .argus.json — ask the user to add one before trying to start the runtime.";
+    throw "No 'run' commands configured for this project — ask the user to add one in Project Settings before trying to start the runtime.";
   }
 
   if (!title) {
@@ -863,7 +863,7 @@ export function resolveRunCommand(
   const match = config.run.find((r) => r.title === title);
   if (!match) {
     const available = config.run.map((r) => `'${r.title}'`).join(", ");
-    throw `No run command with title '${title}' in .argus.json. Available: ${available}.`;
+    throw `No run command with title '${title}' in the project config. Available: ${available}.`;
   }
 
   return match;

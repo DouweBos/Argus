@@ -16,7 +16,7 @@ struct ProjectAutomationsSection: View {
   var body: some View {
     SectionIntro(
       title: "Automations",
-      text: "How far Argus automations may go in this repository. Saved to .argus.json and shared with the team. These limits only ever tighten what the app allows."
+      text: "How far Argus automations may go in this repository. These limits only ever tighten what the app allows."
     )
     Section {
       Picker("Autonomy ceiling", selection: $draft.autonomyCeiling) {
@@ -50,7 +50,7 @@ struct ProjectToolsSection: View {
   var body: some View {
     SectionIntro(
       title: "Disabled tools",
-      text: "Disable tools for everyone working on this project. Saved to .argus.json so the mask travels with the repo. Cannot force-enable tools your team members have turned off."
+      text: "Disable tools for agents working on this project. Cannot force-enable tools your team members have turned off."
     )
     Section {
       ForEach(ArgusConfigDraft.tools, id: \.id) { tool in
@@ -76,7 +76,9 @@ struct JSONPreviewSection: View {
   let settings: ProjectSettingsModel
 
   var body: some View {
-    SectionIntro(title: "JSON preview", text: "Read-only view of what will be written to .argus.json on save.")
+    SectionIntro(
+      title: "JSON preview",
+      text: "The effective config in .argus.json format, as Export… writes it. Saving stores what differs from a checked-in .argus.json on this Mac.")
     Section {
       Text(settings.previewJSON)
         .font(.scaled(size: 12, design: .monospaced))

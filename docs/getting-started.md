@@ -52,15 +52,16 @@ Choose a folder instead, or skip. From there:
    support, notifications) with a one-click fix.
 2. **Pick a project** — point at a git repo on disk, or use **Import from
    Claude Code** to add more of the repos you've used the CLI in.
-3. **Generate `.argus.json`** — Argus reads `package.json`, `Podfile`,
+3. **Generate a project config** — Argus reads `package.json`, `Podfile`,
    `build.gradle`, and friends to infer how your project sets up. You can
    choose between **Quick generate** (fast, deterministic) and **Generate
    with Claude** (the `claude` CLI inspects your project and produces a
-   tailored config). Either way, Argus shows the proposed file for review
-   before writing it to your repo.
+   tailored config). Either way, Argus shows the proposed config for review
+   before saving it.
 
-`.argus.json` is checked into your repo so the whole team shares the same
-worktree setup. See [Project settings](/argus/docs/project-settings) for
+The config is stored by Argus on your Mac, so nothing is written to your
+repo. A team that wants a shared baseline can export it and check it in as
+`.argus.json`. See [Project settings](/argus/docs/project-settings) for
 every field it can contain.
 
 ---

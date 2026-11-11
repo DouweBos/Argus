@@ -18,7 +18,12 @@ import { listClaudeAccounts } from "../claudeAuth/accounts";
 import { writeDesignFiles } from "../design/files";
 import { sessionPullRequestMayHaveChanged } from "../github/sessionPullRequests";
 import { updateScratchPadRecord } from "../scratchPad/store";
-import { isBranchProtected, loadArgusConfig } from "./argusConfig";
+import {
+  getProjectConfig,
+  isBranchProtected,
+  loadArgusConfig,
+  saveProjectConfig,
+} from "./argusConfig";
 import { git } from "./git";
 import { withGitLock } from "./gitLock";
 import { announcingRepoGitStatus, attachGitWatcher } from "./gitWatcher";
@@ -873,13 +878,12 @@ export function resumeAllWatchers(): void {
 }
 
 // ---------------------------------------------------------------------------
-// read_argus_config / write_argus_config
+// read_argus_config
 // ---------------------------------------------------------------------------
 
 /**
- * Read and parse the `.argus.json` configuration from the given repo root.
- *
- * Returns the default (empty) config if the file does not exist.
+ * The project's effective config (checked-in `.argus.json` plus the config
+ * stored on this machine). Returns the default (empty) config if it can't be read.
  */
 export function readArgusConfig(repoRoot: string): ArgusConfig {
   try {
@@ -889,21 +893,19 @@ export function readArgusConfig(repoRoot: string): ArgusConfig {
   }
 }
 
-/**
- * Write a `.argus.json` configuration file to the given repo root.
- * Validates that the content is valid JSON before writing.
- */
-export function writeArgusConfig(repoRoot: string, content: string): void {
-  // Validate JSON before writing.
-  try {
-    JSON.parse(content);
-  } catch (e) {
-    throw `Invalid JSON: ${e}`;
-  }
-  const filePath = `${repoRoot}/.argus.json`;
-  fs.writeFileSync(filePath, content, "utf8");
-  info(`Wrote .argus.json to ${filePath}`);
-  emitHostEvent("argus_config:changed", { repoRoot });
+/** Add a related project to the project's config stored on this machine. */
+export function addRelatedProject(
+  repoRoot: string,
+  project: { path: string; description: string },
+): void {
+  const { config } = getProjectConfig(repoRoot);
+  const related = Array.isArray(config.related_projects)
+    ? config.related_projects
+    : [];
+  saveProjectConfig(repoRoot, {
+    ...config,
+    related_projects: [...related, project],
+  });
 }
 
 // ---------------------------------------------------------------------------

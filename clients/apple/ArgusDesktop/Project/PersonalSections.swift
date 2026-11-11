@@ -8,7 +8,7 @@ struct BranchPrefixSection: View {
   var body: some View {
     SectionIntro(
       title: "Personal branch prefix",
-      text: "Prepended to every new branch you create in this project. Stored in ~/.argus/user-project-settings.json — not in .argus.json — so it stays personal and is not shared with the team."
+      text: "Prepended to every new branch you create in this project. Personal: not part of the project config, so it is never exported or shared."
     )
     Section {
       TextField("Branch prefix", text: $settings.branchPrefix, prompt: Text("yourname/"))
@@ -27,7 +27,7 @@ struct WorktreeLocationSection: View {
   var body: some View {
     SectionIntro(
       title: "Worktree location",
-      text: "Where this project's worktrees are created. Stored in ~/.argus/user-project-settings.json — not in .argus.json — so it stays personal: your drives are not the team's."
+      text: "Where this project's worktrees are created. Personal: not part of the project config, so it is never exported or shared. Your drives are not the team's."
     )
     Section {
       WorktreeLocationField(

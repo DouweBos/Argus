@@ -61,7 +61,7 @@ struct OnboardingProjectStep: View {
 
   private var subtitle: String {
     if generator != nil {
-      return "Argus uses an .argus.json to know how to copy files, run commands, and allocate ports when creating sessions."
+      return "Argus uses a project config to know how to copy files, run commands, and allocate ports when creating sessions."
     }
     if hasSuggestions {
       return "Pick the projects you've used Claude Code in — their chats come along into history — or open another git repository."

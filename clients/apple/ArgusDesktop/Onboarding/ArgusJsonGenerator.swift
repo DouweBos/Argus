@@ -3,7 +3,7 @@ import ArgusKit
 import Foundation
 import Observation
 
-/// Proposing a `.argus.json` for a project that has none: inferred from the
+/// Proposing a project config (stored on this Mac) for a project that has none: inferred from the
 /// repo, optionally refined by Claude, reviewed, then written — the desktop's
 /// "Finish setting up this project" flow.
 @MainActor
@@ -40,7 +40,7 @@ final class ArgusJsonGenerator {
   private(set) var source = Source.quick
   private(set) var signals: [ArgusProtocol.DetectedSignal] = []
   private(set) var inferredFrom: [String] = []
-  /// The repo's Conductor scripts as a `.argus.json`, when it has any.
+  /// The repo's Conductor scripts as a project config, when it has any.
   private(set) var conductor: ArgusProtocol.ConductorImport?
   /// What the Conductor import couldn't carry over.
   private(set) var notes: [String] = []
@@ -110,11 +110,8 @@ final class ArgusJsonGenerator {
     phase = .saving
     error = nil
     do {
-      // Written as text so the file keeps the documented key order; a
-      // dictionary on the wire would scramble it. There's no file to back up.
       try await backend.request(
-        ArgusProtocol.Commands.WriteArgusConfig.self,
-        .init(repoRoot: repoRoot, content: ConfigJSON.string(.object(proposed)) + "\n"))
+        ArgusProtocol.Commands.OnboardingWriteArgusJson.self, .init(path: repoRoot, config: proposed))
       MacTelemetry.capture(.argusJsonGenerated(method: source.telemetry, outcome: .saved))
       phase = .saved
     } catch {

@@ -15,9 +15,10 @@ workspaces and their chats without re-doing your setup.
    Code** if you've used the Claude Code CLI in it).
 2. When Argus offers to finish setting up the project, pick **Import from
    Conductor**. The option shows up whenever the repository has Conductor
-   settings and no `.argus.json` yet.
-3. Review the proposed `.argus.json` and save it. Commit it when you're
-   happy, so your team gets the same setup.
+   settings and no project config yet.
+3. Review the proposed config and save it. Argus keeps it on your Mac; to
+   give your team the same setup, export it from Project Settings and commit
+   it as `.argus.json`.
 
 Argus reads `.conductor/settings.toml`, with your personal
 `.conductor/settings.local.toml` on top. Repositories that still use the
@@ -43,7 +44,7 @@ Argus doesn't import:
   (`CONDUCTOR_API_URL`, `CONDUCTOR_API_TOKEN`, `CONDUCTOR_BASE_DIR`, …).
   The review screen lists any your scripts use.
 - **Environment variables from `settings.local.toml`.** That's where secrets
-  belong, and `.argus.json` is checked in.
+  belong, and a project config may be exported and checked in.
 
 Prompts, models and git preferences have their own places in Argus: see
 [Project settings](/argus/docs/project-settings) and

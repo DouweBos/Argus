@@ -2,7 +2,7 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// Pick how to generate a `.argus.json`, review it, save it. Used by the first
+/// Pick how to generate a project config, review it, save it on this Mac. Used by the first
 /// run's project step and by Add Project.
 struct ArgusJsonReviewView: View {
   let generator: ArgusJsonGenerator
@@ -15,16 +15,16 @@ struct ArgusJsonReviewView: View {
       case .loading:
         ProgressView().frame(maxWidth: .infinity)
       case .existing:
-        Label("This project already has a .argus.json.", systemImage: "checkmark.circle.fill")
+        Label("This project is already configured.", systemImage: "checkmark.circle.fill")
           .foregroundStyle(theme.success)
-        Text("Argus uses it to set up new sessions. Edit it any time from Project Settings.")
+        Text("Argus uses its config to set up new sessions. Edit it any time from Project Settings.")
           .foregroundStyle(theme.textSecondary)
       case .choosing, .generatingQuick, .generatingClaude:
         choosing
       case .reviewing, .saving:
         reviewing
       case .saved:
-        Label("Saved .argus.json to the repo root.", systemImage: "checkmark.circle.fill")
+        Label("Saved the project config on this Mac.", systemImage: "checkmark.circle.fill")
           .foregroundStyle(theme.success)
       }
       if let error = generator.error {
@@ -39,7 +39,7 @@ struct ArgusJsonReviewView: View {
   private var choosing: some View {
     VStack(alignment: .leading, spacing: 16) {
       Text(
-        "An .argus.json tells Argus how to set up new worktrees for this project — which directories to copy (node_modules, Pods), which files to symlink (.env), which install commands to run, and which ports to allocate per session. It's checked in so the whole team shares the same setup."
+        "An .argus.json tells Argus how to set up new worktrees for this project — which directories to copy (node_modules, Pods), which files to symlink (.env), which install commands to run, and which ports to allocate per session. Argus keeps it on this Mac, layered over a checked-in .argus.json if the repo has one, so you never have to commit it."
       )
       .foregroundStyle(theme.textSecondary)
       .fixedSize(horizontal: false, vertical: true)
@@ -89,11 +89,11 @@ struct ArgusJsonReviewView: View {
   }
 
   private var reviewIntro: String {
-    let tail = "Review the contents and save it to write the file to the repo root."
+    let tail = "Review it and save it on this Mac; nothing is written to the repo."
     switch generator.source {
-    case .claude: return "Claude proposed the following .argus.json. \(tail)"
-    case .conductor: return "Argus turned your Conductor scripts into the following .argus.json. \(tail)"
-    case .quick: return "Argus inferred the following .argus.json from your project. \(tail)"
+    case .claude: return "Claude proposed the following config. \(tail)"
+    case .conductor: return "Argus turned your Conductor scripts into the following config. \(tail)"
+    case .quick: return "Argus inferred the following config from your project. \(tail)"
     }
   }
 
@@ -122,7 +122,7 @@ struct ArgusJsonReviewView: View {
           guard let backend else { return }
           Task { await generator.save(backend) }
         } label: {
-          Text(generator.phase == .saving ? "Saving…" : "Save .argus.json")
+          Text(generator.phase == .saving ? "Saving…" : "Save config")
         }
         .buttonStyle(.borderedProminent)
         .disabled(generator.isBusy)

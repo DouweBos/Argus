@@ -3,9 +3,9 @@ import ArgusKit
 import Foundation
 import Observation
 
-/// One project's settings while the sheet is open: the `.argus.json` draft
-/// over the raw file it came from, and the personal settings kept in
-/// `~/.argus/user-project-settings.json`.
+/// One project's settings while the sheet is open: the config draft over the
+/// effective config it came from (a checked-in `.argus.json` with this Mac's
+/// layer over it), and the personal settings kept on this Mac.
 @MainActor
 @Observable
 final class ProjectSettingsModel {
@@ -13,6 +13,12 @@ final class ProjectSettingsModel {
   var draft = ArgusConfigDraft()
   private(set) var initial = ArgusConfigDraft()
   private(set) var raw: [String: JSONValue] = [:]
+  /// Whether the repo has a checked-in `.argus.json`, and which top-level keys
+  /// it and this Mac set.
+  private(set) var repoFile = false
+  private(set) var repoKeys: Set<String> = []
+  private(set) var hostKeys: Set<String> = []
+  private(set) var transferring = false
   private(set) var loaded = false
   private(set) var saving = false
   var error: String?
@@ -34,12 +40,11 @@ final class ProjectSettingsModel {
   var isDirty: Bool { draft != initial || branchPrefix.trimmingCharacters(in: .whitespaces) != initialBranchPrefix }
 
   func load(_ backend: HostRouter) async {
-    // The raw file, not the host's normalized config, so unknown keys survive.
-    let found = try? await backend.request(
-      ArgusProtocol.Commands.OnboardingReadExistingArgusJson.self, .init(path: repoRoot))
-    raw = (found ?? nil) ?? [:]
-    draft = ArgusConfigDraft(raw: raw)
-    initial = draft
+    do {
+      apply(try await backend.request(ArgusProtocol.Commands.GetProjectConfig.self, .init(repoRoot: repoRoot)))
+    } catch {
+      self.error = HostStore.describe(error)
+    }
     if let personal = try? await backend.request(
       ArgusProtocol.Commands.GetUserProjectSettings.self, .init(repoRoot: repoRoot))
     {
@@ -62,20 +67,69 @@ final class ProjectSettingsModel {
     automationWorktreeDefault = storage.automationAppBase ?? storage.root
   }
 
-  /// Writes `.argus.json` and the branch prefix; true when the sheet can close.
+  /// Where a section's keys come from.
+  func source(of keys: [String]) -> ConfigSource {
+    guard repoFile else { return .mac }
+    let fromRepo = !repoKeys.isDisjoint(with: keys)
+    let onMac = !hostKeys.isDisjoint(with: keys)
+    switch (fromRepo, onMac) {
+    case (true, true): return .overridden
+    case (true, false): return .repo
+    case (false, true): return .mac
+    case (false, false): return .unset
+    }
+  }
+
+  private func apply(_ project: ArgusProtocol.ProjectConfig) {
+    raw = project.config
+    repoFile = project.repoFile
+    repoKeys = Set(project.repoKeys)
+    hostKeys = Set(project.hostKeys)
+    draft = ArgusConfigDraft(raw: raw)
+    initial = draft
+  }
+
+  /// The saved config as `.argus.json` text, for Export….
+  func exportText(_ backend: HostRouter) async -> String? {
+    transferring = true
+    defer { transferring = false }
+    do {
+      return try await backend.request(ArgusProtocol.Commands.ExportProjectConfig.self, .init(repoRoot: repoRoot))
+    } catch {
+      self.error = HostStore.describe(error)
+      return nil
+    }
+  }
+
+  /// Replaces this Mac's config with an `.argus.json` file's contents; unsaved edits are dropped.
+  func importConfig(_ content: String, _ backend: HostRouter) async {
+    transferring = true
+    error = nil
+    defer { transferring = false }
+    do {
+      apply(
+        try await backend.request(
+          ArgusProtocol.Commands.ImportProjectConfig.self, .init(repoRoot: repoRoot, content: content)))
+    } catch {
+      self.error = HostStore.describe(error)
+    }
+  }
+
+  /// Saves the config on this Mac and the branch prefix; true when the sheet can close.
   func save(_ backend: HostRouter) async -> Bool {
     saving = true
     error = nil
     defer { saving = false }
     let out = output
+    let autoFetchChanged = draft.autoFetchMinutes != initial.autoFetchMinutes
     let changed = Set(raw.keys).union(out.keys).filter { raw[$0] != out[$0] }.count
     let prefix = branchPrefix.trimmingCharacters(in: .whitespaces)
     let personal = prefix != initialBranchPrefix
     do {
-      try await backend.request(
-        ArgusProtocol.Commands.WriteArgusConfig.self,
-        .init(repoRoot: repoRoot, content: ConfigJSON.string(.object(out)) + "\n"))
-      if draft.autoFetchMinutes != initial.autoFetchMinutes {
+      apply(
+        try await backend.request(
+          ArgusProtocol.Commands.SaveProjectConfig.self, .init(repoRoot: repoRoot, config: out)))
+      if autoFetchChanged {
         // Re-arms the fetch timer for open sessions now, not on next launch.
         try await backend.request(
           ArgusProtocol.Commands.GitReconfigureAutoFetch.self,
@@ -113,3 +167,27 @@ final class ProjectSettingsModel {
     }
   }
 }
+
+/// Where a Project Settings section's values come from.
+enum ConfigSource: Equatable {
+  /// The checked-in `.argus.json`.
+  case repo
+  /// This Mac, over the checked-in `.argus.json`.
+  case overridden
+  /// This Mac only.
+  case mac
+  /// Nowhere yet.
+  case unset
+}
+
+#if DEBUG
+  extension ProjectSettingsModel {
+    /// A loaded sheet without a host, for the gallery.
+    func galleryFill(_ project: ArgusProtocol.ProjectConfig, branchPrefix: String = "") {
+      apply(project)
+      self.branchPrefix = branchPrefix
+      initialBranchPrefix = branchPrefix
+      loaded = true
+    }
+  }
+#endif

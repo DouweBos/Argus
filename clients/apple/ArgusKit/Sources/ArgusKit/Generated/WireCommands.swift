@@ -2331,6 +2331,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct ExportProjectConfigParams: Codable, Sendable {
+      public var repoRoot: String
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoot = "repoRoot"
+      }
+
+      public init(repoRoot: String) {
+        self.repoRoot = repoRoot
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repoRoot, forKey: .repoRoot)
+      }
+    }
+
     public struct FigmaDesignRefParams: Codable, Sendable {
       public var url: String
 
@@ -2644,6 +2661,23 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(id, forKey: .id)
+      }
+    }
+
+    public struct GetProjectConfigParams: Codable, Sendable {
+      public var repoRoot: String
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoot = "repoRoot"
+      }
+
+      public init(repoRoot: String) {
+        self.repoRoot = repoRoot
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repoRoot, forKey: .repoRoot)
       }
     }
 
@@ -5698,6 +5732,27 @@ extension ArgusProtocol {
       }
     }
 
+    public struct ImportProjectConfigParams: Codable, Sendable {
+      public var repoRoot: String
+      public var content: String
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoot = "repoRoot"
+        case content = "content"
+      }
+
+      public init(repoRoot: String, content: String) {
+        self.repoRoot = repoRoot
+        self.content = content
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repoRoot, forKey: .repoRoot)
+        try c.encode(content, forKey: .content)
+      }
+    }
+
     public struct InspectionCaptureParams: Codable, Sendable {
       public var deviceKey: String
 
@@ -8283,6 +8338,27 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SaveProjectConfigParams: Codable, Sendable {
+      public var repoRoot: String
+      public var config: [String: JSONValue]
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoot = "repoRoot"
+        case config = "config"
+      }
+
+      public init(repoRoot: String, config: [String: JSONValue]) {
+        self.repoRoot = repoRoot
+        self.config = config
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repoRoot, forKey: .repoRoot)
+        try c.encode(config, forKey: .config)
+      }
+    }
+
     public struct ScanCliProjectsParams: Codable, Sendable {
       public var source: CliProjectImportSource?
 
@@ -9591,27 +9667,6 @@ extension ArgusProtocol {
       }
     }
 
-    public struct WriteArgusConfigParams: Codable, Sendable {
-      public var repoRoot: String
-      public var content: String
-
-      enum CodingKeys: String, CodingKey {
-        case repoRoot = "repoRoot"
-        case content = "content"
-      }
-
-      public init(repoRoot: String, content: String) {
-        self.repoRoot = repoRoot
-        self.content = content
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(repoRoot, forKey: .repoRoot)
-        try c.encode(content, forKey: .content)
-      }
-    }
-
     public struct WriteFileParams: Codable, Sendable {
       public var id: String
       public var relativePath: String
@@ -10565,6 +10620,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum ExportProjectConfig: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.ExportProjectConfigParams
+      public typealias Result = String
+      public static let name = "export_project_config"
+      public static let tier = "admin"
+    }
+
     public enum FigmaDesignRef: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.FigmaDesignRefParams
       public typealias Result = ArgusProtocol.DesignRef?
@@ -10709,6 +10771,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.GetLastCommitMessageParams
       public typealias Result = String
       public static let name = "get_last_commit_message"
+      public static let tier = "admin"
+    }
+
+    public enum GetProjectConfig: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.GetProjectConfigParams
+      public typealias Result = ArgusProtocol.ProjectConfig
+      public static let name = "get_project_config"
       public static let tier = "admin"
     }
 
@@ -11668,6 +11737,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.ImportCliProjectsParams
       public typealias Result = ArgusProtocol.CommandsTypes.ImportCliProjectsResult
       public static let name = "import_cli_projects"
+      public static let tier = "admin"
+    }
+
+    public enum ImportProjectConfig: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.ImportProjectConfigParams
+      public typealias Result = ArgusProtocol.ProjectConfig
+      public static let name = "import_project_config"
       public static let tier = "admin"
     }
 
@@ -12721,6 +12797,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum SaveProjectConfig: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.SaveProjectConfigParams
+      public typealias Result = ArgusProtocol.ProjectConfig
+      public static let name = "save_project_config"
+      public static let tier = "admin"
+    }
+
     public enum ScanCliProjects: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.ScanCliProjectsParams
       public typealias Result = ArgusProtocol.CliProjectScan
@@ -13152,13 +13235,6 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.WatchSessionParams
       public typealias Result = IgnoredResult
       public static let name = "watch_session"
-      public static let tier = "admin"
-    }
-
-    public enum WriteArgusConfig: RemoteCommand {
-      public typealias Params = ArgusProtocol.CommandsTypes.WriteArgusConfigParams
-      public typealias Result = IgnoredResult
-      public static let name = "write_argus_config"
       public static let tier = "admin"
     }
 

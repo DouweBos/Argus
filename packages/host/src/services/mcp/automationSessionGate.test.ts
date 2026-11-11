@@ -60,7 +60,7 @@ vi.mock("../session/sessionOps", async () => {
     mergeSessionIntoBase: stub,
     readArgusConfig: stub,
     writeSessionFile: (...a: unknown[]) => writeSessionFile(...(a as [])),
-    writeArgusConfig: stub,
+    addRelatedProject: stub,
     pushSessionBranch: stub,
   };
 });

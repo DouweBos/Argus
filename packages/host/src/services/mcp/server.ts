@@ -53,8 +53,8 @@ import {
   getSessionUntrackedDiff,
   mergeSessionIntoBase,
   readArgusConfig,
+  addRelatedProject,
   writeSessionFile,
-  writeArgusConfig,
 } from "../session/sessionOps";
 import { waitForSessionReady } from "../session/waitForReady";
 import {
@@ -563,7 +563,7 @@ export function createMcpServer(
 
   server.tool(
     "add_related_project",
-    "Add a related project to a project's .argus.json configuration. Use this when you discover that work on your current project requires changes in another project that isn't yet listed as related.",
+    "Add a related project to a project's configuration (stored by Argus on this machine, layered over any checked-in .argus.json). Use this when you discover that work on your current project requires changes in another project that isn't yet listed as related.",
     {
       project_path: z
         .string()
@@ -628,9 +628,7 @@ export function createMcpServer(
         };
       }
 
-      existing.push({ path: relativePath, description });
-      const updatedConfig = { ...config, related_projects: existing };
-      writeArgusConfig(repoRoot, JSON.stringify(updatedConfig, null, 2));
+      addRelatedProject(repoRoot, { path: relativePath, description });
 
       return {
         content: [
@@ -1886,7 +1884,7 @@ export function createMcpServer(
                   run_commands: commands,
                   hint:
                     commands.length === 0
-                      ? "No run commands configured. Ask the user to add one to .argus.json rather than spawning a dev server via Bash."
+                      ? "No run commands configured. Ask the user to add one in Project Settings rather than spawning a dev server via Bash."
                       : "Use `trigger_run` with one of these titles to (re)start the runtime in the Argus UI.",
                 },
                 null,

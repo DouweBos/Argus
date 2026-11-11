@@ -82,7 +82,7 @@ export function implementTicketPrompt(input: ImplementTicketInput): string {
   const dir = `${VERIFY_DIR}/${ticketKey(ticket)}`;
   const noVerify = verify
     ? ""
-    : "\n\nThis project has no `verify` block in `.argus.json`. Use the defaults below, and end the report with a suggested `verify` block (checks, sign_in, baseline, slow_backend) for this project.";
+    : "\n\nThis project has no `verify` block in its config. Use the defaults below, and end the report with a suggested `verify` block for Project Settings (checks, sign_in, baseline, slow_backend) for this project.";
   const userNote = extra ? `\n\n## From the user\n\n${extra}` : "";
 
   return `# Implement ${ticket}, and prove it

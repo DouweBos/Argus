@@ -315,16 +315,16 @@ telemetry choice. Everything else happens in place.
 - **Tools** — device tooling is opt-in from **Settings → Tools**.
   Turning a tool off hides its UI surfaces and disables its IPC
   handlers so Argus stays focused on what you use.
-- **`.argus.json` generation** — Argus inspects your project and either
-  writes a sensible default (Quick generate) or asks the `claude` CLI
+- **Project config generation** — Argus inspects your project and either
+  proposes a sensible default (Quick generate) or asks the `claude` CLI
   for a tailored config (Generate with Claude). Both modes show the
-  proposed file for review before writing.
+  proposed config for review before saving it on your Mac.
 - **Import from Claude Code** — next to Add repository, Argus lists the
   repositories you've used the Claude Code CLI in, with their chat count
   and last activity, and adds the ones you tick as projects. Their CLI
   chats then show up in each project's history.
 - **Import from Conductor** — a repository with Conductor settings gets
-  its setup script and run actions turned into `.argus.json`, and the
+  its setup script and run actions turned into a project config, and the
   workspaces Conductor made show up as sessions. See
   [Coming from Conductor](/argus/docs/coming-from-conductor).
 
