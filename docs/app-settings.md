@@ -91,7 +91,7 @@ waiting for you to review it is still work in flight.
 
 ### Verify before finishing
 
-Argus watches each Claude Code agent's tool calls, its subagents' included,
+Argus watches each Claude Code agent's tool calls, and each of its subagents',
 for two things:
 
 - **Evidence** — `conductor take-screenshot`, `capture-ui` or `inspect`, the
@@ -105,6 +105,12 @@ life: an agent that never verifies anything is never stopped. When it then
 tries to finish with a source edit newer than its latest evidence, Argus
 keeps it going once with a short reason. It never blocks twice in one turn,
 so an agent that disagrees can still finish.
+
+Each subagent is held to its own work. Its edits count against the agent
+that launched it only once the subagent has finished, and only the ones it
+didn't verify itself afterwards; those then need evidence gathered after it
+finished. Edits by a subagent still running in the background never stop
+the agent that launched it from finishing.
 
 ### What a read-only run may do
 

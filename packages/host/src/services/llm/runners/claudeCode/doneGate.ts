@@ -116,58 +116,154 @@ export interface DoneGateOptions {
   report: (reverified: boolean) => void;
 }
 
+/** One agent's own ledger: the main agent or a subagent. */
+interface Actor {
+  /** File name → seq of its newest edit not yet covered by evidence. */
+  edits: Map<string, number>;
+  lastEvidence: number;
+}
+
+/** A subagent launched with the Agent/Task tool, until it finishes. */
+interface SubagentCall {
+  background: boolean;
+  /** The actor that launched it; `null` is the main agent. */
+  parent: string | null;
+}
+
+const SUBAGENT_TOOLS = new Set(["Agent", "Task"]);
+
+interface StreamLine {
+  is_backgrounded?: boolean;
+  message?: { content?: unknown };
+  parent_tool_use_id?: string | null;
+  subtype?: string;
+  tool_use_id?: string;
+  type?: string;
+}
+
+/**
+ * Edits and evidence are kept per actor. A subagent's edits reach the actor
+ * that launched it only once it finishes, and only those it didn't verify
+ * itself; they then need evidence gathered after that point. Edits by
+ * subagents still running never block a stop.
+ */
 export class DoneGate {
-  /** Order of tool calls; 0 means never. */
+  /** Order of tool calls and subagent finishes; 0 means never. */
   private seq = 0;
-  private lastEdit = 0;
-  private lastEvidence = 0;
-  private editedSinceEvidence = new Set<string>();
+  /** Any evidence by anyone, ever: arms the gate. */
+  private armed = false;
+  private readonly main: Actor = newActor();
+  /** Subagents by the tool_use id their lines carry as `parent_tool_use_id`. */
+  private readonly subagents = new Map<string, Actor>();
+  private readonly calls = new Map<string, SubagentCall>();
   private blockedThisTurn = false;
   private pendingBlockAt: number | null = null;
 
   constructor(private readonly opts: DoneGateOptions) {}
 
-  /** Feed a raw stream-json stdout line; picks out tool calls, subagents' included. */
+  /** Feed a raw stream-json stdout line: tool calls, results and task events. */
   observeLine(line: string): void {
-    if (!line.includes('"tool_use"') || !line.includes('"assistant"')) {
+    const relevant =
+      line.includes('"tool_use"') ||
+      (this.calls.size > 0 &&
+        (line.includes('"tool_result"') || line.includes('"task_')));
+    if (!relevant) {
       return;
     }
-    let parsed: { type?: string; message?: { content?: unknown } };
+    let parsed: StreamLine;
     try {
-      parsed = JSON.parse(line) as typeof parsed;
+      parsed = JSON.parse(line) as StreamLine;
     } catch {
       return;
     }
-    const content = parsed.message?.content;
-    if (parsed.type !== "assistant" || !Array.isArray(content)) {
+    if (parsed.type === "system") {
+      this.observeTaskEvent(parsed);
+
       return;
     }
+    const content = parsed.message?.content;
+    if (!Array.isArray(content)) {
+      return;
+    }
+    const actor = parsed.parent_tool_use_id ?? null;
     for (const block of content as Record<string, unknown>[]) {
-      if (block.type === "tool_use" && typeof block.name === "string") {
-        this.observeToolUse(
-          block.name,
-          (block.input as Record<string, unknown> | undefined) ?? {},
-        );
+      if (parsed.type === "assistant" && block.type === "tool_use") {
+        if (typeof block.name === "string") {
+          this.observeToolUse(
+            block.name,
+            (block.input as Record<string, unknown> | undefined) ?? {},
+            actor,
+            typeof block.id === "string" ? block.id : undefined,
+          );
+        }
+      } else if (
+        parsed.type === "user" &&
+        block.type === "tool_result" &&
+        typeof block.tool_use_id === "string" &&
+        this.calls.get(block.tool_use_id)?.background === false
+      ) {
+        this.finishSubagent(block.tool_use_id);
       }
     }
   }
 
-  observeToolUse(name: string, input: Record<string, unknown>): void {
+  /** A tool call by `actor` (`null` for the main agent, else the subagent's launch id). */
+  observeToolUse(
+    name: string,
+    input: Record<string, unknown>,
+    actor: string | null = null,
+    id?: string,
+  ): void {
+    if (id && SUBAGENT_TOOLS.has(name)) {
+      this.calls.set(id, {
+        background: input.run_in_background === true,
+        parent: actor,
+      });
+    }
     const kind = classifyToolUse(name, input);
     if (!kind) {
       return;
     }
     this.seq += 1;
+    const ledger = this.actor(actor);
     if (kind === "evidence") {
-      this.lastEvidence = this.seq;
-      this.editedSinceEvidence.clear();
+      this.armed = true;
+      ledger.lastEvidence = this.seq;
+      ledger.edits.clear();
 
       return;
     }
-    this.lastEdit = this.seq;
     const path = input.file_path ?? input.notebook_path;
-    if (typeof path === "string") {
-      this.editedSinceEvidence.add(path.split("/").pop() ?? path);
+    const file =
+      typeof path === "string" ? (path.split("/").pop() ?? path) : "";
+    ledger.edits.set(file, this.seq);
+  }
+
+  /** A subagent's call returned (foreground) or its task settled (background). */
+  finishSubagent(id: string): void {
+    const call = this.calls.get(id);
+    this.calls.delete(id);
+    const child = this.subagents.get(id);
+    this.subagents.delete(id);
+    if (!child) {
+      return;
+    }
+    const parent = this.actor(call?.parent ?? null);
+    // Its checks ran on the shared tree, so they cover the launcher's older edits.
+    if (child.lastEvidence > parent.lastEvidence) {
+      parent.lastEvidence = child.lastEvidence;
+      for (const [file, at] of parent.edits) {
+        if (at < child.lastEvidence) {
+          parent.edits.delete(file);
+        }
+      }
+    }
+    if (child.edits.size === 0) {
+      return;
+    }
+    this.seq += 1;
+    for (const file of child.edits.keys()) {
+      parent.edits.set(file, this.seq);
     }
   }
 
@@ -183,8 +279,8 @@ export class DoneGate {
     if (
       stopHookActive ||
       this.blockedThisTurn ||
-      this.lastEvidence === 0 ||
-      this.lastEdit <= this.lastEvidence ||
+      !this.armed ||
+      this.main.edits.size === 0 ||
       !this.opts.enabled()
     ) {
       return null;
@@ -192,21 +288,51 @@ export class DoneGate {
     this.blockedThisTurn = true;
     this.pendingBlockAt = this.seq;
 
-    return blockReason([...this.editedSinceEvidence]);
+    return blockReason([...this.main.edits.keys()].filter(Boolean));
   }
 
   dispose(): void {
     this.resolvePending();
   }
 
+  private observeTaskEvent(event: StreamLine): void {
+    const id = event.tool_use_id;
+    const call = id ? this.calls.get(id) : undefined;
+    if (!id || !call) {
+      return;
+    }
+    if (event.subtype === "task_started" && event.is_backgrounded) {
+      call.background = true;
+    } else if (event.subtype === "task_notification") {
+      this.finishSubagent(id);
+    }
+  }
+
+  private actor(id: string | null): Actor {
+    if (id === null) {
+      return this.main;
+    }
+    let actor = this.subagents.get(id);
+    if (!actor) {
+      actor = newActor();
+      this.subagents.set(id, actor);
+    }
+
+    return actor;
+  }
+
   private resolvePending(): void {
     if (this.pendingBlockAt === null) {
       return;
     }
-    const reverified = this.lastEvidence > this.pendingBlockAt;
+    const reverified = this.main.lastEvidence > this.pendingBlockAt;
     this.pendingBlockAt = null;
     this.opts.report(reverified);
   }
+}
+
+function newActor(): Actor {
+  return { edits: new Map(), lastEvidence: 0 };
 }
 
 function blockReason(files: string[]): string {
@@ -215,7 +341,8 @@ function blockReason(files: string[]): string {
   const what = shown ? ` (${shown}${more})` : "";
 
   return (
-    `You edited code${what} after your last verification, so your evidence ` +
+    `Code changed${what} after your last verification, by you or by a ` +
+    "subagent that finished without verifying it, so your evidence " +
     "predates the final code. Re-verify the changed behaviour in the running app " +
     "(screenshot, design_compare or the checks you ran) and refresh your report's " +
     "evidence before finishing."
