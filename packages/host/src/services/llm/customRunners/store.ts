@@ -1,10 +1,10 @@
 /**
  * Custom LLM runners stored at `~/.argus/custom-runners.json`.
  *
- * A custom runner derives from an official one (today only `claude-code`)
- * and overrides its environment, model list, and default model — enough to
- * point the same CLI at an Anthropic-compatible gateway (callstack.ai's
- * Apex, a proxy, a self-hosted endpoint). The file holds API tokens, so it
+ * A custom runner either derives from an official one and overrides its
+ * environment, model list, and default model (enough to point the same CLI at
+ * an Anthropic-compatible gateway), or is `acp`-based and starts any Agent
+ * Client Protocol CLI of the user's choosing. The file holds API tokens, so it
  * is machine-local and written 0600; `.argus.json` only references ids.
  */
 
@@ -17,6 +17,21 @@ const SCHEMA_VERSION = 1;
 
 /** Reserved prefix so custom ids can never shadow a built-in runner. */
 export const CUSTOM_RUNNER_ID_PREFIX = "custom:";
+
+/** `baseRunnerId` of a runner that starts its own ACP agent from {@link CustomAcpAgent}. */
+export const CUSTOM_ACP_BASE_ID = "acp";
+
+/** How to start a user-supplied ACP agent, e.g. `goose acp`. */
+export interface CustomAcpAgent {
+  /** Binary on PATH, or an absolute path. */
+  command: string;
+  /** Arguments that start its ACP server. */
+  args: string[];
+  /** Shown when the command isn't found. */
+  installHint?: string;
+  /** Shown when the agent says it isn't signed in. */
+  loginHint?: string;
+}
 
 export interface CustomRunnerModel {
   /** Model id passed to the CLI, e.g. `callstack/Apex`. */
@@ -43,6 +58,8 @@ export interface CustomRunner {
   models: CustomRunnerModel[];
   /** Model used when nothing else pins one. */
   defaultModel: string | null;
+  /** Set when `baseRunnerId` is {@link CUSTOM_ACP_BASE_ID}. */
+  acp?: CustomAcpAgent;
 }
 
 interface CustomRunnersFile {
@@ -124,16 +141,45 @@ function normalize(raw: unknown): CustomRunner | null {
     : [];
 
   const defaultModel = trimOrNull(r.defaultModel);
+  const baseRunnerId = trimOrNull(r.baseRunnerId) ?? "claude-code";
+  let acp: CustomAcpAgent | undefined;
+  if (baseRunnerId === CUSTOM_ACP_BASE_ID) {
+    acp = normalizeAcp(r.acp) ?? undefined;
+    if (!acp) {
+      return null;
+    }
+  }
 
   return {
     id: id.startsWith(CUSTOM_RUNNER_ID_PREFIX)
       ? id
       : `${CUSTOM_RUNNER_ID_PREFIX}${id}`,
     displayName,
-    baseRunnerId: trimOrNull(r.baseRunnerId) ?? "claude-code",
+    baseRunnerId,
     env,
     models,
     defaultModel,
+    ...(acp ? { acp } : {}),
+  };
+}
+
+function normalizeAcp(raw: unknown): CustomAcpAgent | null {
+  const a = (raw ?? {}) as Partial<CustomAcpAgent>;
+  const command = trimOrNull(a.command);
+  if (!command) {
+    return null;
+  }
+  const args = Array.isArray(a.args)
+    ? a.args.filter((x): x is string => typeof x === "string" && x !== "")
+    : [];
+  const installHint = trimOrNull(a.installHint);
+  const loginHint = trimOrNull(a.loginHint);
+
+  return {
+    command,
+    args,
+    ...(installHint ? { installHint } : {}),
+    ...(loginHint ? { loginHint } : {}),
   };
 }
 
@@ -190,6 +236,9 @@ export function saveCustomRunner(input: Partial<CustomRunner>): CustomRunner {
   const id = existingId ?? uniqueId(customRunnerIdFromName(displayName), file);
 
   const normalized = normalize({ ...input, id, displayName });
+  if (!normalized && input.baseRunnerId === CUSTOM_ACP_BASE_ID) {
+    throw "Custom ACP agent needs a command";
+  }
   if (!normalized) {
     throw "Custom runner is missing required fields";
   }

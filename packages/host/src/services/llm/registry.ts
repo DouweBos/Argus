@@ -2,7 +2,7 @@
  * Runner registry.
  *
  * Built-in runners (Claude Code, Codex, the ACP agents) register at module load; custom
- * runners derived from them are layered on top. The agent service resolves a runner
+ * runners (derived from them, or the user's own ACP agents) are layered on top. The agent service resolves a runner
  * by id (or falls back to the only registered one) without importing
  * runner-specific modules.
  */
@@ -16,11 +16,13 @@ import type {
 } from "./runners/types";
 import { warn } from "@argus/host/logger";
 import {
+  CUSTOM_ACP_BASE_ID,
   type CustomRunner,
   deleteCustomRunner,
   listCustomRunners,
   saveCustomRunner,
 } from "./customRunners/store";
+import { CustomAcpRunner } from "./runners/acp/custom";
 import { ACP_PRESETS } from "./runners/acp/presets";
 import { AcpRunner } from "./runners/acp/runner";
 import { ClaudeCodeRunner } from "./runners/claudeCode/runner";
@@ -75,6 +77,10 @@ export function syncCustomRunners(): void {
   }
 
   for (const config of listCustomRunners()) {
+    if (config.baseRunnerId === CUSTOM_ACP_BASE_ID && config.acp) {
+      registerRunner(new CustomAcpRunner(config, config.acp));
+      continue;
+    }
     const base = runners.get(config.baseRunnerId);
     if (!base) {
       warn(

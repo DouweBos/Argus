@@ -29,6 +29,7 @@ enum SettingsField: String {
   case runner
   case llmModel = "llm_model"
   case customRunnerSaved = "custom_runner_saved"
+  case customAcpAgentSaved = "custom_acp_agent_saved"
   case customRunnerDeleted = "custom_runner_deleted"
   case mcpServers = "mcp_servers"
   case mcpTested = "mcp_tested"
@@ -61,7 +62,7 @@ enum SettingsField: String {
       .concurrency, .dailyBudget, .importCliChats, .saveChatHistory, .allowedCommands, .allowedTools, .refusalAllowed,
       .refusalDismissed:
       .agents
-    case .runner, .llmModel, .customRunnerSaved, .customRunnerDeleted: .llm
+    case .runner, .llmModel, .customRunnerSaved, .customAcpAgentSaved, .customRunnerDeleted: .llm
     case .mcpServers, .mcpTested, .mcpSignedIn, .mcpSignedOut: .mcp
     case .toolToggled, .prereqFixed, .conductorVersion: .tools
     case .updateChannel: .advanced

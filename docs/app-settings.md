@@ -296,7 +296,7 @@ the **LLM** section as an app-wide default.
 | Field             | Description                                                                                                                      |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | **Name**          | Shown wherever runners are listed. The id (`custom:<slug>`) is derived from it and never changes afterwards.                     |
-| **Based on**      | The official runner it delegates to: Claude Code or Codex.                                                                       |
+| **Based on**      | The official runner it delegates to (Claude Code, Codex or a built-in ACP agent), or **ACP agent (own command)**.                |
 | **Default model** | Used when neither the agent, session, project, nor app default pins a model.                                                     |
 | **Environment**   | Variables layered on top of the base runner's environment for every agent and one-shot call. An empty value _unsets_ a variable. |
 | **Models**        | Models offered in the model picker. Leave empty to fall back to whatever the base runner advertises.                             |
@@ -306,6 +306,24 @@ Values whose name looks like a credential (`token`, `key`, `secret`,
 `~/.argus/custom-runners.json` (readable only by you, since it holds API
 tokens) and are never written into the repository — `.argus.json` only
 references a runner by id.
+
+### Custom ACP agents
+
+The **Custom ACP agent** template adds any agent that speaks the
+[Agent Client Protocol](#acp-agents) — Goose, Qwen Code, an in-house agent —
+without waiting for Argus to ship a preset for it. It then shows up in every
+runner picker and chats like the built-in ACP agents: same permission modes,
+model picker, interrupts and Argus MCP tools (when the agent takes HTTP MCP
+servers, which Argus reads from the agent itself).
+
+| Field            | Description                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------- |
+| **Command**      | The agent's binary, on `PATH` or as an absolute path — e.g. `goose`.                  |
+| **Arguments**    | What starts its ACP server, separated by spaces — e.g. `acp`.                         |
+| **Install hint** | Shown in the runner pickers when the command isn't found.                             |
+| **Sign-in hint** | Shown when the agent says it isn't signed in — e.g. ``Run `goose configure`.``.       |
+| **Environment**  | Variables for the agent, e.g. its API key. An empty value _unsets_ a variable.        |
+| **Models**       | Optional; leave empty and the model picker offers the agent's own once a chat starts. |
 
 ### Example: Apex (callstack.ai)
 

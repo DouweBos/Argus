@@ -6372,6 +6372,7 @@ extension ArgusProtocol {
       public var env: [String: String]?
       public var models: [CustomRunnerModel]?
       public var defaultModel: String?
+      public var acp: CustomAcpAgent?
 
       enum CodingKeys: String, CodingKey {
         case id = "id"
@@ -6380,15 +6381,17 @@ extension ArgusProtocol {
         case env = "env"
         case models = "models"
         case defaultModel = "defaultModel"
+        case acp = "acp"
       }
 
-      public init(id: String? = nil, displayName: String? = nil, baseRunnerId: String? = nil, env: [String: String]? = nil, models: [CustomRunnerModel]? = nil, defaultModel: String? = nil) {
+      public init(id: String? = nil, displayName: String? = nil, baseRunnerId: String? = nil, env: [String: String]? = nil, models: [CustomRunnerModel]? = nil, defaultModel: String? = nil, acp: CustomAcpAgent? = nil) {
         self.id = id
         self.displayName = displayName
         self.baseRunnerId = baseRunnerId
         self.env = env
         self.models = models
         self.defaultModel = defaultModel
+        self.acp = acp
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -6399,6 +6402,7 @@ extension ArgusProtocol {
         try c.encodeIfPresent(env, forKey: .env)
         try c.encodeIfPresent(models, forKey: .models)
         try c.encodeIfPresent(defaultModel, forKey: .defaultModel)
+        try c.encodeIfPresent(acp, forKey: .acp)
       }
     }
 

@@ -2,8 +2,9 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// An official runner re-pointed at another endpoint through its environment.
-/// Drafts stay here until saved, so a half-typed token never reaches disk.
+/// An official runner re-pointed at another endpoint through its environment,
+/// or an ACP agent of the user's own. Drafts stay here until saved, so a
+/// half-typed token never reaches disk.
 struct CustomRunnersSection: View {
   @Environment(HostSettingsModel.self) private var host
   @State private var drafts: [CustomRunnerDraft] = []
@@ -15,8 +16,8 @@ struct CustomRunnersSection: View {
     SettingsGroup(
       "Custom runners",
       footer: "Point an official runner at a different endpoint — a gateway like callstack.ai's Apex, a "
-        + "proxy, or a self-hosted model. Custom runners reuse the base runner's CLI and only "
-        + "override its environment and model list. Stored in ~/.argus/custom-runners.json; pick "
+        + "proxy, or a self-hosted model — or add any agent that speaks the Agent Client Protocol "
+        + "by its command (e.g. goose acp). Stored in ~/.argus/custom-runners.json; pick "
         + "one per session in the runner picker or as the app default above."
     ) {
       if drafts.isEmpty {
@@ -61,7 +62,8 @@ struct CustomRunnersSection: View {
         if let index = drafts.firstIndex(where: { $0.id == draft.id }) {
           drafts[index].runnerId = saved.id
         }
-        MacTelemetry.capture(.settingsChanged(setting: .customRunnerSaved))
+        MacTelemetry.capture(
+          .settingsChanged(setting: draft.isAcp ? .customAcpAgentSaved : .customRunnerSaved))
         await host.loadRunners()
       } catch {
         errors[draft.id] = HostStore.describe(error)

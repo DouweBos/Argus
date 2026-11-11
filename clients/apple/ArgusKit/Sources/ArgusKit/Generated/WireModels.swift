@@ -5232,6 +5232,35 @@ extension ArgusProtocol {
     }
   }
 
+  public struct CustomAcpAgent: Codable, Sendable {
+    public var command: String
+    public var args: [String]
+    public var installHint: String?
+    public var loginHint: String?
+
+    enum CodingKeys: String, CodingKey {
+      case command = "command"
+      case args = "args"
+      case installHint = "installHint"
+      case loginHint = "loginHint"
+    }
+
+    public init(command: String, args: [String], installHint: String? = nil, loginHint: String? = nil) {
+      self.command = command
+      self.args = args
+      self.installHint = installHint
+      self.loginHint = loginHint
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(command, forKey: .command)
+      try c.encode(args, forKey: .args)
+      try c.encodeIfPresent(installHint, forKey: .installHint)
+      try c.encodeIfPresent(loginHint, forKey: .loginHint)
+    }
+  }
+
   public struct CustomRunner: Codable, Sendable {
     public var id: String
     public var displayName: String
@@ -5239,6 +5268,7 @@ extension ArgusProtocol {
     public var env: [String: String]
     public var models: [CustomRunnerModel]
     public var defaultModel: String?
+    public var acp: CustomAcpAgent?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -5247,15 +5277,17 @@ extension ArgusProtocol {
       case env = "env"
       case models = "models"
       case defaultModel = "defaultModel"
+      case acp = "acp"
     }
 
-    public init(id: String, displayName: String, baseRunnerId: String, env: [String: String], models: [CustomRunnerModel], defaultModel: String? = nil) {
+    public init(id: String, displayName: String, baseRunnerId: String, env: [String: String], models: [CustomRunnerModel], defaultModel: String? = nil, acp: CustomAcpAgent? = nil) {
       self.id = id
       self.displayName = displayName
       self.baseRunnerId = baseRunnerId
       self.env = env
       self.models = models
       self.defaultModel = defaultModel
+      self.acp = acp
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -5266,6 +5298,7 @@ extension ArgusProtocol {
       try c.encode(env, forKey: .env)
       try c.encode(models, forKey: .models)
       try c.encode(defaultModel, forKey: .defaultModel)
+      try c.encodeIfPresent(acp, forKey: .acp)
     }
   }
 
@@ -5276,6 +5309,7 @@ extension ArgusProtocol {
     public var env: [String: String]
     public var models: [CustomRunnerModel]
     public var defaultModel: String?
+    public var acp: CustomAcpAgent?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -5284,15 +5318,17 @@ extension ArgusProtocol {
       case env = "env"
       case models = "models"
       case defaultModel = "defaultModel"
+      case acp = "acp"
     }
 
-    public init(id: String? = nil, displayName: String, baseRunnerId: String, env: [String: String], models: [CustomRunnerModel], defaultModel: String? = nil) {
+    public init(id: String? = nil, displayName: String, baseRunnerId: String, env: [String: String], models: [CustomRunnerModel], defaultModel: String? = nil, acp: CustomAcpAgent? = nil) {
       self.id = id
       self.displayName = displayName
       self.baseRunnerId = baseRunnerId
       self.env = env
       self.models = models
       self.defaultModel = defaultModel
+      self.acp = acp
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -5303,6 +5339,7 @@ extension ArgusProtocol {
       try c.encode(env, forKey: .env)
       try c.encode(models, forKey: .models)
       try c.encode(defaultModel, forKey: .defaultModel)
+      try c.encodeIfPresent(acp, forKey: .acp)
     }
   }
 
@@ -5337,6 +5374,7 @@ extension ArgusProtocol {
     public var env: [String: String]
     public var models: [CustomRunnerModel]
     public var defaultModel: String?
+    public var acp: CustomAcpAgent?
 
     enum CodingKeys: String, CodingKey {
       case displayName = "displayName"
@@ -5344,14 +5382,16 @@ extension ArgusProtocol {
       case env = "env"
       case models = "models"
       case defaultModel = "defaultModel"
+      case acp = "acp"
     }
 
-    public init(displayName: String, baseRunnerId: String, env: [String: String], models: [CustomRunnerModel], defaultModel: String? = nil) {
+    public init(displayName: String, baseRunnerId: String, env: [String: String], models: [CustomRunnerModel], defaultModel: String? = nil, acp: CustomAcpAgent? = nil) {
       self.displayName = displayName
       self.baseRunnerId = baseRunnerId
       self.env = env
       self.models = models
       self.defaultModel = defaultModel
+      self.acp = acp
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -5361,6 +5401,7 @@ extension ArgusProtocol {
       try c.encode(env, forKey: .env)
       try c.encode(models, forKey: .models)
       try c.encode(defaultModel, forKey: .defaultModel)
+      try c.encodeIfPresent(acp, forKey: .acp)
     }
   }
 

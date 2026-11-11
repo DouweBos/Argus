@@ -1,8 +1,9 @@
 import ArgusCore
 import SwiftUI
 
-/// One custom runner: its name, what it's based on, its environment and the
-/// models it offers. Credential-looking values stay masked until shown.
+/// One custom runner: its name, what it's based on (or the ACP agent it starts),
+/// its environment and the models it offers. Credential-looking values stay
+/// masked until shown.
 struct CustomRunnerEditor: View {
   @Binding var draft: CustomRunnerDraft
   let baseRunners: [ArgusProtocol.RegisteredRunner]
@@ -32,15 +33,19 @@ struct CustomRunnerEditor: View {
           Text("Based on")
           Picker("Based on", selection: $draft.baseRunnerId) {
             ForEach(baseRunners, id: \.id) { Text($0.displayName).tag($0.id) }
-            if !baseRunners.contains(where: { $0.id == draft.baseRunnerId }) {
+            Text("ACP agent (own command)").tag(CustomRunnerDraft.acpBaseId)
+            if !draft.isAcp, !baseRunners.contains(where: { $0.id == draft.baseRunnerId }) {
               Text(draft.baseRunnerId).tag(draft.baseRunnerId)
             }
           }
           .labelsHidden()
         }
+        if draft.isAcp {
+          acpRows
+        }
         GridRow {
           Text("Default model")
-          TextField("Default model", text: $draft.defaultModel, prompt: Text("e.g. callstack/Apex"))
+          TextField("Default model", text: $draft.defaultModel, prompt: Text(draft.isAcp ? "Leave blank for the agent's own" : "e.g. callstack/Apex"))
             .labelsHidden()
             .font(.scaled(.body).monospaced())
         }
@@ -49,7 +54,7 @@ struct CustomRunnerEditor: View {
       header("Environment") { draft.envRows.append(.init()) }
       ForEach($draft.envRows) { $row in
         HStack {
-          TextField("Variable", text: $row.key, prompt: Text("ANTHROPIC_BASE_URL"))
+          TextField("Variable", text: $row.key, prompt: Text(draft.isAcp ? "API_KEY" : "ANTHROPIC_BASE_URL"))
             .labelsHidden()
             .font(.scaled(.body).monospaced())
             .frame(width: 260)
@@ -82,7 +87,10 @@ struct CustomRunnerEditor: View {
         }
       }
       if draft.models.isEmpty {
-        SettingsCaption("No models listed — the picker falls back to whatever the base runner advertises.")
+        SettingsCaption(
+          draft.isAcp
+            ? "No models listed — the agent offers its own once a chat starts."
+            : "No models listed — the picker falls back to whatever the base runner advertises.")
       }
 
       SettingsError(text: error)
@@ -94,6 +102,31 @@ struct CustomRunnerEditor: View {
       }
     }
     .padding(.vertical, 6)
+  }
+
+  @ViewBuilder private var acpRows: some View {
+    GridRow {
+      Text("Command")
+      TextField("Command", text: $draft.acpCommand, prompt: Text("e.g. goose, or an absolute path"))
+        .labelsHidden()
+        .font(.scaled(.body).monospaced())
+    }
+    GridRow {
+      Text("Arguments")
+      TextField("Arguments", text: $draft.acpArgs, prompt: Text("e.g. acp"))
+        .labelsHidden()
+        .font(.scaled(.body).monospaced())
+    }
+    GridRow {
+      Text("Install hint")
+      TextField("Install hint", text: $draft.installHint, prompt: Text("Shown when the command isn't found"))
+        .labelsHidden()
+    }
+    GridRow {
+      Text("Sign-in hint")
+      TextField("Sign-in hint", text: $draft.loginHint, prompt: Text("Shown when the agent isn't signed in"))
+        .labelsHidden()
+    }
   }
 
   private func header(_ title: String, add: @escaping () -> Void) -> some View {

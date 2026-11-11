@@ -50,6 +50,21 @@ export const CUSTOM_RUNNER_PRESETS: CustomRunnerPreset[] = [
     },
   },
   {
+    key: "acp",
+    label: "Custom ACP agent",
+    description:
+      "Runs any CLI that speaks the Agent Client Protocol, e.g. `goose acp`.",
+    secretEnvKey: "",
+    draft: {
+      displayName: "",
+      baseRunnerId: "acp",
+      env: {},
+      models: [],
+      defaultModel: null,
+      acp: { command: "", args: [] },
+    },
+  },
+  {
     key: "blank",
     label: "Blank",
     description: "Start from an empty config.",

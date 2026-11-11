@@ -85,13 +85,26 @@ export const CustomRunnerModel = z.object({
 });
 export type CustomRunnerModel = z.infer<typeof CustomRunnerModel>;
 
+/** How to start a user-supplied ACP agent, e.g. `goose acp`. */
+export const CustomAcpAgent = z.object({
+  /** Binary on PATH, or an absolute path. */
+  command: z.string(),
+  /** Arguments that start its ACP server. */
+  args: z.array(z.string()),
+  /** Shown when the command isn't found. */
+  installHint: z.string().optional(),
+  /** Shown when the agent says it isn't signed in. */
+  loginHint: z.string().optional(),
+});
+export type CustomAcpAgent = z.infer<typeof CustomAcpAgent>;
+
 /** A user-configured runner, persisted in `~/.argus/custom-runners.json`. */
 export const CustomRunner = z.object({
   /** Stable id, always `custom:<slug>`. */
   id: z.string(),
   /** Label shown wherever runners are listed. */
   displayName: z.string(),
-  /** Official runner this one derives from, e.g. `claude-code`. */
+  /** Official runner this one derives from, e.g. `claude-code`; `acp` starts {@link acp}. */
   baseRunnerId: z.string(),
   /**
    * Environment overrides applied on top of the base runner's env for every
@@ -102,6 +115,8 @@ export const CustomRunner = z.object({
   models: z.array(CustomRunnerModel),
   /** Model used when nothing else pins one. */
   defaultModel: z.string().nullable(),
+  /** Set when `baseRunnerId` is `acp`. */
+  acp: CustomAcpAgent.optional(),
 });
 export type CustomRunner = z.infer<typeof CustomRunner>;
 

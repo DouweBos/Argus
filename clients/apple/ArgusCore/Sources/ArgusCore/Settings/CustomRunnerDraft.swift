@@ -32,6 +32,9 @@ public struct CustomRunnerDraft: Identifiable, Sendable {
     }
   }
 
+  /// `baseRunnerId` of a runner that starts its own ACP agent.
+  public static let acpBaseId = "acp"
+
   /// Stable for SwiftUI before the runner has a saved id.
   public let id = UUID()
   /// `custom:<slug>`, set by the host on first save and never changed.
@@ -41,10 +44,16 @@ public struct CustomRunnerDraft: Identifiable, Sendable {
   public var envRows: [EnvRow]
   public var models: [ModelRow]
   public var defaultModel: String
+  /// The ACP agent's binary, its arguments (space-separated) and hints.
+  public var acpCommand: String
+  public var acpArgs: String
+  public var installHint: String
+  public var loginHint: String
 
   public init(
     runnerId: String? = nil, displayName: String, baseRunnerId: String, env: [String: String],
-    models: [ArgusProtocol.CustomRunnerModel], defaultModel: String?
+    models: [ArgusProtocol.CustomRunnerModel], defaultModel: String?,
+    acp: ArgusProtocol.CustomAcpAgent? = nil
   ) {
     self.runnerId = runnerId
     self.displayName = displayName
@@ -52,22 +61,39 @@ public struct CustomRunnerDraft: Identifiable, Sendable {
     envRows = env.sorted { $0.key < $1.key }.map { EnvRow(key: $0.key, value: $0.value) }
     self.models = models.map { ModelRow(modelId: $0.id, displayName: $0.displayName) }
     self.defaultModel = defaultModel ?? ""
+    acpCommand = acp?.command ?? ""
+    acpArgs = acp?.args.joined(separator: " ") ?? ""
+    installHint = acp?.installHint ?? ""
+    loginHint = acp?.loginHint ?? ""
   }
 
   public init(_ runner: ArgusProtocol.CustomRunner) {
     self.init(
       runnerId: runner.id, displayName: runner.displayName, baseRunnerId: runner.baseRunnerId,
-      env: runner.env, models: runner.models, defaultModel: runner.defaultModel)
+      env: runner.env, models: runner.models, defaultModel: runner.defaultModel, acp: runner.acp)
   }
 
   public init(preset: ArgusProtocol.CustomRunnerPresetDraft) {
     self.init(
       displayName: preset.displayName, baseRunnerId: preset.baseRunnerId, env: preset.env,
-      models: preset.models, defaultModel: preset.defaultModel)
+      models: preset.models, defaultModel: preset.defaultModel, acp: preset.acp)
   }
+
+  public var isAcp: Bool { baseRunnerId == Self.acpBaseId }
 
   public var canSave: Bool {
     !displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      && (!isAcp || !acpCommand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+  }
+
+  public var wireAcp: ArgusProtocol.CustomAcpAgent? {
+    guard isAcp else { return nil }
+    let install = installHint.trimmingCharacters(in: .whitespacesAndNewlines)
+    let login = loginHint.trimmingCharacters(in: .whitespacesAndNewlines)
+    return .init(
+      command: acpCommand.trimmingCharacters(in: .whitespacesAndNewlines),
+      args: acpArgs.split(whereSeparator: \.isWhitespace).map(String.init),
+      installHint: install.isEmpty ? nil : install, loginHint: login.isEmpty ? nil : login)
   }
 
   /// Blank keys are dropped; an empty value is kept, since it unsets the var.
@@ -92,6 +118,6 @@ public struct CustomRunnerDraft: Identifiable, Sendable {
     let model = defaultModel.trimmingCharacters(in: .whitespacesAndNewlines)
     return .init(
       id: runnerId, displayName: displayName, baseRunnerId: baseRunnerId, env: env,
-      models: wireModels, defaultModel: model.isEmpty ? nil : model)
+      models: wireModels, defaultModel: model.isEmpty ? nil : model, acp: wireAcp)
   }
 }

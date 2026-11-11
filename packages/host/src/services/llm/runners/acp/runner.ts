@@ -107,7 +107,7 @@ export class AcpRunner implements LlmRunner {
     const child = spawn(pre.binPath, argv, {
       cwd: init.cwd,
       stdio: ["pipe", "pipe", "pipe"],
-      env: { ...(env ?? process.env), ...this.preset.env },
+      env: withOverrides(env ?? process.env, this.preset.env),
     });
 
     return new AcpHandle({
@@ -117,4 +117,21 @@ export class AcpRunner implements LlmRunner {
       clientVersion: hostPlatform().appVersion(),
     });
   }
+}
+
+/** Overrides win over inherited vars; an empty value unsets one. */
+function withOverrides(
+  base: NodeJS.ProcessEnv,
+  overrides: Record<string, string> | undefined,
+): NodeJS.ProcessEnv {
+  const env = { ...base };
+  for (const [key, value] of Object.entries(overrides ?? {})) {
+    if (value === "") {
+      Reflect.deleteProperty(env, key);
+    } else {
+      env[key] = value;
+    }
+  }
+
+  return env;
 }

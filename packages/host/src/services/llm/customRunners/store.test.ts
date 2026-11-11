@@ -68,6 +68,27 @@ describe("custom runners store", () => {
     ]);
   });
 
+  it("keeps an ACP agent's command, args and hints", () => {
+    const saved = saveCustomRunner({
+      displayName: "Goose",
+      baseRunnerId: "acp",
+      acp: { command: " goose ", args: ["acp", ""], loginHint: " " },
+    });
+
+    expect(saved.acp).toEqual({ command: "goose", args: ["acp"] });
+    expect(listCustomRunners()[0]?.acp).toEqual(saved.acp);
+  });
+
+  it("rejects an ACP agent without a command", () => {
+    expect(() =>
+      saveCustomRunner({
+        displayName: "Goose",
+        baseRunnerId: "acp",
+        acp: { command: "", args: [] },
+      }),
+    ).toThrow("Custom ACP agent needs a command");
+  });
+
   it("rejects a runner without a name", () => {
     expect(() => saveCustomRunner({ displayName: "  " })).toThrow();
   });

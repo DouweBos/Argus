@@ -78,6 +78,23 @@ struct CustomRunnerDraftTests {
     #expect(wire.models?.map(\.id) == ["callstack/Apex"])
     #expect(wire.defaultModel == nil)
     #expect(draft.canSave)
+    #expect(wire.acp == nil)
+  }
+
+  @Test func acpAgentNeedsACommandAndSplitsItsArgs() {
+    var draft = CustomRunnerDraft(
+      displayName: "Goose", baseRunnerId: CustomRunnerDraft.acpBaseId, env: [:], models: [],
+      defaultModel: nil, acp: .init(command: "", args: []))
+    #expect(!draft.canSave)
+    draft.acpCommand = " goose "
+    draft.acpArgs = "acp  --verbose"
+    draft.loginHint = "Run `goose configure`."
+    let acp = draft.wire.acp
+    #expect(draft.canSave)
+    #expect(acp?.command == "goose")
+    #expect(acp?.args == ["acp", "--verbose"])
+    #expect(acp?.installHint == nil)
+    #expect(acp?.loginHint == "Run `goose configure`.")
   }
 }
 
