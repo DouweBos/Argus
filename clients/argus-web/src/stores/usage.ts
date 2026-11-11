@@ -1,5 +1,6 @@
 /**
- * The computer's Claude plan limits and its token and cost totals. Mirrors
+ * The computer's plan limits (Claude accounts and other runners) and its
+ * token and cost totals per runner. Mirrors
  * `HostStore+UsageLimits` / `+UsageSummary`. The host captures
  * `usage_limits_fetched` and `usage_summary_loaded` itself.
  */

@@ -241,17 +241,24 @@ notification or use the button at the bottom of Notifications.
 
 ## Usage
 
-**Usage** in the sidebar shows how much of your Claude plan is left: the
-5-hour session, the weekly caps and monthly spend, each with when it resets
-and whether you are spending ahead of or under pace. Every signed-in account
-gets its own section. API-key and Console sign-ins have no plan limits.
+**Usage** in the sidebar shows how much of each plan is left. For Claude
+that is the 5-hour session, the weekly caps and monthly spend, with a section
+per signed-in account. Codex shows its session and weekly windows, Cursor its
+monthly allowance (with Auto and API usage apart), and Grok its current
+subscription period, each read with the sign-in its CLI saved. Every window
+says when it resets and whether you are spending ahead of or under pace.
+API-key sign-ins have no plan limits. Gemini and the other agents don't report
+their plan, so they show up only in cost and tokens.
 
-The **Cost** and **Tokens** tabs read the Claude Code sessions on this
-machine and show what they used over the past 24 hours, 7, 30 or 90 days:
-a daily (or hourly) chart, totals, how much caching saved, a split by
-input, cache reads, cache writes and output, and a per-model breakdown.
-Costs are estimates at API list prices — what the same work would cost
-billed per token — and appear once the price list has downloaded.
+The **Cost** and **Tokens** tabs cover every runner over the past 24 hours,
+7, 30 or 90 days: a daily (or hourly) chart split by runner, totals, how much
+caching saved, a split by input, cache reads, cache writes and output, and a
+breakdown per runner and per model. Claude Code and Codex are read from their
+own session files on this machine, including work done outside Argus; the
+other agents are counted from the turns Argus ran, starting with this
+version. Costs are what the agent reported where it reports one, otherwise
+estimates at API list prices — what the same work would cost billed per
+token — once the price list has downloaded.
 
 ---
 

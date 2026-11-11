@@ -67,9 +67,15 @@ describe("codexTranscript", () => {
     expect(result.message.content[0].is_error).toBe(true);
   });
 
-  it("ends a turn with a result carrying usage and the context window", () => {
+  it("ends a turn with a result carrying the turn's usage and the context window", () => {
     const t = new CodexTranscript();
     t.init("thread-1", "gpt-5.5", "auto");
+    t.tokenUsage({
+      total: usage(1000, 0, 50),
+      last: usage(1000, 0, 50),
+      modelContextWindow: 272_000,
+    });
+    t.turnStarted();
     t.tokenUsage({
       total: usage(5000, 1000, 200),
       last: usage(3000, 1000, 100),
@@ -92,12 +98,13 @@ describe("codexTranscript", () => {
       result: "All set",
       duration_ms: 1234,
       usage: {
-        input_tokens: 2000,
+        input_tokens: 3000,
         cache_read_input_tokens: 1000,
-        output_tokens: 100,
+        output_tokens: 150,
       },
       modelUsage: { "gpt-5.5": { contextWindow: 272_000 } },
     });
+    expect(result).not.toHaveProperty("total_cost_usd");
     expect(idle).toMatchObject({
       subtype: "session_state_changed",
       state: "idle",

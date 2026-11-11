@@ -26,6 +26,8 @@ export interface UsageAccountData {
   state: "failed" | "none" | "ok" | "unsupported";
   /** Showing the last known values: the latest check failed. */
   stale: boolean;
+  /** Why there are no windows, in the runner's words; Claude's copy when absent. */
+  message?: string | null;
   windows: UsageWindowRowData[];
 }
 
@@ -37,9 +39,11 @@ interface RetryProps {
 export interface UsageLimitsPanelProps extends RetryProps {
   /** Null until the first answer. Rows come from `usageAccountViews` in `@argus/client-core`. */
   accounts: UsageAccountData[] | null;
+  /** Other runners' plan limits, from `usageRunnerLimitViews`; one group each. */
+  runners?: UsageAccountData[];
   loading: boolean;
   error: string | null;
-  /** Where to go to sign in, when there is no account. */
+  /** Where to go to sign in, when there is no account and no runner. */
   noAccountHint?: string;
 }
 
@@ -52,11 +56,16 @@ function AccountWindows({
     case "unsupported":
       return (
         <p className={styles.note}>
-          No plan limits for this account (API key or Console sign-in).
+          {account.message ??
+            "No plan limits for this account (API key or Console sign-in)."}
         </p>
       );
     case "none":
-      return <p className={styles.note}>This plan reports no limits.</p>;
+      return (
+        <p className={styles.note}>
+          {account.message ?? "This plan reports no limits."}
+        </p>
+      );
     case "failed":
       return (
         <EmptyState
@@ -65,7 +74,10 @@ function AccountWindows({
               Try again
             </Button>
           }
-          body="Claude did not answer the limits check. It may be signed out or offline."
+          body={
+            account.message ??
+            "Claude did not answer the limits check. It may be signed out or offline."
+          }
           icon={<WarningIcon size={18} />}
           title="Couldn't load plan limits"
         />
@@ -98,14 +110,15 @@ function AccountWindows({
   }
 }
 
-/** Each Claude account's plan windows and how much of each is left. */
+/** Each Claude account's and each runner's plan windows and how much of each is left. */
 export function UsageLimitsPanel({
   accounts,
+  runners = [],
   loading,
   error,
   onRetry,
   retrying,
-  noAccountHint = "Sign in to Claude in Settings to see your plan limits here.",
+  noAccountHint = "Sign in to Claude in Settings, or to a runner with a plan, to see its limits here.",
 }: UsageLimitsPanelProps) {
   if (!accounts) {
     if (loading) {
@@ -130,23 +143,25 @@ export function UsageLimitsPanel({
     );
   }
 
-  if (accounts.length === 0) {
+  if (accounts.length === 0 && runners.length === 0) {
     return (
       <EmptyState
         body={noAccountHint}
         icon={<GaugeIcon size={18} />}
-        title="No Claude account"
+        title="No plan limits"
       />
     );
   }
 
   const [only] = accounts;
   const retry = { onRetry, retrying };
+  // A lone Claude account needs no heading until runner groups sit beside it.
+  const bare = accounts.length === 1 && runners.length === 0;
 
   return (
     <div className={styles.sections}>
       {error && <p className={styles.error}>{error}</p>}
-      {accounts.length === 1 && only ? (
+      {bare && only ? (
         <AccountWindows account={only} {...retry} />
       ) : (
         accounts.map((account) => (
@@ -154,12 +169,22 @@ export function UsageLimitsPanel({
             key={account.id}
             meta={account.plan ?? undefined}
             plain
-            title={account.label}
+            title={accounts.length === 1 ? "Claude" : account.label}
           >
             <AccountWindows account={account} {...retry} />
           </SectionPanel>
         ))
       )}
+      {runners.map((runner) => (
+        <SectionPanel
+          key={`runner:${runner.id}`}
+          meta={runner.plan ?? undefined}
+          plain
+          title={runner.label}
+        >
+          <AccountWindows account={runner} {...retry} />
+        </SectionPanel>
+      ))}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 import ArgusCore
 import SwiftUI
 
-/// Claude plan limits for every account on the host, kept fresh while shown:
-/// polled every minute, while a pull or Retry skips the host's cache.
+/// Plan limits for every Claude account and runner on the host, kept fresh
+/// while shown: polled every minute, while a pull or Retry skips the host's cache.
 public struct HostUsageLimitsView: View {
   @Environment(HostStore.self) private var host
 
@@ -21,8 +21,8 @@ public struct HostUsageLimitsView: View {
   }
 }
 
-/// Plan limits grouped per account; the account is only named when there is
-/// more than one, since a lone header just repeats the screen title.
+/// Plan limits grouped per Claude account, then per runner. Claude's group is
+/// only named alongside others, since a lone header repeats the screen title.
 public struct UsageLimitsView: View {
   @Environment(\.theme) private var theme
   let limits: ArgusProtocol.ClaudeUsageLimits?
@@ -42,10 +42,10 @@ public struct UsageLimitsView: View {
 
   public var body: some View {
     if let limits {
-      if limits.accounts.isEmpty {
+      if limits.accounts.isEmpty && (limits.runners ?? []).isEmpty {
         EmptyState(
-          icon: Icon.person, title: "No Claude accounts",
-          body: "Sign in to Claude on the computer to see plan limits.")
+          icon: Icon.person, title: "No plan limits",
+          body: "Sign in to Claude Code, Codex or another agent on the computer to see its plan limits.")
       } else {
         content(limits)
       }
@@ -62,24 +62,35 @@ public struct UsageLimitsView: View {
   }
 
   private func content(_ limits: ArgusProtocol.ClaudeUsageLimits) -> some View {
+    let runners = limits.runners ?? []
+    let namesClaude = limits.accounts.count > 1 || !runners.isEmpty
     // The countdowns move while the screen sits open.
-    TimelineView(.periodic(from: .now, by: 30)) { context in
+    return TimelineView(.periodic(from: .now, by: 30)) { context in
       Screen {
         if let error {
           Banner(text: error, tone: .danger, actionLabel: "Retry", action: onRetry)
         }
         ForEach(limits.accounts, id: \.accountId) { account in
-          if limits.accounts.count > 1 {
-            HStack(spacing: 6) {
-              SectionHeader(title: account.label)
-              if let plan = account.subscriptionType, !plan.isEmpty {
-                Badge(label: plan.capitalized)
-              }
-            }
+          if namesClaude {
+            LimitsHeader(title: limits.accounts.count > 1 ? account.label : "Claude", plan: account.subscriptionType)
           }
-          Card { AccountLimits(account: account, now: context.date, onRetry: onRetry) }
+          Card {
+            LimitsBody(
+              state: .init(account.status), windows: account.windows, now: context.date,
+              failure: "Couldn't read this account's limits.", empty: "No plan limits for this account",
+              onRetry: onRetry)
+          }
         }
-        if let checked = limits.accounts.map(\.checkedAt).max(), checked > 0 {
+        ForEach(runners, id: \.runner) { runner in
+          LimitsHeader(title: runner.label, plan: runner.plan)
+          Card {
+            LimitsBody(
+              state: .init(runner.status), windows: runner.windows, now: context.date,
+              failure: runner.message ?? "Couldn't read \(runner.label)'s limits.",
+              empty: runner.message ?? "No plan limits", onRetry: onRetry)
+          }
+        }
+        if let checked = UsageLimitFormat.checkedAt(limits), checked > 0 {
           Text("Checked \(Date(timeIntervalSince1970: checked / 1000), style: .relative) ago")
             .font(.scaled(size: 12))
             .foregroundStyle(theme.textMuted)
@@ -89,32 +100,72 @@ public struct UsageLimitsView: View {
   }
 }
 
-private struct AccountLimits: View {
+private struct LimitsHeader: View {
+  let title: String
+  let plan: String?
+
+  var body: some View {
+    HStack(spacing: 6) {
+      SectionHeader(title: title)
+      if let plan, !plan.isEmpty {
+        Badge(label: plan.capitalized)
+      }
+    }
+  }
+}
+
+/// A Claude account's or a runner's card: its meters, why it failed, or why
+/// there is nothing to show.
+private struct LimitsBody: View {
+  enum State {
+    case ok, failed, unsupported
+
+    init(_ status: ArgusProtocol.ClaudeAccountLimitsStatus) {
+      self = status == .ok ? .ok : status == .failed ? .failed : .unsupported
+    }
+
+    init(_ status: ArgusProtocol.RunnerUsageLimitsStatus) {
+      self = status == .ok ? .ok : status == .failed ? .failed : .unsupported
+    }
+  }
+
   @Environment(\.theme) private var theme
-  let account: ArgusProtocol.ClaudeAccountLimits
+  let state: State
+  let windows: [ArgusProtocol.UsageLimitWindow]
   let now: Date
+  let failure: String
+  let empty: String
   let onRetry: () -> Void
 
   var body: some View {
-    switch account.status {
-    case .ok where !account.windows.isEmpty:
+    switch state {
+    case .ok where !windows.isEmpty:
       VStack(alignment: .leading, spacing: theme.space) {
-        ForEach(Array(account.windows.enumerated()), id: \.element.id) { index, window in
+        ForEach(Array(windows.enumerated()), id: \.element.id) { index, window in
           if index > 0 { Divider().overlay(theme.borderSubtle) }
           UsageMeterRow(window: window, now: now)
         }
       }
     case .failed:
       HStack(spacing: theme.space) {
-        Text("Couldn't read this account's limits.")
+        Self.inline(failure)
           .font(.scaled(size: 13))
           .foregroundStyle(theme.error)
           .frame(maxWidth: .infinity, alignment: .leading)
         Btn(label: "Retry", tone: .secondary, small: true, action: onRetry).fixedSize()
       }
     default:
-      MutedText("No plan limits for this account")
+      Self.inline(empty)
+        .font(.scaled(size: 13))
+        .foregroundStyle(theme.textMuted)
     }
+  }
+
+  /// Runners' messages carry code spans ("Run `codex login` …").
+  private static func inline(_ source: String) -> Text {
+    var options = AttributedString.MarkdownParsingOptions()
+    options.interpretedSyntax = .inlineOnlyPreservingWhitespace
+    return (try? AttributedString(markdown: source, options: options)).map(Text.init) ?? Text(source)
   }
 }
 
@@ -181,78 +232,5 @@ struct UsageBar: View {
     }
     .frame(height: 6)
     .accessibilityHidden(true)
-  }
-}
-
-/// The Usage screen's plan limits, small: a group per account (named when
-/// there are several), each window a line with what's left and a thin bar.
-public struct UsageLimitsStrip: View {
-  @Environment(\.theme) private var theme
-  let limits: ArgusProtocol.ClaudeUsageLimits?
-
-  public init(limits: ArgusProtocol.ClaudeUsageLimits?) {
-    self.limits = limits
-  }
-
-  /// Accounts with limits to show; empty renders nothing.
-  public static func accounts(_ limits: ArgusProtocol.ClaudeUsageLimits?) -> [ArgusProtocol.ClaudeAccountLimits] {
-    (limits?.accounts ?? []).filter { $0.status == .ok && !$0.windows.isEmpty }
-  }
-
-  public var body: some View {
-    let accounts = Self.accounts(limits)
-    TimelineView(.periodic(from: .now, by: 30)) { context in
-      LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 24, alignment: .top)], alignment: .leading, spacing: 14) {
-        ForEach(accounts, id: \.accountId) { account in
-          VStack(alignment: .leading, spacing: 8) {
-            if accounts.count > 1 {
-              Text(account.label)
-                .font(.scaled(size: 11, weight: .medium))
-                .foregroundStyle(theme.textSecondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            }
-            ForEach(account.windows, id: \.id) { UsageMeterLine(window: $0, now: context.date) }
-          }
-        }
-      }
-    }
-  }
-}
-
-/// One plan window as a single line: label, reset, what's left, and a thin bar.
-public struct UsageMeterLine: View {
-  @Environment(\.theme) private var theme
-  let window: ArgusProtocol.UsageLimitWindow
-  let now: Date
-
-  public init(window: ArgusProtocol.UsageLimitWindow, now: Date) {
-    self.window = window
-    self.now = now
-  }
-
-  public var body: some View {
-    let left = UsageLimitFormat.percentLeft(usedPercent: window.usedPercent)
-    let tone: Tone =
-      switch UsageLimitFormat.level(usedPercent: window.usedPercent) {
-      case .normal: .accent
-      case .warning: .warning
-      case .critical: .danger
-      }
-    VStack(alignment: .leading, spacing: 4) {
-      HStack(spacing: 6) {
-        Text(window.label).foregroundStyle(theme.textMuted).lineLimit(1)
-        if let reset = UsageLimitFormat.resetCaption(resetsAtMs: window.resetsAt, now: now) {
-          Text("· \(reset.prefix(1).lowercased() + reset.dropFirst())")
-            .foregroundStyle(theme.textMuted.opacity(0.7))
-            .lineLimit(1)
-        }
-        Spacer(minLength: 4)
-        Text("\(left)% left").monospacedDigit().foregroundStyle(tone == .accent ? theme.textSecondary : tone.color(theme))
-      }
-      .font(.scaled(size: 11))
-      UsageBar(fraction: UsageLimitFormat.fraction(usedPercent: window.usedPercent), tone: tone)
-    }
-    .accessibilityElement(children: .combine)
   }
 }

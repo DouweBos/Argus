@@ -34,6 +34,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { info, warn } from "@argus/host/logger";
+import { noteCodexRateLimits } from "../../../usage/codexLiveLimits";
 import { toCanonicalPermissionMode } from "../claudeCode/permissionModes";
 import { JsonRpcPeer } from "../rpc";
 import { matchesDisallowed } from "./disallowed";
@@ -396,6 +397,9 @@ export class CodexHandle extends EventEmitter implements LlmRunnerHandle {
         break;
       case "thread/tokenUsage/updated":
         this.transcript.tokenUsage(p.tokenUsage as CodexThreadTokenUsage);
+        break;
+      case "account/rateLimits/updated":
+        noteCodexRateLimits(p);
         break;
       case "serverRequest/resolved":
         this.resolvedElsewhere(p.requestId as RpcId);

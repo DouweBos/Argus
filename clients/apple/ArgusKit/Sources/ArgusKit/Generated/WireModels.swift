@@ -3739,18 +3739,22 @@ extension ArgusProtocol {
 
   public struct ClaudeUsageLimits: Codable, Sendable {
     public var accounts: [ClaudeAccountLimits]
+    public var runners: [RunnerUsageLimits]?
 
     enum CodingKeys: String, CodingKey {
       case accounts = "accounts"
+      case runners = "runners"
     }
 
-    public init(accounts: [ClaudeAccountLimits]) {
+    public init(accounts: [ClaudeAccountLimits], runners: [RunnerUsageLimits]? = nil) {
       self.accounts = accounts
+      self.runners = runners
     }
 
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(accounts, forKey: .accounts)
+      try c.encodeIfPresent(runners, forKey: .runners)
     }
   }
 
@@ -3780,6 +3784,7 @@ extension ArgusProtocol {
     public var cacheSavingsUsd: Double
     public var series: [UsageSeriesPoint]
     public var models: [UsageModelRow]
+    public var runners: [UsageRunnerRow]?
     public var pricesFetchedAt: Double?
 
     enum CodingKeys: String, CodingKey {
@@ -3793,10 +3798,11 @@ extension ArgusProtocol {
       case cacheSavingsUsd = "cache_savings_usd"
       case series = "series"
       case models = "models"
+      case runners = "runners"
       case pricesFetchedAt = "prices_fetched_at"
     }
 
-    public init(range: UsageRange, since: Double, until: Double, bucket: ClaudeUsageSummaryBucket, sessions: Double, tokens: UsageTokenTotals, cost: UsageCostTotals, cacheSavingsUsd: Double, series: [UsageSeriesPoint], models: [UsageModelRow], pricesFetchedAt: Double? = nil) {
+    public init(range: UsageRange, since: Double, until: Double, bucket: ClaudeUsageSummaryBucket, sessions: Double, tokens: UsageTokenTotals, cost: UsageCostTotals, cacheSavingsUsd: Double, series: [UsageSeriesPoint], models: [UsageModelRow], runners: [UsageRunnerRow]? = nil, pricesFetchedAt: Double? = nil) {
       self.range = range
       self.since = since
       self.until = until
@@ -3807,6 +3813,7 @@ extension ArgusProtocol {
       self.cacheSavingsUsd = cacheSavingsUsd
       self.series = series
       self.models = models
+      self.runners = runners
       self.pricesFetchedAt = pricesFetchedAt
     }
 
@@ -3822,6 +3829,7 @@ extension ArgusProtocol {
       try c.encode(cacheSavingsUsd, forKey: .cacheSavingsUsd)
       try c.encode(series, forKey: .series)
       try c.encode(models, forKey: .models)
+      try c.encodeIfPresent(runners, forKey: .runners)
       try c.encode(pricesFetchedAt, forKey: .pricesFetchedAt)
     }
   }
@@ -17122,6 +17130,63 @@ extension ArgusProtocol {
     public static let logout = RunnerSetupStep(rawValue: "logout")
   }
 
+  public struct RunnerUsageLimitsStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let failed = RunnerUsageLimitsStatus(rawValue: "failed")
+    public static let ok = RunnerUsageLimitsStatus(rawValue: "ok")
+    public static let unsupported = RunnerUsageLimitsStatus(rawValue: "unsupported")
+  }
+
+  public struct RunnerUsageLimits: Codable, Sendable {
+    public var runner: String
+    public var label: String
+    public var status: RunnerUsageLimitsStatus
+    public var plan: String?
+    public var message: String?
+    public var windows: [UsageLimitWindow]
+    public var checkedAt: Double
+
+    enum CodingKeys: String, CodingKey {
+      case runner = "runner"
+      case label = "label"
+      case status = "status"
+      case plan = "plan"
+      case message = "message"
+      case windows = "windows"
+      case checkedAt = "checked_at"
+    }
+
+    public init(runner: String, label: String, status: RunnerUsageLimitsStatus, plan: String? = nil, message: String? = nil, windows: [UsageLimitWindow], checkedAt: Double) {
+      self.runner = runner
+      self.label = label
+      self.status = status
+      self.plan = plan
+      self.message = message
+      self.windows = windows
+      self.checkedAt = checkedAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(runner, forKey: .runner)
+      try c.encode(label, forKey: .label)
+      try c.encode(status, forKey: .status)
+      try c.encode(plan, forKey: .plan)
+      try c.encode(message, forKey: .message)
+      try c.encode(windows, forKey: .windows)
+      try c.encode(checkedAt, forKey: .checkedAt)
+    }
+  }
+
   public struct RunTerminalResultDependenciesItem: Codable, Sendable {
     public var sessionId: String
     public var title: String
@@ -18230,6 +18295,7 @@ extension ArgusProtocol {
     public var cacheRead: Double
     public var cacheWrite: Double
     public var output: Double
+    public var other: Double?
 
     enum CodingKeys: String, CodingKey {
       case total = "total"
@@ -18237,14 +18303,16 @@ extension ArgusProtocol {
       case cacheRead = "cache_read"
       case cacheWrite = "cache_write"
       case output = "output"
+      case other = "other"
     }
 
-    public init(total: Double, input: Double, cacheRead: Double, cacheWrite: Double, output: Double) {
+    public init(total: Double, input: Double, cacheRead: Double, cacheWrite: Double, output: Double, other: Double? = nil) {
       self.total = total
       self.input = input
       self.cacheRead = cacheRead
       self.cacheWrite = cacheWrite
       self.output = output
+      self.other = other
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -18254,6 +18322,7 @@ extension ArgusProtocol {
       try c.encode(cacheRead, forKey: .cacheRead)
       try c.encode(cacheWrite, forKey: .cacheWrite)
       try c.encode(output, forKey: .output)
+      try c.encodeIfPresent(other, forKey: .other)
     }
   }
 
@@ -18319,19 +18388,22 @@ extension ArgusProtocol {
     public var tokens: Double
     public var costUsd: Double
     public var priced: Bool
+    public var runner: String?
 
     enum CodingKeys: String, CodingKey {
       case model = "model"
       case tokens = "tokens"
       case costUsd = "cost_usd"
       case priced = "priced"
+      case runner = "runner"
     }
 
-    public init(model: String, tokens: Double, costUsd: Double, priced: Bool) {
+    public init(model: String, tokens: Double, costUsd: Double, priced: Bool, runner: String? = nil) {
       self.model = model
       self.tokens = tokens
       self.costUsd = costUsd
       self.priced = priced
+      self.runner = runner
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -18340,6 +18412,7 @@ extension ArgusProtocol {
       try c.encode(tokens, forKey: .tokens)
       try c.encode(costUsd, forKey: .costUsd)
       try c.encode(priced, forKey: .priced)
+      try c.encodeIfPresent(runner, forKey: .runner)
     }
   }
 
@@ -18374,6 +18447,47 @@ extension ArgusProtocol {
     public static let _7d = UsageRange(rawValue: "7d")
     public static let _30d = UsageRange(rawValue: "30d")
     public static let _90d = UsageRange(rawValue: "90d")
+  }
+
+  public struct UsageRunnerRow: Codable, Sendable {
+    public var runner: String
+    public var label: String
+    public var sessions: Double
+    public var tokens: Double
+    public var costUsd: Double
+    public var priced: Bool
+    public var series: [UsageSeriesPoint]
+
+    enum CodingKeys: String, CodingKey {
+      case runner = "runner"
+      case label = "label"
+      case sessions = "sessions"
+      case tokens = "tokens"
+      case costUsd = "cost_usd"
+      case priced = "priced"
+      case series = "series"
+    }
+
+    public init(runner: String, label: String, sessions: Double, tokens: Double, costUsd: Double, priced: Bool, series: [UsageSeriesPoint]) {
+      self.runner = runner
+      self.label = label
+      self.sessions = sessions
+      self.tokens = tokens
+      self.costUsd = costUsd
+      self.priced = priced
+      self.series = series
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(runner, forKey: .runner)
+      try c.encode(label, forKey: .label)
+      try c.encode(sessions, forKey: .sessions)
+      try c.encode(tokens, forKey: .tokens)
+      try c.encode(costUsd, forKey: .costUsd)
+      try c.encode(priced, forKey: .priced)
+      try c.encode(series, forKey: .series)
+    }
   }
 
   public struct UsageSeriesPoint: Codable, Sendable {

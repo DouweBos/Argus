@@ -120,8 +120,6 @@ import {
   getClaudeLoginState,
 } from "../claudeAuth/claudeAuth";
 import { recheckFlaggedAccounts } from "../claudeAuth/probe";
-import { getClaudeUsageLimits } from "../claudeUsage/limits";
-import { getClaudeUsageSummary } from "../claudeUsage/summary";
 import {
   CommandParamsError,
   getCommand,
@@ -225,6 +223,8 @@ import {
   readTerminalOutput,
   terminalScrollback,
 } from "../terminal/multiplexer";
+import { getUsageLimits } from "../usage/runnerLimits";
+import { getClaudeUsageSummary } from "../usage/summary";
 import { listPinnedBranches } from "../userProjectSettings/store";
 import {
   createRemoteAutomation,
@@ -2783,7 +2783,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "usage.limits": async (params) => {
     const { refresh } = parse("usage.limits", params);
 
-    return getClaudeUsageLimits(refresh ?? false);
+    return getUsageLimits(refresh ?? false);
   },
 
   "usage.summary": async (params) => {

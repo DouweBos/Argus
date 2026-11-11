@@ -63,6 +63,14 @@ public struct UsageShareRow: Hashable, Sendable, Identifiable {
   public let share: Double
 }
 
+/// One runner's (or the folded "Other"'s) amount in one bucket.
+public struct UsageRunnerPoint: Hashable, Sendable {
+  /// The bucket's start, epoch ms.
+  public let start: Double
+  public let series: String
+  public let value: Double
+}
+
 /// Numbers and words for the Cost and Tokens tabs, out of the views so both
 /// apps say the same thing.
 public enum UsageSummaryFormat {
@@ -121,6 +129,7 @@ public enum UsageSummaryFormat {
       case .cost:
         [("Input", summary.cost.input), ("Cache read", summary.cost.cacheRead),
          ("Cache write", summary.cost.cacheWrite), ("Output", summary.cost.output)]
+          + ((summary.cost.other ?? 0) > 0 ? [("Other", summary.cost.other ?? 0)] : [])
       case .tokens:
         [("Input", summary.tokens.input), ("Cache read", summary.tokens.cacheRead),
          ("Cache write", summary.tokens.cacheWrite), ("Output", summary.tokens.output)]
@@ -130,12 +139,61 @@ public enum UsageSummaryFormat {
   }
 
   /// Per model; an unpriced model has no cost rather than a misleading $0.
+  /// With several runners each row names the runner it ran through.
   public static func byModel(_ summary: ArgusProtocol.ClaudeUsageSummary, metric: UsageMetric) -> [UsageShareRow] {
     let total = metric == .cost ? summary.cost.total : summary.tokens.processed
+    let labels = showsRunners(summary)
+      ? Dictionary((summary.runners ?? []).map { ($0.runner, $0.label) }, uniquingKeysWith: { first, _ in first })
+      : [:]
     return summary.models.map { row in
       let value = metric == .cost ? row.costUsd : row.tokens
       let known = metric == .tokens || row.priced
-      return UsageShareRow(label: row.model, value: known ? value : nil, share: known ? share(value, of: total) : 0)
+      let runner = row.runner.flatMap { labels[$0] }
+      let label = runner.map { "\(row.model) · \($0)" } ?? row.model
+      return UsageShareRow(label: label, value: known ? value : nil, share: known ? share(value, of: total) : 0)
+    }
+  }
+
+  /// Whether the summary splits by runner: only when more than one ran.
+  public static func showsRunners(_ summary: ArgusProtocol.ClaudeUsageSummary) -> Bool {
+    (summary.runners?.count ?? 0) > 1
+  }
+
+  /// Per runner, as the host ordered them; an unpriced runner has no cost.
+  public static func byRunner(_ summary: ArgusProtocol.ClaudeUsageSummary, metric: UsageMetric) -> [UsageShareRow] {
+    let total = metric == .cost ? summary.cost.total : summary.tokens.processed
+    return (summary.runners ?? []).map { row in
+      let value = metric == .cost ? row.costUsd : row.tokens
+      let known = metric == .tokens || row.priced
+      return UsageShareRow(label: row.label, value: known ? value : nil, share: known ? share(value, of: total) : 0)
+    }
+  }
+
+  /// The most series a runner chart draws; the palette has this many hues.
+  public static let maxRunnerSeries = 4
+
+  /// The runner chart's series in drawing order, past the palette folded into "Other".
+  public static func runnerSeriesLabels(_ summary: ArgusProtocol.ClaudeUsageSummary) -> [String] {
+    let labels = (summary.runners ?? []).map(\.label)
+    guard labels.count > maxRunnerSeries else { return labels }
+    return Array(labels.prefix(maxRunnerSeries - 1)) + ["Other"]
+  }
+
+  /// One point per runner series per bucket, for a stacked chart.
+  public static func runnerSeries(_ summary: ArgusProtocol.ClaudeUsageSummary, metric: UsageMetric) -> [UsageRunnerPoint] {
+    let runners = summary.runners ?? []
+    let labels = runnerSeriesLabels(summary)
+    let folded = labels.count < runners.count
+    var values: [String: [Double: Double]] = [:]
+    for (index, runner) in runners.enumerated() {
+      let label = folded && index >= maxRunnerSeries - 1 ? "Other" : runner.label
+      for point in runner.series {
+        values[label, default: [:]][point.start, default: 0] += seriesValue(point, metric: metric)
+      }
+    }
+    let starts = Set(runners.flatMap { $0.series.map(\.start) }).sorted()
+    return labels.flatMap { label in
+      starts.map { UsageRunnerPoint(start: $0, series: label, value: values[label]?[$0] ?? 0) }
     }
   }
 

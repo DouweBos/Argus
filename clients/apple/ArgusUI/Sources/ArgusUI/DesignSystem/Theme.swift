@@ -55,6 +55,14 @@ public struct Theme: Sendable, Equatable {
   public var prMerged: Color { Color(hex: scheme == .light ? 0x8250DF : 0xAB7DF8) }
   public var prClosed: Color { Color(hex: scheme == .light ? 0xD1242F : 0xF85149) }
 
+  /// Categorical chart series in fixed order, twins of `--chart-series-*` in
+  /// `tokens.css`; validated for colour-blind separation, always with a legend.
+  public var chartSeries: [Color] {
+    let hex: [UInt32] =
+      scheme == .light ? [0x2A78D6, 0xEB6834, 0x1BAF7A, 0xEDA100] : [0x3987E5, 0xD95926, 0x199E70, 0xC98500]
+    return hex.map { Color(hex: $0) }
+  }
+
   /// A selected pill tab: the label colour inverted, as Grove's tab bar draws it.
   public var pillSelected: Color { scheme == .light ? Color(hex: 0x1C1C1E) : .white }
   public var pillSelectedText: Color { scheme == .light ? .white : Color(hex: 0x1C1C1E) }

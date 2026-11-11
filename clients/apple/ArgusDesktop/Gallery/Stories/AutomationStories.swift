@@ -69,11 +69,14 @@
           "notifications/empty", size: CGSize(width: 900, height: 480), chrome: true,
           setup: { $0.model.notificationsLog.clear() }
         ) { NotificationsScreen() },
-        GalleryStory("usage/limits", size: screen, chrome: true, fixtures: GalleryFixtures.usage) {
+        GalleryStory("usage/limits", size: CGSize(width: 1000, height: 1300), chrome: true, fixtures: GalleryFixtures.usage) {
           UsageScreen(tab: .limits, range: nil)
         },
-        GalleryStory("usage/cost", size: screen, chrome: true, fixtures: GalleryFixtures.usage) {
-          UsageScreen(tab: .cost, range: nil)
+        GalleryStory("usage/cost", size: CGSize(width: 1000, height: 1300), chrome: true, fixtures: GalleryFixtures.usage) {
+          UsageScreen(tab: .cost, range: ._7d)
+        },
+        GalleryStory("usage/tokens", size: CGSize(width: 1000, height: 1300), chrome: true, fixtures: GalleryFixtures.usage) {
+          UsageScreen(tab: .tokens, range: ._7d)
         },
       ]
     }

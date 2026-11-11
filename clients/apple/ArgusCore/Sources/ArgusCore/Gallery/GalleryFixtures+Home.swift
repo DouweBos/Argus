@@ -119,7 +119,16 @@ extension GalleryFixtures {
             ["id": "weekly", "kind": "weekly", "label": "Weekly", "used_percent": 38, "resets_at": ago(-60 * 90)],
           ],
         ],
-      ]
+      ],
+      "runners": [
+        [
+          "runner": "codex", "label": "Codex", "status": "ok", "plan": "pro", "checked_at": ago(1),
+          "windows": [
+            ["id": "primary", "kind": "session", "label": "Session", "used_percent": 34, "resets_at": ago(-180)],
+            ["id": "secondary", "kind": "weekly", "label": "Weekly", "used_percent": 62, "resets_at": ago(-60 * 48)],
+          ],
+        ]
+      ],
     ])
   }
 

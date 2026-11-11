@@ -35,6 +35,7 @@ describe("parseUsageLine", () => {
   it("reads tokens, the 1h cache split and the dedupe key", () => {
     expect(parseUsageLine(line())).toEqual({
       at: Date.parse("2026-10-26T10:00:00.000Z"),
+      runner: "claude-code",
       model: "claude-opus-5-5",
       sessionId: "s1",
       key: "msg_1:req_1",
@@ -43,6 +44,7 @@ describe("parseUsageLine", () => {
       cacheWrite5m: 10,
       cacheWrite1h: 20,
       output: 7,
+      costUsd: null,
     });
   });
 

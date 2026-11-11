@@ -36,6 +36,35 @@ export const CostByType: Story = {
   },
 };
 
+export const WithOther: Story = {
+  args: {
+    caption: "Cost by type",
+    segments: [
+      { label: "Input", value: 12.4, display: "$12.40", detail: "0.4%" },
+      {
+        label: "Cache read",
+        value: 1890.2,
+        display: "$1,890.20",
+        detail: "62.1%",
+      },
+      {
+        label: "Cache write",
+        value: 610.9,
+        display: "$610.90",
+        detail: "20.1%",
+      },
+      { label: "Output", value: 276.3, display: "$276.30", detail: "9.1%" },
+      {
+        label: "Other",
+        value: 252.0,
+        display: "$252.00",
+        detail: "8.3%",
+        other: true,
+      },
+    ],
+  },
+};
+
 export const TwoParts: Story = {
   args: {
     caption: "Reviewed",

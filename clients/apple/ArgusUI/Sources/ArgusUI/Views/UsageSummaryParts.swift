@@ -2,34 +2,27 @@ import ArgusCore
 import Charts
 import SwiftUI
 
-/// Tokens or cost per hour or day, filled in the theme's accent.
+/// Tokens or cost per hour or day: one accent area, or with several runners a
+/// stacked area per runner in the chart palette, with a legend.
 struct UsageSeriesChart: View {
   @Environment(\.theme) private var theme
-  let series: [ArgusProtocol.UsageSeriesPoint]
-  let bucket: ArgusProtocol.ClaudeUsageSummaryBucket
+  let summary: ArgusProtocol.ClaudeUsageSummary
   let metric: UsageMetric
 
-  private var unit: Calendar.Component { bucket == .hour ? .hour : .day }
+  private var unit: Calendar.Component { summary.bucket == .hour ? .hour : .day }
 
   var body: some View {
-    Chart(series, id: \.start) { point in
-      let date = Date(timeIntervalSince1970: point.start / 1000)
-      let value = UsageSummaryFormat.seriesValue(point, metric: metric)
-      AreaMark(x: .value("Time", date, unit: unit), y: .value("Amount", value))
-        .interpolationMethod(.monotone)
-        .foregroundStyle(
-          LinearGradient(
-            colors: [theme.accent.opacity(0.35), theme.accent.opacity(0.02)],
-            startPoint: .top, endPoint: .bottom))
-      LineMark(x: .value("Time", date, unit: unit), y: .value("Amount", value))
-        .interpolationMethod(.monotone)
-        .foregroundStyle(theme.accent)
-        .lineStyle(StrokeStyle(lineWidth: 2))
+    Group {
+      if UsageSummaryFormat.showsRunners(summary) {
+        runnerChart
+      } else {
+        singleChart
+      }
     }
     .chartXAxis {
       AxisMarks(values: .automatic(desiredCount: 5)) { _ in
         AxisGridLine().foregroundStyle(theme.borderSubtle)
-        AxisValueLabel(format: bucket == .hour ? .dateTime.hour() : .dateTime.month(.abbreviated).day())
+        AxisValueLabel(format: summary.bucket == .hour ? .dateTime.hour() : .dateTime.month(.abbreviated).day())
           .foregroundStyle(theme.textMuted)
       }
     }
@@ -44,6 +37,47 @@ struct UsageSeriesChart: View {
       }
     }
     .accessibilityLabel("Usage over time")
+  }
+
+  private var singleChart: some View {
+    Chart(summary.series, id: \.start) { point in
+      let date = Date(timeIntervalSince1970: point.start / 1000)
+      let value = UsageSummaryFormat.seriesValue(point, metric: metric)
+      AreaMark(x: .value("Time", date, unit: unit), y: .value("Amount", value))
+        .interpolationMethod(.monotone)
+        .foregroundStyle(
+          LinearGradient(
+            colors: [theme.accent.opacity(0.35), theme.accent.opacity(0.02)],
+            startPoint: .top, endPoint: .bottom))
+      LineMark(x: .value("Time", date, unit: unit), y: .value("Amount", value))
+        .interpolationMethod(.monotone)
+        .foregroundStyle(theme.accent)
+        .lineStyle(StrokeStyle(lineWidth: 2))
+    }
+  }
+
+  private var runnerChart: some View {
+    let labels = UsageSummaryFormat.runnerSeriesLabels(summary)
+    return Chart(UsageSummaryFormat.runnerSeries(summary, metric: metric), id: \.self) { point in
+      AreaMark(
+        x: .value("Time", Date(timeIntervalSince1970: point.start / 1000), unit: unit),
+        y: .value("Amount", point.value), stacking: .standard
+      )
+      .interpolationMethod(.monotone)
+      .foregroundStyle(by: .value("Runner", point.series))
+      .opacity(0.85)
+    }
+    .chartForegroundStyleScale(domain: labels, range: Array(theme.chartSeries.prefix(labels.count)))
+    .chartLegend(position: .bottom, alignment: .leading, spacing: 10) {
+      HStack(spacing: 14) {
+        ForEach(Array(labels.enumerated()), id: \.offset) { index, label in
+          HStack(spacing: 5) {
+            Circle().fill(theme.chartSeries[index % theme.chartSeries.count]).frame(width: 8, height: 8)
+            Text(label).font(.scaled(size: 12)).foregroundStyle(theme.textSecondary)
+          }
+        }
+      }
+    }
   }
 }
 

@@ -42,7 +42,10 @@ export class AcpTranscript {
   private turnStartedAt = 0;
   private contextWindow: number | null = null;
   private contextUsed: number | null = null;
-  private costUsd = 0;
+  /** The session's running cost as last reported; null until the agent reports one. */
+  private costUsd: number | null = null;
+  /** Running cost at the last result, so each result carries only its turn's spend. */
+  private costBilled = 0;
   private readonly calls = new Map<string, CallState>();
 
   setModel(model: string | null): void {
@@ -129,6 +132,12 @@ export class AcpTranscript {
     const model = this.model ?? "default";
     const input = usage?.inputTokens ?? 0;
     const cached = usage?.cachedReadTokens ?? 0;
+    // `usage_update` cost is the session's running total; a result reports its turn.
+    const turnCost =
+      this.costUsd === null
+        ? null
+        : Math.max(0, this.costUsd - this.costBilled);
+    this.costBilled = this.costUsd ?? this.costBilled;
     out.push(
       line({
         type: "result",
@@ -138,7 +147,7 @@ export class AcpTranscript {
         duration_ms: Date.now() - this.turnStartedAt,
         num_turns: 1,
         session_id: this.sessionId,
-        total_cost_usd: this.costUsd,
+        ...(turnCost === null ? {} : { total_cost_usd: turnCost }),
         usage: usage
           ? {
               input_tokens: Math.max(0, input - cached),

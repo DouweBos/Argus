@@ -85,6 +85,10 @@
   white-space: nowrap;
 }
 
+.detail {
+  color: var(--text-muted);
+}
+
 .breakdown .note {
   padding-top: 8px;
 }

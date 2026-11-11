@@ -19,6 +19,7 @@ const table: RateTable = new Map([
 
 const rec = (over: Partial<UsageRecord>): UsageRecord => ({
   at: NOW - 60_000,
+  runner: "claude-code",
   model: "claude-opus-5-5",
   sessionId: "s1",
   key: "m1:r1",
@@ -27,6 +28,7 @@ const rec = (over: Partial<UsageRecord>): UsageRecord => ({
   cacheWrite5m: 100,
   cacheWrite1h: 50,
   output: 20,
+  costUsd: null,
   ...over,
 });
 
@@ -68,8 +70,55 @@ describe("summarize", () => {
         tokens: 2360,
         cost_usd: s.cost.total,
         priced: true,
+        runner: "claude-code",
       },
     ]);
+  });
+
+  it("splits by runner and prefers a runner's reported cost", () => {
+    const s = summarize(
+      [
+        rec({ key: null }),
+        rec({ runner: "codex", model: "gpt-x", key: null, sessionId: "c1" }),
+        rec({
+          runner: "gemini",
+          model: "gemini-y",
+          key: null,
+          sessionId: "g1",
+          costUsd: 0.5,
+        }),
+        rec({
+          runner: "gemini",
+          model: "claude-opus-5-5",
+          key: null,
+          costUsd: 1,
+        }),
+      ],
+      table,
+      "24h",
+      NOW,
+      (id) => id.toUpperCase(),
+    );
+    const runners = Object.fromEntries(
+      (s.runners ?? []).map((r) => [r.runner, r]),
+    );
+    expect(Object.keys(runners).sort()).toEqual([
+      "claude-code",
+      "codex",
+      "gemini",
+    ]);
+    expect(runners.gemini).toMatchObject({ label: "GEMINI", sessions: 2 });
+    expect(runners.gemini.cost_usd).toBeCloseTo(1.5, 12);
+    expect(runners.codex).toMatchObject({ cost_usd: 0, priced: false });
+    expect(runners["claude-code"].series.at(-1)?.tokens).toBe(1180);
+    // Reported spend without a list rate can't be split by kind.
+    expect(s.cost.other).toBeCloseTo(0.5, 12);
+    const one = 10 * 4e-6 + 1000 * 2e-7 + 100 * 5e-6 + 50 * 8e-6 + 20 * 2e-5;
+    expect(s.cost.total).toBeCloseTo(one + 1.5, 12);
+    expect(
+      s.cost.input + s.cost.cache_read + s.cost.cache_write + s.cost.output,
+    ).toBeCloseTo(one + 1, 12);
+    expect(s.sessions).toBe(4);
   });
 
   it("counts unknown models without cost and drops records outside the range", () => {

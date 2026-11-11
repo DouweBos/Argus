@@ -25,7 +25,7 @@ export interface UsageScreenProps {
   range: UsageScreenRange;
   onTabChange: (tab: UsageScreenTab) => void;
   onRangeChange: (range: UsageScreenRange) => void;
-  /** The plan beside the title, when one account is signed in. */
+  /** The plan beside the title, when one Claude account is all there is. */
   plan?: string | null;
   onRefresh: () => void;
   refreshing: boolean;
@@ -35,7 +35,7 @@ export interface UsageScreenProps {
   children: ReactNode;
 }
 
-/** What your Claude plans allow and what you've spent, one tab per angle on it. */
+/** What your plans allow and what every runner has spent, one tab per angle on it. */
 export function UsageScreen({
   tab,
   range,

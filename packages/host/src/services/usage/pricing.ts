@@ -1,6 +1,7 @@
 /**
- * Per-token prices from LiteLLM's public model price list, kept in the Argus
- * home for a day so cost estimates work offline and don't refetch per view.
+ * Per-token prices for every provider's chat models from LiteLLM's public price
+ * list, kept in the Argus home for a day so estimates work offline and don't
+ * refetch per view.
  */
 
 import fs from "node:fs";
@@ -54,21 +55,32 @@ export function normalizeModelKey(model: string): string {
 const num = (v: unknown): number | null =>
   typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null;
 
-/** Claude entries of the LiteLLM document; models without input and output rates are dropped. */
+/** Price-list modes that bill per token for chat turns. */
+const TOKEN_MODES = new Set(["chat", "responses"]);
+
+/**
+ * Chat models of the LiteLLM document, every provider. A bare id wins over a
+ * `provider/` one that normalizes to it; models without input and output
+ * rates are dropped.
+ */
 export function parsePriceDocument(doc: unknown): Record<string, ModelRate> {
   const rates: Record<string, ModelRate> = {};
   if (typeof doc !== "object" || doc === null) {
     return rates;
   }
-  for (const [name, raw] of Object.entries(doc as Record<string, unknown>)) {
+  const entries = Object.entries(doc as Record<string, unknown>);
+  const bareFirst = [
+    ...entries.filter(([name]) => !name.includes("/")),
+    ...entries.filter(([name]) => name.includes("/")),
+  ];
+  for (const [name, raw] of bareFirst) {
     if (typeof raw !== "object" || raw === null) {
       continue;
     }
-    const key = normalizeModelKey(name);
-    if (!key.startsWith("claude-")) {
+    const e = raw as Record<string, unknown>;
+    if (typeof e.mode === "string" && !TOKEN_MODES.has(e.mode)) {
       continue;
     }
-    const e = raw as Record<string, unknown>;
     const input = num(e.input_cost_per_token);
     const output = num(e.output_cost_per_token);
     if (input === null || output === null) {
@@ -76,7 +88,7 @@ export function parsePriceDocument(doc: unknown): Record<string, ModelRate> {
     }
     const cacheWrite = num(e.cache_creation_input_token_cost) ?? input;
     // First entry wins: the bare id is listed before regional variants.
-    rates[key] ??= {
+    rates[normalizeModelKey(name)] ??= {
       input,
       output,
       cacheRead: num(e.cache_read_input_token_cost) ?? input,
@@ -100,7 +112,7 @@ export function rateFor(table: RateTable, model: string): ModelRate | null {
 }
 
 function cachePath(): string {
-  return path.join(argusHomeDir(), "usage-model-prices.json");
+  return path.join(argusHomeDir(), "usage-model-prices-v2.json");
 }
 
 function readCache(): PriceFile | null {
@@ -128,7 +140,7 @@ async function download(): Promise<Record<string, ModelRate>> {
       if (Object.keys(rates).length > 0) {
         return rates;
       }
-      throw new Error("no Claude prices in the list");
+      throw new Error("no model prices in the list");
     } catch (e) {
       lastError = e;
     }
@@ -139,6 +151,16 @@ async function download(): Promise<Record<string, ModelRate>> {
 let memory: PriceFile | null = null;
 let lastAttempt = 0;
 let pending: Promise<void> | null = null;
+
+/**
+ * The table already in memory or on disk, without waiting on a download; null
+ * before the first one. Kicks off a refresh when stale.
+ */
+export function cachedRateTable(): RateTable | null {
+  loadRateTable().catch(() => undefined);
+
+  return memory ? new Map(Object.entries(memory.rates)) : null;
+}
 
 /** The freshest table available; refetches in the background once stale. */
 export async function loadRateTable(): Promise<{
@@ -174,3 +196,33 @@ export async function loadRateTable(): Promise<{
     fetchedAt: memory?.fetchedAt ?? null,
   };
 }
+
+export interface CostParts {
+  input: number;
+  cache_read: number;
+  cache_write: number;
+  output: number;
+}
+
+/** Dollars by token kind at a model's list rate. */
+export function costParts(
+  rate: ModelRate,
+  t: {
+    input: number;
+    cacheRead: number;
+    cacheWrite5m: number;
+    cacheWrite1h: number;
+    output: number;
+  },
+): CostParts {
+  return {
+    input: t.input * rate.input,
+    cache_read: t.cacheRead * rate.cacheRead,
+    cache_write:
+      t.cacheWrite5m * rate.cacheWrite + t.cacheWrite1h * rate.cacheWrite1h,
+    output: t.output * rate.output,
+  };
+}
+
+export const partsTotal = (p: CostParts): number =>
+  p.input + p.cache_read + p.cache_write + p.output;

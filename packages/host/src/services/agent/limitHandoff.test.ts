@@ -15,7 +15,7 @@ vi.mock("../claudeAuth/accounts", () => ({
   listClaudeAccounts: () => h.accounts,
   resolveAccountForSession: () => "personal",
 }));
-vi.mock("../claudeUsage/limits", () => ({
+vi.mock("../usage/limits", () => ({
   getAccountLimits: (id: string) =>
     h.limits.has(id)
       ? Promise.resolve(h.limits.get(id))

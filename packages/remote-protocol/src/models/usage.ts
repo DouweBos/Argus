@@ -47,8 +47,25 @@ export const LimitHandoffAccount = z.object({
 });
 export type LimitHandoffAccount = z.infer<typeof LimitHandoffAccount>;
 
+/** Plan windows another runner reports: Codex rate limits, Cursor and Grok allowances. */
+export const RunnerUsageLimits = z.object({
+  runner: z.string(),
+  label: z.string(),
+  /** `unsupported`: signed out, or signed in a way that has no plan (an API key). */
+  status: z.enum(["failed", "ok", "unsupported"]),
+  plan: z.string().nullable(),
+  /** Why the windows are missing, when the runner said. */
+  message: z.string().nullable(),
+  windows: z.array(UsageLimitWindow),
+  /** Unix ms of the last check. */
+  checked_at: z.number(),
+});
+export type RunnerUsageLimits = z.infer<typeof RunnerUsageLimits>;
+
 export const ClaudeUsageLimits = z.object({
   accounts: z.array(ClaudeAccountLimits),
+  /** Installed runners other than Claude; absent from hosts that predate them. */
+  runners: z.array(RunnerUsageLimits).optional(),
 });
 export type ClaudeUsageLimits = z.infer<typeof ClaudeUsageLimits>;
 
@@ -72,6 +89,8 @@ export const UsageCostTotals = z.object({
   cache_read: z.number(),
   cache_write: z.number(),
   output: z.number(),
+  /** Cost a runner reported for a model without list prices, so it can't be split by kind. */
+  other: z.number().optional(),
 });
 export type UsageCostTotals = z.infer<typeof UsageCostTotals>;
 
@@ -89,10 +108,28 @@ export const UsageModelRow = z.object({
   cost_usd: z.number(),
   /** False when the price list doesn't know the model: tokens count, cost doesn't. */
   priced: z.boolean(),
+  /** Runner the model was used through. */
+  runner: z.string().optional(),
 });
 export type UsageModelRow = z.infer<typeof UsageModelRow>;
 
-/** Claude Code usage on this machine, read from its session transcripts. */
+/** One runner's share of a range; `series` lines up with the summary's buckets. */
+export const UsageRunnerRow = z.object({
+  runner: z.string(),
+  label: z.string(),
+  sessions: z.number(),
+  tokens: z.number(),
+  cost_usd: z.number(),
+  /** False when none of its models are priced and it reported no cost. */
+  priced: z.boolean(),
+  series: z.array(UsageSeriesPoint),
+});
+export type UsageRunnerRow = z.infer<typeof UsageRunnerRow>;
+
+/**
+ * Usage on this machine across runners: Claude Code and Codex from their own
+ * session files, the other runners from what Argus recorded per turn.
+ */
 export const ClaudeUsageSummary = z.object({
   range: UsageRange,
   since: z.number(),
@@ -105,6 +142,8 @@ export const ClaudeUsageSummary = z.object({
   cache_savings_usd: z.number(),
   series: z.array(UsageSeriesPoint),
   models: z.array(UsageModelRow),
+  /** Per runner, most expensive first; absent from hosts that predate it. */
+  runners: z.array(UsageRunnerRow).optional(),
   /** Unix ms the price list was fetched; null when none is available yet. */
   prices_fetched_at: z.number().nullable(),
 });

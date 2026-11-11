@@ -33,7 +33,10 @@
         GalleryStory("notifications/empty", setup: { $0.app.notifications.clear() }) { WarningsView() },
         GalleryStory("usage/limits", fixtures: GalleryFixtures.usage) { HostUsageView() },
         GalleryStory("usage/cost", fixtures: GalleryFixtures.usage) {
-          HostUsageView(tab: .constant(.cost), range: .constant(.default))
+          HostUsageView(tab: .constant(.cost), range: .constant(._7d))
+        },
+        GalleryStory("usage/tokens", fixtures: GalleryFixtures.usage) {
+          HostUsageView(tab: .constant(.tokens), range: .constant(._7d))
         },
       ]
     }

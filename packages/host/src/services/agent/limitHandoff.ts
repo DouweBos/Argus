@@ -15,8 +15,8 @@ import {
   listClaudeAccounts,
   resolveAccountForSession,
 } from "../claudeAuth/accounts";
-import { getAccountLimits } from "../claudeUsage/limits";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
+import { getAccountLimits } from "../usage/limits";
 import { endLimitStall, isLimitStalled } from "./limitResume";
 
 /** How long the card waits on a usage probe before showing the account without numbers. */

@@ -407,64 +407,7 @@ extension GalleryFixtures {
   }
 }
 
-/// Plan limits for two accounts (one near its cap, one that failed to answer)
-/// and a week of cost and tokens.
 extension GalleryFixtures {
-  public static var usage: [String: String] {
-    let now = Date().timeIntervalSince1970 * 1000
-    let day = 86_400_000.0
-    let limits: [String: Any] = [
-      "accounts": [
-        [
-          "account_id": "work", "label": "Work (Max)", "status": "ok", "subscription_type": "max",
-          "checked_at": now - 60_000,
-          "windows": [
-            [
-              "id": "session", "kind": "session", "label": "Current session", "used_percent": 86,
-              "resets_at": now + 2.2 * 3_600_000, "window_minutes": 300,
-            ],
-            [
-              "id": "weekly", "kind": "weekly", "label": "This week, all models", "used_percent": 41,
-              "resets_at": now + 3.5 * day, "window_minutes": 10_080,
-            ],
-            [
-              "id": "weekly-opus", "kind": "weekly", "label": "This week, Opus", "used_percent": 100,
-              "resets_at": now + 3.5 * day, "window_minutes": 10_080,
-            ],
-          ],
-        ],
-        [
-          "account_id": "personal", "label": "Personal", "status": "failed", "checked_at": now - 600_000,
-          "windows": [],
-        ],
-      ]
-    ]
-    let costs = [3.1, 7.4, 2.2, 0.4, 9.8, 12.6, 5.3]
-    let summary: [String: Any] = [
-      "range": "30d", "since": now - 30 * day, "until": now, "bucket": "day", "sessions": 64,
-      "tokens": [
-        "processed": 182_400_000, "input": 1_200_000, "cache_read": 168_000_000, "cache_write": 11_000_000,
-        "output": 2_200_000,
-      ],
-      "cost": ["total": 40.8, "input": 3.6, "cache_read": 16.8, "cache_write": 13.7, "output": 6.7],
-      "cache_savings_usd": 151.2,
-      "series": (0..<30).map { index in
-        let cost = costs[index % costs.count] * (0.6 + Double(index % 5) * 0.1)
-        return ["start": now - Double(30 - index) * day, "tokens": cost * 4_400_000, "cost_usd": cost]
-      },
-      "models": [
-        ["model": "claude-opus-5-5", "tokens": 121_000_000, "cost_usd": 31.2, "priced": true],
-        ["model": "claude-sonnet-5-5", "tokens": 58_000_000, "cost_usd": 9.1, "priced": true],
-        ["model": "claude-haiku-5-5", "tokens": 3_400_000, "cost_usd": 0.5, "priced": true],
-      ],
-      "prices_fetched_at": now - day,
-    ]
-    return [
-      RemoteMethod.usageLimits.rawValue: GalleryJSON.encode(limits),
-      RemoteMethod.usageSummary.rawValue: GalleryJSON.encode(summary),
-    ]
-  }
-
   /// What the notifications screens list: a repeated error and a warning.
   @MainActor public static func notifications(into log: NotificationsLog) {
     log.clear()

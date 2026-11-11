@@ -2,7 +2,7 @@ import ArgusUI
 import SwiftUI
 
 /// `/usage`, `/usage/cost`, `/usage/tokens`: plan limits, then cost and tokens
-/// from Claude Code transcripts. Tab and range are the route.
+/// from every runner's sessions. Tab and range are the route.
 struct UsageScreen: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var host

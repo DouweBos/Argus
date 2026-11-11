@@ -148,6 +148,23 @@ describe("acpTranscript", () => {
       modelUsage: { m: { contextWindow: 1000 } },
     });
     expect(end[1]).toMatchObject({ subtype: "session_state_changed" });
+    expect(end[0]).not.toHaveProperty("total_cost_usd");
+  });
+
+  it("reports each turn's share of the session's running cost", () => {
+    const t = transcript();
+    const cost = (amount: number) =>
+      t.update({
+        sessionUpdate: "usage_update",
+        cost: { amount, currency: "USD" },
+      });
+    const end = () =>
+      parse(t.turnCompleted({ stopReason: "end_turn" }, null))[0];
+    cost(0.25);
+    expect(end()).toMatchObject({ total_cost_usd: 0.25 });
+    cost(0.4);
+    expect(end().total_cost_usd).toBeCloseTo(0.15);
+    expect(end()).toMatchObject({ total_cost_usd: 0 });
   });
 
   it("closes calls still open when the turn ends", () => {

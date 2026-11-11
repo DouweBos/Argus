@@ -204,6 +204,7 @@ export * from "./components/ResetDialog/ResetDialog";
 export * from "./components/Slider/Slider";
 export * from "./components/Spinner/Spinner";
 export * from "./components/StackedBar/StackedBar";
+export * from "./components/StackedSeriesChart/StackedSeriesChart";
 export * from "./components/StartComposer/PickerChip";
 export * from "./components/StartComposer/StartComposer";
 export * from "./components/StartComposer/WorkspaceChips";

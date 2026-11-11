@@ -58,6 +58,7 @@ const summary: UsageSummaryData = {
     values: [40, 72, 18, 95, 61, 80, 46],
     kind: "bar",
     formatValue: usd,
+    series: null,
   },
   totals: [
     { label: "Processed tokens", value: "412M" },
@@ -77,6 +78,7 @@ const summary: UsageSummaryData = {
   },
   models: [
     {
+      id: "opus",
       model: "claude-opus-4-5",
       cost: "$380.10",
       share: "92.1%",
@@ -85,6 +87,7 @@ const summary: UsageSummaryData = {
       priced: true,
     },
     {
+      id: "haiku",
       model: "claude-haiku-4-5",
       cost: "$32.70",
       share: "7.9%",
@@ -93,6 +96,7 @@ const summary: UsageSummaryData = {
       priced: true,
     },
     {
+      id: "local",
       model: "local-model",
       cost: "—",
       share: "—",
@@ -101,8 +105,149 @@ const summary: UsageSummaryData = {
       priced: false,
     },
   ],
+  runners: [],
   hasUnpriced: true,
 };
+
+const multiRunner: UsageSummaryData = {
+  ...summary,
+  headline: "$498.30",
+  caption: "61 sessions · API estimate",
+  chart: {
+    ...summary.chart,
+    series: [
+      { label: "Claude Code", values: [40, 72, 18, 95, 61, 80, 46] },
+      { label: "Codex", values: [12, 8, 30, 14, 22, 0, 18] },
+      { label: "Gemini", values: [0, 4, 6, 2, 9, 12, 3] },
+    ],
+  },
+  parts: {
+    caption: "Cost by type",
+    segments: [
+      ...summary.parts.segments,
+      {
+        label: "Other",
+        value: 9.4,
+        display: "$9.40",
+        detail: "1.9%",
+        other: true,
+      },
+    ],
+  },
+  runners: [
+    {
+      id: "claude",
+      label: "Claude Code",
+      sessions: "38 sessions",
+      cost: "$412.80",
+      share: "82.8%",
+      tokens: "412M",
+      progress: 0.828,
+      priced: true,
+    },
+    {
+      id: "codex",
+      label: "Codex",
+      sessions: "17 sessions",
+      cost: "$76.10",
+      share: "15.3%",
+      tokens: "88.0M",
+      progress: 0.153,
+      priced: true,
+    },
+    {
+      id: "gemini",
+      label: "Gemini",
+      sessions: "5 sessions",
+      cost: "$9.40",
+      share: "1.9%",
+      tokens: "6.20M",
+      progress: 0.019,
+      priced: true,
+    },
+    {
+      id: "opencode",
+      label: "OpenCode",
+      sessions: "1 session",
+      cost: "—",
+      share: "—",
+      tokens: "41.2K",
+      progress: 0,
+      priced: false,
+    },
+  ],
+  models: [
+    { ...summary.models[0], model: "claude-opus-4-5 · Claude Code" },
+    {
+      id: "codex:gpt-5-codex",
+      model: "gpt-5-codex · Codex",
+      cost: "$76.10",
+      share: "15.3%",
+      tokens: "88.0M",
+      progress: 0.153,
+      priced: true,
+    },
+    { ...summary.models[1], model: "claude-haiku-4-5 · Claude Code" },
+    {
+      id: "gemini:gemini-2.5-pro",
+      model: "gemini-2.5-pro · Gemini",
+      cost: "$9.40",
+      share: "1.9%",
+      tokens: "6.20M",
+      progress: 0.019,
+      priced: true,
+    },
+    { ...summary.models[2], model: "local-model · OpenCode" },
+  ],
+};
+
+const runnerLimits: UsageAccountData[] = [
+  {
+    id: "codex",
+    label: "Codex",
+    plan: "plus",
+    state: "ok",
+    stale: false,
+    windows: [
+      {
+        id: "primary",
+        label: "5-hour",
+        value: "71% left",
+        progress: 0.29,
+        tone: "accent",
+        hint: "Resets in 3h 2m",
+        aside: "Under pace",
+      },
+      {
+        id: "secondary",
+        label: "Weekly",
+        value: "44% left",
+        progress: 0.56,
+        tone: "accent",
+        hint: "Resets in 4d 1h",
+        aside: "On pace",
+      },
+    ],
+  },
+  {
+    id: "cursor",
+    label: "Cursor",
+    plan: null,
+    state: "failed",
+    stale: false,
+    message: "Cursor didn't answer the limits check.",
+    windows: [],
+  },
+  {
+    id: "grok",
+    label: "Grok",
+    plan: null,
+    state: "unsupported",
+    stale: false,
+    message: "Signed in with an API key: no plan limits.",
+    windows: [],
+  },
+];
 
 const meta: Meta<typeof UsageScreen> = {
   title: "Screens/UsageScreen",
@@ -113,7 +258,7 @@ const meta: Meta<typeof UsageScreen> = {
     docs: {
       description: {
         component:
-          "Plan limits per Claude account (bars fill with the share used) and cost or tokens over a range. Rows come from `usageAccountViews` / `usageSummaryView` in `@argus/client-core`; the desktop and the web client each fetch them.",
+          "Plan limits per Claude account and per runner (bars fill with the share used) and cost or tokens over a range, split by runner. Rows come from `usageAccountViews` / `usageRunnerLimitViews` / `usageSummaryView` in `@argus/client-core`; the desktop and the web client each fetch them.",
       },
     },
   },
@@ -121,14 +266,24 @@ const meta: Meta<typeof UsageScreen> = {
 export default meta;
 type Story = StoryObj<typeof UsageScreen>;
 
-function Interactive({ accounts }: { accounts: UsageAccountData[] | null }) {
+function Interactive({
+  accounts,
+  runners = [],
+  data = summary,
+}: {
+  accounts: UsageAccountData[] | null;
+  runners?: UsageAccountData[];
+  data?: UsageSummaryData;
+}) {
   const [tab, setTab] = useState<UsageScreenTab>("limits");
   const [range, setRange] = useState<UsageScreenRange>("30d");
   const retry = { onRetry: () => {}, retrying: false };
 
   return (
     <UsageScreen
-      plan={accounts?.length === 1 ? accounts[0].plan : null}
+      plan={
+        accounts?.length === 1 && runners.length === 0 ? accounts[0].plan : null
+      }
       range={range}
       refreshing={false}
       tab={tab}
@@ -141,13 +296,14 @@ function Interactive({ accounts }: { accounts: UsageAccountData[] | null }) {
           accounts={accounts}
           error={null}
           loading={false}
+          runners={runners}
           {...retry}
         />
       ) : (
         <UsageSummaryPanel
           error={null}
           loading={false}
-          summary={summary}
+          summary={data}
           {...retry}
         />
       )}
@@ -181,6 +337,28 @@ export const SeveralAccounts: Story = {
           windows: [],
         },
       ]}
+    />
+  ),
+};
+
+export const SeveralRunners: Story = {
+  render: () => (
+    <Interactive accounts={[work]} data={multiRunner} runners={runnerLimits} />
+  ),
+};
+
+export const RunnersOnly: Story = {
+  render: () => <Interactive accounts={[]} runners={runnerLimits} />,
+};
+
+export const MultiRunnerSummary: Story = {
+  render: () => (
+    <UsageSummaryPanel
+      error={null}
+      loading={false}
+      retrying={false}
+      summary={multiRunner}
+      onRetry={() => {}}
     />
   ),
 };

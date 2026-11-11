@@ -19,18 +19,31 @@ const doc = {
   },
   "claude-broken": { input_cost_per_token: 1e-6 },
   "gpt-5": { input_cost_per_token: 1e-6, output_cost_per_token: 1e-5 },
+  "xai/grok-4": { input_cost_per_token: 3e-6, output_cost_per_token: 1.5e-5 },
+  "azure/gpt-5": { input_cost_per_token: 9e-6, output_cost_per_token: 9e-5 },
+  "text-embedding-3-small": {
+    mode: "embedding",
+    input_cost_per_token: 2e-8,
+    output_cost_per_token: 0,
+  },
   sample_spec: { note: "not a model" },
 };
 
 describe("parsePriceDocument", () => {
   const table = new Map(Object.entries(parsePriceDocument(doc)));
 
-  it("keeps Claude models with input and output rates", () => {
+  it("keeps chat models with input and output rates", () => {
     expect([...table.keys()].sort()).toEqual([
       "claude-haiku-4-5",
       "claude-opus-5-5",
       "claude-sonnet-5",
+      "gpt-5",
+      "grok-4",
     ]);
+  });
+
+  it("prefers the bare id over a provider-prefixed one", () => {
+    expect(table.get("gpt-5")?.input).toBe(1e-6);
   });
 
   it("falls back to the input rate for unlisted cache rates", () => {

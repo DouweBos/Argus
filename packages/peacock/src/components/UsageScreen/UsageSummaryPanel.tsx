@@ -7,11 +7,29 @@ import { SectionPanel } from "../SectionPanel/SectionPanel";
 import { SeriesChart } from "../SeriesChart/SeriesChart";
 import { Spinner } from "../Spinner/Spinner";
 import { StackedBar } from "../StackedBar/StackedBar";
+import {
+  type StackedSeries,
+  StackedSeriesChart,
+} from "../StackedSeriesChart/StackedSeriesChart";
 import { StatCell, StatsStrip } from "../StatsStrip/StatsStrip";
 import styles from "./UsageSummary.module.css";
 
 export interface UsageModelRowData {
+  /** Unique per row: the same model can show once per runner. */
+  id: string;
   model: string;
+  cost: string;
+  share: string;
+  tokens: string;
+  progress: number;
+  priced: boolean;
+}
+
+export interface UsageRunnerRowData {
+  id: string;
+  label: string;
+  /** "12 sessions". */
+  sessions: string;
   cost: string;
   share: string;
   tokens: string;
@@ -31,6 +49,8 @@ export interface UsageSummaryData {
     values: number[];
     kind: "bar" | "line";
     formatValue: (value: number) => string;
+    /** Stacked by runner; null draws the single series. */
+    series: StackedSeries[] | null;
   };
   totals: { label: string; value: string }[];
   parts: {
@@ -40,8 +60,10 @@ export interface UsageSummaryData {
       value: number;
       display: string;
       detail: string;
+      other?: boolean;
     }[];
   };
+  runners: UsageRunnerRowData[];
   models: UsageModelRowData[];
   hasUnpriced: boolean;
 }
@@ -55,34 +77,53 @@ export interface UsageSummaryPanelProps {
   retrying: boolean;
 }
 
+interface BreakdownRow {
+  id: string;
+  name: string;
+  detail?: string;
+  cost: string;
+  share: string;
+  tokens: string;
+  progress: number;
+  priced: boolean;
+}
+
 function Breakdown({
-  models,
-  unpriced,
+  heading,
+  rows,
+  unpricedTitle,
+  note,
 }: {
-  models: UsageModelRowData[];
-  unpriced: boolean;
+  heading: string;
+  rows: BreakdownRow[];
+  /** Tooltip on an unpriced row's dash. */
+  unpricedTitle: string;
+  note?: string;
 }) {
   return (
     <div className={styles.breakdown}>
       <div className={`${styles.row} ${styles.headRow}`}>
-        <span>Model</span>
+        <span>{heading}</span>
         <span className={styles.num}>Cost</span>
         <span className={styles.num}>Share</span>
         <span className={styles.num}>Tokens</span>
       </div>
-      {models.map((m) => (
-        <div className={styles.row} key={m.model}>
+      {rows.map((m) => (
+        <div className={styles.row} key={m.id}>
           <span className={styles.model}>
-            <span className={styles.modelName}>{m.model}</span>
+            <span className={styles.modelName}>
+              {m.name}
+              {m.detail && <span className={styles.detail}> · {m.detail}</span>}
+            </span>
             <ProgressBar
-              aria-label={`${m.model} share`}
+              aria-label={`${m.name} share`}
               progress={m.progress}
               size="xs"
             />
           </span>
           <span
             className={styles.num}
-            title={m.priced ? undefined : "Not in the price list"}
+            title={m.priced ? undefined : unpricedTitle}
           >
             {m.cost}
           </span>
@@ -90,16 +131,12 @@ function Breakdown({
           <span className={styles.num}>{m.tokens}</span>
         </div>
       ))}
-      {unpriced && (
-        <p className={styles.note}>
-          — marks models the price list doesn’t cover; their tokens still count.
-        </p>
-      )}
+      {note && <p className={styles.note}>{note}</p>}
     </div>
   );
 }
 
-/** Cost or tokens over a range: headline, chart, totals, parts and per model. */
+/** Cost or tokens over a range: headline, chart, totals, parts, per runner and per model. */
 export function UsageSummaryPanel({
   summary,
   loading,
@@ -112,7 +149,7 @@ export function UsageSummaryPanel({
       return (
         <div className={styles.loading}>
           <Spinner />
-          <span>Reading Claude Code sessions…</span>
+          <span>Reading agent sessions…</span>
         </div>
       );
     }
@@ -134,7 +171,7 @@ export function UsageSummaryPanel({
   if (summary.empty) {
     return (
       <EmptyState
-        body="No Claude Code sessions on this machine in this period."
+        body="Agent sessions on the computer show up here."
         icon={<GaugeIcon size={18} />}
         title="No usage yet"
       />
@@ -155,13 +192,23 @@ export function UsageSummaryPanel({
       )}
 
       <Card>
-        <SeriesChart
-          caption={summary.chart.caption}
-          formatValue={summary.chart.formatValue}
-          kind={summary.chart.kind}
-          labels={summary.chart.labels}
-          values={summary.chart.values}
-        />
+        {summary.chart.series ? (
+          <StackedSeriesChart
+            caption={summary.chart.caption}
+            formatValue={summary.chart.formatValue}
+            kind={summary.chart.kind}
+            labels={summary.chart.labels}
+            series={summary.chart.series}
+          />
+        ) : (
+          <SeriesChart
+            caption={summary.chart.caption}
+            formatValue={summary.chart.formatValue}
+            kind={summary.chart.kind}
+            labels={summary.chart.labels}
+            values={summary.chart.values}
+          />
+        )}
       </Card>
 
       <SectionPanel plain title="Totals">
@@ -179,8 +226,31 @@ export function UsageSummaryPanel({
         />
       </Card>
 
+      {summary.runners.length > 1 && (
+        <SectionPanel plain title="By runner">
+          <Breakdown
+            heading="Runner"
+            rows={summary.runners.map((r) => ({
+              ...r,
+              name: r.label,
+              detail: r.sessions,
+            }))}
+            unpricedTitle="No price for its models"
+          />
+        </SectionPanel>
+      )}
+
       <SectionPanel plain title="By model">
-        <Breakdown models={summary.models} unpriced={summary.hasUnpriced} />
+        <Breakdown
+          heading="Model"
+          note={
+            summary.hasUnpriced
+              ? "— marks models the price list doesn’t cover; their tokens still count."
+              : undefined
+          }
+          rows={summary.models.map((m) => ({ ...m, name: m.model }))}
+          unpricedTitle="Not in the price list"
+        />
       </SectionPanel>
     </div>
   );

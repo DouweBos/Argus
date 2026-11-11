@@ -22,7 +22,7 @@ vi.mock("../claudeAuth/accounts", () => ({
   resolveAccountForSession: (s?: { claude_account_id?: string | null }) =>
     s?.claude_account_id ?? "personal",
 }));
-vi.mock("../claudeUsage/limits", () => ({ getAccountLimits: vi.fn() }));
+vi.mock("../usage/limits", () => ({ getAccountLimits: vi.fn() }));
 vi.mock("../telemetry/telemetry", () => ({ capture: h.capture }));
 vi.mock("../session/sessionOps", () => ({
   setSessionClaudeAccount: (id: string, accountId: string | null) => {

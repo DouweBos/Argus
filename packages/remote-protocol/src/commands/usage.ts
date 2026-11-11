@@ -7,13 +7,13 @@ import {
 } from "../models/usage";
 
 export const USAGE_COMMANDS = {
-  /** Plan limits per Claude account; `refresh` skips the minute-long cache. */
+  /** Plan limits per Claude account and per other runner; `refresh` skips the minute-long cache. */
   get_claude_usage_limits: {
     tier: "admin",
     params: z.object({ refresh: z.boolean().optional() }),
     result: ClaudeUsageLimits,
   },
-  /** Tokens and estimated cost from Claude Code transcripts on this machine. */
+  /** Tokens and estimated cost on this machine, split by runner. */
   get_claude_usage_summary: {
     tier: "admin",
     params: z.object({ range: UsageRange }),

@@ -29,6 +29,8 @@ export class CodexTranscript {
   private lastText = "";
   private planSeq = 0;
   private turnStartedAt = 0;
+  /** Thread totals when the turn began, so the result reports the turn's own tokens. */
+  private turnStartTotal: CodexThreadTokenUsage["total"] | null = null;
 
   constructor(private sessionId: string | null = null) {}
 
@@ -57,6 +59,7 @@ export class CodexTranscript {
 
   turnStarted(): string[] {
     this.turnStartedAt = Date.now();
+    this.turnStartTotal = this.usage?.total ?? null;
     this.lastText = "";
 
     return [state("running", this.sessionId)];
@@ -139,6 +142,9 @@ export class CodexTranscript {
     const failed = turn.status === "failed";
     const interrupted = turn.status === "interrupted";
     const last = this.usage?.last;
+    const spent = this.usage
+      ? turnTokens(this.usage, this.turnStartTotal)
+      : null;
     const model = this.model ?? "codex";
 
     return [
@@ -150,9 +156,8 @@ export class CodexTranscript {
         duration_ms: turn.durationMs ?? Date.now() - this.turnStartedAt,
         num_turns: 1,
         session_id: this.sessionId,
-        // Codex doesn't report spend; tokens are the usage it has.
-        total_cost_usd: 0,
-        usage: last ? claudeUsage(last) : undefined,
+        // No `total_cost_usd`: Codex doesn't report spend, so the host prices the tokens.
+        usage: spent ? claudeUsage(spent) : undefined,
         modelUsage: {
           [model]: {
             inputTokens: last?.inputTokens ?? 0,
@@ -292,11 +297,42 @@ function trimTrailingBlank(lines: string[]): string[] {
   return out;
 }
 
+/** The turn's tokens: thread totals now less totals at its start. */
+function turnTokens(
+  usage: CodexThreadTokenUsage,
+  start: CodexThreadTokenUsage["total"] | null,
+): CodexThreadTokenUsage["last"] {
+  const now = usage.total;
+  if (!start || now.inputTokens < start.inputTokens) {
+    return start ? usage.last : now;
+  }
+  const less = (a: number, b: number) => Math.max(0, a - b);
+
+  return {
+    totalTokens: less(now.totalTokens, start.totalTokens),
+    inputTokens: less(now.inputTokens, start.inputTokens),
+    cachedInputTokens: less(now.cachedInputTokens, start.cachedInputTokens),
+    cacheWriteInputTokens: less(
+      now.cacheWriteInputTokens ?? 0,
+      start.cacheWriteInputTokens ?? 0,
+    ),
+    outputTokens: less(now.outputTokens, start.outputTokens),
+    reasoningOutputTokens: less(
+      now.reasoningOutputTokens,
+      start.reasoningOutputTokens,
+    ),
+  };
+}
+
 function claudeUsage(u: CodexThreadTokenUsage["last"]): Record<string, number> {
   return {
     // OpenAI counts cached tokens inside input; Claude reports them apart.
-    input_tokens: Math.max(0, u.inputTokens - u.cachedInputTokens),
+    input_tokens: Math.max(
+      0,
+      u.inputTokens - u.cachedInputTokens - (u.cacheWriteInputTokens ?? 0),
+    ),
     cache_read_input_tokens: u.cachedInputTokens,
+    cache_creation_input_tokens: u.cacheWriteInputTokens ?? 0,
     output_tokens: u.outputTokens,
   };
 }

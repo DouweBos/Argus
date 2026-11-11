@@ -128,6 +128,9 @@ html[data-theme="dark"] {
   --chart-series-2: #d95926;
   --chart-series-3: #199e70;
   --chart-series-4: #c98500;
+  /* The catch-all ("Other") after the hued series: neutral, so it never
+     competes with them. An alias, so it follows the theme. */
+  --chart-series-other: var(--text-muted);
 
   /* ─── Git file status badges ─── solid-fill chips.
      Background uses the semantic palette so the badge reads identically

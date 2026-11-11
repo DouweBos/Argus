@@ -43,6 +43,7 @@ export * from "./notifications/notificationsLog";
 export * from "./telemetry/scrub";
 export * from "./usage/summaryMetric";
 export * from "./usage/usageFormat";
+export * from "./usage/usageRunners";
 export * from "./usage/usageViews";
 export * from "./git/branches";
 export * from "./git/commitMessage";

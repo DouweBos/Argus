@@ -79,7 +79,7 @@ public struct UsageSummaryView: View {
             .disabled(loading)
         }
       } else {
-        Loading(label: "Reading Claude Code sessions…")
+        Loading(label: "Reading usage…")
           .frame(maxWidth: .infinity, minHeight: 240)
       }
     }
@@ -95,7 +95,7 @@ public struct UsageSummaryView: View {
     if summary.tokens.processed == 0 {
       EmptyState(
         icon: Icon.usage, title: "No usage in this range",
-        body: "Claude Code sessions on the computer show up here.")
+        body: "Agent sessions on the computer show up here.")
     } else {
       Card {
         VStack(alignment: .leading, spacing: 2) {
@@ -107,11 +107,15 @@ public struct UsageSummaryView: View {
             .font(.scaled(size: 12))
             .foregroundStyle(theme.textMuted)
         }
-        UsageSeriesChart(series: summary.series, bucket: summary.bucket, metric: metric)
-          .frame(height: 160)
+        UsageSeriesChart(summary: summary, metric: metric)
+          .frame(height: UsageSummaryFormat.showsRunners(summary) ? 190 : 160)
           .padding(.top, 4)
       }
       UsageTotalsGrid(summary: summary)
+      if UsageSummaryFormat.showsRunners(summary) {
+        SectionHeader(title: "By runner", count: summary.runners?.count)
+        Card { UsageShareList(rows: UsageSummaryFormat.byRunner(summary, metric: metric), metric: metric) }
+      }
       SectionHeader(title: "By type")
       Card { UsageShareList(rows: UsageSummaryFormat.byType(summary, metric: metric), metric: metric) }
       if !summary.models.isEmpty {
