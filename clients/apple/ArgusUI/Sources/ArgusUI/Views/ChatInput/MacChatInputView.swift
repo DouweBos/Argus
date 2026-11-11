@@ -24,6 +24,7 @@
     @State var isDropTarget = false
     @State var handoffAccounts: [ArgusProtocol.LimitHandoffAccount]? = []
     @State var showingSideQuestion = false
+    @State var boxWidth: CGFloat = 0
 
     init(
       host: HostStore, agentId: String, sessionId: String?, onAffordance: ((ChatInputAffordance) -> Void)?,
@@ -55,7 +56,11 @@
           FollowUpSuggestionRow(items: composer.followUps) { composer.acceptFollowUp($0) }
         }
         VStack(spacing: 0) {
-          box.overlay(alignment: .top) { suggestions }
+          box
+            .onGeometryChange(for: CGFloat.self, of: \.size.width) { boxWidth = $0 }
+            .floatingPanel(
+              isPresented: .constant(menuOpen), placement: .above, interactive: false, acceptsPointer: true
+            ) { suggestions.frame(width: boxWidth) }
           if let footer {
             footer.padding(.horizontal, 14)
           }
@@ -64,7 +69,6 @@
       .readingColumn()
       .padding(.top, 6)
       .padding(.bottom, 14)
-      .preference(key: ComposerMenuOpenKey.self, value: !composer.slashItems.isEmpty || !composer.mentionItems.isEmpty)
       .task(id: composer.agentId) { await composer.load() }
       // Which affordances the agent's runner supports.
       .task { await host.loadRunners() }
@@ -87,19 +91,18 @@
       }
     }
 
-    /// The `/` and `@` menus float above the box like a popover, so opening one
-    /// moves neither the box nor what's around it.
+    private var menuOpen: Bool { !composer.slashItems.isEmpty || !composer.mentionItems.isEmpty }
+
+    /// The `/` and `@` menus, in a panel of their own above the box: the transcript is
+    /// AppKit, and draws over anything SwiftUI floats in this window. The keyboard stays here.
     @ViewBuilder private var suggestions: some View {
-      Group {
-        if !composer.slashItems.isEmpty {
-          SlashSuggestionList(items: composer.slashItems, selected: composer.menuIndex) { composer.acceptSlash($0) }
-        } else if !composer.mentionItems.isEmpty {
-          MentionSuggestionList(
-            header: composer.mentionHeader, items: composer.mentionItems, selected: composer.menuIndex
-          ) { composer.acceptMention($0) }
-        }
+      if !composer.slashItems.isEmpty {
+        SlashSuggestionList(items: composer.slashItems, selected: composer.menuIndex) { composer.acceptSlash($0) }
+      } else if !composer.mentionItems.isEmpty {
+        MentionSuggestionList(
+          header: composer.mentionHeader, items: composer.mentionItems, selected: composer.menuIndex
+        ) { composer.acceptMention($0) }
       }
-      .alignmentGuide(.top) { $0[.bottom] + 6 }
     }
 
     // MARK: Box
@@ -188,11 +191,5 @@
         finish(panel.runModal())
       }
     }
-  }
-  /// Whether the composer's `/` or `@` menu is open: the menu floats over what's above the
-  /// composer, and a start screen hides its title (a native menu control draws over it) meanwhile.
-  public struct ComposerMenuOpenKey: SwiftUI.PreferenceKey {
-    public static let defaultValue = false
-    public static func reduce(value: inout Bool, nextValue: () -> Bool) { value = value || nextValue() }
   }
 #endif

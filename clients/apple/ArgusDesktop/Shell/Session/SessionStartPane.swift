@@ -11,15 +11,13 @@ struct SessionStartPane: View {
   @State private var drops = ComposerDropInbox()
   @State private var dropTargeted = false
   @State private var workspace = StartWorkspace()
-  /// The composer's `/` or `@` menu is open and floats where the title is.
-  @State private var menuOpen = false
 
   var body: some View {
     VStack(spacing: 0) {
       Color.clear
         .frame(maxHeight: .infinity)
         .overlay(alignment: .bottom) {
-          AgentStartTitle(sessionId: sessionId).padding(.bottom, 18).opacity(menuOpen ? 0 : 1)
+          AgentStartTitle(sessionId: sessionId).padding(.bottom, 18)
         }
       ChatInputView(startingIn: sessionId, starter: model.composerStarter(session: sessionId)) { affordance in
         MacTelemetry.capture(.inputUsed(affordance: affordance.rawValue))
@@ -33,7 +31,6 @@ struct SessionStartPane: View {
           }
         }
     }
-    .onPreferenceChange(ComposerMenuOpenKey.self) { menuOpen = $0 }
     .contentShape(.rect)
     .onDrop(of: ComposerDropInbox.types, isTargeted: $dropTargeted, perform: drops.accept)
     .overlay {
