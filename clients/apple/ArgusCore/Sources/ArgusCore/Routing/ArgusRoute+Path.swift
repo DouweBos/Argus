@@ -17,6 +17,10 @@ extension ArgusRoute {
     case ("inbox", 3) where parts[1] == "proposals": self = .proposal(id: parts[2])
     case ("notifications", 1): self = .notifications
     case ("usage", 1): self = .usage(.limits)
+    case ("usage", 2) where parts[1] == "prices": self = .usagePrices
+    case ("usage", 5) where parts[2] == "models":
+      guard let tab = UsageTab(rawValue: parts[1]), tab != .limits else { return nil }
+      self = .usageModel(tab, runner: parts[3], model: parts[4], range: Self.usageRange(query["range"]))
     case ("usage", 2):
       // An unknown tab falls back to limits, as in Electron.
       let tab = UsageTab(rawValue: parts[1]) ?? .limits
@@ -84,6 +88,10 @@ extension ArgusRoute {
     case .proposal(let id): "/inbox/proposals/\(Self.encode(id))"
     case .notifications: "/notifications"
     case .usage(let tab, let range): pattern + Self.query([("range", tab == .limits ? nil : range?.rawValue)])
+    case .usageModel(let tab, let runner, let model, let range):
+      "/usage/\(tab.rawValue)/models/\(Self.encode(runner))/\(Self.encode(model))"
+        + Self.query([("range", range?.rawValue)])
+    case .usagePrices: "/usage/prices"
     case .pullRequests: "/pull-requests"
     case .pullRequest(let repo, let number): "/pull-requests/\(repo)/\(number)"
     case .issues(let scope, let issue, let query):

@@ -1,16 +1,20 @@
 /**
- * What a finished turn cost, for every runner: the runner's own figure when it
- * reports one, else its tokens at list prices. Turns from runners with no usage
+ * What a finished turn cost, for every runner: a hand-set price, else the
+ * runner's own figure, else its tokens at list prices. Turns from runners with no usage
  * history of their own are written to the ledger for the Usage screen.
  */
 
-import { CODEX_RUNNER_ID } from "./codexRollouts";
 import { appendLedgerEntry } from "./ledger";
-import { costParts, partsTotal, rateFor, cachedRateTable } from "./pricing";
-import { CLAUDE_RUNNER_ID, tokenCount } from "./records";
-
-/** Runners whose CLI keeps a usage history the Usage screen reads directly. */
-const OWN_HISTORY = new Set([CLAUDE_RUNNER_ID, CODEX_RUNNER_ID]);
+import { loadPriceOverrides } from "./priceOverrides";
+import { cachedRateTable, partsTotal } from "./pricing";
+import {
+  countedModel,
+  modelPrice,
+  priceBook,
+  priceRecord,
+} from "./recordPricing";
+import { tokenCount, type UsageRecord } from "./records";
+import { OWN_HISTORY_RUNNERS } from "./sources";
 
 export interface TurnResult {
   total_cost_usd?: number;
@@ -57,14 +61,26 @@ export function recordTurnUsage(ctx: TurnContext, result: TurnResult): number {
   const tokenTotal =
     tokens.input + tokens.cacheRead + tokens.cacheWrite5m + tokens.output;
   let cost = reported ?? 0;
-  if (reported === null && tokenTotal > 0) {
-    const table = cachedRateTable();
-    const rate = table ? rateFor(table, model) : null;
-    cost = rate ? partsTotal(costParts(rate, tokens)) : 0;
+  if (tokenTotal > 0) {
+    // Same precedence as the Usage screen: a hand-set price beats the runner's report.
+    const book = priceBook(
+      cachedRateTable() ?? new Map(),
+      loadPriceOverrides(),
+    );
+    const counted = countedModel(book, model).model;
+    const priced = priceRecord(
+      { ...tokens, costUsd: reported } as UsageRecord,
+      counted,
+      modelPrice(book, counted),
+    );
+    cost = partsTotal(priced.parts) + priced.other;
   }
 
   const base = ctx.baseRunnerId ?? ctx.runnerId;
-  if (!OWN_HISTORY.has(base) && (tokenTotal > 0 || (reported ?? 0) > 0)) {
+  if (
+    !OWN_HISTORY_RUNNERS.has(base) &&
+    (tokenTotal > 0 || (reported ?? 0) > 0)
+  ) {
     appendLedgerEntry({
       at: ctx.at ?? Date.now(),
       runner: ctx.runnerId,

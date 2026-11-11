@@ -78,6 +78,18 @@
         GalleryStory("usage/tokens", size: CGSize(width: 1000, height: 1300), chrome: true, fixtures: GalleryFixtures.usage) {
           UsageScreen(tab: .tokens, range: ._7d)
         },
+        GalleryStory("usage/limits-pooled", size: CGSize(width: 1000, height: 1300), chrome: true, fixtures: GalleryFixtures.usagePooled) {
+          UsageScreen(tab: .limits, range: nil)
+        },
+        GalleryStory("usage/model-detail", size: CGSize(width: 1000, height: 1100), chrome: true, fixtures: GalleryFixtures.usage) {
+          UsageModelScreen(tab: .cost, key: UsageModelKey(runner: "claude-code", model: "claude-opus-5-5"), range: ._7d)
+        },
+        GalleryStory("usage/model-detail-unpriced", size: CGSize(width: 1000, height: 1100), chrome: true, fixtures: GalleryFixtures.usage) {
+          UsageModelScreen(tab: .tokens, key: UsageModelKey(runner: "opencode", model: "qwen3-coder-30b"), range: ._7d)
+        },
+        GalleryStory("usage/prices", size: CGSize(width: 1000, height: 1300), chrome: true, fixtures: GalleryFixtures.usage) {
+          UsagePricesScreen()
+        },
       ]
     }
 

@@ -225,6 +225,7 @@ import {
 } from "../terminal/multiplexer";
 import { getUsageLimits } from "../usage/runnerLimits";
 import { getClaudeUsageSummary } from "../usage/summary";
+import { getUsagePrices, setUsagePrices } from "../usage/usagePrices";
 import { listPinnedBranches } from "../userProjectSettings/store";
 import {
   createRemoteAutomation,
@@ -2790,6 +2791,14 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const { range } = parse("usage.summary", params);
 
     return getClaudeUsageSummary(range);
+  },
+
+  "usage.prices": () => getUsagePrices(),
+
+  "usage.set_prices": async (params) => {
+    const { overrides } = parse("usage.set_prices", params);
+
+    return control(() => setUsagePrices(overrides));
   },
 
   "claude_accounts.set_active": async (params) => {

@@ -15,6 +15,8 @@ import {
 import type {
   ClaudeUsageLimits,
   ClaudeUsageSummary,
+  UsagePriceOverride,
+  UsagePrices,
   UsageRange,
 } from "@argus/remote-protocol";
 import { request } from "../lib/request";
@@ -39,9 +41,18 @@ interface UsageState {
   summaries: Partial<Record<UsageRange, ClaudeUsageSummary>>;
   summaryLoad: Partial<Record<UsageRange, LoadState>>;
   summaryRefreshing: boolean;
+  /** Prices set by hand and the list prices they replace. */
+  prices: UsagePrices | null;
+  pricesLoad: LoadState;
+  /** A model "Set price" asked the editor to start with. */
+  pricesSeed: string | null;
 
   loadLimits: (options?: Load) => Promise<void>;
   loadSummary: (range: UsageRange, options?: Load) => Promise<void>;
+  loadPrices: () => Promise<void>;
+  /** Throws the host's refusal as a string; reloads every loaded range after. */
+  savePrices: (overrides: UsagePriceOverride[]) => Promise<void>;
+  seedPrices: (model: string | null) => void;
 }
 
 const EMPTY = {
@@ -52,12 +63,15 @@ const EMPTY = {
   summaries: {},
   summaryLoad: {},
   summaryRefreshing: false,
+  prices: null,
+  pricesLoad: INITIAL_LOAD,
+  pricesSeed: null,
 } satisfies Partial<UsageState>;
 
 /** The newest summary request per range wins over a slower, older one. */
 const summaryTickets: Partial<Record<UsageRange, number>> = {};
 
-export const useUsageStore = create<UsageState>()((set) => ({
+export const useUsageStore = create<UsageState>()((set, get) => ({
   ...EMPTY,
 
   loadLimits: async ({ background = false, force = false } = {}) => {
@@ -131,6 +145,43 @@ export const useUsageStore = create<UsageState>()((set) => ({
       set({ summaryRefreshing: false });
     }
   },
+
+  loadPrices: async () => {
+    const transport = currentTransport();
+    if (!transport) {
+      return;
+    }
+    try {
+      const prices = await request(transport, "usage.prices", {});
+      set({ prices, pricesLoad: { loaded: true, error: null } });
+    } catch (err) {
+      set({ pricesLoad: { loaded: true, error: describeError(err) } });
+    }
+  },
+
+  savePrices: async (overrides) => {
+    const transport = currentTransport();
+    if (!transport) {
+      throw "Not connected to the computer.";
+    }
+    try {
+      const prices = await request(transport, "usage.set_prices", {
+        overrides,
+      });
+      set({ prices });
+    } catch (err) {
+      throw describeError(err);
+    }
+    // Every cost changes with the prices: refresh each range already loaded.
+    const loaded = Object.keys(get().summaries) as UsageRange[];
+    for (const range of loaded) {
+      get()
+        .loadSummary(range, { background: true })
+        .catch(() => {});
+    }
+  },
+
+  seedPrices: (model) => set({ pricesSeed: model }),
 }));
 
 export function resetUsage(): void {

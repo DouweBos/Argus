@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  codexSpeed,
   initialCodexState,
   loadCodexUsageRecords,
   parseCodexLine,
@@ -76,6 +77,30 @@ describe("parseCodexLine", () => {
       output: 30,
       costUsd: null,
     });
+  });
+
+  it("carries the service tier from the thread settings", () => {
+    const settings = (tier: string | null) =>
+      JSON.stringify({
+        timestamp: at(2),
+        type: "event_msg",
+        payload: {
+          type: "thread_settings_applied",
+          thread_settings: { service_tier: tier },
+        },
+      });
+    const records = parseAll([
+      meta(),
+      context("gpt-5"),
+      count(3, usage(10, 0, 1), usage(10, 0, 1)),
+      settings("priority"),
+      count(4, usage(20, 0, 2), usage(10, 0, 1)),
+      settings(null),
+      count(5, usage(30, 0, 3), usage(10, 0, 1)),
+    ]);
+    expect(records.map((r) => r.speed)).toEqual([undefined, "fast", undefined]);
+    expect(codexSpeed("ultrafast")).toBe("ultrafast");
+    expect(codexSpeed("default")).toBe("standard");
   });
 
   it("skips a fork's copied history", () => {

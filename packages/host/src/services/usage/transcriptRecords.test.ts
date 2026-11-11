@@ -48,6 +48,21 @@ describe("parseUsageLine", () => {
     });
   });
 
+  it("reads fast mode from the usage, standard as no speed", () => {
+    const at = (speed: string) =>
+      parseUsageLine(
+        line({
+          message: {
+            id: "m",
+            model: "claude-opus-5-5",
+            usage: { input_tokens: 1, output_tokens: 1, speed },
+          },
+        }),
+      )?.speed;
+    expect(at("fast")).toBe("fast");
+    expect(at("standard")).toBeUndefined();
+  });
+
   it("skips user lines, placeholders and junk", () => {
     expect(parseUsageLine(line({ type: "user" }))).toBeNull();
     expect(

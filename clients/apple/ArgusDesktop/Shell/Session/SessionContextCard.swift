@@ -93,7 +93,10 @@ struct SessionContextCard: View {
       RunControl(session: session, inCard: true)
       HuddleToolbarButton(sessionId: session.id, inCard: true)
         .buttonStyle(ContextRowButtonStyle())
-      if let agent = model.agentInFront { McpContextRow(agentId: agent.agentId) }
+      if let agent = model.agentInFront {
+        McpContextRow(agentId: agent.agentId)
+        if AppPreferences.shared.showUsageLimitsInDetails { UsageLimitsContextRows(runner: agent.runnerId) }
+      }
     }
     // No branch to show or push in a scratch pad's or a run's folder.
     if !session.isOutsideProjects {

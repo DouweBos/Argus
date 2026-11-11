@@ -91,6 +91,12 @@ export const DEFAULT_USAGE_RANGE: UsageRange = "30d";
 
 const VALID_USAGE_RANGES: UsageRange[] = ["24h", "7d", "30d", "90d"];
 
+/** A model of the usage summary: `/usage/:tab/models/:runner/:model`. */
+export interface UsageModelRef {
+  runner: string;
+  model: string;
+}
+
 export interface PullRequestRef {
   number: number;
   owner: string;
@@ -143,6 +149,10 @@ export interface ParsedRoute extends DesignRouteFields {
   /** Which proposal is open. Only meaningful when view === "inbox". */
   proposalId: string | null;
   sessionId: string | null;
+  /** The model open on the cost or tokens tab, if any. */
+  usageModel: UsageModelRef | null;
+  /** `/usage/prices`: the model price editor. */
+  usagePrices: boolean;
   /** `?range=` of the cost and tokens tabs; null everywhere else. */
   usageRange: UsageRange | null;
   /** Which usage tab is open. Only meaningful when view === "usage". */
@@ -263,11 +273,24 @@ function parsePathname(pathname: string): Omit<ParsedRoute, NonPathFields> {
   }
 
   if (segments[0] === "usage") {
+    if (segments[1] === "prices") {
+      return { ...emptyRoute("usage"), usagePrices: true };
+    }
     const candidate = segments[1] as UsageTab | undefined;
     const usageTab =
       candidate && VALID_USAGE_TABS.includes(candidate) ? candidate : "limits";
+    const usageModel =
+      usageTab !== "limits" &&
+      segments[2] === "models" &&
+      segments[3] &&
+      segments[4]
+        ? {
+            runner: decodeSegment(segments[3]),
+            model: decodeSegment(segments[4]),
+          }
+        : null;
 
-    return { ...emptyRoute("usage"), usageTab };
+    return { ...emptyRoute("usage"), usageTab, usageModel };
   }
 
   if (segments[0] === "sessions" && segments[1]) {
@@ -308,6 +331,8 @@ function parsePathname(pathname: string): Omit<ParsedRoute, NonPathFields> {
       gitRefName,
       proposalId: null,
       pr: null,
+      usageModel: null,
+      usagePrices: false,
       usageTab: null,
     };
   }
@@ -337,6 +362,8 @@ function parsePathname(pathname: string): Omit<ParsedRoute, NonPathFields> {
           repo: decodeURIComponent(segments[2]),
           number,
         },
+        usageModel: null,
+        usagePrices: false,
         usageTab: null,
       };
     }
@@ -378,6 +405,8 @@ function emptyRoute(view: AppView): Omit<ParsedRoute, NonPathFields> {
     gitRefName: null,
     proposalId: null,
     pr: null,
+    usageModel: null,
+    usagePrices: false,
     usageTab: null,
   };
 }
@@ -408,7 +437,13 @@ export function routePattern(pathname: string): string {
     case "inbox":
       return route.proposalId ? "/inbox/proposals/:proposalId" : "/inbox";
     case "usage":
-      return usagePathname(route.usageTab);
+      if (route.usagePrices) {
+        return "/usage/prices";
+      }
+
+      return route.usageModel
+        ? `${usagePathname(route.usageTab)}/models/:runner/:model`
+        : usagePathname(route.usageTab);
     case "design":
       return "/design";
     case "issues": {
@@ -496,7 +531,15 @@ function routePathname(route: Partial<ParsedRoute>): string {
       : "/inbox";
   }
   if (route.view === "usage") {
-    const path = usagePathname(route.usageTab);
+    if (route.usagePrices) {
+      return "/usage/prices";
+    }
+    const model =
+      route.usageModel &&
+      (route.usageTab === "cost" || route.usageTab === "tokens")
+        ? `/models/${encodeURIComponent(route.usageModel.runner)}/${encodeURIComponent(route.usageModel.model)}`
+        : "";
+    const path = `${usagePathname(route.usageTab)}${model}`;
     const range = usageRangeFor(
       route.usageTab ?? null,
       route.usageRange ?? null,

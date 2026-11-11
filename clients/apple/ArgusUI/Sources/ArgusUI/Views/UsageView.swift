@@ -5,6 +5,7 @@ import SwiftUI
 /// range are the route on the Mac and screen state on the phone.
 public struct HostUsageView: View {
   @Environment(\.theme) private var theme
+  @Environment(\.usageNavigation) private var navigation
   private let routed: (tab: Binding<UsageTab>, range: Binding<ArgusProtocol.UsageRange>)?
   @State private var localTab = UsageTab.limits
   @State private var localRange = ArgusProtocol.UsageRange.default
@@ -34,5 +35,18 @@ public struct HostUsageView: View {
       }
     }
     .background(theme.bg.ignoresSafeArea())
+    #if os(iOS)
+      .toolbar {
+        if let navigation, tab.wrappedValue != .limits {
+          ToolbarItem(placement: .primaryAction) {
+            Button {
+              navigation.openPrices(nil)
+            } label: {
+              Label("Model prices", systemImage: Icon.price)
+            }
+          }
+        }
+      }
+    #endif
   }
 }

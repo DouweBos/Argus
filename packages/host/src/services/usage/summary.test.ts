@@ -1,5 +1,6 @@
 import type { RateTable } from "./pricing";
 import type { UsageRecord } from "./transcriptRecords";
+import type { UsagePriceOverride } from "@argus/remote-protocol";
 import { describe, expect, it } from "vitest";
 import { bucketStarts, summarize } from "./summary";
 
@@ -64,15 +65,19 @@ describe("summarize", () => {
     expect(s.cost.total).toBeCloseTo(2 * one, 12);
     expect(s.cache_savings_usd).toBeCloseTo(2 * 1000 * (4e-6 - 2e-7), 12);
     expect(s.series.at(-1)?.tokens).toBe(2360);
-    expect(s.models).toEqual([
-      {
-        model: "claude-opus-5-5",
-        tokens: 2360,
-        cost_usd: s.cost.total,
-        priced: true,
-        runner: "claude-code",
-      },
-    ]);
+    expect(s.models).toHaveLength(1);
+    expect(s.models[0]).toMatchObject({
+      model: "claude-opus-5-5",
+      tokens: 2360,
+      cost_usd: s.cost.total,
+      priced: true,
+      runner: "claude-code",
+      price_source: "list",
+      token_kinds: s.tokens,
+    });
+    expect(s.models[0].series?.at(-1)).toMatchObject({ tokens: 2360 });
+    expect(s.models[0].series).toHaveLength(7);
+    expect(s.speeds).toBeUndefined();
   });
 
   it("splits by runner and prefers a runner's reported cost", () => {
@@ -137,5 +142,184 @@ describe("summarize", () => {
       model: "claude-future-9",
       priced: false,
     });
+  });
+});
+
+const one = 10 * 4e-6 + 1000 * 2e-7 + 100 * 5e-6 + 50 * 8e-6 + 20 * 2e-5;
+
+describe("summarize with speed tiers", () => {
+  const fastTable: RateTable = new Map([
+    [
+      "claude-opus-5-5",
+      {
+        ...table.get("claude-opus-5-5")!,
+        fast: {
+          input: 8e-6,
+          output: 4e-5,
+          cacheRead: 4e-7,
+          cacheWrite: 1e-5,
+          cacheWrite1h: 1.6e-5,
+        },
+      },
+    ],
+    [
+      "gpt-x",
+      {
+        input: 1e-6,
+        output: 1e-5,
+        cacheRead: 1e-7,
+        cacheWrite: 1e-6,
+        cacheWrite1h: 1e-6,
+      },
+    ],
+  ]);
+
+  it("prices fast requests at their tier and reports the premium", () => {
+    const s = summarize(
+      [rec({ key: "a" }), rec({ key: "b", speed: "fast" })],
+      fastTable,
+      "7d",
+      NOW,
+    );
+    expect(s.cost.total).toBeCloseTo(3 * one, 12);
+    expect(s.cost.premium).toBeCloseTo(one, 12);
+    expect(
+      s.cost.input + s.cost.cache_read + s.cost.cache_write + s.cost.output,
+    ).toBeCloseTo(3 * one, 12);
+    expect(s.speeds?.map((r) => r.speed)).toEqual(["standard", "fast"]);
+    expect(s.speeds?.[1].premium_usd).toBeCloseTo(one, 12);
+    expect(s.speeds?.[1].cost_usd).toBeCloseTo(2 * one, 12);
+  });
+
+  it("falls back to the provider's multiple when the list has no tier", () => {
+    const s = summarize(
+      [rec({ key: null, runner: "codex", model: "gpt-x", speed: "fast" })],
+      fastTable,
+      "7d",
+      NOW,
+    );
+    const standard = 10 * 1e-6 + 1000 * 1e-7 + 150 * 1e-6 + 20 * 1e-5;
+    expect(s.cost.total).toBeCloseTo(2 * standard, 12);
+    expect(s.cost.premium).toBeCloseTo(standard, 12);
+  });
+
+  it("scales the premium with a runner's reported cost", () => {
+    const s = summarize(
+      [rec({ key: null, speed: "fast", costUsd: 1 })],
+      fastTable,
+      "7d",
+      NOW,
+    );
+    expect(s.cost.total).toBeCloseTo(1, 12);
+    expect(s.cost.premium).toBeCloseTo(0.5, 12);
+  });
+});
+
+describe("summarize with hand-set prices", () => {
+  const custom = (
+    model: string,
+    over: Partial<UsagePriceOverride> = {},
+  ): UsagePriceOverride => ({
+    model,
+    input_per_mtok: 1,
+    output_per_mtok: 2,
+    cache_read_per_mtok: null,
+    cache_write_per_mtok: null,
+    map_to: null,
+    ...over,
+  });
+
+  it("replaces the list price, cache rates falling back to input", () => {
+    const s = summarize([rec({ key: null })], table, "7d", NOW, undefined, {
+      overrides: [custom("claude-opus-5-5")],
+    });
+    expect(s.cost.total).toBeCloseTo((10 + 1000 + 150) * 1e-6 + 20 * 2e-6, 12);
+    expect(s.models[0].price_source).toBe("custom");
+  });
+
+  it("wins over a runner's reported cost; the list price doesn't", () => {
+    const reported = rec({ key: null, costUsd: 5 });
+    expect(summarize([reported], table, "7d", NOW).cost.total).toBe(5);
+    const s = summarize([reported], table, "7d", NOW, undefined, {
+      overrides: [
+        custom("claude-opus-5-5", { input_per_mtok: 0, output_per_mtok: 0 }),
+      ],
+    });
+    expect(s.cost.total).toBe(0);
+    expect(s.models[0]).toMatchObject({ price_source: "custom", priced: true });
+  });
+
+  it("moves a mapped model's tokens and cost onto its target", () => {
+    const s = summarize(
+      [
+        rec({ key: null }),
+        rec({ key: null, model: "opus-preview-x" }),
+        rec({ key: null, model: "mystery" }),
+      ],
+      table,
+      "7d",
+      NOW,
+      undefined,
+      { overrides: [custom("opus-preview-x", { map_to: "claude-opus-5-5" })] },
+    );
+    expect(s.models.map((m) => m.model)).toEqual([
+      "claude-opus-5-5",
+      "mystery",
+    ]);
+    expect(s.models[0]).toMatchObject({
+      tokens: 2360,
+      mapped_from: ["opus-preview-x"],
+      price_source: "list",
+    });
+    expect(s.models[0].cost_usd).toBeCloseTo(2 * one, 12);
+    expect(s.models[1]).toMatchObject({ price_source: "none", priced: false });
+  });
+
+  it("labels reported cost without a price as reported", () => {
+    const s = summarize(
+      [rec({ key: null, runner: "gemini", model: "gemini-y", costUsd: 0.2 })],
+      table,
+      "7d",
+      NOW,
+    );
+    expect(s.models[0]).toMatchObject({
+      price_source: "reported",
+      priced: true,
+    });
+  });
+});
+
+describe("summarize with a model filter", () => {
+  const records = [
+    rec({ key: null }),
+    rec({ key: null, runner: "codex", model: "gpt-x" }),
+    rec({ key: null, runner: "gemini", model: "gpt-x" }),
+  ];
+
+  it("counts only included models, scoped by runner", () => {
+    const s = summarize(records, table, "7d", NOW, undefined, {
+      filter: { include: [{ runner: "codex", model: "GPT-X" }], exclude: [] },
+    });
+    expect(s.models.map((m) => [m.runner, m.model])).toEqual([
+      ["codex", "gpt-x"],
+    ]);
+  });
+
+  it("leaves excluded models out before mapping", () => {
+    const s = summarize(records, table, "7d", NOW, undefined, {
+      filter: { include: [], exclude: [{ runner: null, model: "gpt-x" }] },
+      overrides: [
+        {
+          model: "gpt-x",
+          input_per_mtok: null,
+          output_per_mtok: null,
+          cache_read_per_mtok: null,
+          cache_write_per_mtok: null,
+          map_to: "claude-opus-5-5",
+        },
+      ],
+    });
+    expect(s.tokens.processed).toBe(1180);
+    expect(s.models[0].mapped_from).toBeUndefined();
   });
 });

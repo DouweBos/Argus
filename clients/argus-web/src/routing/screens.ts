@@ -31,6 +31,9 @@ import {
 
 export type DiffMode = "branch" | "working";
 
+/** The usage tabs a model's detail can sit on. */
+export type UsageSummaryTab = Exclude<UsageTab, "limits">;
+
 /**
  * Settings pages, as the phone names them: this browser's first, then the
  * connected computer's. `/settings/:page`.
@@ -91,6 +94,16 @@ export type Screen =
   | { name: "settingsPage"; page: SettingsPage }
   /** Plan limits, or cost or tokens over `range`: `/usage[/:tab]?range=`. */
   | { name: "usage"; tab: UsageTab; range: UsageRange }
+  /** One model of the cost or tokens tab: `/usage/:tab/models/:runner/:model?range=`. */
+  | {
+      name: "usageModel";
+      tab: UsageSummaryTab;
+      range: UsageRange;
+      runner: string;
+      model: string;
+    }
+  /** The model price editor: `/usage/prices`. */
+  | { name: "usagePrices" }
   /** This visit's warnings and errors. */
   | { name: "notifications" }
   /** A Figma frame; `sessionId` when opened from a session, to compare against its device. */
@@ -282,6 +295,22 @@ export function screenFromPath(path: string): Screen {
         ? { name: "automation", automationId: route.automationId }
         : { name: "automations" };
     case "usage":
+      if (route.usagePrices) {
+        return { name: "usagePrices" };
+      }
+      if (
+        route.usageModel &&
+        (route.usageTab === "cost" || route.usageTab === "tokens")
+      ) {
+        return {
+          name: "usageModel",
+          tab: route.usageTab,
+          range: route.usageRange ?? "30d",
+          runner: route.usageModel.runner,
+          model: route.usageModel.model,
+        };
+      }
+
       return {
         name: "usage",
         tab: route.usageTab ?? "limits",
@@ -364,6 +393,15 @@ export function pathForScreen(screen: Screen): string {
         usageTab: screen.tab,
         usageRange: screen.range,
       });
+    case "usageModel":
+      return routeToPath({
+        view: "usage",
+        usageTab: screen.tab,
+        usageRange: screen.range,
+        usageModel: { runner: screen.runner, model: screen.model },
+      });
+    case "usagePrices":
+      return "/usage/prices";
     case "notifications":
       return "/notifications";
     case "design":
@@ -450,6 +488,10 @@ export function screenPattern(screen: Screen): string {
       return `/settings/${screen.page}`;
     case "usage":
       return screen.tab === "limits" ? "/usage" : `/usage/${screen.tab}`;
+    case "usageModel":
+      return `/usage/${screen.tab}/models/:runner/:model`;
+    case "usagePrices":
+      return "/usage/prices";
     case "notifications":
       return "/notifications";
     case "design":

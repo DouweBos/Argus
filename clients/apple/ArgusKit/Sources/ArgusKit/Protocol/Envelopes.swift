@@ -195,6 +195,8 @@ public enum RemoteMethod: String, Codable, Sendable {
 
   case usageLimits = "usage.limits"
   case usageSummary = "usage.summary"
+  case usagePrices = "usage.prices"
+  case usageSetPrices = "usage.set_prices"
 }
 
 /// Events the gateway pushes. Only those this client acts on are modelled;

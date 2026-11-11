@@ -73,6 +73,76 @@
   color: var(--error);
 }
 
+.pool {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.poolHint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.accountRows {
+  display: flex;
+  flex-direction: column;
+  margin-top: 12px;
+}
+
+.accountRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 4px;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.accountRow:hover {
+  background: var(--bg-hover);
+}
+
+.accountRowSelected {
+  background: var(--chrome-selection);
+}
+
+.accountName {
+  font-weight: 500;
+}
+
+.accountPlan {
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.accountSummary {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.accountDetail {
+  padding: 12px 0;
+}
+
+.headActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 @media (max-width: 600px) {
   .screen {
     padding: 16px;

@@ -96,7 +96,7 @@ extension DesktopModel {
     case .automations, .automation, .quickRun, .describeAutomation: screen = "Automations"
     case .inbox, .proposal: screen = "Inbox"
     case .notifications: screen = "Notifications"
-    case .usage: screen = "Usage"
+    case .usage, .usageModel, .usagePrices: screen = "Usage"
     case .session, .sessionGit, .sessionCode:
       let id = location.route.sessionId ?? ""
       let session = store.sessionsByRepo.values.joined().first { $0.id == id }

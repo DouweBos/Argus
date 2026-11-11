@@ -21,7 +21,7 @@ public struct HostUsageLimitsView: View {
   }
 }
 
-/// Plan limits grouped per Claude account, then per runner. Claude's group is
+/// Plan limits per Claude account (pooled when there are several), then per runner. Claude's group is
 /// only named alongside others, since a lone header repeats the screen title.
 public struct UsageLimitsView: View {
   @Environment(\.theme) private var theme
@@ -70,16 +70,12 @@ public struct UsageLimitsView: View {
         if let error {
           Banner(text: error, tone: .danger, actionLabel: "Retry", action: onRetry)
         }
-        ForEach(limits.accounts, id: \.accountId) { account in
-          if namesClaude {
-            LimitsHeader(title: limits.accounts.count > 1 ? account.label : "Claude", plan: account.subscriptionType)
-          }
-          Card {
-            LimitsBody(
-              state: .init(account.status), windows: account.windows, now: context.date,
-              failure: "Couldn't read this account's limits.", empty: "No plan limits for this account",
-              onRetry: onRetry)
-          }
+        // Several accounts pool into one card per window; the ones that failed keep their own.
+        if let pool = UsagePooling.claude(limits, now: context.date) {
+          UsagePoolSection(pool: pool, now: context.date)
+          accounts(limits.accounts.filter { $0.status != .ok }, named: true, byName: true, now: context.date)
+        } else {
+          accounts(limits.accounts, named: namesClaude, byName: limits.accounts.count > 1, now: context.date)
         }
         ForEach(runners, id: \.runner) { runner in
           LimitsHeader(title: runner.label, plan: runner.plan)
@@ -95,6 +91,22 @@ public struct UsageLimitsView: View {
             .font(.scaled(size: 12))
             .foregroundStyle(theme.textMuted)
         }
+      }
+    }
+  }
+
+  private func accounts(
+    _ accounts: [ArgusProtocol.ClaudeAccountLimits], named: Bool, byName: Bool, now: Date
+  ) -> some View {
+    ForEach(accounts, id: \.accountId) { account in
+      if named {
+        LimitsHeader(title: byName ? account.label : "Claude", plan: account.subscriptionType)
+      }
+      Card {
+        LimitsBody(
+          state: .init(account.status), windows: account.windows, now: now,
+          failure: "Couldn't read this account's limits.", empty: "No plan limits for this account",
+          onRetry: onRetry)
       }
     }
   }

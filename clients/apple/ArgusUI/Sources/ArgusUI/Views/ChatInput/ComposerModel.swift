@@ -53,6 +53,8 @@ public final class ComposerModel {
   @ObservationIgnored private var lastMentionQuery: String?
   /// `/model` with no argument asks the view to open its model picker.
   public var showingModelPicker = false
+  /// `/usage-limits` opened the limits panel; the next send closes it.
+  public var showingUsageLimits = false
   /// A start composer's picks, handed to the agent it starts.
   var draftMode: RemotePermissionMode?
   var draftModel: String?
@@ -141,7 +143,15 @@ public final class ComposerModel {
   // MARK: Menus
 
   public var commands: [SlashCommandMenu.Command] {
-    SlashCommandMenu.merged(capabilities.commands.map(SlashCommandMenu.Command.init))
+    SlashCommandMenu.merged(
+      capabilities.commands.map(SlashCommandMenu.Command.init),
+      local: usageLimitGroups.isEmpty ? [] : [SlashCommandMenu.usageLimits])
+  }
+
+  /// The plan limits this agent's runner draws on, from the host's last snapshot.
+  public var usageLimitGroups: [UsageLimitGroup] {
+    guard starter == nil else { return [] }
+    return UsageLimitFormat.groups(host.usageLimits, runner: status?.runnerId)
   }
 
   public var slashItems: [SlashCommandMenu.Command] {

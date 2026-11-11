@@ -11,6 +11,7 @@ import type {
   ClaudeUsageSummary,
   RunnerUsageLimits,
   UsageLimitWindow,
+  UsageSpeedRow,
 } from "@argus/remote-protocol";
 import { METRICS, type SummaryMetric } from "./summaryMetric";
 import {
@@ -24,6 +25,7 @@ import {
   resetHint,
   type UsageLimitTone,
 } from "./usageFormat";
+import { usageModelKey } from "./usageModelDetail";
 import {
   modelLabel,
   sessionCount,
@@ -159,6 +161,9 @@ export function usagePlan(limits: ClaudeUsageLimits | null): string | null {
 export interface UsageModelView {
   /** The same model can show once per runner. */
   id: string;
+  /** What its detail route names. */
+  runner: string;
+  modelId: string;
   /** "opus", or "opus · Codex" when several runners show. */
   model: string;
   /** "$12.40", or "—" for a model the price list doesn't cover. */
@@ -169,6 +174,26 @@ export interface UsageModelView {
   progress: number;
   priced: boolean;
 }
+
+/** One speed tier's share of the range. */
+export interface UsageSpeedView {
+  id: UsageSpeedRow["speed"];
+  label: string;
+  /** "+$4.20 premium"; null at standard speed. */
+  premium: string | null;
+  cost: string;
+  share: string;
+  tokens: string;
+  progress: number;
+}
+
+const SPEED_LABELS: Record<UsageSpeedRow["speed"], string> = {
+  standard: "Standard",
+  fast: "Fast",
+  ultrafast: "Ultrafast",
+};
+
+const SPEED_ORDER: UsageSpeedRow["speed"][] = ["standard", "fast", "ultrafast"];
 
 export interface UsageSummaryView {
   /** No agent sessions in the range. */
@@ -202,6 +227,8 @@ export interface UsageSummaryView {
   runners: UsageRunnerView[];
   /** Largest first. */
   models: UsageModelView[];
+  /** Per speed tier; empty when everything ran at standard speed. */
+  speeds: UsageSpeedView[];
   /** Some model has no price: say what the dashes mean. */
   hasUnpriced: boolean;
 }
@@ -217,11 +244,17 @@ export function usageSummaryView(
     (a, b) => (view.modelValue(b) ?? -1) - (view.modelValue(a) ?? -1),
   );
   const sessions = sessionCount(data.sessions);
+  const premium = data.cost.premium ?? 0;
+  const speeds = (data.speeds ?? []).some((s) => s.speed !== "standard")
+    ? [...(data.speeds ?? [])].sort(
+        (a, b) => SPEED_ORDER.indexOf(a.speed) - SPEED_ORDER.indexOf(b.speed),
+      )
+    : [];
 
   return {
     empty: data.sessions === 0,
     headline: view.headline(data),
-    caption: `${sessions}${metric === "cost" ? " · API estimate" : " · processed tokens"}`,
+    caption: `${sessions}${metric === "cost" ? " · estimated at API prices where agents don’t report their own" : " · processed tokens"}`,
     pricesPending: metric === "cost" && data.prices_fetched_at === null,
     chart: {
       caption: view.chartTitle(data.bucket),
@@ -237,6 +270,10 @@ export function usageSummaryView(
       { label: "Uncached input", value: formatTokens(data.tokens.input) },
       { label: "Output", value: formatTokens(data.tokens.output) },
       { label: "Cache savings", value: formatUsd(data.cache_savings_usd) },
+      // Already inside the kinds above: what fast tiers cost beyond standard.
+      ...(metric === "cost" && premium > 0
+        ? [{ label: "Premium", value: formatUsd(premium) }]
+        : []),
     ],
     parts: {
       caption: view.partsTitle,
@@ -252,6 +289,8 @@ export function usageSummaryView(
 
       return {
         id: `${m.runner ?? ""}:${m.model}`,
+        runner: usageModelKey(m).runner,
+        modelId: m.model,
         model: modelLabel(m, data.runners),
         cost: m.priced ? formatUsd(m.cost_usd) : "—",
         share: value === null ? "—" : formatShare(value, total),
@@ -261,5 +300,19 @@ export function usageSummaryView(
       };
     }),
     hasUnpriced: models.some((m) => !m.priced),
+    speeds: speeds.map((sp) => {
+      const value = metric === "cost" ? sp.cost_usd : sp.tokens;
+
+      return {
+        id: sp.speed,
+        label: SPEED_LABELS[sp.speed],
+        premium:
+          sp.premium_usd > 0 ? `+${formatUsd(sp.premium_usd)} premium` : null,
+        cost: formatUsd(sp.cost_usd),
+        share: formatShare(value, total),
+        tokens: formatTokens(sp.tokens),
+        progress: total > 0 ? value / total : 0,
+      };
+    }),
   };
 }

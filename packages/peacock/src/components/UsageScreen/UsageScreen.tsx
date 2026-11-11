@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { RefreshIcon } from "../../icons/Icons";
+import { RefreshIcon, TagIcon } from "../../icons/Icons";
 import { Button } from "../Button/Button";
 import { SegmentedControl } from "../SegmentedControl/SegmentedControl";
 import styles from "./UsageScreen.module.css";
@@ -29,6 +29,8 @@ export interface UsageScreenProps {
   plan?: string | null;
   onRefresh: () => void;
   refreshing: boolean;
+  /** Opens the model price editor; shown on the cost and tokens tabs. */
+  onPrices?: () => void;
   /** Hide the "Usage" heading when the surrounding chrome already says it. */
   hideTitle?: boolean;
   /** `UsageLimitsPanel` or `UsageSummaryPanel`, for the tab. */
@@ -44,6 +46,7 @@ export function UsageScreen({
   plan,
   onRefresh,
   refreshing,
+  onPrices,
   hideTitle = false,
   children,
 }: UsageScreenProps) {
@@ -54,15 +57,27 @@ export function UsageScreen({
           {!hideTitle && <h1 className={styles.titleHeading}>Usage</h1>}
           {plan && <span className={styles.sub}>{plan}</span>}
         </div>
-        <Button
-          disabled={refreshing}
-          leading={<RefreshIcon size={12} />}
-          onClick={onRefresh}
-          size="sm"
-          variant="secondary"
-        >
-          Refresh
-        </Button>
+        <div className={styles.headActions}>
+          {onPrices && tab !== "limits" && (
+            <Button
+              leading={<TagIcon size={12} />}
+              onClick={onPrices}
+              size="sm"
+              variant="secondary"
+            >
+              Model prices
+            </Button>
+          )}
+          <Button
+            disabled={refreshing}
+            leading={<RefreshIcon size={12} />}
+            onClick={onRefresh}
+            size="sm"
+            variant="secondary"
+          >
+            Refresh
+          </Button>
+        </div>
       </header>
 
       <div className={styles.controls}>

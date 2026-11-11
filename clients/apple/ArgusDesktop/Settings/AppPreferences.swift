@@ -32,6 +32,7 @@ final class AppPreferences {
     static let disabledLanguageServers = "argus:editor.languageServers.disabled"
     static let deviceName = "argus:device.name"
     static let showInMenuBar = AppPreferences.showInMenuBarKey
+    static let usageLimitsInDetails = "argus:contextCard.usageLimits"
   }
 
   private let defaults: UserDefaults
@@ -78,6 +79,11 @@ final class AppPreferences {
   /// so this Mac doesn't get two Argus icons.
   var showInMenuBar: Bool {
     didSet { defaults.set(showInMenuBar, forKey: Key.showInMenuBar) }
+  }
+
+  /// The session details card lists what's left of the front agent's plan limits.
+  var showUsageLimitsInDetails: Bool {
+    didSet { defaults.set(showUsageLimitsInDetails, forKey: Key.usageLimitsInDetails) }
   }
 
   /// The host's `default_llm.model`, which Settings → LLM edits; empty means the runner's own default.
@@ -159,6 +165,7 @@ final class AppPreferences {
     // Registered rather than stored, so it follows a server installed later until it's set.
     defaults.register(defaults: [Key.showInMenuBar: !InstalledServer.isInstalled()])
     showInMenuBar = defaults.bool(forKey: Key.showInMenuBar)
+    showUsageLimitsInDetails = defaults.object(forKey: Key.usageLimitsInDetails) as? Bool ?? true
     customEditors = CustomEditor.sanitize(defaults.data(forKey: Key.customEditors))
     editorFontName = defaults.string(forKey: Key.editorFontName) ?? ""
     editorFontSize = (defaults.object(forKey: Key.editorFontSize) as? Double).map { min(max($0, 8), 32) } ?? 13

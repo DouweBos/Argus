@@ -7391,6 +7391,33 @@ extension ArgusProtocol {
       }
     }
 
+    public struct UsagePricesParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct UsageSetPricesParams: Codable, Sendable {
+      public var overrides: [UsagePriceOverride]
+
+      enum CodingKeys: String, CodingKey {
+        case overrides = "overrides"
+      }
+
+      public init(overrides: [UsagePriceOverride]) {
+        self.overrides = overrides
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(overrides, forKey: .overrides)
+      }
+    }
+
     public struct UsageSummaryParams: Codable, Sendable {
       public var range: UsageRange
 
@@ -8471,6 +8498,18 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.UsageLimitsParams
       public typealias Result = ArgusProtocol.ClaudeUsageLimits
       public static let name = "usage.limits"
+    }
+
+    public enum UsagePrices: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.UsagePricesParams
+      public typealias Result = ArgusProtocol.UsagePrices
+      public static let name = "usage.prices"
+    }
+
+    public enum UsageSetPrices: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.UsageSetPricesParams
+      public typealias Result = ArgusProtocol.UsagePrices
+      public static let name = "usage.set_prices"
     }
 
     public enum UsageSummary: RemoteCommand {

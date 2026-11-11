@@ -1634,6 +1634,7 @@ extension ArgusProtocol {
     public var commitMessageStyle: AppSettingsCommitMessageStyle?
     public var commitMessageInstructions: String?
     public var warmAgents: Int?
+    public var usageModelFilter: UsageModelFilter?
     public var launchRoute: AppSettingsLaunchRoute?
     public var linearMarkStarted: Bool?
     public var linearReport: AppSettingsLinearReport?
@@ -1676,6 +1677,7 @@ extension ArgusProtocol {
       case commitMessageStyle = "commit_message_style"
       case commitMessageInstructions = "commit_message_instructions"
       case warmAgents = "warm_agents"
+      case usageModelFilter = "usage_model_filter"
       case launchRoute = "launch_route"
       case linearMarkStarted = "linear_mark_started"
       case linearReport = "linear_report"
@@ -1707,7 +1709,7 @@ extension ArgusProtocol {
       case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, remoteLanWebClient: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, usageModelFilter: UsageModelFilter? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, remoteLanWebClient: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
       self.defaultLlm = defaultLlm
@@ -1719,6 +1721,7 @@ extension ArgusProtocol {
       self.commitMessageStyle = commitMessageStyle
       self.commitMessageInstructions = commitMessageInstructions
       self.warmAgents = warmAgents
+      self.usageModelFilter = usageModelFilter
       self.launchRoute = launchRoute
       self.linearMarkStarted = linearMarkStarted
       self.linearReport = linearReport
@@ -1763,6 +1766,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(commitMessageStyle, forKey: .commitMessageStyle)
       try c.encodeIfPresent(commitMessageInstructions, forKey: .commitMessageInstructions)
       try c.encodeIfPresent(warmAgents, forKey: .warmAgents)
+      try c.encodeIfPresent(usageModelFilter, forKey: .usageModelFilter)
       try c.encodeIfPresent(launchRoute, forKey: .launchRoute)
       try c.encodeIfPresent(linearMarkStarted, forKey: .linearMarkStarted)
       try c.encodeIfPresent(linearReport, forKey: .linearReport)
@@ -3785,6 +3789,7 @@ extension ArgusProtocol {
     public var series: [UsageSeriesPoint]
     public var models: [UsageModelRow]
     public var runners: [UsageRunnerRow]?
+    public var speeds: [UsageSpeedRow]?
     public var pricesFetchedAt: Double?
 
     enum CodingKeys: String, CodingKey {
@@ -3799,10 +3804,11 @@ extension ArgusProtocol {
       case series = "series"
       case models = "models"
       case runners = "runners"
+      case speeds = "speeds"
       case pricesFetchedAt = "prices_fetched_at"
     }
 
-    public init(range: UsageRange, since: Double, until: Double, bucket: ClaudeUsageSummaryBucket, sessions: Double, tokens: UsageTokenTotals, cost: UsageCostTotals, cacheSavingsUsd: Double, series: [UsageSeriesPoint], models: [UsageModelRow], runners: [UsageRunnerRow]? = nil, pricesFetchedAt: Double? = nil) {
+    public init(range: UsageRange, since: Double, until: Double, bucket: ClaudeUsageSummaryBucket, sessions: Double, tokens: UsageTokenTotals, cost: UsageCostTotals, cacheSavingsUsd: Double, series: [UsageSeriesPoint], models: [UsageModelRow], runners: [UsageRunnerRow]? = nil, speeds: [UsageSpeedRow]? = nil, pricesFetchedAt: Double? = nil) {
       self.range = range
       self.since = since
       self.until = until
@@ -3814,6 +3820,7 @@ extension ArgusProtocol {
       self.series = series
       self.models = models
       self.runners = runners
+      self.speeds = speeds
       self.pricesFetchedAt = pricesFetchedAt
     }
 
@@ -3830,6 +3837,7 @@ extension ArgusProtocol {
       try c.encode(series, forKey: .series)
       try c.encode(models, forKey: .models)
       try c.encodeIfPresent(runners, forKey: .runners)
+      try c.encodeIfPresent(speeds, forKey: .speeds)
       try c.encode(pricesFetchedAt, forKey: .pricesFetchedAt)
     }
   }
@@ -18296,6 +18304,7 @@ extension ArgusProtocol {
     public var cacheWrite: Double
     public var output: Double
     public var other: Double?
+    public var premium: Double?
 
     enum CodingKeys: String, CodingKey {
       case total = "total"
@@ -18304,15 +18313,17 @@ extension ArgusProtocol {
       case cacheWrite = "cache_write"
       case output = "output"
       case other = "other"
+      case premium = "premium"
     }
 
-    public init(total: Double, input: Double, cacheRead: Double, cacheWrite: Double, output: Double, other: Double? = nil) {
+    public init(total: Double, input: Double, cacheRead: Double, cacheWrite: Double, output: Double, other: Double? = nil, premium: Double? = nil) {
       self.total = total
       self.input = input
       self.cacheRead = cacheRead
       self.cacheWrite = cacheWrite
       self.output = output
       self.other = other
+      self.premium = premium
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -18323,6 +18334,7 @@ extension ArgusProtocol {
       try c.encode(cacheWrite, forKey: .cacheWrite)
       try c.encode(output, forKey: .output)
       try c.encodeIfPresent(other, forKey: .other)
+      try c.encodeIfPresent(premium, forKey: .premium)
     }
   }
 
@@ -18383,12 +18395,87 @@ extension ArgusProtocol {
     }
   }
 
+  public struct UsageListPrice: Codable, Sendable {
+    public var model: String
+    public var inputPerMtok: Double
+    public var outputPerMtok: Double
+    public var cacheReadPerMtok: Double
+    public var cacheWritePerMtok: Double
+
+    enum CodingKeys: String, CodingKey {
+      case model = "model"
+      case inputPerMtok = "input_per_mtok"
+      case outputPerMtok = "output_per_mtok"
+      case cacheReadPerMtok = "cache_read_per_mtok"
+      case cacheWritePerMtok = "cache_write_per_mtok"
+    }
+
+    public init(model: String, inputPerMtok: Double, outputPerMtok: Double, cacheReadPerMtok: Double, cacheWritePerMtok: Double) {
+      self.model = model
+      self.inputPerMtok = inputPerMtok
+      self.outputPerMtok = outputPerMtok
+      self.cacheReadPerMtok = cacheReadPerMtok
+      self.cacheWritePerMtok = cacheWritePerMtok
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(model, forKey: .model)
+      try c.encode(inputPerMtok, forKey: .inputPerMtok)
+      try c.encode(outputPerMtok, forKey: .outputPerMtok)
+      try c.encode(cacheReadPerMtok, forKey: .cacheReadPerMtok)
+      try c.encode(cacheWritePerMtok, forKey: .cacheWritePerMtok)
+    }
+  }
+
+  public struct UsageModelFilter: Codable, Sendable {
+    public var include: [UsageModelRule]
+    public var exclude: [UsageModelRule]
+
+    enum CodingKeys: String, CodingKey {
+      case include = "include"
+      case exclude = "exclude"
+    }
+
+    public init(include: [UsageModelRule], exclude: [UsageModelRule]) {
+      self.include = include
+      self.exclude = exclude
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(include, forKey: .include)
+      try c.encode(exclude, forKey: .exclude)
+    }
+  }
+
+  public struct UsageModelRowPriceSource: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let custom = UsageModelRowPriceSource(rawValue: "custom")
+    public static let list = UsageModelRowPriceSource(rawValue: "list")
+    public static let none = UsageModelRowPriceSource(rawValue: "none")
+    public static let reported = UsageModelRowPriceSource(rawValue: "reported")
+  }
+
   public struct UsageModelRow: Codable, Sendable {
     public var model: String
     public var tokens: Double
     public var costUsd: Double
     public var priced: Bool
     public var runner: String?
+    public var priceSource: UsageModelRowPriceSource?
+    public var mappedFrom: [String]?
+    public var tokenKinds: UsageTokenTotals?
+    public var series: [UsageSeriesPoint]?
 
     enum CodingKeys: String, CodingKey {
       case model = "model"
@@ -18396,14 +18483,22 @@ extension ArgusProtocol {
       case costUsd = "cost_usd"
       case priced = "priced"
       case runner = "runner"
+      case priceSource = "price_source"
+      case mappedFrom = "mapped_from"
+      case tokenKinds = "token_kinds"
+      case series = "series"
     }
 
-    public init(model: String, tokens: Double, costUsd: Double, priced: Bool, runner: String? = nil) {
+    public init(model: String, tokens: Double, costUsd: Double, priced: Bool, runner: String? = nil, priceSource: UsageModelRowPriceSource? = nil, mappedFrom: [String]? = nil, tokenKinds: UsageTokenTotals? = nil, series: [UsageSeriesPoint]? = nil) {
       self.model = model
       self.tokens = tokens
       self.costUsd = costUsd
       self.priced = priced
       self.runner = runner
+      self.priceSource = priceSource
+      self.mappedFrom = mappedFrom
+      self.tokenKinds = tokenKinds
+      self.series = series
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -18413,6 +18508,31 @@ extension ArgusProtocol {
       try c.encode(costUsd, forKey: .costUsd)
       try c.encode(priced, forKey: .priced)
       try c.encodeIfPresent(runner, forKey: .runner)
+      try c.encodeIfPresent(priceSource, forKey: .priceSource)
+      try c.encodeIfPresent(mappedFrom, forKey: .mappedFrom)
+      try c.encodeIfPresent(tokenKinds, forKey: .tokenKinds)
+      try c.encodeIfPresent(series, forKey: .series)
+    }
+  }
+
+  public struct UsageModelRule: Codable, Sendable {
+    public var runner: String?
+    public var model: String
+
+    enum CodingKeys: String, CodingKey {
+      case runner = "runner"
+      case model = "model"
+    }
+
+    public init(runner: String? = nil, model: String) {
+      self.runner = runner
+      self.model = model
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(runner, forKey: .runner)
+      try c.encode(model, forKey: .model)
     }
   }
 
@@ -18430,6 +18550,64 @@ extension ArgusProtocol {
     public static let ahead = UsagePace(rawValue: "ahead")
     public static let on = UsagePace(rawValue: "on")
     public static let under = UsagePace(rawValue: "under")
+  }
+
+  public struct UsagePriceOverride: Codable, Sendable {
+    public var model: String
+    public var inputPerMtok: Double?
+    public var outputPerMtok: Double?
+    public var cacheReadPerMtok: Double?
+    public var cacheWritePerMtok: Double?
+    public var mapTo: String?
+
+    enum CodingKeys: String, CodingKey {
+      case model = "model"
+      case inputPerMtok = "input_per_mtok"
+      case outputPerMtok = "output_per_mtok"
+      case cacheReadPerMtok = "cache_read_per_mtok"
+      case cacheWritePerMtok = "cache_write_per_mtok"
+      case mapTo = "map_to"
+    }
+
+    public init(model: String, inputPerMtok: Double? = nil, outputPerMtok: Double? = nil, cacheReadPerMtok: Double? = nil, cacheWritePerMtok: Double? = nil, mapTo: String? = nil) {
+      self.model = model
+      self.inputPerMtok = inputPerMtok
+      self.outputPerMtok = outputPerMtok
+      self.cacheReadPerMtok = cacheReadPerMtok
+      self.cacheWritePerMtok = cacheWritePerMtok
+      self.mapTo = mapTo
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(model, forKey: .model)
+      try c.encode(inputPerMtok, forKey: .inputPerMtok)
+      try c.encode(outputPerMtok, forKey: .outputPerMtok)
+      try c.encode(cacheReadPerMtok, forKey: .cacheReadPerMtok)
+      try c.encode(cacheWritePerMtok, forKey: .cacheWritePerMtok)
+      try c.encode(mapTo, forKey: .mapTo)
+    }
+  }
+
+  public struct UsagePrices: Codable, Sendable {
+    public var overrides: [UsagePriceOverride]
+    public var list: [UsageListPrice]
+
+    enum CodingKeys: String, CodingKey {
+      case overrides = "overrides"
+      case list = "list"
+    }
+
+    public init(overrides: [UsagePriceOverride], list: [UsageListPrice]) {
+      self.overrides = overrides
+      self.list = list
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(overrides, forKey: .overrides)
+      try c.encode(list, forKey: .list)
+    }
   }
 
   public struct UsageRange: RawRepresentable, Codable, Hashable, Sendable {
@@ -18512,6 +18690,51 @@ extension ArgusProtocol {
       try c.encode(start, forKey: .start)
       try c.encode(tokens, forKey: .tokens)
       try c.encode(costUsd, forKey: .costUsd)
+    }
+  }
+
+  public struct UsageSpeed: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let fast = UsageSpeed(rawValue: "fast")
+    public static let standard = UsageSpeed(rawValue: "standard")
+    public static let ultrafast = UsageSpeed(rawValue: "ultrafast")
+  }
+
+  public struct UsageSpeedRow: Codable, Sendable {
+    public var speed: UsageSpeed
+    public var tokens: Double
+    public var costUsd: Double
+    public var premiumUsd: Double
+
+    enum CodingKeys: String, CodingKey {
+      case speed = "speed"
+      case tokens = "tokens"
+      case costUsd = "cost_usd"
+      case premiumUsd = "premium_usd"
+    }
+
+    public init(speed: UsageSpeed, tokens: Double, costUsd: Double, premiumUsd: Double) {
+      self.speed = speed
+      self.tokens = tokens
+      self.costUsd = costUsd
+      self.premiumUsd = premiumUsd
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(speed, forKey: .speed)
+      try c.encode(tokens, forKey: .tokens)
+      try c.encode(costUsd, forKey: .costUsd)
+      try c.encode(premiumUsd, forKey: .premiumUsd)
     }
   }
 

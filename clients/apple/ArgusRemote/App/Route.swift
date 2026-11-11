@@ -70,6 +70,10 @@ enum Route: Hashable {
   case addComputer
   case claudeAccounts
   case usage
+  /// One model's detail under Cost or Tokens, as the desktop's `/usage/:tab/models/:runner/:model`.
+  case usageModel(tab: UsageTab, runner: String, model: String, range: ArgusProtocol.UsageRange)
+  /// The model price editor, as the desktop's `/usage/prices`.
+  case usagePrices
   /// The phone's fifth tab: every destination without a tab of its own.
   case more
 
@@ -103,6 +107,8 @@ enum Route: Hashable {
     case .run(let id, _): ArgusRoute.automation(id: "", runId: id).pattern
     case .notifications: ArgusRoute.notifications.pattern
     case .usage: ArgusRoute.usage(.limits).pattern
+    case .usageModel(let tab, let runner, let model, _): ArgusRoute.usageModel(tab, runner: runner, model: model).pattern
+    case .usagePrices: ArgusRoute.usagePrices.pattern
     case .projects: ArgusRoute.home.pattern
     case .project: "/projects/:repoRoot"
     case .newSession: "/sessions/new"

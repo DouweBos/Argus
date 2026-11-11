@@ -5,6 +5,7 @@
  * model comes from the latest `turn_context`.
  */
 
+import type { UsageSpeed } from "@argus/remote-protocol";
 import os from "node:os";
 import path from "node:path";
 import { JsonlScanner, listJsonl } from "./jsonlScan";
@@ -22,6 +23,8 @@ interface Totals {
 export interface CodexScanState {
   sessionId: string;
   model: string;
+  /** Service tier from the latest thread settings; token counts don't carry it. */
+  speed: UsageSpeed;
   previous: Totals | null;
   /** Last per-request usage seen, for rollouts without cumulative totals. */
   lastSignature: string | null;
@@ -35,6 +38,7 @@ const FORK_BURST_MS = 1000;
 export const initialCodexState = (): CodexScanState => ({
   sessionId: "",
   model: "",
+  speed: "standard",
   previous: null,
   lastSignature: null,
   forkAnchor: null,
@@ -89,7 +93,17 @@ function record(
     cacheWrite1h: 0,
     output: t.output,
     costUsd: null,
+    ...(state.speed === "standard" ? {} : { speed: state.speed }),
   };
+}
+
+/** `priority` is the API's name for Codex's fast tier; unset and `default` are standard. */
+export function codexSpeed(tier: unknown): UsageSpeed {
+  if (tier === "fast" || tier === "priority") {
+    return "fast";
+  }
+
+  return tier === "ultrafast" ? "ultrafast" : "standard";
 }
 
 export function parseCodexLine(
@@ -99,7 +113,8 @@ export function parseCodexLine(
   if (
     !line.includes('"token_count"') &&
     !line.includes('"turn_context"') &&
-    !line.includes('"session_meta"')
+    !line.includes('"session_meta"') &&
+    !line.includes('"thread_settings_applied"')
   ) {
     return null;
   }
@@ -126,6 +141,19 @@ export function parseCodexLine(
   if (rec.type === "turn_context") {
     if (typeof payload.model === "string" && payload.model) {
       state.model = payload.model;
+    }
+    if (typeof payload.service_tier === "string" && payload.service_tier) {
+      state.speed = codexSpeed(payload.service_tier);
+    }
+
+    return null;
+  }
+  if (payload.type === "thread_settings_applied") {
+    const settings = isRecord(payload.thread_settings)
+      ? payload.thread_settings
+      : null;
+    if (settings) {
+      state.speed = codexSpeed(settings.service_tier);
     }
 
     return null;

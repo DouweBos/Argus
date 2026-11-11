@@ -2,7 +2,6 @@ import { GaugeIcon, WarningIcon } from "../../icons/Icons";
 import { Button } from "../Button/Button";
 import { Card } from "../Card/Card";
 import { EmptyState } from "../EmptyState/EmptyState";
-import { ProgressBar } from "../ProgressBar/ProgressBar";
 import { SectionPanel } from "../SectionPanel/SectionPanel";
 import { SeriesChart } from "../SeriesChart/SeriesChart";
 import { Spinner } from "../Spinner/Spinner";
@@ -12,6 +11,7 @@ import {
   StackedSeriesChart,
 } from "../StackedSeriesChart/StackedSeriesChart";
 import { StatCell, StatsStrip } from "../StatsStrip/StatsStrip";
+import { Breakdown } from "./UsageBreakdown";
 import styles from "./UsageSummary.module.css";
 
 export interface UsageModelRowData {
@@ -23,6 +23,18 @@ export interface UsageModelRowData {
   tokens: string;
   progress: number;
   priced: boolean;
+}
+
+/** One speed tier: standard, fast or ultrafast. */
+export interface UsageSpeedRowData {
+  id: string;
+  label: string;
+  /** "+$4.20 premium"; null at standard speed. */
+  premium: string | null;
+  cost: string;
+  share: string;
+  tokens: string;
+  progress: number;
 }
 
 export interface UsageRunnerRowData {
@@ -66,6 +78,8 @@ export interface UsageSummaryData {
   runners: UsageRunnerRowData[];
   models: UsageModelRowData[];
   hasUnpriced: boolean;
+  /** Per speed tier; empty when everything ran at standard speed. */
+  speeds?: UsageSpeedRowData[];
 }
 
 export interface UsageSummaryPanelProps {
@@ -75,65 +89,8 @@ export interface UsageSummaryPanelProps {
   error: string | null;
   onRetry: () => void;
   retrying: boolean;
-}
-
-interface BreakdownRow {
-  id: string;
-  name: string;
-  detail?: string;
-  cost: string;
-  share: string;
-  tokens: string;
-  progress: number;
-  priced: boolean;
-}
-
-function Breakdown({
-  heading,
-  rows,
-  unpricedTitle,
-  note,
-}: {
-  heading: string;
-  rows: BreakdownRow[];
-  /** Tooltip on an unpriced row's dash. */
-  unpricedTitle: string;
-  note?: string;
-}) {
-  return (
-    <div className={styles.breakdown}>
-      <div className={`${styles.row} ${styles.headRow}`}>
-        <span>{heading}</span>
-        <span className={styles.num}>Cost</span>
-        <span className={styles.num}>Share</span>
-        <span className={styles.num}>Tokens</span>
-      </div>
-      {rows.map((m) => (
-        <div className={styles.row} key={m.id}>
-          <span className={styles.model}>
-            <span className={styles.modelName}>
-              {m.name}
-              {m.detail && <span className={styles.detail}> · {m.detail}</span>}
-            </span>
-            <ProgressBar
-              aria-label={`${m.name} share`}
-              progress={m.progress}
-              size="xs"
-            />
-          </span>
-          <span
-            className={styles.num}
-            title={m.priced ? undefined : unpricedTitle}
-          >
-            {m.cost}
-          </span>
-          <span className={styles.num}>{m.share}</span>
-          <span className={styles.num}>{m.tokens}</span>
-        </div>
-      ))}
-      {note && <p className={styles.note}>{note}</p>}
-    </div>
-  );
+  /** Opens a model's detail; rows are plain without it. */
+  onModelSelect?: (id: string) => void;
 }
 
 /** Cost or tokens over a range: headline, chart, totals, parts, per runner and per model. */
@@ -143,6 +100,7 @@ export function UsageSummaryPanel({
   error,
   onRetry,
   retrying,
+  onModelSelect,
 }: UsageSummaryPanelProps) {
   if (!summary) {
     if (loading) {
@@ -240,9 +198,25 @@ export function UsageSummaryPanel({
         </SectionPanel>
       )}
 
+      {summary.speeds && summary.speeds.length > 0 && (
+        <SectionPanel plain title="By speed">
+          <Breakdown
+            heading="Speed"
+            rows={summary.speeds.map((sp) => ({
+              ...sp,
+              name: sp.label,
+              detail: sp.premium ?? undefined,
+              priced: true,
+            }))}
+            unpricedTitle=""
+          />
+        </SectionPanel>
+      )}
+
       <SectionPanel plain title="By model">
         <Breakdown
           heading="Model"
+          onSelect={onModelSelect}
           note={
             summary.hasUnpriced
               ? "— marks models the price list doesn’t cover; their tokens still count."

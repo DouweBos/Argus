@@ -3,12 +3,18 @@
  * (`~/.claude/projects/**.jsonl`), read incrementally per file.
  */
 
+import type { UsageSpeed } from "@argus/remote-protocol";
 import os from "node:os";
 import path from "node:path";
 import { JsonlScanner, listJsonl } from "./jsonlScan";
 import { CLAUDE_RUNNER_ID, tokenCount, type UsageRecord } from "./records";
 
 export type { UsageRecord } from "./records";
+
+/** Fast mode is recorded on the message's usage; anything else billed as standard. */
+function speedOf(v: unknown): { speed?: UsageSpeed } {
+  return v === "fast" || v === "ultrafast" ? { speed: v } : {};
+}
 
 export function parseUsageLine(line: string): UsageRecord | null {
   if (!line.includes('"usage"') || !line.includes('"assistant"')) {
@@ -64,6 +70,7 @@ export function parseUsageLine(line: string): UsageRecord | null {
     cacheWrite1h: oneHour,
     output: tokenCount(usage.output_tokens),
     costUsd: null,
+    ...speedOf(usage.speed),
   };
 }
 

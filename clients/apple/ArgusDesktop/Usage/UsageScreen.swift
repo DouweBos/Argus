@@ -29,8 +29,19 @@ struct UsageScreen: View {
 
   var body: some View {
     HostUsageView(tab: tabBinding, range: rangeBinding)
+      .environment(\.usageNavigation, .desktop(model, host: host))
       .navigationTitle("Usage")
       .toolbar {
+        if tab != .limits {
+          ToolbarItem {
+            Button {
+              model.navigate(.usagePrices)
+            } label: {
+              Label("Model prices", systemImage: Icon.price)
+            }
+            .help("Set prices for models the price list doesn't know")
+          }
+        }
         ToolbarItem {
           Button {
             Task { await refresh() }
@@ -41,6 +52,25 @@ struct UsageScreen: View {
           .help(tab == .limits ? "Check plan limits now" : "Read usage again")
         }
       }
+      .pageKeys { typed in
+        switch typed {
+        case "c": go(.cost, currentRange)
+        case "t": go(.tokens, currentRange)
+        case "l": go(.limits, currentRange)
+        case UsageKeys.escape: model.goBack(via: .shortcut)
+        default: return false
+        }
+        return true
+      }
+      .background {
+        // ⌘⇧1–4 pick the range, as the segmented control orders them.
+        ForEach(Array(ArgusProtocol.UsageRange.all.enumerated()), id: \.offset) { index, next in
+          Button(next.label) { go(tab, next) }
+            .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [.command, .shift])
+            .disabled(tab == .limits)
+            .hidden()
+        }
+      }
   }
 
   private func refresh() async {
@@ -49,5 +79,24 @@ struct UsageScreen: View {
     } else {
       await host.loadUsageSummary(range: currentRange)
     }
+  }
+}
+
+enum UsageKeys {
+  static let escape: Character = "\u{1b}"
+}
+
+extension UsageNavigation {
+  /// Each opens its route; "Set price" leaves the model for the editor to add.
+  @MainActor
+  static func desktop(_ model: DesktopModel, host: HostStore) -> UsageNavigation {
+    UsageNavigation(
+      openModel: { key, tab, range in
+        model.navigate(.usageModel(tab, runner: key.runner, model: key.model, range: range == .default ? nil : range))
+      },
+      openPrices: { added in
+        host.pendingPriceModel = added
+        model.navigate(.usagePrices)
+      })
   }
 }

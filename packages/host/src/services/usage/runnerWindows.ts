@@ -1,5 +1,5 @@
 /**
- * Plan windows from what Codex, Cursor and Grok report, in the same shape as
+ * Plan windows from what Codex, Cursor, Grok and OpenCode Go report, in the same shape as
  * Claude's so every runner's meters read alike.
  */
 
@@ -184,4 +184,49 @@ export function grokWindows(raw: unknown, now: number): UsageLimitWindow[] {
       now,
     ),
   ];
+}
+
+const OPENCODE_GO_WINDOWS = [
+  ["rolling", "session", "Session", 5 * 60],
+  ["weekly", "weekly", "Weekly", 7 * DAY_MINUTES],
+  ["monthly", "monthly", "Monthly", null],
+] as const;
+
+/** OpenCode Go's `/zen/go/v1/usage`: rolling 5-hour, weekly and monthly allowances. */
+export function opencodeGoWindows(
+  raw: unknown,
+  now: number,
+): UsageLimitWindow[] {
+  const usage = isRecord(raw) && isRecord(raw.usage) ? raw.usage : null;
+  if (!usage) {
+    return [];
+  }
+
+  return OPENCODE_GO_WINDOWS.flatMap(([id, kind, label, minutes]) => {
+    const w = usage[id];
+    if (!isRecord(w) || !finite(w.percent)) {
+      return [];
+    }
+    const reset =
+      typeof w.resetsAt === "string" ? Date.parse(w.resetsAt) : w.resetsAt;
+    // An ISO date on the wire; a bare number below 1e12 is Unix seconds.
+    let resetsAt = finite(reset) ? reset : null;
+    if (resetsAt !== null && resetsAt < 1e12) {
+      resetsAt *= 1000;
+    }
+
+    return [
+      makeWindow(
+        {
+          id,
+          label,
+          kind,
+          used: w.percent,
+          resetsAt,
+          minutes,
+        },
+        now,
+      ),
+    ];
+  });
 }

@@ -1,30 +1,38 @@
 /**
- * Tokens and estimated cost over a range, per runner: Claude Code transcripts,
- * Codex rollouts and Argus's ledger for the rest, priced with the shared model
- * price list unless the runner reported its own cost.
+ * Tokens and estimated cost over a range, per runner, model and speed tier:
+ * hand-set prices first, then the runner's own reported cost, then the shared
+ * model price list.
  */
 
 import type { UsageRecord } from "./records";
 import type {
   ClaudeUsageSummary,
-  UsageModelRow,
+  UsageModelFilter,
+  UsagePriceOverride,
   UsageRange,
   UsageRunnerRow,
   UsageSeriesPoint,
 } from "@argus/remote-protocol";
+import { loadAppSettings } from "../appSettings/store";
 import { getRunnerById } from "../llm/registry";
 import { capture } from "../telemetry/telemetry";
-import { loadCodexUsageRecords } from "./codexRollouts";
-import { loadLedgerRecords } from "./ledger";
+import { recordFilter } from "./modelFilter";
+import { loadPriceOverrides } from "./priceOverrides";
+import { loadRateTable, partsTotal, type RateTable } from "./pricing";
 import {
-  costParts,
-  loadRateTable,
-  partsTotal,
-  rateFor,
-  type CostParts,
-  type RateTable,
-} from "./pricing";
-import { loadUsageRecords } from "./transcriptRecords";
+  countedModel,
+  modelPrice,
+  priceBook,
+  priceRecord,
+  type ModelPrice,
+} from "./recordPricing";
+import { loadAllUsageRecords } from "./sources";
+import {
+  addTokens,
+  emptyTokens,
+  ModelTallies,
+  SpeedTallies,
+} from "./summaryModels";
 
 const HOUR_MS = 60 * 60_000;
 const DAYS: Record<Exclude<UsageRange, "24h">, number> = {
@@ -62,39 +70,9 @@ interface RunnerTally {
   series: UsageSeriesPoint[];
 }
 
-/** What one record cost, by kind; reported spend without a list rate is `other`. */
-function priceRecord(
-  r: UsageRecord,
-  table: RateTable,
-): { parts: CostParts; other: number; priced: boolean } {
-  const rate = rateFor(table, r.model);
-  const zero = { input: 0, cache_read: 0, cache_write: 0, output: 0 };
-  if (!rate) {
-    return r.costUsd === null
-      ? { parts: zero, other: 0, priced: false }
-      : { parts: zero, other: r.costUsd, priced: true };
-  }
-  const parts = costParts(rate, r);
-  const estimate = partsTotal(parts);
-  if (r.costUsd === null) {
-    return { parts, other: 0, priced: true };
-  }
-  // The runner's own figure wins; the list rates only say how it splits.
-  if (estimate <= 0) {
-    return { parts: zero, other: r.costUsd, priced: true };
-  }
-  const scale = r.costUsd / estimate;
-
-  return {
-    parts: {
-      input: parts.input * scale,
-      cache_read: parts.cache_read * scale,
-      cache_write: parts.cache_write * scale,
-      output: parts.output * scale,
-    },
-    other: 0,
-    priced: true,
-  };
+export interface SummaryOptions {
+  overrides?: UsagePriceOverride[];
+  filter?: UsageModelFilter;
 }
 
 export function summarize(
@@ -103,17 +81,14 @@ export function summarize(
   range: UsageRange,
   now: number,
   labelFor: (runner: string) => string = (runner) => runner,
+  options: SummaryOptions = {},
 ): Omit<ClaudeUsageSummary, "prices_fetched_at"> {
   const starts = bucketStarts(range, now);
   const since = starts[0];
+  const book = priceBook(table, options.overrides);
+  const keep = recordFilter(options.filter);
   const series = starts.map((start) => ({ start, tokens: 0, cost_usd: 0 }));
-  const tokens = {
-    processed: 0,
-    input: 0,
-    cache_read: 0,
-    cache_write: 0,
-    output: 0,
-  };
+  const tokens = emptyTokens();
   const cost = {
     total: 0,
     input: 0,
@@ -121,15 +96,18 @@ export function summarize(
     cache_write: 0,
     output: 0,
     other: 0,
+    premium: 0,
   };
-  const models = new Map<string, UsageModelRow>();
+  const models = new ModelTallies(starts);
+  const speeds = new SpeedTallies();
   const runners = new Map<string, RunnerTally>();
+  const prices = new Map<string, ModelPrice>();
   const seen = new Set<string>();
   let savings = 0;
   let bucket = 0;
 
   const sorted = records
-    .filter((r) => r.at >= since && r.at <= now)
+    .filter((r) => r.at >= since && r.at <= now && keep(r))
     .sort((a, b) => a.at - b.at);
   for (const r of sorted) {
     // Repeated per content block, and copied into resumed or forked transcripts.
@@ -143,28 +121,33 @@ export function summarize(
     while (bucket + 1 < starts.length && starts[bucket + 1] <= r.at) {
       bucket += 1;
     }
-    const cacheWrite = r.cacheWrite5m + r.cacheWrite1h;
-    const total = r.input + r.cacheRead + cacheWrite + r.output;
-    const priced = priceRecord(r, table);
+    const counted = countedModel(book, r.model);
+    let price = prices.get(counted.model);
+    if (!price) {
+      price = modelPrice(book, counted.model);
+      prices.set(counted.model, price);
+    }
+    const priced = priceRecord(r, counted.model, price);
     const spent = partsTotal(priced.parts) + priced.other;
-    const rate = rateFor(table, r.model);
+    const kinds = {
+      input: r.input,
+      cacheRead: r.cacheRead,
+      cacheWrite: r.cacheWrite5m + r.cacheWrite1h,
+      output: r.output,
+    };
+    const total = addTokens(tokens, kinds);
 
-    tokens.processed += total;
-    tokens.input += r.input;
-    tokens.cache_read += r.cacheRead;
-    tokens.cache_write += cacheWrite;
-    tokens.output += r.output;
     cost.total += spent;
     cost.input += priced.parts.input;
     cost.cache_read += priced.parts.cache_read;
     cost.cache_write += priced.parts.cache_write;
     cost.output += priced.parts.output;
     cost.other += priced.other;
-    if (rate) {
-      savings += r.cacheRead * Math.max(0, rate.input - rate.cacheRead);
-    }
+    cost.premium += priced.premium;
+    savings += priced.savings;
     series[bucket].tokens += total;
     series[bucket].cost_usd += spent;
+    speeds.add(r.speed ?? "standard", total, spent, priced.premium);
 
     const tally = runners.get(r.runner) ?? {
       sessions: new Set<string>(),
@@ -183,22 +166,21 @@ export function summarize(
     tally.series[bucket].cost_usd += spent;
     runners.set(r.runner, tally);
 
-    const modelKey = `${r.runner}\u0000${r.model}`;
-    const row = models.get(modelKey) ?? {
-      model: r.model,
-      tokens: 0,
-      cost_usd: 0,
-      priced: false,
+    models.add({
       runner: r.runner,
-    };
-    row.tokens += total;
-    row.cost_usd += spent;
-    row.priced ||= priced.priced;
-    models.set(modelKey, row);
+      model: counted.model,
+      mappedFrom: counted.mapped ? r.model : null,
+      priceSource: price.source,
+      reported: r.costUsd !== null,
+      tokens: kinds,
+      cost: spent,
+      bucket,
+    });
   }
 
   const byCost = <T extends { cost_usd: number; tokens: number }>(a: T, b: T) =>
     b.cost_usd - a.cost_usd || b.tokens - a.tokens;
+  const speedRows = speeds.list();
 
   return {
     range,
@@ -210,7 +192,7 @@ export function summarize(
     cost,
     cache_savings_usd: savings,
     series,
-    models: [...models.values()].sort(byCost),
+    models: models.list().sort(byCost),
     runners: [...runners.entries()]
       .map(
         ([runner, t]): UsageRunnerRow => ({
@@ -224,6 +206,7 @@ export function summarize(
         }),
       )
       .sort(byCost),
+    ...(speedRows ? { speeds: speedRows } : {}),
   };
 }
 
@@ -236,19 +219,14 @@ export async function getClaudeUsageSummary(
 ): Promise<ClaudeUsageSummary> {
   const now = Date.now();
   const since = bucketStarts(range, now)[0];
-  const [claude, codex, ledger, prices] = await Promise.all([
-    loadUsageRecords(since - FILE_SLACK_MS),
-    loadCodexUsageRecords(since - FILE_SLACK_MS),
-    loadLedgerRecords(),
+  const [records, prices] = await Promise.all([
+    loadAllUsageRecords(since - FILE_SLACK_MS),
     loadRateTable(),
   ]);
-  const summary = summarize(
-    [...claude, ...codex, ...ledger],
-    prices.table,
-    range,
-    now,
-    runnerLabel,
-  );
+  const summary = summarize(records, prices.table, range, now, runnerLabel, {
+    overrides: loadPriceOverrides(),
+    filter: loadAppSettings().usage_model_filter,
+  });
   capture("usage_summary_loaded", {
     range,
     prices_available: prices.fetchedAt !== null,

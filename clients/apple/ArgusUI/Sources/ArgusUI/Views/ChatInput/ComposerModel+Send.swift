@@ -9,7 +9,9 @@ extension ComposerModel {
     let typed = trimmedText
 
     // Handled here rather than sent to the CLI, as on the desktop.
-    if images.isEmpty, elements.isEmpty, linkedProjects.isEmpty, let local = SlashCommandMenu.local(typed) {
+    if images.isEmpty, elements.isEmpty, linkedProjects.isEmpty, let local = SlashCommandMenu.local(typed),
+      local != .showUsageLimits || !usageLimitGroups.isEmpty
+    {
       clearComposer()
       switch local {
       case .togglePlan:
@@ -22,9 +24,13 @@ extension ComposerModel {
         }
       case .openModelPicker:
         showingModelPicker = true
+      case .showUsageLimits:
+        onAffordance?(.usageLimits)
+        showingUsageLimits = true
       }
       return
     }
+    showingUsageLimits = false
 
     var display = typed.isEmpty && !images.isEmpty ? "(see attached images)" : typed
     var message = display
@@ -123,6 +129,8 @@ extension ComposerModel {
       if let sessionId { await host.loadStartOptions(sessionId: sessionId, runnerId: nil) }
       return
     }
+    // Offers `/usage-limits`; whatever the snapshot already holds will do.
+    if host.usageLimits == nil { await host.loadUsageLimits(refresh: false) }
     await host.loadQueue(agentId: agentId)
     await host.loadCapabilities(agentId: agentId)
   }

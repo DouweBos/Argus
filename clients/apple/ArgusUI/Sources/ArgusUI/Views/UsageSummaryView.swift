@@ -37,6 +37,7 @@ public struct HostUsageSummaryView: View {
 /// range stays up, dimmed, while the chosen one loads.
 public struct UsageSummaryView: View {
   @Environment(\.theme) private var theme
+  @Environment(\.usageNavigation) private var navigation
   let metric: UsageMetric
   @Binding var range: ArgusProtocol.UsageRange
   let summary: ArgusProtocol.ClaudeUsageSummary?
@@ -111,23 +112,34 @@ public struct UsageSummaryView: View {
           .frame(height: UsageSummaryFormat.showsRunners(summary) ? 190 : 160)
           .padding(.top, 4)
       }
-      UsageTotalsGrid(summary: summary)
+      UsageTotalsGrid(summary: summary, metric: metric)
       if UsageSummaryFormat.showsRunners(summary) {
         SectionHeader(title: "By runner", count: summary.runners?.count)
         Card { UsageShareList(rows: UsageSummaryFormat.byRunner(summary, metric: metric), metric: metric) }
       }
       SectionHeader(title: "By type")
       Card { UsageShareList(rows: UsageSummaryFormat.byType(summary, metric: metric), metric: metric) }
+      let speeds = UsageSummaryFormat.bySpeed(summary, metric: metric)
+      if !speeds.isEmpty {
+        SectionHeader(title: "By speed")
+        Card { UsageShareList(rows: speeds, metric: metric) }
+      }
       if !summary.models.isEmpty {
         SectionHeader(title: "By model", count: summary.models.count)
-        Card { UsageShareList(rows: UsageSummaryFormat.byModel(summary, metric: metric), metric: metric) }
+        Card {
+          UsageShareList(
+            rows: UsageSummaryFormat.byModel(summary, metric: metric), metric: metric,
+            onSelect: navigation.map { navigation in
+              { row in row.model.map { navigation.openModel($0, metric.tab, summary.range) } }
+            })
+        }
       }
     }
   }
 
   private func caption(_ summary: ArgusProtocol.ClaudeUsageSummary) -> String {
     let parts = [
-      metric == .cost ? "Estimated at API prices" : nil,
+      metric == .cost ? "Estimated at API prices where agents don't report cost" : nil,
       summary.range.label,
       UsageSummaryFormat.sessions(summary.sessions),
     ]

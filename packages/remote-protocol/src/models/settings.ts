@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TOOL_IDS } from "../commands/spec";
 import { AutonomyLevel } from "./automations";
+import { UsageModelFilter } from "./usage";
 
 /** Colour theme presets; ids match `html[data-color-theme]` in Peacock. */
 export const ColorTheme = z.enum([
@@ -60,6 +61,8 @@ export const AppSettings = z.object({
   commit_message_instructions: z.string().optional(),
   /** Warm agents kept ready for the sessions clients show, 0 for none. Defaults to 1. */
   warm_agents: z.number().int().min(0).max(2).optional(),
+  /** Models Usage counts or leaves out. Absent counts every model. */
+  usage_model_filter: UsageModelFilter.optional(),
   /** Screen Argus opens on: the project picker, or the inbox. Defaults to home. */
   launch_route: z.enum(["home", "inbox"]).optional(),
   /** Move a Linear issue to its team's started state when a session starts from it. Defaults to true. */

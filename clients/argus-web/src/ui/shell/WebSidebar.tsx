@@ -301,7 +301,7 @@ export function WebSidebar({
                   "Usage",
                   <Icons.GaugeIcon size={15} />,
                   { name: "usage", tab: "limits", range: "30d" },
-                  is("usage")(screen),
+                  is("usage", "usageModel", "usagePrices")(screen),
                 )}
               </>
             }

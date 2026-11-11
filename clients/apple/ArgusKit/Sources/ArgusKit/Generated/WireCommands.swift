@@ -2981,6 +2981,16 @@ extension ArgusProtocol {
       }
     }
 
+    public struct GetUsagePricesParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
     public struct GetUserProjectSettingsParams: Codable, Sendable {
       public var repoRoot: String
 
@@ -8744,6 +8754,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SetUsagePricesParams: Codable, Sendable {
+      public var overrides: [UsagePriceOverride]
+
+      enum CodingKeys: String, CodingKey {
+        case overrides = "overrides"
+      }
+
+      public init(overrides: [UsagePriceOverride]) {
+        self.overrides = overrides
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(overrides, forKey: .overrides)
+      }
+    }
+
     public struct SetUserProjectSettingsParams: Codable, Sendable {
       public var repoRoot: String
       public var settings: UserProjectSettings
@@ -10922,6 +10949,13 @@ extension ArgusProtocol {
       public static let tier = "monitor"
     }
 
+    public enum GetUsagePrices: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.GetUsagePricesParams
+      public typealias Result = ArgusProtocol.UsagePrices
+      public static let name = "get_usage_prices"
+      public static let tier = "admin"
+    }
+
     public enum GetUserProjectSettings: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.GetUserProjectSettingsParams
       public typealias Result = ArgusProtocol.UserProjectSettings
@@ -12949,6 +12983,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.SetSessionDesignRefsParams
       public typealias Result = IgnoredResult
       public static let name = "set_session_design_refs"
+      public static let tier = "admin"
+    }
+
+    public enum SetUsagePrices: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.SetUsagePricesParams
+      public typealias Result = ArgusProtocol.UsagePrices
+      public static let name = "set_usage_prices"
       public static let tier = "admin"
     }
 

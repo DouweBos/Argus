@@ -38,6 +38,15 @@
         GalleryStory("usage/tokens", fixtures: GalleryFixtures.usage) {
           HostUsageView(tab: .constant(.tokens), range: .constant(._7d))
         },
+        GalleryStory("usage/limits-pooled", fixtures: GalleryFixtures.usagePooled) { HostUsageView() },
+        GalleryStory("usage/model-detail", fixtures: GalleryFixtures.usage) {
+          HostUsageModelView(metric: .cost, key: UsageModelKey(runner: "claude-code", model: "claude-opus-5-5"), range: ._7d)
+        },
+        GalleryStory("usage/model-detail-unpriced", fixtures: GalleryFixtures.usage) {
+          HostUsageModelView(metric: .tokens, key: UsageModelKey(runner: "opencode", model: "qwen3-coder-30b"), range: ._7d)
+            .environment(\.usageNavigation, UsageNavigation(openModel: { _, _, _ in }, openPrices: { _ in }))
+        },
+        GalleryStory("usage/prices", fixtures: GalleryFixtures.usage) { HostUsagePricesView {} },
       ]
     }
 

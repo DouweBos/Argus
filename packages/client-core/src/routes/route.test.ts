@@ -87,6 +87,9 @@ describe("routeToPath", () => {
     "/sessions/s1/git/branches/feature%2Ffoo",
     "/automations/a1/runs/r1",
     "/usage/cost?range=7d",
+    "/usage/prices",
+    "/usage/tokens/models/codex/gpt-5.1-codex?range=90d",
+    "/usage/cost/models/claude-code/openrouter%2Fclaude",
     "/agents?host=h1",
     "/sessions/s1/agents/a1?host=h1",
   ])("round-trips %s", (path) => {
@@ -109,6 +112,44 @@ describe("routeToPath", () => {
     expect(withHostParam("/usage/cost?range=7d", "h 1")).toBe(
       "/usage/cost?range=7d&host=h%201",
     );
+  });
+});
+
+describe("usage routes", () => {
+  it("reads a model's detail with its tab and range", () => {
+    expect(
+      parseRoute("/usage/cost/models/claude-code/claude-opus-4-5?range=7d"),
+    ).toMatchObject({
+      view: "usage",
+      usageTab: "cost",
+      usageRange: "7d",
+      usageModel: { runner: "claude-code", model: "claude-opus-4-5" },
+      usagePrices: false,
+    });
+    expect(
+      parseRoute("/usage/cost/models/openai/a%2Fb").usageModel?.model,
+    ).toBe("a/b");
+  });
+
+  it("has no model detail on Limits or without both segments", () => {
+    expect(parseRoute("/usage/limits/models/x/y").usageModel).toBeNull();
+    expect(parseRoute("/usage/cost/models/x").usageModel).toBeNull();
+  });
+
+  it("reads the price editor", () => {
+    expect(parseRoute("/usage/prices")).toMatchObject({
+      view: "usage",
+      usagePrices: true,
+      usageModel: null,
+      usageRange: null,
+    });
+  });
+
+  it("keeps model ids out of the pattern", () => {
+    expect(routePattern("/usage/tokens/models/codex/gpt-5")).toBe(
+      "/usage/tokens/models/:runner/:model",
+    );
+    expect(routePattern("/usage/prices")).toBe("/usage/prices");
   });
 });
 

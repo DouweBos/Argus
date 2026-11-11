@@ -44,12 +44,16 @@ public enum SlashCommandMenu {
       argumentHint: "[low|medium|high|xhigh|max|ultracode]"),
   ]
 
+  /// Never reaches the agent: opens the composer's limits panel.
+  public static let usageLimits = Command(
+    name: "usage-limits", description: "Show what's left of this agent's plan limits", argumentHint: "")
+
   /// Built-ins merged with the agent's own; the agent's entry wins when it
   /// describes itself. Alphabetical — the desktop's per-project usage ranking
-  /// has no store behind it here.
-  public static func merged(_ commands: [Command]) -> [Command] {
+  /// has no store behind it here. `local` are the client's own, offered as they apply.
+  public static func merged(_ commands: [Command], local: [Command] = []) -> [Command] {
     var byName: [String: Command] = [:]
-    for command in builtins { byName[command.name] = command }
+    for command in builtins + local { byName[command.name] = command }
     for command in commands where byName[command.name] == nil || !command.description.isEmpty {
       byName[command.name] = command
     }
@@ -83,6 +87,7 @@ public enum SlashCommandMenu {
     case togglePlan
     case setModel(String)
     case openModelPicker
+    case showUsageLimits
   }
 
   public static func local(_ message: String) -> Local? {
@@ -92,6 +97,7 @@ public enum SlashCommandMenu {
     guard let command = parts.first?.lowercased() else { return nil }
     switch command {
     case "plan": return .togglePlan
+    case usageLimits.name: return parts.count == 1 ? .showUsageLimits : nil
     case "model":
       let argument = parts.dropFirst().joined(separator: " ")
       return argument.isEmpty ? .openModelPicker : .setModel(argument)

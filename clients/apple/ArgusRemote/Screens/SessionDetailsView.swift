@@ -51,6 +51,7 @@ struct SessionDetailsView: View {
       if ready { work }
       references
       agentSection
+      usageLimits
       chats
       facts
       if control, !session.isUnavailable { manage }
@@ -86,6 +87,7 @@ struct SessionDetailsView: View {
       if !session.isOutsideProjects { await host.loadStoppedAgents(repoRoot: session.repoRoot) }
       // Fetched once, not polled: this only decides where the device row goes.
       if host.connection == .ready { await host.refreshDevices() }
+      await host.loadUsageLimitsIfMissing()
     }
   }
 
@@ -231,6 +233,17 @@ struct SessionDetailsView: View {
             Label("MCP servers", systemImage: Icon.mcp)
           }
         }
+      }
+    }
+  }
+
+  /// What's left of the plan the front agent's runner draws on, as the Mac's context card shows it.
+  @ViewBuilder private var usageLimits: some View {
+    let runner = agentId.flatMap { host.statusByAgent[$0]?.runnerId }
+    let groups = UsageLimitFormat.groups(host.usageLimits, runner: runner)
+    if agentId != nil, !groups.isEmpty {
+      Section("Usage limits") {
+        AgentUsageLimits(groups: groups).padding(.vertical, 4)
       }
     }
   }

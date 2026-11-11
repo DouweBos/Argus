@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { codexWindows, cursorWindows, grokWindows } from "./runnerWindows";
+import {
+  codexWindows,
+  cursorWindows,
+  grokWindows,
+  opencodeGoWindows,
+} from "./runnerWindows";
 
 const NOW = Date.UTC(2026, 10, 11, 12);
 const MIN = 60_000;
@@ -96,5 +101,45 @@ describe("grokWindows", () => {
       },
     ]);
     expect(grokWindows({}, NOW)).toEqual([]);
+  });
+});
+
+describe("opencodeGoWindows", () => {
+  it("reads the rolling, weekly and monthly allowances", () => {
+    const windows = opencodeGoWindows(
+      {
+        usage: {
+          rolling: { percent: 30, resetsAt: "2026-11-11T14:00:00Z" },
+          weekly: { percent: 120, resetsAt: "2026-11-16T00:00:00Z" },
+          monthly: { percent: 5, resetsAt: (NOW + 60 * MIN) / 1000 },
+        },
+      },
+      NOW,
+    );
+    expect(windows).toMatchObject([
+      {
+        id: "rolling",
+        kind: "session",
+        label: "Session",
+        used_percent: 30,
+        resets_at: NOW + 120 * MIN,
+        window_minutes: 300,
+      },
+      { id: "weekly", kind: "weekly", used_percent: 100 },
+      {
+        id: "monthly",
+        kind: "monthly",
+        resets_at: NOW + 60 * MIN,
+        window_minutes: null,
+        pace: null,
+      },
+    ]);
+  });
+
+  it("skips missing windows and unknown shapes", () => {
+    expect(
+      opencodeGoWindows({ usage: { weekly: { percent: 10 } } }, NOW),
+    ).toMatchObject([{ id: "weekly", resets_at: null }]);
+    expect(opencodeGoWindows({ error: "nope" }, NOW)).toEqual([]);
   });
 });

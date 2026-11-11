@@ -57,6 +57,10 @@ extension PhoneDestination {
       return PhoneDestination(section: .automations, route: .automation(id: id, label: "Automation"))
     case .notifications: return PhoneDestination(section: .notifications)
     case .usage: return PhoneDestination(section: .usage)
+    case .usageModel(let tab, let runner, let model, let range):
+      return PhoneDestination(
+        section: .usage, route: .usageModel(tab: tab, runner: runner, model: model, range: range ?? .default))
+    case .usagePrices: return PhoneDestination(section: .usage, route: .usagePrices)
     case .session(_, let agentId?):
       let label = host.statusByAgent[agentId].map(Labels.agentName) ?? hints.agentLabel ?? "Agent"
       return PhoneDestination(section: .home, route: .agent(id: agentId, label: label))

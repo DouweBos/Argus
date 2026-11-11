@@ -75,6 +75,8 @@ struct AgentsSettingsTab: View {
 
       ImportCliChatsSection()
 
+      UsageModelFilterSection()
+
       SettingsGroup("Automations") {
         if let settings = host.settings {
           SettingsToggleRow(

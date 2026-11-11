@@ -29,7 +29,24 @@
             session: GalleryFixtures.argusSession("s-long"), agentId: "a-perm", open: { _ in }, newAgent: {},
             deleted: {})
         },
+        // The details sheet's Usage limits section, below the fold in `sessions/context-card`.
+        GalleryStory("sessions/context-card-usage-limits", fixtures: GalleryFixtures.home, setup: load) {
+          UsageLimitsSectionStory()
+        },
       ]
+    }
+
+    private struct UsageLimitsSectionStory: View {
+      @Environment(HostStore.self) private var host
+
+      var body: some View {
+        List {
+          Section("Usage limits") {
+            AgentUsageLimits(groups: UsageLimitFormat.groups(host.usageLimits, runner: "claude-code"))
+              .padding(.vertical, 4)
+          }
+        }
+      }
     }
 
     /// A session's screen while its worktree is set up, or after that failed.

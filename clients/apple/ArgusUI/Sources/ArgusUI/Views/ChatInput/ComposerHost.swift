@@ -15,6 +15,7 @@ public protocol ComposerHost: AnyObject {
   var activeClaudeAccountId: String? { get }
   var projects: [RemoteProject] { get }
   var sessionsByRepo: [String: [RemoteSession]] { get }
+  var usageLimits: ArgusProtocol.ClaudeUsageLimits? { get }
 
   func claudeAccountId(forSessionId id: String) -> String?
   func repoRoot(forSessionId id: String) -> String?
@@ -36,6 +37,7 @@ public protocol ComposerHost: AnyObject {
   func loadStartOptions(sessionId: String, runnerId: String?) async
   func loadSessions(repoRoot: String) async
   func refreshClaudeAccounts() async
+  func loadUsageLimits(refresh: Bool) async
   func listFiles(sessionId: String) async -> [String]
   func resolveMentionPath(sessionId: String, query: String) async -> RemoteMentionPathResult?
   func hostPaths(forDropped urls: [URL], sessionId: String?) async -> HostStore.DroppedFiles

@@ -27,6 +27,8 @@ public enum UsageTab: String, CaseIterable, Hashable, Sendable {
 public enum UsageMetric: Hashable, Sendable {
   case cost, tokens
 
+  public var tab: UsageTab { self == .cost ? .cost : .tokens }
+
   public func format(_ value: Double) -> String {
     switch self {
     case .cost: UsageSummaryFormat.dollars(value)
@@ -61,6 +63,26 @@ public struct UsageShareRow: Hashable, Sendable, Identifiable {
   public let value: Double?
   /// 0–1 of the total.
   public let share: Double
+  /// The model a "By model" row opens.
+  public var model: UsageModelKey?
+
+  public init(label: String, value: Double?, share: Double, model: UsageModelKey? = nil) {
+    self.label = label
+    self.value = value
+    self.share = share
+    self.model = model
+  }
+}
+
+/// A model as Usage tells it apart: the same id through two runners is two rows.
+public struct UsageModelKey: Hashable, Sendable {
+  public let runner: String
+  public let model: String
+
+  public init(runner: String, model: String) {
+    self.runner = runner
+    self.model = model
+  }
 }
 
 /// One runner's (or the folded "Other"'s) amount in one bucket.
@@ -150,7 +172,9 @@ public enum UsageSummaryFormat {
       let known = metric == .tokens || row.priced
       let runner = row.runner.flatMap { labels[$0] }
       let label = runner.map { "\(row.model) · \($0)" } ?? row.model
-      return UsageShareRow(label: label, value: known ? value : nil, share: known ? share(value, of: total) : 0)
+      return UsageShareRow(
+        label: label, value: known ? value : nil, share: known ? share(value, of: total) : 0,
+        model: UsageModelKey(runner: UsageModelFormat.runner(row), model: row.model))
     }
   }
 

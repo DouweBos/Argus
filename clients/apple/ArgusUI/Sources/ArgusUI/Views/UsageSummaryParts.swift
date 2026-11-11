@@ -19,41 +19,12 @@ struct UsageSeriesChart: View {
         singleChart
       }
     }
-    .chartXAxis {
-      AxisMarks(values: .automatic(desiredCount: 5)) { _ in
-        AxisGridLine().foregroundStyle(theme.borderSubtle)
-        AxisValueLabel(format: summary.bucket == .hour ? .dateTime.hour() : .dateTime.month(.abbreviated).day())
-          .foregroundStyle(theme.textMuted)
-      }
-    }
-    .chartYAxis {
-      AxisMarks(values: .automatic(desiredCount: 4)) { value in
-        AxisGridLine().foregroundStyle(theme.borderSubtle)
-        AxisValueLabel {
-          if let amount = value.as(Double.self) {
-            Text(metric.format(amount)).foregroundStyle(theme.textMuted)
-          }
-        }
-      }
-    }
+    .usageAxes(bucket: summary.bucket, metric: metric)
     .accessibilityLabel("Usage over time")
   }
 
   private var singleChart: some View {
-    Chart(summary.series, id: \.start) { point in
-      let date = Date(timeIntervalSince1970: point.start / 1000)
-      let value = UsageSummaryFormat.seriesValue(point, metric: metric)
-      AreaMark(x: .value("Time", date, unit: unit), y: .value("Amount", value))
-        .interpolationMethod(.monotone)
-        .foregroundStyle(
-          LinearGradient(
-            colors: [theme.accent.opacity(0.35), theme.accent.opacity(0.02)],
-            startPoint: .top, endPoint: .bottom))
-      LineMark(x: .value("Time", date, unit: unit), y: .value("Amount", value))
-        .interpolationMethod(.monotone)
-        .foregroundStyle(theme.accent)
-        .lineStyle(StrokeStyle(lineWidth: 2))
-    }
+    UsageAreaMarks(series: summary.series, bucket: summary.bucket, metric: metric)
   }
 
   private var runnerChart: some View {
@@ -81,21 +52,90 @@ struct UsageSeriesChart: View {
   }
 }
 
-/// Processed, cached and uncached input, output, and what the cache saved.
-struct UsageTotalsGrid: View {
+/// One series as an accent area: the whole summary, or one model's trend.
+struct UsageAreaMarks: View {
   @Environment(\.theme) private var theme
-  let summary: ArgusProtocol.ClaudeUsageSummary
+  let series: [ArgusProtocol.UsageSeriesPoint]
+  let bucket: ArgusProtocol.ClaudeUsageSummaryBucket
+  let metric: UsageMetric
 
-  private var stats: [(label: String, value: String)] {
-    let tokens = summary.tokens
-    return [
-      ("Processed", UsageSummaryFormat.compact(tokens.processed)),
-      ("Cached input", UsageSummaryFormat.compact(tokens.cacheRead)),
-      ("Uncached input", UsageSummaryFormat.compact(tokens.input)),
-      ("Output", UsageSummaryFormat.compact(tokens.output)),
-      ("Cache savings", UsageSummaryFormat.dollars(summary.cacheSavingsUsd)),
-    ]
+  var body: some View {
+    let unit: Calendar.Component = bucket == .hour ? .hour : .day
+    Chart(series, id: \.start) { point in
+      let date = Date(timeIntervalSince1970: point.start / 1000)
+      let value = UsageSummaryFormat.seriesValue(point, metric: metric)
+      AreaMark(x: .value("Time", date, unit: unit), y: .value("Amount", value))
+        .interpolationMethod(.monotone)
+        .foregroundStyle(
+          LinearGradient(
+            colors: [theme.accent.opacity(0.35), theme.accent.opacity(0.02)],
+            startPoint: .top, endPoint: .bottom))
+      LineMark(x: .value("Time", date, unit: unit), y: .value("Amount", value))
+        .interpolationMethod(.monotone)
+        .foregroundStyle(theme.accent)
+        .lineStyle(StrokeStyle(lineWidth: 2))
+    }
   }
+}
+
+extension View {
+  /// Usage charts' axes: hours or days along the bottom, the metric up the side.
+  func usageAxes(bucket: ArgusProtocol.ClaudeUsageSummaryBucket, metric: UsageMetric) -> some View {
+    modifier(UsageAxes(bucket: bucket, metric: metric))
+  }
+}
+
+private struct UsageAxes: ViewModifier {
+  @Environment(\.theme) private var theme
+  let bucket: ArgusProtocol.ClaudeUsageSummaryBucket
+  let metric: UsageMetric
+
+  func body(content: Content) -> some View {
+    content
+      .chartXAxis {
+        AxisMarks(values: .automatic(desiredCount: 5)) { _ in
+          AxisGridLine().foregroundStyle(theme.borderSubtle)
+          AxisValueLabel(format: bucket == .hour ? .dateTime.hour() : .dateTime.month(.abbreviated).day())
+            .foregroundStyle(theme.textMuted)
+        }
+      }
+      .chartYAxis {
+        AxisMarks(values: .automatic(desiredCount: 4)) { value in
+          AxisGridLine().foregroundStyle(theme.borderSubtle)
+          AxisValueLabel {
+            if let amount = value.as(Double.self) {
+              Text(metric.format(amount)).foregroundStyle(theme.textMuted)
+            }
+          }
+        }
+      }
+  }
+}
+
+/// Processed, cached and uncached input, output, and what the cache saved;
+/// on Cost, what fast tiers cost above standard when they ran.
+struct UsageTotalsGrid: View {
+  let summary: ArgusProtocol.ClaudeUsageSummary
+  let metric: UsageMetric
+
+  var body: some View {
+    let tokens = summary.tokens
+    let premium = metric == .cost ? UsageSummaryFormat.premium(summary) : nil
+    UsageStatGrid(
+      stats: [
+        ("Processed", UsageSummaryFormat.compact(tokens.processed)),
+        ("Cached input", UsageSummaryFormat.compact(tokens.cacheRead)),
+        ("Uncached input", UsageSummaryFormat.compact(tokens.input)),
+        ("Output", UsageSummaryFormat.compact(tokens.output)),
+        ("Cache savings", UsageSummaryFormat.dollars(summary.cacheSavingsUsd)),
+      ] + (premium.map { [("Speed premium", UsageSummaryFormat.dollars($0))] } ?? []))
+  }
+}
+
+/// Labelled figures in tiles that wrap to the width.
+struct UsageStatGrid: View {
+  @Environment(\.theme) private var theme
+  let stats: [(label: String, value: String)]
 
   var body: some View {
     LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: theme.space)], spacing: theme.space) {
@@ -126,33 +166,49 @@ struct UsageShareList: View {
   @Environment(\.theme) private var theme
   let rows: [UsageShareRow]
   let metric: UsageMetric
+  /// Rows open their detail when set; a chevron says so.
+  var onSelect: ((UsageShareRow) -> Void)?
 
   var body: some View {
     VStack(alignment: .leading, spacing: theme.space) {
       ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
         if index > 0 { Divider().overlay(theme.borderSubtle) }
-        VStack(alignment: .leading, spacing: 6) {
-          HStack(spacing: 8) {
-            Text(row.label)
-              .font(.scaled(size: 13, weight: .medium))
-              .foregroundStyle(theme.text)
-              .lineLimit(1)
-              .truncationMode(.middle)
-            Spacer(minLength: 8)
-            Text(row.value.map(metric.format) ?? "—")
-              .font(.scaled(size: 13, weight: .semibold))
-              .monospacedDigit()
-              .foregroundStyle(row.value == nil ? theme.textMuted : theme.text)
-            Text(row.value == nil ? "" : UsageSummaryFormat.percent(row.share))
-              .font(.scaled(size: 12))
-              .monospacedDigit()
-              .foregroundStyle(theme.textMuted)
-              .frame(minWidth: 36, alignment: .trailing)
-          }
-          UsageBar(fraction: row.share, tone: .accent)
+        if let onSelect {
+          Button { onSelect(row) } label: { line(row, chevron: true).contentShape(Rectangle()) }
+            .buttonStyle(.argusPlain)
+        } else {
+          line(row, chevron: false)
         }
-        .accessibilityElement(children: .combine)
       }
     }
+  }
+
+  private func line(_ row: UsageShareRow, chevron: Bool) -> some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 8) {
+        Text(row.label)
+          .font(.scaled(size: 13, weight: .medium))
+          .foregroundStyle(theme.text)
+          .lineLimit(1)
+          .truncationMode(.middle)
+        Spacer(minLength: 8)
+        Text(row.value.map(metric.format) ?? "—")
+          .font(.scaled(size: 13, weight: .semibold))
+          .monospacedDigit()
+          .foregroundStyle(row.value == nil ? theme.textMuted : theme.text)
+        Text(row.value == nil ? "" : UsageSummaryFormat.percent(row.share))
+          .font(.scaled(size: 12))
+          .monospacedDigit()
+          .foregroundStyle(theme.textMuted)
+          .frame(minWidth: 36, alignment: .trailing)
+        if chevron {
+          Image(systemName: Icon.chevronRight)
+            .font(.scaled(size: 11, weight: .semibold))
+            .foregroundStyle(theme.textMuted)
+        }
+      }
+      UsageBar(fraction: row.share, tone: .accent)
+    }
+    .accessibilityElement(children: .combine)
   }
 }

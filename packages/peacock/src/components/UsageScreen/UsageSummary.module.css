@@ -45,6 +45,39 @@
   color: var(--error);
 }
 
+.detailTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-md);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.mapped {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.mapped li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
 .breakdown {
   display: flex;
   flex-direction: column;
@@ -59,6 +92,27 @@
   font-size: 12px;
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.rowButton {
+  width: 100%;
+  border-top: none;
+  border-right: none;
+  border-left: none;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rowButton:hover {
+  background: var(--bg-hover);
+}
+
+.rowButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .headRow {

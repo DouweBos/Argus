@@ -443,6 +443,36 @@ built-in MCP server.
 
 ---
 
+## Usage
+
+**Models to count** (`usage_model_filter` in `app-settings.json`) decides which
+models the [Usage](./features.md#usage) cost and token figures include. It
+holds two lists of rules, each a model id and optionally the runner it applies
+to (`claude-code`, `codex`, an ACP agent's id; leave it out to match the model
+on any runner):
+
+```json
+"usage_model_filter": {
+  "include": [{ "runner": "codex", "model": "gpt-5.4" }],
+  "exclude": [{ "runner": null, "model": "claude-haiku-4-5" }]
+}
+```
+
+- **Include** — when it has any rules, only those models count.
+- **Exclude** — these models never count.
+
+Rules match the model id the runner recorded, before any **Map to** price
+mapping, so a model you leave out isn't counted under the model it maps to
+either. Unset, every model counts. Argus for Mac edits both lists in Settings →
+Agents (**Usage: count only these models** and **Usage: leave out these
+models**).
+
+Model prices set by hand on the Usage screen aren't an app setting: they live
+in `~/.argus/usage-prices.json`, shared by every app and device connected to
+this computer.
+
+---
+
 ## Privacy
 
 | Setting       | Default    | Description                                                                                                                                                                                                                                                  |
@@ -1042,6 +1072,16 @@ Settings → General → Startup in Argus for Mac. These live on this Mac only.
 
 ---
 
+## Agent details (Mac app)
+
+Settings → Appearance → Interface in Argus for Mac. This lives on this Mac only.
+
+| Setting                                | Default | Description                                                                                                                                                                                                                                                                             |
+| -------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Show usage limits in agent details** | on      | The session details card lists what's left of each plan window the agent in front draws on: every Claude account for Claude Code, else its runner's own limits. Hover a meter for its reset time and pace; **Usage Limits** opens Usage. The iPhone's session details always show them. |
+
+---
+
 ## Where things are stored
 
 Argus keeps everything under `~/.argus/`:
@@ -1062,6 +1102,7 @@ Argus keeps everything under `~/.argus/`:
   user-project-settings.json  ← Per-developer project prefs (branch prefix, worktree locations, …)
   viewed-files.json           ← Files ticked as viewed in session diffs (pull requests keep theirs on GitHub)
   device-hosts.json           ← Other Macs whose simulators Argus streams over SSH
+  usage-prices.json           ← Model prices and mappings set by hand on the Usage screen
   telemetry-id                ← Anonymous install id
 ```
 

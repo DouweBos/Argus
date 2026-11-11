@@ -8,6 +8,7 @@
 
 import type { AutonomyLevel } from "../automation/models";
 import type { McpServers } from "../mcp/userConfig";
+import type { UsageModelFilter } from "@argus/remote-protocol";
 import fs from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
@@ -76,6 +77,11 @@ export interface AppSettings {
    * servers. 0 turns warming off; defaults to 1.
    */
   warm_agents?: number;
+  /**
+   * Models Usage counts or leaves out, matched on the model id before any
+   * price mapping. Absent counts every model.
+   */
+  usage_model_filter?: UsageModelFilter;
   /**
    * Screen Argus opens on. `home` is the project picker; `inbox` is the
    * briefing. Defaults to `home` — the inbox only earns the launch slot once

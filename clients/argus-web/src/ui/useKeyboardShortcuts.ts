@@ -71,7 +71,7 @@ export const WEB_SHORTCUTS: readonly ShortcutCheatsheetEntry[] = [
   },
 ];
 
-function isTypingTarget(target: EventTarget | null): boolean {
+export function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
     return false;
   }

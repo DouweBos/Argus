@@ -80,6 +80,17 @@ describe("usage, notifications and settings pages", () => {
     ["/usage", { name: "usage", tab: "limits", range: "30d" }],
     ["/usage/cost?range=7d", { name: "usage", tab: "cost", range: "7d" }],
     ["/usage/tokens", { name: "usage", tab: "tokens", range: "30d" }],
+    [
+      "/usage/cost/models/codex/gpt-5.1-codex?range=7d",
+      {
+        name: "usageModel",
+        tab: "cost",
+        range: "7d",
+        runner: "codex",
+        model: "gpt-5.1-codex",
+      },
+    ],
+    ["/usage/prices", { name: "usagePrices" }],
     ["/notifications", { name: "notifications" }],
     ["/settings/appearance", { name: "settingsPage", page: "appearance" }],
     [
@@ -95,6 +106,8 @@ describe("usage, notifications and settings pages", () => {
     "/usage",
     "/usage/cost?range=7d",
     "/usage/tokens",
+    "/usage/tokens/models/claude-code/claude-opus-4-5",
+    "/usage/prices",
     "/notifications",
     "/settings/device-hosts",
   ])("round-trips %s", (path) => {
@@ -105,6 +118,15 @@ describe("usage, notifications and settings pages", () => {
     expect(
       screenPattern({ name: "usage", tab: "cost", range: "7d" }),
     ).toBe("/usage/cost");
+    expect(
+      screenPattern({
+        name: "usageModel",
+        tab: "tokens",
+        range: "7d",
+        runner: "codex",
+        model: "gpt-5",
+      }),
+    ).toBe("/usage/tokens/models/:runner/:model");
     expect(paneFor({ name: "notifications" })).toBe("detail");
   });
 });

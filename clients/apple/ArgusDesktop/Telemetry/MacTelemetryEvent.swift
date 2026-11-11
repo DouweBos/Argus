@@ -218,6 +218,7 @@ enum MacTelemetryEvent {
     case design
     case mcp
     case setup
+    case usageLimits = "usage_limits"
   }
 
   case launched

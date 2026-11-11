@@ -75,4 +75,14 @@ struct UsageLimitFormatTests {
     ])
     #expect(UsageLimitFormat.groups(limits).map(\.label) == ["Work", "Personal"])
   }
+
+  @Test func runnerGroupsPickTheAgentsRunner() {
+    let limits = ArgusProtocol.ClaudeUsageLimits(
+      accounts: [.init(accountId: "a", label: "Work", status: .ok, windows: [window("s")], checkedAt: 1)],
+      runners: [.init(runner: "codex", label: "Codex", status: .ok, plan: nil, windows: [window("s")], checkedAt: 1)])
+    #expect(UsageLimitFormat.groups(limits, runner: "claude-code").map(\.label) == ["Claude"])
+    #expect(UsageLimitFormat.groups(limits, runner: nil).map(\.label) == ["Claude"])
+    #expect(UsageLimitFormat.groups(limits, runner: "codex").map(\.label) == ["Codex"])
+    #expect(UsageLimitFormat.groups(limits, runner: "grok").isEmpty)
+  }
 }

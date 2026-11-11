@@ -1,6 +1,7 @@
 /**
  * Plan limits for every installed runner that has them, next to Claude's:
- * Codex rate limits, Cursor's monthly pools and Grok's subscription period.
+ * Codex rate limits, Cursor's monthly pools, Grok's subscription period,
+ * OpenCode Go's allowance and Antigravity's quotas.
  * Each is checked at most once a minute unless asked to refresh.
  */
 
@@ -11,19 +12,23 @@ import type {
 import { warn } from "@argus/host/logger";
 import { getRunnerById, runnerAvailability } from "../llm/registry";
 import { capture } from "../telemetry/telemetry";
+import { readAntigravityLimits } from "./antigravityLimits";
 import { applyLiveCodexLimits, readCodexLimits } from "./codexLimits";
 import { CODEX_RUNNER_ID } from "./codexRollouts";
 import { getClaudeUsageLimits } from "./limits";
+import { readOpencodeLimits } from "./opencodeLimits";
 import { readCursorLimits, readGrokLimits, type PlanReading } from "./planApis";
 
 const CACHE_MS = 60_000;
 
-type PlanRunner = "codex" | "cursor" | "grok";
+type PlanRunner = "antigravity" | "codex" | "cursor" | "grok" | "opencode";
 
 const READERS: Record<PlanRunner, (now: number) => Promise<PlanReading>> = {
   [CODEX_RUNNER_ID]: readCodexLimits,
   cursor: readCursorLimits,
   grok: readGrokLimits,
+  opencode: readOpencodeLimits,
+  antigravity: readAntigravityLimits,
 };
 
 const cache = new Map<PlanRunner, RunnerUsageLimits>();

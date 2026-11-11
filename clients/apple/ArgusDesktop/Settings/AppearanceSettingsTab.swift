@@ -25,6 +25,10 @@ struct AppearanceSettingsTab: View {
           }
           .pickerStyle(.segmented)
         }
+        SettingsToggleRow(
+          "Show usage limits in agent details",
+          description: "List what's left of the agent's plan limits in the session details card.",
+          isOn: $prefs.showUsageLimitsInDetails.tracked(.usageLimitsInDetails))
       }
     }
   }

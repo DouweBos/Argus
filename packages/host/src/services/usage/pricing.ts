@@ -18,12 +18,18 @@ const RETRY_MS = 60_000;
 const FETCH_TIMEOUT_MS = 20_000;
 
 /** Dollars per token. Cache rates fall back to the input rate when unlisted. */
-export interface ModelRate {
+export interface TokenRates {
   input: number;
   output: number;
   cacheRead: number;
   cacheWrite: number;
   cacheWrite1h: number;
+}
+
+/** Standard rates, plus the fast and ultrafast tiers when the list prices them. */
+export interface ModelRate extends TokenRates {
+  fast?: TokenRates;
+  ultrafast?: TokenRates;
 }
 
 export type RateTable = Map<string, ModelRate>;
@@ -54,6 +60,61 @@ export function normalizeModelKey(model: string): string {
 
 const num = (v: unknown): number | null =>
   typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null;
+
+export function scaleRates(rates: TokenRates, by: number): TokenRates {
+  return {
+    input: rates.input * by,
+    output: rates.output * by,
+    cacheRead: rates.cacheRead * by,
+    cacheWrite: rates.cacheWrite * by,
+    cacheWrite1h: rates.cacheWrite1h * by,
+  };
+}
+
+/**
+ * A tier's rates from `<field><suffix>`; a cache rate the tier doesn't list
+ * keeps its standard ratio to the input rate.
+ */
+function tierRates(
+  e: Record<string, unknown>,
+  suffix: string,
+  standard: TokenRates,
+): TokenRates | undefined {
+  const input = num(e[`input_cost_per_token${suffix}`]);
+  const output = num(e[`output_cost_per_token${suffix}`]);
+  if (input === null || output === null) {
+    return undefined;
+  }
+  const ratio = (v: number) =>
+    standard.input > 0 ? (v / standard.input) * input : input;
+  const cacheWrite =
+    num(e[`cache_creation_input_token_cost${suffix}`]) ??
+    ratio(standard.cacheWrite);
+
+  return {
+    input,
+    output,
+    cacheRead:
+      num(e[`cache_read_input_token_cost${suffix}`]) ??
+      ratio(standard.cacheRead),
+    cacheWrite,
+    cacheWrite1h:
+      standard.cacheWrite > 0
+        ? (standard.cacheWrite1h / standard.cacheWrite) * cacheWrite
+        : cacheWrite,
+  };
+}
+
+/** Anthropic lists fast mode as a multiple of the standard price. */
+function fastMultiple(e: Record<string, unknown>): number | null {
+  const specific = e.provider_specific_entry;
+  if (typeof specific !== "object" || specific === null) {
+    return null;
+  }
+  const fast = num((specific as Record<string, unknown>).fast);
+
+  return fast !== null && fast > 0 ? fast : null;
+}
 
 /** Price-list modes that bill per token for chat turns. */
 const TOKEN_MODES = new Set(["chat", "responses"]);
@@ -86,15 +147,30 @@ export function parsePriceDocument(doc: unknown): Record<string, ModelRate> {
     if (input === null || output === null) {
       continue;
     }
+    const key = normalizeModelKey(name);
+    if (rates[key]) {
+      // First entry wins: the bare id is listed before regional variants.
+      continue;
+    }
     const cacheWrite = num(e.cache_creation_input_token_cost) ?? input;
-    // First entry wins: the bare id is listed before regional variants.
-    rates[normalizeModelKey(name)] ??= {
+    const standard: TokenRates = {
       input,
       output,
       cacheRead: num(e.cache_read_input_token_cost) ?? input,
       cacheWrite,
       cacheWrite1h:
         num(e.cache_creation_input_token_cost_above_1hr) ?? cacheWrite,
+    };
+    const multiple = fastMultiple(e);
+    const fast =
+      multiple === null
+        ? tierRates(e, "_priority", standard)
+        : scaleRates(standard, multiple);
+    const ultrafast = tierRates(e, "_ultrafast", standard);
+    rates[key] = {
+      ...standard,
+      ...(fast ? { fast } : {}),
+      ...(ultrafast ? { ultrafast } : {}),
     };
   }
 
@@ -112,7 +188,7 @@ export function rateFor(table: RateTable, model: string): ModelRate | null {
 }
 
 function cachePath(): string {
-  return path.join(argusHomeDir(), "usage-model-prices-v2.json");
+  return path.join(argusHomeDir(), "usage-model-prices-v3.json");
 }
 
 function readCache(): PriceFile | null {
@@ -204,9 +280,9 @@ export interface CostParts {
   output: number;
 }
 
-/** Dollars by token kind at a model's list rate. */
+/** Dollars by token kind at a model's rates. */
 export function costParts(
-  rate: ModelRate,
+  rate: TokenRates,
   t: {
     input: number;
     cacheRead: number;

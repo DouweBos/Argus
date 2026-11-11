@@ -35,6 +35,10 @@
           "composer/account-menu/start", fixtures: GalleryFixtures.transcript(.idle),
           setup: { await loadAccountMenu($0.host) }
         ) { AccountMenuStory(starts: true) },
+        GalleryStory(
+          "composer/usage-limits", fixtures: GalleryFixtures.composer.merging(GalleryFixtures.usage) { $1 },
+          setup: { await $0.host.loadUsageLimits() }
+        ) { UsageLimitsComposerStory() },
       ]
     }
 
@@ -57,6 +61,20 @@
           agentId: GalleryFixtures.transcriptAgent, sessionId: GalleryFixtures.transcriptSession, host: host,
           starter: starts ? ComposerStarter(defaultMode: "auto") { _ in true } : nil, style: .phone),
         which: .account)
+    }
+  }
+
+  /// `/usage-limits`' panel over the chat composer, as it opens for a Claude Code agent.
+  private struct UsageLimitsComposerStory: View {
+    @Environment(HostStore.self) private var host
+
+    var body: some View {
+      VStack(spacing: 0) {
+        Spacer()
+        ComposerUsageLimitsPanel(groups: UsageLimitFormat.groups(host.usageLimits, runner: "claude-code")) {}
+          .padding(.horizontal, 10)
+        ChatInputView(agentId: "a1")
+      }
     }
   }
 

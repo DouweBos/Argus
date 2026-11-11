@@ -69,6 +69,10 @@ export function useScreenTitle(screen: Screen): string {
       return SETTINGS_PAGE_TITLES[screen.page];
     case "usage":
       return "Usage";
+    case "usageModel":
+      return screen.model;
+    case "usagePrices":
+      return "Model prices";
     case "notifications":
       return "Notifications";
     case "design":

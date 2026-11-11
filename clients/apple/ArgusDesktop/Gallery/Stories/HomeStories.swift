@@ -32,6 +32,16 @@
         ) {
           Color.clear.sessionContextCard(GalleryFixtures.argusSession("s-long"), panel: .agents)
         },
+        // The agent in front's plan limits, under its MCP row.
+        GalleryStory(
+          "sessions/context-card-usage-limits", size: CGSize(width: 900, height: 900), fixtures: GalleryFixtures.home,
+          setup: { stage in
+            await load(stage)
+            stage.model.navigate(.session(id: "s-long", agentId: "a-perm"))
+          }
+        ) {
+          Color.clear.sessionContextCard(GalleryFixtures.argusSession("s-long"), panel: .agents)
+        },
         GalleryStory(
           "sessions/context-card-setup-pending", size: CGSize(width: 900, height: 700),
           fixtures: GalleryFixtures.home, setup: load

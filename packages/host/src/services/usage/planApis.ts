@@ -4,14 +4,12 @@
  */
 
 import type { UsageLimitWindow } from "@argus/remote-protocol";
-import { execFile } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { promisify } from "node:util";
+import { CURSOR_API, cursorAccessToken } from "./readers/cursorAuth";
 import { cursorWindows, grokWindows } from "./runnerWindows";
 
-const execFileAsync = promisify(execFile);
 const FETCH_TIMEOUT_MS = 10_000;
 
 /** One runner's plan as read, before it gets its runner id and label. */
@@ -52,73 +50,8 @@ function readJson(file: string): Record<string, unknown> | null {
 // Cursor
 // ---------------------------------------------------------------------------
 
-const CURSOR_API = "https://api2.cursor.sh";
-
-/** Where `cursor-agent login` keeps its access token: the Keychain on macOS, a file elsewhere. */
-async function cursorLoginToken(): Promise<string | null> {
-  if (process.platform === "darwin") {
-    try {
-      const { stdout } = await execFileAsync(
-        "security",
-        [
-          "find-generic-password",
-          "-s",
-          "cursor-access-token",
-          "-a",
-          "cursor-user",
-          "-w",
-        ],
-        { timeout: FETCH_TIMEOUT_MS },
-      );
-      const token = stdout.trim();
-      if (token) {
-        return token;
-      }
-    } catch {
-      // Not signed in through the Keychain; try the file.
-    }
-  }
-  const config =
-    process.platform === "darwin"
-      ? path.join(os.homedir(), ".cursor")
-      : path.join(
-          process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config"),
-          "cursor",
-        );
-  const token = readJson(path.join(config, "auth.json"))?.accessToken;
-
-  return typeof token === "string" && token.trim() ? token.trim() : null;
-}
-
-/** An API key is traded for the access token Cursor's RPCs accept. */
-async function exchangeCursorApiKey(apiKey: string): Promise<string> {
-  const res = await fetch(`${CURSOR_API}/auth/exchange_user_api_key`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: "{}",
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  const body = (await res.json()) as { accessToken?: unknown };
-  if (typeof body.accessToken !== "string" || !body.accessToken) {
-    throw new Error("no access token");
-  }
-
-  return body.accessToken;
-}
-
 export async function readCursorLimits(now = Date.now()): Promise<PlanReading> {
-  let token = process.env.CURSOR_AUTH_TOKEN?.trim() || null;
-  const apiKey = process.env.CURSOR_API_KEY?.trim();
-  if (!token && apiKey) {
-    token = await exchangeCursorApiKey(apiKey);
-  }
-  token ??= await cursorLoginToken();
+  const token = await cursorAccessToken();
   if (!token) {
     return unsupported("Run `cursor-agent login` to see plan limits.");
   }

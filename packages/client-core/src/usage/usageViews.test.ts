@@ -204,7 +204,9 @@ describe("usageSummaryView", () => {
   it("leads with cost, largest model first, unpriced last", () => {
     const view = usageSummaryView(summary({}), "cost");
     expect(view.headline).toBe("$10.00");
-    expect(view.caption).toBe("3 sessions · API estimate");
+    expect(view.caption).toBe(
+      "3 sessions · estimated at API prices where agents don’t report their own",
+    );
     expect(view.models.map((m) => m.model)).toEqual([
       "opus",
       "haiku",
@@ -225,6 +227,56 @@ describe("usageSummaryView", () => {
     expect(view.caption).toBe("1 session · processed tokens");
     expect(view.pricesPending).toBe(false);
     expect(view.chart.caption).toBe("Daily processed tokens");
+  });
+
+  it("splits by speed and names the premium only when a fast tier ran", () => {
+    const plain = usageSummaryView(
+      summary({
+        speeds: [
+          { speed: "standard", tokens: 1, cost_usd: 10, premium_usd: 0 },
+        ],
+      }),
+      "cost",
+    );
+    expect(plain.speeds).toEqual([]);
+    expect(plain.totals.map((t) => t.label)).not.toContain("Premium");
+
+    const fast = usageSummaryView(
+      summary({
+        cost: {
+          total: 10,
+          input: 2,
+          cache_read: 1,
+          cache_write: 3,
+          output: 4,
+          premium: 3,
+        },
+        speeds: [
+          { speed: "fast", tokens: 500, cost_usd: 6, premium_usd: 3 },
+          { speed: "standard", tokens: 1000, cost_usd: 4, premium_usd: 0 },
+        ],
+      }),
+      "cost",
+    );
+    expect(fast.speeds.map((s) => [s.label, s.share, s.premium])).toEqual([
+      ["Standard", "40%", null],
+      ["Fast", "60%", "+$3.00 premium"],
+    ]);
+    expect(fast.totals.at(-1)).toEqual({ label: "Premium", value: "$3.00" });
+    const tokens = usageSummaryView(
+      summary({
+        cost: {
+          total: 10,
+          input: 2,
+          cache_read: 1,
+          cache_write: 3,
+          output: 4,
+          premium: 3,
+        },
+      }),
+      "tokens",
+    );
+    expect(tokens.totals.map((t) => t.label)).not.toContain("Premium");
   });
 
   it("flags an empty range and a missing price list", () => {
