@@ -105,7 +105,10 @@ export function normalizeToolsConfig(
   return { disabled: cleaned };
 }
 
-/** `verify` block: trimmed strings, empty lists dropped, null when nothing is set. */
+/**
+ * `verify` block: trimmed strings, empty lists dropped, null when nothing is
+ * set. A legacy `devices` key is ignored — agents pick devices per ticket.
+ */
 export function normalizeVerifyConfig(input: unknown): VerifyConfig | null {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     return null;
@@ -121,14 +124,12 @@ export function normalizeVerifyConfig(input: unknown): VerifyConfig | null {
   const text = (v: unknown): string | null =>
     typeof v === "string" && v.trim().length > 0 ? v.trim() : null;
   const out: VerifyConfig = {
-    devices: list(raw.devices),
     checks: list(raw.checks),
     sign_in: text(raw.sign_in),
     baseline: typeof raw.baseline === "boolean" ? raw.baseline : null,
     slow_backend: text(raw.slow_backend),
   };
   const empty =
-    out.devices.length === 0 &&
     out.checks.length === 0 &&
     out.sign_in == null &&
     out.baseline == null &&

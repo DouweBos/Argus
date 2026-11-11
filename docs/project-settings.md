@@ -76,7 +76,7 @@ Two ways to change project settings:
   "llm":                { "runner": "claude-code", "model": "claude-opus-4-7" },
   "tools":              { "disabled": ["device-debug"] },
   "automations":        { "autonomy_ceiling": "draft", "disabled": [...], "path_denylist": [...] },
-  "verify":             { "devices": [...], "checks": [...], "sign_in": "/login", "baseline": true, "slow_backend": "..." }
+  "verify":             { "checks": [...], "sign_in": "/login", "baseline": true, "slow_backend": "..." }
 }
 ```
 
@@ -519,13 +519,14 @@ started.
 
 ## `verify` — how an agent proves its work
 
-What an agent drives and runs before it calls a change done: the devices to
-check it on, the commands that must pass after the last code change, how to
-sign in, and how to slow the backend down so loading states can be seen.
+What an agent runs before it calls a change done: the commands that must pass
+after the last code change, how to sign in, and how to slow the backend down so
+loading states can be seen. Which devices to check on depends on the ticket, so
+it isn't set here: the agent uses the device it already has and starts a
+throwaway one for each other form factor the change affects.
 
 ```jsonc
 "verify": {
-  "devices": ["iPhone 17 Pro", "iPad Pro 13-inch (M5)"],
   "checks": ["pnpm tsc --noEmit", "pnpm lint", "pnpm test", "maestro test .maestro/smoke"],
   "sign_in": "/login-test-account",
   "baseline": true,
@@ -533,9 +534,6 @@ sign in, and how to slow the backend down so loading states can be seen.
 }
 ```
 
-- **`devices`** — simulator or emulator names as they appear in the Devices
-  screen, or `web` for the embedded browser. Empty means the agent verifies on
-  whatever device it has.
 - **`checks`** — shell commands run from the worktree root, in order. Type
   checks, lint, unit tests and end-to-end flows (Maestro, Playwright) all go
   here.

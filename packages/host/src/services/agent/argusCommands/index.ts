@@ -107,7 +107,6 @@ export function expandArgusCommand(
     has_ticket: parsed.ticket.length > 0,
     has_notes: parsed.extra.length > 0,
     has_verify: verify != null,
-    devices: bucket(verify?.devices.length ?? 0),
     checks: bucket(verify?.checks.length ?? 0),
     sign_in: Boolean(verify?.sign_in),
     baseline: verify?.baseline !== false,

@@ -61,7 +61,6 @@ describe("expandArgusCommand", () => {
     config.value = {
       run: [{ title: "Expo" }],
       verify: {
-        devices: ["iPhone 17 Pro", "iPad Pro 13-inch (M5)"],
         checks: ["pnpm tsc --noEmit", "maestro test .maestro"],
         sign_in: "/login",
         baseline: true,
@@ -76,7 +75,12 @@ describe("expandArgusCommand", () => {
       runnerCommands: [],
     });
     expect(out).toContain("`linear_get_issue` with `ENG-273`");
-    expect(out).toContain("`iPhone 17 Pro`, `iPad Pro 13-inch (M5)`");
+    expect(out).toContain("a phone and a tablet");
+    expect(out).toContain('--name "ENG-273-<form factor>"');
+    expect(out).toContain("`conductor workspace info`");
+    expect(out).toContain("never boot an existing device by name");
+    expect(out).toContain("`conductor stop-device <id>`");
+    expect(out).toContain("- **Devices**:");
     expect(out).toContain("invoking `/login`");
     expect(out).toContain("- `maestro test .maestro`");
     expect(out).toContain("`pnpm proxy --delay 3000`");
@@ -101,7 +105,8 @@ describe("expandArgusCommand", () => {
       runnerCommands: [],
     });
     expect(out).toContain("no `verify` block");
-    expect(out).toContain("reserved for you");
+    expect(out).toContain("reserved for or handed to you");
+    expect(out).not.toContain("(devices,");
     expect(out).toContain("`package.json` scripts");
   });
 });
@@ -123,7 +128,6 @@ describe("implementTicketPrompt", () => {
       ticket: "ENG-9",
       extra: "only the empty state",
       verify: {
-        devices: [],
         checks: [],
         baseline: false,
         sign_in: "./scripts/login.sh",

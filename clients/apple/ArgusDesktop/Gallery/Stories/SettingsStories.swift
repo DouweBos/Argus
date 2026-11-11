@@ -27,7 +27,6 @@
 
     private static var verifyDraft: ArgusConfigDraft {
       var draft = ArgusConfigDraft()
-      draft.verifyDevices = ["iPhone 17 Pro", "iPad Pro 13-inch (M5)"].map { .init($0) }
       draft.verifyChecks = ["pnpm tsc --noEmit", "pnpm lint", "pnpm test", "maestro test .maestro/smoke"].map { .init($0) }
       draft.verifySignIn = "/login-test-account"
       draft.verifySlowBackend = "pnpm mock-api --latency 3000"
@@ -35,7 +34,7 @@
     }
 
     private static func verify(_ state: String, _ draft: ArgusConfigDraft) -> GalleryStory {
-      GalleryStory("project-settings/verify/\(state)", size: CGSize(width: 710, height: 760)) {
+      GalleryStory("project-settings/verify/\(state)", size: CGSize(width: 710, height: 580)) {
         VerifyStage(draft: draft)
       }
     }
@@ -99,7 +98,7 @@
 
     var body: some View {
       Form {
-        VerifySection(draft: $draft, knownDevices: ["iPhone 17 Pro", "iPhone 16e", "iPad Pro 13-inch (M5)", "Pixel 9"])
+        VerifySection(draft: $draft)
       }
       .formStyle(.grouped)
       .toggleStyle(.argusSwitch)

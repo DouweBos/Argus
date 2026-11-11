@@ -180,8 +180,8 @@ describe("loadArgusConfig", () => {
     mockReadFileSync.mockReturnValue(
       JSON.stringify({
         verify: {
-          devices: [" iPhone 17 Pro ", "", 3],
-          checks: ["pnpm lint"],
+          devices: ["iPhone 17 Pro"],
+          checks: [" pnpm lint ", "", 3],
           sign_in: "/login",
           baseline: false,
           slow_backend: "  ",
@@ -189,7 +189,6 @@ describe("loadArgusConfig", () => {
       }),
     );
     expect(loadArgusConfig("/repo").verify).toEqual({
-      devices: ["iPhone 17 Pro"],
       checks: ["pnpm lint"],
       sign_in: "/login",
       baseline: false,
@@ -199,17 +198,17 @@ describe("loadArgusConfig", () => {
     mockExistsSync.mockReturnValue(true);
     mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) =>
       String(p).includes("local")
-        ? JSON.stringify({ verify: { devices: ["web"] } })
+        ? JSON.stringify({ verify: { sign_in: "/login" } })
         : JSON.stringify({ verify: { checks: ["pnpm test"] } }),
     );
-    expect(loadArgusConfig("/repo").verify?.devices).toEqual(["web"]);
+    expect(loadArgusConfig("/repo").verify?.sign_in).toBe("/login");
     expect(loadArgusConfig("/repo").verify?.checks).toEqual([]);
   });
 
   it("drops an empty verify block", () => {
     mockExistsSync.mockImplementation((p) => !String(p).includes("local"));
     mockReadFileSync.mockReturnValue(
-      JSON.stringify({ verify: { devices: [] } }),
+      JSON.stringify({ verify: { checks: [], devices: ["web"] } }),
     );
     expect(loadArgusConfig("/repo").verify).toBeNull();
   });

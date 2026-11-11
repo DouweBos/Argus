@@ -33,12 +33,9 @@ function code(text: string): string {
 function devicesStep(
   verify: VerifyConfig | null,
   runCommands: string[],
+  key: string,
 ): string {
-  const devices = verify?.devices ?? [];
-  const list =
-    devices.length > 0
-      ? `Verify on every one of these: ${devices.map(code).join(", ")}. Map names to ids with \`conductor list-devices\`; ${code("web")} is the embedded browser (\`--device web\`). Boot one that isn't running with \`conductor start-device\` — never erase or shut down a device you didn't start.`
-      : "This project lists no devices, so verify on the device(s) reserved for you (`conductor workspace info`).";
+  const list = `From the ticket and the frames, decide which platforms and form factors the change affects — only what the ticket touches (a layout change on iOS that also ships on iPad: a phone and a tablet). Verify on the device(s) already reserved for or handed to you (\`conductor workspace info\`). For each other form factor, create a fresh throwaway device: \`conductor start-device --platform <p> --device-type "<type>" --name "${key}-<form factor>"\`. Never use another agent's or the user's devices, and never boot an existing device by name. Shut down the throwaways you created with \`conductor stop-device <id>\` when you're done.`;
   const run =
     runCommands.length > 0
       ? `Start the app with \`trigger_run\` (configured: ${runCommands.map(code).join(", ")}) and wait for it with \`wait_for_terminal\` — never from Bash.`
@@ -85,7 +82,7 @@ export function implementTicketPrompt(input: ImplementTicketInput): string {
   const dir = `${VERIFY_DIR}/${ticketKey(ticket)}`;
   const noVerify = verify
     ? ""
-    : "\n\nThis project has no `verify` block in `.argus.json`. Use the defaults below, and end the report with a suggested `verify` block (devices, checks, sign_in, baseline, slow_backend) for this project.";
+    : "\n\nThis project has no `verify` block in `.argus.json`. Use the defaults below, and end the report with a suggested `verify` block (checks, sign_in, baseline, slow_backend) for this project.";
   const userNote = extra ? `\n\n## From the user\n\n${extra}` : "";
 
   return `# Implement ${ticket}, and prove it
@@ -102,7 +99,7 @@ Collect every Figma link in the ticket and its comments. Hand this to a subagent
 
 ## 3. Get the devices ready
 
-${devicesStep(verify, runCommands)}
+${devicesStep(verify, runCommands, ticketKey(ticket))}
 
 ## 4. Baseline
 
@@ -133,6 +130,7 @@ A failed criterion, an unexplained difference or a failed check: fix it, then re
 
 End with:
 - **Criteria**: a table with one row per criterion and device — the screenshot path, what \`capture-ui\` showed, the \`design_compare\` result and any remaining difference, and pass or fail.
+- **Devices**: each device you used, whether it was yours or a throwaway, and why.
 - **Checks**: each command and its result.
 - **Not verified**: anything you couldn't check, and why.
 

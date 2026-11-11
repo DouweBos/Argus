@@ -18252,22 +18252,19 @@ extension ArgusProtocol {
   }
 
   public struct VerifyConfig: Codable, Sendable {
-    public var devices: [String]
     public var checks: [String]
     public var signIn: String?
     public var baseline: Bool?
     public var slowBackend: String?
 
     enum CodingKeys: String, CodingKey {
-      case devices = "devices"
       case checks = "checks"
       case signIn = "sign_in"
       case baseline = "baseline"
       case slowBackend = "slow_backend"
     }
 
-    public init(devices: [String], checks: [String], signIn: String? = nil, baseline: Bool? = nil, slowBackend: String? = nil) {
-      self.devices = devices
+    public init(checks: [String], signIn: String? = nil, baseline: Bool? = nil, slowBackend: String? = nil) {
       self.checks = checks
       self.signIn = signIn
       self.baseline = baseline
@@ -18276,7 +18273,6 @@ extension ArgusProtocol {
 
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(devices, forKey: .devices)
       try c.encode(checks, forKey: .checks)
       try c.encodeIfPresent(signIn, forKey: .signIn)
       try c.encodeIfPresent(baseline, forKey: .baseline)

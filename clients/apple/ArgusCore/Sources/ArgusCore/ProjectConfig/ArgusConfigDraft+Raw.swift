@@ -75,7 +75,6 @@ extension ArgusConfigDraft {
     automationPathDenylist = Self.strings(automations["path_denylist"]).joined(separator: ", ")
     disabledAutomations = Self.strings(automations["disabled"]).joined(separator: ", ")
     let verify = raw["verify"]?.objectValue ?? [:]
-    verifyDevices = Self.strings(verify["devices"]).map { ListItem($0) }
     verifyChecks = Self.strings(verify["checks"]).map { ListItem($0) }
     verifySignIn = verify["sign_in"]?.stringValue ?? ""
     verifyBaseline = verify["baseline"]?.boolValue ?? true
@@ -131,7 +130,8 @@ extension ArgusConfigDraft {
     automations["disabled"] = Self.nonEmpty(Self.commaList(disabledAutomations).map(JSONValue.string))
     set("automations", automations.isEmpty ? nil : .object(automations))
     var verify = raw["verify"]?.objectValue ?? [:]
-    verify["devices"] = Self.nonEmpty(Self.values(verifyDevices))
+    // Retired: agents pick their devices per ticket.
+    verify["devices"] = nil
     verify["checks"] = Self.nonEmpty(Self.values(verifyChecks))
     verify["sign_in"] = Self.trimmed(verifySignIn)
     // Baselines are on by default; only opting out is written.

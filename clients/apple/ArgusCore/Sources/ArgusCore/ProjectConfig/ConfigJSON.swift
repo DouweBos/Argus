@@ -79,7 +79,7 @@ public enum ConfigJSON {
     "llm": ["runner", "model"],
     "tools": ["disabled"],
     "automations": ["autonomy_ceiling", "disabled", "path_denylist"],
-    "verify": ["devices", "checks", "sign_in", "baseline", "slow_backend"],
+    "verify": ["checks", "sign_in", "baseline", "slow_backend"],
   ].merging(deeplinkOrders) { a, _ in a }
 
   /// Deep links nest; a few levels covers any sane tree.

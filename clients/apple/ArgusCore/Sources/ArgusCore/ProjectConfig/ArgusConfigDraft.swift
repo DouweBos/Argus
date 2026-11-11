@@ -40,7 +40,6 @@ public struct ArgusConfigDraft: Equatable, Sendable {
   public var disabledAutomations = ""
 
   // Verify
-  public var verifyDevices: [ListItem] = []
   public var verifyChecks: [ListItem] = []
   public var verifySignIn = ""
   public var verifyBaseline = true

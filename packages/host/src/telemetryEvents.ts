@@ -328,7 +328,6 @@ export interface EventMap {
   implement_ticket_started: {
     baseline: boolean;
     checks: "0" | "1" | "2" | "3+";
-    devices: "0" | "1" | "2" | "3+";
     has_notes: boolean;
     has_ticket: boolean;
     has_verify: boolean;

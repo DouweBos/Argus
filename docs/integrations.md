@@ -107,7 +107,9 @@ along as notes. The agent:
 1. reads the issue and writes down every acceptance criterion;
 2. pulls every linked Figma frame up front into spec files and images, so it
    works from the design rather than from memory;
-3. gets the project's devices ready and signs in;
+3. picks the devices the ticket calls for (say a phone and a tablet), using
+   the one it already has and starting throwaway ones for the rest, and signs
+   in;
 4. screenshots a baseline before changing code;
 5. implements the ticket;
 6. drives every criterion on every device, confirms it from what's on
@@ -117,10 +119,10 @@ along as notes. The agent:
 9. ends with a report: per criterion and device, the evidence taken after
    the last change, then the check results.
 
-The devices, checks, sign-in, baseline and backend slowdown come from the
+The checks, sign-in, baseline and backend slowdown come from the
 project's [`verify` block](./project-settings.md#verify--how-an-agent-proves-its-work).
-Without one, the agent uses the device it has and the project's usual
-scripts, and suggests a block for you. Notes and evidence are kept in
+Without one, the agent uses the project's usual scripts and suggests a block
+for you. Notes and evidence are kept in
 `.argus/verify/<ticket>/` in the worktree, out of git.
 
 When you start from an issue in a new worktree, turn on **Verify** to start

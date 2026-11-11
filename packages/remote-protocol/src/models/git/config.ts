@@ -126,8 +126,6 @@ export type ProjectAutomationConfig = z.infer<typeof ProjectAutomationConfig>;
 
 /** The `verify` block of `.argus.json`: how an agent proves its work. */
 export const VerifyConfig = z.object({
-  /** Devices to verify on, by simulator/emulator name or `web`. */
-  devices: z.array(z.string()),
   /** Commands that must pass after the last code change. */
   checks: z.array(z.string()),
   /** How to sign in before driving the app: a `/skill` or a shell command. */

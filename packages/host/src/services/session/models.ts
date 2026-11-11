@@ -387,8 +387,6 @@ export interface ArgusConfig {
 
 /** The `verify` block of `.argus.json`. */
 export interface VerifyConfig {
-  /** Devices to verify on, by simulator/emulator name or `web` (e.g. a phone and a tablet). */
-  devices: string[];
   /** Commands that must pass after the last code change (type-check, lint, tests, e2e flows). */
   checks: string[];
   /** How to sign in before driving the app: a `/skill` or a shell command. */
