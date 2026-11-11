@@ -13,7 +13,7 @@ type ResolveSession = (
   idOrBranch: string,
   projectPath: string,
   callerAgentId: string | null,
-) => Session | null;
+) => Promise<Session | null>;
 
 function text(body: string, isError = false) {
   return {
@@ -57,7 +57,9 @@ export function registerPrWatchTools(
         const root =
           project_path ??
           (own ? appState.sessions.get(own)?.repo_root : undefined);
-        target = root ? resolveSession(session, root, callerAgentId) : null;
+        target = root
+          ? await resolveSession(session, root, callerAgentId)
+          : null;
       } else {
         target = own ? appState.sessions.get(own) : undefined;
       }

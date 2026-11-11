@@ -438,6 +438,61 @@ describe("list_sessions", () => {
 });
 
 // ===========================================================================
+// refresh_sessions, and adopting a worktree an agent made itself
+// ===========================================================================
+
+describe("refresh_sessions", () => {
+  beforeEach(() => {
+    appState.repoRoots.add("/projects/frontend");
+  });
+
+  it("rescans the project and returns its sessions", async () => {
+    mockListSessions.mockResolvedValue([mockSession()]);
+
+    const result = await client.callTool({
+      name: "refresh_sessions",
+      arguments: { project_path: "/projects/frontend" },
+    });
+
+    expect(mockListSessions).toHaveBeenCalledWith(
+      "/projects/frontend",
+      "mcp_refresh",
+    );
+    const parsed = jsonOf(result) as { session_id: string }[];
+    expect(parsed.map((s) => s.session_id)).toEqual(["ws-1"]);
+  });
+
+  it("finds a worktree it didn't know yet by rescanning once", async () => {
+    const adopted = mockSession({
+      id: "ws-new",
+      branch: "agent/new-worktree",
+      path: "/tmp/worktrees/new-worktree",
+    });
+    mockListSessions.mockImplementation(async () => {
+      appState.sessions.set(adopted.id, adopted);
+
+      return [adopted];
+    });
+    mockDeleteSession.mockResolvedValue(undefined);
+
+    const result = await client.callTool({
+      name: "delete_session",
+      arguments: {
+        session: "/tmp/worktrees/new-worktree",
+        project_path: "/projects/frontend",
+      },
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(mockListSessions).toHaveBeenCalledWith(
+      "/projects/frontend",
+      "mcp_lookup",
+    );
+    expect(mockDeleteSession).toHaveBeenCalledWith("ws-new", false);
+  });
+});
+
+// ===========================================================================
 // delete_session
 // ===========================================================================
 

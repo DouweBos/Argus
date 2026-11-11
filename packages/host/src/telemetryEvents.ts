@@ -71,6 +71,9 @@ export const TELEMETRY_RUNNERS = [
   "grok",
   "fx",
 ] as const;
+/** What asked for a project's session list: an app, an agent's `refresh_sessions`, or a tool that didn't recognise a session. */
+export type SessionListTrigger = "listing" | "mcp_lookup" | "mcp_refresh";
+
 export type TelemetryRunner = (typeof TELEMETRY_RUNNERS)[number] | "custom";
 
 export interface EventMap {
@@ -384,6 +387,7 @@ export interface EventMap {
   session_adopted: {
     origin: "claude_code" | "conductor" | "other";
     setup_pending: boolean;
+    trigger: SessionListTrigger;
   };
   session_deleted: {
     delete_branch: boolean;

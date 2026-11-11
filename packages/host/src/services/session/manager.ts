@@ -3,6 +3,7 @@
  */
 
 import type { WorktreePurpose } from "./worktreeLocationCore";
+import type { SessionListTrigger } from "../../telemetryEvents";
 import type { DesignRef, LinkedIssue } from "@argus/remote-protocol";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -248,7 +249,10 @@ function stampAvailability(ws: Session): void {
  * worktrees discovered on disk via `git worktree list`. Persisted metadata is
  * loaded and migrated to remove orphaned entries.
  */
-export async function listSessions(repoRoot: string): Promise<Session[]> {
+export async function listSessions(
+  repoRoot: string,
+  trigger: SessionListTrigger = "listing",
+): Promise<Session[]> {
   const diskSessions = (await listWorktrees(repoRoot)).filter(
     (w) => !creatingWorktreePaths.has(w.path),
   );
@@ -331,6 +335,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
       telemetryCapture("session_adopted", {
         origin,
         setup_pending: Boolean(ws.setup_pending),
+        trigger,
       });
     }
 
@@ -338,6 +343,10 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
 
     if (!appState.sessions.has(ws.id)) {
       appState.sessions.set(ws.id, { ...ws });
+      // A worktree made outside Argus: the apps learn of it now, not at their next poll.
+      if (adopted) {
+        emitHostEvent("session:created", { ...ws });
+      }
     }
     trackSessionBranch(ws.id);
 

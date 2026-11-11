@@ -11,6 +11,7 @@
  * to `appState` and all service functions. No proxy layer or IPC needed.
  */
 
+import type { Session } from "../session/models";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import crypto from "node:crypto";
@@ -79,6 +80,7 @@ import { findPastAgent, registerPastAgentTools } from "./pastAgentTools";
 import { registerPrWatchTools } from "./prWatchTools";
 import { isGitRepo, collectAllProjects } from "./projectDiscovery";
 import { ensureRepoRegistered } from "./projects";
+import { registerSessionListTools } from "./sessionListTools";
 import {
   addMcpSession,
   closeAllMcpSessions,
@@ -189,11 +191,30 @@ const ROOT_SESSION_ALIASES = new Set(["root", "project_root", "project-root"]);
 /** Aliases for "wherever the calling agent already is" — root or worktree. */
 const CURRENT_SESSION_ALIASES = new Set(["current", "here", "self"]);
 
-function resolveSession(
+/**
+ * A session by id, branch, display name, path or alias. On a miss it lists the
+ * project once first: a worktree an agent just made with `git worktree add`
+ * isn't a session until a listing adopts it.
+ */
+async function resolveSession(
   idOrBranch: string,
   projectPath: string,
   callerAgentId: string | null = null,
-) {
+): Promise<Session | null> {
+  const known = findSession(idOrBranch, projectPath, callerAgentId);
+  if (known) {
+    return known;
+  }
+  await listSessions(projectPath, "mcp_lookup").catch(() => []);
+
+  return findSession(idOrBranch, projectPath, callerAgentId);
+}
+
+function findSession(
+  idOrBranch: string,
+  projectPath: string,
+  callerAgentId: string | null = null,
+): Session | null {
   // "current" is the caller's own checkout, whatever kind it is. An agent in a
   // worktree gets that worktree, not the project root — the two are only the
   // same session for an agent that happens to be running in the root.
@@ -240,13 +261,17 @@ function resolveSession(
     return byBranch;
   }
 
-  // Search by display_name — last resort.
+  // Search by display_name, then by the worktree's path.
   const byName = inProject.find((ws) => ws.display_name === idOrBranch);
   if (byName) {
     return byName;
   }
 
-  return null;
+  return (
+    inProject.find(
+      (ws) => ws.path && path.resolve(ws.path) === path.resolve(idOrBranch),
+    ) ?? null
+  );
 }
 
 /**
@@ -801,45 +826,7 @@ export function createMcpServer(
     },
   );
 
-  // -------------------------------------------------------------------------
-  // list_sessions
-  // -------------------------------------------------------------------------
-
-  server.tool(
-    "list_sessions",
-    'List all sessions for a project. Exactly one has `kind: "project_root"` — that is the checkout the user has open, always `ready`, and addressable as `"root"` in any tool taking a `session`; the rest are worktrees. Returns session IDs, branches, paths, and statuses. The `status` field is `"initializing"` while `git worktree add` and the project\'s setup pipeline run, `"ready"` once provisioning completes, or an error object if setup failed. Sessions in `initializing` cannot host agents yet — spawning into them is queued by `spawn_agent`/`spawn_agents_batch` until ready, so freshly-created sessions may legitimately show no agents in `list_agents` for several seconds (or longer if dependency installs are running).',
-    {
-      project_path: z
-        .string()
-        .optional()
-        .describe(
-          "Absolute path to the project root. Defaults to the first registered project.",
-        ),
-    },
-    async ({ project_path }) => {
-      const repoRoot = resolveRepoRoot(project_path);
-      const sessions = await listSessions(repoRoot);
-      const summary = sessions.map((ws) => ({
-        session_id: ws.id,
-        kind: ws.kind,
-        branch: ws.branch,
-        display_name: ws.display_name,
-        description: ws.description,
-        path: ws.path,
-        status: ws.status,
-        base_branch: ws.base_branch,
-      }));
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(summary, null, 2),
-          },
-        ],
-      };
-    },
-  );
+  registerSessionListTools(server, resolveRepoRoot);
 
   // -------------------------------------------------------------------------
   // delete_session
@@ -857,7 +844,7 @@ export function createMcpServer(
         .describe("Also delete the git branch (default: false)"),
     },
     async ({ session, project_path, delete_branch }) => {
-      const ws = resolveSession(session, project_path, callerAgentId);
+      const ws = await resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -964,7 +951,7 @@ export function createMcpServer(
       parent_agent_id,
       attachments,
     }) => {
-      const ws = resolveSession(session, project_path, callerAgentId);
+      const ws = await resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -1327,7 +1314,7 @@ export function createMcpServer(
     async ({ project_path, session }) => {
       let agents;
       if (session) {
-        const ws = resolveSession(session, project_path, callerAgentId);
+        const ws = await resolveSession(session, project_path, callerAgentId);
         if (!ws) {
           return {
             content: [
@@ -1974,7 +1961,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path, callerAgentId);
+      const ws = await resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2043,7 +2030,7 @@ export function createMcpServer(
         ),
     },
     async ({ session, project_path, title }) => {
-      const ws = resolveSession(session, project_path, callerAgentId);
+      const ws = await resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2256,7 +2243,7 @@ export function createMcpServer(
             "Pass `terminal_session_id`, or `session` + `project_path` (and optionally `title`).",
           );
         }
-        ws = resolveSession(session, project_path, callerAgentId);
+        ws = await resolveSession(session, project_path, callerAgentId);
         if (!ws) {
           return fail(`Session not found: ${session}`);
         }
@@ -2412,7 +2399,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path, callerAgentId);
+      const ws = await resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2476,7 +2463,7 @@ export function createMcpServer(
         ),
     },
     async ({ session, project_path, scope, max_bytes }) => {
-      const ws = resolveSession(session, project_path, callerAgentId);
+      const ws = await resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2555,7 +2542,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path, callerAgentId);
+      const ws = await resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2645,7 +2632,7 @@ export function createMcpServer(
         ),
     },
     async ({ session, project_path, file_path, max_bytes }) => {
-      const ws = resolveSession(session, project_path, callerAgentId);
+      const ws = await resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2743,7 +2730,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path, callerAgentId);
+      const ws = await resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2793,7 +2780,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path, callerAgentId);
+      const ws = await resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2852,7 +2839,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path, callerAgentId);
+      const ws = await resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2903,7 +2890,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path, callerAgentId);
+      const ws = await resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2957,7 +2944,7 @@ export function createMcpServer(
         ),
     },
     async ({ session, project_path, file_path, content, stage }) => {
-      const ws = resolveSession(session, project_path, callerAgentId);
+      const ws = await resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -3026,7 +3013,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     run: async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path, callerAgentId);
+      const ws = await resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -3079,7 +3066,7 @@ export function createMcpServer(
         ),
     },
     run: async ({ session, project_path, delete_branch }) => {
-      const ws = resolveSession(session, project_path, callerAgentId);
+      const ws = await resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
