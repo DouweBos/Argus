@@ -21,8 +21,28 @@
           ChatInputView(startingIn: "s-1", starter: ComposerStarter(defaultMode: "auto") { _ in true })
             .padding(.vertical, 12)
         },
+        // Two other accounts and every installed runner: the rows scroll instead of growing off screen.
+        GalleryStory(
+          "composer/limit-handoff", size: CGSize(width: 760, height: 0),
+          fixtures: [RemoteMethod.automationsRunners.rawValue: runners],
+          setup: { await $0.host.loadRunners() }
+        ) {
+          LimitHandoffCard(agentId: "a-1", accounts: handoffAccounts) {}
+            .padding(12)
+        },
       ]
     }
+
+    private static let handoffAccounts: [ArgusProtocol.LimitHandoffAccount] = try! ProtocolCodec.decoder.decode(
+      [ArgusProtocol.LimitHandoffAccount].self,
+      from: Data(
+        """
+        [{"account_id":"work","label":"Work","detail":"team",
+          "usage":{"id":"weekly","kind":"weekly","label":"Weekly","used_percent":68,"resets_at":\(
+            (Date().timeIntervalSince1970 + 2 * 86400 + 18 * 3600) * 1000)}},
+         {"account_id":"side","label":"Side projects","detail":"max",
+          "usage":{"id":"five_hour","kind":"five_hour","label":"5-hour","used_percent":12}}]
+        """.utf8))
 
     /// Every built-in runner plus a gateway of the user's, half of their CLIs missing.
     private static let runners = """

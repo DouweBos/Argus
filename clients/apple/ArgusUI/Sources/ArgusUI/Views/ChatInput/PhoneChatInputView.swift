@@ -14,7 +14,7 @@
 
     @State private var composer: ComposerModel
     @State private var controller: PastingTextController
-    @State private var handoffAccounts: [ArgusProtocol.LimitHandoffAccount] = []
+    @State private var handoffAccounts: [ArgusProtocol.LimitHandoffAccount]? = []
     @State private var picker: PhoneComposerPicker?
     @State private var showingAttachMenu = false
     @State private var inputHeight = PastingTextView.collapsedHeight
@@ -44,7 +44,7 @@
         if LimitHandoffCard.shows(
           accounts: handoffAccounts, status: composer.status, runners: host.continueRunners(agentId: composer.agentId))
         {
-          LimitHandoffCard(agentId: composer.agentId, accounts: handoffAccounts) { handoffAccounts = [] }
+          LimitHandoffCard(agentId: composer.agentId, accounts: handoffAccounts ?? []) { handoffAccounts = [] }
         }
         if !composer.slashItems.isEmpty {
           PhoneSlashList(commands: composer.slashItems) { composer.acceptSlash($0) }

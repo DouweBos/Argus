@@ -34,6 +34,8 @@ struct LimitHandoffCardTests {
     #expect(LimitHandoffCard.shows(accounts: [], status: stalled, runners: [runner]))
     #expect(!LimitHandoffCard.shows(accounts: [], status: try status("idle", stalled: false), runners: [runner]))
     #expect(!LimitHandoffCard.shows(accounts: [], status: stalled, runners: []))
+    // Still loading the accounts: nothing yet, rather than runners that are replaced a moment later.
+    #expect(!LimitHandoffCard.shows(accounts: nil, status: stalled, runners: [runner]))
   }
 
   @Test("usage reads as what's left, with the reset when known")

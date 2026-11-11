@@ -22,7 +22,7 @@
     @State var controller: ComposerController
     @State var height = ComposerField.minHeight
     @State var isDropTarget = false
-    @State var handoffAccounts: [ArgusProtocol.LimitHandoffAccount] = []
+    @State var handoffAccounts: [ArgusProtocol.LimitHandoffAccount]? = []
     @State var showingSideQuestion = false
 
     init(
@@ -47,7 +47,7 @@
         if LimitHandoffCard.shows(
           accounts: handoffAccounts, status: composer.status, runners: host.continueRunners(agentId: composer.agentId))
         {
-          LimitHandoffCard(agentId: composer.agentId, accounts: handoffAccounts) { handoffAccounts = [] }
+          LimitHandoffCard(agentId: composer.agentId, accounts: handoffAccounts ?? []) { handoffAccounts = [] }
         }
         if composer.slashItems.isEmpty, composer.mentionItems.isEmpty, !composer.hasContent,
           !composer.followUps.isEmpty

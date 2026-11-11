@@ -23,12 +23,17 @@ public struct LimitHandoffCard: View {
     self.onHandedOff = onHandedOff
   }
 
-  /// Shown while stalled with somewhere to go: another account or another runner.
+  /// Shown while stalled with somewhere to go: another account or another runner. Not before
+  /// the accounts have loaded (nil), or it would offer only runners for a moment and then redraw.
   static func shows(
-    accounts: [ArgusProtocol.LimitHandoffAccount], status: RemoteAgentStatus?, runners: [RemoteRunner]
+    accounts: [ArgusProtocol.LimitHandoffAccount]?, status: RemoteAgentStatus?, runners: [RemoteRunner]
   ) -> Bool {
-    !accounts.isEmpty || (isStalled(status) && !runners.isEmpty)
+    guard let accounts else { return false }
+    return !accounts.isEmpty || (isStalled(status) && !runners.isEmpty)
   }
+
+  /// Past this the rows scroll, so a long list never pushes the card off screen.
+  static let maxRowsHeight: CGFloat = 220
 
   private var runners: [RemoteRunner] { host.continueRunners(agentId: agentId) }
 
@@ -57,8 +62,15 @@ public struct LimitHandoffCard: View {
           .foregroundStyle(theme.textSecondary)
           .fixedSize(horizontal: false, vertical: true)
       }
-      ForEach(accounts, id: \.accountId) { row($0) }
-      ForEach(runners, id: \.id) { runnerRow($0) }
+      ScrollView {
+        VStack(alignment: .leading, spacing: 10) {
+          ForEach(accounts, id: \.accountId) { row($0) }
+          ForEach(runners, id: \.id) { runnerRow($0) }
+        }
+      }
+      .frame(maxHeight: Self.maxRowsHeight)
+      .fixedSize(horizontal: false, vertical: true)
+      .scrollBounceBehavior(.basedOnSize)
       if let error {
         Text(error).font(.scaled(size: 12)).foregroundStyle(theme.error)
       }
@@ -172,23 +184,25 @@ public struct LimitHandoffCard: View {
   }
 }
 
-/// Fetches the offer whenever the agent starts or stops being stalled.
+/// Fetches the offer whenever the agent starts or stops being stalled; nil while it loads.
 struct LimitHandoffLoader: ViewModifier {
   @Environment(HostStore.self) private var host
   let agentId: String
   let stalled: Bool
-  @Binding var accounts: [ArgusProtocol.LimitHandoffAccount]
+  @Binding var accounts: [ArgusProtocol.LimitHandoffAccount]?
 
   func body(content: Content) -> some View {
     content.task(id: "\(agentId):\(stalled)") {
-      accounts = stalled ? await host.limitHandoffAccounts(agentId: agentId) : []
+      guard stalled else { return accounts = [] }
+      accounts = nil
+      accounts = await host.limitHandoffAccounts(agentId: agentId)
     }
   }
 }
 
 extension View {
   func limitHandoffOffer(
-    agentId: String, status: RemoteAgentStatus?, into accounts: Binding<[ArgusProtocol.LimitHandoffAccount]>
+    agentId: String, status: RemoteAgentStatus?, into accounts: Binding<[ArgusProtocol.LimitHandoffAccount]?>
   ) -> some View {
     modifier(LimitHandoffLoader(agentId: agentId, stalled: LimitHandoffCard.isStalled(status), accounts: accounts))
   }
