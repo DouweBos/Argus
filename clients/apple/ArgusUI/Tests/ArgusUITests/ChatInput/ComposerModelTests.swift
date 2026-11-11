@@ -120,6 +120,15 @@ struct ComposerModelTests {
     #expect(host.sent.count == 1)
   }
 
+  @Test("side questions need a conversation: not before the first message, nor in a start composer")
+  func hasConversation() {
+    let composer = model()
+    #expect(!composer.hasConversation)
+    host.messagesByAgent["a1"] = [RemoteMessage(id: "m1", role: .user, textBlocks: ["go"], toolCalls: [])]
+    #expect(composer.hasConversation)
+    #expect(!model(status: nil, starter: ComposerStarter(defaultMode: "auto") { _ in true }).hasConversation)
+  }
+
   @Test("the draft's text, images and links come back on load")
   func draftRestore() async throws {
     let first = model()
@@ -375,7 +384,8 @@ final class FakeComposerHost: ComposerHost {
 
   func claudeAccountId(forSessionId id: String) -> String? { nil }
   func repoRoot(forSessionId id: String) -> String? { nil }
-  func visibleMessages(for key: String) -> [RemoteMessage] { [] }
+  var messagesByAgent: [String: [RemoteMessage]] = [:]
+  func visibleMessages(for key: String) -> [RemoteMessage] { messagesByAgent[key] ?? [] }
   func lastKnownModels(runnerId: String?) -> [RemoteModelInfo] { [] }
 
   func sendMessage(

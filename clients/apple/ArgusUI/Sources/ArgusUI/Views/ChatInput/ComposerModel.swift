@@ -92,6 +92,9 @@ public final class ComposerModel {
     return status.map { $0.status != .stopped && $0.status != .error } ?? true
   }
 
+  /// A side question forks the conversation, so an agent with nothing said yet has none to ask about.
+  public var hasConversation: Bool { starter == nil && !host.visibleMessages(for: agentId).isEmpty }
+
   /// A start composer offers the CLI its start will take; an agent, its own.
   public var capabilities: RemoteAgentCapabilities {
     if starter != nil, let sessionId { return host.startOptionsBySession[sessionId] ?? .empty }

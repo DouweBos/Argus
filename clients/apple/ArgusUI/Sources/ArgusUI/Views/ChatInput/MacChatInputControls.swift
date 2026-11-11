@@ -23,7 +23,7 @@
         permissionMenu
         ComposerPillDivider()
         projectMenu
-        if composer.starter == nil && host.supportsSideQuestion(agentId: composer.agentId) {
+        if composer.hasConversation && host.supportsSideQuestion(agentId: composer.agentId) {
           ComposerPillDivider()
           sideQuestionButton
         }
