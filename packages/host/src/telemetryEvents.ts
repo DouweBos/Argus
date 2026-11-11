@@ -217,6 +217,10 @@ export interface EventMap {
   };
   agent_nudged: { critical: boolean; tagged: boolean };
   agent_stopped: undefined;
+  agent_transcript_read: {
+    has_subagents: boolean;
+    target: "agent" | "subagent";
+  };
   app_error: { message: string; scope: string };
   app_launched: undefined;
   app_quit: undefined;
