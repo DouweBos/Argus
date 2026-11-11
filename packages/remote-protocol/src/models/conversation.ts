@@ -105,9 +105,18 @@ export type ConversationMessageSource = z.infer<
   typeof ConversationMessageSource
 >;
 
+/** Marks the divider where a chat moved from one runner to another. */
+export const ConversationHandoff = z.object({
+  fromAgentId: z.string(),
+  fromRunner: z.string(),
+  toRunner: z.string(),
+});
+export type ConversationHandoff = z.infer<typeof ConversationHandoff>;
+
 export const ConversationMessage = z.object({
   author: z.string().optional(),
   checkpointId: z.string().optional(),
+  handoff: ConversationHandoff.optional(),
   id: z.string(),
   images: z.array(ImageAttachment).optional(),
   role: z.enum(["assistant", "system", "user"]),

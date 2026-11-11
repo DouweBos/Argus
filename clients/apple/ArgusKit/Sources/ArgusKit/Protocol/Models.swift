@@ -456,6 +456,25 @@ public enum RemoteMessageRole: String, Codable, Sendable {
   case assistant, system, user
 }
 
+/// The divider where a chat moved from one runner to another.
+public struct RemoteMessageHandoff: Codable, Hashable, Sendable {
+  public var fromAgentId: String
+  public var fromRunner: String
+  public var toRunner: String
+
+  public init(fromAgentId: String, fromRunner: String, toRunner: String) {
+    self.fromAgentId = fromAgentId
+    self.fromRunner = fromRunner
+    self.toRunner = toRunner
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case fromAgentId = "from_agent_id"
+    case fromRunner = "from_runner"
+    case toRunner = "to_runner"
+  }
+}
+
 public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
   public var id: String
   public var role: RemoteMessageRole
@@ -463,6 +482,7 @@ public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
   public var toolCalls: [RemoteToolCall]
   public var images: [RemoteImageRef]?
   public var source: RemoteMessageSource?
+  public var handoff: RemoteMessageHandoff?
   public var author: String?
   public var isError: Bool?
   public var timestamp: Double?
@@ -475,6 +495,7 @@ public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
     toolCalls: [RemoteToolCall] = [],
     images: [RemoteImageRef]? = nil,
     source: RemoteMessageSource? = nil,
+    handoff: RemoteMessageHandoff? = nil,
     author: String? = nil,
     isError: Bool? = nil,
     timestamp: Double? = nil,
@@ -486,6 +507,7 @@ public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
     self.toolCalls = toolCalls
     self.images = images
     self.source = source
+    self.handoff = handoff
     self.author = author
     self.isError = isError
     self.timestamp = timestamp
@@ -493,7 +515,7 @@ public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
   }
 
   enum CodingKeys: String, CodingKey {
-    case id, role, images, source, author, timestamp, usage
+    case id, role, images, source, handoff, author, timestamp, usage
     case textBlocks = "text_blocks"
     case toolCalls = "tool_calls"
     case isError = "is_error"

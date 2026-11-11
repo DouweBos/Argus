@@ -189,6 +189,16 @@ export interface EventMap {
     source: "limit_card" | "picker";
     success: boolean;
   };
+  agent_continued_on_runner: {
+    from_runner: TelemetryRunner;
+    to_runner: TelemetryRunner;
+    after_limit: boolean;
+    source: "limit_card" | "menu";
+    /** `mcp`: a lean seed plus the transcript tool; `inline`: a larger seed only. */
+    seed: "inline" | "mcp";
+    native: boolean;
+    success: boolean;
+  };
   agent_limit_auto_continue: {
     action: "cancelled" | "dismissed" | "gave_up" | "scheduled" | "sent";
     has_reset_time: boolean;

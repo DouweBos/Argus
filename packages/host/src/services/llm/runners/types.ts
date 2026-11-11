@@ -198,6 +198,11 @@ export interface LlmRunnerHandle {
    * this as a no-op.
    */
   setEffort: (level: string | null) => Promise<void>;
+  /**
+   * Whether the agent can reach HTTP MCP servers (Argus's own). Absent means
+   * it can; ACP agents only know after their handshake.
+   */
+  reachesHttpMcp?: () => boolean;
   /** Live status of every MCP server the CLI loaded; absent when it can't report. */
   mcpStatus?: () => Promise<RunnerMcpServerStatus[]>;
   /** Respond to a previously-emitted permission request. */

@@ -68,6 +68,7 @@ export interface RawMessage {
   toolCalls?: RawToolCall[];
   images?: RawImage[];
   source?: RawSource;
+  handoff?: { fromAgentId?: string; fromRunner?: string; toRunner?: string };
   isError?: boolean;
   timestamp?: number;
   usage?: RawTokenUsage;
@@ -212,6 +213,15 @@ export function toRemoteMessage(m: RawMessage): RemoteMessage {
     ),
     ...(images.length > 0 ? { images } : {}),
     ...(source ? { source } : {}),
+    ...(m.handoff?.fromAgentId && m.handoff.fromRunner && m.handoff.toRunner
+      ? {
+          handoff: {
+            from_agent_id: m.handoff.fromAgentId,
+            from_runner: m.handoff.fromRunner,
+            to_runner: m.handoff.toRunner,
+          },
+        }
+      : {}),
     ...(m.usage && typeof m.usage.input_tokens === "number"
       ? {
           usage: {

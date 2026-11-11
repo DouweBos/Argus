@@ -26,6 +26,14 @@ public struct TranscriptMessageView: View {
   }
 
   public var body: some View {
+    if let handoff = message.handoff {
+      HandoffDivider(handoff: handoff)
+    } else {
+      bubbleRow
+    }
+  }
+
+  private var bubbleRow: some View {
     HStack {
       if isUser { Spacer(minLength: 40) }
       VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {

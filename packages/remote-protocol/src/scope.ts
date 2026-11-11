@@ -139,6 +139,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   // Scoped to its source agent; the handler still refuses any scoped guest,
   // since the fork it starts is outside the scope.
   "agents.fork": agent(),
+  // Likewise: the new agent it starts is outside the scope.
+  "agents.continue_on_runner": agent(),
 
   // This connection's own device record and push registration.
   "device.rename": OPEN,

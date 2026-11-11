@@ -373,7 +373,7 @@ export async function startAgent(
   return agentInfoOf(agentSession);
 }
 
-function telemetryRunner(runner: LlmRunner): TelemetryRunner {
+export function telemetryRunner(runner: LlmRunner): TelemetryRunner {
   if (runner.isCustom) {
     return "custom";
   }

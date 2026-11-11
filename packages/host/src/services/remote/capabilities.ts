@@ -1500,6 +1500,32 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return { session_id: forked.sessionId, agent: toRemoteAgentStatus(agent) };
   },
 
+  "agents.continue_on_runner": async (params, ctx) => {
+    const { agent_id, runner_id, source } = parse(
+      "agents.continue_on_runner",
+      params,
+    );
+    if (ctx.scope) {
+      throw new GatewayError("capability_denied", "agents.continue_on_runner");
+    }
+    requireAgent(agent_id);
+    requireKnownRunner(runner_id);
+    // Through the registry: importing the service here closes an import cycle.
+    const info = await control(() =>
+      invokeCommand("continue_agent_on_runner", {
+        agentId: agent_id,
+        runnerId: runner_id,
+        source,
+      }),
+    );
+    const agent = appState.agents.get((info as { agent_id: string }).agent_id);
+    if (!agent) {
+      throw new GatewayError("internal", "continued agent vanished");
+    }
+
+    return { agent: toRemoteAgentStatus(agent) };
+  },
+
   "agents.ask_side": async (params) => {
     const { agent_id, question } = parse("agents.ask_side", params);
     requireAgent(agent_id);

@@ -319,6 +319,15 @@ export const MethodParams = {
     text: z.string().min(1).max(MAX_PROMPT),
   }),
   /**
+   * Continue the chat in a new agent on another runner, in the same session
+   * and worktree, seeded with the chat so far.
+   */
+  "agents.continue_on_runner": z.object({
+    agent_id: z.string(),
+    runner_id: z.string(),
+    source: z.enum(["limit_card", "menu"]),
+  }),
+  /**
    * Fork the chat at a message into a new agent: in a new session branched at
    * that point, or in this one. `description` names the new session.
    */
@@ -924,6 +933,7 @@ export const MethodResult = {
   "agents.queue_send_now": z.object({ mid_turn: z.boolean() }),
   "agents.rewind": z.object({ accepted: z.boolean() }),
   "agents.fork": z.object({ session_id: z.string(), agent: RemoteAgentStatus }),
+  "agents.continue_on_runner": z.object({ agent: RemoteAgentStatus }),
   "agents.ask_side": z.object({ answer: z.string() }),
   "sessions.create": z.object({ session: RemoteSession }),
   "scratch_pads.create": z.object({ session: RemoteSession }),

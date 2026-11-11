@@ -2,11 +2,12 @@ import ArgusCore
 import SwiftUI
 
 /// A chat stalled on a spent usage limit, offering the user's other signed-in
-/// Claude accounts. Moving is always their pick: plans may belong to different
-/// employers, so nothing here ever switches by itself.
+/// Claude accounts and the other installed runners. Moving is always their
+/// pick: plans may belong to different employers, so nothing switches by itself.
 public struct LimitHandoffCard: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
+  @Environment(\.openContinuedAgent) private var openContinuedAgent
   let agentId: String
   let accounts: [ArgusProtocol.LimitHandoffAccount]
   /// The handoff went through; the parent drops the offer.
@@ -21,6 +22,15 @@ public struct LimitHandoffCard: View {
     self.accounts = accounts
     self.onHandedOff = onHandedOff
   }
+
+  /// Shown while stalled with somewhere to go: another account or another runner.
+  static func shows(
+    accounts: [ArgusProtocol.LimitHandoffAccount], status: RemoteAgentStatus?, runners: [RemoteRunner]
+  ) -> Bool {
+    !accounts.isEmpty || (isStalled(status) && !runners.isEmpty)
+  }
+
+  private var runners: [RemoteRunner] { host.continueRunners(agentId: agentId) }
 
   /// A stopped agent can't be moved, so its last stall offers nothing.
   nonisolated static func isStalled(_ status: RemoteAgentStatus?) -> Bool {
@@ -42,11 +52,13 @@ public struct LimitHandoffCard: View {
         Label("Usage limit reached", systemImage: Icon.warning)
           .font(.scaled(size: 13, weight: .semibold))
           .foregroundStyle(theme.warning)
-        Text("Continue this chat on another of your accounts. Its plan will be used from here on.")
+        Text(subtitle)
           .font(.scaled(size: 12))
           .foregroundStyle(theme.textSecondary)
+          .fixedSize(horizontal: false, vertical: true)
       }
       ForEach(accounts, id: \.accountId) { row($0) }
+      ForEach(runners, id: \.id) { runnerRow($0) }
       if let error {
         Text(error).font(.scaled(size: 12)).foregroundStyle(theme.error)
       }
@@ -90,6 +102,58 @@ public struct LimitHandoffCard: View {
           .accessibilityLabel("Continue on \(account.label)")
         }
       }
+    }
+  }
+
+  private var subtitle: String {
+    switch (accounts.isEmpty, runners.isEmpty) {
+    case (false, true): "Continue this chat on another of your accounts. Its plan will be used from here on."
+    case (true, false): "Continue this chat on another agent. It picks up from the chat so far."
+    default: "Continue this chat on another of your accounts, or on another agent that picks up from here."
+    }
+  }
+
+  private func runnerRow(_ runner: RemoteRunner) -> some View {
+    HStack(spacing: 10) {
+      Image(systemName: Icon.terminal)
+        .font(.scaled(size: 16))
+        .foregroundStyle(theme.textSecondary)
+        .frame(width: 22)
+        .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(runner.displayName).font(.scaled(size: 13, weight: .medium)).foregroundStyle(theme.text)
+        Text("New agent in this worktree")
+          .font(.scaled(size: 12))
+          .foregroundStyle(theme.textMuted)
+      }
+      .lineLimit(1)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      if host.hasControl {
+        if pendingId == runner.id {
+          ProgressView().controlSize(.small)
+        } else {
+          Btn(label: "Continue here", tone: .secondary, small: true, hugs: true) {
+            continueOn(runner.id)
+          }
+          .disabled(pendingId != nil)
+          .accessibilityLabel("Continue on \(runner.displayName)")
+        }
+      }
+    }
+  }
+
+  private func continueOn(_ runnerId: String) {
+    pendingId = runnerId
+    error = nil
+    Task {
+      do {
+        let agent = try await host.continueOnRunner(agentId: agentId, runnerId: runnerId, source: .limitCard)
+        onHandedOff()
+        openContinuedAgent?(agent)
+      } catch {
+        self.error = HostStore.describe(error)
+      }
+      pendingId = nil
     }
   }
 

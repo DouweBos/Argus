@@ -98,7 +98,8 @@ struct SessionView: View {
         closeMany: { model.closeAgents($0, inSession: sessionId) },
         rename: { model.renameAgent($0, to: $1) },
         move: { model.moveAgent($0, to: $1, inSession: sessionId) },
-        revealInFinder: { model.revealSessionInFinder(sessionId) })
+        revealInFinder: { model.revealSessionInFinder(sessionId) },
+        continued: { model.open(spawned: $0.agentId, session: $0.sessionId) })
       .padding(.trailing, SessionContextCardOverlay.barReserve)
       Group {
         if let session, session.status != .ready {
@@ -112,6 +113,7 @@ struct SessionView: View {
         }
       }
       .environment(\.readingColumnReserve, readingReserve)
+      .environment(\.openContinuedAgent) { model.open(spawned: $0.agentId, session: $0.sessionId) }
     }
     .frame(maxHeight: .infinity, alignment: .top)
     .sessionContextCard(session, panel: .agents, barHeight: AgentTabBar.height, roomToOpen: agentCardFits)
@@ -137,7 +139,9 @@ struct AgentTabBar: View {
   /// Drag reordering: the first agent takes the second's slot.
   var move: (String, String) -> Void = { _, _ in }
   var revealInFinder: () -> Void = {}
+  var continued: (RemoteAgentStatus) -> Void = { _ in }
   @State private var renaming: RemoteAgentStatus?
+  @State private var continueError: String?
   @State private var newTitle = ""
 
   var body: some View {
@@ -181,6 +185,13 @@ struct AgentTabBar: View {
       }
       Button("Cancel", role: .cancel) { renaming = nil }
     }
+    .alert(
+      "Couldn't Continue the Chat", isPresented: Binding(get: { continueError != nil }, set: { if !$0 { continueError = nil } })
+    ) {
+      Button("OK", role: .cancel) { continueError = nil }
+    } message: {
+      Text(continueError ?? "")
+    }
   }
 
   static let height: CGFloat = 34
@@ -206,6 +217,10 @@ struct AgentTabBar: View {
     Divider()
     Button("Stop Agent") { track("stop"); Task { await store.interrupt(agentId: agent.agentId) } }
       .disabled(agent.status != .running)
+    ContinueOnMenu(agentId: agent.agentId) {
+      track("continue_on")
+      continued($0)
+    } onError: { continueError = $0 }
     Button("Reveal Session in Finder") {
       track("reveal")
       revealInFinder()

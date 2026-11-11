@@ -47,7 +47,9 @@ struct TranscriptMessageRow: View, Equatable {
 
   @ViewBuilder
   private var row: some View {
-    if isUser {
+    if let handoff = message.handoff {
+      HandoffDivider(handoff: handoff)
+    } else if isUser {
       // A sent message: a quiet bubble at the trailing edge, at most 70% of the column.
       TrailingFractionLayout(fraction: Self.bubbleFraction) { content }
     } else {

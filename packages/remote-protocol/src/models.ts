@@ -238,6 +238,14 @@ export const RemoteTokenUsage = z.object({
 });
 export type RemoteTokenUsage = z.infer<typeof RemoteTokenUsage>;
 
+/** The divider where a chat moved from one runner to another. */
+export const RemoteMessageHandoff = z.object({
+  from_agent_id: z.string(),
+  from_runner: z.string(),
+  to_runner: z.string(),
+});
+export type RemoteMessageHandoff = z.infer<typeof RemoteMessageHandoff>;
+
 /** A structured transcript message mirroring the desktop conversation. */
 export const RemoteMessage = z.object({
   id: z.string(),
@@ -247,6 +255,7 @@ export const RemoteMessage = z.object({
   /** Image attachments carried by the message (user/MCP), as references. */
   images: z.array(RemoteImageRef).optional(),
   source: RemoteMessageSource.optional(),
+  handoff: RemoteMessageHandoff.optional(),
   /** Who sent a user message, when it came from a remote client or huddle guest. */
   author: z.string().optional(),
   is_error: z.boolean().optional(),

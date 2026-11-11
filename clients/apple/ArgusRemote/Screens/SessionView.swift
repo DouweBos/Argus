@@ -30,6 +30,7 @@ struct SessionView: View {
   @State private var shown: [String] = []
   @State private var closed: Set<String> = []
   @State private var confirmingStop = false
+  @State private var continueError: String?
 
   private var resolvedSessionId: String? { sessionId ?? agentId.flatMap { host.statusByAgent[$0]?.sessionId } }
   private var session: RemoteSession? { resolvedSessionId.flatMap(host.session(id:)) }
@@ -130,6 +131,14 @@ struct SessionView: View {
       let new = ids.filter { !shown.contains($0) && !closed.contains($0) }
       if !new.isEmpty { shown += new }
     }
+    .environment(\.openContinuedAgent) { focus($0) }
+    .alert(
+      "Couldn't continue the chat", isPresented: Binding(get: { continueError != nil }, set: { if !$0 { continueError = nil } })
+    ) {
+      Button("OK", role: .cancel) { continueError = nil }
+    } message: {
+      Text(continueError ?? "")
+    }
     .confirmationDialog("Shut down this agent?", isPresented: $confirmingStop, titleVisibility: .visible) {
       Button("Shut down", role: .destructive) { stopFocused() }
       Button("Cancel", role: .cancel) {}
@@ -209,6 +218,9 @@ struct SessionView: View {
       Button(pinned ? "Unpin chat" : "Pin chat", systemImage: pinned ? Icon.pinSlash : Icon.pin) {
         Task { await host.setPinned(agentId: id, pinned: !pinned) }
       }
+    }
+    if !host.isGone(id) {
+      ContinueOnMenu(agentId: id) { focus($0) } onError: { continueError = $0 }
     }
   }
 

@@ -41,7 +41,9 @@
             Task { await host.dismissLimitResume(agentId: composer.agentId) }
           }
         }
-        if !handoffAccounts.isEmpty {
+        if LimitHandoffCard.shows(
+          accounts: handoffAccounts, status: composer.status, runners: host.continueRunners(agentId: composer.agentId))
+        {
           LimitHandoffCard(agentId: composer.agentId, accounts: handoffAccounts) { handoffAccounts = [] }
         }
         if !composer.slashItems.isEmpty {

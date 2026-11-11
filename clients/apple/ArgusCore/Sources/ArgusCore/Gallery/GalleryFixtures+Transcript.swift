@@ -26,6 +26,8 @@ extension GalleryFixtures {
     case limit
     /// Nothing said yet.
     case empty
+    /// Continued on Codex from a Claude Code chat that hit its limit.
+    case handoff
   }
 
   /// Every reply the agent screen asks for, in `state`.
@@ -90,7 +92,7 @@ extension GalleryFixtures {
   private static func agentStatus(_ state: TranscriptState) -> [String: Any] {
     let status: String =
       switch state {
-      case .idle, .empty, .limit: "idle"
+      case .idle, .empty, .limit, .handoff: "idle"
       case .working, .subagents: "running"
       case .permission, .question, .plan: "requires_action"
       case .stopped: "stopped"
@@ -111,6 +113,9 @@ extension GalleryFixtures {
     case .limit:
       agent["limit_stalled"] = true
       agent["limit_resume_at"] = Date().timeIntervalSince1970 * 1000 + 2 * 3_600_000
+    case .handoff:
+      agent["runner_id"] = "codex"
+      agent["model"] = "gpt-5.5-codex"
     default: break
     }
     return agent
@@ -154,7 +159,37 @@ extension GalleryFixtures {
     case .question: return conversation + [pending(question)]
     case .plan: return conversation + [pending(plan)]
     case .subagents: return conversation + subagents
+    case .handoff: return handedOff
     }
+  }
+
+  private static var handedOff: [[String: Any]] {
+    [
+      [
+        "id": "h0", "role": "system", "text_blocks": ["Continued on Codex from Claude Code"], "tool_calls": [],
+        "timestamp": t(14),
+        "handoff": ["from_agent_id": "gallery-claude", "from_runner": "Claude Code", "to_runner": "Codex"],
+      ],
+      user("h1", 14, "Continue where Claude Code left off."),
+      assistant(
+        "h2", 15, text: ["Picking up from the capped transcript: the Mac rows are done, the iOS build is next."],
+        calls: [
+          call(
+            "h3", "Bash", ["command": "git status --short"],
+            output: " M clients/apple/ArgusUI/Sources/ArgusUI/Views/AgentTranscriptView.swift"),
+          call(
+            "h4", "Bash",
+            [
+              "command":
+                "xcodebuild -project clients/apple/ArgusRemote.xcodeproj -scheme ArgusRemote -destination 'generic/platform=iOS Simulator' build"
+            ], output: "** BUILD SUCCEEDED **"),
+        ]),
+      assistant(
+        "h5", 17,
+        text: [
+          "The iOS build passes with the transcript in the reading column. Left from the todo list: the changeset."
+        ]),
+    ]
   }
 
   private static var conversation: [[String: Any]] {

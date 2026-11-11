@@ -56,6 +56,7 @@ struct AgentView: View {
       }
     }
     .background(theme.bg.ignoresSafeArea())
+    .environment(\.openContinuedAgent) { open($0, label: Labels.agentName($0)) }
     .task { await host.loadRunners() }
     // Handoff: the Mac this agent runs on offers to take it back over.
     .userActivity(Handoff.activityType, isActive: handoff != nil) { activity in

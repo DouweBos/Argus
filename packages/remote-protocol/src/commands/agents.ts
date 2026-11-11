@@ -189,6 +189,15 @@ export const AGENT_COMMANDS = {
     params: AgentId.extend({ accountId: z.string() }),
     result: Void,
   },
+  /** Continue the chat in a new agent on another runner, seeded with its context. */
+  continue_agent_on_runner: {
+    tier: "admin",
+    params: AgentId.extend({
+      runnerId: z.string(),
+      source: z.enum(["limit_card", "menu"]),
+    }),
+    result: AgentInfo,
+  },
   list_queued_messages: {
     tier: "admin",
     params: AgentId,

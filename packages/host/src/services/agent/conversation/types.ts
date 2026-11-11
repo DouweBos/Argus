@@ -7,6 +7,7 @@
 import type {
   AgentCapabilities,
   ConversationBackgroundTask as BackgroundTask,
+  ConversationHandoff,
   AgentSlashCommand as SlashCommand,
   ImageAttachment,
 } from "@argus/remote-protocol";
@@ -235,6 +236,8 @@ export interface ConversationMessage {
    * succeeded. Lets the user revert all file changes made after this turn.
    */
   checkpointId?: string;
+  /** Set on the divider a "Continue on…" leaves at the top of the new chat. */
+  handoff?: ConversationHandoff;
   id: string;
   /** Image attachments accompanying this message. */
   images?: ImageAttachment[];

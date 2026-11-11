@@ -182,6 +182,63 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AgentsContinueOnRunnerParamsSource: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let limitCard = AgentsContinueOnRunnerParamsSource(rawValue: "limit_card")
+      public static let menu = AgentsContinueOnRunnerParamsSource(rawValue: "menu")
+    }
+
+    public struct AgentsContinueOnRunnerParams: Codable, Sendable {
+      public var agentId: String
+      public var runnerId: String
+      public var source: AgentsContinueOnRunnerParamsSource
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case runnerId = "runner_id"
+        case source = "source"
+      }
+
+      public init(agentId: String, runnerId: String, source: AgentsContinueOnRunnerParamsSource) {
+        self.agentId = agentId
+        self.runnerId = runnerId
+        self.source = source
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(runnerId, forKey: .runnerId)
+        try c.encode(source, forKey: .source)
+      }
+    }
+
+    public struct AgentsContinueOnRunnerResult: Codable, Sendable {
+      public var agent: RemoteAgentStatus
+
+      enum CodingKeys: String, CodingKey {
+        case agent = "agent"
+      }
+
+      public init(agent: RemoteAgentStatus) {
+        self.agent = agent
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agent, forKey: .agent)
+      }
+    }
+
     public struct AgentsDismissLimitResumeParams: Codable, Sendable {
       public var agentId: String
 
@@ -6770,6 +6827,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AgentsCapabilitiesParams
       public typealias Result = ArgusProtocol.MethodsTypes.AgentsCapabilitiesResult
       public static let name = "agents.capabilities"
+    }
+
+    public enum AgentsContinueOnRunner: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsContinueOnRunnerParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsContinueOnRunnerResult
+      public static let name = "agents.continue_on_runner"
     }
 
     public enum AgentsDismissLimitResume: RemoteCommand {

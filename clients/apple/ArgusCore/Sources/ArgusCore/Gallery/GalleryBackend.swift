@@ -100,6 +100,12 @@ public enum GalleryFixtures {
             "reported_models": models,
           ],
           ["id": "codex", "display_name": "Codex", "is_custom": false, "models": []],
+          ["id": "gemini", "display_name": "Gemini CLI", "is_custom": false, "models": []],
+          ["id": "cursor", "display_name": "Cursor", "is_custom": false, "models": []],
+          [
+            "id": "kiro", "display_name": "Kiro", "is_custom": false, "models": [], "available": false,
+            "unavailable_reason": "Install the Kiro CLI.",
+          ],
         ]
       ]),
     ]

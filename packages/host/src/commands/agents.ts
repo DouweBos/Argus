@@ -57,6 +57,7 @@ import {
   setAgentPinned,
   setHistoryPinned,
 } from "../services/agent/pins/pins";
+import { continueAgentOnRunner } from "../services/agent/runnerHandoff/continueOnRunner";
 import { getStartOptions } from "../services/agent/startOptions";
 import { setViewingSession } from "../services/agent/warmPolicy";
 import { defineTypedCommand } from "../services/command/registry";
@@ -160,6 +161,9 @@ export function registerAgentCommands(): void {
   );
   defineTypedCommand("handoff_agent_to_account", (p) =>
     handoffAgentToAccount(p.agentId, p.accountId),
+  );
+  defineTypedCommand("continue_agent_on_runner", (p) =>
+    continueAgentOnRunner(p.agentId, p.runnerId, p.source),
   );
   defineTypedCommand("dismiss_agent_limit_resume", (p) =>
     dismissLimitResume(p.agentId),

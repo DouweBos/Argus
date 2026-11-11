@@ -1670,6 +1670,46 @@ extension ArgusProtocol {
       }
     }
 
+    public struct ContinueAgentOnRunnerParamsSource: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let limitCard = ContinueAgentOnRunnerParamsSource(rawValue: "limit_card")
+      public static let menu = ContinueAgentOnRunnerParamsSource(rawValue: "menu")
+    }
+
+    public struct ContinueAgentOnRunnerParams: Codable, Sendable {
+      public var agentId: String
+      public var runnerId: String
+      public var source: ContinueAgentOnRunnerParamsSource
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agentId"
+        case runnerId = "runnerId"
+        case source = "source"
+      }
+
+      public init(agentId: String, runnerId: String, source: ContinueAgentOnRunnerParamsSource) {
+        self.agentId = agentId
+        self.runnerId = runnerId
+        self.source = source
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(runnerId, forKey: .runnerId)
+        try c.encode(source, forKey: .source)
+      }
+    }
+
     public struct CreateCheckpointParams: Codable, Sendable {
       public var sessionId: String
 
@@ -10294,6 +10334,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.CodeWriteFileParams
       public typealias Result = ArgusProtocol.CodeWriteResult
       public static let name = "code_write_file"
+      public static let tier = "admin"
+    }
+
+    public enum ContinueAgentOnRunner: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.ContinueAgentOnRunnerParams
+      public typealias Result = ArgusProtocol.AgentInfo
+      public static let name = "continue_agent_on_runner"
       public static let tier = "admin"
     }
 

@@ -85,6 +85,10 @@ export class AcpHandle extends EventEmitter implements LlmRunnerHandle {
   private readonly stderrTail: string[] = [];
   private exited = false;
 
+  reachesHttpMcp(): boolean {
+    return this.agent?.agentCapabilities?.mcpCapabilities?.http === true;
+  }
+
   constructor(private readonly opts: AcpHandleInit) {
     super();
     this.preset = opts.preset;
