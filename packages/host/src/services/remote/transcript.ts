@@ -8,6 +8,7 @@ import type {
   AgentTranscriptDelta,
   EventPayloads,
   RemoteMessage,
+  RemoteMessageCommand,
   RemoteTask,
   RemoteTodo,
   RemoteToolCall,
@@ -63,6 +64,7 @@ export interface RawTokenUsage {
 export interface RawMessage {
   id?: string;
   author?: string;
+  command?: RemoteMessageCommand;
   role?: string;
   textBlocks?: string[];
   toolCalls?: RawToolCall[];
@@ -187,6 +189,16 @@ function toRemoteToolCall(messageId: string, tc: RawToolCall): RemoteToolCall {
   };
 }
 
+function toRemoteCommand(c: RemoteMessageCommand): RemoteMessageCommand {
+  return {
+    name: c.name,
+    kind: c.kind === "argus" ? "argus" : "runner",
+    ...(c.argument ? { argument: c.argument } : {}),
+    ...(c.notes ? { notes: c.notes } : {}),
+    ...(c.prompt ? { prompt: c.prompt } : {}),
+  };
+}
+
 export function toRemoteMessage(m: RawMessage): RemoteMessage {
   const messageId = m.id ?? "";
   const role = m.role === "user" || m.role === "system" ? m.role : "assistant";
@@ -233,6 +245,7 @@ export function toRemoteMessage(m: RawMessage): RemoteMessage {
         }
       : {}),
     ...(m.author ? { author: m.author } : {}),
+    ...(m.command?.name ? { command: toRemoteCommand(m.command) } : {}),
     is_error: m.isError,
     timestamp: m.timestamp,
   };

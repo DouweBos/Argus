@@ -8,6 +8,7 @@ import { IMAGES_ONLY_PROMPT } from "@argus/remote-protocol";
 import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
 import { generateChatTitle } from "../../llm/titleGenerator";
+import { describeAgentCommand } from "../argusCommands/agentCommand";
 import { saveConversation } from "../chatHistory";
 import {
   dropLive,
@@ -104,18 +105,13 @@ export function recordUserMessage(
     author?: string;
     checkpointId?: string;
     images?: ImageAttachment[];
+    /** What goes to the agent, when the bubble shows something else. */
+    sent?: string;
   },
 ): void {
   const entry = tracked.get(agentId);
   if (entry) {
-    userMessage(
-      agentId,
-      entry,
-      text,
-      options.images,
-      options.author,
-      options.checkpointId,
-    );
+    userMessage(agentId, entry, text, options);
   }
 }
 
@@ -149,13 +145,16 @@ export function userMessage(
   agentId: string,
   entry: Tracked,
   text: string,
-  images?: ImageAttachment[],
-  author?: string,
-  checkpointId?: string,
+  options: {
+    author?: string;
+    checkpointId?: string;
+    images?: ImageAttachment[];
+    sent?: string;
+  } = {},
 ): void {
-  update(agentId, entry, (c) =>
-    withUserMessage(c, text, { images, author, checkpointId }),
-  );
+  const { sent, ...rest } = options;
+  const command = describeAgentCommand(agentId, sent ?? text);
+  update(agentId, entry, (c) => withUserMessage(c, text, { ...rest, command }));
   maybeGenerateTitle(agentId, entry, text);
 }
 

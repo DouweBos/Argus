@@ -79,6 +79,7 @@ import {
   expandArgusCommand,
   withArgusCommands,
 } from "./argusCommands";
+import { commandContext } from "./argusCommands/agentCommand";
 import { loadConversationByRunnerSession } from "./chatHistory";
 import {
   CONDUCTOR_DISALLOWED,
@@ -1735,11 +1736,8 @@ export function sendAgentMessage(
     }
     outgoing =
       expandArgusCommand(message, {
-        worktree: session?.path ?? null,
+        ...commandContext(agentId),
         source: opts.commandSource ?? "message",
-        runnerCommands: (
-          agentEntry.handle.initializeResponse()?.commands ?? []
-        ).map((c) => c.name),
       }) ?? message;
   }
 

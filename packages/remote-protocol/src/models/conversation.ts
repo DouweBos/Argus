@@ -113,9 +113,26 @@ export const ConversationHandoff = z.object({
 });
 export type ConversationHandoff = z.infer<typeof ConversationHandoff>;
 
+/**
+ * A message that was a slash command Argus recognized: one of its own, which
+ * it expanded into `prompt` before sending, or the runner's, passed through.
+ */
+export const ConversationCommand = z.object({
+  /** The main argument — `/implement-ticket`'s ticket. */
+  argument: z.string().optional(),
+  kind: z.enum(["argus", "runner"]),
+  name: z.string(),
+  /** Everything after the main argument (a runner command: all its arguments). */
+  notes: z.string().optional(),
+  /** What the agent received instead of the typed text (Argus commands only). */
+  prompt: z.string().optional(),
+});
+export type ConversationCommand = z.infer<typeof ConversationCommand>;
+
 export const ConversationMessage = z.object({
   author: z.string().optional(),
   checkpointId: z.string().optional(),
+  command: ConversationCommand.optional(),
   handoff: ConversationHandoff.optional(),
   id: z.string(),
   images: z.array(ImageAttachment).optional(),

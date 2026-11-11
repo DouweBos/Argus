@@ -78,6 +78,29 @@ describe("toRemoteTranscriptDelta", () => {
 });
 
 describe("toRemoteMessage", () => {
+  it("forwards a recognized command", () => {
+    const out = toRemoteMessage({
+      id: "m1",
+      role: "user",
+      textBlocks: ["/implement-ticket ENG-1"],
+      command: {
+        name: "implement-ticket",
+        kind: "argus",
+        argument: "ENG-1",
+        prompt: "# Implement ENG-1",
+      },
+    });
+    expect(out.command).toEqual({
+      name: "implement-ticket",
+      kind: "argus",
+      argument: "ENG-1",
+      prompt: "# Implement ENG-1",
+    });
+    expect(
+      toRemoteMessage({ id: "m2", role: "user", textBlocks: ["hi"] }),
+    ).not.toHaveProperty("command");
+  });
+
   it("forwards a background call's progress", () => {
     const out = toRemoteMessage({
       id: "m",

@@ -17,6 +17,7 @@ import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
 import { capture as telemetryCapture } from "../../telemetry/telemetry";
 import { sendAgentMessage } from "../agentService";
+import { describeAgentCommand } from "../argusCommands/agentCommand";
 import { createCheckpoint } from "../checkpoints";
 import {
   dequeueMessage,
@@ -148,9 +149,13 @@ function route(channel: string, payload: unknown): void {
       break;
     case "remote-message": {
       // Sent straight to the CLI by the gateway or an automation.
-      const { message, images, author } = payload as RemoteMessage;
+      const { message, images, author, sent } = payload as RemoteMessage;
       entry.inflight = true;
-      userMessage(id, entry, message, images, author ?? undefined);
+      userMessage(id, entry, message, {
+        images,
+        author: author ?? undefined,
+        sent: sent ?? undefined,
+      });
       break;
     }
     case "stderr":
@@ -172,6 +177,8 @@ interface RemoteMessage {
   author?: string | null;
   images?: ImageAttachment[];
   message: string;
+  /** What went to the agent, when `message` is only what the bubble shows. */
+  sent?: string | null;
 }
 
 function started(info: AgentInfo & { initial_prompt?: string }): void {
@@ -325,10 +332,12 @@ function notifyIfStillUnanswered(
 }
 
 function injected(agentId: string, entry: Tracked, payload: McpMessage): void {
+  const command = describeAgentCommand(agentId, payload.message);
   update(agentId, entry, (c) =>
     withInjectedPrompt(c, {
       id: crypto.randomUUID(),
       role: "system",
+      ...(command ? { command } : {}),
       textBlocks: [payload.message],
       toolCalls: [],
       images: payload.images?.length ? payload.images : undefined,
@@ -436,13 +445,11 @@ function sendMidTurn(agentId: string, entry: Tracked): void {
   sendAgentMessage(agentId, next.text, next.images);
   entry.inflight = true;
   dequeueMessage(agentId);
-  userMessage(
-    agentId,
-    entry,
-    next.display_text ?? next.text,
-    next.images,
-    next.author,
-  );
+  userMessage(agentId, entry, next.display_text ?? next.text, {
+    images: next.images,
+    author: next.author,
+    sent: next.text,
+  });
 }
 
 /**
@@ -472,14 +479,12 @@ function trySendNextQueued(agentId: string, entry: Tracked): boolean {
     if (trackedEntry(agentId) !== entry) {
       return;
     }
-    userMessage(
-      agentId,
-      entry,
-      next.display_text ?? next.text,
-      next.images,
-      next.author,
+    userMessage(agentId, entry, next.display_text ?? next.text, {
+      images: next.images,
+      author: next.author,
       checkpointId,
-    );
+      sent: next.text,
+    });
     try {
       sendAgentMessage(agentId, next.text, next.images);
     } catch (e) {

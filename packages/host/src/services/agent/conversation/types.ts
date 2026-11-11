@@ -7,6 +7,7 @@
 import type {
   AgentCapabilities,
   ConversationBackgroundTask as BackgroundTask,
+  ConversationCommand,
   ConversationHandoff,
   AgentSlashCommand as SlashCommand,
   ImageAttachment,
@@ -15,6 +16,7 @@ import type {
 export type {
   AgentCapabilities,
   BackgroundTask,
+  ConversationCommand,
   ImageAttachment,
   SlashCommand,
 };
@@ -236,6 +238,8 @@ export interface ConversationMessage {
    * succeeded. Lets the user revert all file changes made after this turn.
    */
   checkpointId?: string;
+  /** Set on a user message that was a slash command Argus recognized. */
+  command?: ConversationCommand;
   /** Set on the divider a "Continue on…" leaves at the top of the new chat. */
   handoff?: ConversationHandoff;
   id: string;

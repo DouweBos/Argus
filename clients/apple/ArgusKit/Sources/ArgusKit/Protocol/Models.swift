@@ -475,6 +475,31 @@ public struct RemoteMessageHandoff: Codable, Hashable, Sendable {
   }
 }
 
+/// A slash command Argus recognized: one of its own, expanded into `prompt`
+/// before it reached the agent, or the runner's, passed through.
+public struct RemoteMessageCommand: Codable, Hashable, Sendable {
+  public enum Kind: String, Codable, Sendable { case argus, runner }
+
+  public var name: String
+  public var kind: Kind
+  /// The main argument — `/implement-ticket`'s ticket.
+  public var argument: String?
+  /// Everything after the main argument.
+  public var notes: String?
+  /// The prompt the agent received in place of the typed text.
+  public var prompt: String?
+
+  public init(
+    name: String, kind: Kind, argument: String? = nil, notes: String? = nil, prompt: String? = nil
+  ) {
+    self.name = name
+    self.kind = kind
+    self.argument = argument
+    self.notes = notes
+    self.prompt = prompt
+  }
+}
+
 public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
   public var id: String
   public var role: RemoteMessageRole
@@ -484,6 +509,7 @@ public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
   public var source: RemoteMessageSource?
   public var handoff: RemoteMessageHandoff?
   public var author: String?
+  public var command: RemoteMessageCommand?
   public var isError: Bool?
   public var timestamp: Double?
   public var usage: RemoteTokenUsage?
@@ -497,6 +523,7 @@ public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
     source: RemoteMessageSource? = nil,
     handoff: RemoteMessageHandoff? = nil,
     author: String? = nil,
+    command: RemoteMessageCommand? = nil,
     isError: Bool? = nil,
     timestamp: Double? = nil,
     usage: RemoteTokenUsage? = nil
@@ -509,13 +536,14 @@ public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
     self.source = source
     self.handoff = handoff
     self.author = author
+    self.command = command
     self.isError = isError
     self.timestamp = timestamp
     self.usage = usage
   }
 
   enum CodingKeys: String, CodingKey {
-    case id, role, images, source, handoff, author, timestamp, usage
+    case id, role, images, source, handoff, author, command, timestamp, usage
     case textBlocks = "text_blocks"
     case toolCalls = "tool_calls"
     case isError = "is_error"
