@@ -64,7 +64,7 @@ public enum ConfigJSON {
       "related_projects", "browser_url", "browser_presets", "simulator_deeplinks",
       "auto_continue_on_limit", "protected_branches",
       "default_base_branch", "single_runtime",
-      "auto_fetch_minutes", "release_note_patterns", "llm", "tools", "automations",
+      "auto_fetch_minutes", "release_note_patterns", "llm", "tools", "automations", "verify",
     ],
     "setup": ["copy", "symlink", "commands"],
     "setup.copy.[]": ["path", "exclude"],
@@ -79,6 +79,7 @@ public enum ConfigJSON {
     "llm": ["runner", "model"],
     "tools": ["disabled"],
     "automations": ["autonomy_ceiling", "disabled", "path_denylist"],
+    "verify": ["devices", "checks", "sign_in", "baseline", "slow_backend"],
   ].merging(deeplinkOrders) { a, _ in a }
 
   /// Deep links nest; a few levels covers any sane tree.

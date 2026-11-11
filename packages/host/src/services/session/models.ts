@@ -381,6 +381,22 @@ export interface ArgusConfig {
    * autonomy, never more. Parsed in `session/setup.ts`.
    */
   automations?: ProjectAutomationConfig | null;
+  /** How an agent proves its work on this project; drives `/implement-ticket`. */
+  verify?: VerifyConfig | null;
+}
+
+/** The `verify` block of `.argus.json`. */
+export interface VerifyConfig {
+  /** Devices to verify on, by simulator/emulator name or `web` (e.g. a phone and a tablet). */
+  devices: string[];
+  /** Commands that must pass after the last code change (type-check, lint, tests, e2e flows). */
+  checks: string[];
+  /** How to sign in before driving the app: a `/skill` or a shell command. */
+  sign_in?: string | null;
+  /** Screenshot each device before changing code, to compare against. Defaults to true. */
+  baseline?: boolean | null;
+  /** How to slow the backend down so first-load and loading states can be checked. */
+  slow_backend?: string | null;
 }
 
 /** The `automations` block of `.argus.json`. Every field is optional. */
@@ -469,5 +485,6 @@ export function defaultArgusConfig(): ArgusConfig {
     llm: null,
     tools: null,
     automations: null,
+    verify: null,
   };
 }

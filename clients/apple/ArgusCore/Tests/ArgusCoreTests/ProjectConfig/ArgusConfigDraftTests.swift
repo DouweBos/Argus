@@ -44,11 +44,22 @@ struct ArgusConfigDraftTests {
                                     "labels": [{ "name": "type", "selector": "^T:(.+)$", "tone": "accent" }] }],
         "llm": { "runner": "claude-code", "model": "opus" },
         "tools": { "disabled": ["device-debug"] },
-        "automations": { "autonomy_ceiling": "draft", "disabled": ["a"], "path_denylist": ["infra/**"] }
+        "automations": { "autonomy_ceiling": "draft", "disabled": ["a"], "path_denylist": ["infra/**"] },
+        "verify": { "devices": ["iPhone 17 Pro", "iPad Pro 13-inch (M5)"], "checks": ["pnpm lint"],
+                    "sign_in": "/login", "baseline": false, "slow_backend": "pnpm proxy --delay 3000" }
       }
       """#)
     let draft = ArgusConfigDraft(raw: file)
     #expect(draft.applied(to: file) == file)
+  }
+
+  @Test func verifyWritesOnlyWhatDiffersFromDefaults() throws {
+    var draft = ArgusConfigDraft()
+    #expect(draft.applied(to: [:])["verify"] == nil)
+    draft.verifyDevices = [.init(" web "), .init("")]
+    #expect(draft.applied(to: [:])["verify"] == .object(["devices": .array([.string("web")])]))
+    draft.verifyBaseline = false
+    #expect(draft.applied(to: [:])["verify"]?["baseline"] == .bool(false))
   }
 
   @Test func dropsRetiredKeys() throws {

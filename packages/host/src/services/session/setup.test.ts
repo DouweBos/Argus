@@ -175,6 +175,45 @@ describe("loadArgusConfig", () => {
     expect(config.auto_continue_on_limit).toBe(true);
   });
 
+  it("normalizes the verify block and lets a local one replace it", () => {
+    mockExistsSync.mockImplementation((p) => !String(p).includes("local"));
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({
+        verify: {
+          devices: [" iPhone 17 Pro ", "", 3],
+          checks: ["pnpm lint"],
+          sign_in: "/login",
+          baseline: false,
+          slow_backend: "  ",
+        },
+      }),
+    );
+    expect(loadArgusConfig("/repo").verify).toEqual({
+      devices: ["iPhone 17 Pro"],
+      checks: ["pnpm lint"],
+      sign_in: "/login",
+      baseline: false,
+      slow_backend: null,
+    });
+
+    mockExistsSync.mockReturnValue(true);
+    mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) =>
+      String(p).includes("local")
+        ? JSON.stringify({ verify: { devices: ["web"] } })
+        : JSON.stringify({ verify: { checks: ["pnpm test"] } }),
+    );
+    expect(loadArgusConfig("/repo").verify?.devices).toEqual(["web"]);
+    expect(loadArgusConfig("/repo").verify?.checks).toEqual([]);
+  });
+
+  it("drops an empty verify block", () => {
+    mockExistsSync.mockImplementation((p) => !String(p).includes("local"));
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({ verify: { devices: [] } }),
+    );
+    expect(loadArgusConfig("/repo").verify).toBeNull();
+  });
+
   it("defaults unset booleans after merging", () => {
     mockExistsSync.mockReturnValue(true);
     mockReadFileSync.mockReturnValue(JSON.stringify({}));

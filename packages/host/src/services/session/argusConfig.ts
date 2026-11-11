@@ -21,6 +21,7 @@ import {
   normalizeSetupEntries,
   normalizeSimulatorDeeplinks,
   normalizeToolsConfig,
+  normalizeVerifyConfig,
   normalizeWorkspaceEnv,
 } from "./argusConfigNormalize";
 import {
@@ -123,6 +124,7 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
     llm: normalizeLlmConfig(parsed.llm, repoRoot),
     tools: normalizeToolsConfig(parsed.tools),
     automations: normalizeProjectAutomations(parsed.automations),
+    verify: normalizeVerifyConfig(parsed.verify),
   };
 }
 
@@ -200,6 +202,7 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
     llm: mergeLlmConfig(base.llm ?? null, local.llm ?? null),
     tools: local.tools ?? base.tools ?? null,
     automations: local.automations ?? base.automations ?? null,
+    verify: local.verify ?? base.verify ?? null,
   };
 }
 

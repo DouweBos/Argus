@@ -1807,6 +1807,7 @@ extension ArgusProtocol {
     public var llm: ArgusLlmConfig?
     public var tools: ArgusConfigTools?
     public var automations: ProjectAutomationConfig?
+    public var verify: VerifyConfig?
 
     enum CodingKeys: String, CodingKey {
       case setup = "setup"
@@ -1826,9 +1827,10 @@ extension ArgusProtocol {
       case llm = "llm"
       case tools = "tools"
       case automations = "automations"
+      case verify = "verify"
     }
 
-    public init(setup: ArgusSetupConfig, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], protectedBranches: [String], defaultBaseBranch: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
+    public init(setup: ArgusSetupConfig, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], protectedBranches: [String], defaultBaseBranch: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil, verify: VerifyConfig? = nil) {
       self.setup = setup
       self.terminals = terminals
       self.workspaceEnv = workspaceEnv
@@ -1846,6 +1848,7 @@ extension ArgusProtocol {
       self.llm = llm
       self.tools = tools
       self.automations = automations
+      self.verify = verify
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -1867,6 +1870,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(llm, forKey: .llm)
       try c.encodeIfPresent(tools, forKey: .tools)
       try c.encodeIfPresent(automations, forKey: .automations)
+      try c.encodeIfPresent(verify, forKey: .verify)
     }
   }
 
@@ -18240,6 +18244,39 @@ extension ArgusProtocol {
       try c.encodeIfPresent(worktreesBaseDir, forKey: .worktreesBaseDir)
       try c.encodeIfPresent(automationWorktreesBaseDir, forKey: .automationWorktreesBaseDir)
       try c.encodeIfPresent(previousWorktreesRoots, forKey: .previousWorktreesRoots)
+    }
+  }
+
+  public struct VerifyConfig: Codable, Sendable {
+    public var devices: [String]
+    public var checks: [String]
+    public var signIn: String?
+    public var baseline: Bool?
+    public var slowBackend: String?
+
+    enum CodingKeys: String, CodingKey {
+      case devices = "devices"
+      case checks = "checks"
+      case signIn = "sign_in"
+      case baseline = "baseline"
+      case slowBackend = "slow_backend"
+    }
+
+    public init(devices: [String], checks: [String], signIn: String? = nil, baseline: Bool? = nil, slowBackend: String? = nil) {
+      self.devices = devices
+      self.checks = checks
+      self.signIn = signIn
+      self.baseline = baseline
+      self.slowBackend = slowBackend
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(devices, forKey: .devices)
+      try c.encode(checks, forKey: .checks)
+      try c.encodeIfPresent(signIn, forKey: .signIn)
+      try c.encodeIfPresent(baseline, forKey: .baseline)
+      try c.encodeIfPresent(slowBackend, forKey: .slowBackend)
     }
   }
 

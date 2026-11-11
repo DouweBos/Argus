@@ -10,7 +10,7 @@ extension ArgusConfigDraft {
     "browser_url", "browser_presets", "simulator_deeplinks",
     "auto_continue_on_limit", "protected_branches", "default_base_branch",
     "single_runtime", "auto_fetch_minutes",
-    "release_note_patterns", "llm", "tools", "automations",
+    "release_note_patterns", "llm", "tools", "automations", "verify",
   ]
 
   /// Settings Argus no longer reads; saving drops them, as the desktop dialog does.
@@ -74,6 +74,12 @@ extension ArgusConfigDraft {
     }
     automationPathDenylist = Self.strings(automations["path_denylist"]).joined(separator: ", ")
     disabledAutomations = Self.strings(automations["disabled"]).joined(separator: ", ")
+    let verify = raw["verify"]?.objectValue ?? [:]
+    verifyDevices = Self.strings(verify["devices"]).map { ListItem($0) }
+    verifyChecks = Self.strings(verify["checks"]).map { ListItem($0) }
+    verifySignIn = verify["sign_in"]?.stringValue ?? ""
+    verifyBaseline = verify["baseline"]?.boolValue ?? true
+    verifySlowBackend = verify["slow_backend"]?.stringValue ?? ""
   }
 
   /// The file to write: `raw` with every owned key replaced by the draft's
@@ -124,6 +130,14 @@ extension ArgusConfigDraft {
     automations["path_denylist"] = Self.nonEmpty(Self.commaList(automationPathDenylist).map(JSONValue.string))
     automations["disabled"] = Self.nonEmpty(Self.commaList(disabledAutomations).map(JSONValue.string))
     set("automations", automations.isEmpty ? nil : .object(automations))
+    var verify = raw["verify"]?.objectValue ?? [:]
+    verify["devices"] = Self.nonEmpty(Self.values(verifyDevices))
+    verify["checks"] = Self.nonEmpty(Self.values(verifyChecks))
+    verify["sign_in"] = Self.trimmed(verifySignIn)
+    // Baselines are on by default; only opting out is written.
+    verify["baseline"] = verifyBaseline ? nil : .bool(false)
+    verify["slow_backend"] = Self.trimmed(verifySlowBackend)
+    set("verify", verify.isEmpty ? nil : .object(verify))
     return out
   }
 
@@ -196,6 +210,10 @@ extension ArgusConfigDraft {
   static func trimmed(_ text: String) -> JSONValue? {
     let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
     return value.isEmpty ? nil : .string(value)
+  }
+
+  static func values(_ items: [ListItem]) -> [JSONValue] {
+    items.map { $0.value.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.map(JSONValue.string)
   }
 
   static func commaList(_ text: String) -> [String] {

@@ -19,7 +19,24 @@
         account("awaiting-approval", GalleryAccount(phase: .awaitingApproval, selfKind: "mac")),
         customRunner("acp-agent", acpDraft),
         customRunner("gateway", gatewayDraft),
+        verify("empty", ArgusConfigDraft()),
+        verify("filled", verifyDraft),
       ]
+    }
+
+    private static var verifyDraft: ArgusConfigDraft {
+      var draft = ArgusConfigDraft()
+      draft.verifyDevices = ["iPhone 17 Pro", "iPad Pro 13-inch (M5)"].map { .init($0) }
+      draft.verifyChecks = ["pnpm tsc --noEmit", "pnpm lint", "pnpm test", "maestro test .maestro/smoke"].map { .init($0) }
+      draft.verifySignIn = "/login-test-account"
+      draft.verifySlowBackend = "pnpm mock-api --latency 3000"
+      return draft
+    }
+
+    private static func verify(_ state: String, _ draft: ArgusConfigDraft) -> GalleryStory {
+      GalleryStory("project-settings/verify/\(state)", size: CGSize(width: 710, height: 760)) {
+        VerifyStage(draft: draft)
+      }
     }
 
     private static let acpDraft = CustomRunnerDraft(
@@ -62,6 +79,18 @@
       ) {
         AccountSettingsTab()
       }
+    }
+  }
+
+  private struct VerifyStage: View {
+    @State var draft: ArgusConfigDraft
+
+    var body: some View {
+      Form {
+        VerifySection(draft: $draft, knownDevices: ["iPhone 17 Pro", "iPhone 16e", "iPad Pro 13-inch (M5)", "Pixel 9"])
+      }
+      .formStyle(.grouped)
+      .toggleStyle(.argusSwitch)
     }
   }
 
