@@ -86,7 +86,7 @@ that off with **Move to In Progress** in Settings → Integrations.
 
 While Linear is connected, every agent gets three Argus tools:
 
-- `linear_get_issue` reads an issue with its comments and screenshots. With Figma connected, the frames it links to come rendered with it (up to four).
+- `linear_get_issue` reads an issue with its comments and screenshots. It lists the Figma frames the issue links to (name, file key, node id, link), for the agent to fetch with `figma_get_frame`.
 - `linear_search_issues` searches issues, or lists yours.
 - `linear_comment` comments on an issue as you.
 

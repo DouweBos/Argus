@@ -1,39 +1,29 @@
 /**
- * The Figma frames an issue links to, rendered, so an agent reading the ticket
- * sees the design without having to go and fetch it.
+ * The Figma frames an issue links to, listed as text. Images stay out: a few
+ * rendered frames made the reply too large for the agent's MCP connection.
  */
 
-import type { FigmaFrame } from "@argus/remote-protocol";
 import { capture } from "../../telemetry/telemetry";
 import { parseFigmaUrl } from "./refs";
-import { figmaApi, figmaFrame } from "./service";
+import { cachedFigmaFrame, figmaApi } from "./service";
 
-/** Frames rendered per issue; more would crowd the agent's context with images. */
-export const MAX_ISSUE_FRAMES = 4;
+/** Links listed per issue; the rest are counted. */
+export const MAX_ISSUE_FRAMES = 20;
 
 export interface IssueFrame {
   url: string;
   fileKey: string;
   /** API form, `12:34`; null when the link points at the whole file. */
   nodeId: string | null;
-  frame: FigmaFrame;
+  /** From the frame cache only, never a fetch; null when not cached. */
+  name: string | null;
 }
 
-export interface IssueFrames {
-  frames: IssueFrame[];
-  /** Links that didn't render: no such node, no access, Figma down. */
-  failed: string[];
-  /** Links past the cap, left for `figma_get_frame`. */
-  skipped: string[];
-}
-
-/** Resolves up to {@link MAX_ISSUE_FRAMES} distinct frames; failures are reported, never thrown. */
-export async function resolveIssueFrames(
-  urls: string[],
-  fetchFrame: (url: string) => Promise<FigmaFrame | null> = figmaFrame,
-): Promise<IssueFrames> {
+/** Distinct frames the links point at, in order; non-Figma links are dropped. */
+export function issueFrames(urls: string[]): IssueFrame[] {
   const seen = new Set<string>();
-  const refs = urls.flatMap((url) => {
+
+  return urls.flatMap((url) => {
     const ref = parseFigmaUrl(url);
     const key = ref ? `${ref.fileKey}:${ref.nodeId ?? ""}` : null;
     if (!ref || !key || seen.has(key)) {
@@ -41,91 +31,37 @@ export async function resolveIssueFrames(
     }
     seen.add(key);
 
-    return [{ url, ...ref }];
+    return [{ url, ...ref, name: cachedFigmaFrame(url)?.name ?? null }];
   });
-  const picked = refs.slice(0, MAX_ISSUE_FRAMES);
-  const rendered = await Promise.all(
-    picked.map((ref) => fetchFrame(ref.url).catch(() => null)),
-  );
-  const frames: IssueFrame[] = [];
-  const failed: string[] = [];
-  picked.forEach((ref, i) => {
-    const frame = rendered[i];
-    if (frame) {
-      frames.push({ ...ref, frame });
-    } else {
-      failed.push(ref.url);
-    }
-  });
-
-  return {
-    frames,
-    failed,
-    skipped: refs.slice(MAX_ISSUE_FRAMES).map((r) => r.url),
-  };
 }
 
-/** Text + images for `linear_get_issue`; empty when there are no links or Figma isn't connected. */
-export async function issueFrameContent(
-  urls: string[],
-): Promise<
-  (
-    | { type: "image"; data: string; mimeType: string }
-    | { type: "text"; text: string }
-  )[]
-> {
-  if (urls.length === 0 || !figmaApi()) {
-    return [];
+/** The listing for `linear_get_issue`; null when the issue links no frames. */
+export function issueFramesText(urls: string[]): string | null {
+  const frames = issueFrames(urls);
+  if (frames.length === 0) {
+    return null;
   }
-  const { frames, failed, skipped } = await resolveIssueFrames(urls);
   capture("issue_designs_resolved", {
-    failed: failed.length,
-    resolved: frames.length,
-    skipped: skipped.length,
+    frames: frames.length,
+    named: frames.filter((f) => f.name).length,
   });
-  if (frames.length === 0 && failed.length === 0) {
-    return [];
-  }
-
-  return [
-    { type: "text", text: issueFramesText({ frames, failed, skipped }) },
-    ...frames.map((f) => ({
-      type: "image" as const,
-      data: f.frame.image,
-      mimeType: "image/png",
-    })),
-  ];
-}
-
-export function issueFramesText({
-  frames,
-  failed,
-  skipped,
-}: IssueFrames): string {
-  const lines = ["## Figma designs linked in the issue"];
-  frames.forEach((f, i) => {
+  const lines = ["## Figma frames linked in the issue", ""];
+  frames.slice(0, MAX_ISSUE_FRAMES).forEach((f, i) => {
     lines.push(
-      "",
-      `${i + 1}. **${f.frame.name}** (${f.frame.width}×${f.frame.height} pt) — file \`${f.fileKey}\`, node \`${f.nodeId ?? "whole file"}\``,
+      `${i + 1}. ${f.name ? `**${f.name}**` : "Figma frame"} — file \`${f.fileKey}\`, node \`${f.nodeId ?? "whole file"}\``,
       `   ${f.url}`,
     );
   });
-  if (frames.length > 0) {
-    lines.push(
-      "",
-      "The frame images follow, in this order. Use `figma_get_frame` for a frame's layers and designer comments, and `design_compare` to check the running app against it.",
-    );
+  const more = frames.length - MAX_ISSUE_FRAMES;
+  if (more > 0) {
+    lines.push(`…and ${more} more in the issue.`);
   }
-  if (failed.length > 0) {
-    lines.push("", "Couldn't render:", ...failed.map((u) => `- ${u}`));
-  }
-  if (skipped.length > 0) {
-    lines.push(
-      "",
-      "Not rendered (over the limit) — read with `figma_get_frame`:",
-      ...skipped.map((u) => `- ${u}`),
-    );
-  }
+  lines.push(
+    "",
+    figmaApi()
+      ? "Fetch each frame's image and specs with `figma_get_frame` (pass its link), and check the running app against it with `design_compare`."
+      : "Figma isn't connected in Argus, so these frames can't be fetched here. Ask the user to connect it in Settings → Integrations.",
+  );
 
   return lines.join("\n");
 }

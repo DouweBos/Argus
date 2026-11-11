@@ -72,6 +72,15 @@ function cacheKey(fileKey: string, nodeId: string | null): string {
   return `${fileKey}:${nodeId ?? ""}`;
 }
 
+/** A frame already rendered this run, without touching the network. */
+export function cachedFigmaFrame(url: string): FigmaFrame | null {
+  const ref = parseFigmaUrl(url);
+
+  return ref
+    ? (frameCache.get(cacheKey(ref.fileKey, ref.nodeId)) ?? null)
+    : null;
+}
+
 export function figmaFrame(url: string): Promise<FigmaFrame | null> {
   const ref = parseFigmaUrl(url);
   if (!ref) {

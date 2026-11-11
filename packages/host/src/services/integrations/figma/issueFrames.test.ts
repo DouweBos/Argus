@@ -3,100 +3,87 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   capture: vi.fn(),
   connected: true,
-  figmaFrame: vi.fn(),
+  names: new Map<string, string>(),
 }));
 
 vi.mock("./service", () => ({
   figmaApi: () => (mocks.connected ? {} : null),
-  figmaFrame: mocks.figmaFrame,
+  cachedFigmaFrame: (url: string) => {
+    const name = mocks.names.get(url);
+
+    return name ? { name, image: "png", width: 1, height: 1 } : null;
+  },
 }));
 vi.mock("../../telemetry/telemetry", () => ({ capture: mocks.capture }));
 
-const { MAX_ISSUE_FRAMES, issueFrameContent, resolveIssueFrames } =
+const { MAX_ISSUE_FRAMES, issueFrames, issueFramesText } =
   await import("./issueFrames");
 
-const frame = (name: string) => ({
-  name,
-  image: `png:${name}`,
-  width: 390,
-  height: 844,
-});
 const link = (node: string) =>
   `https://www.figma.com/design/FILE/App?node-id=${node}`;
 
 describe("issueFrames", () => {
   beforeEach(() => {
     mocks.connected = true;
+    mocks.names.clear();
     mocks.capture.mockReset();
-    mocks.figmaFrame.mockReset();
   });
 
-  describe("resolveIssueFrames", () => {
-    it("dedupes links to the same node and keeps the file key and node id", async () => {
-      const fetch = vi.fn(async () => frame("Home"));
-      const result = await resolveIssueFrames(
-        [link("1-2"), `${link("1-2")}&t=abc`, "https://example.com"],
-        fetch,
-      );
+  it("dedupes links to the same node and keeps the file key and node id", () => {
+    mocks.names.set(link("1-2"), "Home");
 
-      expect(fetch).toHaveBeenCalledTimes(1);
-      expect(result.frames).toEqual([
-        {
-          url: link("1-2"),
-          fileKey: "FILE",
-          nodeId: "1:2",
-          frame: frame("Home"),
-        },
-      ]);
-    });
+    expect(
+      issueFrames([
+        link("1-2"),
+        `${link("1-2")}&t=abc`,
+        "https://www.figma.com/design/OTHER/App",
+        "https://example.com",
+      ]),
+    ).toEqual([
+      { url: link("1-2"), fileKey: "FILE", nodeId: "1:2", name: "Home" },
+      {
+        url: "https://www.figma.com/design/OTHER/App",
+        fileKey: "OTHER",
+        nodeId: null,
+        name: null,
+      },
+    ]);
+  });
 
-    it("reports frames that fail and skips those over the cap", async () => {
-      const urls = Array.from({ length: MAX_ISSUE_FRAMES + 2 }, (_, i) =>
-        link(`${i}-1`),
-      );
-      const fetch = vi.fn(async (url: string) => {
-        if (url === urls[1]) {
-          throw new Error("403");
-        }
+  it("lists frames as text, pointing at figma_get_frame", () => {
+    mocks.names.set(link("5-6"), "Checkout");
+    const text = issueFramesText([link("5-6"), link("7-8")]);
 
-        return url === urls[2] ? null : frame(url);
-      });
-      const result = await resolveIssueFrames(urls, fetch);
-
-      expect(fetch).toHaveBeenCalledTimes(MAX_ISSUE_FRAMES);
-      expect(result.frames).toHaveLength(MAX_ISSUE_FRAMES - 2);
-      expect(result.failed).toEqual([urls[1], urls[2]]);
-      expect(result.skipped).toEqual(urls.slice(MAX_ISSUE_FRAMES));
+    expect(text).toContain("1. **Checkout** — file `FILE`, node `5:6`");
+    expect(text).toContain("2. Figma frame — file `FILE`, node `7:8`");
+    expect(text).toContain(`   ${link("7-8")}`);
+    expect(text).toContain("`figma_get_frame`");
+    expect(mocks.capture).toHaveBeenCalledWith("issue_designs_resolved", {
+      frames: 2,
+      named: 1,
     });
   });
 
-  describe("issueFrameContent", () => {
-    it("returns the summary then one image per frame", async () => {
-      mocks.figmaFrame.mockResolvedValue(frame("Checkout"));
-      const content = await issueFrameContent([link("5-6")]);
+  it("still lists the links when Figma isn't connected", () => {
+    mocks.connected = false;
+    const text = issueFramesText([link("5-6")]);
 
-      expect(content[0]).toMatchObject({ type: "text" });
-      expect((content[0] as { text: string }).text).toContain(
-        "**Checkout** (390×844 pt) — file `FILE`, node `5:6`",
-      );
-      expect(content[1]).toEqual({
-        type: "image",
-        data: "png:Checkout",
-        mimeType: "image/png",
-      });
-      expect(mocks.capture).toHaveBeenCalledWith("issue_designs_resolved", {
-        failed: 0,
-        resolved: 1,
-        skipped: 0,
-      });
-    });
+    expect(text).toContain("file `FILE`, node `5:6`");
+    expect(text).toContain("Figma isn't connected");
+  });
 
-    it("adds nothing when Figma isn't connected", async () => {
-      mocks.connected = false;
+  it("caps the listing and counts the rest", () => {
+    const urls = Array.from({ length: MAX_ISSUE_FRAMES + 3 }, (_, i) =>
+      link(`${i}-1`),
+    );
+    const text = issueFramesText(urls)!;
 
-      await expect(issueFrameContent([link("5-6")])).resolves.toEqual([]);
-      expect(mocks.figmaFrame).not.toHaveBeenCalled();
-      expect(mocks.capture).not.toHaveBeenCalled();
-    });
+    expect(text).not.toContain(urls.at(-1)!);
+    expect(text).toContain("…and 3 more in the issue.");
+  });
+
+  it("returns nothing when the issue links no frames", () => {
+    expect(issueFramesText(["https://example.com"])).toBeNull();
+    expect(mocks.capture).not.toHaveBeenCalled();
   });
 });
