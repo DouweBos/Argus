@@ -169,8 +169,8 @@ vi.mock("../integrations/issueStart", () => ({
   })),
 }));
 vi.mock("../agent/warmPolicy", () => ({ setViewingSession: vi.fn() }));
-vi.mock("../agent/accountSwitch", () => ({
-  switchSessionClaudeAccount: vi.fn(async () => {}),
+vi.mock("../agent/sessionAccountPin", () => ({
+  pinSessionAccount: vi.fn(() => null),
 }));
 vi.mock("../agent/pins/pins", () => ({
   isPinned: () => false,
@@ -195,8 +195,8 @@ vi.mock("../llm/registry", () => ({
 const { appState } = await import("../../state");
 const { dispatch } = await import("./capabilities");
 const { setViewingSession } = vi.mocked(await import("../agent/warmPolicy"));
-const { switchSessionClaudeAccount } = vi.mocked(
-  await import("../agent/accountSwitch"),
+const { pinSessionAccount } = vi.mocked(
+  await import("../agent/sessionAccountPin"),
 );
 const { sendAgentMessage, startAgent, stopAgent } = vi.mocked(
   await import("../agent/agentService"),
@@ -430,8 +430,8 @@ describe("control capability gating", () => {
       { session_id: "s1", claude_account_id: "side" },
       ctx,
     );
-    expect(switchSessionClaudeAccount).toHaveBeenCalledWith("s1", "side");
-    expect(switchSessionClaudeAccount.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(pinSessionAccount).toHaveBeenCalledWith("s1", "side");
+    expect(pinSessionAccount.mock.invocationCallOrder[0]).toBeLessThan(
       startAgent.mock.invocationCallOrder[0],
     );
   });
@@ -443,10 +443,10 @@ describe("control capability gating", () => {
       { session_id: "s1", claude_account_id: "" },
       ctx,
     );
-    expect(switchSessionClaudeAccount).toHaveBeenCalledWith("s1", null);
-    switchSessionClaudeAccount.mockClear();
+    expect(pinSessionAccount).toHaveBeenCalledWith("s1", null);
+    pinSessionAccount.mockClear();
     await dispatch("agents.spawn", { session_id: "s1" }, ctx);
-    expect(switchSessionClaudeAccount).not.toHaveBeenCalled();
+    expect(pinSessionAccount).not.toHaveBeenCalled();
   });
 
   it("refuses a runner this computer no longer has", async () => {

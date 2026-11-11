@@ -23,7 +23,7 @@ import {
   isLimitStalled,
   limitResumeAt,
 } from "./limitResume";
-import { discardSpare } from "./spares";
+import { pinSessionAccount } from "./sessionAccountPin";
 
 /** Which control asked for the move. */
 export type AccountSwitchSource = "limit_card" | "picker";
@@ -158,10 +158,7 @@ export async function switchSessionClaudeAccount(
   agentId?: string | null,
   source: AccountSwitchSource = "picker",
 ): Promise<void> {
-  const previous = appState.sessions.get(sessionId)?.claude_account_id ?? null;
-  setSessionClaudeAccount(sessionId, accountId);
-  // The spare was spawned on the old account.
-  discardSpare(sessionId, "account");
+  const previous = pinSessionAccount(sessionId, accountId);
 
   const agent = agentId ? appState.agents.get(agentId) : undefined;
   if (!agent || agent.sessionId !== sessionId || isGone(agent)) {

@@ -43,7 +43,6 @@ import { error as logError, info as logInfo } from "@argus/host/logger";
 import { appState } from "../../state";
 import { applyPushedEntries } from "../account/lifecycle";
 import { remoteAccountStatus, requestLinkFromPaired } from "../account/service";
-import { switchSessionClaudeAccount } from "../agent/accountSwitch";
 import {
   interruptAgent,
   respondToPermission,
@@ -90,6 +89,7 @@ import {
   setAgentPinned,
   setHistoryPinned,
 } from "../agent/pins/pins";
+import { pinSessionAccount } from "../agent/sessionAccountPin";
 import { getStartOptions } from "../agent/startOptions";
 import { setViewingSession } from "../agent/warmPolicy";
 import { saveAppSettings } from "../appSettings/store";
@@ -1407,7 +1407,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     // Pinned before the spawn, so the first turn already runs on the account picked.
     if (claude_account_id !== undefined) {
       await control(() =>
-        switchSessionClaudeAccount(session_id, claude_account_id || null),
+        pinSessionAccount(session_id, claude_account_id || null),
       );
     }
     const info = await control(() =>
@@ -1570,9 +1570,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     // Before setup finishes and its agent starts, so that agent runs on the account picked.
     const pin = async (sessionId: string): Promise<void> => {
       if (claude_account_id) {
-        await control(() =>
-          switchSessionClaudeAccount(sessionId, claude_account_id),
-        );
+        await control(() => pinSessionAccount(sessionId, claude_account_id));
       }
     };
     requireKnownRepoRoot(repo_root);
