@@ -325,6 +325,16 @@ export interface EventMap {
     mcp_sessions: number;
     uptime_bucket: "<1d" | "<3d" | "<6h" | ">=3d";
   };
+  implement_ticket_started: {
+    baseline: boolean;
+    checks: "0" | "1" | "2" | "3+";
+    devices: "0" | "1" | "2" | "3+";
+    has_notes: boolean;
+    has_ticket: boolean;
+    has_verify: boolean;
+    sign_in: boolean;
+    slow_backend: boolean;
+  };
   integration_connected: {
     method: "key" | "oauth";
     service: "figma" | "linear";

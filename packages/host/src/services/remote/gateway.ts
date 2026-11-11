@@ -40,6 +40,7 @@ import {
 import { addHostEventSink } from "@argus/host/bus";
 import { log } from "@argus/host/logger";
 import { appState } from "../../state";
+import { withArgusCommands } from "../agent/argusCommands";
 import { liveMeta } from "../agent/conversation/live";
 import { onBrowserFrame } from "../browser/frameForward";
 import {
@@ -1087,7 +1088,7 @@ export class DeviceConnection implements DeviceMediaController {
           this.pushEvent(
             "agent.capabilities",
             agentId,
-            toRemoteAgentCapabilities(init),
+            toRemoteAgentCapabilities(withArgusCommands(init)),
           );
         }
         break;

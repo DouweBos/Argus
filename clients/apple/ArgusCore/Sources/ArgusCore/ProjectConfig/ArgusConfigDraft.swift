@@ -39,6 +39,13 @@ public struct ArgusConfigDraft: Equatable, Sendable {
   public var automationPathDenylist = ""
   public var disabledAutomations = ""
 
+  // Verify
+  public var verifyDevices: [ListItem] = []
+  public var verifyChecks: [ListItem] = []
+  public var verifySignIn = ""
+  public var verifyBaseline = true
+  public var verifySlowBackend = ""
+
   public init() {}
 
   // MARK: Rows

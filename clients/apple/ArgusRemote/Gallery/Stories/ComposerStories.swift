@@ -13,6 +13,17 @@
           .navigationTitle("New Session")
           .inlineNavigationTitle()
         },
+        GalleryStory(
+          "sessions/start-from-issue",
+          fixtures: GalleryFixtures.composer.merging(GalleryFixtures.homeWithLinear) { old, _ in old }
+        ) {
+          AgentStartPane(
+            repoRoot: "/Users/dev/Projects/Argus", sessionId: nil, workspace: .worktree,
+            issues: [GalleryFixtures.linearIssue], picksProject: true
+          ) { _, _ in }
+          .navigationTitle("New Session")
+          .inlineNavigationTitle()
+        },
         GalleryStory("composer/chat", fixtures: GalleryFixtures.composer) { ChatComposerStory() },
       ]
     }

@@ -274,6 +274,9 @@
     }
 
     private var caption: String? {
+      if !flow.issues.isEmpty, flow.verify {
+        return "It runs /implement-ticket: implements, checks every acceptance criterion on device and reports with evidence."
+      }
       if !flow.issues.isEmpty {
         return flow.issues.count == 1
           ? "It starts from the issue, in a worktree on Linear's branch name. Anything you add goes after it."
