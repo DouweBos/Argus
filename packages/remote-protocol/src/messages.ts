@@ -296,6 +296,8 @@ export const MethodParams = {
     resume_session_id: z.string().optional(),
     /** Optional so a client built before runners could be picked still spawns. */
     runner_id: z.string().optional(),
+    /** Pin the session to this Claude account before spawning; `""` follows the computer's default, absent leaves the pin. */
+    claude_account_id: z.string().optional(),
   }),
   "agents.queue_list": z.object({ agent_id: z.string() }),
   "agents.queue_add": z.object({
@@ -361,6 +363,8 @@ export const MethodParams = {
     model: z.string().optional(),
     permission_mode: RemotePermissionMode.optional(),
     runner_id: z.string().optional(),
+    /** The Claude account the session is pinned to from the start; `""` or absent follows the computer's default. */
+    claude_account_id: z.string().optional(),
     /** Sent with `prompt`, so a client that can't wait out setup (a share sheet) still attaches them. */
     images: z.array(RemoteImageAttachment).max(20).optional(),
     /**

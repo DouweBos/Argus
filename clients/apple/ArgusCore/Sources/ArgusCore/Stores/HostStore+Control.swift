@@ -446,7 +446,7 @@ extension HostStore {
   @discardableResult
   public func spawnAgent(
     sessionId: String, model: String? = nil, permissionMode: RemotePermissionMode? = nil,
-    resumeSessionId: String? = nil, runnerId: String? = nil
+    resumeSessionId: String? = nil, runnerId: String? = nil, claudeAccountId: String? = nil
   ) async -> RemoteAgentStatus? {
     guard let backend else { return nil }
     struct Params: Encodable {
@@ -455,6 +455,8 @@ extension HostStore {
       let permission_mode: String?
       let resume_session_id: String?
       let runner_id: String?
+      /// `""` follows the computer's default; nil leaves the session's pin.
+      let claude_account_id: String?
     }
     struct Result: Decodable { let agent: RemoteAgentStatus }
     do {
@@ -462,7 +464,7 @@ extension HostStore {
         .agentsSpawn,
         Params(
           session_id: sessionId, model: model, permission_mode: permissionMode?.rawValue,
-          resume_session_id: resumeSessionId, runner_id: runnerId),
+          resume_session_id: resumeSessionId, runner_id: runnerId, claude_account_id: claudeAccountId),
         as: Result.self
       ).agent
       statusByAgent[agent.agentId] = agent

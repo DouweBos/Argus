@@ -43,6 +43,7 @@ import { error as logError, info as logInfo } from "@argus/host/logger";
 import { appState } from "../../state";
 import { applyPushedEntries } from "../account/lifecycle";
 import { remoteAccountStatus, requestLinkFromPaired } from "../account/service";
+import { switchSessionClaudeAccount } from "../agent/accountSwitch";
 import {
   interruptAgent,
   respondToPermission,
@@ -1393,10 +1394,22 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   },
 
   "agents.spawn": async (params) => {
-    const { session_id, model, permission_mode, resume_session_id, runner_id } =
-      parse("agents.spawn", params);
+    const {
+      session_id,
+      model,
+      permission_mode,
+      resume_session_id,
+      runner_id,
+      claude_account_id,
+    } = parse("agents.spawn", params);
     requireRemotePermissionMode(permission_mode);
     requireKnownRunner(runner_id);
+    // Pinned before the spawn, so the first turn already runs on the account picked.
+    if (claude_account_id !== undefined) {
+      await control(() =>
+        switchSessionClaudeAccount(session_id, claude_account_id || null),
+      );
+    }
     const info = await control(() =>
       startAgent(
         session_id,
@@ -1549,10 +1562,19 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       model,
       permission_mode,
       runner_id,
+      claude_account_id,
       images,
       linear_issue,
       verify,
     } = parse("sessions.create", params);
+    // Before setup finishes and its agent starts, so that agent runs on the account picked.
+    const pin = async (sessionId: string): Promise<void> => {
+      if (claude_account_id) {
+        await control(() =>
+          switchSessionClaudeAccount(sessionId, claude_account_id),
+        );
+      }
+    };
     requireKnownRepoRoot(repo_root);
     requireRemotePermissionMode(permission_mode);
     requireKnownRunner(runner_id);
@@ -1571,6 +1593,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
           { linkedIssue: start.linkedIssue, designRefs: start.designRefs },
         ),
       );
+      await pin(session.id);
       // The command fetches the issue itself; only its screenshots ride along.
       const first = verify
         ? implementTicketMessage(start.linkedIssue.identifier, prompt ?? "")
@@ -1594,6 +1617,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         base_branch,
       ),
     );
+    await pin(session.id);
     if (prompt?.trim()) {
       startAgentWhenReady(session.id, prompt, {
         model,

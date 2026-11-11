@@ -208,6 +208,47 @@ struct ComposerModelTests {
     #expect(started.first?.model == nil)
   }
 
+  @Test("a start picks its account, which rides the start; other runners get no account section")
+  func startAccount() async throws {
+    var started: [ComposerStart] = []
+    let starter = ComposerStarter(defaultMode: "auto") { request in
+      started.append(request)
+      return true
+    }
+    host.claudeAccounts = try ["work", "side"].map { id in
+      let json = #"{"id":"\#(id)","label":"\#(id)","needs_reauth":false,"rate_limited":false,"account_type":"claudeai"}"#
+      return try JSONDecoder().decode(RemoteClaudeAccount.self, from: Data(json.utf8))
+    }
+    let composer = model(status: nil, starter: starter)
+    #expect(composer.offersAccounts)
+    #expect(composer.accountId == ComposerModel.followDefaultAccount)
+    composer.setAccount("side")
+    #expect(composer.accountId == "side")
+    composer.text = "go"
+    composer.submit()
+    await settle()
+    #expect(started.first?.accountId == "side")
+    // Sent once: the next start follows the session again.
+    #expect(composer.accountId == ComposerModel.followDefaultAccount)
+
+    let json = #"{"id":"gw","display_name":"Gateway","is_custom":true,"models":[]}"#
+    composer.setRunner(try JSONDecoder().decode(RemoteRunner.self, from: Data(json.utf8)))
+    #expect(!composer.offersAccounts)
+  }
+
+  @Test("a start the account picker was never touched leaves the session's pin alone")
+  func startWithoutAccount() async {
+    var started: [ComposerStart] = []
+    let composer = model(status: nil, starter: ComposerStarter(defaultMode: "auto") { request in
+      started.append(request)
+      return true
+    })
+    composer.text = "go"
+    composer.submit()
+    await settle()
+    #expect(started.first?.accountId == nil)
+  }
+
   @Test("a picked runner drops the starter's default model, which belongs to the default runner")
   func runnerDropsDefaultModel() {
     let starter = ComposerStarter(defaultMode: "auto", defaultModel: "opus") { _ in true }

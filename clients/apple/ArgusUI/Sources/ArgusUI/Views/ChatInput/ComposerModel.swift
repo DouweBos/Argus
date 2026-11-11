@@ -57,6 +57,8 @@ public final class ComposerModel {
   var draftMode: RemotePermissionMode?
   var draftModel: String?
   var draftEffort: String?
+  /// A start's account pick; nil keeps the session's own pin.
+  var draftAccount: String?
   /// A start composer's runner; nil is the computer's default.
   public internal(set) var runner: RemoteRunner?
   /// A start that can't carry images or effort (one per Linear issue) hides both.

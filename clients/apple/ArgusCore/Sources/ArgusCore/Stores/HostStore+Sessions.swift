@@ -11,7 +11,8 @@ extension HostStore {
     repoRoot: String, branch: String, description: String,
     useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil,
     model: String? = nil, permissionMode: RemotePermissionMode? = nil, runnerId: String? = nil,
-    linearIssue: String? = nil, images: [RemoteImageAttachment]? = nil, verify: Bool? = nil
+    linearIssue: String? = nil, images: [RemoteImageAttachment]? = nil, verify: Bool? = nil,
+    claudeAccountId: String? = nil
   ) async -> RemoteSession? {
     guard let backend else { return nil }
     struct Params: Encodable {
@@ -30,6 +31,8 @@ extension HostStore {
       let images: [RemoteImageAttachment]?
       /// With `linear_issue`: the agent starts on `/implement-ticket` instead.
       let verify: Bool?
+      /// Pinned from the start; nil or `""` follows the computer's default.
+      let claude_account_id: String?
     }
     struct Result: Decodable { let session: RemoteSession }
     do {
@@ -39,7 +42,7 @@ extension HostStore {
           repo_root: repoRoot, branch: branch, description: description,
           use_existing_branch: useExistingBranch, base_branch: baseBranch, prompt: prompt,
           model: model, permission_mode: permissionMode?.rawValue, runner_id: runnerId,
-          linear_issue: linearIssue, images: images, verify: verify),
+          linear_issue: linearIssue, images: images, verify: verify, claude_account_id: claudeAccountId),
         as: Result.self
       ).session
       creatingSessions[session.id] = session

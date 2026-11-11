@@ -14,11 +14,14 @@ public struct ComposerStart: Sendable {
   public let effort: String?
   /// Nil is the computer's default runner.
   public let runnerId: String?
+  /// The Claude account to pin the session to before the agent starts: `""` follows the
+  /// computer's default, nil leaves the session as it is.
+  public let accountId: String?
 
   public init(
     message: String, displayText: String, images: [RemoteImageAttachment] = [],
     permissionMode: RemotePermissionMode? = nil, model: String? = nil, effort: String? = nil,
-    runnerId: String? = nil
+    runnerId: String? = nil, accountId: String? = nil
   ) {
     self.message = message
     self.displayText = displayText
@@ -27,6 +30,7 @@ public struct ComposerStart: Sendable {
     self.model = model
     self.effort = effort
     self.runnerId = runnerId
+    self.accountId = accountId
   }
 }
 

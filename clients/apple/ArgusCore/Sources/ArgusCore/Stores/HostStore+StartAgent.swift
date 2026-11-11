@@ -8,14 +8,17 @@ extension HostStore {
   /// start (the store reports why). `mode` is raw: one no gateway mode carries
   /// (`trusted`) goes through the admin start, which only a local backend has.
   public func startAgent(
-    sessionId: String, mode: String?, model: String?, runnerId: String? = nil
+    sessionId: String, mode: String?, model: String?, runnerId: String? = nil, accountId: String? = nil
   ) async -> String? {
+    if accountId != nil { hooks.track(.claudeAccountChanged(action: .pin)) }
     let remoteMode = mode.flatMap(RemotePermissionMode.init(rawValue:))
     if let mode, remoteMode == nil, backend?.kind == .local {
+      if let accountId { await pinSession(sessionId, to: accountId) }
       return await startTrusted(sessionId: sessionId, mode: mode, model: model)
     }
-    return await spawnAgent(sessionId: sessionId, model: model, permissionMode: remoteMode, runnerId: runnerId)?
-      .agentId
+    return await spawnAgent(
+      sessionId: sessionId, model: model, permissionMode: remoteMode, runnerId: runnerId, claudeAccountId: accountId
+    )?.agentId
   }
 
   /// An agent in the session with the request as its first turn. `onSpawned`
@@ -28,7 +31,7 @@ extension HostStore {
     guard
       let agentId = await startAgent(
         sessionId: id, mode: request.permissionMode?.rawValue ?? defaults.mode,
-        model: request.model(or: defaults), runnerId: request.runnerId)
+        model: request.model(or: defaults), runnerId: request.runnerId, accountId: request.accountId)
     else { return nil }
     if let effort = request.effort(or: defaults) { await setEffort(agentId: agentId, level: effort) }
     let hasMessage = !request.message.isEmpty || !request.images.isEmpty
@@ -63,7 +66,8 @@ extension HostStore {
         baseBranch: existingBranch == nil ? baseBranch : nil,
         prompt: hostStarts && !request.message.isEmpty ? request.message : nil,
         model: request.model(or: defaults), permissionMode: mode, runnerId: request.runnerId,
-        images: hostStarts && !request.images.isEmpty ? request.images : nil)
+        images: hostStarts && !request.images.isEmpty ? request.images : nil,
+        claudeAccountId: request.accountId.flatMap { $0.isEmpty ? nil : $0 })
     else { return nil }
     if !hostStarts {
       Task { await startWhenReady(session.id, request: request, defaults: defaults, onSpawned: onSpawned) }
@@ -95,6 +99,18 @@ extension HostStore {
   public func session(id: String) -> RemoteSession? {
     sessionsByRepo.values.joined().first { $0.id == id }
       ?? scratchPads.first { $0.id == id } ?? adoptedSessions[id]
+  }
+
+  /// The admin pin, for the `trusted` start that skips the gateway's spawn; `""` follows the default.
+  private func pinSession(_ sessionId: String, to accountId: String) async {
+    guard let backend else { return }
+    do {
+      _ = try await backend.request(
+        ArgusProtocol.Commands.SetSessionClaudeAccount.self,
+        .init(sessionId: sessionId, accountId: accountId.isEmpty ? nil : accountId))
+    } catch {
+      report(error, scope: "claude_accounts")
+    }
   }
 
   /// `trusted` is a CLI flag fixed at launch, and the gateway's spawn refuses

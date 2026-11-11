@@ -58,16 +58,19 @@ extension ComposerModel {
     ComposerOptions.linkable(host.projects, ownRepoRoot: sessionId.flatMap { host.repoRoot(forSessionId: $0) })
   }
 
-  /// With one account there's nothing to switch between, and a start composer has no session pin.
+  /// With one account there's nothing to switch between, and only Claude Code runs on one.
   public var offersAccounts: Bool {
-    starter == nil && sessionId != nil && (host.claudeAccounts?.count ?? 0) > 1
+    guard (host.claudeAccounts?.count ?? 0) > 1 else { return false }
+    if starter != nil { return runner == nil || runner?.id == "claude-code" }
+    return sessionId != nil
   }
 
   public var accounts: [RemoteClaudeAccount] { host.claudeAccounts ?? [] }
 
-  /// The session's pinned account, or `followDefaultAccount`.
+  /// A start's pick, else the session's pinned account, or `followDefaultAccount`.
   public var accountId: String {
-    sessionId.flatMap { host.claudeAccountId(forSessionId: $0) } ?? Self.followDefaultAccount
+    if starter != nil, let draftAccount { return draftAccount }
+    return sessionId.flatMap { host.claudeAccountId(forSessionId: $0) } ?? Self.followDefaultAccount
   }
 
   public func accountName(_ id: String?) -> String? {
@@ -113,6 +116,8 @@ extension ComposerModel {
   }
 
   public func setAccount(_ value: String) {
+    // A start pins it with the agent, so its first turn already runs there.
+    if starter != nil { return draftAccount = value }
     guard let sessionId else { return }
     let accountId = value == Self.followDefaultAccount ? nil : value
     Task { await host.setSessionClaudeAccount(sessionId: sessionId, accountId: accountId, agentId: agentId) }
