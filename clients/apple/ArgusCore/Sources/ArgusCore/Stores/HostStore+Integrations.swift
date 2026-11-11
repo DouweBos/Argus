@@ -85,10 +85,11 @@ extension HostStore {
   }
 
   /// One worktree session per issue, on Linear's branch name, each with an
-  /// agent the computer starts on the issue once setup finishes.
+  /// agent the computer starts on the issue once setup finishes — on
+  /// `/implement-ticket` when `verify` is set.
   public func startFromIssues(
     _ issues: [LinearIssue], repoRoot: String, baseBranch: String?, prompt: String,
-    model: String?, permissionMode: RemotePermissionMode?, runnerId: String?
+    model: String?, permissionMode: RemotePermissionMode?, runnerId: String?, verify: Bool = false
   ) async -> [RemoteSession] {
     var started: [RemoteSession] = []
     for issue in issues {
@@ -96,7 +97,7 @@ extension HostStore {
         repoRoot: repoRoot, branch: issue.branchName, description: issue.identifier,
         baseBranch: baseBranch, prompt: prompt.isEmpty ? nil : prompt,
         model: model, permissionMode: permissionMode, runnerId: runnerId,
-        linearIssue: issue.identifier)
+        linearIssue: issue.identifier, verify: verify ? true : nil)
       {
         started.append(session)
       }

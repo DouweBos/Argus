@@ -45,6 +45,12 @@
           NewSessionSheet(project: GalleryFixtures.argusProject) { _ in }
         },
         GalleryStory(
+          "sessions/start-from-issue", size: CGSize(width: 480, height: 640),
+          fixtures: GalleryFixtures.homeWithLinear, setup: load
+        ) {
+          NewSessionSheet(project: GalleryFixtures.argusProject, issues: [GalleryFixtures.linearIssue]) { _ in }
+        },
+        GalleryStory(
           "sessions/delete-sheet", size: CGSize(width: 420, height: 0), fixtures: GalleryFixtures.home, setup: load
         ) {
           DeleteSessionSheet(session: GalleryFixtures.argusSession("s-long")) {}

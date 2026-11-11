@@ -73,6 +73,7 @@ import { incrementCommandMetric } from "../session/commandMetrics";
 import { sessionRunnerId } from "../session/models";
 import { simulatorPool } from "../simulator/pool";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
+import { expandArgusCommand, withArgusCommands } from "./argusCommands";
 import { loadConversationByRunnerSession } from "./chatHistory";
 import { injectDeviceFlag, isConductorInvocation } from "./conductorInjection";
 import {
@@ -388,7 +389,7 @@ function agentInfoOf(agent: AgentSession): AgentInfo {
     status: agent.status,
     parent_agent_id: agent.parentAgentId,
     created_at: agent.createdAt,
-    capabilities: agent.handle.initializeResponse(),
+    capabilities: withArgusCommands(agent.handle.initializeResponse()),
     model: agent.model,
     runner_id: agent.runner.id,
     pinned: isPinned(agent.agentId),
@@ -889,7 +890,10 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
 
   handle.on("capabilities", (payload: unknown) => {
     rememberStartOptions(runner.id, payload);
-    emitHostEvent(`agent:capabilities:${agentId}`, payload);
+    emitHostEvent(
+      `agent:capabilities:${agentId}`,
+      withArgusCommands(payload as { commands?: unknown } | null),
+    );
   });
 
   handle.on("stream-event", (line: string) => {
@@ -1656,18 +1660,24 @@ export function sendAgentMessage(
 
   // Track slash command usage for autocomplete sorting.
   const trimmed = message.trim();
+  const session = appState.sessions.get(agentEntry.sessionId);
+  let outgoing = message;
   if (trimmed.startsWith("/")) {
     const cmdName = trimmed.slice(1).split(/\s+/)[0];
-    if (cmdName) {
-      const session = appState.sessions.get(agentEntry.sessionId);
-      if (session?.repo_root) {
-        incrementCommandMetric(session.repo_root, cmdName);
-      }
+    if (cmdName && session?.repo_root) {
+      incrementCommandMetric(session.repo_root, cmdName);
     }
+    outgoing =
+      expandArgusCommand(message, {
+        worktree: session?.path ?? null,
+        runnerCommands: (
+          agentEntry.handle.initializeResponse()?.commands ?? []
+        ).map((c) => c.name),
+      }) ?? message;
   }
 
   try {
-    agentEntry.handle.send(message, images ?? []);
+    agentEntry.handle.send(outgoing, images ?? []);
   } catch (e) {
     throw `Failed to write to agent stdin: ${String(e)}`;
   }

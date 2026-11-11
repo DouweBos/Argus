@@ -17,6 +17,8 @@
     let workspace: StartWorkspace
     /// Each gets its own worktree on Linear's branch name.
     var issues: [HostStore.LinearIssue]
+    /// Issues start on `/implement-ticket`: verified on device, reported with evidence.
+    var verify = false
     var branches: [RemoteGitBranch] = []
 
     @ObservationIgnored private weak var host: HostStore?
@@ -116,7 +118,7 @@
       let sessions = await host.startFromIssues(
         issues, repoRoot: repoRoot, baseBranch: workspace.base, prompt: request.message, model: request.model,
         permissionMode: request.permissionMode ?? defaults.mode.flatMap(RemotePermissionMode.init(rawValue:)),
-        runnerId: request.runnerId)
+        runnerId: request.runnerId, verify: verify)
       return sessions.first.map { .session($0) }
     }
 

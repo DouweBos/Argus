@@ -3,6 +3,7 @@ import type { NewSpare } from "./spares";
 import type { Session } from "../session/models";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { appState } from "../../state";
+import { ARGUS_COMMANDS } from "./argusCommands";
 import { clearSpares, fillSpare } from "./spares";
 import {
   getStartOptions,
@@ -53,7 +54,10 @@ describe("getStartOptions", () => {
 
     const options = await getStartOptions("s1");
 
-    expect(options.slashCommands.map((c) => c.name)).toEqual(["warm"]);
+    expect(options.slashCommands.map((c) => c.name)).toEqual([
+      "warm",
+      "implement-ticket",
+    ]);
     expect(options.models.map((m) => m.value)).toEqual(["warm-model"]);
   });
 
@@ -64,7 +68,10 @@ describe("getStartOptions", () => {
 
     const options = await getStartOptions("s1", "custom:apex");
 
-    expect(options.slashCommands.map((c) => c.name)).toEqual(["apex"]);
+    expect(options.slashCommands.map((c) => c.name)).toEqual([
+      "apex",
+      "implement-ticket",
+    ]);
   });
 
   it("waits for a spare on its way when nothing is known yet", async () => {
@@ -77,7 +84,10 @@ describe("getStartOptions", () => {
     arrive(spare("claude-code", "warm"));
     await filled;
 
-    expect((await pending).slashCommands.map((c) => c.name)).toEqual(["warm"]);
+    expect((await pending).slashCommands.map((c) => c.name)).toEqual([
+      "warm",
+      "implement-ticket",
+    ]);
   });
 
   it("remembers the last-known list across a host restart", async () => {
@@ -95,7 +105,7 @@ describe("getStartOptions", () => {
 
   it("is empty for a runner nobody has run yet", async () => {
     await expect(getStartOptions("s1")).resolves.toEqual({
-      slashCommands: [],
+      slashCommands: ARGUS_COMMANDS,
       models: [],
     });
   });
