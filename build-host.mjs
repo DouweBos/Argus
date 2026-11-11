@@ -26,4 +26,15 @@ await esbuild.build({
   logLevel: "info",
 });
 
+// The stdio MCP bridge agents without HTTP MCP spawn; it sits next to the host.
+await esbuild.build({
+  entryPoints: ["packages/host/src/bin/argus-mcp-stdio.ts"],
+  outfile: "dist-host/argus-mcp-stdio.js",
+  bundle: true,
+  platform: "node",
+  target: "node20",
+  format: "cjs",
+  logLevel: "info",
+});
+
 fs.writeFileSync("dist-host/package.json", '{"type":"commonjs"}');

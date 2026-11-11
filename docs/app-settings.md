@@ -268,9 +268,9 @@ Plan mode switches the agent into its own plan mode when it has one. Picking
 Things that differ from Claude Code, and are hidden on ACP chats: editing or
 forking from an earlier message, side questions and the effort picker. A
 message sent while the agent is busy waits for its turn to end. The Argus MCP
-tools reach agents that take HTTP MCP servers; agents that don't (Cursor, so
-far) still run, without them, and keep the MCP servers configured in the
-agent itself. Resuming a chat needs the agent to support it; one that can't
+tools reach every agent: ones that only take stdio MCP servers (Cursor, so far)
+get them through a small bridge Argus ships, along with any other HTTP MCP
+servers you've configured. Resuming a chat needs the agent to support it; one that can't
 starts fresh and says so.
 
 ---

@@ -130,6 +130,13 @@ export interface EventMap {
     turns_completed: number;
   };
   agent_interrupted: undefined;
+  /** An agent without HTTP MCP started; its HTTP servers went over the stdio bridge. */
+  agent_mcp_bridged: {
+    /** `unavailable`: no bridge script was found, so the servers were skipped. */
+    outcome: "bridged" | "unavailable";
+    runner: TelemetryRunner;
+    servers: number;
+  };
   agent_pinned: {
     action: "pin" | "unpin";
     /** A live agent, or a saved chat whose agent is gone. */

@@ -4,6 +4,7 @@
  *   host/
  *   ├── node                         the pinned runtime (mise.toml), hardened
  *   ├── argus-host.js                the dist-host bundle
+ *   ├── argus-mcp-stdio.js           the stdio MCP bridge for agents without HTTP MCP
  *   ├── node_modules/node-pty        the addon + spawn-helper for this arch
  *   └── resources/                   ARGUS_RESOURCES: sim-bridge, sim-input, conductor,
  *                                    scrcpy jar, emulator proto, prompts, docs,
@@ -228,6 +229,12 @@ function stage(options: Options): boolean {
     sync(
       path.join(ROOT, "dist-host/argus-host.js"),
       path.join(out, "argus-host.js"),
+      true,
+    ) || changed;
+  changed =
+    sync(
+      path.join(ROOT, "dist-host/argus-mcp-stdio.js"),
+      path.join(out, "argus-mcp-stdio.js"),
       true,
     ) || changed;
   changed =

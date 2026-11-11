@@ -29,11 +29,13 @@ import type {
 import type { ChildProcess } from "node:child_process";
 import EventEmitter from "node:events";
 import { info, warn } from "@argus/host/logger";
+import { TELEMETRY_RUNNERS } from "../../../../telemetryEvents";
+import { capture } from "../../../telemetry/telemetry";
 import { toCanonicalPermissionMode } from "../claudeCode/permissionModes";
 import { killChild } from "../killChild";
 import { JsonRpcPeer, RpcError } from "../rpc";
 import { AcpApprovals } from "./approvals";
-import { toAcpMcpServers } from "./mcp";
+import { stdioBridge, toAcpMcpServers } from "./mcp";
 import { PLAN_MODE_INSTRUCTIONS } from "./permissions";
 import { ACP_AUTH_REQUIRED, ACP_PROTOCOL_VERSION } from "./protocol";
 import { AcpSessionSettings } from "./settings";
@@ -220,14 +222,24 @@ export class AcpHandle extends EventEmitter implements LlmRunnerHandle {
     });
 
     const caps = this.agent.agentCapabilities ?? {};
+    const http = caps.mcpCapabilities?.http === true;
     const mcp = toAcpMcpServers(
       this.opts.mcpServers,
-      caps.mcpCapabilities?.http === true,
+      http,
+      http ? null : stdioBridge(),
     );
     if (mcp.skipped.length > 0) {
       warn(
         `[agent:${this.agentId}] ${this.preset.displayName} can't reach HTTP MCP servers; skipped ${mcp.skipped.join(", ")}`,
       );
+    }
+    if (mcp.skipped.length + mcp.bridged.length > 0) {
+      capture("agent_mcp_bridged", {
+        outcome: mcp.skipped.length > 0 ? "unavailable" : "bridged",
+        runner:
+          TELEMETRY_RUNNERS.find((id) => id === this.preset.id) ?? "custom",
+        servers: mcp.skipped.length + mcp.bridged.length,
+      });
     }
     const params = {
       cwd: this.opts.cwd,
