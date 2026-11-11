@@ -13,6 +13,7 @@ import {
   outlineMatch,
 } from "../design/compare";
 import { exportDesignAssets, saveComparison } from "../design/files";
+import { issueFrameContent } from "../integrations/figma/issueFrames";
 import { figmaApi, figmaDesignContext } from "../integrations/figma/service";
 import {
   commentOnLinearIssue,
@@ -222,7 +223,7 @@ function registerFigmaTools(server: McpServer): void {
 function registerLinearTools(server: McpServer): void {
   server.tool(
     "linear_get_issue",
-    "Read a Linear issue in full: description, state, labels, comments, and the screenshots attached to it. Accepts an identifier (ENG-123) or an issue URL.",
+    "Read a Linear issue in full: description, state, labels, comments, and the screenshots attached to it. When Figma is connected, the Figma frames the issue links to come with it, rendered (name, file key, node id, image). Accepts an identifier (ENG-123) or an issue URL.",
     {
       ref: z
         .string()
@@ -234,6 +235,10 @@ function registerLinearTools(server: McpServer): void {
         if (!result) {
           return text(`No Linear issue found for "${ref}".`, true);
         }
+        // A design that won't render mustn't cost the agent the ticket.
+        const designs = await issueFrameContent(result.designUrls).catch(
+          () => [],
+        );
 
         return {
           content: [
@@ -243,6 +248,7 @@ function registerLinearTools(server: McpServer): void {
               data: image.data,
               mimeType: image.media_type,
             })),
+            ...designs,
           ],
         };
       } catch (err) {
