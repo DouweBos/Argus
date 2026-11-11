@@ -333,6 +333,7 @@ export interface EventMap {
     has_verify: boolean;
     sign_in: boolean;
     slow_backend: boolean;
+    source: "mcp_tool" | "message";
   };
   integration_connected: {
     method: "key" | "oauth";

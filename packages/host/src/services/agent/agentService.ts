@@ -74,7 +74,11 @@ import { incrementCommandMetric } from "../session/commandMetrics";
 import { sessionRunnerId } from "../session/models";
 import { simulatorPool } from "../simulator/pool";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
-import { expandArgusCommand, withArgusCommands } from "./argusCommands";
+import {
+  type ArgusCommandSource,
+  expandArgusCommand,
+  withArgusCommands,
+} from "./argusCommands";
 import { loadConversationByRunnerSession } from "./chatHistory";
 import {
   CONDUCTOR_DISALLOWED,
@@ -1698,6 +1702,7 @@ export function sendAgentMessage(
   agentId: string,
   message: string,
   images?: ImageAttachment[],
+  opts: { commandSource?: ArgusCommandSource } = {},
 ): void {
   const agentEntry = appState.agents.get(agentId);
   if (!agentEntry) {
@@ -1711,7 +1716,7 @@ export function sendAgentMessage(
   const pendingRespawn = respawning.get(agentId);
   if (pendingRespawn) {
     pendingRespawn
-      .then(() => sendAgentMessage(agentId, message, images))
+      .then(() => sendAgentMessage(agentId, message, images, opts))
       .catch((e) => {
         warn(`[agent:${agentId}] message after respawn failed: ${String(e)}`);
       });
@@ -1731,6 +1736,7 @@ export function sendAgentMessage(
     outgoing =
       expandArgusCommand(message, {
         worktree: session?.path ?? null,
+        source: opts.commandSource ?? "message",
         runnerCommands: (
           agentEntry.handle.initializeResponse()?.commands ?? []
         ).map((c) => c.name),

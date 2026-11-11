@@ -628,6 +628,7 @@ describe("spawn_agent", () => {
       "agent-42",
       "Build the thing",
       [],
+      { commandSource: undefined },
     );
   });
 
@@ -953,7 +954,50 @@ describe("send_agent_message", () => {
       arguments: { agent_id: "a-1", message: "Hello agent" },
     });
     expect(textOf(result)).toContain("Message sent to agent a-1");
-    expect(mockSendAgentMessage).toHaveBeenCalledWith("a-1", "Hello agent", []);
+    expect(mockSendAgentMessage).toHaveBeenCalledWith(
+      "a-1",
+      "Hello agent",
+      [],
+      { commandSource: undefined },
+    );
+  });
+});
+
+// ===========================================================================
+// implement_ticket
+// ===========================================================================
+
+describe("implement_ticket", () => {
+  it("spawns through spawn_agent's path, marked as the MCP tool", async () => {
+    appState.sessions.set("ws-1", mockSession());
+    mockStartAgent.mockResolvedValue({
+      agent_id: "agent-42",
+      session_id: "ws-1",
+      status: "running",
+      parent_agent_id: null,
+      created_at: 1_700_000_000_000,
+      model: null,
+      runner_id: "claude-code",
+    });
+    const result = await client.callTool({
+      name: "implement_ticket",
+      arguments: {
+        ticket: "ENG-7",
+        notes: "skip the tablet",
+        session: "ws-1",
+        project_path: "/projects/frontend",
+      },
+    });
+    expect(jsonOf(result)).toMatchObject({
+      agent_id: "agent-42",
+      session_id: "ws-1",
+    });
+    expect(mockSendAgentMessage).toHaveBeenCalledWith(
+      "agent-42",
+      "/implement-ticket ENG-7\n\nskip the tablet",
+      [],
+      { commandSource: "mcp_tool" },
+    );
   });
 });
 

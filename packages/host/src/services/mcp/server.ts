@@ -11,7 +11,9 @@
  * to `appState` and all service functions. No proxy layer or IPC needed.
  */
 
+import type { ArgusCommandSource } from "../agent/argusCommands";
 import type { Session } from "../session/models";
+import type { ToolId } from "../tools/types";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import crypto from "node:crypto";
@@ -67,7 +69,6 @@ import {
   waitForTerminal,
 } from "../terminal/multiplexer";
 import { stopTerminalGracefully } from "../terminal/stop";
-import { TOOL_IDS, type ToolId } from "../tools/types";
 import { worktreePurposeForCaller } from "./automationCaller";
 import {
   automationMergeBlock,
@@ -76,6 +77,7 @@ import {
   recordAutomationSessionForCaller,
 } from "./automationGuards";
 import { registerAutomationTools } from "./automationTools";
+import { registerImplementTicketTool } from "./implementTicketTool";
 import { registerIntegrationTools } from "./integrationTools";
 import { findPastAgent, registerPastAgentTools } from "./pastAgentTools";
 import { registerPrWatchTools } from "./prWatchTools";
@@ -90,6 +92,13 @@ import {
   removeMcpSession,
   SPAWN_ID_HEADER,
 } from "./sessions";
+import {
+  devicesArg,
+  modelArg,
+  permissionModeArg,
+  sessionProjectPathArg,
+  toolsArg,
+} from "./spawnArgs";
 import { ArgusTaskStore } from "./taskStore";
 import { registerTaskTool } from "./taskTools";
 import { localAgentHint, registerTranscriptTools } from "./transcriptTools";
@@ -168,18 +177,6 @@ function authorizeRequest(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Reusable required `project_path` argument for session-scoped tools. Agents
- * typically reference a session by branch or display name, neither of which is
- * unique across projects — the project scopes the lookup so a shared name
- * can't resolve to the wrong project's session.
- */
-const sessionProjectPathArg = z
-  .string()
-  .describe(
-    "Absolute path to the project root the session belongs to. Use the project_path from your system prompt for the current project, or a path from list_projects for another. Required: branch and display names are only unique within a project.",
-  );
 
 /**
  * Resolve a session by ID, branch name, or display name within a single
@@ -284,20 +281,6 @@ function findSession(
  * Returns the spawned agent info on success. Throws on session-ready timeout
  * or agent startup failure — callers translate that into MCP error content.
  */
-const devicesArg = z
-  .array(z.string())
-  .optional()
-  .describe(
-    "Devices to hand this agent for the run — simulator UDIDs or names, Android serials (from `conductor list-devices`). Its system prompt lists them and no other agent gets them; use it for a device matrix such as an iPhone plus an iPad instead of naming UDIDs in the prompt.",
-  );
-
-const toolsArg = z
-  .object({ disabled: z.array(z.enum(TOOL_IDS)).optional() })
-  .optional()
-  .describe(
-    'Tool profile for this agent: `{ disabled: ["device-control"] }` runs it without devices — no device guide in its prompt, `conductor` and `design_compare` refused. On top of the app and project Tools settings, which it can only narrow.',
-  );
-
 async function spawnAgentInSession(
   sessionId: string,
   prompt: string,
@@ -319,6 +302,7 @@ async function spawnAgentInSession(
     /** Tools off for this agent only, on top of the app and project masks. */
     tools?: { disabled?: ToolId[] };
     sourceTool: "create_session" | "spawn_agent" | "spawn_agents_batch";
+    commandSource?: ArgusCommandSource;
   },
 ): Promise<{
   agent_id: string;
@@ -366,7 +350,9 @@ async function spawnAgentInSession(
     model: agentInfo.model,
   });
 
-  sendAgentMessage(agentInfo.agent_id, prompt, opts.images);
+  sendAgentMessage(agentInfo.agent_id, prompt, opts.images, {
+    commandSource: opts.commandSource,
+  });
 
   emitMcpSystemMessage(agentInfo.agent_id, {
     tool: opts.sourceTool,
@@ -472,6 +458,50 @@ function resolveRepoRoot(projectPath?: string): string {
 
   return appState.repoRoots.values().next().value as string;
 }
+
+const spawnAgentShape = {
+  session: z
+    .string()
+    .describe(
+      'Which session to run the agent in. `"current"` is your own checkout — your worktree if you are in one, the project root if you are the root agent. `"root"` is always the project root specifically. Otherwise a session ID, branch name, or display name. Prefer `"current"` for work related to your own task; use a fresh session for unrelated work.',
+    ),
+  project_path: sessionProjectPathArg,
+  prompt: z
+    .string()
+    .describe(
+      "Initial message/instructions to send to the agent. When resuming, this is the next message in its restored conversation — e.g. tell it to carry on where it stopped.",
+    ),
+  resume: z
+    .string()
+    .optional()
+    .describe(
+      "Continue a past agent instead of starting a fresh one: the `resume` value from `list_past_agents`. The new agent gets the old one's full conversation, runs on the same runner, and is attributed to you. Run it in the session it worked in.",
+    ),
+  permission_mode: permissionModeArg,
+  model: modelArg,
+  platforms: z
+    .array(z.enum(["ios", "android", "web"]))
+    .optional()
+    .describe(
+      "Runtime platforms this child agent should target (e.g. ['ios']). Narrows the system prompt so the agent only sees iOS/Android/Web sections relevant to its task. Defaults to the project's `.argus.json` `platforms` field, or all three if unset.",
+    ),
+  devices: devicesArg,
+  tools: toolsArg,
+  parent_agent_id: z
+    .string()
+    .optional()
+    .describe(
+      "Optional override for the parent agent id. Defaults to the calling agent automatically, so you normally don't need to set this — only pass it to attribute the spawn to a different agent. Used for tracking the parent-child relationship in the UI and for cascade cleanup.",
+    ),
+  attachments: z
+    .array(mcpAttachmentSchema)
+    .optional()
+    .describe(
+      "Optional attachments (images/screenshots) to forward to the child agent's initial message. When the user sends you an image, include its absolute path here so the child agent sees the actual image, not just a text description. Use { path: '/abs/path/to/file.png' } for files on disk, or { data: '<base64>', mime_type: 'image/png' } for inline bytes.",
+    ),
+};
+
+type SpawnAgentArgs = z.infer<z.ZodObject<typeof spawnAgentShape>>;
 
 // ---------------------------------------------------------------------------
 // Tool registration
@@ -900,65 +930,11 @@ export function createMcpServer(
     },
   );
 
-  // -------------------------------------------------------------------------
-  // spawn_agent
-  // -------------------------------------------------------------------------
-
-  server.tool(
-    "spawn_agent",
-    'Start a new Claude Code agent in a session. The agent runs as an independent process with its own conversation. The parent-child relationship is tracked automatically (the spawn is attributed to you), so you don\'t need to pass parent_agent_id.\n\nThis does NOT create a worktree — it runs the agent in a session that already exists. Pass `session: "current"` to run it in YOUR OWN checkout, whichever that is: if you are in a worktree the child joins that worktree, and only if you are the root agent does it mean the project root. Decide by whether the work is related to yours — a piece of the task you are already doing, or something touching the same code, belongs in your session where the child can see what you have already done and needs no merge afterwards.\n\nSpawn into a fresh worktree instead when the work is unrelated to what your session is for — a different feature, a separate bug, anything that would muddy your branch or that the user will want to review and merge on its own. Create it with `create_session` (optionally with a `prompt` to spawn in one round-trip), or `spawn_agents_batch` for several.\n\nThis call blocks internally until the session is ready — it will not return early with an `initializing` status, so do not poll/retry just because the session is freshly created.',
-    {
-      session: z
-        .string()
-        .describe(
-          'Which session to run the agent in. `"current"` is your own checkout — your worktree if you are in one, the project root if you are the root agent. `"root"` is always the project root specifically. Otherwise a session ID, branch name, or display name. Prefer `"current"` for work related to your own task; use a fresh session for unrelated work.',
-        ),
-      project_path: sessionProjectPathArg,
-      prompt: z
-        .string()
-        .describe(
-          "Initial message/instructions to send to the agent. When resuming, this is the next message in its restored conversation — e.g. tell it to carry on where it stopped.",
-        ),
-      resume: z
-        .string()
-        .optional()
-        .describe(
-          "Continue a past agent instead of starting a fresh one: the `resume` value from `list_past_agents`. The new agent gets the old one's full conversation, runs on the same runner, and is attributed to you. Run it in the session it worked in.",
-        ),
-      permission_mode: z
-        .enum(["default", "auto", "acceptEdits", "bypassPermissions", "plan"])
-        .optional()
-        .describe(
-          "Permission mode for the agent. 'auto' uses Claude's smart classifier to auto-approve safe actions and ask for risky ones. 'default' prompts per tool; 'acceptEdits' auto-accepts file edits; 'plan' is read-only exploration plus AskUserQuestion/ExitPlanMode requiring an approved plan before writes; 'bypassPermissions' skips all prompts. Defaults to the app's setting.",
-        ),
-      model: z
-        .string()
-        .optional()
-        .describe(
-          "Optional model id override for this agent (runner-specific shape). When omitted the cascade falls through to the session, project, and app defaults — set this only when delegating a child to a different model than its parent. The session's runner is fixed at session creation and is *not* overridable here.",
-        ),
-      platforms: z
-        .array(z.enum(["ios", "android", "web"]))
-        .optional()
-        .describe(
-          "Runtime platforms this child agent should target (e.g. ['ios']). Narrows the system prompt so the agent only sees iOS/Android/Web sections relevant to its task. Defaults to the project's `.argus.json` `platforms` field, or all three if unset.",
-        ),
-      devices: devicesArg,
-      tools: toolsArg,
-      parent_agent_id: z
-        .string()
-        .optional()
-        .describe(
-          "Optional override for the parent agent id. Defaults to the calling agent automatically, so you normally don't need to set this — only pass it to attribute the spawn to a different agent. Used for tracking the parent-child relationship in the UI and for cascade cleanup.",
-        ),
-      attachments: z
-        .array(mcpAttachmentSchema)
-        .optional()
-        .describe(
-          "Optional attachments (images/screenshots) to forward to the child agent's initial message. When the user sends you an image, include its absolute path here so the child agent sees the actual image, not just a text description. Use { path: '/abs/path/to/file.png' } for files on disk, or { data: '<base64>', mime_type: 'image/png' } for inline bytes.",
-        ),
-    },
-    async ({
+  const spawnAgentTool = async (
+    args: SpawnAgentArgs,
+    commandSource?: ArgusCommandSource,
+  ) => {
+    const {
       session,
       project_path,
       prompt,
@@ -970,110 +946,121 @@ export function createMcpServer(
       tools,
       parent_agent_id,
       attachments,
-    }) => {
-      const ws = await resolveSession(session, project_path, callerAgentId);
-      if (!ws) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Session not found: ${session}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      const blocked = automationWorkBlock(callerAgentId, ws.repo_root);
-      if (blocked) {
-        return {
-          content: [{ type: "text" as const, text: blocked }],
-          isError: true,
-        };
-      }
-
-      let images;
-      try {
-        images = resolveAttachments(attachments);
-      } catch (e) {
-        return {
-          content: [{ type: "text" as const, text: (e as Error).message }],
-          isError: true,
-        };
-      }
-
-      const past = resume ? findPastAgent(ws.repo_root, resume) : null;
-      if (resume && !past) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `No past agent found for "${resume}". Use a \`resume\` value from list_past_agents.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-      const liveAgent = past?.agentId
-        ? appState.agents.get(past.agentId)
-        : undefined;
-      if (
-        liveAgent &&
-        liveAgent.status !== "stopped" &&
-        liveAgent.status !== "error"
-      ) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Agent ${past?.agentId} is still running — use send_agent_message instead.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      let agentResult;
-      try {
-        agentResult = await spawnAgentInSession(ws.id, prompt, {
-          images,
-          model,
-          permission_mode,
-          platforms,
-          devices,
-          tools,
-          parentAgentId: parent_agent_id ?? callerAgentId ?? undefined,
-          resumeSessionId: past?.sessionId,
-          runnerId: past?.runnerId,
-          sourceTool: "spawn_agent",
-        });
-      } catch (e) {
-        return {
-          content: [{ type: "text" as const, text: String(e) }],
-          isError: true,
-        };
-      }
-
+    } = args;
+    const ws = await resolveSession(session, project_path, callerAgentId);
+    if (!ws) {
       return {
         content: [
           {
             type: "text" as const,
-            text: JSON.stringify(
-              {
-                agent_id: agentResult.agent_id,
-                session_id: ws.id,
-                branch: ws.branch,
-                status: agentResult.status,
-                parent_agent_id: agentResult.parent_agent_id,
-                ...(past ? { resumed_from: past.agentId ?? resume } : {}),
-              },
-              null,
-              2,
-            ),
+            text: `Session not found: ${session}`,
           },
         ],
+        isError: true,
       };
-    },
+    }
+
+    const blocked = automationWorkBlock(callerAgentId, ws.repo_root);
+    if (blocked) {
+      return {
+        content: [{ type: "text" as const, text: blocked }],
+        isError: true,
+      };
+    }
+
+    let images;
+    try {
+      images = resolveAttachments(attachments);
+    } catch (e) {
+      return {
+        content: [{ type: "text" as const, text: (e as Error).message }],
+        isError: true,
+      };
+    }
+
+    const past = resume ? findPastAgent(ws.repo_root, resume) : null;
+    if (resume && !past) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `No past agent found for "${resume}". Use a \`resume\` value from list_past_agents.`,
+          },
+        ],
+        isError: true,
+      };
+    }
+    const liveAgent = past?.agentId
+      ? appState.agents.get(past.agentId)
+      : undefined;
+    if (
+      liveAgent &&
+      liveAgent.status !== "stopped" &&
+      liveAgent.status !== "error"
+    ) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Agent ${past?.agentId} is still running — use send_agent_message instead.`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    let agentResult;
+    try {
+      agentResult = await spawnAgentInSession(ws.id, prompt, {
+        images,
+        model,
+        permission_mode,
+        platforms,
+        devices,
+        tools,
+        parentAgentId: parent_agent_id ?? callerAgentId ?? undefined,
+        resumeSessionId: past?.sessionId,
+        runnerId: past?.runnerId,
+        sourceTool: "spawn_agent",
+        commandSource,
+      });
+    } catch (e) {
+      return {
+        content: [{ type: "text" as const, text: String(e) }],
+        isError: true,
+      };
+    }
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify(
+            {
+              agent_id: agentResult.agent_id,
+              session_id: ws.id,
+              branch: ws.branch,
+              status: agentResult.status,
+              parent_agent_id: agentResult.parent_agent_id,
+              ...(past ? { resumed_from: past.agentId ?? resume } : {}),
+            },
+            null,
+            2,
+          ),
+        },
+      ],
+    };
+  };
+
+  // -------------------------------------------------------------------------
+  // spawn_agent
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "spawn_agent",
+    'Start a new Claude Code agent in a session. The agent runs as an independent process with its own conversation. The parent-child relationship is tracked automatically (the spawn is attributed to you), so you don\'t need to pass parent_agent_id.\n\nThis does NOT create a worktree — it runs the agent in a session that already exists. Pass `session: "current"` to run it in YOUR OWN checkout, whichever that is: if you are in a worktree the child joins that worktree, and only if you are the root agent does it mean the project root. Decide by whether the work is related to yours — a piece of the task you are already doing, or something touching the same code, belongs in your session where the child can see what you have already done and needs no merge afterwards.\n\nSpawn into a fresh worktree instead when the work is unrelated to what your session is for — a different feature, a separate bug, anything that would muddy your branch or that the user will want to review and merge on its own. Create it with `create_session` (optionally with a `prompt` to spawn in one round-trip), or `spawn_agents_batch` for several.\n\nThis call blocks internally until the session is ready — it will not return early with an `initializing` status, so do not poll/retry just because the session is freshly created.',
+    spawnAgentShape,
+    (args) => spawnAgentTool(args),
   );
 
   // -------------------------------------------------------------------------
@@ -1714,6 +1701,45 @@ export function createMcpServer(
     },
   });
 
+  const sendAgentMessageTool = (
+    args: {
+      agent_id: string;
+      message: string;
+      attachments?: z.infer<typeof mcpAttachmentSchema>[];
+      parent_agent_id?: string;
+    },
+    commandSource?: ArgusCommandSource,
+  ) => {
+    const { agent_id, message, attachments, parent_agent_id } = args;
+    let images;
+    try {
+      images = resolveAttachments(attachments);
+    } catch (e) {
+      return {
+        content: [{ type: "text" as const, text: (e as Error).message }],
+        isError: true,
+      };
+    }
+
+    sendAgentMessage(agent_id, message, images, { commandSource });
+
+    emitMcpSystemMessage(agent_id, {
+      tool: "send_agent_message",
+      message,
+      images,
+      parentAgentId: parent_agent_id ?? callerAgentId ?? undefined,
+    });
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `Message sent to agent ${agent_id}.`,
+        },
+      ],
+    };
+  };
+
   // -------------------------------------------------------------------------
   // send_agent_message
   // -------------------------------------------------------------------------
@@ -1737,36 +1763,13 @@ export function createMcpServer(
           "Optional override for the sender agent id, shown in the recipient's UI. Defaults to the calling agent automatically.",
         ),
     },
-    async ({ agent_id, message, attachments, parent_agent_id }) => {
-      let images;
-      try {
-        images = resolveAttachments(attachments);
-      } catch (e) {
-        return {
-          content: [{ type: "text" as const, text: (e as Error).message }],
-          isError: true,
-        };
-      }
-
-      sendAgentMessage(agent_id, message, images);
-
-      emitMcpSystemMessage(agent_id, {
-        tool: "send_agent_message",
-        message,
-        images,
-        parentAgentId: parent_agent_id ?? callerAgentId ?? undefined,
-      });
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Message sent to agent ${agent_id}.`,
-          },
-        ],
-      };
-    },
+    (args) => sendAgentMessageTool(args),
   );
+
+  registerImplementTicketTool(server, {
+    spawn: (args) => spawnAgentTool(args, "mcp_tool"),
+    send: (args) => sendAgentMessageTool(args, "mcp_tool"),
+  });
 
   // -------------------------------------------------------------------------
   // stop_agent

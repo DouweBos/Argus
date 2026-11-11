@@ -79,13 +79,20 @@ function bucket(n: number): "0" | "1" | "2" | "3+" {
   return n >= 3 ? "3+" : (String(n) as "0" | "1" | "2");
 }
 
+/** Who sent the command: any message (typed, a Verify start, an agent's prompt) or the `implement_ticket` MCP tool. */
+export type ArgusCommandSource = "mcp_tool" | "message";
+
 /**
  * The prompt to send instead of `message`, or null when it isn't an Argus
  * command (or the runner has its own command of that name).
  */
 export function expandArgusCommand(
   message: string,
-  ctx: { worktree: string | null; runnerCommands: string[] },
+  ctx: {
+    worktree: string | null;
+    runnerCommands: string[];
+    source?: ArgusCommandSource;
+  },
 ): string | null {
   const parsed = parseArgusCommand(message);
   if (!parsed || ctx.runnerCommands.includes(parsed.name)) {
@@ -104,6 +111,7 @@ export function expandArgusCommand(
   }
   const verify = config?.verify ?? null;
   capture("implement_ticket_started", {
+    source: ctx.source ?? "message",
     has_ticket: parsed.ticket.length > 0,
     has_notes: parsed.extra.length > 0,
     has_verify: verify != null,

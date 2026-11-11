@@ -129,6 +129,11 @@ When you start from an issue in a new worktree, turn on **Verify** to start
 the agent on `/implement-ticket` instead of the plain issue. A project's own
 `/implement-ticket` command, if it has one, takes precedence.
 
+An orchestrating agent starts the same loop with Argus's `implement_ticket`
+MCP tool: give it the ticket, any notes, and either a session to start a new
+agent in or an idle agent to hand it to. The agent's transcript shows
+`/implement-ticket` just as if you had typed it.
+
 ## Reporting back
 
 When a session's work lands, Argus comments on its issue. The comment has the
