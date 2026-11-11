@@ -14,6 +14,7 @@ import {
   deviceCapabilities,
   resolveDeviceSource,
 } from "../../simulator/deviceSources";
+import { localDeviceSource } from "../../simulator/machineSource";
 import { listAllSimulators } from "../../simulator/simulatorList";
 import { loadDeviceHosts, saveDeviceHosts } from "../config";
 import {
@@ -111,6 +112,7 @@ describe("eas simulator hosts", () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     resetEasDeviceHostsForTests();
     setEasNetworkForTests(null);
     resetHostPlatform();
@@ -401,7 +403,9 @@ describe("eas simulator hosts", () => {
       initEasDeviceHosts();
       const host = addEasDeviceHost({ label: "Cloud", appId: APP_ID });
       const id = easDeviceId(host.id, 1);
-      const all = await listAllSimulators().catch(() => []);
+      // A cold `simctl list` on CI outlasts the test timeout; this test is about EAS.
+      vi.spyOn(localDeviceSource, "list").mockResolvedValue([]);
+      const all = await listAllSimulators();
       expect(all.find((d) => d.udid === id)).toMatchObject({
         booted: false,
         deviceHostId: host.id,

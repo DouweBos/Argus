@@ -4,13 +4,14 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   forceStopSimulatorCapture,
   listAllSimulators,
   simulatorTouch,
   startSimulatorCapture,
 } from "../simulator/ios";
+import { localDeviceSource } from "../simulator/machineSource";
 import { normalizeDeviceHostInput } from "./config";
 import { isRemoteDeviceId, parseDeviceId, remoteDeviceId } from "./deviceId";
 import { localMachine } from "./machine";
@@ -249,6 +250,8 @@ describe("device host registry", () => {
     process.env.ARGUS_HOME = home;
     calls = [];
     respond = () => ({ code: 0 });
+    // Remote listings are under test; a cold local `simctl list` can outlast the timeout.
+    vi.spyOn(localDeviceSource, "list").mockResolvedValue([]);
     setSshSpawnForTests((_file, args) => {
       calls.push(args);
 
@@ -258,6 +261,7 @@ describe("device host registry", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     resetDeviceHostsForTests();
     setSshSpawnForTests(null);
     delete process.env.ARGUS_HOME;
