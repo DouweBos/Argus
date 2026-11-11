@@ -20,6 +20,16 @@ struct ArgusConfigDraftTests {
     #expect(out["browser_url"] == .string("http://localhost:5173"))
   }
 
+  @Test func editedKeysAreOnlyTheFieldsChanged() throws {
+    let file = try raw(#"{ "browser_url": "http://a", "run": [{ "title": "Dev", "command": "pnpm dev" }] }"#)
+    let initial = ArgusConfigDraft(raw: file)
+    var draft = initial
+    #expect(draft.editedKeys(since: initial, raw: file).isEmpty)
+    draft.browserUrl = "http://b"
+    draft.singleRuntime = true
+    #expect(draft.editedKeys(since: initial, raw: file) == ["browser_url", "single_runtime"])
+  }
+
   @Test func roundTripsEveryOwnedField() throws {
     let file = try raw(
       #"""

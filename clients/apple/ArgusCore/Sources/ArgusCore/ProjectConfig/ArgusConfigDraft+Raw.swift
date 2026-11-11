@@ -141,6 +141,14 @@ extension ArgusConfigDraft {
     return out
   }
 
+  /// Top-level keys this draft saves differently from `initial`, both applied
+  /// to `raw` so a round trip's normalization doesn't count as an edit.
+  public func editedKeys(since initial: ArgusConfigDraft, raw: [String: JSONValue]) -> [String] {
+    let before = initial.applied(to: raw)
+    let after = applied(to: raw)
+    return Set(before.keys).union(after.keys).filter { before[$0] != after[$0] }.sorted()
+  }
+
   /// The release-note patterns as they'd be saved, for the live preview.
   public var releasePatternValues: [JSONValue] { releaseNotes.compactMap(Self.patternValue) }
 

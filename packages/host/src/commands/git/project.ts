@@ -40,7 +40,7 @@ export function registerGitProjectCommands(): void {
   defineTypedCommand("read_argus_config", (p) => readArgusConfig(p.repoRoot));
   defineTypedCommand("get_project_config", (p) => getProjectConfig(p.repoRoot));
   defineTypedCommand("save_project_config", (p) =>
-    saveProjectConfig(p.repoRoot, p.config),
+    saveProjectConfig(p.repoRoot, p.config, p.keys),
   );
   defineTypedCommand("export_project_config", (p) =>
     exportProjectConfig(p.repoRoot),

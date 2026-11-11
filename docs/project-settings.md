@@ -52,9 +52,11 @@ and a JSON preview of the effective config.
 
 The sheet always shows the effective config. When the repo has a checked-in
 `.argus.json`, each section notes whether its values come from that file or
-were changed on this Mac. **Saving never writes the repo**: Argus stores the
-top-level keys that differ from the checked-in `.argus.json` on this Mac, so
-the team's later changes to everything else still come through.
+were changed on this Mac. **Saving never writes the repo**: Argus stores on
+this Mac the top-level keys you edited, plus any already stored here — even
+when a value matches the checked-in `.argus.json`, so what you set stays set
+if the repo file later changes or loses it. Keys you never touched aren't
+stored, so the team's later changes to them still come through.
 
 ### Export and import
 
@@ -62,7 +64,9 @@ the team's later changes to everything else still come through.
   to share it, check it in as a team baseline, or move it to another Mac.
 - **Import…** reads such a file, validates it the same way Argus validates
   `.argus.json`, and — after you confirm — replaces this Mac's config for the
-  project with it. A checked-in `.argus.json` is left as it is.
+  project with it. Every key in the file is stored on this Mac, including ones
+  that match the checked-in `.argus.json`. A checked-in `.argus.json` is left
+  as it is.
 
 Both are host commands too (`export_project_config`, `import_project_config`,
 alongside `get_project_config` and `save_project_config`), so they can be

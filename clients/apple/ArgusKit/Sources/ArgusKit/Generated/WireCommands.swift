@@ -8341,21 +8341,25 @@ extension ArgusProtocol {
     public struct SaveProjectConfigParams: Codable, Sendable {
       public var repoRoot: String
       public var config: [String: JSONValue]
+      public var keys: [String]
 
       enum CodingKeys: String, CodingKey {
         case repoRoot = "repoRoot"
         case config = "config"
+        case keys = "keys"
       }
 
-      public init(repoRoot: String, config: [String: JSONValue]) {
+      public init(repoRoot: String, config: [String: JSONValue], keys: [String]) {
         self.repoRoot = repoRoot
         self.config = config
+        self.keys = keys
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(repoRoot, forKey: .repoRoot)
         try c.encode(config, forKey: .config)
+        try c.encode(keys, forKey: .keys)
       }
     }
 

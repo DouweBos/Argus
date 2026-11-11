@@ -902,10 +902,14 @@ export function addRelatedProject(
   const related = Array.isArray(config.related_projects)
     ? config.related_projects
     : [];
-  saveProjectConfig(repoRoot, {
-    ...config,
-    related_projects: [...related, project],
-  });
+  saveProjectConfig(
+    repoRoot,
+    {
+      ...config,
+      related_projects: [...related, project],
+    },
+    ["related_projects"],
+  );
 }
 
 // ---------------------------------------------------------------------------

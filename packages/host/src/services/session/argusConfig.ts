@@ -187,30 +187,23 @@ export function getProjectConfig(repoRoot: string): ProjectConfig {
 }
 
 /**
- * Store `desired` as this project's config. Only the top-level keys that
- * differ from the checked-in `.argus.json` are stored, so the team's later
- * changes to the rest still come through.
+ * Store `desired` as this project's config. A key is stored when it's in
+ * `edited` or already stored, even if it matches the checked-in `.argus.json`,
+ * so what the user set stays set; keys nobody touched keep following the repo.
  */
 export function saveProjectConfig(
   repoRoot: string,
   desired: RawConfig,
+  edited: string[],
 ): ProjectConfig {
-  const wanted = applyDefaults(parseArgusConfig(desired, repoRoot));
-  const repoRaw = readRepoRaw(repoRoot);
-  const repo = applyDefaults(
-    repoRaw ? parseRepo(repoRaw, repoRoot) : defaultArgusConfig(),
+  parseArgusConfig(desired, repoRoot);
+  const keep = new Set(
+    [...edited, ...Object.keys(hostLayer(repoRoot) ?? {})].map(configKey),
   );
 
   const layer: RawConfig = {};
   for (const [key, value] of Object.entries(desired)) {
-    if (value === null || value === undefined) {
-      continue;
-    }
-    const field = configKey(key) as keyof ArgusConfig;
-    const same = CONFIG_KEYS.has(field)
-      ? sameJson(wanted[field], repo[field])
-      : repoRaw !== null && sameJson(value, repoRaw[key]);
-    if (!same) {
+    if (value !== null && value !== undefined && keep.has(configKey(key))) {
       layer[key] = value;
     }
   }
@@ -233,7 +226,10 @@ export function exportProjectConfig(repoRoot: string): string {
   return `${JSON.stringify(project.config, null, 2)}\n`;
 }
 
-/** Replace this project's stored config with an `.argus.json`-format file's contents. */
+/**
+ * Replace this project's stored config with an `.argus.json`-format file's
+ * contents. Every key in the file is stored, matching the repo file or not.
+ */
 export function importProjectConfig(
   repoRoot: string,
   content: string,
@@ -263,7 +259,9 @@ export function importProjectConfig(
     throw fail("invalid_config", e);
   }
 
-  const result = saveProjectConfig(repoRoot, parsed);
+  saveHostArgusConfig(repoRoot, withoutNulls(parsed));
+  emitHostEvent("argus_config:changed", { repoRoot });
+  const result = getProjectConfig(repoRoot);
   capture("project_config_transferred", {
     action: "import",
     outcome: "success",
@@ -310,6 +308,8 @@ function isEmpty(value: unknown): boolean {
   return typeof value === "object" && Object.keys(value).length === 0;
 }
 
-function sameJson(a: unknown, b: unknown): boolean {
-  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+function withoutNulls(raw: RawConfig): RawConfig {
+  return Object.fromEntries(
+    Object.entries(raw).filter(([, v]) => v !== null && v !== undefined),
+  );
 }

@@ -122,13 +122,13 @@ final class ProjectSettingsModel {
     defer { saving = false }
     let out = output
     let autoFetchChanged = draft.autoFetchMinutes != initial.autoFetchMinutes
-    let changed = Set(raw.keys).union(out.keys).filter { raw[$0] != out[$0] }.count
+    let edited = draft.editedKeys(since: initial, raw: raw)
     let prefix = branchPrefix.trimmingCharacters(in: .whitespaces)
     let personal = prefix != initialBranchPrefix
     do {
       apply(
         try await backend.request(
-          ArgusProtocol.Commands.SaveProjectConfig.self, .init(repoRoot: repoRoot, config: out)))
+          ArgusProtocol.Commands.SaveProjectConfig.self, .init(repoRoot: repoRoot, config: out, keys: edited)))
       if autoFetchChanged {
         // Re-arms the fetch timer for open sessions now, not on next launch.
         try await backend.request(
@@ -141,11 +141,11 @@ final class ProjectSettingsModel {
           .init(repoRoot: repoRoot, settings: .init(branchPrefix: prefix)))
       }
       MacTelemetry.capture(
-        .projectSettingsSaved(changed: MacTelemetryEvent.countBucket(changed), personal: personal, success: true))
+        .projectSettingsSaved(changed: MacTelemetryEvent.countBucket(edited.count), personal: personal, success: true))
       return true
     } catch {
       MacTelemetry.capture(
-        .projectSettingsSaved(changed: MacTelemetryEvent.countBucket(changed), personal: personal, success: false))
+        .projectSettingsSaved(changed: MacTelemetryEvent.countBucket(edited.count), personal: personal, success: false))
       self.error = HostStore.describe(error)
       return false
     }

@@ -507,7 +507,7 @@ export function writeArgusJson(
   repoRoot: string,
   config: Record<string, unknown>,
 ): void {
-  saveProjectConfig(repoRoot, config);
+  saveProjectConfig(repoRoot, config, Object.keys(config));
 }
 
 /** The project's effective config, or null when neither the repo nor this machine has one. */

@@ -29,10 +29,13 @@ export const GIT_PROJECT_COMMANDS = {
     params: RepoRoot,
     result: ProjectConfig,
   },
-  /** Stores the keys of `config` that differ from the checked-in `.argus.json`. Never writes the repo. */
+  /** Stores `config`'s values for `keys` (the ones the user edited) and for keys already stored. Never writes the repo. */
   save_project_config: {
     tier: "admin",
-    params: RepoRoot.extend({ config: z.record(z.string(), z.unknown()) }),
+    params: RepoRoot.extend({
+      config: z.record(z.string(), z.unknown()),
+      keys: z.array(z.string()),
+    }),
     result: ProjectConfig,
   },
   /** The effective config as `.argus.json` text. */
@@ -41,7 +44,7 @@ export const GIT_PROJECT_COMMANDS = {
     params: RepoRoot,
     result: z.string(),
   },
-  /** Validates `.argus.json` text and replaces the host's layer with it. */
+  /** Validates `.argus.json` text and replaces the host's layer with every key in it. */
   import_project_config: {
     tier: "admin",
     params: RepoRoot.extend({ content: z.string() }),

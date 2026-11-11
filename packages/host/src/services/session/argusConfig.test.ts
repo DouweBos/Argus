@@ -22,6 +22,11 @@ function writeJson(file: string, value: unknown) {
   fs.writeFileSync(file, JSON.stringify(value));
 }
 
+/** Saves `config` with every key in it marked edited. */
+function store(dir: string, config: Record<string, unknown>) {
+  return saveProjectConfig(dir, config, Object.keys(config));
+}
+
 describe("project config", () => {
   beforeEach(() => {
     home = fs.mkdtempSync(path.join(os.tmpdir(), "argus-home-"));
@@ -38,7 +43,7 @@ describe("project config", () => {
 
   describe("loadArgusConfig layers", () => {
     it("reads the stored config alone when the repo has no .argus.json", () => {
-      saveProjectConfig(repo, { browser_url: "http://localhost:3000" });
+      store(repo, { browser_url: "http://localhost:3000" });
       expect(fs.existsSync(path.join(repo, ".argus.json"))).toBe(false);
       expect(loadArgusConfig(repo).browser_url).toBe("http://localhost:3000");
     });
@@ -49,7 +54,7 @@ describe("project config", () => {
         protected_branches: ["main"],
         setup: { copy: [".env"] },
       });
-      saveProjectConfig(repo, {
+      store(repo, {
         browser_url: "http://mac",
         protected_branches: ["main"],
         setup: { copy: [".env", "secrets/"] },
@@ -61,37 +66,56 @@ describe("project config", () => {
       expect(config.setup.copy).toEqual([".env", "secrets/"]);
     });
 
-    it("stores only the keys that differ from the repo file", () => {
+    it("stores the edited keys and keeps the rest following the repo", () => {
       writeJson(path.join(repo, ".argus.json"), {
         browser_url: "http://repo",
         run: [{ title: "Dev", command: "pnpm dev" }],
       });
-      const result = saveProjectConfig(repo, {
-        browser_url: "http://repo",
-        run: [{ title: "Dev", command: "pnpm dev" }],
-        single_runtime: true,
-      });
+      const result = saveProjectConfig(
+        repo,
+        {
+          browser_url: "http://repo",
+          run: [{ title: "Dev", command: "pnpm dev" }],
+          single_runtime: true,
+        },
+        ["single_runtime"],
+      );
 
       expect(loadHostArgusConfig(repo)).toEqual({ single_runtime: true });
       expect(result.repo_keys.sort()).toEqual(["browser_url", "run"]);
       expect(result.host_keys).toEqual(["single_runtime"]);
+
+      writeJson(path.join(repo, ".argus.json"), { browser_url: "http://b" });
+      expect(loadArgusConfig(repo).browser_url).toBe("http://b");
     });
 
-    it("lets later repo changes through for keys the Mac doesn't override", () => {
+    it("keeps an edited value that matches the repo after the repo changes", () => {
       writeJson(path.join(repo, ".argus.json"), { browser_url: "http://a" });
-      saveProjectConfig(repo, {
+      saveProjectConfig(repo, { browser_url: "http://a" }, ["browser_url"]);
+      writeJson(path.join(repo, ".argus.json"), {});
+
+      expect(loadArgusConfig(repo).browser_url).toBe("http://a");
+    });
+
+    it("keeps keys already stored when a later save edits others", () => {
+      writeJson(path.join(repo, ".argus.json"), { browser_url: "http://a" });
+      saveProjectConfig(repo, { browser_url: "http://a" }, ["browser_url"]);
+      saveProjectConfig(
+        repo,
+        { browser_url: "http://a", single_runtime: true },
+        ["single_runtime"],
+      );
+
+      expect(loadHostArgusConfig(repo)).toEqual({
         browser_url: "http://a",
         single_runtime: true,
       });
-      writeJson(path.join(repo, ".argus.json"), { browser_url: "http://b" });
-
-      expect(loadArgusConfig(repo).browser_url).toBe("http://b");
     });
 
     it("doesn't repeat a repo terminal the stored config also lists", () => {
       const logs = { name: "Logs", dir: "" };
       writeJson(path.join(repo, ".argus.json"), { terminals: [logs] });
-      saveProjectConfig(repo, { terminals: [logs, { name: "Db", dir: "db" }] });
+      store(repo, { terminals: [logs, { name: "Db", dir: "db" }] });
 
       expect(loadArgusConfig(repo).terminals).toEqual([
         logs,
@@ -105,7 +129,7 @@ describe("project config", () => {
         path: worktree,
         repo_root: repo,
       } as Session);
-      saveProjectConfig(repo, { browser_url: "http://mac" });
+      store(repo, { browser_url: "http://mac" });
 
       expect(loadArgusConfig(worktree).browser_url).toBe("http://mac");
       fs.rmSync(worktree, { recursive: true, force: true });
@@ -113,7 +137,7 @@ describe("project config", () => {
 
     it("keeps keys Argus doesn't know through a round trip", () => {
       writeJson(path.join(repo, ".argus.json"), { $schema: "x" });
-      saveProjectConfig(repo, { custom: 1, run: [] });
+      store(repo, { custom: 1, run: [] });
 
       expect(getProjectConfig(repo).config).toMatchObject({
         $schema: "x",
@@ -141,7 +165,7 @@ describe("project config", () => {
     });
 
     it("doesn't import over a config already stored", () => {
-      saveProjectConfig(repo, { browser_url: "http://mac" });
+      store(repo, { browser_url: "http://mac" });
       writeJson(path.join(repo, ".argus.local.json"), {
         browser_url: "http://local",
       });
@@ -162,7 +186,7 @@ describe("project config", () => {
       writeJson(path.join(repo, ".argus.json"), {
         protected_branches: ["main"],
       });
-      saveProjectConfig(repo, { browser_url: "http://mac" });
+      store(repo, { browser_url: "http://mac" });
 
       const exported = JSON.parse(exportProjectConfig(repo)) as Record<
         string,
@@ -175,7 +199,7 @@ describe("project config", () => {
     });
 
     it("round-trips an export through import", () => {
-      saveProjectConfig(repo, {
+      store(repo, {
         setup: { copy: [{ path: "node_modules", exclude: ["*.log"] }] },
         run: [{ title: "Dev", command: "pnpm dev", restartOnRerun: true }],
         workspace_env: [
@@ -189,8 +213,30 @@ describe("project config", () => {
       expect(loadArgusConfig(repo)).toEqual(before);
     });
 
+    it("keeps imported keys that match the repo file after the repo loses them", () => {
+      const file = {
+        browser_url: "http://repo",
+        related_projects: [{ path: "../api", description: "Backend" }],
+        verify: { checks: ["pnpm test"] },
+      };
+      writeJson(path.join(repo, ".argus.json"), file);
+      importProjectConfig(repo, JSON.stringify(file));
+      writeJson(path.join(repo, ".argus.json"), {
+        browser_url: "http://repo",
+      });
+
+      const config = loadArgusConfig(repo);
+      expect(config.related_projects).toEqual(file.related_projects);
+      expect(config.verify?.checks).toEqual(["pnpm test"]);
+      expect(Object.keys(loadHostArgusConfig(repo) ?? {}).sort()).toEqual([
+        "browser_url",
+        "related_projects",
+        "verify",
+      ]);
+    });
+
     it("replaces the stored config", () => {
-      saveProjectConfig(repo, {
+      store(repo, {
         browser_url: "http://old",
         single_runtime: true,
       });
@@ -212,7 +258,7 @@ describe("project config", () => {
     });
 
     it("rejects a config the normalizer refuses, leaving the store alone", () => {
-      saveProjectConfig(repo, { browser_url: "http://keep" });
+      store(repo, { browser_url: "http://keep" });
 
       expect(() =>
         importProjectConfig(repo, JSON.stringify({ run: [{ title: "" }] })),

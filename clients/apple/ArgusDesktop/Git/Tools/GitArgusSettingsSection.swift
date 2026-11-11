@@ -143,7 +143,7 @@ struct GitArgusSettingsSection: View {
       else { return autoFetch = previous }
       config["auto_fetch_minutes"] = minutes.map(JSONValue.number)
       let saved = await workspace.host(
-        ArgusProtocol.Commands.SaveProjectConfig.self, .init(repoRoot: repoRoot, config: config),
+        ArgusProtocol.Commands.SaveProjectConfig.self, .init(repoRoot: repoRoot, config: config, keys: ["auto_fetch_minutes"]),
         label: "Saving auto-fetch")
       guard saved != nil else { return autoFetch = previous }
       await workspace.host(
