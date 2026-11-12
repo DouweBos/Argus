@@ -8,13 +8,9 @@ export interface DisclosureProps {
   summary?: ReactNode;
   /** The label on the toggle, e.g. "What they can do". */
   toggleLabel?: string;
-  /** The toggle's label while open, e.g. "Hide playbook"; defaults to `toggleLabel`. */
-  openToggleLabel?: string;
   children: ReactNode;
   defaultOpen?: boolean;
-  onOpenChange?: (open: boolean) => void;
   className?: string;
-  bodyClassName?: string;
 }
 
 /**
@@ -27,12 +23,9 @@ export interface DisclosureProps {
 export function Disclosure({
   summary,
   toggleLabel = "Details",
-  openToggleLabel,
   children,
   defaultOpen = false,
-  onOpenChange,
   className,
-  bodyClassName,
 }: DisclosureProps) {
   const [open, setOpen] = useState(defaultOpen);
   const bodyId = useId();
@@ -45,19 +38,13 @@ export function Disclosure({
         aria-controls={bodyId}
         aria-expanded={open}
         className={styles.toggle}
-        onClick={() => {
-          setOpen(!open);
-          onOpenChange?.(!open);
-        }}
+        onClick={() => setOpen((v) => !v)}
       >
         {open ? <ChevronDownIcon size={11} /> : <ChevronRightIcon size={11} />}
-        {open ? (openToggleLabel ?? toggleLabel) : toggleLabel}
+        {toggleLabel}
       </button>
       {open && (
-        <div
-          className={[styles.body, bodyClassName].filter(Boolean).join(" ")}
-          id={bodyId}
-        >
+        <div className={styles.body} id={bodyId}>
           {children}
         </div>
       )}

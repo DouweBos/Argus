@@ -65,11 +65,6 @@ function hrefFor(screen: Screen, hostId: string | null): string {
   return `${base()}${path.slice(1)}${query}${window.location.hash}`;
 }
 
-/** The href for a screen on the current computer, for a real link. */
-export function screenHref(screen: Screen): string {
-  return hrefFor(screen, currentLocation().hostId);
-}
-
 function notify(): void {
   for (const listener of listeners) {
     listener();

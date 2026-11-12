@@ -11,6 +11,7 @@ import {
 } from "@argus/client-core";
 import {
   Button,
+  CommandMessage,
   Markdown,
   MessageActions,
   MessageBubble,
@@ -24,7 +25,6 @@ import {
 import type { RemoteMessage, RemoteToolCall } from "../../lib/protocol";
 import { usePromptsStore } from "../../stores/prompts";
 import { Mermaid } from "../Mermaid";
-import { CommandContent } from "./CommandContent";
 import { type ImageBlock, mcpLabel, toToolCallData } from "./toolCallData";
 
 // Deny messages mirror the desktop's ToolCallCard so the agent gets the same
@@ -223,10 +223,7 @@ export const TranscriptMessage = memo(function TranscriptMessage({
       textBlocks={blocks}
       content={
         msg.command && (
-          <CommandContent
-            command={msg.command}
-            renderMarkdown={renderMarkdown}
-          />
+          <CommandMessage args={msg.command.args} name={msg.command.name} />
         )
       }
       renderMarkdown={renderMarkdown}

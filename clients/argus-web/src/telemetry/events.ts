@@ -30,10 +30,6 @@ export type QuickOpenVia = "screen" | "shortcut";
 export type DesignOpenSource = "issue" | "session";
 
 export type TerminalKind = "run" | "setup" | "shell";
-
-/** Argus's own slash commands, which expand into a playbook. */
-export const ARGUS_COMMANDS = ["implement-ticket"] as const;
-export type ArgusCommandName = (typeof ARGUS_COMMANDS)[number];
 /** How an inbox proposal was answered. */
 export type ProposalAction =
   | "accept"
@@ -142,7 +138,6 @@ export interface EventMap {
   };
   web_chat_history_used: { action: "delete" | "search" };
   web_transcript_work_log_opened: { working: boolean };
-  web_transcript_playbook_opened: { command: ArgusCommandName };
   web_mcp_servers_opened: undefined;
   web_proposal_handled: { action: ProposalAction };
   web_proposal_opened: undefined;

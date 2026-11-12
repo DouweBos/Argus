@@ -1,14 +1,7 @@
 .wrap {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  min-width: 0;
-}
-
-.head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-3);
   min-width: 0;
 }
@@ -28,35 +21,11 @@
   white-space: nowrap;
 }
 
-.argument,
-.argumentLink {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  color: var(--text-primary);
-  overflow-wrap: anywhere;
-}
-
-.argumentLink {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-.argumentLink:hover {
-  text-decoration: underline;
-}
-
-.notes {
+.args {
   margin: 0;
   font-size: var(--font-size-sm);
   line-height: 1.6;
   color: var(--text-primary);
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-.playbook {
-  max-height: 360px;
-  overflow-y: auto;
-  text-align: left;
-  --markdown-font-size: var(--font-size-xs);
 }

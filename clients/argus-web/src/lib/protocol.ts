@@ -35,7 +35,6 @@ export type {
   RemoteMcpServerStatus,
   RemoteMentionPathResult,
   RemoteMessage,
-  RemoteMessageCommand,
   RemoteModelInfo,
   RemotePermissionMode,
   RemotePermissionRequest,

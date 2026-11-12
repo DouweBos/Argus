@@ -4,4 +4,4 @@
 # platforms: mac
 ---
 
-Slash commands in the web transcript show as a chip with their ticket, and Argus commands can reveal the playbook the agent received.
+Slash commands sent to the agent, like `/compact`, show as a chip in the web transcript, with anything typed after them as the message text.
