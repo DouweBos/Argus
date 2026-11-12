@@ -17,8 +17,8 @@ extension DesktopModel {
         MacTelemetry.capture(.deviceNameChanged(source: source, linked: linked))
       case .accountReset(let action):
         MacTelemetry.capture(.accountReset(action: action))
-      case .sessionLost:
-        MacTelemetry.capture(.accountSessionLost)
+      case .sessionLost(let reason):
+        MacTelemetry.capture(.accountSessionLost(reason: reason))
       case .signedIn, .signedOut, .computerAdded, .pushRegistered:
         break
       }

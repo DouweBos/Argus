@@ -350,7 +350,7 @@ enum MacTelemetryEvent {
   /// Starting the account over from this Mac, or noticing it was started over elsewhere.
   case accountReset(action: ResetAction)
   /// Found signed out on launch or return: this Mac's keys outlived the sign-in behind them.
-  case accountSessionLost
+  case accountSessionLost(reason: AccountSessionLossReason)
   /// This Mac removed or renamed a member of the account.
   case accountMemberChanged(action: AccountMemberAction, role: AccountMember.Role)
   /// This Mac's name setting changed; `linked`: renamed on the account too.
@@ -509,8 +509,10 @@ enum MacTelemetryEvent {
 
   var properties: [String: Any] {
     switch self {
-    case .launched, .accountSessionLost:
+    case .launched:
       [:]
+    case .accountSessionLost(let reason):
+      ["reason": reason.rawValue]
     case .quit(let hadRunningAgents):
       ["had_running_agents": hadRunningAgents]
     case .hostStarted(let restarts):
