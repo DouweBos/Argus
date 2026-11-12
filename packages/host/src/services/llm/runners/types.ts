@@ -239,6 +239,15 @@ export interface RunnerSetup {
   installUrl: string | null;
   /** Shell command that signs in, run in a terminal after installing. */
   loginCommand: string | null;
+  /** Shell command that signs out, when the CLI has one. */
+  logoutCommand?: string | null;
+}
+
+/** Who a runner's CLI says it's signed in as; null when it can't tell. */
+export interface RunnerAuthProbe {
+  signedIn: boolean | null;
+  /** Email, account or plan, when the CLI reports one. */
+  account: string | null;
 }
 
 export interface OneShotArgs {
@@ -296,6 +305,8 @@ export interface LlmRunner {
   preflight: () => Promise<PreflightResult>;
   /** Optional: how to install and sign in, when Argus can do it for you. */
   setup?: () => RunnerSetup;
+  /** Optional: asks the installed CLI whether it's signed in, without prompting. */
+  authStatus?: () => Promise<RunnerAuthProbe>;
   spawn: (args: LlmRunnerSpawnArgs) => Promise<LlmRunnerHandle>;
   /** One-shot title/slug invocation (replaces direct claudePrint). */
   oneShot: (args: OneShotArgs) => Promise<string | null>;

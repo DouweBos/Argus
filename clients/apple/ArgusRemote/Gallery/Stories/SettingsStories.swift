@@ -19,6 +19,7 @@
         GalleryStory("settings/device-hosts", fixtures: GalleryFixtures.deviceHosts, setup: connect) {
           DeviceHostsSettingsPage()
         },
+        GalleryStory("settings/accounts", fixtures: GalleryFixtures.runnerAccounts) { ClaudeAccountsView() },
         GalleryStory("settings/computer", fixtures: computerFixtures, setup: connect) { ComputerStory() },
         account("signed-in", GalleryAccount(selfKind: "ios")),
         account("signed-out", GalleryAccount(phase: .signedOut, selfKind: "ios")),

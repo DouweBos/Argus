@@ -56,7 +56,9 @@ final class RunnerSetupModel {
     do {
       let started = try await backend.request(
         ArgusProtocol.Commands.LlmRunnerSetup.self,
-        .init(runnerId: current.runnerId, step: .init(rawValue: current.step.rawValue)))
+        .init(
+          runnerId: current.runnerId, step: .init(rawValue: current.step.rawValue),
+          source: .init(rawValue: current.source.rawValue)))
       if let terminalId = started.terminalId {
         phase = .running(terminalId: terminalId)
       } else {
@@ -86,6 +88,7 @@ final class RunnerSetupModel {
     guard let model else { return }
     await model.store.reloadRunners()
     await model.automations.loadRunners()
+    await model.store.refreshRunnerAccounts()
     revision += 1
     if let id = flow?.runnerId, let runner = model.store.runners.first(where: { $0.id == id }) {
       flow?.installed = runner.isAvailable

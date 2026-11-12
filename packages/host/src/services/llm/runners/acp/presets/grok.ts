@@ -10,6 +10,8 @@ export const GROK_PRESET: AcpPreset = {
   loginHint: "Run `grok` in a terminal once to sign in, or set `XAI_API_KEY`.",
   installCommand: "npm install -g @xai-official/grok",
   loginCommand: "grok",
+  // No status command to ask; `XAI_API_KEY` keeps working after this.
+  logoutCommand: "grok logout",
   authMethodId: () =>
     process.env.XAI_API_KEY ? "xai.api_key" : "cached_token",
   // Grok saves most "always allow" grants project-wide.

@@ -12,6 +12,7 @@ import type {
   LlmRunnerSpawnArgs,
   OneShotArgs,
   PreflightResult,
+  RunnerAuthProbe,
   RunnerSetup,
   RunnerCapabilities,
 } from "../types";
@@ -19,6 +20,7 @@ import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { info } from "@argus/host/logger";
 import { hostPlatform } from "@argus/host/platform";
+import { runAuthProbe } from "../authProbe";
 import { CODEX_RUNNER_ID, CodexHandle } from "./handle";
 import { toCodexMcpServers } from "./mcpConfig";
 import { runCodexExec } from "./oneShot";
@@ -62,7 +64,19 @@ export class CodexRunner implements LlmRunner {
       installCommand: "npm install -g @openai/codex",
       installUrl: null,
       loginCommand: "codex login",
+      logoutCommand: "codex logout",
     };
+  }
+
+  async authStatus(): Promise<RunnerAuthProbe> {
+    const pre = await this.preflight();
+
+    return pre.ok
+      ? runAuthProbe(pre.binPath, {
+          args: ["login", "status"],
+          parse: parseCodexLoginStatus,
+        })
+      : { signedIn: null, account: null };
   }
 
   async spawn(args: LlmRunnerSpawnArgs): Promise<LlmRunnerHandle> {
@@ -91,4 +105,26 @@ export class CodexRunner implements LlmRunner {
   async oneShot(args: OneShotArgs): Promise<string | null> {
     return runCodexExec(CODEX_BIN, args);
   }
+}
+
+/**
+ * "Not logged in" (exit 1), "Logged in using ChatGPT", or "API key configured -
+ * sk-…" — the masked key is never kept.
+ */
+export function parseCodexLoginStatus(
+  output: string,
+  exitCode: number,
+): RunnerAuthProbe {
+  if (/not logged in/i.test(output)) {
+    return { signedIn: false, account: null };
+  }
+  if (/api key configured/i.test(output)) {
+    return { signedIn: true, account: "API key" };
+  }
+  const using = /logged in using\s+([A-Za-z][A-Za-z ]*[A-Za-z])/i.exec(output);
+  if (using && exitCode === 0) {
+    return { signedIn: true, account: using[1] ?? null };
+  }
+
+  return { signedIn: null, account: null };
 }

@@ -14,6 +14,7 @@ import type {
   LlmRunnerSpawnArgs,
   OneShotArgs,
   PreflightResult,
+  RunnerAuthProbe,
   RunnerCapabilities,
   RunnerSetup,
 } from "../types";
@@ -21,16 +22,23 @@ import { spawn } from "node:child_process";
 import { info } from "@argus/host/logger";
 import { hostPlatform } from "@argus/host/platform";
 import { resolveBinary } from "../../../dependencies/check";
+import { type AuthProbeSpec, runAuthProbe } from "../authProbe";
 import { AcpHandle } from "./handle";
 import { runAcpOneShot } from "./oneShot";
 
 export class AcpRunner implements LlmRunner {
   readonly id: string;
   readonly displayName: string;
+  /** Only when the preset knows how to ask, so "can't tell" stays distinguishable. */
+  readonly authStatus?: () => Promise<RunnerAuthProbe>;
 
   constructor(private readonly preset: AcpPreset) {
     this.id = preset.id;
     this.displayName = preset.displayName;
+    const spec = preset.authStatus;
+    if (spec) {
+      this.authStatus = () => this.probeAuth(spec);
+    }
   }
 
   capabilities(): RunnerCapabilities {
@@ -64,7 +72,20 @@ export class AcpRunner implements LlmRunner {
       installCommand: this.preset.installCommand ?? null,
       installUrl: this.preset.installUrl ?? null,
       loginCommand: this.preset.loginCommand ?? null,
+      logoutCommand: this.preset.logoutCommand ?? null,
     };
+  }
+
+  private async probeAuth(spec: AuthProbeSpec): Promise<RunnerAuthProbe> {
+    const pre = await this.preflight();
+
+    return pre.ok
+      ? runAuthProbe(
+          pre.binPath,
+          spec,
+          withOverrides(process.env, this.preset.env),
+        )
+      : { signedIn: null, account: null };
   }
 
   async spawn(args: LlmRunnerSpawnArgs): Promise<LlmRunnerHandle> {

@@ -72,6 +72,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   // switching one silently changes what every new agent spends. Nothing a
   // huddle guest has a claim on.
   "claude_accounts.list": DENIED,
+  "runners.accounts": DENIED,
   "claude_accounts.set_active": DENIED,
   "claude_accounts.add": DENIED,
   "claude_accounts.remove": DENIED,

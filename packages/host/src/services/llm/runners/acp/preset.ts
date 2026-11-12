@@ -3,6 +3,7 @@
  * sign in to it, and the few quirks its vendor needs worked around.
  */
 
+import type { AuthProbeSpec } from "../authProbe";
 import type { CanonicalPermissionMode } from "../types";
 
 export interface AcpPreset {
@@ -23,6 +24,10 @@ export interface AcpPreset {
   installUrl?: string;
   /** What the picker's Sign in runs in a terminal; absent for a user's own agent. */
   loginCommand?: string;
+  /** What Accounts' Sign Out runs in a terminal; absent when the CLI has none. */
+  logoutCommand?: string;
+  /** How to ask the CLI whether it's signed in; absent when it can't say. */
+  authStatus?: AuthProbeSpec;
   /** Auth method to call when `session/new` says it needs one. */
   authMethodId?: string | (() => string);
   /** The agent's own mode id for an Argus mode (first one it offers wins). */

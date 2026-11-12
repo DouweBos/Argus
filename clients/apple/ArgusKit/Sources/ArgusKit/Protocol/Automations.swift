@@ -176,11 +176,17 @@ public struct RemoteRunner: Codable, Hashable, Sendable, Identifiable {
     public var installCommand: String?
     public var installUrl: String?
     public var loginCommand: String?
+    /// Only the Accounts page signs out, and it reads the catalog's setup; never on the wire here.
+    public var logoutCommand: String? = nil
 
-    public init(installCommand: String? = nil, installUrl: String? = nil, loginCommand: String? = nil) {
+    public init(
+      installCommand: String? = nil, installUrl: String? = nil, loginCommand: String? = nil,
+      logoutCommand: String? = nil
+    ) {
       self.installCommand = installCommand
       self.installUrl = installUrl
       self.loginCommand = loginCommand
+      self.logoutCommand = logoutCommand
     }
 
     public var canInstall: Bool { installCommand != nil || installUrl != nil }

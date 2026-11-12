@@ -2,8 +2,9 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// Every Claude account signed in on this machine and which one new agents
-/// run as; switching never interrupts a running agent.
+/// Every runner's sign-in: the Claude accounts on this machine and which one
+/// new agents run as (switching never interrupts a running agent), then every
+/// other runner's CLI.
 struct AccountsSettingsTab: View {
   @Environment(HostStore.self) private var store
   @Environment(HostSettingsModel.self) private var host
@@ -17,7 +18,7 @@ struct AccountsSettingsTab: View {
   var body: some View {
     SettingsPage {
       SettingsGroup(
-        "Accounts",
+        "Claude",
         footer: accounts.isEmpty
           ? nil
           : "Agents and terminals use the selected account. Sessions pinned to another account keep "
@@ -51,6 +52,8 @@ struct AccountsSettingsTab: View {
       ) { startLogin(accountId: nil) }
 
       SettingsError(text: loginError ?? host.error)
+
+      RunnerAccountsSection()
     }
     .task {
       await store.refreshClaudeAccounts()

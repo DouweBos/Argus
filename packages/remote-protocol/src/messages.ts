@@ -75,6 +75,7 @@ import {
   LinearIssueScope,
   LinearWorkflowState,
 } from "./models/integrations";
+import { RunnerAccount } from "./models/llm";
 import {
   ClaudeUsageLimits,
   ClaudeUsageSummary,
@@ -775,6 +776,8 @@ export const MethodParams = {
     note: z.string().optional(),
   }),
   "claude_accounts.list": z.object({}),
+  /** `refresh` re-asks every CLI instead of reading the host's cache. */
+  "runners.accounts": z.object({ refresh: z.boolean().optional() }),
   "usage.limits": z.object({ refresh: z.boolean().optional() }),
   "usage.summary": z.object({ range: UsageRange }),
   "claude_accounts.set_active": z.object({ id: z.string() }),
@@ -1151,6 +1154,7 @@ export const MethodResult = {
     accounts: z.array(RemoteClaudeAccount),
     active_id: z.string(),
   }),
+  "runners.accounts": z.object({ runners: z.array(RunnerAccount) }),
   "usage.limits": ClaudeUsageLimits,
   "usage.summary": ClaudeUsageSummary,
   "claude_accounts.set_active": z.object({ accepted: z.boolean() }),

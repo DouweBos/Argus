@@ -3,6 +3,8 @@ import {
   CustomRunner,
   CustomRunnerPreset,
   RegisteredRunner,
+  RunnerAccount,
+  RunnerSetupSource,
   RunnerSetupStarted,
   RunnerSetupStep,
 } from "../models/llm";
@@ -24,14 +26,30 @@ export const LLM_COMMANDS = {
     result: z.null(),
   },
   /**
-   * Install a runner's CLI or sign in to it, in a terminal of its own (or the
-   * install page, for a CLI with no command). The runner is re-probed and
-   * `llm:runners_changed` fires once the terminal exits.
+   * Install a runner's CLI, or sign in to or out of it, in a terminal of its
+   * own (or the install page, for a CLI with no command). The runner is
+   * re-probed and `llm:runners_changed` fires once the terminal exits.
    */
   llm_runner_setup: {
     tier: "admin",
-    params: z.object({ runnerId: z.string(), step: RunnerSetupStep }),
+    params: z.object({
+      runnerId: z.string(),
+      step: RunnerSetupStep,
+      source: RunnerSetupSource.optional(),
+    }),
     result: RunnerSetupStarted,
+  },
+  /**
+   * Every runner besides Claude Code: installed, signed in, and as whom.
+   * `refresh` re-probes (only `runnerId`, when given) instead of reading the cache.
+   */
+  llm_runner_accounts: {
+    tier: "admin",
+    params: z.object({
+      refresh: z.boolean().optional(),
+      runnerId: z.string().optional(),
+    }),
+    result: z.array(RunnerAccount),
   },
   llm_list_custom_runners: {
     tier: "admin",

@@ -186,6 +186,18 @@ export interface EventMap {
   runner_unavailable: {
     runner: TelemetryRunner;
   };
+  runner_account_action: {
+    runner: TelemetryRunner;
+    action: "check_again" | "install" | "sign_in" | "sign_out";
+    outcome:
+      | "failed"
+      | "not_installed"
+      | "opened_page"
+      | "signed_in"
+      | "signed_out"
+      | "succeeded"
+      | "unknown";
+  };
   runner_setup: {
     runner: TelemetryRunner;
     step: "install" | "login";

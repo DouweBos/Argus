@@ -5,6 +5,7 @@ import type {
   CustomRunnerModel as HostCustomRunnerModel,
 } from "../services/llm/customRunners/store";
 import type { RegisteredRunner as HostRegisteredRunner } from "../services/llm/registry";
+import type { RunnerAccount as HostRunnerAccount } from "../services/llm/runnerAccounts";
 import type {
   RunnerCapabilities as HostRunnerCapabilities,
   RunnerModelOption as HostRunnerModelOption,
@@ -16,6 +17,7 @@ import type {
   CustomRunnerPreset,
   ParamsOf,
   RegisteredRunner,
+  RunnerAccount,
   RunnerCapabilities,
   RunnerModelOption,
   RunnerSetup,
@@ -26,6 +28,7 @@ export type LlmModelChecks = [
   Expect<Equal<RunnerModelOption, HostRunnerModelOption>>,
   Expect<Equal<RegisteredRunner, HostRegisteredRunner>>,
   Expect<Equal<RunnerSetup, HostRunnerSetup>>,
+  Expect<Equal<RunnerAccount, HostRunnerAccount>>,
   Expect<Equal<CustomRunnerModel, HostCustomRunnerModel>>,
   Expect<Equal<CustomRunner, HostCustomRunner>>,
   Expect<Equal<CustomRunnerPreset, HostCustomRunnerPreset>>,

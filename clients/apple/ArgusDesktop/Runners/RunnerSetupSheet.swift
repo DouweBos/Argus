@@ -24,11 +24,16 @@ struct RunnerSetupSheet: View {
 
   private func header(_ flow: RunnerSetupFlow) -> some View {
     VStack(alignment: .leading, spacing: 10) {
-      Text("Set Up \(flow.displayName)").font(.scaled(.headline))
-      HStack(spacing: 16) {
-        stepLabel(1, "Install", command: flow.setup.installCommand ?? flow.setup.installUrl, state: installState(flow))
-        if let login = flow.setup.loginCommand {
-          stepLabel(2, "Sign in", command: login, state: loginState(flow))
+      if flow.step == .logout {
+        Text("Sign Out of \(flow.displayName)").font(.scaled(.headline))
+        stepLabel(1, "Sign out", command: flow.setup.logoutCommand, state: loginState(flow))
+      } else {
+        Text("Set Up \(flow.displayName)").font(.scaled(.headline))
+        HStack(spacing: 16) {
+          stepLabel(1, "Install", command: flow.setup.installCommand ?? flow.setup.installUrl, state: installState(flow))
+          if let login = flow.setup.loginCommand {
+            stepLabel(2, "Sign in", command: login, state: loginState(flow))
+          }
         }
       }
     }
@@ -43,7 +48,7 @@ struct RunnerSetupSheet: View {
   }
 
   private func loginState(_ flow: RunnerSetupFlow) -> StepState {
-    guard flow.step == .login else { return .pending }
+    guard flow.step != .install else { return .pending }
     if case .finished(_, 0) = flow.phase { return .done }
     return .active
   }
@@ -121,7 +126,10 @@ struct RunnerSetupSheet: View {
 
   private func status(_ flow: RunnerSetupFlow) -> String {
     switch (flow.phase, flow.next) {
+    case (.running, _) where flow.step == .logout: "Signing out… answer any prompts in the terminal."
     case (.running, _): flow.step == .install ? "Installing…" : "Signing in… answer any prompts in the terminal."
+    case (.finished(_, 0), .done) where flow.step == .logout: "Signed out of \(flow.displayName)."
+    case (.finished, _) where flow.step == .logout: "That didn't finish cleanly. Read the output above."
     case (_, .signIn): "\(flow.displayName) is installed. Sign in to start agents on it."
     case (.openedPage, .checkAgain): "Not found yet. Check again once it's installed."
     case (_, .checkAgain): "Installed, but not found on your PATH yet. Check again."

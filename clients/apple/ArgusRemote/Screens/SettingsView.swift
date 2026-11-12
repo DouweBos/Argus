@@ -38,7 +38,7 @@ struct SettingsView: View {
           row(.connection, value: host.connection.label)
           row(.agents)
           row(.automations)
-          link(.claudeAccounts) { SettingsLinkRow("Claude Accounts", systemImage: Icon.person) }
+          link(.claudeAccounts) { SettingsLinkRow("Accounts", systemImage: Icon.person) }
           link(.usage) { SettingsLinkRow("Usage", systemImage: Icon.usage) }
           if !host.deviceHosts.isEmpty {
             row(.deviceHosts, value: "\(host.deviceHosts.count)")

@@ -122,7 +122,7 @@ enum Route: Hashable {
     case .computer: "/settings/computers/:deviceId"
     case .addComputer: "/settings/computers/new"
     case .account: "/settings/account"
-    case .claudeAccounts: "/settings/claude-accounts"
+    case .claudeAccounts: "/settings/accounts"
     case .more: "/more"
     }
   }

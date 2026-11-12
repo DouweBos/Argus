@@ -29,6 +29,11 @@ vi.mock("@argus/host/bus", () => ({
     events.push([channel, payload]),
 }));
 
+const captured = vi.hoisted(() => [] as [string, unknown][]);
+vi.mock("../telemetry/telemetry", () => ({
+  capture: (event: string, props: unknown) => captured.push([event, props]),
+}));
+
 const { startRunnerSetup } = await import("./runnerSetup");
 
 describe("startRunnerSetup", () => {
@@ -37,6 +42,7 @@ describe("startRunnerSetup", () => {
   beforeEach(() => {
     terminals.created = [];
     events.length = 0;
+    captured.length = 0;
     opened.length = 0;
     setHostPlatform({
       ...nodeHostPlatform(),
@@ -78,6 +84,33 @@ describe("startRunnerSetup", () => {
     });
     expect(opened).toEqual(["https://antigravity.google"]);
     expect(terminals.created).toEqual([]);
+  });
+
+  it("signs out from the Accounts page and counts it there, not as picker setup", async () => {
+    await startRunnerSetup("cursor", "logout", "accounts");
+    expect(terminals.created).toEqual([
+      {
+        owner: "runner-setup",
+        command: "cursor-agent logout",
+        title: "Sign out of Cursor",
+      },
+    ]);
+
+    terminals.exit?.(0);
+    await vi.waitFor(() =>
+      expect(captured).toEqual([
+        [
+          "runner_account_action",
+          { runner: "cursor", action: "sign_out", outcome: "succeeded" },
+        ],
+      ]),
+    );
+  });
+
+  it("refuses to sign out of a CLI with no logout command", async () => {
+    await expect(
+      startRunnerSetup("antigravity", "logout", "accounts"),
+    ).rejects.toMatch("no sign-out command");
   });
 
   it("refuses a runner it can't set up", async () => {

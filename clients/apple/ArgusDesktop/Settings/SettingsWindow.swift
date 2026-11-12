@@ -90,7 +90,7 @@ enum SettingsTab: String, Hashable, CaseIterable {
     case .general: "General"
     case .appearance: "Appearance"
     case .account: "Argus Account"
-    case .accounts: "Claude Accounts"
+    case .accounts: "Accounts"
     case .agents: "Agents"
     case .llm: "LLM"
     case .mcp: "MCP"

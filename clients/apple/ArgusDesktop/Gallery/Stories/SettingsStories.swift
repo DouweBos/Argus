@@ -3,7 +3,7 @@
   import ArgusUI
   import SwiftUI
 
-  /// The Settings window, its Argus Account page in each state, and the custom runner editor.
+  /// The Settings window, its Accounts page, its Argus Account page in each state, and the custom runner editor.
   enum SettingsStories {
     static var all: [GalleryStory] {
       [
@@ -14,6 +14,9 @@
           SettingsWindow()
         },
         GalleryStory("settings/appearance", size: page) { AppearanceSettingsTab() },
+        GalleryStory("settings/accounts", size: CGSize(width: 760, height: 1000), fixtures: GalleryFixtures.runnerAccounts) {
+          AccountsSettingsTab().environment(HostSettingsModel())
+        },
         account("signed-in", GalleryAccount(selfKind: "mac")),
         account("host-elsewhere", GalleryAccount(selfKind: "mac", hostElsewhere: true)),
         account("signed-out", GalleryAccount(phase: .signedOut, selfKind: "mac")),

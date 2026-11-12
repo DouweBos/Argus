@@ -16854,6 +16854,68 @@ extension ArgusProtocol {
     public static let unlinked = RevokeReason(rawValue: "unlinked")
   }
 
+  public struct RunnerAccount: Codable, Sendable {
+    public var id: String
+    public var displayName: String
+    public var isCustom: Bool
+    public var status: RunnerAccountStatus
+    public var account: String?
+    public var detail: String?
+    public var canProbe: Bool
+    public var setup: RunnerSetup?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case displayName = "displayName"
+      case isCustom = "isCustom"
+      case status = "status"
+      case account = "account"
+      case detail = "detail"
+      case canProbe = "canProbe"
+      case setup = "setup"
+    }
+
+    public init(id: String, displayName: String, isCustom: Bool, status: RunnerAccountStatus, account: String? = nil, detail: String? = nil, canProbe: Bool, setup: RunnerSetup? = nil) {
+      self.id = id
+      self.displayName = displayName
+      self.isCustom = isCustom
+      self.status = status
+      self.account = account
+      self.detail = detail
+      self.canProbe = canProbe
+      self.setup = setup
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(displayName, forKey: .displayName)
+      try c.encode(isCustom, forKey: .isCustom)
+      try c.encode(status, forKey: .status)
+      try c.encode(account, forKey: .account)
+      try c.encode(detail, forKey: .detail)
+      try c.encode(canProbe, forKey: .canProbe)
+      try c.encode(setup, forKey: .setup)
+    }
+  }
+
+  public struct RunnerAccountStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let notInstalled = RunnerAccountStatus(rawValue: "not_installed")
+    public static let signedIn = RunnerAccountStatus(rawValue: "signed_in")
+    public static let signedOut = RunnerAccountStatus(rawValue: "signed_out")
+    public static let unknown = RunnerAccountStatus(rawValue: "unknown")
+  }
+
   public struct RunnerCapabilities: Codable, Sendable {
     public var supportsMcp: Bool
     public var supportsTranscriptFork: Bool
@@ -16924,17 +16986,20 @@ extension ArgusProtocol {
     public var installCommand: String?
     public var installUrl: String?
     public var loginCommand: String?
+    public var logoutCommand: String?
 
     enum CodingKeys: String, CodingKey {
       case installCommand = "installCommand"
       case installUrl = "installUrl"
       case loginCommand = "loginCommand"
+      case logoutCommand = "logoutCommand"
     }
 
-    public init(installCommand: String? = nil, installUrl: String? = nil, loginCommand: String? = nil) {
+    public init(installCommand: String? = nil, installUrl: String? = nil, loginCommand: String? = nil, logoutCommand: String? = nil) {
       self.installCommand = installCommand
       self.installUrl = installUrl
       self.loginCommand = loginCommand
+      self.logoutCommand = logoutCommand
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -16942,7 +17007,23 @@ extension ArgusProtocol {
       try c.encode(installCommand, forKey: .installCommand)
       try c.encode(installUrl, forKey: .installUrl)
       try c.encode(loginCommand, forKey: .loginCommand)
+      try c.encodeIfPresent(logoutCommand, forKey: .logoutCommand)
     }
+  }
+
+  public struct RunnerSetupSource: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let picker = RunnerSetupSource(rawValue: "picker")
+    public static let accounts = RunnerSetupSource(rawValue: "accounts")
   }
 
   public struct RunnerSetupStarted: Codable, Sendable {
@@ -16979,6 +17060,7 @@ extension ArgusProtocol {
 
     public static let install = RunnerSetupStep(rawValue: "install")
     public static let login = RunnerSetupStep(rawValue: "login")
+    public static let logout = RunnerSetupStep(rawValue: "logout")
   }
 
   public struct RunTerminalResultDependenciesItem: Codable, Sendable {

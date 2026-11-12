@@ -150,6 +150,7 @@ import {
   updateLinearIssue,
 } from "../integrations/service";
 import { getRunnerById } from "../llm/registry";
+import { listRunnerAccounts } from "../llm/runnerAccounts";
 import { collectAllProjects } from "../mcp/projectDiscovery";
 import { createScratchPad, listScratchPads } from "../scratchPad/manager";
 import {
@@ -2667,6 +2668,12 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     recheckFlaggedAccounts();
 
     return remoteClaudeAccounts();
+  },
+
+  "runners.accounts": async (params) => {
+    const { refresh } = parse("runners.accounts", params);
+
+    return { runners: await listRunnerAccounts({ refresh }) };
   },
 
   "usage.limits": async (params) => {

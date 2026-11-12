@@ -6399,24 +6399,49 @@ extension ArgusProtocol {
       }
     }
 
+    public struct LlmRunnerAccountsParams: Codable, Sendable {
+      public var refresh: Bool?
+      public var runnerId: String?
+
+      enum CodingKeys: String, CodingKey {
+        case refresh = "refresh"
+        case runnerId = "runnerId"
+      }
+
+      public init(refresh: Bool? = nil, runnerId: String? = nil) {
+        self.refresh = refresh
+        self.runnerId = runnerId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(refresh, forKey: .refresh)
+        try c.encodeIfPresent(runnerId, forKey: .runnerId)
+      }
+    }
+
     public struct LlmRunnerSetupParams: Codable, Sendable {
       public var runnerId: String
       public var step: RunnerSetupStep
+      public var source: RunnerSetupSource?
 
       enum CodingKeys: String, CodingKey {
         case runnerId = "runnerId"
         case step = "step"
+        case source = "source"
       }
 
-      public init(runnerId: String, step: RunnerSetupStep) {
+      public init(runnerId: String, step: RunnerSetupStep, source: RunnerSetupSource? = nil) {
         self.runnerId = runnerId
         self.step = step
+        self.source = source
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(runnerId, forKey: .runnerId)
         try c.encode(step, forKey: .step)
+        try c.encodeIfPresent(source, forKey: .source)
       }
     }
 
@@ -12098,6 +12123,13 @@ extension ArgusProtocol {
       public typealias Params = EmptyParams
       public typealias Result = [ArgusProtocol.RegisteredRunner]
       public static let name = "llm_list_runners"
+      public static let tier = "admin"
+    }
+
+    public enum LlmRunnerAccounts: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LlmRunnerAccountsParams
+      public typealias Result = [ArgusProtocol.RunnerAccount]
+      public static let name = "llm_runner_accounts"
       public static let tier = "admin"
     }
 

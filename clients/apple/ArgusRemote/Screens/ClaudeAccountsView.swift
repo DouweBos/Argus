@@ -1,8 +1,8 @@
 import ArgusUI
 import SwiftUI
 
-/// Every Claude account signed in on the computer, and which one new agents
-/// run as. Each account gets its own Claude config directory, so choosing here
+/// Every runner's sign-in on the computer: its Claude accounts and which one
+/// new agents run as, then the other runners, read-only. Each account gets its own Claude config directory, so choosing here
 /// is what decides which subscription an agent burns.
 struct ClaudeAccountsView: View {
   @Environment(HostStore.self) private var host
@@ -19,7 +19,7 @@ struct ClaudeAccountsView: View {
     List {
       // No inline error: the app-wide toast already shows `lastError`.
       if !accounts.isEmpty {
-        Section("Accounts") {
+        Section("Claude") {
           ForEach(accounts) { account in
             AccountRow(
               account: account,
@@ -41,10 +41,12 @@ struct ClaudeAccountsView: View {
           useConsole: $useConsole, starting: startingLogin, firstAccount: accounts.isEmpty
         ) { startLogin(accountId: nil) }
       }
+      RunnerAccountsSection()
     }
     .loadPhase(
       LoadPhase(
-        loaded: host.claudeAccounts != nil, error: nil, isEmpty: accounts.isEmpty && !host.hasControl),
+        loaded: host.claudeAccounts != nil, error: nil,
+        isEmpty: accounts.isEmpty && !host.hasControl && (host.runnerAccounts ?? []).isEmpty),
       loading: "Loading accounts…"
     ) {
       EmptyState(
@@ -54,13 +56,17 @@ struct ClaudeAccountsView: View {
           + "whichever account Claude was signed into first.")
     }
     .scrollContentBackground(.hidden)
-    .navigationTitle("Claude Accounts")
+    .navigationTitle("Accounts")
     .navigationBarTitleDisplayMode(.inline)
     .task {
       await host.refreshClaudeAccounts()
       await host.loadClaudeLoginStatus()
+      await host.refreshRunnerAccounts()
     }
-    .refreshable { await host.refreshClaudeAccounts() }
+    .refreshable {
+      await host.refreshClaudeAccounts()
+      await host.refreshRunnerAccounts(refresh: true)
+    }
     .liveRefresh(enabled: host.connection == .ready) {
       await host.refreshClaudeAccounts()
       // The attempt runs on the computer, so follow what it reports.
@@ -147,7 +153,7 @@ private struct ClaudeSignInSection: View {
         Btn(label: firstAccount ? "Sign in" : "Add account", icon: Icon.plus, action: start)
       }
     } header: {
-      Text(pending || starting ? "Complete sign-in" : firstAccount ? "Sign in" : "Add another account")
+      Text(pending || starting ? "Complete sign-in" : firstAccount ? "Sign in to Claude" : "Add another Claude account")
     } footer: {
       Text(caption)
     }

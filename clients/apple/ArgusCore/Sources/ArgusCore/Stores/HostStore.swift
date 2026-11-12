@@ -105,6 +105,8 @@ public final class HostStore {
   /// out everywhere" rather than "not fetched yet".
   public internal(set) var claudeAccounts: [RemoteClaudeAccount]?
   public internal(set) var activeClaudeAccountId: String?
+  /// Every other runner's sign-in, nil until the first answer.
+  public internal(set) var runnerAccounts: [ArgusProtocol.RunnerAccount]?
   /// Plan limits per Claude account; `nil` until the first load.
   public internal(set) var usageLimits: ArgusProtocol.ClaudeUsageLimits?
   /// Why the last usage load failed, cleared by the next success.
@@ -291,6 +293,7 @@ public final class HostStore {
     deviceHosts = []
     claudeAccounts = nil
     activeClaudeAccountId = nil
+    runnerAccounts = nil
     usageLimits = nil
     usageLimitsError = nil
     usageLimitsLoading = false

@@ -312,6 +312,11 @@ telemetry choice. Everything else happens in place.
   signed-in Claude account, git, a git identity, notification
   permission, optional device tooling) shows up as a card on the home
   screen with a one-click fix, and disappears once resolved.
+- **Accounts** — **Settings → Accounts** lists every runner's sign-in:
+  your Claude accounts, then Codex, Cursor, Gemini CLI and the rest, each
+  Not installed, Not signed in or Signed in (with the account when its CLI
+  says), with Install, Sign In, Sign Out and Check Again. See
+  [Accounts](app-settings.md#accounts).
 - **Tools** — device tooling is opt-in from **Settings → Tools**.
   Turning a tool off hides its UI surfaces and disables its IPC
   handlers so Argus stays focused on what you use.

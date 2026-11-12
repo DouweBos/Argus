@@ -34,12 +34,44 @@ export const RunnerSetup = z.object({
   installUrl: z.string().nullable(),
   /** Shell command that signs in, run in a terminal. */
   loginCommand: z.string().nullable(),
+  /** Shell command that signs out, when the CLI has one; absent from older hosts. */
+  logoutCommand: z.string().nullable().optional(),
 });
 export type RunnerSetup = z.infer<typeof RunnerSetup>;
 
 /** Which half of a runner's setup to run. */
-export const RunnerSetupStep = z.enum(["install", "login"]);
+export const RunnerSetupStep = z.enum(["install", "login", "logout"]);
 export type RunnerSetupStep = z.infer<typeof RunnerSetupStep>;
+
+/** Where a setup step was started from, for telemetry. */
+export const RunnerSetupSource = z.enum(["picker", "accounts"]);
+export type RunnerSetupSource = z.infer<typeof RunnerSetupSource>;
+
+/** Whether a runner's CLI is installed and signed in. */
+export const RunnerAccountStatus = z.enum([
+  "not_installed",
+  "signed_in",
+  "signed_out",
+  "unknown",
+]);
+export type RunnerAccountStatus = z.infer<typeof RunnerAccountStatus>;
+
+/** One runner on the Accounts page: its sign-in, and how to change it. */
+export const RunnerAccount = z.object({
+  id: z.string(),
+  displayName: z.string(),
+  /** A user's own ACP agent. */
+  isCustom: z.boolean(),
+  status: RunnerAccountStatus,
+  /** Email, account or plan, when the CLI reports one. */
+  account: z.string().nullable(),
+  /** How to install it, when it isn't. */
+  detail: z.string().nullable(),
+  /** Whether the CLI can be asked; false means signed-in is always unknown. */
+  canProbe: z.boolean(),
+  setup: RunnerSetup.nullable(),
+});
+export type RunnerAccount = z.infer<typeof RunnerAccount>;
 
 /** A setup step started: its terminal, or the page opened instead. */
 export const RunnerSetupStarted = z.object({

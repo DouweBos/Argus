@@ -20,7 +20,7 @@ struct ClaudeLoginSection: View {
 
   var body: some View {
     SettingsGroup(
-      pending || starting ? "Complete sign-in" : (firstAccount ? "Sign in" : "Add another account"),
+      pending || starting ? "Complete sign-in" : (firstAccount ? "Sign in to Claude" : "Add another Claude account"),
       footer: caption
     ) {
       if starting {

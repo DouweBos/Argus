@@ -173,6 +173,7 @@ public enum RemoteMethod: String, Codable, Sendable {
   case proposalsRequestRevision = "proposals.request_revision"
 
   case claudeAccountsList = "claude_accounts.list"
+  case runnersAccounts = "runners.accounts"
   case claudeAccountsSetActive = "claude_accounts.set_active"
   case claudeAccountsAdd = "claude_accounts.add"
   case claudeAccountsRemove = "claude_accounts.remove"

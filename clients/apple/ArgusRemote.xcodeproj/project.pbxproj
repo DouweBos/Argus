@@ -59,6 +59,7 @@
 		A5D4478D135C8571D9B0C25E /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9798D9FC585435B89959E156 /* RootView.swift */; };
 		A7CA00EFEA917C9540802DFC /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C7B226438808577288DF012 /* NotificationService.swift */; };
 		AA1000000000000000000001 /* ClaudeAccountsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000002 /* ClaudeAccountsView.swift */; };
+		AA1000000000000000000101 /* RunnerAccountsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000102 /* RunnerAccountsSection.swift */; };
 		AAC53DE55E408A8C4899520D /* DeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B760406B1B2B956C52E89F9 /* DeviceView.swift */; };
 		AC0A00000000000000000001 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0A00000000000000000002 /* AccountView.swift */; };
 		AC0A00000000000000000003 /* AddComputerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0A00000000000000000004 /* AddComputerView.swift */; };
@@ -224,6 +225,7 @@
 		A5C0DE0000000000000C0003 /* ArgusCore */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ArgusCore; sourceTree = SOURCE_ROOT; };
 		A5C0DE0000000000000C0004 /* ArgusUI */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ArgusUI; sourceTree = SOURCE_ROOT; };
 		AA1000000000000000000002 /* ClaudeAccountsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeAccountsView.swift; sourceTree = "<group>"; };
+		AA1000000000000000000102 /* RunnerAccountsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerAccountsSection.swift; sourceTree = "<group>"; };
 		AC0A00000000000000000002 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		AC0A00000000000000000004 /* AddComputerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddComputerView.swift; sourceTree = "<group>"; };
 		AC0A00000000000000000008 /* ApproveJoinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApproveJoinView.swift; sourceTree = "<group>"; };
@@ -503,6 +505,7 @@
 				AC0A00000000000000000002 /* AccountView.swift */,
 				57ADDE446C44DCB7D8E5AA3C /* DevicesView.swift */,
 				AA1000000000000000000002 /* ClaudeAccountsView.swift */,
+				AA1000000000000000000102 /* RunnerAccountsSection.swift */,
 				7B760406B1B2B956C52E89F9 /* DeviceView.swift */,
 				B6C14566E26586DC89C61830 /* HomeView.swift */,
 				2AA1C76CC7A23652BD96252A /* InboxView.swift */,
@@ -1049,6 +1052,7 @@
 				A1F00D1E55E5A1C0DEC0FF10 /* IssueView.swift in Sources */,
 				D5E51A9E0000DE5160000010 /* DesignView.swift in Sources */,
 				AA1000000000000000000001 /* ClaudeAccountsView.swift in Sources */,
+				AA1000000000000000000101 /* RunnerAccountsSection.swift in Sources */,
 				0C2CEA8B85053A238EB47BA7 /* AutomationsView.swift in Sources */,
 				8B82B5637BDFB9252A8D9AD0 /* BranchesView.swift in Sources */,
 				B77C1EA73DE9EF93E59424EF /* BranchCompareView.swift in Sources */,

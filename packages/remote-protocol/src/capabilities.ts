@@ -364,6 +364,8 @@ export const REMOTE_METHODS = {
    *  monitor; anything that switches, adds or forgets one changes what every
    *  new agent authenticates as and spends that account's quota, so control. */
   "claude_accounts.list": "monitor",
+  /** Which other runners are installed and signed in; signing in stays on the computer. */
+  "runners.accounts": "monitor",
   "claude_accounts.set_active": "control",
   "claude_accounts.add": "control",
   "claude_accounts.remove": "control",

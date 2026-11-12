@@ -5059,6 +5059,40 @@ extension ArgusProtocol {
       }
     }
 
+    public struct RunnersAccountsParams: Codable, Sendable {
+      public var refresh: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case refresh = "refresh"
+      }
+
+      public init(refresh: Bool? = nil) {
+        self.refresh = refresh
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(refresh, forKey: .refresh)
+      }
+    }
+
+    public struct RunnersAccountsResult: Codable, Sendable {
+      public var runners: [RunnerAccount]
+
+      enum CodingKeys: String, CodingKey {
+        case runners = "runners"
+      }
+
+      public init(runners: [RunnerAccount]) {
+        self.runners = runners
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(runners, forKey: .runners)
+      }
+    }
+
     public struct ScratchPadsCreateParams: Codable, Sendable {
       public var name: String?
 
@@ -7537,6 +7571,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.ProposalsResolveParams
       public typealias Result = ArgusProtocol.MethodsTypes.ProposalsResolveResult
       public static let name = "proposals.resolve"
+    }
+
+    public enum RunnersAccounts: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.RunnersAccountsParams
+      public typealias Result = ArgusProtocol.MethodsTypes.RunnersAccountsResult
+      public static let name = "runners.accounts"
     }
 
     public enum ScratchPadsCreate: RemoteCommand {

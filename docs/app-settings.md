@@ -23,12 +23,17 @@ targets, related projects, …) see
 
 ---
 
-## Claude account
+## Accounts
+
+**Settings → Accounts** shows every runner's sign-in: your Claude accounts
+first, then each other runner.
+
+### Claude
 
 Stay signed in to several Claude accounts at once and switch between them
 instantly — no logging out, no terminal.
 
-- **Accounts** — every account you've signed in, with its email, organization
+- **Claude** — every account you've signed in, with its email, organization
   and plan. Click a row to make it active; agents, terminals and one-shot
   helpers started from then on use it. Rename a row to give an account a
   friendlier label, or remove it to sign out and forget it. A row marked
@@ -62,6 +67,30 @@ location is part of how the credentials are keyed, so moving or renaming
 Everything else the Claude CLI keeps in `~/.claude` (settings, `CLAUDE.md`,
 plugins, transcripts) is linked back to the shared copy, so it stays one set of
 files across accounts.
+
+### Other runners
+
+One row per other runner — Codex, Cursor, Gemini CLI, Antigravity, Kiro,
+OpenCode, Grok Build, fx and your own ACP agents — installed ones first. Once
+four or more aren't installed, those fold under **Not installed**.
+
+Each row says whether the runner is **Not installed**, **Not signed in**,
+**Signed in** (with the account or plan when its CLI reports one) or unknown,
+and offers what fits: **Install** and **Sign In** open the same terminal the
+runner picker does, **Sign Out** runs the CLI's own sign-out, and **Check
+Again** asks it afresh.
+
+| Runner                                       | Status from                                          | Sign out               |
+| -------------------------------------------- | ---------------------------------------------------- | ---------------------- |
+| Codex                                        | `codex login status` (ChatGPT / API key)             | `codex logout`         |
+| Cursor                                       | `cursor-agent status` (email)                        | `cursor-agent logout`  |
+| Kiro                                         | `kiro-cli whoami` (Builder ID / IAM Identity Center) | `kiro-cli logout`      |
+| OpenCode                                     | `opencode auth list` (provider count)                | `opencode auth logout` |
+| Grok Build                                   | —                                                    | `grok logout`          |
+| Gemini CLI, Antigravity, fx, your own agents | —                                                    | —                      |
+
+A runner whose CLI has no way to ask shows its status as unknown once it's
+installed; Sign In stays available. The phone shows the same list, read-only.
 
 ---
 
