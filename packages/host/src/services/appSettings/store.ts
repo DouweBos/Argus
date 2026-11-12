@@ -63,11 +63,6 @@ export interface AppSettings {
    */
   follow_up_suggestions?: boolean;
   /**
-   * Keep a Claude Code agent from finishing, once per turn, when it edited
-   * source after its last screenshot, design comparison or check. Opt-in: defaults to false.
-   */
-  done_gate?: boolean;
-  /**
    * How many warm agents the host keeps for the sessions clients show, so a
    * start there skips the CLI's spawn. Each is a live `claude` plus its MCP
    * servers. 0 turns warming off; defaults to 1.

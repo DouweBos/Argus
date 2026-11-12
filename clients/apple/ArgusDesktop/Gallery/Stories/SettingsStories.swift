@@ -14,7 +14,6 @@
           SettingsWindow()
         },
         GalleryStory("settings/appearance", size: page) { AppearanceSettingsTab() },
-        GalleryStory("settings/agents", size: CGSize(width: 760, height: 1400)) { AgentsStage() },
         account("signed-in", GalleryAccount(selfKind: "mac")),
         account("signed-out", GalleryAccount(phase: .signedOut, selfKind: "mac")),
         account("awaiting-approval", GalleryAccount(phase: .awaitingApproval, selfKind: "mac")),
@@ -107,17 +106,6 @@
     }
 
     private static let page = CGSize(width: 760, height: 900)
-
-    /// The Agents tab with the gate off, so the toggle's off state shows.
-    private struct AgentsStage: View {
-      @State private var host: HostSettingsModel = {
-        let host = HostSettingsModel()
-        host.galleryFill(.init(followUpSuggestions: true, doneGate: false, warmAgents: 1))
-        return host
-      }()
-
-      var body: some View { AgentsSettingsTab().environment(host) }
-    }
 
     private static func account(_ state: String, _ fixture: GalleryAccount) -> GalleryStory {
       GalleryStory(

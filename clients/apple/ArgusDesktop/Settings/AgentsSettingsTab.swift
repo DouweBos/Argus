@@ -40,19 +40,6 @@ struct AgentsSettingsTab: View {
         }
       }
 
-      Section("Verify before finishing") {
-        if let settings = host.settings {
-          VStack(alignment: .leading, spacing: 4) {
-            Toggle("Re-verify after late edits", isOn: doneGate(settings))
-            SettingsCaption(
-              "A Claude Code agent that took a screenshot, compared a design or ran a check, then edited "
-                + "code again, is sent back once to re-verify before it finishes.")
-          }
-        } else {
-          SettingsLoading()
-        }
-      }
-
       Section("Warm agents") {
         if let settings = host.settings {
           VStack(alignment: .leading, spacing: 4) {
@@ -148,18 +135,6 @@ struct AgentsSettingsTab: View {
         Task {
           await host.save(.followUpSuggestions, ["follow_up_suggestions": .bool(next)]) {
             $0.followUpSuggestions = next
-          }
-        }
-      })
-  }
-
-  private func doneGate(_ settings: ArgusProtocol.AppSettings) -> Binding<Bool> {
-    Binding(
-      get: { settings.doneGate == true },
-      set: { next in
-        Task {
-          await host.save(.doneGate, ["done_gate": .bool(next)]) {
-            $0.doneGate = next
           }
         }
       })

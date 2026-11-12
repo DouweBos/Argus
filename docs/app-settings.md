@@ -71,7 +71,6 @@ files across accounts.
 | ------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Default permission mode**           | `auto`  | The permission mode applied to every new agent — at spawn — unless overridden in the new-agent picker.                                                                                                                                                                                                                                                                                                       |
 | **Follow-up suggestions**             | On      | When an agent finishes a turn, a small model (Haiku) reads its last message and suggests up to three replies. They appear above the chat input on every client; click one, or press Tab, to fill the input. Nothing is sent until you send it.                                                                                                                                                               |
-| **Verify before finishing**           | Off     | A Claude Code agent that checked its work (see below) and then edited code again is sent back once, when it tries to finish, to re-verify the change in the running app and refresh its report's evidence.                                                                                                                                                                                                   |
 | **Warm agents**                       | 1       | How many agents Argus keeps started for the sessions you are looking at — on the Mac or your phone — so starting one there is instant. Off starts every agent from scratch; 2 keeps one ready in each of the two sessions you looked at last. Each warm agent is a running Claude Code process with its MCP servers, so it uses memory while it waits; one nobody has looked at for five minutes is stopped. |
 | **Chat history**                      | On      | Keeps each agent's chat in its project's **Chat history** once it has messages, so you can search, read and resume it after the agent is gone. Off stops saving new chats there and stops importing Claude Code chats (manual **Import now** included); chats already saved stay.                                                                                                                            |
 | **Import Claude Code chats**          | On      | Chats you ran with the `claude` CLI in a project's folder or one of its Conductor workspaces — in a terminal or another app — show up in that project's chat history, marked Imported, and can be resumed. Checked at launch, when a project is added and every 10 minutes; covers the last 30 days. **Import now** runs it straight away.                                                                   |
@@ -88,31 +87,6 @@ it belongs to.
 A session counts against the concurrency limit from the moment an automation
 creates it until it is merged or deleted — not until its agent stops. A branch
 waiting for you to review it is still work in flight.
-
-### Verify before finishing
-
-Argus watches each Claude Code agent's tool calls, and each of its subagents',
-for two things:
-
-- **Evidence** — `conductor take-screenshot`, `capture-ui` or `inspect`, the
-  `design_compare` tool, or a test, lint or type-check command (`pnpm test`,
-  `npm run lint`, `tsc`, `vitest`, `swift test`, `xcodebuild … test` and the like).
-- **Source edits** — Edit, Write and NotebookEdit, except Markdown and text
-  files, changesets, `plan/`, `.claude/` and `.argus.json`. Files written from
-  the shell don't count.
-
-The gate only arms once the agent has gathered evidence at least once in its
-life: an agent that never verifies anything is never stopped. When it then
-tries to finish with a source edit newer than its latest evidence, Argus
-keeps it going once with a short reason. It never blocks twice in one turn,
-so an agent that disagrees can still finish — and once it has, those edits are
-settled: later turns aren't held back over them, only over new edits.
-
-Each subagent is held to its own work. Its edits count against the agent
-that launched it only once the subagent has finished, and only the ones it
-didn't verify itself afterwards; those then need evidence gathered after it
-finished. Edits by a subagent still running in the background never stop
-the agent that launched it from finishing.
 
 ### What a read-only run may do
 

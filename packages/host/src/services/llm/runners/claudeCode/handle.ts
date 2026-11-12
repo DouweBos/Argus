@@ -34,10 +34,7 @@ import EventEmitter from "node:events";
 import readline from "node:readline";
 import type { Writable } from "node:stream";
 import { info, warn } from "@argus/host/logger";
-import { loadAppSettings } from "../../../appSettings/store";
-import { capture } from "../../../telemetry/telemetry";
 import { ControlHandler } from "./controlHandler";
-import { DoneGate } from "./doneGate";
 import { parseMcpStatus } from "./mcpStatus";
 import { toClaudePermissionMode } from "./permissionModes";
 
@@ -92,11 +89,6 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
   private readonly controlHandler: ControlHandler;
   private readonly agentId: string;
   private readonly permissionPreHook: PermissionPreHook | null;
-  private readonly doneGate = new DoneGate({
-    // Opt-in: off until turned on in Settings.
-    enabled: () => loadAppSettings().done_gate === true,
-    report: (reverified) => capture("agent_done_gate", { reverified }),
-  });
   private exited = false;
 
   constructor(init: ClaudeCodeHandleInit) {
@@ -105,9 +97,7 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
     this.child = init.child;
     this.stdin = init.stdin;
     this.permissionPreHook = init.permissionPreHook ?? null;
-    this.controlHandler = new ControlHandler(init.agentId, (active) =>
-      this.doneGate.onStop(active),
-    );
+    this.controlHandler = new ControlHandler(init.agentId);
     this.wireStdioErrors();
     this.wireStderr();
     this.wireStdoutReadline();
@@ -127,7 +117,6 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
 
   send(message: string, images: ImageAttachment[] = []): void {
     const payload = buildUserMessagePayload(message, images);
-    this.doneGate.newTurn();
     this.safeWriteLine(payload);
   }
 
@@ -185,7 +174,6 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
 
   cleanup(): void {
     this.controlHandler.cleanup();
-    this.doneGate.dispose();
   }
 
   async kill(): Promise<void> {
@@ -280,7 +268,6 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
       const exitCode = code ?? 0;
       // Reject any in-flight control requests so awaiting callers don't hang.
       this.controlHandler.cleanup();
-      this.doneGate.dispose();
       this.emit("exit", exitCode);
     });
   }
@@ -314,7 +301,6 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
         // fall through — forward unrecognised lines.
       }
 
-      this.doneGate.observeLine(line);
       this.emit("stream-event", line);
     });
   }

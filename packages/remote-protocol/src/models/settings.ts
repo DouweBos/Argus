@@ -54,8 +54,6 @@ export const AppSettings = z.object({
   automations_enabled: z.boolean().optional(),
   /** Suggest replies after a turn ends, from the agent's last message. Defaults to true. */
   follow_up_suggestions: z.boolean().optional(),
-  /** Send an agent back to re-verify when it edited code after its last verification. Defaults to false (opt-in). */
-  done_gate: z.boolean().optional(),
   /** Warm agents kept ready for the sessions clients show, 0 for none. Defaults to 1. */
   warm_agents: z.number().int().min(0).max(2).optional(),
   /** Screen Argus opens on: the project picker, or the inbox. Defaults to home. */
