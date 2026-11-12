@@ -76,12 +76,14 @@
           .pickerStyle(.inline)
         }
         if composer.offersAccounts {
-          Picker("Account", selection: Binding(get: { composer.accountId }, set: composer.setAccount)) {
-            Button {} label: {
-              Text("Follow computer default")
-              if let hint = composer.followDefaultHint { Text(hint) }
+          Picker("Account", selection: Binding(get: { composer.checkedAccountId }, set: composer.setAccount)) {
+            if composer.offersFollowDefault {
+              Button {} label: {
+                Text("Follow computer default")
+                if let hint = composer.activeAccountName { Text(hint) }
+              }
+              .tag(ComposerModel.followDefaultAccount)
             }
-            .tag(ComposerModel.followDefaultAccount)
             ForEach(composer.accounts, id: \.id) { account in
               Button {} label: {
                 Label(account.displayName, systemImage: Icon.person)
@@ -174,18 +176,19 @@
       case .account:
         PickerSheet(
           title: "Account",
-          options: [
-            .init(
-              value: ComposerModel.followDefaultAccount, label: "Follow computer default",
-              hint: composer.followDefaultHint)
-          ]
+          options: (composer.offersFollowDefault
+            ? [
+              .init(
+                value: ComposerModel.followDefaultAccount, label: "Follow computer default",
+                hint: composer.activeAccountName)
+            ] : [])
             + composer.accounts.map {
               .init(
                 value: $0.id, label: $0.displayName,
                 hint: [composer.accountHint($0.id), $0.subtitle.isEmpty ? nil : $0.subtitle].compactMap { $0 }
                   .joined(separator: " · ").nilIfEmpty)
             },
-          selected: [composer.accountId]
+          selected: [composer.checkedAccountId]
         ) { composer.setAccount($0) }
       case .mode:
         PickerSheet(

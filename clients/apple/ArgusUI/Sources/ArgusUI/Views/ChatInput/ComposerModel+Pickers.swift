@@ -84,21 +84,27 @@ extension ComposerModel {
   /// The account a live agent's process runs as; nil before a start or from older hosts.
   public var runningAccountId: String? { starter == nil ? status?.accountId : nil }
 
-  /// What "Follow computer default" lands on. A running agent keeps its account
-  /// when the default changes, so that one leads when the two differ.
-  public var followDefaultHint: String? {
-    guard accountId == Self.followDefaultAccount, let running = runningAccountId,
-      running != host.activeClaudeAccountId, let name = accountName(running)
-    else { return activeAccountName }
-    return activeAccountName.map { "On \(name) · default is \($0)" } ?? "On \(name)"
+  /// Before an agent has talked nothing runs yet, so following the computer's default is a choice;
+  /// after that only the account it runs on matters.
+  public var offersFollowDefault: Bool { !hasConversation }
+
+  /// A picked account the agent moves to once its turn ends.
+  public var hasPendingAccountSwitch: Bool {
+    guard accountId != Self.followDefaultAccount, let running = runningAccountId else { return false }
+    return running != accountId
   }
 
-  /// Marks the account the agent still runs on while a picked one waits for its turn to end.
+  /// The account the agent runs on, or the one it moves to after this turn.
+  public var currentAccountId: String? {
+    if hasPendingAccountSwitch { return accountId }
+    return runningAccountId ?? (accountId == Self.followDefaultAccount ? host.activeClaudeAccountId : accountId)
+  }
+
+  /// The account picker's ticked row: an agent's account, else the pick or `followDefaultAccount`.
+  public var checkedAccountId: String { offersFollowDefault ? accountId : currentAccountId ?? accountId }
+
   public func accountHint(_ id: String) -> String? {
-    guard accountId != Self.followDefaultAccount, let running = runningAccountId, running != accountId,
-      id == running
-    else { return nil }
-    return "Running now"
+    !offersFollowDefault && hasPendingAccountSwitch && id == accountId ? "After this turn" : nil
   }
 
   /// The account the agent is on, else the one it will start on.
@@ -143,7 +149,7 @@ extension ComposerModel {
   public func setAccount(_ value: String) {
     // A start pins it with the agent, so its first turn already runs there.
     if starter != nil { return draftAccount = value }
-    guard let sessionId else { return }
+    guard let sessionId, value != checkedAccountId else { return }
     let accountId = value == Self.followDefaultAccount ? nil : value
     Task { await host.setSessionClaudeAccount(sessionId: sessionId, accountId: accountId, agentId: agentId) }
   }

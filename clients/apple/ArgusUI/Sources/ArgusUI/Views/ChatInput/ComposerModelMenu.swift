@@ -19,16 +19,18 @@
       if composer.offersAccounts {
         ChromeMenuEntry.divider
         ChromeMenuEntry.header("Account")
-        ChromeMenuItem(
-          "Follow computer default", subtitle: composer.followDefaultHint,
-          checked: composer.accountId == ComposerModel.followDefaultAccount
-        ) {
-          composer.setAccount(ComposerModel.followDefaultAccount)
+        if composer.offersFollowDefault {
+          ChromeMenuItem(
+            "Follow computer default", subtitle: composer.activeAccountName,
+            checked: composer.checkedAccountId == ComposerModel.followDefaultAccount
+          ) {
+            composer.setAccount(ComposerModel.followDefaultAccount)
+          }
         }
         for account in composer.accounts {
           ChromeMenuItem(
             account.displayName, subtitle: composer.accountHint(account.id), icon: .symbol(Icon.person),
-            checked: composer.accountId == account.id
+            checked: composer.checkedAccountId == account.id
           ) {
             composer.setAccount(account.id)
           }

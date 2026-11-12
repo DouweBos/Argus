@@ -25,34 +25,36 @@
           .inlineNavigationTitle()
         },
         GalleryStory("composer/chat", fixtures: GalleryFixtures.composer) { ChatComposerStory() },
-        // Following the default, on it; then still on Work after the default moved to Personal.
+        // An agent running on Work while the computer's default is Personal; then a start composer.
         GalleryStory(
-          "composer/account-menu/on-default", fixtures: GalleryFixtures.transcript(.idle),
+          "composer/account-menu/running", fixtures: GalleryFixtures.transcript(.idle, runningOn: "work"),
           setup: { await loadAccountMenu($0.host) }
-        ) { AccountMenuStory() },
+        ) { AccountMenuStory(starts: false) },
         GalleryStory(
-          "composer/account-menu/default-changed", fixtures: GalleryFixtures.transcript(.idle, runningOn: "work"),
+          "composer/account-menu/start", fixtures: GalleryFixtures.transcript(.idle),
           setup: { await loadAccountMenu($0.host) }
-        ) { AccountMenuStory() },
+        ) { AccountMenuStory(starts: true) },
       ]
     }
 
     private static func loadAccountMenu(_ host: HostStore) async {
       let agent = GalleryFixtures.transcriptAgent
       await host.loadAgentStatus(agentId: agent)
+      await host.loadTranscript(agentId: agent)
       await host.refreshClaudeAccounts()
     }
   }
 
   /// The composer's account picker, as the phone's sheet shows it.
   private struct AccountMenuStory: View {
+    let starts: Bool
     @Environment(HostStore.self) private var host
 
     var body: some View {
       PhoneComposerPickerSheet(
         composer: ComposerModel(
           agentId: GalleryFixtures.transcriptAgent, sessionId: GalleryFixtures.transcriptSession, host: host,
-          style: .phone),
+          starter: starts ? ComposerStarter(defaultMode: "auto") { _ in true } : nil, style: .phone),
         which: .account)
     }
   }

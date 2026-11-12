@@ -30,15 +30,15 @@
           LimitHandoffCard(agentId: "a-1", accounts: handoffAccounts) {}
             .padding(12)
         },
-        // Following the default, on it; then still on Work after the default moved to Personal.
+        // An agent running on Work while the computer's default is Personal; then a start composer.
         GalleryStory(
-          "composer/account-menu/on-default", size: CGSize(width: 360, height: 0),
-          fixtures: GalleryFixtures.transcript(.idle), setup: { await loadAccountMenu($0.host) }
-        ) { AccountMenuStory() },
-        GalleryStory(
-          "composer/account-menu/default-changed", size: CGSize(width: 360, height: 0),
+          "composer/account-menu/running", size: CGSize(width: 360, height: 0),
           fixtures: GalleryFixtures.transcript(.idle, runningOn: "work"), setup: { await loadAccountMenu($0.host) }
-        ) { AccountMenuStory() },
+        ) { AccountMenuStory(starts: false) },
+        GalleryStory(
+          "composer/account-menu/start", size: CGSize(width: 360, height: 0),
+          fixtures: GalleryFixtures.transcript(.idle), setup: { await loadAccountMenu($0.host) }
+        ) { AccountMenuStory(starts: true) },
       ]
     }
 
@@ -46,6 +46,7 @@
       let agent = GalleryFixtures.transcriptAgent
       await host.loadAgentStatus(agentId: agent)
       await host.loadCapabilities(agentId: agent)
+      await host.loadTranscript(agentId: agent)
       await host.refreshClaudeAccounts()
     }
 
@@ -83,12 +84,13 @@
 
     /// The model pill's menu, drawn open.
     private struct AccountMenuStory: View {
+      let starts: Bool
       @Environment(HostStore.self) private var host
 
       var body: some View {
         let composer = ComposerModel(
           agentId: GalleryFixtures.transcriptAgent, sessionId: GalleryFixtures.transcriptSession, host: host,
-          style: .desktop)
+          starter: starts ? ComposerStarter(defaultMode: "auto") { _ in true } : nil, style: .desktop)
         ChromeMenuSurface { ComposerModelMenu.entries(composer) }
           .padding(12)
       }
