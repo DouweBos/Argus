@@ -270,3 +270,24 @@ struct AccountView: View {
     }
   }
 }
+
+/// The account's sign-in went away: said above every tab, not only on this
+/// screen, with Sign in again opening it.
+struct AccountSessionNotice: View {
+  @Environment(AppStore.self) private var app
+  @Environment(Router.self) private var router
+
+  var body: some View {
+    if let reason = app.account.sessionLostNotice {
+      AccountSessionLostBanner(reason: reason, keeps: "your computers") {
+        Telemetry.capture(.accountSessionNotice(action: .signIn, reason: reason))
+        if router.path(for: router.section).last != .account { router.push(.account) }
+      } onDismiss: {
+        Telemetry.capture(.accountSessionNotice(action: .dismiss, reason: reason))
+        app.account.dismissSessionNotice()
+      }
+      .padding(.horizontal, 12)
+      .padding(.vertical, 6)
+    }
+  }
+}

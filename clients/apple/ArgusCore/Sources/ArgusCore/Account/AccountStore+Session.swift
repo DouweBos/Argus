@@ -3,6 +3,12 @@ import Foundation
 
 /// The sign-in behind this device's keys: noticing it went, and why.
 extension AccountStore {
+  /// What the user did with the notice.
+  public enum SessionNoticeAction: String, Sendable {
+    case signIn = "sign_in"
+    case dismiss
+  }
+
   /// The notice to show: only while signed out, not mid sign-in.
   public var sessionLostNotice: AccountSessionLossReason? {
     phase == .signedOut ? sessionLoss : nil

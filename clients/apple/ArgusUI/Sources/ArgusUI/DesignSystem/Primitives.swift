@@ -492,17 +492,23 @@ public struct Banner: View {
   var title: String?
   /// A trailing button, for when the banner can be acted on.
   var actionLabel: String?
+  var actionTone: ButtonTone = .secondary
   var action: (() -> Void)?
+  /// A close button after the action, for a banner that stays until dismissed.
+  var onDismiss: (() -> Void)?
 
   public init(
     text: String, tone: Tone = .warning, title: String? = nil,
-    actionLabel: String? = nil, action: (() -> Void)? = nil
+    actionLabel: String? = nil, actionTone: ButtonTone = .secondary, action: (() -> Void)? = nil,
+    onDismiss: (() -> Void)? = nil
   ) {
     self.text = text
     self.tone = tone
     self.title = title
     self.actionLabel = actionLabel
+    self.actionTone = actionTone
     self.action = action
+    self.onDismiss = onDismiss
   }
 
   public var body: some View {
@@ -518,7 +524,11 @@ public struct Banner: View {
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       if let actionLabel, let action {
-        Btn(label: actionLabel, tone: .secondary, small: true, action: action).fixedSize()
+        Btn(label: actionLabel, tone: actionTone, small: true, action: action).fixedSize()
+      }
+      if let onDismiss {
+        IconBtn(systemName: "xmark", label: "Dismiss", size: 12, action: onDismiss)
+          .frame(width: 24, height: 24)
       }
     }
     .padding(10)

@@ -10,6 +10,8 @@
       [
         GalleryStory("home/loaded", fixtures: GalleryFixtures.home, setup: load) { ProjectsView() },
         GalleryStory("home/empty", fixtures: GalleryFixtures.homeEmpty, setup: load) { ProjectsView() },
+        sessionLost("home/account-session-lost", .expired),
+        sessionLost("home/account-session-ended", .endedElsewhere),
         GalleryStory("agents/overview", fixtures: GalleryFixtures.home, setup: load) { AllAgentsView() },
         GalleryStory("sessions/sidebar", fixtures: GalleryFixtures.home, setup: load) {
           ProjectView(repoRoot: GalleryFixtures.argusRoot, name: "Argus")
@@ -35,6 +37,19 @@
     private static func setup(_ id: String, _ session: String) -> GalleryStory {
       GalleryStory(id, fixtures: GalleryFixtures.home, setup: load) {
         SessionView(sessionId: session, label: "Session", repoRoot: GalleryFixtures.argusRoot)
+      }
+    }
+
+    /// Home under the app-wide notice that the account sign-in went away.
+    private static func sessionLost(_ id: String, _ reason: AccountSessionLossReason) -> GalleryStory {
+      GalleryStory(
+        id, fixtures: GalleryFixtures.home,
+        setup: { stage in
+          await load(stage)
+          stage.app.account.galleryFill(GalleryAccount(phase: .signedOut, selfKind: "ios", sessionLoss: reason))
+        }
+      ) {
+        ProjectsView().safeAreaInset(edge: .top, spacing: 0) { AccountSessionNotice() }
       }
     }
 

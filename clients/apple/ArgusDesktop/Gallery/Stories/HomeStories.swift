@@ -16,6 +16,8 @@
           "home/empty", size: CGSize(width: 1100, height: 700), chrome: true, fixtures: GalleryFixtures.homeEmpty,
           setup: load
         ) { HomeScreen() },
+        sessionLost("home/account-session-lost", .expired),
+        sessionLost("home/account-session-ended", .endedElsewhere),
         GalleryStory(
           "agents/overview", size: CGSize(width: 1100, height: 480), chrome: true, fixtures: GalleryFixtures.home,
           setup: load
@@ -86,6 +88,22 @@
       GalleryStory(id, size: CGSize(width: 900, height: 480), fixtures: GalleryFixtures.home, setup: load) {
         let session = GalleryFixtures.argusSession(session)
         SessionSetupView(session: session, progress: session.progress)
+      }
+    }
+
+    /// Home under the main window's notice that the account sign-in went away.
+    private static func sessionLost(_ id: String, _ reason: AccountSessionLossReason) -> GalleryStory {
+      GalleryStory(
+        id, size: CGSize(width: 1100, height: 700), chrome: true, fixtures: GalleryFixtures.home,
+        setup: { stage in
+          await load(stage)
+          stage.model.account.galleryFill(GalleryAccount(phase: .signedOut, selfKind: "mac", sessionLoss: reason))
+        }
+      ) {
+        VStack(spacing: 0) {
+          AccountSessionBanner()
+          HomeScreen()
+        }
       }
     }
 
