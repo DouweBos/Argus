@@ -98,13 +98,15 @@ for two things:
   `design_compare` tool, or a test, lint or type-check command (`pnpm test`,
   `npm run lint`, `tsc`, `vitest`, `swift test`, `xcodebuild … test` and the like).
 - **Source edits** — Edit, Write and NotebookEdit, except Markdown and text
-  files, changesets and `plan/`. Files written from the shell don't count.
+  files, changesets, `plan/`, `.claude/` and `.argus.json`. Files written from
+  the shell don't count.
 
 The gate only arms once the agent has gathered evidence at least once in its
 life: an agent that never verifies anything is never stopped. When it then
 tries to finish with a source edit newer than its latest evidence, Argus
 keeps it going once with a short reason. It never blocks twice in one turn,
-so an agent that disagrees can still finish.
+so an agent that disagrees can still finish — and once it has, those edits are
+settled: later turns aren't held back over them, only over new edits.
 
 Each subagent is held to its own work. Its edits count against the agent
 that launched it only once the subagent has finished, and only the ones it

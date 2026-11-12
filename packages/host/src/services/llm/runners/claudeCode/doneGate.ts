@@ -8,8 +8,9 @@ export type ToolUseKind = "edit" | "evidence";
 
 const EDIT_TOOLS = new Set(["Edit", "MultiEdit", "NotebookEdit", "Write"]);
 
-/** Files whose edits don't change the app's behaviour. */
-const NON_SOURCE = /(\.(md|mdx|txt)$)|(^|\/)(\.changeset|plan)\//i;
+/** Files whose edits don't change the app's behaviour, or that no check in the app can cover (Argus and agent config). */
+const NON_SOURCE =
+  /(\.(md|mdx|txt)$)|(^|\/)(\.changeset|plan|\.claude)\/|(^|\/)\.argus\.json$/i;
 
 const CONDUCTOR_EVIDENCE = new Set([
   "capture-ui",
@@ -327,6 +328,10 @@ export class DoneGate {
     }
     const reverified = this.main.lastEvidence > this.pendingBlockAt;
     this.pendingBlockAt = null;
+    // Asked once about these edits; finishing anyway settles them, so later turns don't ask again.
+    if (!reverified) {
+      this.main.edits.clear();
+    }
     this.opts.report(reverified);
   }
 }

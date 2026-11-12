@@ -22,6 +22,14 @@ describe("classifyToolUse", () => {
       classifyToolUse("Write", { file_path: "/w/.changeset/a.md" }),
     ).toBeNull();
     expect(classifyToolUse("Edit", { file_path: "/w/plan/x.ts" })).toBeNull();
+    // Agent and Argus config: no check in the app can cover it.
+    expect(classifyToolUse("Edit", { file_path: "/w/.argus.json" })).toBeNull();
+    expect(
+      classifyToolUse("Write", { file_path: "/w/.claude/settings.json" }),
+    ).toBeNull();
+    expect(classifyToolUse("Edit", { file_path: "/w/src/argus.json" })).toBe(
+      "edit",
+    );
     expect(
       classifyToolUse("NotebookEdit", { notebook_path: "/w/a.ipynb" }),
     ).toBe("edit");
@@ -102,6 +110,19 @@ describe("done gate", () => {
     expect(g.onStop(true)).toBeNull();
     g.newTurn();
     expect(g.onStop(false)).not.toBeNull();
+  });
+
+  it("settles edits the agent finished over, asking again only about new ones", () => {
+    const { g } = gate();
+    g.observeToolUse("Bash", shot);
+    g.observeToolUse("Edit", edit);
+    expect(g.onStop(false)).not.toBeNull();
+    expect(g.onStop(true)).toBeNull();
+    g.newTurn();
+    expect(g.onStop(false)).toBeNull();
+    g.newTurn();
+    g.observeToolUse("Edit", { file_path: "/w/src/Other.tsx" });
+    expect(g.onStop(false)).toContain("Other.tsx");
   });
 
   it("never blocks while the setting is off", () => {
