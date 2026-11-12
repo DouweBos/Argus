@@ -591,13 +591,7 @@ public final class HostStore {
   public nonisolated static func describe(_ error: Error) -> String {
     switch error {
     case let transport as Transport.TransportError:
-      switch transport {
-      case .gateway(let payload): return payload.message
-      case .unsupported: return transport.localizedDescription
-      case .timedOut: return "The computer didn't answer in time."
-      case .notReady: return "Not connected to a computer."
-      case .badIdentity: return "This pairing's keys are unreadable."
-      }
+      return transport.localizedDescription
     case let decoding as DecodingError:
       switch decoding {
       case .keyNotFound(let key, _):

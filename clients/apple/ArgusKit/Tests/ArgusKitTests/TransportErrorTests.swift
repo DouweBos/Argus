@@ -16,6 +16,16 @@ import Testing
     #expect(!Transport.TransportError.unsupported(method: "x", hostVersion: nil).isTransient)
   }
 
+  /// Foundation's fallback is "…TransportError error 0."; every case says what happened instead.
+  @Test func everyCaseReadsAsASentence() {
+    let refused = GatewayErrorPayload(code: "error", message: "This computer is already linked to an account")
+    #expect(Transport.TransportError.gateway(refused).localizedDescription == refused.message)
+    #expect((refused as Error).localizedDescription == refused.message)
+    #expect(Transport.TransportError.timedOut.localizedDescription == "The computer didn't answer in time.")
+    #expect(Transport.TransportError.notReady.localizedDescription == "Not connected to a computer.")
+    #expect(!Transport.TransportError.badIdentity.localizedDescription.contains("error 0"))
+  }
+
   /// The host gives each account's limits probe 20 s; the default would cut it off.
   @Test func planLimitsOutwaitTheHostProbe() {
     #expect(Transport.timeout(for: RemoteMethod.usageLimits.rawValue) == .seconds(30))

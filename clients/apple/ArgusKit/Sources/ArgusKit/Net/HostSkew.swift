@@ -32,8 +32,18 @@ extension Transport.TransportError: LocalizedError {
     return "This needs a newer version of Argus. The host you're connected to is running \(hostVersion)."
   }
 
+  /// Every case reads as a sentence; without one, Foundation says "error 0".
   public var errorDescription: String? {
-    guard case .unsupported(_, let hostVersion) = self else { return nil }
-    return Self.unsupportedMessage(hostVersion: hostVersion)
+    switch self {
+    case .gateway(let payload): payload.message
+    case .unsupported(_, let hostVersion): Self.unsupportedMessage(hostVersion: hostVersion)
+    case .timedOut: "The computer didn't answer in time."
+    case .notReady: "Not connected to a computer."
+    case .badIdentity: "This pairing's keys are unreadable."
+    }
   }
+}
+
+extension GatewayErrorPayload: LocalizedError {
+  public var errorDescription: String? { message }
 }
