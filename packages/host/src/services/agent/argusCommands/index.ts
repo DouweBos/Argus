@@ -6,10 +6,7 @@
  */
 
 import type { ArgusConfig } from "../../session/models";
-import type {
-  AgentSlashCommand,
-  ConversationCommand,
-} from "@argus/remote-protocol";
+import type { AgentSlashCommand } from "@argus/remote-protocol";
 import { warn } from "@argus/host/logger";
 import { excludeFromGit } from "../../design/files";
 import { loadArgusConfig } from "../../session/argusConfig";
@@ -85,31 +82,6 @@ function bucket(n: number): "0" | "1" | "2" | "3+" {
 /** Who sent the command: any message (typed, a Verify start, an agent's prompt) or the `implement_ticket` MCP tool. */
 export type ArgusCommandSource = "mcp_tool" | "message";
 
-function loadConfig(worktree: string | null): ArgusConfig | null {
-  if (!worktree) {
-    return null;
-  }
-  try {
-    return loadArgusConfig(worktree);
-  } catch (e) {
-    warn(`[argus-commands] .argus.json unreadable: ${String(e)}`);
-
-    return null;
-  }
-}
-
-function promptFor(
-  parsed: { ticket: string; extra: string },
-  config: ArgusConfig | null,
-): string {
-  return implementTicketPrompt({
-    ticket: parsed.ticket,
-    extra: parsed.extra,
-    verify: config?.verify ?? null,
-    runCommands: (config?.run ?? []).map((r) => r.title),
-  });
-}
-
 /**
  * The prompt to send instead of `message`, or null when it isn't an Argus
  * command (or the runner has its own command of that name).
@@ -126,8 +98,13 @@ export function expandArgusCommand(
   if (!parsed || ctx.runnerCommands.includes(parsed.name)) {
     return null;
   }
-  const config = loadConfig(ctx.worktree);
+  let config: ArgusConfig | null = null;
   if (ctx.worktree) {
+    try {
+      config = loadArgusConfig(ctx.worktree);
+    } catch (e) {
+      warn(`[argus-commands] .argus.json unreadable: ${String(e)}`);
+    }
     excludeFromGit(ctx.worktree, VERIFY_DIR).catch((e: unknown) =>
       warn(`[argus-commands] couldn't keep ${VERIFY_DIR} out of git: ${e}`),
     );
@@ -144,37 +121,10 @@ export function expandArgusCommand(
     slow_backend: Boolean(verify?.slow_backend),
   });
 
-  return promptFor(parsed, config);
-}
-
-/**
- * What the transcript records about a sent message that is a recognized slash
- * command; null for prose and for a `/word` neither Argus nor the runner knows.
- */
-export function describeCommand(
-  message: string,
-  ctx: { worktree: string | null; runnerCommands: string[] },
-): ConversationCommand | null {
-  const match = /^\/([^\s/]+)(?:\s+([\s\S]*))?$/.exec(message.trim());
-  if (!match) {
-    return null;
-  }
-  const name = match[1]!;
-  if (ctx.runnerCommands.includes(name)) {
-    const notes = (match[2] ?? "").trim();
-
-    return { name, kind: "runner", ...(notes ? { notes } : {}) };
-  }
-  const parsed = parseArgusCommand(message);
-  if (!parsed) {
-    return null;
-  }
-
-  return {
-    name,
-    kind: "argus",
-    ...(parsed.ticket ? { argument: parsed.ticket } : {}),
-    ...(parsed.extra ? { notes: parsed.extra } : {}),
-    prompt: promptFor(parsed, loadConfig(ctx.worktree)),
-  };
+  return implementTicketPrompt({
+    ticket: parsed.ticket,
+    extra: parsed.extra,
+    verify,
+    runCommands: (config?.run ?? []).map((r) => r.title),
+  });
 }

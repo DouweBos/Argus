@@ -246,16 +246,11 @@ export const RemoteMessageHandoff = z.object({
 });
 export type RemoteMessageHandoff = z.infer<typeof RemoteMessageHandoff>;
 
-/** A recognized slash command: Argus's own (expanded into `prompt`) or the runner's. */
+/** A message that was one of the runner's own slash commands. */
 export const RemoteMessageCommand = z.object({
   name: z.string(),
-  kind: z.enum(["argus", "runner"]),
-  /** The main argument — `/implement-ticket`'s ticket. */
-  argument: z.string().optional(),
-  /** Everything after the main argument. */
-  notes: z.string().optional(),
-  /** The prompt the agent received in place of the typed text. */
-  prompt: z.string().optional(),
+  /** Whatever followed the command's name. */
+  args: z.string().optional(),
 });
 export type RemoteMessageCommand = z.infer<typeof RemoteMessageCommand>;
 
@@ -271,7 +266,7 @@ export const RemoteMessage = z.object({
   handoff: RemoteMessageHandoff.optional(),
   /** Who sent a user message, when it came from a remote client or huddle guest. */
   author: z.string().optional(),
-  /** Set when the message was a slash command Argus recognized. */
+  /** Set when the message was one of the runner's slash commands. */
   command: RemoteMessageCommand.optional(),
   is_error: z.boolean().optional(),
   timestamp: z.number().optional(),

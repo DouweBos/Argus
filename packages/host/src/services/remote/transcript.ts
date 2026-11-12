@@ -190,13 +190,7 @@ function toRemoteToolCall(messageId: string, tc: RawToolCall): RemoteToolCall {
 }
 
 function toRemoteCommand(c: RemoteMessageCommand): RemoteMessageCommand {
-  return {
-    name: c.name,
-    kind: c.kind === "argus" ? "argus" : "runner",
-    ...(c.argument ? { argument: c.argument } : {}),
-    ...(c.notes ? { notes: c.notes } : {}),
-    ...(c.prompt ? { prompt: c.prompt } : {}),
-  };
+  return { name: c.name, ...(c.args ? { args: c.args } : {}) };
 }
 
 export function toRemoteMessage(m: RawMessage): RemoteMessage {

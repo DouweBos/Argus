@@ -4586,51 +4586,24 @@ extension ArgusProtocol {
     }
   }
 
-  public struct ConversationCommandKind: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let argus = ConversationCommandKind(rawValue: "argus")
-    public static let runner = ConversationCommandKind(rawValue: "runner")
-  }
-
   public struct ConversationCommand: Codable, Sendable {
-    public var argument: String?
-    public var kind: ConversationCommandKind
+    public var args: String?
     public var name: String
-    public var notes: String?
-    public var prompt: String?
 
     enum CodingKeys: String, CodingKey {
-      case argument = "argument"
-      case kind = "kind"
+      case args = "args"
       case name = "name"
-      case notes = "notes"
-      case prompt = "prompt"
     }
 
-    public init(argument: String? = nil, kind: ConversationCommandKind, name: String, notes: String? = nil, prompt: String? = nil) {
-      self.argument = argument
-      self.kind = kind
+    public init(args: String? = nil, name: String) {
+      self.args = args
       self.name = name
-      self.notes = notes
-      self.prompt = prompt
     }
 
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encodeIfPresent(argument, forKey: .argument)
-      try c.encode(kind, forKey: .kind)
+      try c.encodeIfPresent(args, forKey: .args)
       try c.encode(name, forKey: .name)
-      try c.encodeIfPresent(notes, forKey: .notes)
-      try c.encodeIfPresent(prompt, forKey: .prompt)
     }
   }
 
@@ -14693,51 +14666,24 @@ extension ArgusProtocol {
     }
   }
 
-  public struct RemoteMessageCommandKind: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let argus = RemoteMessageCommandKind(rawValue: "argus")
-    public static let runner = RemoteMessageCommandKind(rawValue: "runner")
-  }
-
   public struct RemoteMessageCommand: Codable, Sendable {
     public var name: String
-    public var kind: RemoteMessageCommandKind
-    public var argument: String?
-    public var notes: String?
-    public var prompt: String?
+    public var args: String?
 
     enum CodingKeys: String, CodingKey {
       case name = "name"
-      case kind = "kind"
-      case argument = "argument"
-      case notes = "notes"
-      case prompt = "prompt"
+      case args = "args"
     }
 
-    public init(name: String, kind: RemoteMessageCommandKind, argument: String? = nil, notes: String? = nil, prompt: String? = nil) {
+    public init(name: String, args: String? = nil) {
       self.name = name
-      self.kind = kind
-      self.argument = argument
-      self.notes = notes
-      self.prompt = prompt
+      self.args = args
     }
 
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(name, forKey: .name)
-      try c.encode(kind, forKey: .kind)
-      try c.encodeIfPresent(argument, forKey: .argument)
-      try c.encodeIfPresent(notes, forKey: .notes)
-      try c.encodeIfPresent(prompt, forKey: .prompt)
+      try c.encodeIfPresent(args, forKey: .args)
     }
   }
 

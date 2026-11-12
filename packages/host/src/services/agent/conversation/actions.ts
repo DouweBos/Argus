@@ -15,7 +15,7 @@ import type { ForkReplayOp } from "@argus/remote-protocol";
 import { emitHostEvent } from "@argus/host/bus";
 import { appState } from "../../../state";
 import { restoreAgentAtTurn, sendAgentMessage } from "../agentService";
-import { describeAgentCommand } from "../argusCommands/agentCommand";
+import { runnerCommandFor } from "../runnerCommand";
 import { createCheckpoint, restoreCheckpoint } from "../checkpoints";
 import { clearQueue, enqueueMessage, listQueue } from "../messageQueue";
 import {
@@ -195,7 +195,7 @@ export async function rewindAgent(
               toolCalls: [],
               timestamp: Date.now(),
               images: resend.images?.length ? resend.images : undefined,
-              command: describeAgentCommand(agentId, resend.text),
+              command: runnerCommandFor(agentId, resend.text),
             },
           ]
         : []),

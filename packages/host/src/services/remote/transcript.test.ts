@@ -82,20 +82,10 @@ describe("toRemoteMessage", () => {
     const out = toRemoteMessage({
       id: "m1",
       role: "user",
-      textBlocks: ["/implement-ticket ENG-1"],
-      command: {
-        name: "implement-ticket",
-        kind: "argus",
-        argument: "ENG-1",
-        prompt: "# Implement ENG-1",
-      },
+      textBlocks: ["/compact keep the plan"],
+      command: { name: "compact", args: "keep the plan" },
     });
-    expect(out.command).toEqual({
-      name: "implement-ticket",
-      kind: "argus",
-      argument: "ENG-1",
-      prompt: "# Implement ENG-1",
-    });
+    expect(out.command).toEqual({ name: "compact", args: "keep the plan" });
     expect(
       toRemoteMessage({ id: "m2", role: "user", textBlocks: ["hi"] }),
     ).not.toHaveProperty("command");

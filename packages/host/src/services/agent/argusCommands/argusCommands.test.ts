@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { implementTicketPrompt, ticketKey } from "./implementTicket";
 import {
-  describeCommand,
   expandArgusCommand,
   parseArgusCommand,
   withArgusCommands,
@@ -109,49 +108,6 @@ describe("expandArgusCommand", () => {
     expect(out).toContain("reserved for or handed to you");
     expect(out).not.toContain("(devices,");
     expect(out).toContain("`package.json` scripts");
-  });
-});
-
-describe("describeCommand", () => {
-  beforeEach(() => {
-    config.value = {};
-  });
-  const ctx = { worktree: "/wt", runnerCommands: ["compact", "review"] };
-
-  it("records an Argus command with its ticket, notes and the prompt sent", () => {
-    const cmd = describeCommand(
-      "/implement-ticket ENG-273 keep the header",
-      ctx,
-    );
-    expect(cmd).toMatchObject({
-      name: "implement-ticket",
-      kind: "argus",
-      argument: "ENG-273",
-      notes: "keep the header",
-    });
-    expect(cmd?.prompt).toBe(
-      expandArgusCommand("/implement-ticket ENG-273 keep the header", ctx),
-    );
-  });
-
-  it("marks the runner's own commands as passed through", () => {
-    expect(describeCommand("/compact keep the plan", ctx)).toEqual({
-      name: "compact",
-      kind: "runner",
-      notes: "keep the plan",
-    });
-    expect(
-      describeCommand("/implement-ticket ENG-1", {
-        worktree: null,
-        runnerCommands: ["implement-ticket"],
-      }),
-    ).toEqual({ name: "implement-ticket", kind: "runner", notes: "ENG-1" });
-  });
-
-  it("leaves unknown commands and prose alone", () => {
-    expect(describeCommand("/nope ENG-1", ctx)).toBeNull();
-    expect(describeCommand("/usr/bin/env is broken", ctx)).toBeNull();
-    expect(describeCommand("run /compact later", ctx)).toBeNull();
   });
 });
 

@@ -17,7 +17,7 @@ import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
 import { capture as telemetryCapture } from "../../telemetry/telemetry";
 import { sendAgentMessage } from "../agentService";
-import { describeAgentCommand } from "../argusCommands/agentCommand";
+import { runnerCommandFor } from "../runnerCommand";
 import { createCheckpoint } from "../checkpoints";
 import {
   dequeueMessage,
@@ -332,7 +332,7 @@ function notifyIfStillUnanswered(
 }
 
 function injected(agentId: string, entry: Tracked, payload: McpMessage): void {
-  const command = describeAgentCommand(agentId, payload.message);
+  const command = runnerCommandFor(agentId, payload.message);
   update(agentId, entry, (c) =>
     withInjectedPrompt(c, {
       id: crypto.randomUUID(),

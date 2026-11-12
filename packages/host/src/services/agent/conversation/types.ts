@@ -238,7 +238,7 @@ export interface ConversationMessage {
    * succeeded. Lets the user revert all file changes made after this turn.
    */
   checkpointId?: string;
-  /** Set on a user message that was a slash command Argus recognized. */
+  /** Set on a user message that was one of the runner's slash commands. */
   command?: ConversationCommand;
   /** Set on the divider a "Continue on…" leaves at the top of the new chat. */
   handoff?: ConversationHandoff;
