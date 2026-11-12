@@ -8,12 +8,18 @@ public struct GalleryAccount: Sendable {
   public var selfKind: String
   public var requests: Bool
   public var error: String?
+  /// Signed out because the sign-in went away, keys kept.
+  public var sessionLoss: AccountSessionLossReason?
 
-  public init(phase: AccountStore.Phase = .ready, selfKind: String, requests: Bool = true, error: String? = nil) {
+  public init(
+    phase: AccountStore.Phase = .ready, selfKind: String, requests: Bool = true, error: String? = nil,
+    sessionLoss: AccountSessionLossReason? = nil
+  ) {
     self.phase = phase
     self.selfKind = selfKind
     self.requests = requests
     self.error = error
+    self.sessionLoss = sessionLoss
   }
 }
 
@@ -24,6 +30,7 @@ extension AccountStore {
     configured = true
     phase = fixture.phase
     error = fixture.error
+    sessionLoss = fixture.sessionLoss
     guard fixture.phase == .ready || fixture.phase == .awaitingApproval else { return }
     profile = AccountProfile(firstName: "Alex", lastName: "Rivera", email: "alex.rivera@example.com")
     let members = GalleryFixtures.accountMembers

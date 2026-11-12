@@ -93,6 +93,7 @@ extension MainWindow {
   private var centre: some View {
     VStack(spacing: 0) {
       WindowTabStrip()
+      AccountSessionBanner()
       HostOfflineBanner()
       StoreErrorBanner()
       HuddleJoinRequests()

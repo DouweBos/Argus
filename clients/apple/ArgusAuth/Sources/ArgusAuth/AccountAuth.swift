@@ -14,7 +14,8 @@ public final class AccountAuth: AccountAuthenticating {
   public init() {}
 
   public func configure(publishableKey: String) async throws {
-    guard configuredKey != publishableKey else { return }
+    // Same key again: a load that timed out last time gets another chance.
+    guard configuredKey != publishableKey else { return try await waitUntilLoaded() }
     if configuredKey == nil {
       Clerk.configure(publishableKey: publishableKey)
     } else {
@@ -26,6 +27,37 @@ public final class AccountAuth: AccountAuthenticating {
 
   public var isSignedIn: Bool {
     configuredKey != nil && Clerk.shared.session != nil
+  }
+
+  public var sessionState: AccountSessionState {
+    Self.sessionState(
+      configured: configuredKey != nil, loaded: Clerk.shared.isLoaded && Clerk.shared.client != nil,
+      hasSession: Clerk.shared.session != nil)
+  }
+
+  nonisolated static func sessionState(configured: Bool, loaded: Bool, hasSession: Bool) -> AccountSessionState {
+    guard configured, loaded else { return .unknown }
+    return hasSession ? .signedIn : .signedOut
+  }
+
+  public var sessionLifetime: AccountSessionLifetime? {
+    guard configuredKey != nil, let session = Clerk.shared.session else { return nil }
+    return AccountSessionLifetime(expireAt: session.expireAt, abandonAt: session.abandonAt)
+  }
+
+  public var lastSessionEnd: AccountSessionLossReason? {
+    guard configuredKey != nil, let client = Clerk.shared.client else { return nil }
+    let last = client.sessions.first { $0.id == client.lastActiveSessionId } ?? client.sessions.last
+    return last.flatMap { Self.lossReason($0.status) }
+  }
+
+  nonisolated static func lossReason(_ status: Session.SessionStatus) -> AccountSessionLossReason? {
+    switch status {
+    case .expired: .expired
+    case .abandoned: .inactive
+    case .ended, .removed, .revoked, .replaced: .endedElsewhere
+    case .active, .pending, .unknown: nil
+    }
   }
 
   public var profile: AccountProfile? {
@@ -113,10 +145,13 @@ public final class AccountAuth: AccountAuthenticating {
     try await Clerk.shared.auth.signOut()
   }
 
+  /// Clerk loads its environment and client from the network; still not there
+  /// after 10 s is an error, so nobody reads "no session" off a half-loaded SDK.
   private func waitUntilLoaded() async throws {
     for _ in 0..<100 where !Clerk.shared.isLoaded {
       try await Task.sleep(for: .milliseconds(100))
     }
+    guard Clerk.shared.isLoaded else { throw AccountAuthError.notLoaded }
   }
 
   /// A finished flow leaves an active session; anything else (an extra
@@ -132,11 +167,13 @@ public final class AccountAuth: AccountAuthenticating {
 public enum AccountAuthError: LocalizedError {
   case noPendingCode
   case incomplete
+  case notLoaded
 
   public var errorDescription: String? {
     switch self {
     case .noPendingCode: "Ask for a new code first."
     case .incomplete: "Sign-in needs a step this app doesn't support yet."
+    case .notLoaded: "Couldn't reach the sign-in service. Check your connection and try again."
     }
   }
 }

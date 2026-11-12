@@ -7,6 +7,13 @@ public protocol AccountAuthenticating: AnyObject, Sendable {
   /// Point the provider at the account's Clerk instance (from `GET /config`).
   func configure(publishableKey: String) async throws
   var isSignedIn: Bool { get }
+  /// Signed out only once the provider has loaded and holds no session; a lost
+  /// session is decided on this, never on a read that failed for another reason.
+  var sessionState: AccountSessionState { get }
+  /// When the live session runs out, for telling an expiry from a sign-out.
+  var sessionLifetime: AccountSessionLifetime? { get }
+  /// What the provider still knows about the session that went away, if anything.
+  var lastSessionEnd: AccountSessionLossReason? { get }
   /// With the identity token from the system's Sign in with Apple button, or
   /// nil to run Apple's sheet from here.
   func signInWithApple(idToken: String?) async throws
@@ -27,10 +34,43 @@ public protocol AccountAuthenticating: AnyObject, Sendable {
 }
 
 extension AccountAuthenticating {
+  public var sessionState: AccountSessionState { isSignedIn ? .signedIn : .signedOut }
+  public var sessionLifetime: AccountSessionLifetime? { nil }
+  public var lastSessionEnd: AccountSessionLossReason? { nil }
   public var profile: AccountProfile? { nil }
   public func isReverified(withinMinutes minutes: Int) -> Bool { false }
   public func startReverification() async throws -> String { throw AccountReverifyError.unavailable }
   public func finishReverification(code: String) async throws { throw AccountReverifyError.unavailable }
+}
+
+public enum AccountSessionState: Equatable, Sendable {
+  /// Not configured or not loaded yet: nothing can be concluded.
+  case unknown
+  case signedOut
+  case signedIn
+}
+
+/// The session's hard expiry and its inactivity cut-off.
+public struct AccountSessionLifetime: Codable, Hashable, Sendable {
+  public var expireAt: Date
+  public var abandonAt: Date?
+
+  public init(expireAt: Date, abandonAt: Date? = nil) {
+    self.expireAt = expireAt
+    self.abandonAt = abandonAt
+  }
+}
+
+/// Why a sign-in went away, as far as this device can tell.
+public enum AccountSessionLossReason: String, Codable, Sendable, CaseIterable {
+  /// Past the session's maximum lifetime.
+  case expired
+  /// Unused for longer than the inactivity window.
+  case inactive
+  /// Ended before its time: signed out or revoked from somewhere else.
+  case endedElsewhere = "ended_elsewhere"
+  /// Nothing recorded to tell.
+  case unknown
 }
 
 public enum AccountReverifyError: Error, Equatable, Sendable {

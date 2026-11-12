@@ -284,7 +284,9 @@ enum TelemetryEvent {
   case accountSignedIn(provider: SignInProvider, firstDevice: Bool)
   case accountSignedOut
   /// Found signed out on launch or return: the phone's keys outlived the sign-in behind them.
-  case accountSessionLost
+  case accountSessionLost(reason: AccountSessionLossReason)
+  /// The app-wide signed-out notice: Sign in again, or dismissed.
+  case accountSessionNotice(action: AccountStore.SessionNoticeAction, reason: AccountSessionLossReason)
   /// The phone wrote a revoke for another member.
   case memberRemoved(role: MemberRole)
   /// The phone approved a computer's link; the host counts completion itself.
@@ -367,6 +369,7 @@ enum TelemetryEvent {
     case .accountSignedIn: "ios_account_signed_in"
     case .accountSignedOut: "ios_account_signed_out"
     case .accountSessionLost: "ios_account_session_lost"
+    case .accountSessionNotice: "ios_account_session_notice"
     case .memberRemoved: "ios_member_removed"
     case .computerAdded: "ios_computer_added"
     case .joinActed: "ios_join_acted"
@@ -385,8 +388,12 @@ enum TelemetryEvent {
   var properties: [String: Any] {
     switch self {
     case .launched, .telemetryEnabled, .telemetryDisabled, .proposalOpenedAsRun, .followUpUsed,
-      .accountSignedOut, .accountSessionLost, .mcpServersOpened:
+      .accountSignedOut, .mcpServersOpened:
       [:]
+    case .accountSessionLost(let reason):
+      ["reason": reason.rawValue]
+    case .accountSessionNotice(let action, let reason):
+      ["action": action.rawValue, "reason": reason.rawValue]
     case .accountSignedIn(let provider, let firstDevice):
       ["provider": provider.rawValue, "first_device": firstDevice]
     case .memberRemoved(let role), .memberRenamed(let role):

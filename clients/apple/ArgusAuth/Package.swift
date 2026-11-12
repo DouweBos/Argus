@@ -16,6 +16,7 @@ let package = Package(
     .target(
       name: "ArgusAuth",
       dependencies: ["ArgusKit", .product(name: "ClerkKit", package: "clerk-ios")]
-    )
+    ),
+    .testTarget(name: "ArgusAuthTests", dependencies: ["ArgusAuth"]),
   ]
 )

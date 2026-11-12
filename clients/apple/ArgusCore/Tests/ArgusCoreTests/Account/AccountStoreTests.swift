@@ -137,7 +137,8 @@ struct AccountStoreTests {
     await store.start()
     #expect(store.phase == .signedOut)
     #expect(store.error == AccountServiceError.notSignedIn.message)
-    #expect(events == [.sessionLost])
+    #expect(events == [.sessionLost(reason: .unknown)])
+    #expect(store.sessionLostNotice == .unknown)
     // The keys stay, flagged: signing back in resumes them rather than asking to join.
     let kept = await memory.load()
     #expect(kept.root == state.root)
@@ -163,11 +164,144 @@ struct AccountStoreTests {
     await relaunched.start()
     #expect(relaunched.phase == .signedOut)
     #expect(events.isEmpty)
+    // The notice comes back with the relaunch, and goes once signed back in.
+    #expect(relaunched.sessionLostNotice == .unknown)
 
     await relaunched.signIn(with: .github)
     #expect(relaunched.phase == .ready)
     #expect(relaunched.join == .idle)
     #expect(await relaunchedVault.load().signedOut == nil)
+    #expect(await relaunchedVault.load().signedOutReason == nil)
+    #expect(relaunched.sessionLoss == nil)
+  }
+
+  /// A device signed in on the account, cached, whose Clerk session can be taken away.
+  func signedInPhone(lifetime: AccountSessionLifetime?, now: Date) async throws
+    -> (AccountStore, MemoryAccountVault)
+  {
+    let phone = TestKey(1)
+    let g = genesis(phone)
+    let state = try #require(AccountLog.verify([g]).state)
+    service.seed([g])
+    auth.signedIn = true
+    auth.lifetime = lifetime
+    let memory = MemoryAccountVault(AccountVault(keys: phone.deviceKeys, root: state.root, entries: [g]))
+    let store = AccountStore(
+      auth: auth, vault: memory, deviceKind: "ios", deviceName: { "Phone" },
+      baseURL: URL(string: "https://example.test/argus/account/v1")!, http: service.http, now: { now },
+      joinPollInterval: .seconds(3600))
+    await store.start()
+    #expect(store.phase == .ready)
+    return (store, memory)
+  }
+
+  @Test("a launch with no network keeps the account, and the next refresh configures")
+  func unconfiguredKeepsAccount() async throws {
+    let phone = TestKey(1)
+    let g = genesis(phone)
+    let state = try #require(AccountLog.verify([g]).state)
+    service.seed([g])
+    service.setConfigDown(true)
+    let (store, memory) = makeStore(vault: AccountVault(keys: phone.deviceKeys, root: state.root, entries: [g]))
+    var events: [AccountStore.Event] = []
+    store.onEvent = { events.append($0) }
+    await store.start()
+    await store.refresh()
+    #expect(store.phase == .ready)
+    #expect(events.isEmpty)
+    #expect(await memory.load().signedOut == nil)
+
+    service.setConfigDown(false)
+    auth.signedIn = true
+    await store.refresh()
+    #expect(store.phase == .ready)
+    #expect(auth.configuredKey == "pk_test")
+    #expect(events.isEmpty)
+  }
+
+  @Test("no sign-out while the sign-in provider hasn't loaded")
+  func notLoadedKeepsAccount() async throws {
+    let (store, memory) = try await signedInPhone(lifetime: nil, now: Date())
+    auth.signedIn = false
+    auth.loaded = false
+    await store.refresh()
+    #expect(store.phase == .ready)
+    #expect(store.sessionLostNotice == nil)
+    #expect(await memory.load().signedOut == nil)
+  }
+
+  @Test("a session gone past its recorded expiry is lost as expired")
+  func expiredSession() async throws {
+    let start = Date(timeIntervalSince1970: 1_800_000_000)
+    let lifetime = AccountSessionLifetime(
+      expireAt: start.addingTimeInterval(7 * 86_400), abandonAt: start.addingTimeInterval(30 * 86_400))
+    var clock = start
+    let phone = TestKey(1)
+    let g = genesis(phone)
+    let state = try #require(AccountLog.verify([g]).state)
+    service.seed([g])
+    auth.signedIn = true
+    auth.lifetime = lifetime
+    let memory = MemoryAccountVault(AccountVault(keys: phone.deviceKeys, root: state.root, entries: [g]))
+    let store = AccountStore(
+      auth: auth, vault: memory, deviceKind: "ios", deviceName: { "Phone" },
+      baseURL: URL(string: "https://example.test/argus/account/v1")!, http: service.http, now: { clock },
+      joinPollInterval: .seconds(3600))
+    var events: [AccountStore.Event] = []
+    store.onEvent = { events.append($0) }
+    await store.start()
+    #expect(await memory.load().session == lifetime)
+
+    clock = start.addingTimeInterval(8 * 86_400)
+    auth.signedIn = false
+    await store.refresh()
+    #expect(store.phase == .signedOut)
+    #expect(events == [.sessionLost(reason: .expired)])
+    #expect(store.sessionLostNotice == .expired)
+    let kept = await memory.load()
+    #expect(kept.signedOut == true)
+    #expect(kept.signedOutReason == .expired)
+    #expect(kept.keys == phone.deviceKeys)
+  }
+
+  @Test("a session gone before its expiry was ended elsewhere")
+  func endedElsewhere() async throws {
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let (store, _) = try await signedInPhone(
+      lifetime: AccountSessionLifetime(expireAt: now.addingTimeInterval(86_400)), now: now)
+    var events: [AccountStore.Event] = []
+    store.onEvent = { events.append($0) }
+    auth.signedIn = false
+    await store.refresh()
+    #expect(events == [.sessionLost(reason: .endedElsewhere)])
+  }
+
+  @Test("the reason follows the stored deadlines first, then what the provider remembers")
+  func lossReasons() {
+    let now = Date(timeIntervalSince1970: 1000)
+    let past = AccountSessionLifetime(expireAt: Date(timeIntervalSince1970: 900))
+    let idle = AccountSessionLifetime(
+      expireAt: Date(timeIntervalSince1970: 2000), abandonAt: Date(timeIntervalSince1970: 950))
+    let live = AccountSessionLifetime(expireAt: Date(timeIntervalSince1970: 2000))
+    #expect(AccountStore.lossReason(ended: .endedElsewhere, lifetime: past, now: now) == .expired)
+    #expect(AccountStore.lossReason(ended: nil, lifetime: idle, now: now) == .inactive)
+    #expect(AccountStore.lossReason(ended: .expired, lifetime: nil, now: now) == .expired)
+    #expect(AccountStore.lossReason(ended: nil, lifetime: live, now: now) == .endedElsewhere)
+    #expect(AccountStore.lossReason(ended: nil, lifetime: nil, now: now) == .unknown)
+  }
+
+  @Test("the notice can be dismissed, and a deliberate sign-out never shows one")
+  func noticeDismissAndSignOut() async throws {
+    let (store, _) = try await signedInPhone(lifetime: nil, now: Date())
+    auth.signedIn = false
+    await store.refresh()
+    #expect(store.sessionLostNotice == .unknown)
+    store.dismissSessionNotice()
+    #expect(store.sessionLostNotice == nil)
+
+    let (other, _) = try await signedInPhone(lifetime: nil, now: Date())
+    await other.signOut()
+    #expect(other.sessionLostNotice == nil)
   }
 
   @Test("a retry after a failed account setup sets it up without signing in again")

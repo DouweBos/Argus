@@ -40,7 +40,7 @@ public final class AccountStore {
     case signedIn(provider: AccountSignInProvider, firstDevice: Bool)
     case signedOut
     /// The keys were still here but the sign-in behind them was gone.
-    case sessionLost
+    case sessionLost(reason: AccountSessionLossReason)
     case memberRemoved(role: AccountMember.Role)
     case memberRenamed(role: AccountMember.Role)
     /// `viaPairing`: started from a QR-paired computer rather than a typed code.
@@ -96,6 +96,8 @@ public final class AccountStore {
   public internal(set) var reset: ResetFlow = .idle
   /// The account was reset from another device; shown until this one is back on it.
   public internal(set) var resetNotice: AccountResetNotice?
+  /// The sign-in went away with this device's keys kept; cleared by signing back in or dismissing.
+  public internal(set) var sessionLoss: AccountSessionLossReason?
 
   /// How often a visible host list re-reads the directory. Well inside the
   /// online window, so a host that comes back shows within a minute.
@@ -176,6 +178,9 @@ public final class AccountStore {
   /// `restoringSession: false` leaves the auth provider (and its keychain) alone until a sign-in.
   public func start(restoringSession: Bool = true) async {
     vault = await vaultStore.load()
+    if vault.signedOut == true, vault.keys != nil {
+      sessionLoss = vault.signedOutReason ?? .unknown
+    }
     if vault.signedOut != true, let root = vault.root,
       case .ok(let verified) = AccountLog.verify(vault.entries, root: root), ownMemberLive(in: verified)
     {
@@ -209,8 +214,10 @@ public final class AccountStore {
   /// The app came to the foreground: pick up new entries and moved addresses.
   public func refresh() async {
     guard phase == .ready, !galleryFrozen else { return }
-    refreshProfile()
     if await dropLostSession() { return }
+    // Still no `/config` (offline since launch): nothing below can reach the service.
+    guard configured else { return }
+    refreshProfile()
     if await checkForReset() { return }
     await refreshLog()
     await flushName()
@@ -344,8 +351,11 @@ public final class AccountStore {
       }
       if vault.signedOut != nil {
         vault.signedOut = nil
+        vault.signedOutReason = nil
         await vaultStore.save(vault)
       }
+      sessionLoss = nil
+      await recordSessionLifetime()
       phase = .ready
       publishHosts()
       if let provider { onEvent(.signedIn(provider: provider, firstDevice: firstDevice)) }
@@ -442,24 +452,6 @@ public final class AccountStore {
     onEvent(.signedOut)
   }
 
-  /// Ready from this device's keys, but signed out of Clerk (signed out
-  /// elsewhere, or the service moved Clerk instance): nothing can sync, so it
-  /// starts signed out. The service has to agree, so a slow load never signs anyone out.
-  func dropLostSession() async -> Bool {
-    guard phase == .ready, !auth.isSignedIn else { return false }
-    do {
-      _ = try await client.account()
-      return false
-    } catch AccountServiceError.notSignedIn {
-      await forgetAccount(keepingKeys: true)
-      error = AccountServiceError.notSignedIn.message
-      onEvent(.sessionLost)
-      return true
-    } catch {
-      return false
-    }
-  }
-
   /// `keepingKeys`: a lost session, not a sign-out. The keys stay on the account, so
   /// signing back in resumes this device; another account's sign-in still wipes them.
   func forgetAccount(keepingKeys: Bool = false) async {
@@ -467,6 +459,7 @@ public final class AccountStore {
       vault.signedOut = true
     } else {
       vault = .empty
+      sessionLoss = nil
     }
     await vaultStore.save(vault)
     state = nil
