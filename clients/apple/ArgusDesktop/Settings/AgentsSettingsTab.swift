@@ -155,7 +155,7 @@ struct AgentsSettingsTab: View {
 
   private func doneGate(_ settings: ArgusProtocol.AppSettings) -> Binding<Bool> {
     Binding(
-      get: { settings.doneGate != false },
+      get: { settings.doneGate == true },
       set: { next in
         Task {
           await host.save(.doneGate, ["done_gate": .bool(next)]) {

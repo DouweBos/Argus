@@ -64,7 +64,7 @@ export interface AppSettings {
   follow_up_suggestions?: boolean;
   /**
    * Keep a Claude Code agent from finishing, once per turn, when it edited
-   * source after its last screenshot, design comparison or check. Defaults to true.
+   * source after its last screenshot, design comparison or check. Opt-in: defaults to false.
    */
   done_gate?: boolean;
   /**

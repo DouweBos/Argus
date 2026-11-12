@@ -93,7 +93,8 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
   private readonly agentId: string;
   private readonly permissionPreHook: PermissionPreHook | null;
   private readonly doneGate = new DoneGate({
-    enabled: () => loadAppSettings().done_gate !== false,
+    // Opt-in: off until turned on in Settings.
+    enabled: () => loadAppSettings().done_gate === true,
     report: (reverified) => capture("agent_done_gate", { reverified }),
   });
   private exited = false;
