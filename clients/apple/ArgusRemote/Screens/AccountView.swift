@@ -206,7 +206,7 @@ struct AccountView: View {
       footer: "A computer that hasn't checked in for 15 minutes shows as offline; it's still tried at its last addresses."
     ) {
       if account.hosts.isEmpty {
-        Text("No computers yet. Run `argus-host login`, or Sign in in Argus on the computer, and add the code it shows.")
+        Text("No computers yet. Run `argus-host login`, or sign in to Argus on the computer, and add the code it shows.")
           .font(.scaled(size: 13))
           .foregroundStyle(theme.textSecondary)
       }

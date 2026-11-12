@@ -2,7 +2,7 @@ import ArgusUI
 import SwiftUI
 
 /// Add a computer to the account by the code it shows (`argus-host login`,
-/// or Sign in in Argus): type it, compare the 6-digit code, confirm.
+/// or signing in to Argus): type it, compare the 6-digit code, confirm.
 struct AddComputerView: View {
   @Environment(\.theme) private var theme
   @Environment(AppStore.self) private var app
@@ -47,7 +47,7 @@ struct AddComputerView: View {
 
   @ViewBuilder private var enterCode: some View {
     MutedText(
-      "On the computer, run `argus-host login` or choose Sign in in Argus. Type the code it shows.")
+      "On the computer, run `argus-host login` or sign in to Argus. Type the code it shows.")
     ThemedTextField(placeholder: "WDJB-MJHT", text: $code, mono: true, input: .code) { submit() }
     Btn(label: "Continue") { submit() }
       .disabled(AccountCodec.normalizeUserCode(code).count != 9)

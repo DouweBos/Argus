@@ -244,7 +244,7 @@ headless Argus server, or `argus-host` — as well as its own:
   its own host straight away, with no code, so your phone sees it. The tab
   shows the account's safety code, every host on it as online or
   "Offline · last seen …", and **Add a host**: type the code another
-  computer shows (`argus-host login`, or Sign in in Argus there) and compare
+  computer shows (`argus-host login`, or signing in to Argus there) and compare
   the 6-digit codes. Sign Out takes this Mac off the account.
 - If your account already has devices, this Mac asks to join: approve it from
   your iPhone or another computer after both show the same 6-digit code, and

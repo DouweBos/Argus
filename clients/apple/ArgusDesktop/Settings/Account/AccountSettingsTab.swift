@@ -90,7 +90,12 @@ private struct AccountOverview: View {
       }
     }
 
-    SettingsGroup("This Mac", footer: "This Mac's host is on your account, so your phone and other computers reach it without pairing.") {
+    SettingsGroup(
+      "This Mac",
+      footer: account.localHostLinked
+        ? "This Mac's host is on your account, so your phone and other computers reach it without pairing."
+        : "Put this Mac's host on your account so your phone and other computers reach it without pairing."
+    ) {
       if account.localHostLinked {
         Label("On your account", systemImage: "checkmark.circle").foregroundStyle(theme.success)
       } else {
@@ -114,7 +119,7 @@ private struct AccountOverview: View {
     ) {
       let others = account.hosts.filter { !$0.isLocal }
       if others.isEmpty {
-        Text("No other hosts yet. Run `argus-host login`, or Sign in in Argus on the other computer, and add its code below.")
+        Text("No other hosts yet. Run `argus-host login`, or sign in to Argus on the other computer, and add the code it shows below.")
           .foregroundStyle(.secondary)
       }
       ForEach(others) { host in
