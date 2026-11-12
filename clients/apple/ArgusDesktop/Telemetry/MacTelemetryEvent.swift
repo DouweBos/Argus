@@ -351,6 +351,8 @@ enum MacTelemetryEvent {
   case accountReset(action: ResetAction)
   /// Found signed out on launch or return: this Mac's keys outlived the sign-in behind them.
   case accountSessionLost(reason: AccountSessionLossReason)
+  /// This Mac's own host, already linked when it went to add it: taken as is, or offered the move.
+  case accountLocalHost(outcome: AccountStore.LocalHostOutcome)
   /// The main window's signed-out notice: Sign In Again, or dismissed.
   case accountSessionNotice(action: AccountStore.SessionNoticeAction, reason: AccountSessionLossReason)
   /// This Mac removed or renamed a member of the account.
@@ -475,6 +477,7 @@ enum MacTelemetryEvent {
     case .accountJoinActed: "mac_account_join_acted"
     case .accountReset: "mac_account_reset"
     case .accountSessionLost: "mac_account_session_lost"
+    case .accountLocalHost: "mac_account_local_host"
     case .accountSessionNotice: "mac_account_session_notice"
     case .accountMemberChanged: "mac_account_member_changed"
     case .deviceNameChanged: "mac_device_name_changed"
@@ -516,6 +519,8 @@ enum MacTelemetryEvent {
       [:]
     case .accountSessionLost(let reason):
       ["reason": reason.rawValue]
+    case .accountLocalHost(let outcome):
+      ["outcome": outcome.rawValue]
     case .accountSessionNotice(let action, let reason):
       ["action": action.rawValue, "reason": reason.rawValue]
     case .quit(let hadRunningAgents):

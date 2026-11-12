@@ -146,47 +146,4 @@ extension AccountStore {
       self.error = Self.describe(error)
     }
   }
-
-  // MARK: The Mac's own host
-
-  /// Put the bundled host on the account with no code (§5.2b). Runs after
-  /// genesis and on each launch until it sticks.
-  func linkLocalHostIfNeeded() async {
-    guard let localHost, phase == .ready, state != nil else { return }
-    if let id = vault.localHostId, state?.liveMember(id) != nil { return }
-    localLinkError = nil
-    do {
-      var offer = try await localHost.begin()
-      guard offer.host.role == .host else { throw AccountStoreError.keys }
-      // One name for this Mac and its host; the proof doesn't cover it.
-      offer.host.name = AccountDeviceKeys.memberName(deviceName())
-      if state?.liveMember(offer.host.id) == nil {
-        try await appendWithRetry { [self] head in
-          [
-            try entry(
-              head: head, .addHost(member: offer.host, requestId: "", sasCommit: "", proof: offer.proof))
-          ]
-        }
-      }
-      guard let root = state?.root else { return }
-      try await localHost.finish(root: root)
-      vault.localHostId = offer.host.id
-      await vaultStore.save(vault)
-      publishHosts()
-    } catch let error as Transport.TransportError where error.isTransient {
-      // Retried when the connection to the host comes up.
-      localLinkError = "Waiting for this Mac's host to start."
-    } catch {
-      localLinkError = Self.describe(error)
-    }
-  }
-
-  /// Retry the bundled host's link from the Account screen.
-  public func linkLocalHost() async {
-    await linkLocalHostIfNeeded()
-  }
-
-  public var localHostLinked: Bool {
-    vault.localHostId.flatMap { state?.liveMember($0) } != nil
-  }
 }

@@ -250,6 +250,10 @@ headless Argus server, or `argus-host` — as well as its own:
   your iPhone or another computer after both show the same 6-digit code, and
   its own host joins with it. **Link this Mac with a code** still links just
   the host, from your phone.
+- If this Mac's host is already on your account (say, after signing back in),
+  the tab picks it up as is. If it's on another account, or on yours from
+  before a reset, **This Mac** says so and **Move to This Account** takes it
+  off that one and adds it here.
 - **Settings → General → This Mac → Name** is one name for this Mac and its
   own host (it defaults to the system's computer name). Signing in and linking
   use it; changing it renames both on the account (once the account service is

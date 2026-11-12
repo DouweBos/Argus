@@ -53,6 +53,8 @@ public final class AccountStore {
     case nameChanged(source: NameSource, linked: Bool)
     /// Starting the account over (§5.8), or noticing it was started over elsewhere.
     case accountReset(action: ResetAction)
+    /// The Mac's bundled host, where its own `account_linked` can't tell.
+    case localHost(outcome: LocalHostOutcome)
   }
 
   /// Where this device's name was edited.
@@ -80,6 +82,8 @@ public final class AccountStore {
   public internal(set) var logError: AccountLogRejectReason?
   /// The bundled host couldn't be put on the account (Mac only).
   public internal(set) var localLinkError: String?
+  /// The bundled host is linked elsewhere; `moveLocalHost()` brings it here.
+  public internal(set) var localLinkConflict = false
   /// An email code is on its way and the next step is to type it.
   public internal(set) var awaitingEmailCode = false
   /// The way in that's running while `phase` is `.signingIn`, for its button's spinner.
@@ -509,8 +513,12 @@ public enum AccountStoreError: Error, Equatable {
 /// with no code: both ends are the same user on the same machine (§5.2b).
 @MainActor
 public protocol AccountLocalHostLinking: AnyObject {
+  /// The account the host is already linked to, nil when it isn't.
+  func status() async throws -> AccountStore.LocalHostLink?
   /// The host's member record and its proof of possession.
   func begin() async throws -> (host: AccountMember, proof: String)
   /// The `add_host` is in the log; the host fetches, verifies and pins it.
   func finish(root: AccountRoot) async throws
+  /// The host signs itself off its account and forgets it.
+  func unlink() async throws
 }

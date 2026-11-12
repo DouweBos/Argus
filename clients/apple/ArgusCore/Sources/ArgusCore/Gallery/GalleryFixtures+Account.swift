@@ -10,16 +10,19 @@ public struct GalleryAccount: Sendable {
   public var error: String?
   /// Signed out because the sign-in went away, keys kept.
   public var sessionLoss: AccountSessionLossReason?
+  /// The Mac's own host is on another account, so This Mac offers the move.
+  public var hostElsewhere: Bool
 
   public init(
     phase: AccountStore.Phase = .ready, selfKind: String, requests: Bool = true, error: String? = nil,
-    sessionLoss: AccountSessionLossReason? = nil
+    sessionLoss: AccountSessionLossReason? = nil, hostElsewhere: Bool = false
   ) {
     self.phase = phase
     self.selfKind = selfKind
     self.requests = requests
     self.error = error
     self.sessionLoss = sessionLoss
+    self.hostElsewhere = hostElsewhere
   }
 }
 
@@ -40,7 +43,11 @@ extension AccountStore {
         memberId: selfId, signSeed: "", signPub: "", noisePriv: "", noisePub: "", kind: fixture.selfKind, name: "",
         createdAt: 0),
       presence: GalleryFixtures.accountPresence(now: now()),
-      localHostId: fixture.selfKind == "mac" ? "h-local" : nil)
+      localHostId: fixture.selfKind == "mac" && !fixture.hostElsewhere ? "h-local" : nil)
+    if fixture.hostElsewhere {
+      localLinkConflict = true
+      localLinkError = "This Mac's host is on another Argus account."
+    }
     guard fixture.phase == .ready else { return }
     state = AccountLogState(
       accountId: "acct-gallery", epoch: 1, genesisHash: "5f2c9e81b07a4d6e93c1a2b4f8d0e7c6",

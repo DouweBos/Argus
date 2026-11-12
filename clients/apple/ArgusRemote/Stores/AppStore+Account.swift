@@ -33,6 +33,8 @@ extension AppStore {
         Telemetry.capture(.accountPushRegistered(success: success))
       case .accountReset(let action):
         Telemetry.capture(.accountReset(action: action))
+      case .localHost:
+        break  // The phone has no bundled host.
       }
     }
     // A removal reaches the connected computer at once, not at its next poll.

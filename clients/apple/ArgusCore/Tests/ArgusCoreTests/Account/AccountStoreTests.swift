@@ -520,15 +520,32 @@ final class FakeLocalHost: AccountLocalHostLinking {
   var finished: AccountRoot?
   /// No connection to the host yet, as right after launch.
   var down = false
+  /// The account the host is already on, as `account_get_status` reports it.
+  var linked: AccountStore.LocalHostLink?
+  /// What `account_link_local_begin` throws, e.g. the host's own refusal.
+  var beginError: (any Error)?
+  var unlinked = false
 
   init(member: AccountMember, proof: String) {
     self.member = member
     self.proof = proof
   }
 
+  func status() async throws -> AccountStore.LocalHostLink? {
+    if down { throw Transport.TransportError.notReady }
+    return linked
+  }
   func begin() async throws -> (host: AccountMember, proof: String) {
     if down { throw Transport.TransportError.notReady }
+    if let beginError { throw beginError }
     return (member, proof)
   }
-  func finish(root: AccountRoot) async throws { finished = root }
+  func finish(root: AccountRoot) async throws {
+    finished = root
+    linked = .init(accountId: root.accountId, epoch: root.epoch, hostId: member.id)
+  }
+  func unlink() async throws {
+    unlinked = true
+    linked = nil
+  }
 }

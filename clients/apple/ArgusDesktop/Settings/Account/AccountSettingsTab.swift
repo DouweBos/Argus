@@ -96,8 +96,13 @@ private struct AccountOverview: View {
         HStack {
           Text(account.localLinkError ?? "Not on your account yet.").foregroundStyle(.secondary)
           Spacer()
-          Button("Add this Mac") { Task { await account.linkLocalHost() } }
-            .buttonStyle(.accent)
+          if account.localLinkConflict {
+            Button("Move to This Account") { Task { await account.moveLocalHost() } }
+              .buttonStyle(.accent)
+          } else {
+            Button("Add this Mac") { Task { await account.linkLocalHost() } }
+              .buttonStyle(.accent)
+          }
         }
       }
     }

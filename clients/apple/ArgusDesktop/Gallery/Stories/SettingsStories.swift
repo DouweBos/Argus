@@ -15,6 +15,7 @@
         },
         GalleryStory("settings/appearance", size: page) { AppearanceSettingsTab() },
         account("signed-in", GalleryAccount(selfKind: "mac")),
+        account("host-elsewhere", GalleryAccount(selfKind: "mac", hostElsewhere: true)),
         account("signed-out", GalleryAccount(phase: .signedOut, selfKind: "mac")),
         account("awaiting-approval", GalleryAccount(phase: .awaitingApproval, selfKind: "mac")),
         customRunner("acp-agent", acpDraft),
