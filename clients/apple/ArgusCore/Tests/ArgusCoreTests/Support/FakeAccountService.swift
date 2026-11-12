@@ -31,6 +31,7 @@ final class FakeAccountService: @unchecked Sendable {
   private var directory: [AccountDirectoryRecord] = []
   private var directoryDown = false
   private var appendDown = false
+  private var configDown = false
   private var pushBodies: [[String: Any]] = []
   private var pushDeletes: [String] = []
   /// Every `PUT /push/registration` body, oldest first.
@@ -102,6 +103,8 @@ final class FakeAccountService: @unchecked Sendable {
   func setDirectoryDown(_ down: Bool) { lock.withLock { directoryDown = down } }
   /// Answer every `POST /log` with a 503, as an unreachable service would.
   func setAppendDown(_ down: Bool) { lock.withLock { appendDown = down } }
+  /// `GET /config` fails as it would offline.
+  func setConfigDown(_ down: Bool) { lock.withLock { configDown = down } }
 
   var http: AccountClient.HTTP {
     { [self] request in try handle(request) }
@@ -118,6 +121,7 @@ final class FakeAccountService: @unchecked Sendable {
     }
     switch (method, path) {
     case ("GET", "config"):
+      if lock.withLock({ configDown }) { throw URLError(.notConnectedToInternet) }
       return respond(200, ["clerk_publishable_key": "pk_test", "frontend_api": "clerk.example"], url)
     case ("POST", "account"):
       let count = lock.withLock { entries.count }
@@ -268,7 +272,18 @@ final class FakeAccountAuth: AccountAuthenticating {
   var reverifyEmail: String? = "me@example.test"
   var sentReverifyCodes = 0
 
+  /// Clerk has its environment and client; until then nothing is known.
+  var loaded = true
+  var lifetime: AccountSessionLifetime?
+  var lastEnd: AccountSessionLossReason?
+
   var isSignedIn: Bool { signedIn }
+  var sessionState: AccountSessionState {
+    guard configuredKey != nil, loaded else { return .unknown }
+    return signedIn ? .signedIn : .signedOut
+  }
+  var sessionLifetime: AccountSessionLifetime? { signedIn ? lifetime : nil }
+  var lastSessionEnd: AccountSessionLossReason? { signedIn ? nil : lastEnd }
   func configure(publishableKey: String) async throws { configuredKey = publishableKey }
   func signInWithApple(idToken _: String?) async throws { signedIn = true }
   /// Clerk refuses a second sign-in while a session is live.
