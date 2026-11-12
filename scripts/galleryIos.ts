@@ -1,14 +1,15 @@
 /**
  * The iOS half of `pnpm gallery --ios`: builds the Debug iOS app for the
- * simulator, boots a simulator of its own through conductor (created once,
- * per checkout and device type, never one of the user's), launches the app in
- * gallery mode and waits for `index.json`. Stories live in
+ * simulator, boots a throwaway simulator of its own through conductor (never
+ * one of the user's, deleted when the run ends), launches the app in gallery
+ * mode and waits for `index.json`. Stories live in
  * `clients/apple/ArgusRemote/Gallery/`, with the same ids as the Mac's.
  */
 
 import { execFile } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
@@ -68,7 +69,7 @@ async function buildApp(root: string): Promise<string> {
   );
 }
 
-/** Short and stable per checkout: worktrees rendering at once each get their own simulator and output. */
+/** Short and stable per checkout: worktrees rendering at once each get their own output. */
 export function checkoutTag(root: string): string {
   return crypto
     .createHash("sha1")
@@ -77,8 +78,63 @@ export function checkoutTag(root: string): string {
     .slice(0, 6);
 }
 
-/** The gallery's own simulator for this checkout and device type, created on first use. */
-async function simulator(
+const PREFIX = "argus-gallery-";
+
+interface SimDevice {
+  name: string;
+  udid: string;
+  state: string;
+  isAvailable: boolean;
+}
+
+async function listDevices(): Promise<SimDevice[]> {
+  const { stdout } = await run("xcrun", ["simctl", "list", "devices", "-j"]);
+
+  return Object.values(
+    (JSON.parse(stdout) as { devices: Record<string, SimDevice[]> }).devices,
+  ).flat();
+}
+
+async function deleteDevice(udid: string): Promise<void> {
+  await conductor(["delete-device", udid, "--platform", "ios"]);
+}
+
+/** Created minutes ago: another run may not have booted it yet. */
+function isFresh(udid: string): boolean {
+  const dir = path.join(
+    os.homedir(),
+    "Library/Developer/CoreSimulator/Devices",
+    udid,
+  );
+  try {
+    return Date.now() - fs.statSync(dir).birthtimeMs < 10 * 60_000;
+  } catch {
+    return false;
+  }
+}
+
+/** Leftovers from older runs; Booted ones may belong to a run in progress, so they stay. */
+async function sweepLeftovers(): Promise<void> {
+  const stale = (await listDevices()).filter(
+    (d) =>
+      d.name.startsWith(PREFIX) && d.state === "Shutdown" && !isFresh(d.udid),
+  );
+  let removed = 0;
+  for (const device of stale) {
+    removed += await deleteDevice(device.udid).then(
+      () => 1,
+      () => 0,
+    );
+  }
+  if (removed > 0) {
+    process.stderr.write(
+      `removed ${removed} leftover gallery simulator${removed === 1 ? "" : "s"}\n`,
+    );
+  }
+}
+
+/** A throwaway simulator for this run, deleted when it ends. */
+async function createSimulator(
   deviceType: string,
   root: string,
 ): Promise<{ id: string; name: string }> {
@@ -86,22 +142,8 @@ async function simulator(
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/-$/, "");
-  const name = `argus-gallery-${type}-${checkoutTag(root)}`;
-  const { stdout } = await run("xcrun", ["simctl", "list", "devices", "-j"]);
-  const devices = Object.values(
-    (
-      JSON.parse(stdout) as {
-        devices: Record<
-          string,
-          { name: string; udid: string; isAvailable: boolean }[]
-        >;
-      }
-    ).devices,
-  ).flat();
-  const existing = devices.find((d) => d.name === name && d.isAvailable);
-  if (existing) {
-    return { id: existing.udid, name };
-  }
+  const random = crypto.randomBytes(3).toString("hex");
+  const name = `${PREFIX}${type}-${checkoutTag(root)}-${random}`;
   const created = await run("xcrun", ["simctl", "create", name, deviceType]);
 
   return { id: created.stdout.trim(), name };
@@ -117,15 +159,28 @@ export async function renderIos(options: IosOptions): Promise<void> {
   if (!fs.existsSync(app)) {
     throw new Error("no iOS gallery build yet — drop --no-build");
   }
-  const sim = await simulator(options.device, options.root);
-  await conductor([
-    "start-device",
-    "--platform",
-    "ios",
-    "--device-name",
-    sim.name,
-  ]);
+  await sweepLeftovers();
+  const sim = await createSimulator(options.device, options.root);
+  let cleanup: Promise<void> | undefined;
+  const cleanUp = (): Promise<void> =>
+    (cleanup ??= conductor(["stop-device", sim.id])
+      .catch(() => undefined)
+      .then(() => deleteDevice(sim.id))
+      .catch(() => undefined));
+  const onSignal = async (signal: NodeJS.Signals): Promise<void> => {
+    await cleanUp();
+    process.exit(signal === "SIGINT" ? 130 : 143);
+  };
+  process.once("SIGINT", onSignal);
+  process.once("SIGTERM", onSignal);
   try {
+    await conductor([
+      "start-device",
+      "--platform",
+      "ios",
+      "--device-name",
+      sim.name,
+    ]);
     await conductor(["install-app", app, "--device", sim.id]);
     fs.rmSync(options.out, { recursive: true, force: true });
     fs.mkdirSync(options.out, { recursive: true });
@@ -165,6 +220,8 @@ export async function renderIos(options: IosOptions): Promise<void> {
       process.stdout.write(`${entry.path}${missing}\n`);
     }
   } finally {
-    await conductor(["stop-device", sim.id]).catch(() => undefined);
+    process.off("SIGINT", onSignal);
+    process.off("SIGTERM", onSignal);
+    await cleanUp();
   }
 }
