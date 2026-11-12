@@ -12,7 +12,6 @@ import { warn } from "@argus/host/logger";
 import { argusHomeDir } from "../../lib/argusHome";
 import { appState } from "../../state";
 import { sessionRunnerId } from "../session/models";
-import { withArgusCommands } from "./argusCommands";
 import { awaitSpare, getSpare } from "./spares";
 
 export interface StartOptions {
@@ -116,13 +115,7 @@ export async function getStartOptions(
       ? fromCapabilities(spare.agent.handle.initializeResponse())
       : null;
 
-  const options = fromSpare ?? cached ?? { slashCommands: [], models: [] };
-
-  return {
-    ...options,
-    slashCommands: withArgusCommands({ commands: options.slashCommands })
-      .commands,
-  };
+  return fromSpare ?? cached ?? { slashCommands: [], models: [] };
 }
 
 /** Forget the in-memory cache; `onDisk` also drops the file. */

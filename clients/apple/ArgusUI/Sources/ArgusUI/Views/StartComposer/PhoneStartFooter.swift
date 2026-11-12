@@ -52,7 +52,6 @@
       if flow.issues.isEmpty, flow.options.count > 1 { workspaceMenu.fixedSize() }
       if !host.runners.isEmpty { runnerPill.fixedSize() }
       if flow.repoRoot != nil, host.linearConnected { issuePill.fixedSize() }
-      if !flow.issues.isEmpty { verifyPill.fixedSize() }
     }
 
     private var shape: UnevenRoundedRectangle {
@@ -74,17 +73,6 @@
       }
       .buttonStyle(.argusPlain)
       .accessibilityLabel(flow.issues.isEmpty ? "Linear issue" : "Add issue")
-    }
-
-    /// Starts each issue on `/implement-ticket`.
-    private var verifyPill: some View {
-      Button { flow.verify.toggle() } label: {
-        ComposerPillLabel(icon: "checkmark.seal", title: "Verify", accent: flow.verify, chevron: false)
-      }
-      .buttonStyle(.argusPlain)
-      .accessibilityLabel("Verify")
-      .accessibilityValue(flow.verify ? "On" : "Off")
-      .accessibilityHint("Starts on /implement-ticket: checks every acceptance criterion on device and reports with evidence.")
     }
 
     private var currentLabel: String {

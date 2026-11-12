@@ -195,42 +195,17 @@ describe("loadArgusConfig", () => {
     expect(config.auto_continue_on_limit).toBe(true);
   });
 
-  it("normalizes the verify block and lets a local one replace it", () => {
+  it("ignores a retired verify block", () => {
     mockExistsSync.mockImplementation((p) => !String(p).includes("local"));
     mockReadFileSync.mockReturnValue(
       JSON.stringify({
-        verify: {
-          devices: ["iPhone 17 Pro"],
-          checks: [" pnpm lint ", "", 3],
-          sign_in: "/login",
-          baseline: false,
-          slow_backend: "  ",
-        },
+        browser_url: "http://x",
+        verify: { checks: ["pnpm lint"] },
       }),
     );
-    expect(loadArgusConfig("/repo").verify).toEqual({
-      checks: ["pnpm lint"],
-      sign_in: "/login",
-      baseline: false,
-      slow_backend: null,
-    });
-
-    mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) =>
-      String(p).includes("local")
-        ? JSON.stringify({ verify: { sign_in: "/login" } })
-        : JSON.stringify({ verify: { checks: ["pnpm test"] } }),
-    );
-    expect(loadArgusConfig("/repo").verify?.sign_in).toBe("/login");
-    expect(loadArgusConfig("/repo").verify?.checks).toEqual([]);
-  });
-
-  it("drops an empty verify block", () => {
-    mockExistsSync.mockImplementation((p) => !String(p).includes("local"));
-    mockReadFileSync.mockReturnValue(
-      JSON.stringify({ verify: { checks: [], devices: ["web"] } }),
-    );
-    expect(loadArgusConfig("/repo").verify).toBeNull();
+    const config = loadArgusConfig("/repo");
+    expect(config.browser_url).toBe("http://x");
+    expect(config).not.toHaveProperty("verify");
   });
 
   it("defaults unset booleans after merging", () => {

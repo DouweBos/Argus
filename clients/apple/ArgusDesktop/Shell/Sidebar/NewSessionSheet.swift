@@ -22,8 +22,6 @@ struct NewSessionSheet: View {
   /// Each gets its own session on Linear's branch name.
   @State private var issues: [HostStore.LinearIssue] = []
   @State private var pickingIssues = false
-  /// Start issues on `/implement-ticket`; remembered, as a team tends to always or never want it.
-  @AppStorage("issues.verify") private var verify = false
 
   init(
     project: RemoteProject, choices: [RemoteProject] = [], issues: [HostStore.LinearIssue] = [],
@@ -73,16 +71,6 @@ struct NewSessionSheet: View {
           if !issues.isEmpty {
             Text("Each issue gets its own session on Linear's branch name, and an agent that starts from it.")
               .foregroundStyle(.secondary)
-          }
-        }
-        if !issues.isEmpty {
-          Section {
-            Toggle("Verify", isOn: $verify)
-          } footer: {
-            Text(
-              "Starts on /implement-ticket: the agent checks every acceptance criterion on the devices the ticket calls for, compares with Figma, runs its checks and reports with evidence."
-            )
-            .foregroundStyle(.secondary)
           }
         }
       }
@@ -158,7 +146,7 @@ struct NewSessionSheet: View {
       let sessions = await store.startFromIssues(
         issues, repoRoot: project.repoRoot, baseBranch: baseBranch.isEmpty ? nil : baseBranch,
         prompt: prompt.trimmingCharacters(in: .whitespacesAndNewlines),
-        model: nil, permissionMode: nil, runnerId: nil, verify: verify)
+        model: nil, permissionMode: nil, runnerId: nil)
       creating = false
       guard let first = sessions.first else { return }
       await store.loadSessions(repoRoot: project.repoRoot)

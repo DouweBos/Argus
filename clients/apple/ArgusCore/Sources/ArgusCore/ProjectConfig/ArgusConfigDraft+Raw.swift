@@ -10,13 +10,13 @@ extension ArgusConfigDraft {
     "browser_url", "browser_presets", "simulator_deeplinks",
     "auto_continue_on_limit", "protected_branches", "default_base_branch",
     "single_runtime", "auto_fetch_minutes",
-    "release_note_patterns", "llm", "tools", "automations", "verify",
+    "release_note_patterns", "llm", "tools", "automations",
   ]
 
   /// Settings Argus no longer reads; saving drops them, as the desktop dialog does.
   static let retiredKeys: Set<String> = [
     "platforms", "agent_prompt", "mcp_servers", "pull_request_template", "min_argus_version",
-    "save_chat_history",
+    "save_chat_history", "verify",
   ]
 
   public init(raw: [String: JSONValue]) {
@@ -74,11 +74,6 @@ extension ArgusConfigDraft {
     }
     automationPathDenylist = Self.strings(automations["path_denylist"]).joined(separator: ", ")
     disabledAutomations = Self.strings(automations["disabled"]).joined(separator: ", ")
-    let verify = raw["verify"]?.objectValue ?? [:]
-    verifyChecks = Self.strings(verify["checks"]).map { ListItem($0) }
-    verifySignIn = verify["sign_in"]?.stringValue ?? ""
-    verifyBaseline = verify["baseline"]?.boolValue ?? true
-    verifySlowBackend = verify["slow_backend"]?.stringValue ?? ""
   }
 
   /// The file to write: `raw` with every owned key replaced by the draft's
@@ -129,15 +124,6 @@ extension ArgusConfigDraft {
     automations["path_denylist"] = Self.nonEmpty(Self.commaList(automationPathDenylist).map(JSONValue.string))
     automations["disabled"] = Self.nonEmpty(Self.commaList(disabledAutomations).map(JSONValue.string))
     set("automations", automations.isEmpty ? nil : .object(automations))
-    var verify = raw["verify"]?.objectValue ?? [:]
-    // Retired: agents pick their devices per ticket.
-    verify["devices"] = nil
-    verify["checks"] = Self.nonEmpty(Self.values(verifyChecks))
-    verify["sign_in"] = Self.trimmed(verifySignIn)
-    // Baselines are on by default; only opting out is written.
-    verify["baseline"] = verifyBaseline ? nil : .bool(false)
-    verify["slow_backend"] = Self.trimmed(verifySlowBackend)
-    set("verify", verify.isEmpty ? nil : .object(verify))
     return out
   }
 

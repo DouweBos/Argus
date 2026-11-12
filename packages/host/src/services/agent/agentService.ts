@@ -74,11 +74,6 @@ import { incrementCommandMetric } from "../session/commandMetrics";
 import { sessionRunnerId } from "../session/models";
 import { simulatorPool } from "../simulator/pool";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
-import {
-  type ArgusCommandSource,
-  expandArgusCommand,
-  withArgusCommands,
-} from "./argusCommands";
 import { loadConversationByRunnerSession } from "./chatHistory";
 import {
   CONDUCTOR_DISALLOWED,
@@ -420,7 +415,7 @@ function agentInfoOf(agent: AgentSession): AgentInfo {
     status: agent.status,
     parent_agent_id: agent.parentAgentId,
     created_at: agent.createdAt,
-    capabilities: withArgusCommands(agent.handle.initializeResponse()),
+    capabilities: agent.handle.initializeResponse(),
     model: agent.model,
     runner_id: agent.runner.id,
     pinned: isPinned(agent.agentId),
@@ -955,10 +950,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
 
   handle.on("capabilities", (payload: unknown) => {
     rememberStartOptions(runner.id, payload);
-    emitHostEvent(
-      `agent:capabilities:${agentId}`,
-      withArgusCommands(payload as { commands?: unknown } | null),
-    );
+    emitHostEvent(`agent:capabilities:${agentId}`, payload);
   });
 
   handle.on("stream-event", (line: string) => {
@@ -1702,7 +1694,6 @@ export function sendAgentMessage(
   agentId: string,
   message: string,
   images?: ImageAttachment[],
-  opts: { commandSource?: ArgusCommandSource } = {},
 ): void {
   const agentEntry = appState.agents.get(agentId);
   if (!agentEntry) {
@@ -1716,7 +1707,7 @@ export function sendAgentMessage(
   const pendingRespawn = respawning.get(agentId);
   if (pendingRespawn) {
     pendingRespawn
-      .then(() => sendAgentMessage(agentId, message, images, opts))
+      .then(() => sendAgentMessage(agentId, message, images))
       .catch((e) => {
         warn(`[agent:${agentId}] message after respawn failed: ${String(e)}`);
       });
@@ -1726,25 +1717,18 @@ export function sendAgentMessage(
 
   // Track slash command usage for autocomplete sorting.
   const trimmed = message.trim();
-  const session = appState.sessions.get(agentEntry.sessionId);
-  let outgoing = message;
   if (trimmed.startsWith("/")) {
     const cmdName = trimmed.slice(1).split(/\s+/)[0];
-    if (cmdName && session?.repo_root) {
-      incrementCommandMetric(session.repo_root, cmdName);
+    if (cmdName) {
+      const session = appState.sessions.get(agentEntry.sessionId);
+      if (session?.repo_root) {
+        incrementCommandMetric(session.repo_root, cmdName);
+      }
     }
-    outgoing =
-      expandArgusCommand(message, {
-        worktree: session?.path ?? null,
-        source: opts.commandSource ?? "message",
-        runnerCommands: (
-          agentEntry.handle.initializeResponse()?.commands ?? []
-        ).map((c) => c.name),
-      }) ?? message;
   }
 
   try {
-    agentEntry.handle.send(outgoing, images ?? []);
+    agentEntry.handle.send(message, images ?? []);
   } catch (e) {
     throw `Failed to write to agent stdin: ${String(e)}`;
   }

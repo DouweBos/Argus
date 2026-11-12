@@ -54,28 +54,11 @@ struct ArgusConfigDraftTests {
                                     "labels": [{ "name": "type", "selector": "^T:(.+)$", "tone": "accent" }] }],
         "llm": { "runner": "claude-code", "model": "opus" },
         "tools": { "disabled": ["device-debug"] },
-        "automations": { "autonomy_ceiling": "draft", "disabled": ["a"], "path_denylist": ["infra/**"] },
-        "verify": { "checks": ["pnpm lint"],
-                    "sign_in": "/login", "baseline": false, "slow_backend": "pnpm proxy --delay 3000" }
+        "automations": { "autonomy_ceiling": "draft", "disabled": ["a"], "path_denylist": ["infra/**"] }
       }
       """#)
     let draft = ArgusConfigDraft(raw: file)
     #expect(draft.applied(to: file) == file)
-  }
-
-  @Test func verifyWritesOnlyWhatDiffersFromDefaults() throws {
-    var draft = ArgusConfigDraft()
-    #expect(draft.applied(to: [:])["verify"] == nil)
-    draft.verifyChecks = [.init(" pnpm lint "), .init("")]
-    #expect(draft.applied(to: [:])["verify"] == .object(["checks": .array([.string("pnpm lint")])]))
-    draft.verifyBaseline = false
-    #expect(draft.applied(to: [:])["verify"]?["baseline"] == .bool(false))
-  }
-
-  @Test func dropsTheRetiredVerifyDevices() throws {
-    let file = try raw(#"{ "verify": { "devices": ["iPhone 17 Pro"], "checks": ["pnpm lint"] } }"#)
-    let out = ArgusConfigDraft(raw: file).applied(to: file)
-    #expect(out["verify"] == .object(["checks": .array([.string("pnpm lint")])]))
   }
 
   @Test func dropsRetiredKeys() throws {

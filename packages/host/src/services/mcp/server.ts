@@ -11,7 +11,6 @@
  * to `appState` and all service functions. No proxy layer or IPC needed.
  */
 
-import type { ArgusCommandSource } from "../agent/argusCommands";
 import type { Session } from "../session/models";
 import type { ToolId } from "../tools/types";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -77,7 +76,6 @@ import {
   recordAutomationSessionForCaller,
 } from "./automationGuards";
 import { registerAutomationTools } from "./automationTools";
-import { registerImplementTicketTool } from "./implementTicketTool";
 import { registerIntegrationTools } from "./integrationTools";
 import { findPastAgent, registerPastAgentTools } from "./pastAgentTools";
 import { registerPrWatchTools } from "./prWatchTools";
@@ -302,7 +300,6 @@ async function spawnAgentInSession(
     /** Tools off for this agent only, on top of the app and project masks. */
     tools?: { disabled?: ToolId[] };
     sourceTool: "create_session" | "spawn_agent" | "spawn_agents_batch";
-    commandSource?: ArgusCommandSource;
   },
 ): Promise<{
   agent_id: string;
@@ -350,9 +347,7 @@ async function spawnAgentInSession(
     model: agentInfo.model,
   });
 
-  sendAgentMessage(agentInfo.agent_id, prompt, opts.images, {
-    commandSource: opts.commandSource,
-  });
+  sendAgentMessage(agentInfo.agent_id, prompt, opts.images);
 
   emitMcpSystemMessage(agentInfo.agent_id, {
     tool: opts.sourceTool,
@@ -930,10 +925,7 @@ export function createMcpServer(
     },
   );
 
-  const spawnAgentTool = async (
-    args: SpawnAgentArgs,
-    commandSource?: ArgusCommandSource,
-  ) => {
+  const spawnAgentTool = async (args: SpawnAgentArgs) => {
     const {
       session,
       project_path,
@@ -1022,7 +1014,6 @@ export function createMcpServer(
         resumeSessionId: past?.sessionId,
         runnerId: past?.runnerId,
         sourceTool: "spawn_agent",
-        commandSource,
       });
     } catch (e) {
       return {
@@ -1701,15 +1692,12 @@ export function createMcpServer(
     },
   });
 
-  const sendAgentMessageTool = (
-    args: {
-      agent_id: string;
-      message: string;
-      attachments?: z.infer<typeof mcpAttachmentSchema>[];
-      parent_agent_id?: string;
-    },
-    commandSource?: ArgusCommandSource,
-  ) => {
+  const sendAgentMessageTool = (args: {
+    agent_id: string;
+    message: string;
+    attachments?: z.infer<typeof mcpAttachmentSchema>[];
+    parent_agent_id?: string;
+  }) => {
     const { agent_id, message, attachments, parent_agent_id } = args;
     let images;
     try {
@@ -1721,7 +1709,7 @@ export function createMcpServer(
       };
     }
 
-    sendAgentMessage(agent_id, message, images, { commandSource });
+    sendAgentMessage(agent_id, message, images);
 
     emitMcpSystemMessage(agent_id, {
       tool: "send_agent_message",
@@ -1765,11 +1753,6 @@ export function createMcpServer(
     },
     (args) => sendAgentMessageTool(args),
   );
-
-  registerImplementTicketTool(server, {
-    spawn: (args) => spawnAgentTool(args, "mcp_tool"),
-    send: (args) => sendAgentMessageTool(args, "mcp_tool"),
-  });
 
   // -------------------------------------------------------------------------
   // stop_agent

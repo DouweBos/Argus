@@ -124,19 +124,6 @@ export const ProjectAutomationConfig = z.object({
 });
 export type ProjectAutomationConfig = z.infer<typeof ProjectAutomationConfig>;
 
-/** The `verify` block of `.argus.json`: how an agent proves its work. */
-export const VerifyConfig = z.object({
-  /** Commands that must pass after the last code change. */
-  checks: z.array(z.string()),
-  /** How to sign in before driving the app: a `/skill` or a shell command. */
-  sign_in: z.string().nullish(),
-  /** Screenshot each device before changing code. Defaults to true. */
-  baseline: z.boolean().nullish(),
-  /** How to slow the backend down so loading states can be checked. */
-  slow_backend: z.string().nullish(),
-});
-export type VerifyConfig = z.infer<typeof VerifyConfig>;
-
 /** A project's `.argus.json`, normalized. */
 export const ArgusConfig = z.object({
   /** Setup instructions run once when a new session is created. */
@@ -173,8 +160,6 @@ export const ArgusConfig = z.object({
   tools: z.object({ disabled: z.array(z.string()).optional() }).nullish(),
   /** How far Argus automations may go in this repo. */
   automations: ProjectAutomationConfig.nullish(),
-  /** How an agent proves its work on this project; drives `/implement-ticket`. */
-  verify: VerifyConfig.nullish(),
 });
 export type ArgusConfig = z.infer<typeof ArgusConfig>;
 

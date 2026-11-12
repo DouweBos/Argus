@@ -19,8 +19,6 @@
         account("awaiting-approval", GalleryAccount(phase: .awaitingApproval, selfKind: "mac")),
         customRunner("acp-agent", acpDraft),
         customRunner("gateway", gatewayDraft),
-        verify("empty", ArgusConfigDraft()),
-        verify("filled", verifyDraft),
         projectSheet("mac-only", repoFile: false, section: .setup),
         projectSheet("layered", repoFile: true, section: .setup),
         projectSheet("overridden", repoFile: true, section: .run),
@@ -59,20 +57,6 @@
       "browser_url": .string("http://localhost:3000"),
       "protected_branches": .array([.string("main"), .string("release")]),
     ]
-
-    private static var verifyDraft: ArgusConfigDraft {
-      var draft = ArgusConfigDraft()
-      draft.verifyChecks = ["pnpm tsc --noEmit", "pnpm lint", "pnpm test", "maestro test .maestro/smoke"].map { .init($0) }
-      draft.verifySignIn = "/login-test-account"
-      draft.verifySlowBackend = "pnpm mock-api --latency 3000"
-      return draft
-    }
-
-    private static func verify(_ state: String, _ draft: ArgusConfigDraft) -> GalleryStory {
-      GalleryStory("project-settings/verify/\(state)", size: CGSize(width: 710, height: 580)) {
-        VerifyStage(draft: draft)
-      }
-    }
 
     private static let acpDraft = CustomRunnerDraft(
       runnerId: "custom:goose", displayName: "Goose", baseRunnerId: CustomRunnerDraft.acpBaseId,
@@ -114,18 +98,6 @@
       ) {
         AccountSettingsTab()
       }
-    }
-  }
-
-  private struct VerifyStage: View {
-    @State var draft: ArgusConfigDraft
-
-    var body: some View {
-      Form {
-        VerifySection(draft: $draft)
-      }
-      .formStyle(.grouped)
-      .toggleStyle(.argusSwitch)
     }
   }
 

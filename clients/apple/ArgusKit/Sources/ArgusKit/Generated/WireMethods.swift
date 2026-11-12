@@ -5468,7 +5468,6 @@ extension ArgusProtocol {
       public var claudeAccountId: String?
       public var images: [RemoteImageAttachment]?
       public var linearIssue: String?
-      public var verify: Bool?
 
       enum CodingKeys: String, CodingKey {
         case repoRoot = "repo_root"
@@ -5483,10 +5482,9 @@ extension ArgusProtocol {
         case claudeAccountId = "claude_account_id"
         case images = "images"
         case linearIssue = "linear_issue"
-        case verify = "verify"
       }
 
-      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil, model: String? = nil, permissionMode: RemotePermissionMode? = nil, runnerId: String? = nil, claudeAccountId: String? = nil, images: [RemoteImageAttachment]? = nil, linearIssue: String? = nil, verify: Bool? = nil) {
+      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil, model: String? = nil, permissionMode: RemotePermissionMode? = nil, runnerId: String? = nil, claudeAccountId: String? = nil, images: [RemoteImageAttachment]? = nil, linearIssue: String? = nil) {
         self.repoRoot = repoRoot
         self.branch = branch
         self.description = description
@@ -5499,7 +5497,6 @@ extension ArgusProtocol {
         self.claudeAccountId = claudeAccountId
         self.images = images
         self.linearIssue = linearIssue
-        self.verify = verify
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -5516,7 +5513,6 @@ extension ArgusProtocol {
         try c.encodeIfPresent(claudeAccountId, forKey: .claudeAccountId)
         try c.encodeIfPresent(images, forKey: .images)
         try c.encodeIfPresent(linearIssue, forKey: .linearIssue)
-        try c.encodeIfPresent(verify, forKey: .verify)
       }
     }
 

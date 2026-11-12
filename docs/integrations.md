@@ -98,42 +98,6 @@ to use these tools: read the ticket and its linked frames before coding, and
 run `design_compare` after the last code change (left out when device control
 is off for the agent).
 
-## Implementing a ticket, with proof
-
-`/implement-ticket ENG-123` (or an issue link) runs the whole validation loop
-on a ticket, with any runner. Anything you type after the ticket is passed
-along as notes. The agent:
-
-1. reads the issue and writes down every acceptance criterion;
-2. pulls every linked Figma frame up front into spec files and images, so it
-   works from the design rather than from memory;
-3. picks the devices the ticket calls for (say a phone and a tablet), using
-   the one it already has and starting throwaway ones for the rest, and signs
-   in;
-4. screenshots a baseline before changing code;
-5. implements the ticket;
-6. drives every criterion on every device, confirms it from what's on
-   screen, compares with its Figma frame and writes down each difference;
-7. runs the project's checks;
-8. repeats until a full pass comes after its last code change;
-9. ends with a report: per criterion and device, the evidence taken after
-   the last change, then the check results.
-
-The checks, sign-in, baseline and backend slowdown come from the
-project's [`verify` block](./project-settings.md#verify--how-an-agent-proves-its-work).
-Without one, the agent uses the project's usual scripts and suggests a block
-for you. Notes and evidence are kept in
-`.argus/verify/<ticket>/` in the worktree, out of git.
-
-When you start from an issue in a new worktree, turn on **Verify** to start
-the agent on `/implement-ticket` instead of the plain issue. A project's own
-`/implement-ticket` command, if it has one, takes precedence.
-
-An orchestrating agent starts the same loop with Argus's `implement_ticket`
-MCP tool: give it the ticket, any notes, and either a session to start a new
-agent in or an idle agent to hand it to. The agent's transcript shows
-`/implement-ticket` just as if you had typed it.
-
 ## Reporting back
 
 When a session's work lands, Argus comments on its issue. The comment has the

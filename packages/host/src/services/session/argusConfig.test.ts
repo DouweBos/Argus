@@ -217,7 +217,7 @@ describe("project config", () => {
       const file = {
         browser_url: "http://repo",
         related_projects: [{ path: "../api", description: "Backend" }],
-        verify: { checks: ["pnpm test"] },
+        tools: { disabled: ["device-debug"] },
       };
       writeJson(path.join(repo, ".argus.json"), file);
       importProjectConfig(repo, JSON.stringify(file));
@@ -227,11 +227,11 @@ describe("project config", () => {
 
       const config = loadArgusConfig(repo);
       expect(config.related_projects).toEqual(file.related_projects);
-      expect(config.verify?.checks).toEqual(["pnpm test"]);
+      expect(config.tools?.disabled).toEqual(["device-debug"]);
       expect(Object.keys(loadHostArgusConfig(repo) ?? {}).sort()).toEqual([
         "browser_url",
         "related_projects",
-        "verify",
+        "tools",
       ]);
     });
 

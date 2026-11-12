@@ -156,7 +156,7 @@ extension ProjectSettingsSheet {
 enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
   case setup, workspaceEnv
   case run, terminals, browser, deeplinks
-  case branchProtection, releaseNotes, agent, llm, verify, relatedProjects, automations, tools
+  case branchProtection, releaseNotes, agent, llm, relatedProjects, automations, tools
   case branchPrefix, worktreeLocation
   case preview
 
@@ -174,7 +174,6 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
     case .releaseNotes: "Release notes"
     case .agent: "Agent"
     case .llm: "LLM"
-    case .verify: "Verify"
     case .relatedProjects: "Related projects"
     case .automations: "Automations"
     case .tools: "Tools"
@@ -196,7 +195,6 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
     case .releaseNotes: "doc.text"
     case .agent: "sparkles"
     case .llm: "cpu"
-    case .verify: "checkmark.seal"
     case .relatedProjects: "square.stack.3d.up"
     case .automations: "clock.arrow.circlepath"
     case .tools: "wrench.and.screwdriver"
@@ -219,7 +217,6 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
     case .releaseNotes: ["release_note_patterns"]
     case .agent: ["auto_continue_on_limit"]
     case .llm: ["llm"]
-    case .verify: ["verify"]
     case .relatedProjects: ["related_projects"]
     case .automations: ["automations"]
     case .tools: ["tools"]
@@ -230,7 +227,7 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
   static let groups: [(title: String, sections: [ProjectSettingsSection])] = [
     ("Workspace", [.setup, .workspaceEnv]),
     ("Runtime", [.run, .terminals, .browser, .deeplinks]),
-    ("Workflow", [.branchProtection, .releaseNotes, .agent, .llm, .verify, .relatedProjects, .automations, .tools]),
+    ("Workflow", [.branchProtection, .releaseNotes, .agent, .llm, .relatedProjects, .automations, .tools]),
     ("Personal", [.branchPrefix, .worktreeLocation]),
     ("Reference", [.preview]),
   ]
@@ -259,7 +256,6 @@ struct ProjectSettingsDetail: View {
       case .releaseNotes: ReleaseNotesSection(draft: $settings.draft)
       case .agent: AgentSection(draft: $settings.draft)
       case .llm: LLMSection(draft: $settings.draft)
-      case .verify: VerifySection(draft: $settings.draft)
       case .relatedProjects: RelatedProjectsSection(draft: $settings.draft)
       case .automations: ProjectAutomationsSection(draft: $settings.draft)
       case .tools: ProjectToolsSection(draft: $settings.draft)

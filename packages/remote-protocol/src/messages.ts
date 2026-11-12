@@ -374,8 +374,6 @@ export const MethodParams = {
      * `description` are ignored.
      */
     linear_issue: z.string().max(500).optional(),
-    /** With `linear_issue`: start the agent on `/implement-ticket`, with `prompt` as its notes. */
-    verify: z.boolean().optional(),
   }),
   "sessions.files": z.object({ session_id: z.string() }),
   /** One file's contents, read-only: the phone views, it never writes. */

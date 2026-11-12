@@ -55,10 +55,6 @@ import {
 } from "../agent/agentService";
 import { alwaysAllowRule } from "../agent/alwaysAllowRule";
 import {
-  implementTicketMessage,
-  withArgusCommands,
-} from "../agent/argusCommands";
-import {
   deleteHistoryEntry,
   loadConversation,
   loadHistoryIndex,
@@ -1260,7 +1256,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       throw new GatewayError("not_found", "capabilities not ready");
     }
 
-    return { capabilities: toRemoteAgentCapabilities(withArgusCommands(init)) };
+    return { capabilities: toRemoteAgentCapabilities(init) };
   },
 
   "agents.send": async (params, ctx) => {
@@ -1565,7 +1561,6 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       claude_account_id,
       images,
       linear_issue,
-      verify,
     } = parse("sessions.create", params);
     // Before setup finishes and its agent starts, so that agent runs on the account picked.
     const pin = async (sessionId: string): Promise<void> => {
@@ -1592,11 +1587,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         ),
       );
       await pin(session.id);
-      // The command fetches the issue itself; only its screenshots ride along.
-      const first = verify
-        ? implementTicketMessage(start.linkedIssue.identifier, prompt ?? "")
-        : start.prompt;
-      startAgentWhenReady(session.id, first, {
+      startAgentWhenReady(session.id, start.prompt, {
         model,
         permissionMode: permission_mode,
         runnerId: runner_id,

@@ -15,7 +15,7 @@ extension GalleryFixtures {
     return try! ProtocolCodec.decoder.decode(HostStore.LinearIssue.self, from: Data(GalleryJSON.encode(json).utf8))
   }
 
-  /// `home` plus a connected Linear, so the issue chips and the Verify option show.
+  /// `home` plus a connected Linear, so the issue chips show.
   public static var homeWithLinear: [String: String] {
     home.merging([
       RemoteMethod.integrationsList.rawValue: GalleryJSON.encode([

@@ -21,16 +21,12 @@ import { git } from "../session/git";
 /** Renders at 3x: the scale of most current phones, so the files read crisp. */
 const REFERENCE_SCALE = 3;
 
-/** Adds `/<dir>/` to the repo's `info/exclude` once. */
-export async function excludeFromGit(
-  worktree: string,
-  dir = DESIGN_DIR,
-): Promise<void> {
+async function excludeFromGit(worktree: string): Promise<void> {
   const common = (
     await git(worktree, ["rev-parse", "--git-common-dir"])
   ).trim();
   const exclude = path.resolve(worktree, common, "info", "exclude");
-  const line = `/${dir}/`;
+  const line = `/${DESIGN_DIR}/`;
   const current = await fs.readFile(exclude, "utf8").catch(() => "");
   if (!current.split("\n").includes(line)) {
     await fs.mkdir(path.dirname(exclude), { recursive: true });

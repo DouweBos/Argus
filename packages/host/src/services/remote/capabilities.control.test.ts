@@ -921,32 +921,6 @@ describe("sessions.create with a prompt", () => {
     );
   });
 
-  it("starts a Verify issue on /implement-ticket with the notes after it", async () => {
-    const { createSession } = vi.mocked(await import("../session/manager"));
-    createSession.mockResolvedValueOnce({ id: "s7", status: "ready" } as never);
-    appState.sessions.set("s7", { id: "s7", status: "ready" } as never);
-
-    await dispatch(
-      "sessions.create",
-      {
-        repo_root: "/repo",
-        branch: "",
-        description: "",
-        linear_issue: "ENG-1",
-        prompt: "tablet too",
-        verify: true,
-      },
-      makeCtx(["monitor", "control"]),
-    );
-    await vi.waitFor(() =>
-      expect(sendAgentMessage).toHaveBeenCalledWith(
-        "a1",
-        "/implement-ticket ENG-1\n\ntablet too",
-        [{ data: "aGk=", media_type: "image/png" }],
-      ),
-    );
-  });
-
   it("refuses a permission mode the phone may not grant", async () => {
     await expect(
       dispatch(

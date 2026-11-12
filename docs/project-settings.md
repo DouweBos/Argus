@@ -21,7 +21,7 @@ Mac's config merged over it:
   collision.
 - `run`, `workspace_env`, `protected_branches` and `simulator_deeplinks` —
   this Mac's list replaces the repo's when it has entries.
-- Everything else (`browser_url`, `llm`, `tools`, `automations`, `verify`,
+- Everything else (`browser_url`, `llm`, `tools`, `automations`,
   …) — this Mac's value wins when set.
 
 Because lists from the repo are combined rather than replaced, an entry that
@@ -44,7 +44,7 @@ delete it whenever you like.
 
 Open **Project Settings** from a project's menu in the sidebar → _Project
 Settings…_. Sections cover Setup, Workspace env, Run commands, Terminals,
-Browser, Deep links, Branch protection, Release notes, Agent, LLM, Verify,
+Browser, Deep links, Branch protection, Release notes, Agent, LLM,
 Related projects, Automations and Tools, plus the personal Branch prefix and
 Worktree location (see
 [per-project personal settings](./app-settings.md#per-project-personal-settings))
@@ -93,7 +93,6 @@ tool also save to this Mac, never to the repo.
 | `related_projects`                          | yes (Related projects)  |
 | `automations`                               | yes (Automations)       |
 | `tools.disabled`                            | yes (Tools)             |
-| `verify`                                    | yes (Verify)            |
 
 ---
 
@@ -116,8 +115,7 @@ tool also save to this Mac, never to the repo.
   "auto_fetch_minutes": 15,
   "llm":                { "runner": "claude-code", "model": "claude-opus-4-7" },
   "tools":              { "disabled": ["device-debug"] },
-  "automations":        { "autonomy_ceiling": "draft", "disabled": [...], "path_denylist": [...] },
-  "verify":             { "checks": [...], "sign_in": "/login", "baseline": true, "slow_backend": "..." }
+  "automations":        { "autonomy_ceiling": "draft", "disabled": [...], "path_denylist": [...] }
 }
 ```
 
@@ -555,39 +553,6 @@ itself, not by the instructions an automation is handed — a playbook telling t
 agent to push anyway is refused at the tool call, and so is the agent running
 `git push` or `gh pr create` from a terminal in a session the automation
 started.
-
----
-
-## `verify` — how an agent proves its work
-
-What an agent runs before it calls a change done: the commands that must pass
-after the last code change, how to sign in, and how to slow the backend down so
-loading states can be seen. Which devices to check on depends on the ticket, so
-it isn't set here: the agent uses the device it already has and starts a
-throwaway one for each other form factor the change affects.
-
-```jsonc
-"verify": {
-  "checks": ["pnpm tsc --noEmit", "pnpm lint", "pnpm test", "maestro test .maestro/smoke"],
-  "sign_in": "/login-test-account",
-  "baseline": true,
-  "slow_backend": "pnpm mock-api --latency 3000"
-}
-```
-
-- **`checks`** — shell commands run from the worktree root, in order. Type
-  checks, lint, unit tests and end-to-end flows (Maestro, Playwright) all go
-  here.
-- **`sign_in`** — a `/skill` the agent invokes, or a shell command it runs,
-  to get each device past the login screen.
-- **`baseline`** — screenshot every device before changing code, so the
-  report can show before and after. Defaults to `true`.
-- **`slow_backend`** — a command or instruction that delays the backend
-  (a proxy with latency, a mock server flag). Omit it to skip the loading-state
-  check.
-
-A `verify` block set on this Mac replaces the checked-in block as a whole.
-Edit via **Project Settings → Verify**.
 
 ---
 

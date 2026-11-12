@@ -18,7 +18,6 @@ import type {
   RunCommand,
   SetupCopyEntry,
   SimulatorDeeplinkConfig,
-  VerifyConfig,
   WorkspaceEnvConfig,
 } from "./models";
 import { warn } from "@argus/host/logger";
@@ -103,39 +102,6 @@ export function normalizeToolsConfig(
   }
 
   return { disabled: cleaned };
-}
-
-/**
- * `verify` block: trimmed strings, empty lists dropped, null when nothing is
- * set. A legacy `devices` key is ignored — agents pick devices per ticket.
- */
-export function normalizeVerifyConfig(input: unknown): VerifyConfig | null {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    return null;
-  }
-  const raw = input as Record<string, unknown>;
-  const list = (v: unknown): string[] =>
-    Array.isArray(v)
-      ? v
-          .filter((x): x is string => typeof x === "string")
-          .map((x) => x.trim())
-          .filter((x) => x.length > 0)
-      : [];
-  const text = (v: unknown): string | null =>
-    typeof v === "string" && v.trim().length > 0 ? v.trim() : null;
-  const out: VerifyConfig = {
-    checks: list(raw.checks),
-    sign_in: text(raw.sign_in),
-    baseline: typeof raw.baseline === "boolean" ? raw.baseline : null,
-    slow_backend: text(raw.slow_backend),
-  };
-  const empty =
-    out.checks.length === 0 &&
-    out.sign_in == null &&
-    out.baseline == null &&
-    out.slow_backend == null;
-
-  return empty ? null : out;
 }
 
 /**

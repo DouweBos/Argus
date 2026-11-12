@@ -254,10 +254,6 @@ An orchestrator can hand a child agent its own devices for the run —
 iPhone and an iPad at once. The child's system prompt lists every device it
 holds, and no other agent is given them until it ends.
 
-`implement_ticket` hands a Linear ticket to a new agent in a session, or to
-an idle one, as [`/implement-ticket`](./integrations.md#implementing-a-ticket-with-proof):
-it implements the ticket and proves every acceptance criterion on device.
-
 ### Watching a pull request
 
 An agent that opened a pull request can call `watch_pull_request` and end
