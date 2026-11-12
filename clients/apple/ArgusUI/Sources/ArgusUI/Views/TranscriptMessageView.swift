@@ -84,11 +84,6 @@ public struct TranscriptMessageView: View {
         .contentShape(.rect)
         .messageMenu(menu, for: message)
       }
-      if let command = message.command, let playbook = command.playbook {
-        PlaybookDisclosure(command: command, messageId: message.id) {
-          MarkdownView(text: playbook, baseSize: 14)
-        }
-      }
       // A call waiting on a decision sits at the transcript's foot (`TranscriptPrompts`), as on the Mac.
       ForEach(settledCalls) { call in
         ToolCallCard(agentKey: agentKey, call: call, depth: 0)

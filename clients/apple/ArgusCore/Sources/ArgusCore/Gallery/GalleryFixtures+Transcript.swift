@@ -28,7 +28,7 @@ extension GalleryFixtures {
     case empty
     /// Continued on Codex from a Claude Code chat that hit its limit.
     case handoff
-    /// Started with `/implement-ticket`, then compacted with the runner's `/compact`.
+    /// The runner's own slash commands: a bare `/review`, then `/compact` with text after it.
     case command
   }
 

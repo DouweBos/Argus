@@ -34,7 +34,7 @@ struct TranscriptMessageRow: View, Equatable {
   }
 
   /// A sent message's bubble takes at most this share of the column.
-  static let bubbleFraction: CGFloat = 0.7
+  private static let bubbleFraction: CGFloat = 0.7
   private static let bubblePadding = EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
 
   /// How wide a user bubble lays out in a column this wide.
@@ -73,21 +73,14 @@ struct TranscriptMessageRow: View, Equatable {
     }
   }
 
-  /// A command: its chip, its notes, and for an Argus command the playbook the agent got.
+  /// A runner command: its chip, then whatever followed it.
   private func commandBody(_ command: RemoteMessageCommand) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       CommandChip(command: command)
       if let text = model.text(for: message) {
-        messageText(text, fills: command.playbook != nil)
-      }
-      if let playbook = command.playbook {
-        PlaybookDisclosure(command: command, messageId: message.id) {
-          TranscriptMessageText(rendered: model.playbook(playbook, for: message.id), unit: nil)
-        }
+        messageText(text, fills: false)
       }
     }
-    // A playbook needs the room; a bare runner command hugs its chip.
-    .frame(maxWidth: command.playbook != nil ? .infinity : nil, alignment: .leading)
     .padding(isUser ? Self.bubblePadding : EdgeInsets())
     .background {
       if isUser {

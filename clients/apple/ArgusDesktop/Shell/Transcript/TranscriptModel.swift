@@ -80,18 +80,6 @@ final class TranscriptModel {
     return text
   }
 
-  /// An Argus command's playbook, laid out like a reply; the prompt never changes, so cached by message.
-  func playbook(_ prompt: String, for messageId: String) -> TranscriptRendered {
-    let key = "playbook:\(messageId)" as NSString
-    let scale = TextScale.shared.factor
-    if let cached = rendered.object(forKey: key), cached.source == [prompt], cached.scale == scale {
-      return cached.text
-    }
-    let text = TranscriptMarkdown.render(markdown: prompt)
-    rendered.setObject(Rendered(source: [prompt], scale: scale, text: text), forKey: key)
-    return text
-  }
-
   static func textUnit(_ messageId: String) -> String { "m:\(messageId)" }
   static func toolUnit(_ messageId: String, _ callId: String) -> String { "t:\(messageId):\(callId)" }
 

@@ -9,7 +9,6 @@ import SwiftUI
 struct TranscriptView: View {
   @Environment(HostStore.self) private var host
   @Environment(\.codeOpener) private var codeOpener
-  @Environment(DesktopModel.self) private var desktop
 
   let agentKey: String
   let sessionId: String
@@ -87,8 +86,6 @@ struct TranscriptView: View {
     .environment(model)
     .environment(\.transcriptLinks, links)
     .environment(\.toolTextRenderer, toolTextRenderer)
-    .environment(\.openIssue) { [desktop] in desktop.navigate(.issues(issue: $0)) }
-    .environment(\.playbookOpened) { MacTelemetry.capture(.transcriptPlaybookOpened(command: $0.telemetryName)) }
     .task(id: agentKey) {
       landed = false
       controller.onNeedOlder = { loadOlder() }

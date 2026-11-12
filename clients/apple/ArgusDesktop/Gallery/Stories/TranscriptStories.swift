@@ -15,20 +15,6 @@
         }
       } + [
         GalleryStory(
-          "transcript/command-playbook", size: CGSize(width: 960, height: 820),
-          fixtures: GalleryFixtures.transcript(.command),
-          setup: { stage in
-            // The pane claims this same session, so the playbook is open when it lays out.
-            TranscriptSessions.shared.forgetAll()
-            TranscriptSessions.shared.session(
-              for: GalleryFixtures.transcriptAgent, owner: .init(), store: stage.host,
-              sessionId: GalleryFixtures.transcriptSession
-            ).model.toolCards.expanded[PlaybookDisclosure<EmptyView>.key(GalleryFixtures.commandMessageId)] = true
-          }
-        ) {
-          AgentPane(agentId: GalleryFixtures.transcriptAgent, sessionId: GalleryFixtures.transcriptSession)
-        },
-        GalleryStory(
           "agent/mcp-servers", size: CGSize(width: 320, height: 420), fixtures: GalleryFixtures.transcript(.idle)
         ) {
           AgentMcpServersView(agentId: GalleryFixtures.transcriptAgent)

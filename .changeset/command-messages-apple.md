@@ -3,4 +3,4 @@
 # platforms: mac, ios
 ---
 
-Slash commands in a chat show as a chip with their ticket linked, and an Argus command like `/implement-ticket` can reveal the playbook the agent received.
+Slash commands sent to the agent, like `/compact`, show as a chip in the chat, with anything typed after them as the message text.

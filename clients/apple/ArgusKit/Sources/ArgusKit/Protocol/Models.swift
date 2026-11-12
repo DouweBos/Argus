@@ -475,28 +475,15 @@ public struct RemoteMessageHandoff: Codable, Hashable, Sendable {
   }
 }
 
-/// A slash command Argus recognized: one of its own, expanded into `prompt`
-/// before it reached the agent, or the runner's, passed through.
+/// A message that was one of the runner's own slash commands (`/compact keep the plan`).
 public struct RemoteMessageCommand: Codable, Hashable, Sendable {
-  public enum Kind: String, Codable, Sendable { case argus, runner }
-
   public var name: String
-  public var kind: Kind
-  /// The main argument — `/implement-ticket`'s ticket.
-  public var argument: String?
-  /// Everything after the main argument.
-  public var notes: String?
-  /// The prompt the agent received in place of the typed text.
-  public var prompt: String?
+  /// Whatever followed the command's name.
+  public var args: String?
 
-  public init(
-    name: String, kind: Kind, argument: String? = nil, notes: String? = nil, prompt: String? = nil
-  ) {
+  public init(name: String, args: String? = nil) {
     self.name = name
-    self.kind = kind
-    self.argument = argument
-    self.notes = notes
-    self.prompt = prompt
+    self.args = args
   }
 }
 
