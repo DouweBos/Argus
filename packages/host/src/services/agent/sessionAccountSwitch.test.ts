@@ -2,13 +2,16 @@ import type * as AgentServiceModule from "./agentService";
 import type { AgentSession } from "./models";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { capture, forgetLimitResume, limitResumeAt } = vi.hoisted(() => ({
-  capture: vi.fn(),
-  forgetLimitResume: vi.fn(),
-  limitResumeAt: vi.fn<() => number | null>(),
-}));
+const { capture, emitHostEvent, forgetLimitResume, limitResumeAt } = vi.hoisted(
+  () => ({
+    capture: vi.fn(),
+    emitHostEvent: vi.fn(),
+    forgetLimitResume: vi.fn(),
+    limitResumeAt: vi.fn<() => number | null>(),
+  }),
+);
 
-vi.mock("@argus/host/bus", () => ({ emitHostEvent: () => {} }));
+vi.mock("@argus/host/bus", () => ({ emitHostEvent }));
 vi.mock("../claudeAuth/accounts", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   resolveAccountForSession: (s: { claude_account_id?: string | null }) =>
@@ -91,6 +94,7 @@ describe("switchSessionClaudeAccount", () => {
     kill.mockReset().mockResolvedValue();
     respawn.mockClear();
     capture.mockClear();
+    emitHostEvent.mockClear();
     forgetLimitResume.mockClear();
     limitResumeAt.mockReset().mockReturnValue(null);
   });
@@ -158,6 +162,8 @@ describe("switchSessionClaudeAccount", () => {
       source: "picker",
       success: true,
     });
+    // The respawn's statuses are suppressed, so clients learn the account from this.
+    expect(emitHostEvent).toHaveBeenCalledWith("agent:account:a1", "personal");
   });
 
   it("waits for a busy agent's turn to end, then moves it", async () => {

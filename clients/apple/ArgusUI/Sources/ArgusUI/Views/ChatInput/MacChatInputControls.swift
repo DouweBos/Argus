@@ -34,34 +34,18 @@
 
     private var modelMenu: some View {
       ChromeMenuButton(isPresented: $composer.showingModelPicker, edge: .above) {
-        if composer.models.isEmpty {
-          ChromeMenuEntry.note("No agent has reported its models yet.")
-        } else {
-          ChromeMenuEntry.header("Model")
-          for model in composer.models {
-            ChromeMenuItem(model.displayName, subtitle: model.description, checked: model.value == (composer.pickedModel ?? "default")) {
-              composer.setModel(model.value)
-            }
-          }
-        }
-        if composer.offersAccounts {
-          ChromeMenuEntry.divider
-          ChromeMenuEntry.header("Account")
-          ChromeMenuItem("Follow computer default", checked: composer.accountId == ComposerModel.followDefaultAccount) {
-            composer.setAccount(ComposerModel.followDefaultAccount)
-          }
-          for account in composer.accounts {
-            ChromeMenuItem(account.displayName, icon: .symbol(Icon.person), checked: composer.accountId == account.id) {
-              composer.setAccount(account.id)
-            }
-          }
-        }
+        ComposerModelMenu.entries(composer)
       } label: { open in
         ComposerPillLabel(icon: Icon.agent, title: composer.modelLabel, open: open)
       }
       .buttonStyle(.argusPlain)
       .fixedSize()
-      .help("Switch model")
+      .help(modelHelp)
+    }
+
+    private var modelHelp: String {
+      guard composer.offersAccounts, let account = composer.effectiveAccountName else { return "Switch model" }
+      return "Switch model or account · on \(account)"
     }
 
     /// Which CLI the started agent runs on; one whose CLI is missing opens its setup, or is

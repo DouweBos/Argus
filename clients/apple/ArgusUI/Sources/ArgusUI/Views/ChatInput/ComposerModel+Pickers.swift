@@ -81,6 +81,31 @@ extension ComposerModel {
 
   public var activeAccountName: String? { accountName(host.activeClaudeAccountId) }
 
+  /// The account a live agent's process runs as; nil before a start or from older hosts.
+  public var runningAccountId: String? { starter == nil ? status?.accountId : nil }
+
+  /// What "Follow computer default" lands on. A running agent keeps its account
+  /// when the default changes, so that one leads when the two differ.
+  public var followDefaultHint: String? {
+    guard accountId == Self.followDefaultAccount, let running = runningAccountId,
+      running != host.activeClaudeAccountId, let name = accountName(running)
+    else { return activeAccountName }
+    return activeAccountName.map { "On \(name) · default is \($0)" } ?? "On \(name)"
+  }
+
+  /// Marks the account the agent still runs on while a picked one waits for its turn to end.
+  public func accountHint(_ id: String) -> String? {
+    guard accountId != Self.followDefaultAccount, let running = runningAccountId, running != accountId,
+      id == running
+    else { return nil }
+    return "Running now"
+  }
+
+  /// The account the agent is on, else the one it will start on.
+  public var effectiveAccountName: String? {
+    accountName(runningAccountId) ?? (accountId == Self.followDefaultAccount ? activeAccountName : accountName(accountId))
+  }
+
   public func setModel(_ value: String) {
     if starter != nil {
       draftModel = value

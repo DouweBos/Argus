@@ -30,7 +30,23 @@
           LimitHandoffCard(agentId: "a-1", accounts: handoffAccounts) {}
             .padding(12)
         },
+        // Following the default, on it; then still on Work after the default moved to Personal.
+        GalleryStory(
+          "composer/account-menu/on-default", size: CGSize(width: 360, height: 0),
+          fixtures: GalleryFixtures.transcript(.idle), setup: { await loadAccountMenu($0.host) }
+        ) { AccountMenuStory() },
+        GalleryStory(
+          "composer/account-menu/default-changed", size: CGSize(width: 360, height: 0),
+          fixtures: GalleryFixtures.transcript(.idle, runningOn: "work"), setup: { await loadAccountMenu($0.host) }
+        ) { AccountMenuStory() },
       ]
+    }
+
+    private static func loadAccountMenu(_ host: HostStore) async {
+      let agent = GalleryFixtures.transcriptAgent
+      await host.loadAgentStatus(agentId: agent)
+      await host.loadCapabilities(agentId: agent)
+      await host.refreshClaudeAccounts()
     }
 
     private static let handoffAccounts: [ArgusProtocol.LimitHandoffAccount] = try! ProtocolCodec.decoder.decode(
@@ -64,6 +80,19 @@
       {"id":"custom:gateway","display_name":"Team gateway","is_custom":true,"models":[],"available":true}
       ]}
       """
+
+    /// The model pill's menu, drawn open.
+    private struct AccountMenuStory: View {
+      @Environment(HostStore.self) private var host
+
+      var body: some View {
+        let composer = ComposerModel(
+          agentId: GalleryFixtures.transcriptAgent, sessionId: GalleryFixtures.transcriptSession, host: host,
+          style: .desktop)
+        ChromeMenuSurface { ComposerModelMenu.entries(composer) }
+          .padding(12)
+      }
+    }
 
     private static var browser: PickedElement {
       PickedElement(

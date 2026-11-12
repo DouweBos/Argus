@@ -192,6 +192,8 @@ public struct RemoteAgentStatus: Codable, Hashable, Sendable, Identifiable {
   public var runnerId: String?
   /// The host resumes it on its next start; nil from older hosts.
   public var pinned: Bool?
+  /// Claude account its process runs as, which may not be the computer's current default; nil from older hosts.
+  public var accountId: String?
 
   public var id: String { agentId }
   public var isPinned: Bool { pinned == true }
@@ -214,6 +216,7 @@ public struct RemoteAgentStatus: Codable, Hashable, Sendable, Identifiable {
     case runnerSessionId = "runner_session_id"
     case runnerId = "runner_id"
     case pinned
+    case accountId = "account_id"
   }
 }
 

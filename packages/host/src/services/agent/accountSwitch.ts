@@ -145,6 +145,11 @@ async function moveAgent(
   }
   // The new account isn't the one that ran out.
   forgetLimitResume(agentId);
+  // The respawn's own status changes are suppressed; the status carries the account.
+  emitHostEvent(
+    `agent:account:${agentId}`,
+    appState.agents.get(agentId)?.accountId,
+  );
   capture(true);
 }
 

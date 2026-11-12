@@ -4,9 +4,9 @@
   import SwiftUI
 
   /// Which sheet the phone composer's chip row has open.
-  enum PhoneComposerPicker: String, Identifiable {
+  public enum PhoneComposerPicker: String, Identifiable {
     case model, account, mode, effort, project, sideQuestion
-    var id: String { rawValue }
+    public var id: String { rawValue }
   }
 
   /// The pills along the phone composer's foot, as the Mac's: model (and
@@ -77,9 +77,17 @@
         }
         if composer.offersAccounts {
           Picker("Account", selection: Binding(get: { composer.accountId }, set: composer.setAccount)) {
-            Text("Follow computer default").tag(ComposerModel.followDefaultAccount)
+            Button {} label: {
+              Text("Follow computer default")
+              if let hint = composer.followDefaultHint { Text(hint) }
+            }
+            .tag(ComposerModel.followDefaultAccount)
             ForEach(composer.accounts, id: \.id) { account in
-              Label(account.displayName, systemImage: Icon.person).tag(account.id)
+              Button {} label: {
+                Label(account.displayName, systemImage: Icon.person)
+                if let hint = composer.accountHint(account.id) { Text(hint) }
+              }
+              .tag(account.id)
             }
           }
           .pickerStyle(.inline)
@@ -88,7 +96,14 @@
         ComposerPillLabel(icon: Icon.agent, title: compact ? Self.short(composer.modelLabel) : composer.modelLabel, chevron: !compact)
       }
       .menuIndicator(.hidden)
-      .accessibilityLabel("Model: \(composer.modelLabel)")
+      .accessibilityLabel(modelAccessibilityLabel)
+    }
+
+    private var modelAccessibilityLabel: String {
+      guard composer.offersAccounts, let account = composer.effectiveAccountName else {
+        return "Model: \(composer.modelLabel)"
+      }
+      return "Model: \(composer.modelLabel), account: \(account)"
     }
 
     private func effortMenu(compact: Bool) -> some View {
@@ -135,14 +150,19 @@
     }
   }
 
-  struct PhoneComposerPickerSheet: View {
+  public struct PhoneComposerPickerSheet: View {
     let composer: ComposerModel
     let which: PhoneComposerPicker
+
+    public init(composer: ComposerModel, which: PhoneComposerPicker) {
+      self.composer = composer
+      self.which = which
+    }
 
     /// The effort picker's value for "no level": the CLI default.
     private static let defaultEffort = ""
 
-    var body: some View {
+    public var body: some View {
       switch which {
       case .model:
         PickerSheet(
@@ -157,10 +177,13 @@
           options: [
             .init(
               value: ComposerModel.followDefaultAccount, label: "Follow computer default",
-              hint: composer.activeAccountName)
+              hint: composer.followDefaultHint)
           ]
             + composer.accounts.map {
-              .init(value: $0.id, label: $0.displayName, hint: $0.subtitle.isEmpty ? nil : $0.subtitle)
+              .init(
+                value: $0.id, label: $0.displayName,
+                hint: [composer.accountHint($0.id), $0.subtitle.isEmpty ? nil : $0.subtitle].compactMap { $0 }
+                  .joined(separator: " · ").nilIfEmpty)
             },
           selected: [composer.accountId]
         ) { composer.setAccount($0) }

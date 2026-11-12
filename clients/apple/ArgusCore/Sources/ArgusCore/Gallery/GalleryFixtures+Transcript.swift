@@ -32,10 +32,13 @@ extension GalleryFixtures {
     case command
   }
 
-  /// Every reply the agent screen asks for, in `state`.
-  public static func transcript(_ state: TranscriptState) -> [String: String] {
+  /// Every reply the agent screen asks for, in `state`. The agent runs as `account`;
+  /// the computer's default is `personal`.
+  public static func transcript(_ state: TranscriptState, runningOn account: String = "personal") -> [String: String] {
     var fixtures = composer
-    fixtures[RemoteMethod.agentsStatus.rawValue] = GalleryJSON.encode(["agent": agentStatus(state)])
+    var status = agentStatus(state)
+    status["account_id"] = account
+    fixtures[RemoteMethod.agentsStatus.rawValue] = GalleryJSON.encode(["agent": status])
     fixtures[RemoteMethod.agentsTranscript.rawValue] = GalleryJSON.encode(transcriptPage(state))
     fixtures[RemoteMethod.agentsQueueList.rawValue] = GalleryJSON.encode([
       "messages": state == .working

@@ -667,6 +667,7 @@ export function toRemoteAgentStatus(a: AgentSession): RemoteAgentStatus {
     ...(runnerSessionId ? { runner_session_id: runnerSessionId } : {}),
     runner_id: a.runner.id,
     pinned: isPinned(a.agentId),
+    ...(a.accountId ? { account_id: a.accountId } : {}),
   };
 }
 

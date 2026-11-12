@@ -283,6 +283,7 @@ export interface DeviceConnectionOptions {
  * those as typed events, so mirroring them raw would send each twice.
  */
 const TYPED_AGENT_KINDS = new Set([
+  "account",
   "capabilities",
   "event",
   "limit-resume",
@@ -1070,6 +1071,7 @@ export class DeviceConnection implements DeviceMediaController {
         break;
       }
       // The pending continue rides on the status, so late joiners see it too.
+      case "account":
       case "limit-resume":
       case "limit-stall":
       case "pinned":

@@ -13181,6 +13181,7 @@ extension ArgusProtocol {
     public var runnerSessionId: String?
     public var runnerId: String?
     public var pinned: Bool?
+    public var accountId: String?
 
     enum CodingKeys: String, CodingKey {
       case agentId = "agent_id"
@@ -13202,9 +13203,10 @@ extension ArgusProtocol {
       case runnerSessionId = "runner_session_id"
       case runnerId = "runner_id"
       case pinned = "pinned"
+      case accountId = "account_id"
     }
 
-    public init(agentId: String, sessionId: String, sessionLabel: String? = nil, projectName: String? = nil, title: String? = nil, status: RemoteAgentStatusStatus, model: String? = nil, contextWindow: Double? = nil, permissionMode: String? = nil, parentAgentId: String? = nil, createdAt: Double? = nil, lastActivityAt: Double? = nil, awaiting: RemoteAgentStatusAwaiting? = nil, limitResumeAt: Double? = nil, limitStalled: Bool? = nil, effort: String? = nil, runnerSessionId: String? = nil, runnerId: String? = nil, pinned: Bool? = nil) {
+    public init(agentId: String, sessionId: String, sessionLabel: String? = nil, projectName: String? = nil, title: String? = nil, status: RemoteAgentStatusStatus, model: String? = nil, contextWindow: Double? = nil, permissionMode: String? = nil, parentAgentId: String? = nil, createdAt: Double? = nil, lastActivityAt: Double? = nil, awaiting: RemoteAgentStatusAwaiting? = nil, limitResumeAt: Double? = nil, limitStalled: Bool? = nil, effort: String? = nil, runnerSessionId: String? = nil, runnerId: String? = nil, pinned: Bool? = nil, accountId: String? = nil) {
       self.agentId = agentId
       self.sessionId = sessionId
       self.sessionLabel = sessionLabel
@@ -13224,6 +13226,7 @@ extension ArgusProtocol {
       self.runnerSessionId = runnerSessionId
       self.runnerId = runnerId
       self.pinned = pinned
+      self.accountId = accountId
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -13247,6 +13250,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(runnerSessionId, forKey: .runnerSessionId)
       try c.encodeIfPresent(runnerId, forKey: .runnerId)
       try c.encodeIfPresent(pinned, forKey: .pinned)
+      try c.encodeIfPresent(accountId, forKey: .accountId)
     }
   }
 

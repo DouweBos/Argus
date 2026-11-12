@@ -245,6 +245,22 @@ struct ComposerModelTests {
     #expect(!composer.offersAccounts)
   }
 
+  @Test("following the default names the account the agent is on, which leads once the default moves on")
+  func followDefaultHint() throws {
+    host.claudeAccounts = try ["work", "side"].map { id in
+      let json = #"{"id":"\#(id)","label":"\#(id)","needs_reauth":false,"rate_limited":false,"account_type":"claudeai"}"#
+      return try JSONDecoder().decode(RemoteClaudeAccount.self, from: Data(json.utf8))
+    }
+    host.activeClaudeAccountId = "work"
+    let composer = model()
+    #expect(composer.followDefaultHint == "work")
+    host.statusByAgent["a1"]?.accountId = "work"
+    #expect(composer.followDefaultHint == "work")
+    host.activeClaudeAccountId = "side"
+    #expect(composer.followDefaultHint == "On work · default is side")
+    #expect(composer.effectiveAccountName == "work")
+  }
+
   @Test("a start the account picker was never touched leaves the session's pin alone")
   func startWithoutAccount() async {
     var started: [ComposerStart] = []
