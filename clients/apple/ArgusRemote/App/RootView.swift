@@ -109,7 +109,7 @@ struct RootView: View {
       if sizeClass == .regular { columns } else { tabs }
     }
     // Stacked, unlike the pill below: it stays until signed back in or dismissed.
-    .safeAreaInset(edge: .top, spacing: 0) { AccountSessionNotice() }
+    .safeAreaInset(edge: .top, spacing: 0) { AccountRemovedNotice() }
     // Floated rather than stacked: a transient state should not resize the
     // whole layout on its way in and out.
     .overlay(alignment: .top) {

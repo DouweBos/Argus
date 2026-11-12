@@ -349,12 +349,12 @@ enum MacTelemetryEvent {
   case accountJoinActed(action: AccountStore.JoinAction, role: AccountStore.JoinRole)
   /// Starting the account over from this Mac, or noticing it was started over elsewhere.
   case accountReset(action: ResetAction)
-  /// Found signed out on launch or return: this Mac's keys outlived the sign-in behind them.
-  case accountSessionLost(reason: AccountSessionLossReason)
+  /// Signing a request with this Mac's member key didn't simply work.
+  case accountMemberAuth(outcome: AccountStore.MemberAuthOutcome)
   /// This Mac's own host, already linked when it went to add it: taken as is, or offered the move.
   case accountLocalHost(outcome: AccountStore.LocalHostOutcome)
-  /// The main window's signed-out notice: Sign In Again, or dismissed.
-  case accountSessionNotice(action: AccountStore.SessionNoticeAction, reason: AccountSessionLossReason)
+  /// The main window's "removed from your account" notice: Join Again, or dismissed.
+  case accountRemovedNotice(action: AccountStore.NoticeAction)
   /// This Mac removed or renamed a member of the account.
   case accountMemberChanged(action: AccountMemberAction, role: AccountMember.Role)
   /// This Mac's name setting changed; `linked`: renamed on the account too.
@@ -476,9 +476,9 @@ enum MacTelemetryEvent {
     case .pullRequestActed: "mac_pull_request_acted"
     case .accountJoinActed: "mac_account_join_acted"
     case .accountReset: "mac_account_reset"
-    case .accountSessionLost: "mac_account_session_lost"
+    case .accountMemberAuth: "mac_account_member_auth"
     case .accountLocalHost: "mac_account_local_host"
-    case .accountSessionNotice: "mac_account_session_notice"
+    case .accountRemovedNotice: "mac_account_removed_notice"
     case .accountMemberChanged: "mac_account_member_changed"
     case .deviceNameChanged: "mac_device_name_changed"
     case .paletteCommandRun: "mac_palette_command_run"
@@ -517,12 +517,12 @@ enum MacTelemetryEvent {
     switch self {
     case .launched:
       [:]
-    case .accountSessionLost(let reason):
-      ["reason": reason.rawValue]
+    case .accountMemberAuth(let outcome):
+      ["outcome": outcome.rawValue]
     case .accountLocalHost(let outcome):
       ["outcome": outcome.rawValue]
-    case .accountSessionNotice(let action, let reason):
-      ["action": action.rawValue, "reason": reason.rawValue]
+    case .accountRemovedNotice(let action):
+      ["action": action.rawValue]
     case .quit(let hadRunningAgents):
       ["had_running_agents": hadRunningAgents]
     case .hostStarted(let restarts):

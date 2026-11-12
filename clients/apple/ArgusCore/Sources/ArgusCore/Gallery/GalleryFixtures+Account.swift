@@ -8,20 +8,23 @@ public struct GalleryAccount: Sendable {
   public var selfKind: String
   public var requests: Bool
   public var error: String?
-  /// Signed out because the sign-in went away, keys kept.
-  public var sessionLoss: AccountSessionLossReason?
+  /// Signed out because another device removed this one.
+  public var removed: Bool
+  /// On the account, but an identity action asked for the sign-in it doesn't hold.
+  public var signInNeeded: AccountStore.IdentityAction?
   /// The Mac's own host is on another account, so This Mac offers the move.
   public var hostElsewhere: Bool
 
   public init(
     phase: AccountStore.Phase = .ready, selfKind: String, requests: Bool = true, error: String? = nil,
-    sessionLoss: AccountSessionLossReason? = nil, hostElsewhere: Bool = false
+    removed: Bool = false, signInNeeded: AccountStore.IdentityAction? = nil, hostElsewhere: Bool = false
   ) {
     self.phase = phase
     self.selfKind = selfKind
     self.requests = requests
     self.error = error
-    self.sessionLoss = sessionLoss
+    self.removed = removed
+    self.signInNeeded = signInNeeded
     self.hostElsewhere = hostElsewhere
   }
 }
@@ -33,7 +36,8 @@ extension AccountStore {
     configured = true
     phase = fixture.phase
     error = fixture.error
-    sessionLoss = fixture.sessionLoss
+    removed = fixture.removed
+    signInNeeded = fixture.signInNeeded
     guard fixture.phase == .ready || fixture.phase == .awaitingApproval else { return }
     profile = AccountProfile(firstName: "Alex", lastName: "Rivera", email: "alex.rivera@example.com")
     let members = GalleryFixtures.accountMembers

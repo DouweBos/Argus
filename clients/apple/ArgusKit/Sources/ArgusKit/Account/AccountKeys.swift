@@ -119,13 +119,6 @@ public struct AccountVault: Codable, Hashable, Sendable {
   public var pendingJoin: AccountPendingJoin?
   /// A name set here that isn't on the account yet (offline, or mid-join).
   public var pendingName: String?
-  /// The sign-in session was lost with these keys still on the account: signing in
-  /// again as the same person resumes them instead of asking to join from scratch.
-  public var signedOut: Bool?
-  /// Why the session behind `signedOut` went away, for the notice after a relaunch.
-  public var signedOutReason: AccountSessionLossReason?
-  /// The live session's lifetime, last read while signed in.
-  public var session: AccountSessionLifetime?
 
   public init(
     keys: AccountDeviceKeys? = nil, root: AccountRoot? = nil, entries: [AccountEntry] = [],

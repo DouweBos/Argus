@@ -56,7 +56,11 @@ public struct AccountResetSheet: View {
     }
     .padding(20)
     .onChange(of: account.reset) { _, now in
-      if started, now == .idle, account.phase == .ready { onClose() }
+      if started, now == .idle, account.phase == .ready, account.signInNeeded == nil { onClose() }
+    }
+    // No sign-in to prove it's you: the account screen shows one instead.
+    .onChange(of: account.signInNeeded) { _, now in
+      if now != nil { onClose() }
     }
   }
 

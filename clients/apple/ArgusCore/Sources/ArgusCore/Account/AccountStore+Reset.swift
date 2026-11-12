@@ -31,21 +31,28 @@ public struct AccountResetNotice: Equatable, Sendable {
 
 public enum ResetAction: String, Sendable {
   case started, completed, failed, seen
+  /// Asked for a reset with no sign-in behind this device: it asks for one first.
+  case signInNeeded = "sign_in_needed"
 }
 
 extension AccountStore {
   /// The service's reverification window.
   static let reverifyMinutes = 10
 
-  /// Native apps only, signed in, and on (or asking to join) an account.
+  /// Native apps only, on (or asking to join) an account. Without a sign-in,
+  /// starting one asks for it (`signInNeeded`).
   public var canReset: Bool {
-    configured && auth.isSignedIn && (phase == .ready || phase == .awaitingApproval)
+    configured && (phase == .ready || phase == .awaitingApproval)
   }
 
   /// After the warning: confirm it's you, then reset.
   public func beginReset() async {
     guard canReset else { return }
     error = nil
+    guard requireSession(for: .reset) else {
+      onEvent(.accountReset(action: .signInNeeded))
+      return
+    }
     onEvent(.accountReset(action: .started))
     if auth.isReverified(withinMinutes: Self.reverifyMinutes) {
       await performReset()
@@ -140,9 +147,9 @@ extension AccountStore {
   /// `info` is on a newer epoch of the account this device pinned: it was reset
   /// elsewhere. This device can't verify that, so it treats it like being
   /// removed — keys and log go — and asks to join the new account.
-  func followReset(_ info: AccountInfo) async -> Bool {
+  func followReset(_ info: AccountInfo, genesis: AccountEntry? = nil) async -> Bool {
     guard let root = vault.root, root.accountId == info.accountId, info.epoch > root.epoch else { return false }
-    resetNotice = await readResetNotice(info)
+    resetNotice = await readResetNotice(info, genesis: genesis)
     onEvent(.accountReset(action: .seen))
     stopJoin()
     vault = .empty
@@ -157,9 +164,12 @@ extension AccountStore {
   }
 
   /// Who reset the account and when, from the new genesis. Shown, never trusted.
-  private func readResetNotice(_ info: AccountInfo) async -> AccountResetNotice {
+  /// `genesis`: the one the service sent with its refusal; fetched otherwise.
+  private func readResetNotice(_ info: AccountInfo, genesis: AccountEntry?) async -> AccountResetNotice {
     var notice = AccountResetNotice(epoch: info.epoch)
-    guard let first = try? await client.log(epoch: info.epoch, after: -1).first,
+    var fetched = genesis
+    if fetched == nil { fetched = try? await client.log(epoch: info.epoch, after: -1).first }
+    guard let first = fetched,
       case .ok(let verified) = AccountLog.verify([first]),
       verified.accountId == info.accountId
     else { return notice }
@@ -171,9 +181,12 @@ extension AccountStore {
     return notice
   }
 
-  /// A ready device checks the account's epoch on every refresh.
-  func checkForReset() async -> Bool {
-    guard let info = try? await client.account(), await followReset(info) else { return false }
+  /// While on the Clerk fallback no request carries this device's signature, so no
+  /// `account_reset` refusal arrives: ask the account directly. Goes with the fallback.
+  func checkForResetOverClerk() async -> Bool {
+    guard client.usesClerkForMembers, let info = try? await client.account(), await followReset(info) else {
+      return false
+    }
     await bootstrap(provider: nil)
     return true
   }

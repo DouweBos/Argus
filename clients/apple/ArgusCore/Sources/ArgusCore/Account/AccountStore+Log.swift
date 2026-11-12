@@ -5,16 +5,17 @@ extension AccountStore {
   // MARK: Log
 
   /// Fetch and verify entries past the head. A log that doesn't verify is
-  /// refused whole and the last good state stays.
-  func refreshLog() async {
-    guard let current = state, let root = vault.root else { return }
+  /// refused whole and the last good state stays. False once this device is off the account.
+  @discardableResult
+  func refreshLog() async -> Bool {
+    guard let current = state, let root = vault.root else { return phase == .ready }
     let fresh: [AccountEntry]
     do {
       fresh = try await client.log(epoch: current.epoch, after: current.head.seq)
     } catch {
-      return
+      return !(await handleMemberError(error))
     }
-    guard !fresh.isEmpty else { return }
+    guard !fresh.isEmpty else { return true }
     switch AccountLog.verify(fresh, root: root, prior: current) {
     case .ok(let verified):
       logError = nil
@@ -22,6 +23,7 @@ extension AccountStore {
     case .rejected(let reason, _, _):
       logError = reason
     }
+    return phase == .ready
   }
 
   private func adopt(_ verified: AccountLogState, appending entries: [AccountEntry]) async {
@@ -30,8 +32,7 @@ extension AccountStore {
     vault.entries += entries
     guard ownMemberLive(in: verified) else {
       // Another device removed this one.
-      error = "This device was removed from your account."
-      await forgetAccount()
+      await dropRemoved()
       return
     }
     if let prior { reflectName(from: prior, to: verified) }

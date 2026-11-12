@@ -32,6 +32,7 @@ struct AccountSettingsTab: View {
           "Nobody left to approve?",
           footer: "Lost every device and computer on your account? Reset it from this Mac and link your other computers again.")
       case .ready:
+        if account.signInNeeded != nil { AccountSignInSection() }
         AccountProfileHeader()
         AccountOverview()
         resetGroup(

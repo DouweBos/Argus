@@ -283,10 +283,10 @@ enum TelemetryEvent {
   /// Signed in and the account is ready; `firstDevice` when this phone wrote its genesis.
   case accountSignedIn(provider: SignInProvider, firstDevice: Bool)
   case accountSignedOut
-  /// Found signed out on launch or return: the phone's keys outlived the sign-in behind them.
-  case accountSessionLost(reason: AccountSessionLossReason)
-  /// The app-wide signed-out notice: Sign in again, or dismissed.
-  case accountSessionNotice(action: AccountStore.SessionNoticeAction, reason: AccountSessionLossReason)
+  /// Signing a request with the phone's member key didn't simply work.
+  case accountMemberAuth(outcome: AccountStore.MemberAuthOutcome)
+  /// The app-wide "removed from your account" notice: Join again, or dismissed.
+  case accountRemovedNotice(action: AccountStore.NoticeAction)
   /// The phone wrote a revoke for another member.
   case memberRemoved(role: MemberRole)
   /// The phone approved a computer's link; the host counts completion itself.
@@ -368,8 +368,8 @@ enum TelemetryEvent {
     case .telemetryDisabled: "telemetry_disabled"
     case .accountSignedIn: "ios_account_signed_in"
     case .accountSignedOut: "ios_account_signed_out"
-    case .accountSessionLost: "ios_account_session_lost"
-    case .accountSessionNotice: "ios_account_session_notice"
+    case .accountMemberAuth: "ios_account_member_auth"
+    case .accountRemovedNotice: "ios_account_removed_notice"
     case .memberRemoved: "ios_member_removed"
     case .computerAdded: "ios_computer_added"
     case .joinActed: "ios_join_acted"
@@ -390,10 +390,10 @@ enum TelemetryEvent {
     case .launched, .telemetryEnabled, .telemetryDisabled, .proposalOpenedAsRun, .followUpUsed,
       .accountSignedOut, .mcpServersOpened:
       [:]
-    case .accountSessionLost(let reason):
-      ["reason": reason.rawValue]
-    case .accountSessionNotice(let action, let reason):
-      ["action": action.rawValue, "reason": reason.rawValue]
+    case .accountMemberAuth(let outcome):
+      ["outcome": outcome.rawValue]
+    case .accountRemovedNotice(let action):
+      ["action": action.rawValue]
     case .accountSignedIn(let provider, let firstDevice):
       ["provider": provider.rawValue, "first_device": firstDevice]
     case .memberRemoved(let role), .memberRenamed(let role):

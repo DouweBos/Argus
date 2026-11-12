@@ -87,7 +87,7 @@ extension AccountStore {
   /// join: for a background wake-up with no UI. False when not on an account.
   public func resumeForWake() async -> Bool {
     vault = await vaultStore.load()
-    guard vault.signedOut != true, let root = vault.root,
+    guard let root = vault.root,
       case .ok(let verified) = AccountLog.verify(vault.entries, root: root),
       ownMemberLive(in: verified)
     else { return false }
@@ -111,11 +111,9 @@ extension AccountStore {
     if let token, pushToken == nil { pushToken = token }
     let wasReady = phase == .ready
     guard wasReady else { return AccountWakeResult(newRequests: [], removed: false, reached: false) }
-    if await checkForReset() {
-      return AccountWakeResult(newRequests: [], removed: true, reached: true, reset: true)
+    guard await refreshLog(), !(await checkForResetOverClerk()), phase == .ready else {
+      return AccountWakeResult(newRequests: [], removed: true, reached: true, reset: resetNotice != nil)
     }
-    await refreshLog()
-    guard phase == .ready else { return AccountWakeResult(newRequests: [], removed: true, reached: true) }
     await refreshDirectory()
     await refreshRequests()
     await syncPushRegistration()

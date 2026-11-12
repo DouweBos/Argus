@@ -23,6 +23,9 @@
         GalleryStory("settings/computer", fixtures: computerFixtures, setup: connect) { ComputerStory() },
         account("signed-in", GalleryAccount(selfKind: "ios")),
         account("signed-out", GalleryAccount(phase: .signedOut, selfKind: "ios")),
+        account(
+          "removed", GalleryAccount(phase: .signedOut, selfKind: "ios", error: "This device was removed from your account.", removed: true)),
+        account("sign-in-needed", GalleryAccount(selfKind: "ios", signInNeeded: .reset)),
         account("awaiting-approval", GalleryAccount(phase: .awaitingApproval, selfKind: "ios")),
       ]
     }

@@ -1,65 +1,104 @@
 import ArgusKit
 import Foundation
 
-/// The sign-in behind this device's keys: noticing it went, and why.
+/// A live member works on its own key. The sign-in only proves who you are, for
+/// identity actions; losing it never takes the device off the account.
 extension AccountStore {
-  /// What the user did with the notice.
-  public enum SessionNoticeAction: String, Sendable {
+  /// Something only the signed-in person may do, not a device on its own.
+  public enum IdentityAction: String, Sendable {
+    case reset
+  }
+
+  /// What came of signing a request with this device's key, when it wasn't plain success.
+  public enum MemberAuthOutcome: String, Sendable {
+    /// Refused: another device removed this one.
+    case removed
+    case clockSkew = "clock_skew"
+    /// Refused by a service without device-key auth, with no sign-in to fall back on.
+    case refused
+    /// Refused by a service without device-key auth; the sign-in worked instead.
+    case clerkFallback = "clerk_fallback"
+  }
+
+  /// What the user did with the "removed from your account" notice.
+  public enum NoticeAction: String, Sendable {
     case signIn = "sign_in"
     case dismiss
   }
 
-  /// The notice to show: only while signed out, not mid sign-in.
-  public var sessionLostNotice: AccountSessionLossReason? {
-    phase == .signedOut ? sessionLoss : nil
+  /// Shown while signed out after another device removed this one.
+  public var removedNotice: Bool { phase == .signedOut && removed }
+
+  public func dismissRemovedNotice() {
+    removed = false
   }
 
-  public func dismissSessionNotice() {
-    sessionLoss = nil
+  /// Signed in, or ask for it: `signInNeeded` tells the screen to show the sign-in.
+  func requireSession(for action: IdentityAction) -> Bool {
+    if auth.isSignedIn {
+      signInNeeded = nil
+      return true
+    }
+    signInNeeded = action
+    return false
   }
 
-  /// Ready from this device's keys, but the sign-in provider has loaded and holds no
-  /// session: nothing can sync, so it starts signed out. Unconfigured or still loading
-  /// (offline, slow launch) decides nothing — a failed read never signs anyone out.
-  func dropLostSession() async -> Bool {
-    guard phase == .ready else { return false }
-    try? await ensureConfigured()
-    guard configured else { return false }
-    switch auth.sessionState {
-    case .unknown:
-      return false
-    case .signedIn:
-      await recordSessionLifetime()
-      return false
-    case .signedOut:
+  public func cancelSignInNeeded() {
+    signInNeeded = nil
+  }
+
+  /// A member-signed request failed; true when it took this device off the account.
+  func handleMemberError(_ error: Error) async -> Bool {
+    switch error as? AccountServiceError {
+    case .accountReset(let epoch, let genesis):
+      await followServiceReset(epoch: epoch, genesis: genesis)
+      return true
+    case .memberRefused(401):
+      await dropRemoved()
+      return true
+    case .memberRefused:
+      reportMemberAuth(.refused)
+      self.error = AccountServiceError.memberRefused(status: 403).message
+    case .clockSkew:
+      reportMemberAuth(.clockSkew)
+      self.error = AccountServiceError.clockSkew.message
+    default:
       break
     }
-    let reason = Self.lossReason(ended: auth.lastSessionEnd, lifetime: vault.session, now: now())
-    vault.signedOutReason = reason
-    vault.session = nil
-    await forgetAccount(keepingKeys: true)
-    sessionLoss = reason
-    error = AccountServiceError.notSignedIn.message
-    onEvent(.sessionLost(reason: reason))
-    return true
+    return false
   }
 
-  /// The stored expiry is the clearest answer; then what the provider remembers.
-  /// A session that went before either deadline was ended from somewhere else.
-  static func lossReason(
-    ended: AccountSessionLossReason?, lifetime: AccountSessionLifetime?, now: Date
-  ) -> AccountSessionLossReason {
-    if let lifetime, now >= lifetime.expireAt { return .expired }
-    if let ended { return ended }
-    guard let lifetime else { return .unknown }
-    if let abandonAt = lifetime.abandonAt, now >= abandonAt { return .inactive }
-    return .endedElsewhere
+  /// The service refused this device's key, or the log shows it revoked.
+  func dropRemoved() async {
+    await forgetAccount()
+    removed = true
+    error = "This device was removed from your account."
+    onEvent(.memberAuth(outcome: .removed))
   }
 
-  /// Kept current while signed in, so a later loss can be told apart.
-  func recordSessionLifetime() async {
-    guard !galleryFrozen, let lifetime = auth.sessionLifetime, vault.session != lifetime else { return }
-    vault.session = lifetime
-    await vaultStore.save(vault)
+  /// Once per launch: an outcome that repeats on every refresh says nothing new.
+  func reportMemberAuth(_ outcome: MemberAuthOutcome) {
+    guard reportedMemberAuth.insert(outcome).inserted else { return }
+    onEvent(.memberAuth(outcome: outcome))
   }
+
+  /// A refused member signature carried the account's new epoch.
+  private func followServiceReset(epoch: Int, genesis: AccountEntry?) async {
+    guard let root = vault.root else { return }
+    let info = AccountInfo(accountId: root.accountId, epoch: epoch, headSeq: nil)
+    guard await followReset(info, genesis: genesis) else { return }
+    if auth.isSignedIn {
+      await bootstrap(provider: nil)
+    } else {
+      phase = .signedOut
+      error = "Your account was reset. Sign in to ask to join again."
+    }
+  }
+}
+
+/// The weak hop from the client's signer back to the store that owns it.
+@MainActor
+final class AccountStoreRef: Sendable {
+  weak var store: AccountStore?
+  nonisolated init() {}
 }

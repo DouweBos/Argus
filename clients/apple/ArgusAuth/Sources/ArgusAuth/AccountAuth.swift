@@ -29,37 +29,6 @@ public final class AccountAuth: AccountAuthenticating {
     configuredKey != nil && Clerk.shared.session != nil
   }
 
-  public var sessionState: AccountSessionState {
-    Self.sessionState(
-      configured: configuredKey != nil, loaded: Clerk.shared.isLoaded && Clerk.shared.client != nil,
-      hasSession: Clerk.shared.session != nil)
-  }
-
-  nonisolated static func sessionState(configured: Bool, loaded: Bool, hasSession: Bool) -> AccountSessionState {
-    guard configured, loaded else { return .unknown }
-    return hasSession ? .signedIn : .signedOut
-  }
-
-  public var sessionLifetime: AccountSessionLifetime? {
-    guard configuredKey != nil, let session = Clerk.shared.session else { return nil }
-    return AccountSessionLifetime(expireAt: session.expireAt, abandonAt: session.abandonAt)
-  }
-
-  public var lastSessionEnd: AccountSessionLossReason? {
-    guard configuredKey != nil, let client = Clerk.shared.client else { return nil }
-    let last = client.sessions.first { $0.id == client.lastActiveSessionId } ?? client.sessions.last
-    return last.flatMap { Self.lossReason($0.status) }
-  }
-
-  nonisolated static func lossReason(_ status: Session.SessionStatus) -> AccountSessionLossReason? {
-    switch status {
-    case .expired: .expired
-    case .abandoned: .inactive
-    case .ended, .removed, .revoked, .replaced: .endedElsewhere
-    case .active, .pending, .unknown: nil
-    }
-  }
-
   public var profile: AccountProfile? {
     guard configuredKey != nil, let user = Clerk.shared.user else { return nil }
     return AccountProfile(

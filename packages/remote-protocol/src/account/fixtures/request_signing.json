@@ -1,0 +1,42 @@
+{
+  "member_id": "00000000-0000-4000-8000-000000000001",
+  "sign_pub": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w=",
+  "cases": [
+    {
+      "method": "GET",
+      "path_and_query": "/argus/account/v1/log?epoch=0&after=-1",
+      "body": "",
+      "ts": 1800000000000,
+      "body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "message": "YXJndXMtYWNjb3VudC1yZXEtdjEKR0VUCi9hcmd1cy9hY2NvdW50L3YxL2xvZz9lcG9jaD0wJmFmdGVyPS0xCjE4MDAwMDAwMDAwMDAKZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NQ==",
+      "sig": "wUOgdqKLMT5pd8Z86FOLxDkIseT03I4pToOL/vybxyYA1iv8kRFMwPGwgWe+GDw+NO14PF/wfGzX9d666qNHAQ=="
+    },
+    {
+      "method": "POST",
+      "path_and_query": "/argus/account/v1/log",
+      "body": "{\"epoch\":0,\"entries\":[]}",
+      "ts": 1800000000001,
+      "body_sha256": "c5daf93be1f33962c88a4bd603863a96a0b48f65ff412fd51603246372710b66",
+      "message": "YXJndXMtYWNjb3VudC1yZXEtdjEKUE9TVAovYXJndXMvYWNjb3VudC92MS9sb2cKMTgwMDAwMDAwMDAwMQpjNWRhZjkzYmUxZjMzOTYyYzg4YTRiZDYwMzg2M2E5NmEwYjQ4ZjY1ZmY0MTJmZDUxNjAzMjQ2MzcyNzEwYjY2",
+      "sig": "9yCQUJ3+HTmakttU2rxzd7wunnqv2xFu/hQcWTw8nRVVtcIBfTCzbAVVkxQfQXNWnlwpcauuKlqpfxpg3S0RCw=="
+    },
+    {
+      "method": "post",
+      "path_and_query": "/argus/account/v1/join/6f1c2a8e-0000-4000-8000-00000000abcd/deny",
+      "body": "{}",
+      "ts": 1800000000002,
+      "body_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "message": "YXJndXMtYWNjb3VudC1yZXEtdjEKUE9TVAovYXJndXMvYWNjb3VudC92MS9qb2luLzZmMWMyYThlLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwYWJjZC9kZW55CjE4MDAwMDAwMDAwMDIKNDQxMzZmYTM1NWIzNjc4YTExNDZhZDE2ZjdlODY0OWU5NGZiNGZjMjFmZTc3ZTgzMTBjMDYwZjYxY2FhZmY4YQ==",
+      "sig": "L1Gj70cAtr8EQTugFapgRLq8KtsJKsEIge3n4F6Tr21QZG3MGJ0eW5HxyQNK05LqbTjNJiv5sTPXm30HkzY3CQ=="
+    },
+    {
+      "method": "PUT",
+      "path_and_query": "/argus/account/v1/push/registration",
+      "body": "{\"device_id\":\"00000000-0000-4000-8000-000000000001\",\"name\":\"Café\"}",
+      "ts": 1800000000003,
+      "body_sha256": "97c4b254bbbe4a010ad93ee069f5e1c5c584ac631b303f2de009684e9e330999",
+      "message": "YXJndXMtYWNjb3VudC1yZXEtdjEKUFVUCi9hcmd1cy9hY2NvdW50L3YxL3B1c2gvcmVnaXN0cmF0aW9uCjE4MDAwMDAwMDAwMDMKOTdjNGIyNTRiYmJlNGEwMTBhZDkzZWUwNjlmNWUxYzVjNTg0YWM2MzFiMzAzZjJkZTAwOTY4NGU5ZTMzMDk5OQ==",
+      "sig": "3VoyZh6NQNp2Mcrl/TPrCQre1N8f3ju6jOrODhSdvm+CVtWbkJ1z9JiQRUPJ/aqyWJf5m4MswQ7AnnSEjv6EDA=="
+    }
+  ]
+}

@@ -17,8 +17,8 @@ extension AppStore {
         Telemetry.capture(.accountSignedIn(provider: provider, firstDevice: firstDevice))
       case .signedOut:
         Telemetry.capture(.accountSignedOut)
-      case .sessionLost(let reason):
-        Telemetry.capture(.accountSessionLost(reason: reason))
+      case .memberAuth(let outcome):
+        Telemetry.capture(.accountMemberAuth(outcome: outcome))
       case .memberRemoved(let role):
         Telemetry.capture(.memberRemoved(role: role))
       case .computerAdded(let viaPairing):

@@ -7,6 +7,7 @@ public enum AccountCodec {
   static let entryPrefix = "argus-account-v1\n"
   static let proofPrefix = "argus-account-proof-v1\n"
   static let presencePrefix = "argus-account-presence-v1\n"
+  static let requestPrefix = "argus-account-req-v1\n"
 
   // MARK: Base64 and hex
 
@@ -59,6 +60,11 @@ public enum AccountCodec {
   }
 
   public static func presenceSigningBytes(_ body: String) -> Data { Data((presencePrefix + body).utf8) }
+
+  /// What a member signs to authenticate one HTTP request to the service.
+  public static func requestSigningBytes(method: String, pathAndQuery: String, ts: Int64, body: Data) -> Data {
+    Data("\(requestPrefix)\(method.uppercased())\n\(pathAndQuery)\n\(ts)\n\(sha256Hex(body))".utf8)
+  }
 
   // MARK: Ed25519
 

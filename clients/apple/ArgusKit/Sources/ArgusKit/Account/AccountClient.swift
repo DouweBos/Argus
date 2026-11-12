@@ -3,23 +3,44 @@ import Foundation
 /// A device's side of the account service (`houwert.dev/argus/account/v1`).
 /// It only ever carries signed statements and public keys; nothing it returns
 /// is trusted until the log verifier has seen it.
+///
+/// A live member signs its requests with its own key; the Clerk session only
+/// proves who you are, for the identity routes (genesis, joining, reset).
 public struct AccountClient: Sendable {
   public typealias HTTP = @Sendable (URLRequest) async throws -> (Data, HTTPURLResponse)
   public typealias TokenProvider = @Sendable () async throws -> String?
+  /// This device's member key while it is a live member, else nil (Clerk then).
+  public typealias SignerProvider = @Sendable () async -> AccountSigner?
 
   public static let defaultBaseURL = URL(string: "https://houwert.dev/argus/account/v1")!
   /// `ARGUS_ACCOUNT_URL` in the environment, else this defaults key, else the built-in service.
   public static let baseURLDefaultsKey = "argus.account.url"
 
   public let baseURL: URL
-  private let token: TokenProvider
-  private let http: HTTP
+  let token: TokenProvider
+  let signer: SignerProvider
+  let http: HTTP
+  let now: @Sendable () -> Date
+  let fallback = ClerkFallback()
 
-  public init(baseURL: URL = AccountClient.configuredBaseURL(), token: @escaping TokenProvider, http: HTTP? = nil) {
+  /// - Parameter onClerkFallback: the service refused this device's signature and
+  ///   took Clerk instead, so it predates device-key auth; once per launch.
+  public init(
+    baseURL: URL = AccountClient.configuredBaseURL(), token: @escaping TokenProvider,
+    signer: @escaping SignerProvider = { nil }, http: HTTP? = nil,
+    now: @escaping @Sendable () -> Date = Date.init,
+    onClerkFallback: @escaping @Sendable () -> Void = {}
+  ) {
     self.baseURL = baseURL
     self.token = token
+    self.signer = signer
     self.http = http ?? AccountClient.urlSession
+    self.now = now
+    fallback.onFirstUse = onClerkFallback
   }
+
+  /// This launch found a service that only takes Clerk from devices.
+  public var usesClerkForMembers: Bool { fallback.active }
 
   public static func configuredBaseURL(
     environment: [String: String] = ProcessInfo.processInfo.environment, defaults: UserDefaults = .standard
@@ -30,7 +51,7 @@ public struct AccountClient: Sendable {
     return defaultBaseURL
   }
 
-  private static let urlSession: HTTP = { request in
+  static let urlSession: HTTP = { request in
     let (data, response) = try await URLSession.shared.data(for: request)
     guard let http = response as? HTTPURLResponse else { throw AccountServiceError.transport("no HTTP response") }
     return (data, http)
@@ -39,12 +60,12 @@ public struct AccountClient: Sendable {
   // MARK: Routes
 
   public func config() async throws -> AccountServiceConfig {
-    try await send("GET", "config", auth: false)
+    try await send("GET", "config", auth: .none)
   }
 
   /// Create-or-get the signed-in user's account.
   public func account() async throws -> AccountInfo {
-    try await send("POST", "account", body: [String: String]())
+    try await send("POST", "account", auth: .identity, body: [String: String]())
   }
 
   /// Every entry after `after` (−1 for the whole log), following pages.
@@ -83,7 +104,7 @@ public struct AccountClient: Sendable {
       let epoch: Int
       let entries: [AccountEntry]
     }
-    return try await send("POST", "account/reset", body: Body(epoch: epoch, entries: entries))
+    return try await send("POST", "account/reset", auth: .identity, body: Body(epoch: epoch, entries: entries))
   }
 
   public func directory() async throws -> [AccountDirectoryRecord] {
@@ -107,7 +128,7 @@ public struct AccountClient: Sendable {
       let member: AccountMember
       let proof: String
     }
-    return try await send("POST", "join", body: Body(member: member, proof: proof))
+    return try await send("POST", "join", auth: .identity, body: Body(member: member, proof: proof))
   }
 
   /// Where this device's own join request is.
@@ -145,105 +166,6 @@ public struct AccountClient: Sendable {
 
   public func deny(requestId: String) async throws {
     let _: Empty = try await send("POST", "join/\(requestId)/deny", body: [String: String]())
-  }
-
-  // MARK: Transport
-
-  private struct Empty: Decodable {}
-
-  private func send<Result: Decodable>(
-    _ method: String, _ path: String, query: [(String, String)] = [], auth: Bool = true
-  ) async throws -> Result {
-    try await send(method, path, query: query, auth: auth, bodyData: nil)
-  }
-
-  private func send<Result: Decodable>(
-    _ method: String, _ path: String, query: [(String, String)] = [], auth: Bool = true,
-    body: some Encodable
-  ) async throws -> Result {
-    try await send(method, path, query: query, auth: auth, bodyData: try JSONEncoder().encode(body))
-  }
-
-  private func send<Result: Decodable>(
-    _ method: String, _ path: String, query: [(String, String)], auth: Bool, bodyData: Data?
-  ) async throws -> Result {
-    var components = URLComponents(
-      url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)
-    if !query.isEmpty { components?.queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) } }
-    guard let url = components?.url else { throw AccountServiceError.transport("bad URL") }
-    var request = URLRequest(url: url)
-    request.httpMethod = method
-    request.timeoutInterval = 20
-    request.setValue("application/json", forHTTPHeaderField: "Accept")
-    if let bodyData {
-      request.httpBody = bodyData
-      request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    }
-    if auth {
-      guard let token = try await token(), !token.isEmpty else { throw AccountServiceError.notSignedIn }
-      request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-    }
-    let (data, response): (Data, HTTPURLResponse)
-    do {
-      (data, response) = try await http(request)
-    } catch let error as AccountServiceError {
-      throw error
-    } catch {
-      throw AccountServiceError.transport(error.localizedDescription)
-    }
-    guard (200..<300).contains(response.statusCode) else {
-      throw AccountServiceError.from(status: response.statusCode, data: data)
-    }
-    if Result.self == Empty.self { return Empty() as! Result }
-    do {
-      return try JSONDecoder().decode(Result.self, from: data.isEmpty ? Data("{}".utf8) : data)
-    } catch {
-      throw AccountServiceError.decoding
-    }
-  }
-}
-
-public enum AccountServiceError: Error, Equatable, Sendable {
-  case notSignedIn
-  /// The log moved on underneath an append.
-  case conflict(headSeq: Int?)
-  case invalidEntry(index: Int?, reason: String?)
-  case http(status: Int, code: String?)
-  case transport(String)
-  case decoding
-
-  static func from(status: Int, data: Data) -> AccountServiceError {
-    struct Payload: Decodable {
-      let error: String?
-      let headSeq: Int?
-      let index: Int?
-      let reason: String?
-      enum CodingKeys: String, CodingKey {
-        case error, index, reason
-        case headSeq = "head_seq"
-      }
-    }
-    let payload = try? JSONDecoder().decode(Payload.self, from: data)
-    switch (status, payload?.error) {
-    case (401, _): return .notSignedIn
-    case (409, _): return .conflict(headSeq: payload?.headSeq)
-    case (422, _): return .invalidEntry(index: payload?.index, reason: payload?.reason)
-    default: return .http(status: status, code: payload?.error)
-    }
-  }
-
-  public var message: String {
-    switch self {
-    case .notSignedIn: "You're signed out. Sign in again."
-    case .conflict: "Your account changed at the same time. Try again."
-    case .invalidEntry: "The account service refused the change."
-    case .http(410, _): "That code has expired. Start again on the computer."
-    case .http(404, _): "That code wasn't found. Check it and try again."
-    case .http(429, _): "Too many attempts. Wait a few minutes and try again."
-    case .http(let status, _): "The account service answered \(status)."
-    case .transport: "Couldn't reach the account service."
-    case .decoding: "The account service's answer couldn't be read."
-    }
   }
 }
 

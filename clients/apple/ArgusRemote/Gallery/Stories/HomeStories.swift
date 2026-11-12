@@ -10,8 +10,7 @@
       [
         GalleryStory("home/loaded", fixtures: GalleryFixtures.home, setup: load) { ProjectsView() },
         GalleryStory("home/empty", fixtures: GalleryFixtures.homeEmpty, setup: load) { ProjectsView() },
-        sessionLost("home/account-session-lost", .expired),
-        sessionLost("home/account-session-ended", .endedElsewhere),
+        accountRemoved,
         GalleryStory("agents/overview", fixtures: GalleryFixtures.home, setup: load) { AllAgentsView() },
         GalleryStory("sessions/sidebar", fixtures: GalleryFixtures.home, setup: load) {
           ProjectView(repoRoot: GalleryFixtures.argusRoot, name: "Argus")
@@ -40,16 +39,16 @@
       }
     }
 
-    /// Home under the app-wide notice that the account sign-in went away.
-    private static func sessionLost(_ id: String, _ reason: AccountSessionLossReason) -> GalleryStory {
+    /// Home under the app-wide notice that another device removed this phone from the account.
+    private static var accountRemoved: GalleryStory {
       GalleryStory(
-        id, fixtures: GalleryFixtures.home,
+        "home/account-removed", fixtures: GalleryFixtures.home,
         setup: { stage in
           await load(stage)
-          stage.app.account.galleryFill(GalleryAccount(phase: .signedOut, selfKind: "ios", sessionLoss: reason))
+          stage.app.account.galleryFill(GalleryAccount(phase: .signedOut, selfKind: "ios", removed: true))
         }
       ) {
-        ProjectsView().safeAreaInset(edge: .top, spacing: 0) { AccountSessionNotice() }
+        ProjectsView().safeAreaInset(edge: .top, spacing: 0) { AccountRemovedNotice() }
       }
     }
 

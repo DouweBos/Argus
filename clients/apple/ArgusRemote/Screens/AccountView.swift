@@ -21,7 +21,7 @@ struct AccountView: View {
   private var account: AccountStore { app.account }
 
   @ViewBuilder private var content: some View {
-    if account.phase == .ready {
+    if account.phase == .ready, account.signInNeeded == nil {
       SettingsPage { signedIn }
     } else {
       Screen {
@@ -31,7 +31,11 @@ struct AccountView: View {
         // Signing in keeps the form, so a web sign-in that comes back shows where it left.
         case .signedOut, .signingIn:
           signIn.disabled(account.phase == .signingIn)
-        case .awaitingApproval, .ready:
+        // Still on the account; an identity action wants proof it's you.
+        case .ready:
+          signIn
+          Btn(label: "Cancel", tone: .ghost) { account.cancelSignInNeeded() }
+        case .awaitingApproval:
           awaitingApproval
         }
       }
@@ -83,9 +87,10 @@ struct AccountView: View {
   // MARK: Signed out
 
   @ViewBuilder private var signIn: some View {
-    TitleText("Sign in to Argus")
+    TitleText(AccountSignInCopy.title(account.signInNeeded))
     MutedText(
-      "Your computers show up here with their current addresses, so you can connect without scanning a code for each one.")
+      AccountSignInCopy.detail(account.signInNeeded, deviceNoun: "phone")
+        ?? "Your computers show up here with their current addresses, so you can connect without scanning a code for each one.")
 
     SignInWithAppleButton(.signIn) { request in
       request.requestedScopes = [.email]
@@ -138,7 +143,9 @@ struct AccountView: View {
       Banner(text: error, tone: .danger)
     }
 
-    Btn(label: "Pair with a QR code instead", tone: .secondary, icon: Icon.qrCode) { router.push(.pair) }
+    if account.signInNeeded == nil {
+      Btn(label: "Pair with a QR code instead", tone: .secondary, icon: Icon.qrCode) { router.push(.pair) }
+    }
   }
 
   private func sendCode() {
@@ -271,20 +278,20 @@ struct AccountView: View {
   }
 }
 
-/// The account's sign-in went away: said above every tab, not only on this
-/// screen, with Sign in again opening it.
-struct AccountSessionNotice: View {
+/// Another device removed this phone from the account: said above every tab,
+/// not only on this screen, with Join again opening it.
+struct AccountRemovedNotice: View {
   @Environment(AppStore.self) private var app
   @Environment(Router.self) private var router
 
   var body: some View {
-    if let reason = app.account.sessionLostNotice {
-      AccountSessionLostBanner(reason: reason, keeps: "your computers") {
-        Telemetry.capture(.accountSessionNotice(action: .signIn, reason: reason))
+    if app.account.removedNotice {
+      AccountRemovedBanner(deviceNoun: "iPhone") {
+        Telemetry.capture(.accountRemovedNotice(action: .signIn))
         if router.path(for: router.section).last != .account { router.push(.account) }
       } onDismiss: {
-        Telemetry.capture(.accountSessionNotice(action: .dismiss, reason: reason))
-        app.account.dismissSessionNotice()
+        Telemetry.capture(.accountRemovedNotice(action: .dismiss))
+        app.account.dismissRemovedNotice()
       }
       .padding(.horizontal, 12)
       .padding(.vertical, 6)

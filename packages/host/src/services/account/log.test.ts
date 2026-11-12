@@ -7,7 +7,11 @@ import type {
 import {
   accountSas,
   admitsMember,
+  fromB64,
   liveMembers,
+  requestSigningBytes,
+  toB64,
+  verifyB64,
   verifyLog,
   verifyPresence,
 } from "@argus/remote-protocol";
@@ -42,7 +46,12 @@ function read<T>(file: string): T {
 }
 
 /** Vectors that aren't log fixtures. */
-const VECTORS = new Set(["keys.json", "sas.json", "push_key.json"]);
+const VECTORS = new Set([
+  "keys.json",
+  "sas.json",
+  "push_key.json",
+  "request_signing.json",
+]);
 
 const fixtures = readdirSync(DIR)
   .filter((f) => f.endsWith(".json") && !VECTORS.has(f))
@@ -133,6 +142,30 @@ describe("account log fixtures", () => {
       ok: true,
       state: { head: { seq: fixture.entries.length - 1 } },
     });
+  });
+
+  it("signs the shared device request vector", () => {
+    const vector = read<{
+      sign_pub: string;
+      cases: {
+        method: string;
+        path_and_query: string;
+        ts: number;
+        body: string;
+        message: string;
+        sig: string;
+      }[];
+    }>("request_signing.json");
+    for (const c of vector.cases) {
+      const message = requestSigningBytes(
+        c.method,
+        c.path_and_query,
+        c.ts,
+        c.body,
+      );
+      expect(toB64(message)).toBe(c.message);
+      expect(verifyB64(fromB64(c.message), c.sig, vector.sign_pub)).toBe(true);
+    }
   });
 
   it("derives the shared SAS vector", () => {

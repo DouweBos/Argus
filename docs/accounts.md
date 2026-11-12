@@ -19,6 +19,13 @@ way to connect without one.
 | Headless host | Type `login` in the `argus-host` terminal (or start it as `argus-host login`). It prints a code.                           |
 | Any browser   | Open `houwert.dev/argus/app` and sign in; a device already on the account approves it (see [In a browser](#in-a-browser)). |
 
+Once your iPhone or Mac is on the account, it stays on it by its own key, not
+by the sign-in: when the sign-in runs out, nothing changes and the device keeps
+syncing. A device leaves only when you sign it out, remove it from another of
+your devices, or reset the account. You're asked to sign in again only for
+something that needs to know it's you — adding a new device, resetting the
+account, or deleting it.
+
 ### Linking a computer with a code
 
 A computer that has no sign-in of its own — Argus Server,
@@ -56,6 +63,12 @@ Deny anything you didn't just sign in on: a request only gets in if someone
 confirms the code on a device that's already trusted.
 
 ## If you lose your devices
+
+A device stays on your account until you sign it out or remove it, however long
+it has been since you signed in. If another device removes it, it says _This
+iPhone (or Mac) was removed from your account_; choose **Join again** to sign in
+and ask to join, as for a new device. Signing in again is only needed to add a
+new device, reset the account or delete it.
 
 | You still have                    | Do                                                                                                                                                                                                                                                   |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

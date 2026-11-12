@@ -32,6 +32,7 @@ import {
 } from "./fixtureChain";
 import { joinFixtures, laptop, tablet } from "./fixtureJoins";
 import { pushKeyVector } from "./fixturePush";
+import { requestSigningVector } from "./fixtureRequests";
 import { browser, webFixtures } from "./fixtureWeb";
 
 const miniMember = host(mini, "Mini");
@@ -419,6 +420,7 @@ export function buildFixtures(): Record<string, unknown> {
     },
     "sas.json": sasVectors(),
     "push_key.json": pushKeyVector(),
+    "request_signing.json": requestSigningVector(),
   };
   for (const f of fixtures()) {
     out[`${f.name}.json`] = f;

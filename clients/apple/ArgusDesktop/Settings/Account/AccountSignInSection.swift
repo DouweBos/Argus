@@ -12,8 +12,9 @@ struct AccountSignInSection: View {
 
   var body: some View {
     SettingsGroup(
-      "Sign in to Argus",
-      footer: "Your hosts show up in Settings → Hosts with their current addresses, and this Mac's host joins your account, so your phone reaches it without a pairing code."
+      AccountSignInCopy.title(account.signInNeeded),
+      footer: AccountSignInCopy.detail(account.signInNeeded, deviceNoun: "Mac")
+        ?? "Your hosts show up in Settings → Hosts with their current addresses, and this Mac's host joins your account, so your phone reaches it without a pairing code."
     ) {
       if Self.canSignInWithApple {
         appleButton
@@ -73,6 +74,13 @@ struct AccountSignInSection: View {
         }
       }
       SettingsError(text: account.error)
+      if account.signInNeeded != nil, account.phase == .ready {
+        HStack {
+          Spacer()
+          Button("Cancel") { account.cancelSignInNeeded() }
+            .buttonStyle(.secondary)
+        }
+      }
     }
     .disabled(account.phase == .signingIn)
     .task { await account.prepare() }

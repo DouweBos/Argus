@@ -41,6 +41,17 @@ final class FakeAccountService: @unchecked Sendable {
   /// Called before a `POST /log` is applied; returning true answers 409 instead.
   var beforeAppend: (@Sendable (FakeAccountService) -> Bool)?
 
+  /// `accepted`: today's service, devices sign with their key. `legacy`: one from
+  /// before device-key auth, which refuses a live device's signature (403).
+  enum DeviceAuth { case accepted, legacy }
+  private var deviceAuthMode = DeviceAuth.accepted
+  private var authLog: [(path: String, member: Bool)] = []
+  func setDeviceAuth(_ mode: DeviceAuth) { lock.withLock { deviceAuthMode = mode } }
+  /// Paths answered on a member signature, oldest first.
+  var memberSigned: [String] { lock.withLock { authLog.filter(\.member).map(\.path) } }
+  /// Paths answered on a Clerk token.
+  var clerkAuthed: [String] { lock.withLock { authLog.filter { !$0.member }.map(\.path) } }
+
   var log: [AccountEntry] { lock.withLock { entries } }
   var batches: [[AccountEntry]] { lock.withLock { appends } }
   var headHash: String { lock.withLock { entries.last?.hash ?? "" } }
@@ -116,8 +127,12 @@ final class FakeAccountService: @unchecked Sendable {
     let method = request.httpMethod ?? "GET"
     let body = request.httpBody.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
     let bearer = request.value(forHTTPHeaderField: "Authorization") ?? ""
-    if path != "config", !bearer.hasPrefix("Bearer token") {
-      return respond(401, ["error": "unauthorized"], url)
+    if path != "config", let memberId = request.value(forHTTPHeaderField: "x-argus-member") {
+      if let refusal = checkMember(memberId, request, url) { return refusal }
+      lock.withLock { authLog.append((path, true)) }
+    } else if path != "config" {
+      guard bearer.hasPrefix("Bearer token") else { return respond(401, ["error": "unauthorized"], url) }
+      lock.withLock { authLog.append((path, false)) }
     }
     switch (method, path) {
     case ("GET", "config"):
@@ -221,6 +236,34 @@ final class FakeAccountService: @unchecked Sendable {
     }
   }
 
+  /// The service's member check: a valid signature from a live member of the
+  /// current epoch; a member of an earlier one is told the account was reset.
+  private func checkMember(_ memberId: String, _ request: URLRequest, _ url: URL) -> (Data, HTTPURLResponse)? {
+    let (current, old, epoch, mode) = lock.withLock { (entries, oldLogs, self.epoch, deviceAuthMode) }
+    let live = AccountLog.verify(current).state?.liveMember(memberId)?.member
+    let earlier = old.values.compactMap { AccountLog.verify($0).state?.liveMember(memberId)?.member }.first
+    guard let member = live ?? earlier, signed(request, url, by: member) else {
+      return respond(401, ["error": "unauthorized"], url)
+    }
+    if live == nil {
+      let genesis = current.first.map(Self.json) ?? [:]
+      return respond(410, ["error": "account_reset", "epoch": epoch, "genesis": genesis], url)
+    }
+    if mode == .legacy, member.role == .device { return respond(403, ["error": "forbidden"], url) }
+    return nil
+  }
+
+  private func signed(_ request: URLRequest, _ url: URL, by member: AccountMember) -> Bool {
+    guard let ts = request.value(forHTTPHeaderField: "x-argus-ts").flatMap(Int64.init),
+      let sig = request.value(forHTTPHeaderField: "x-argus-sig")
+    else { return false }
+    var pathAndQuery = url.path(percentEncoded: true)
+    if let query = url.query(percentEncoded: true) { pathAndQuery += "?\(query)" }
+    let message = AccountCodec.requestSigningBytes(
+      method: request.httpMethod ?? "GET", pathAndQuery: pathAndQuery, ts: ts, body: request.httpBody ?? Data())
+    return AccountCodec.verify(message, signature: sig, publicKey: member.signPub)
+  }
+
   private func appendLog(_ body: [String: Any], _ url: URL) -> (Data, HTTPURLResponse) {
     let raw = body["entries"] as? [[String: Any]] ?? []
     let batch = raw.map { AccountEntry(body: $0["body"] as? String ?? "", sigs: $0["sigs"] as? [String: String] ?? [:]) }
@@ -272,18 +315,7 @@ final class FakeAccountAuth: AccountAuthenticating {
   var reverifyEmail: String? = "me@example.test"
   var sentReverifyCodes = 0
 
-  /// Clerk has its environment and client; until then nothing is known.
-  var loaded = true
-  var lifetime: AccountSessionLifetime?
-  var lastEnd: AccountSessionLossReason?
-
   var isSignedIn: Bool { signedIn }
-  var sessionState: AccountSessionState {
-    guard configuredKey != nil, loaded else { return .unknown }
-    return signedIn ? .signedIn : .signedOut
-  }
-  var sessionLifetime: AccountSessionLifetime? { signedIn ? lifetime : nil }
-  var lastSessionEnd: AccountSessionLossReason? { signedIn ? nil : lastEnd }
   func configure(publishableKey: String) async throws { configuredKey = publishableKey }
   func signInWithApple(idToken _: String?) async throws { signedIn = true }
   /// Clerk refuses a second sign-in while a session is live.

@@ -20,6 +20,9 @@
         account("signed-in", GalleryAccount(selfKind: "mac")),
         account("host-elsewhere", GalleryAccount(selfKind: "mac", hostElsewhere: true)),
         account("signed-out", GalleryAccount(phase: .signedOut, selfKind: "mac")),
+        account(
+          "removed", GalleryAccount(phase: .signedOut, selfKind: "mac", error: "This device was removed from your account.", removed: true)),
+        account("sign-in-needed", GalleryAccount(selfKind: "mac", signInNeeded: .reset)),
         account("awaiting-approval", GalleryAccount(phase: .awaitingApproval, selfKind: "mac")),
         customRunner("acp-agent", acpDraft),
         customRunner("gateway", gatewayDraft),
