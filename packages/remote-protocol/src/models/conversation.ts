@@ -113,9 +113,18 @@ export const ConversationHandoff = z.object({
 });
 export type ConversationHandoff = z.infer<typeof ConversationHandoff>;
 
+/** A message that was one of the runner's own slash commands (`/compact keep the plan`). */
+export const ConversationCommand = z.object({
+  /** Whatever followed the command's name. */
+  args: z.string().optional(),
+  name: z.string(),
+});
+export type ConversationCommand = z.infer<typeof ConversationCommand>;
+
 export const ConversationMessage = z.object({
   author: z.string().optional(),
   checkpointId: z.string().optional(),
+  command: ConversationCommand.optional(),
   handoff: ConversationHandoff.optional(),
   id: z.string(),
   images: z.array(ImageAttachment).optional(),

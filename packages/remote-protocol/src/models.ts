@@ -246,6 +246,14 @@ export const RemoteMessageHandoff = z.object({
 });
 export type RemoteMessageHandoff = z.infer<typeof RemoteMessageHandoff>;
 
+/** A message that was one of the runner's own slash commands. */
+export const RemoteMessageCommand = z.object({
+  name: z.string(),
+  /** Whatever followed the command's name. */
+  args: z.string().optional(),
+});
+export type RemoteMessageCommand = z.infer<typeof RemoteMessageCommand>;
+
 /** A structured transcript message mirroring the desktop conversation. */
 export const RemoteMessage = z.object({
   id: z.string(),
@@ -258,6 +266,8 @@ export const RemoteMessage = z.object({
   handoff: RemoteMessageHandoff.optional(),
   /** Who sent a user message, when it came from a remote client or huddle guest. */
   author: z.string().optional(),
+  /** Set when the message was one of the runner's slash commands. */
+  command: RemoteMessageCommand.optional(),
   is_error: z.boolean().optional(),
   timestamp: z.number().optional(),
   /** Token usage (assistant turns only) — drives the context-window meter. */

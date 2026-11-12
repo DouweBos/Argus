@@ -4578,6 +4578,27 @@ extension ArgusProtocol {
     }
   }
 
+  public struct ConversationCommand: Codable, Sendable {
+    public var args: String?
+    public var name: String
+
+    enum CodingKeys: String, CodingKey {
+      case args = "args"
+      case name = "name"
+    }
+
+    public init(args: String? = nil, name: String) {
+      self.args = args
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(args, forKey: .args)
+      try c.encode(name, forKey: .name)
+    }
+  }
+
   public struct ConversationHandoff: Codable, Sendable {
     public var fromAgentId: String
     public var fromRunner: String
@@ -4637,6 +4658,7 @@ extension ArgusProtocol {
   public struct ConversationMessage: Codable, Sendable {
     public var author: String?
     public var checkpointId: String?
+    public var command: ConversationCommand?
     public var handoff: ConversationHandoff?
     public var id: String
     public var images: [ImageAttachment]?
@@ -4651,6 +4673,7 @@ extension ArgusProtocol {
     enum CodingKeys: String, CodingKey {
       case author = "author"
       case checkpointId = "checkpointId"
+      case command = "command"
       case handoff = "handoff"
       case id = "id"
       case images = "images"
@@ -4663,9 +4686,10 @@ extension ArgusProtocol {
       case usage = "usage"
     }
 
-    public init(author: String? = nil, checkpointId: String? = nil, handoff: ConversationHandoff? = nil, id: String, images: [ImageAttachment]? = nil, role: ConversationMessageRole, source: ConversationMessageSource? = nil, textBlocks: [String], timestamp: Double, tone: ConversationMessageTone? = nil, toolCalls: [ConversationToolCall], usage: ConversationTokenUsage? = nil) {
+    public init(author: String? = nil, checkpointId: String? = nil, command: ConversationCommand? = nil, handoff: ConversationHandoff? = nil, id: String, images: [ImageAttachment]? = nil, role: ConversationMessageRole, source: ConversationMessageSource? = nil, textBlocks: [String], timestamp: Double, tone: ConversationMessageTone? = nil, toolCalls: [ConversationToolCall], usage: ConversationTokenUsage? = nil) {
       self.author = author
       self.checkpointId = checkpointId
+      self.command = command
       self.handoff = handoff
       self.id = id
       self.images = images
@@ -4682,6 +4706,7 @@ extension ArgusProtocol {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encodeIfPresent(author, forKey: .author)
       try c.encodeIfPresent(checkpointId, forKey: .checkpointId)
+      try c.encodeIfPresent(command, forKey: .command)
       try c.encodeIfPresent(handoff, forKey: .handoff)
       try c.encode(id, forKey: .id)
       try c.encodeIfPresent(images, forKey: .images)
@@ -14581,6 +14606,7 @@ extension ArgusProtocol {
     public var source: RemoteMessageSource?
     public var handoff: RemoteMessageHandoff?
     public var author: String?
+    public var command: RemoteMessageCommand?
     public var isError: Bool?
     public var timestamp: Double?
     public var usage: RemoteTokenUsage?
@@ -14594,12 +14620,13 @@ extension ArgusProtocol {
       case source = "source"
       case handoff = "handoff"
       case author = "author"
+      case command = "command"
       case isError = "is_error"
       case timestamp = "timestamp"
       case usage = "usage"
     }
 
-    public init(id: String, role: RemoteMessageRole, textBlocks: [String], toolCalls: [RemoteToolCall], images: [RemoteImageRef]? = nil, source: RemoteMessageSource? = nil, handoff: RemoteMessageHandoff? = nil, author: String? = nil, isError: Bool? = nil, timestamp: Double? = nil, usage: RemoteTokenUsage? = nil) {
+    public init(id: String, role: RemoteMessageRole, textBlocks: [String], toolCalls: [RemoteToolCall], images: [RemoteImageRef]? = nil, source: RemoteMessageSource? = nil, handoff: RemoteMessageHandoff? = nil, author: String? = nil, command: RemoteMessageCommand? = nil, isError: Bool? = nil, timestamp: Double? = nil, usage: RemoteTokenUsage? = nil) {
       self.id = id
       self.role = role
       self.textBlocks = textBlocks
@@ -14608,6 +14635,7 @@ extension ArgusProtocol {
       self.source = source
       self.handoff = handoff
       self.author = author
+      self.command = command
       self.isError = isError
       self.timestamp = timestamp
       self.usage = usage
@@ -14623,9 +14651,31 @@ extension ArgusProtocol {
       try c.encodeIfPresent(source, forKey: .source)
       try c.encodeIfPresent(handoff, forKey: .handoff)
       try c.encodeIfPresent(author, forKey: .author)
+      try c.encodeIfPresent(command, forKey: .command)
       try c.encodeIfPresent(isError, forKey: .isError)
       try c.encodeIfPresent(timestamp, forKey: .timestamp)
       try c.encodeIfPresent(usage, forKey: .usage)
+    }
+  }
+
+  public struct RemoteMessageCommand: Codable, Sendable {
+    public var name: String
+    public var args: String?
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case args = "args"
+    }
+
+    public init(name: String, args: String? = nil) {
+      self.name = name
+      self.args = args
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encodeIfPresent(args, forKey: .args)
     }
   }
 

@@ -17,6 +17,7 @@ import { appState } from "../../../state";
 import { restoreAgentAtTurn, sendAgentMessage } from "../agentService";
 import { createCheckpoint, restoreCheckpoint } from "../checkpoints";
 import { clearQueue, enqueueMessage, listQueue } from "../messageQueue";
+import { runnerCommandFor } from "../runnerCommand";
 import {
   changeConversation,
   isFolding,
@@ -94,6 +95,7 @@ export async function submitAgentMessage(
       message: message.displayText ?? message.text,
       images: message.images,
       author: message.author ?? null,
+      sent: message.text,
     });
 
     return { queued: false };
@@ -110,6 +112,7 @@ export async function submitAgentMessage(
     author: message.author,
     checkpointId,
     images: message.images,
+    sent: message.text,
   });
   try {
     sendAgentMessage(agentId, message.text, message.images);
@@ -192,6 +195,7 @@ export async function rewindAgent(
               toolCalls: [],
               timestamp: Date.now(),
               images: resend.images?.length ? resend.images : undefined,
+              command: runnerCommandFor(agentId, resend.text),
             },
           ]
         : []),

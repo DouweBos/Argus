@@ -11,6 +11,7 @@ import {
 } from "@argus/client-core";
 import {
   Button,
+  CommandMessage,
   Markdown,
   MessageActions,
   MessageBubble,
@@ -220,6 +221,11 @@ export const TranscriptMessage = memo(function TranscriptMessage({
       timestamp={msg.timestamp}
       toolOnly={blocks.length === 0 && !!toolCalls}
       textBlocks={blocks}
+      content={
+        msg.command && (
+          <CommandMessage args={msg.command.args} name={msg.command.name} />
+        )
+      }
       renderMarkdown={renderMarkdown}
       toolCalls={toolCalls}
       images={images}

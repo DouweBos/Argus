@@ -28,6 +28,8 @@ extension GalleryFixtures {
     case empty
     /// Continued on Codex from a Claude Code chat that hit its limit.
     case handoff
+    /// The runner's own slash commands: a bare `/review`, then `/compact` with text after it.
+    case command
   }
 
   /// Every reply the agent screen asks for, in `state`.
@@ -92,7 +94,7 @@ extension GalleryFixtures {
   private static func agentStatus(_ state: TranscriptState) -> [String: Any] {
     let status: String =
       switch state {
-      case .idle, .empty, .limit, .handoff: "idle"
+      case .idle, .empty, .limit, .handoff, .command: "idle"
       case .working, .subagents: "running"
       case .permission, .question, .plan: "requires_action"
       case .stopped: "stopped"
@@ -160,6 +162,7 @@ extension GalleryFixtures {
     case .plan: return conversation + [pending(plan)]
     case .subagents: return conversation + subagents
     case .handoff: return handedOff
+    case .command: return commandChat
     }
   }
 

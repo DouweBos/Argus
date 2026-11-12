@@ -78,6 +78,19 @@ describe("toRemoteTranscriptDelta", () => {
 });
 
 describe("toRemoteMessage", () => {
+  it("forwards a recognized command", () => {
+    const out = toRemoteMessage({
+      id: "m1",
+      role: "user",
+      textBlocks: ["/compact keep the plan"],
+      command: { name: "compact", args: "keep the plan" },
+    });
+    expect(out.command).toEqual({ name: "compact", args: "keep the plan" });
+    expect(
+      toRemoteMessage({ id: "m2", role: "user", textBlocks: ["hi"] }),
+    ).not.toHaveProperty("command");
+  });
+
   it("forwards a background call's progress", () => {
     const out = toRemoteMessage({
       id: "m",

@@ -7,6 +7,7 @@
 import type {
   AgentCapabilities,
   AgentConversation,
+  ConversationCommand,
   ConversationMessage,
   ImageAttachment,
   LlmContentBlock,
@@ -293,6 +294,7 @@ export function withUserMessage(
   options: {
     author?: string;
     checkpointId?: string;
+    command?: ConversationCommand;
     images?: ImageAttachment[];
   } = {},
 ): AgentConversation {
@@ -305,6 +307,7 @@ export function withUserMessage(
     images: options.images?.length ? options.images : undefined,
     checkpointId: options.checkpointId,
     author: options.author,
+    command: options.command,
   };
 
   return {

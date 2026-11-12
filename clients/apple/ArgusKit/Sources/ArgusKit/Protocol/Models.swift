@@ -475,6 +475,18 @@ public struct RemoteMessageHandoff: Codable, Hashable, Sendable {
   }
 }
 
+/// A message that was one of the runner's own slash commands (`/compact keep the plan`).
+public struct RemoteMessageCommand: Codable, Hashable, Sendable {
+  public var name: String
+  /// Whatever followed the command's name.
+  public var args: String?
+
+  public init(name: String, args: String? = nil) {
+    self.name = name
+    self.args = args
+  }
+}
+
 public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
   public var id: String
   public var role: RemoteMessageRole
@@ -484,6 +496,7 @@ public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
   public var source: RemoteMessageSource?
   public var handoff: RemoteMessageHandoff?
   public var author: String?
+  public var command: RemoteMessageCommand?
   public var isError: Bool?
   public var timestamp: Double?
   public var usage: RemoteTokenUsage?
@@ -497,6 +510,7 @@ public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
     source: RemoteMessageSource? = nil,
     handoff: RemoteMessageHandoff? = nil,
     author: String? = nil,
+    command: RemoteMessageCommand? = nil,
     isError: Bool? = nil,
     timestamp: Double? = nil,
     usage: RemoteTokenUsage? = nil
@@ -509,13 +523,14 @@ public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
     self.source = source
     self.handoff = handoff
     self.author = author
+    self.command = command
     self.isError = isError
     self.timestamp = timestamp
     self.usage = usage
   }
 
   enum CodingKeys: String, CodingKey {
-    case id, role, images, source, handoff, author, timestamp, usage
+    case id, role, images, source, handoff, author, command, timestamp, usage
     case textBlocks = "text_blocks"
     case toolCalls = "tool_calls"
     case isError = "is_error"

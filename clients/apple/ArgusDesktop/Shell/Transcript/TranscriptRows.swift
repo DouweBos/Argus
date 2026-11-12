@@ -62,7 +62,9 @@ struct TranscriptMessageRow: View, Equatable {
       badges
       chips
       images
-      if let text = model.text(for: message) {
+      if let command = message.command {
+        commandBody(command)
+      } else if let text = model.text(for: message) {
         textView(text)
       }
       ForEach(calls) { call in
@@ -71,14 +73,34 @@ struct TranscriptMessageRow: View, Equatable {
     }
   }
 
-  private func textView(_ text: TranscriptRendered) -> some View {
+  /// A runner command: its chip, then whatever followed it.
+  private func commandBody(_ command: RemoteMessageCommand) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      CommandChip(command: command)
+      if let text = model.text(for: message) {
+        messageText(text, fills: false)
+      }
+    }
+    .padding(isUser ? Self.bubblePadding : EdgeInsets())
+    .background {
+      if isUser {
+        RoundedRectangle(cornerRadius: theme.radius).fill(theme.bgSecondary)
+      }
+    }
+  }
+
+  private func messageText(_ text: TranscriptRendered, fills: Bool) -> some View {
     let unit = TranscriptModel.textUnit(message.id)
     let current = model.currentHit.flatMap { $0.unitId == unit ? $0.range : nil }
     return TranscriptMessageText(
       rendered: text, unit: message.id, highlights: model.hitsByUnit[unit] ?? [], current: current,
-      revealToken: current == nil ? 0 : model.pendingReveal, fills: !isUser,
+      revealToken: current == nil ? 0 : model.pendingReveal, fills: fills,
       onRevealed: { model.revealedToken = $0 }
     )
+  }
+
+  private func textView(_ text: TranscriptRendered) -> some View {
+    messageText(text, fills: !isUser)
     .padding(isUser ? Self.bubblePadding : EdgeInsets())
     .background {
       if isUser {

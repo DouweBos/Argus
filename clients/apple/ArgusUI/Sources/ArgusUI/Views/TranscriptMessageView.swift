@@ -16,7 +16,7 @@ public struct TranscriptMessageView: View {
     return LinkedProjects.parsePreamble(message.textBlocks.joined(separator: "\n"))
   }
 
-  private var textBlocks: [String] { message.displayBlocks }
+  private var textBlocks: [String] { message.bodyBlocks }
 
   private var isUser: Bool { message.role == .user }
 
@@ -65,11 +65,15 @@ public struct TranscriptMessageView: View {
   }
 
   private var hasBubbleContent: Bool {
-    !textBlocks.isEmpty || !settledCalls.isEmpty
+    !textBlocks.isEmpty || !settledCalls.isEmpty || message.command != nil
   }
 
   private var bubble: some View {
     VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
+      if let command = message.command {
+        CommandChip(command: command, size: 13)
+          .messageMenu(menu, for: message)
+      }
       if !textBlocks.isEmpty {
         // On the text alone: a long press on a tool card or its prompt isn't about the message.
         VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {

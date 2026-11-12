@@ -35,7 +35,7 @@
     static let states: [(String, GalleryFixtures.TranscriptState)] = [
       ("idle", .idle), ("working", .working), ("permission", .permission), ("question", .question),
       ("plan", .plan), ("subagents", .subagents), ("stopped", .stopped), ("limit", .limit), ("empty", .empty),
-      ("handoff", .handoff),
+      ("handoff", .handoff), ("command", .command),
     ]
 
     private static let waiting = [

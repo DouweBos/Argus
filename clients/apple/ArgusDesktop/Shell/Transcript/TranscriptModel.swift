@@ -66,7 +66,7 @@ final class TranscriptModel {
 
   /// The message's text as it's laid out, cached until its blocks or the text scale change.
   func text(for message: RemoteMessage) -> TranscriptRendered? {
-    let blocks = message.displayBlocks
+    let blocks = message.bodyBlocks
     guard !blocks.isEmpty else { return nil }
     let scale = TextScale.shared.factor
     if let cached = rendered.object(forKey: message.id as NSString), cached.source == blocks, cached.scale == scale {

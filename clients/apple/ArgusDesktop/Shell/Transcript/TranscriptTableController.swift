@@ -129,6 +129,7 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
   func plainText(_ index: Int) -> (RemoteMessage, TranscriptRendered)? {
     guard case .segment(.single(let message)) = row(index), message.role != .user, message.toolCalls.isEmpty,
       (message.images ?? []).isEmpty, message.isError != true, message.source == nil, message.handoff == nil, message.author == nil,
+      message.command == nil,
       let text = model.text(for: message)
     else { return nil }
     return (message, text)
