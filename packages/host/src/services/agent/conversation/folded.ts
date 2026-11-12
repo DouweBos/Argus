@@ -8,8 +8,8 @@ import { IMAGES_ONLY_PROMPT } from "@argus/remote-protocol";
 import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
 import { generateChatTitle } from "../../llm/titleGenerator";
-import { runnerCommandFor } from "../runnerCommand";
 import { saveConversation } from "../chatHistory";
+import { runnerCommandFor } from "../runnerCommand";
 import {
   dropLive,
   liveConversation,

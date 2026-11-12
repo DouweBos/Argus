@@ -15,9 +15,9 @@ import type { ForkReplayOp } from "@argus/remote-protocol";
 import { emitHostEvent } from "@argus/host/bus";
 import { appState } from "../../../state";
 import { restoreAgentAtTurn, sendAgentMessage } from "../agentService";
-import { runnerCommandFor } from "../runnerCommand";
 import { createCheckpoint, restoreCheckpoint } from "../checkpoints";
 import { clearQueue, enqueueMessage, listQueue } from "../messageQueue";
+import { runnerCommandFor } from "../runnerCommand";
 import {
   changeConversation,
   isFolding,

@@ -17,13 +17,13 @@ import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
 import { capture as telemetryCapture } from "../../telemetry/telemetry";
 import { sendAgentMessage } from "../agentService";
-import { runnerCommandFor } from "../runnerCommand";
 import { createCheckpoint } from "../checkpoints";
 import {
   dequeueMessage,
   listQueue,
   promoteQueuedMessage,
 } from "../messageQueue";
+import { runnerCommandFor } from "../runnerCommand";
 import { withBackgroundSettled } from "./background";
 import { parseCliDiagnostic } from "./cliDiagnostics";
 import {
