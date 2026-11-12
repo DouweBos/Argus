@@ -600,6 +600,20 @@ change only the repository on screen.
 Pulling follows the repository's own `pull.rebase` / `pull.ff` git config,
 which the git panel's settings edit.
 
+### Drafted messages
+
+The sparkles button in the commit composer (⌥⌘G on the Mac; Draft on the phone) drafts a commit
+message from the staged changes and the session's chat; on the phone it drafts
+from everything uncommitted, since the phone commits it all. **Fill in with
+Claude** in the pull request sheet drafts the title and description the same
+way. Both run Claude Code on this computer, and you can edit the draft before
+committing.
+
+| Setting           | Default                | Description                                                                                                                                                                             |
+| ----------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Message style** | Repository conventions | `Repository conventions` matches the repository's recent commit subjects and its `CLAUDE.md` / `AGENTS.md`. `Custom instructions` follows your own rules.                               |
+| **Instructions**  | —                      | Your rules for drafted commits and pull requests, e.g. "Conventional Commits, imperative mood, no body". Used with Custom instructions; left empty, the repository's conventions apply. |
+
 A few git-panel preferences are intentionally _not_ in Settings because
 they're pure layout state: the source-sidebar collapsed state
 and width, which sub-sections are collapsed, and the

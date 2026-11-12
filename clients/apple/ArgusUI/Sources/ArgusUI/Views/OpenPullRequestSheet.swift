@@ -70,10 +70,14 @@ public struct OpenPullRequestSheet: View {
     Task {
       defer { busy = nil }
       do {
-        if let body = try await store.fill(
+        if let draft = try await store.fill(
           sessionId: session.id, title: trimmedTitle.isEmpty ? session.branch : trimmedTitle)
         {
-          summary = body
+          summary = draft.body ?? summary
+          // A title the user typed stays; the branch-name default doesn't.
+          if let drafted = draft.title, trimmedTitle.isEmpty || title == defaultTitle || title == session.branch {
+            title = drafted
+          }
         } else {
           error = "Claude couldn't fill in the description. Check that `claude` is installed and signed in on the computer."
         }

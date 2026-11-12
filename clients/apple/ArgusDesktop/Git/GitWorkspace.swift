@@ -291,6 +291,23 @@ final class GitWorkspace {
     }
   }
 
+  /// Fills the composer with Claude's message for the staged changes; a
+  /// failure lands in the banner with Retry.
+  func draftCommitMessage() async {
+    hostBusy = "Drafting…"
+    defer { hostBusy = nil }
+    do {
+      guard let draft = try await host.draftCommitMessage(sessionId: sessionId) else { return }
+      workingCopy.commitSubject = draft.summary
+      workingCopy.commitBody = draft.description
+      workingCopy.dismissAutoComplete()
+      hostError = nil
+    } catch {
+      failure = GitFailure.classify(HostStore.describe(error), operation: "draft_commit_message")
+      retry = { [weak self] in await self?.draftCommitMessage() }
+    }
+  }
+
   func track(_ action: MacTelemetryEvent.GitAction, success: Bool) {
     MacTelemetry.capture(.gitUsed(action: action, scope: scope, remote: isRemote, success: success))
   }

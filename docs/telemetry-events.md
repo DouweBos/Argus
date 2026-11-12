@@ -136,6 +136,8 @@ Sent only in `full` mode.
 | `scratch_pad_created`       | host   | A scratch pad is created                                                                                                                                                   | `has_name` — whether a name was given rather than the default                                                                                                                                                                                                                                          |
 | `terminal_stopped`          | host   | A running terminal was stopped gracefully — the Stop button (`ui`), an agent's `stop_terminal` (`mcp`) or a restart-on-rerun (`rerun`)                                     | `source`, `step` (`SIGINT`, `SIGTERM` or `SIGKILL`, whichever finished it), `stopped`                                                                                                                                                                                                                  |
 | `worktrees_moved`           | host   | A project's worktrees were moved to a new location                                                                                                                         | `moved`, `failed` (counts), `copied` (crossed drives), `duration_bucket`, `purpose`                                                                                                                                                                                                                    |
+| `commit_message_drafted`    | host   | Claude drafted a commit message for the Mac's or the phone's commit composer                                                                                               | `style` (`conventions`, `custom`), `scope` (`staged`, `all` — everything uncommitted, from the phone), `has_chat` — the session had a live chat to draw on, `duration_bucket` (`<10s`, `10-30s`, `30-90s`, `90s+`), `success`                                                                          |
+| `pull_request_drafted`      | host   | Claude drafted a pull request's title and description (Fill in with Claude)                                                                                                | `style` (`conventions`, `custom`), `has_template` — the repository has a PR template, `success`                                                                                                                                                                                                        |
 
 ## Merges
 
@@ -650,7 +652,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_navigated_history` | Back or Forward went through the window tab's history | `direction` (`back`, `forward`), `via` (`button` the toolbar chevrons, `shortcut` ⌘[ / ⌘] or the code view's ⌃- / ⌃⇧-, `menu` the Go menu clicked, `palette`, `mouse` the side buttons) |
 
 `mac_settings_changed`'s `section` is `general`, `appearance`, `accounts`, `agents`, `llm`,
-`mcp`, `integrations`, `tools`, `editor` or `advanced`, and `setting` is one of `theme`, `color_theme`, `display_size`,
+`mcp`, `integrations`, `tools`, `git`, `editor` or `advanced`, and `setting` is one of `theme`, `color_theme`, `display_size`,
 `launch_route`, `worktree_location`, `automation_worktree_location`,
 `custom_editors`, `telemetry_mode`, `account_selected`, `account_added`,
 `account_removed`, `account_renamed`, `account_reauth`,
@@ -662,7 +664,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 `update_channel`, `editor_font`, `editor_font_size`, `editor_tab_width`,
 `editor_insert_spaces`, `editor_wrap_lines`, `editor_show_invisibles`,
 `editor_format_on_save`, `open_file_links_in`, `language_servers`,
-`linear_mark_started` or `linear_report`. `mcp_tested` also fires when a server is tested from Project
+`linear_mark_started`, `linear_report`, `commit_message_style` or `commit_message_instructions`. `mcp_tested` also fires when a server is tested from Project
 Settings.
 
 ## Argus Server (Mac)

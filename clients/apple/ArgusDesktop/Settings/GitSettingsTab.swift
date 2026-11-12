@@ -43,6 +43,7 @@ struct GitSettingsTab: View {
         }
         SettingsToggleRow("Ignore whitespace in diffs", isOn: $ignoreWhitespace)
       }
+      CommitMessageStyleSection()
       SettingsGroup("Git signing") {
         if projects.isEmpty {
           Text("Add a project to set up its commit signing.").foregroundStyle(.secondary)

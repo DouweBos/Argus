@@ -22,6 +22,8 @@ public enum Icon {
   public static let push = "arrow.up"
   public static let repo = "shippingbox"
   public static let agent = "sparkle"
+  /// Have Claude draft a message.
+  public static let draft = "sparkles"
   /// A chat carried on by another runner.
   public static let continueOn = "arrow.forward.circle"
   public static let desktop = "desktopcomputer"

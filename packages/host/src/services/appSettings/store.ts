@@ -63,6 +63,14 @@ export interface AppSettings {
    */
   follow_up_suggestions?: boolean;
   /**
+   * How drafted commit messages and pull requests are styled: the repository's
+   * recent subjects and CLAUDE.md/AGENTS.md, or `commit_message_instructions`.
+   * Defaults to `conventions`.
+   */
+  commit_message_style?: "conventions" | "custom";
+  /** The user's own rules for drafted commit messages and pull requests. */
+  commit_message_instructions?: string;
+  /**
    * How many warm agents the host keeps for the sessions clients show, so a
    * start there skips the CLI's spawn. Each is a live `claude` plus its MCP
    * servers. 0 turns warming off; defaults to 1.

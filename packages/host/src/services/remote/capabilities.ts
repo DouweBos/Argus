@@ -153,6 +153,7 @@ import { getRunnerById } from "../llm/registry";
 import { listRunnerAccounts } from "../llm/runnerAccounts";
 import { collectAllProjects } from "../mcp/projectDiscovery";
 import { createScratchPad, listScratchPads } from "../scratchPad/manager";
+import { draftCommitMessage } from "../session/commitDraft";
 import {
   gitCheckout,
   gitCreateBranch,
@@ -2115,6 +2116,17 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return { output };
   },
 
+  "sessions.draft_commit_message": async (params) => {
+    const { session_id, all_changes } = parse(
+      "sessions.draft_commit_message",
+      params,
+    );
+    requireSession(session_id);
+
+    return await control(() =>
+      draftCommitMessage(session_id, all_changes ?? false),
+    );
+  },
   "sessions.commit_identity": async (params) => {
     const { session_id } = parse("sessions.commit_identity", params);
     requireSession(session_id);

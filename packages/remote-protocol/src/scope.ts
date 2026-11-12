@@ -186,6 +186,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.checkout": DENIED,
   // Landing work is the engineer's call too — a guest reviews, never ships.
   "sessions.commit": DENIED,
+  "sessions.draft_commit_message": DENIED,
   "sessions.commit_identity": DENIED,
   "sessions.push": DENIED,
   "sessions.merge_base": DENIED,

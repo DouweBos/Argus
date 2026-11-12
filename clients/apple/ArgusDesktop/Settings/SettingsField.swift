@@ -50,6 +50,8 @@ enum SettingsField: String {
   case languageServers = "language_servers"
   case linearMarkStarted = "linear_mark_started"
   case linearReport = "linear_report"
+  case commitMessageStyle = "commit_message_style"
+  case commitMessageInstructions = "commit_message_instructions"
 
   var section: SettingsTab {
     switch self {
@@ -67,6 +69,7 @@ enum SettingsField: String {
     case .toolToggled, .prereqFixed, .conductorVersion: .tools
     case .updateChannel: .advanced
     case .linearMarkStarted, .linearReport: .integrations
+    case .commitMessageStyle, .commitMessageInstructions: .git
     case .editorFont, .editorFontSize, .editorTabWidth, .editorInsertSpaces, .editorWrapLines,
       .editorShowInvisibles, .editorFormatOnSave, .openFileLinksIn, .languageServers:
       .editor

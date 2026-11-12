@@ -4230,18 +4230,22 @@ extension ArgusProtocol {
 
     public struct GithubFillPullRequestResult: Codable, Sendable {
       public var body: String?
+      public var title: String?
 
       enum CodingKeys: String, CodingKey {
         case body = "body"
+        case title = "title"
       }
 
-      public init(body: String? = nil) {
+      public init(body: String? = nil, title: String? = nil) {
         self.body = body
+        self.title = title
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(body, forKey: .body)
+        try c.encodeIfPresent(title, forKey: .title)
       }
     }
 
@@ -5978,6 +5982,48 @@ extension ArgusProtocol {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(diff, forKey: .diff)
         try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
+      }
+    }
+
+    public struct SessionsDraftCommitMessageParams: Codable, Sendable {
+      public var sessionId: String
+      public var allChanges: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case allChanges = "all_changes"
+      }
+
+      public init(sessionId: String, allChanges: Bool? = nil) {
+        self.sessionId = sessionId
+        self.allChanges = allChanges
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(allChanges, forKey: .allChanges)
+      }
+    }
+
+    public struct SessionsDraftCommitMessageResult: Codable, Sendable {
+      public var subject: String
+      public var body: String
+
+      enum CodingKeys: String, CodingKey {
+        case subject = "subject"
+        case body = "body"
+      }
+
+      public init(subject: String, body: String) {
+        self.subject = subject
+        self.body = body
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(subject, forKey: .subject)
+        try c.encode(body, forKey: .body)
       }
     }
 
@@ -7912,6 +7958,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsDiffParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsDiffResult
       public static let name = "sessions.diff"
+    }
+
+    public enum SessionsDraftCommitMessage: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsDraftCommitMessageParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsDraftCommitMessageResult
+      public static let name = "sessions.draft_commit_message"
     }
 
     public enum SessionsFiles: RemoteCommand {

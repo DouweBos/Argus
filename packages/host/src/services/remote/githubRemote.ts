@@ -22,7 +22,7 @@ import { appState } from "../../state";
 import { ghPrComment, ghPrCreate, ghPrMerge } from "../github/prActions";
 import { getPullRequestDetail } from "../github/prDetail";
 import { listInterestingPullRequests } from "../github/pullRequests";
-import { autofillPullRequestBody } from "../session/prAutofill";
+import { autofillPullRequest } from "../session/prAutofill";
 import { readPullRequestTemplate } from "../session/pullRequest";
 
 function toRemotePullRequest(pr: InterestingPullRequest): RemotePullRequest {
@@ -161,16 +161,15 @@ export function remotePullRequestTemplate(sessionId: string): {
 export async function fillRemotePullRequest(
   sessionId: string,
   title: string,
-): Promise<{ body: string | null }> {
+): Promise<{ body: string | null; title: string | null }> {
   const session = sessionFor(sessionId);
+  const draft = await autofillPullRequest({
+    sessionId,
+    title,
+    baseBranch: session.base_branch ?? "main",
+  });
 
-  return {
-    body: await autofillPullRequestBody({
-      sessionId,
-      title,
-      baseBranch: session.base_branch ?? "main",
-    }),
-  };
+  return { body: draft?.body ?? null, title: draft?.title || null };
 }
 
 export async function mergeRemotePullRequest(

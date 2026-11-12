@@ -109,22 +109,26 @@ public final class PullRequestsStore {
     ).template
   }
 
-  /// Claude's description from the session's commits and diff; nil when it
-  /// couldn't. Throws for the sheet to show, not the list's banner.
-  public func fill(sessionId: String, title: String) async throws -> String? {
+  /// Claude's title and description from the session's commits and diff.
+  public struct Draft: Decodable, Sendable, Equatable {
+    public let body: String?
+    /// Nil from an older computer, which drafts only the description.
+    public let title: String?
+  }
+
+  /// Nil when Claude couldn't draft one. Throws for the sheet to show, not the list's banner.
+  public func fill(sessionId: String, title: String) async throws -> Draft? {
     guard let backend = host.backend else { return nil }
     struct Params: Encodable {
       let session_id: String
       let title: String
     }
-    struct Result: Decodable { let body: String? }
     do {
-      let body = try await backend.request(
-        .githubFillPullRequest, Params(session_id: sessionId, title: title), as: Result.self
-      ).body
+      let draft = try await backend.request(
+        .githubFillPullRequest, Params(session_id: sessionId, title: title), as: Draft.self)
       host.hooks.track(.pullRequestActed(action: .fill))
 
-      return body
+      return draft.body == nil ? nil : draft
     } catch {
       if !HostStore.isQuiet(error) { host.hooks.errorReported(error, "pull_requests") }
       throw error

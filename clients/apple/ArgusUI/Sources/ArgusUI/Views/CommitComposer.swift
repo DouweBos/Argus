@@ -22,13 +22,20 @@ struct CommitComposer: View {
   @State private var signOff = false
   @State private var sign = false
   @State private var identity: HostStore.CommitIdentity?
+  @State private var draftError: String?
 
   private var canCommit: Bool { !message.isEmpty && busy == nil }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
       fields
+      if let draftError {
+        Banner(text: draftError, tone: .danger)
+      }
       ChipFlowLayout(spacing: 6, lineSpacing: 6) {
+        Chip(label: busy == "draft" ? "Drafting…" : "Draft", icon: Icon.draft) { draft() }
+          .disabled(busy != nil)
+          .accessibilityHint("Claude writes a message for these changes")
         if allowsAmend {
           optionChip("Amend", on: amend) { setAmend(!amend) }
         }
@@ -118,6 +125,22 @@ struct CommitComposer: View {
     } else if let draft = draftBeforeAmend {
       message = draft
       draftBeforeAmend = nil
+    }
+  }
+
+  /// The phone commits every change, so Claude reads them all.
+  private func draft() {
+    busy = "draft"
+    draftError = nil
+    Task {
+      defer { busy = nil }
+      do {
+        if let drafted = try await host.draftCommitMessage(sessionId: sessionId, allChanges: true) {
+          message = drafted
+        }
+      } catch {
+        draftError = HostStore.describe(error)
+      }
     }
   }
 

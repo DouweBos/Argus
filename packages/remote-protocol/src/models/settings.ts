@@ -54,6 +54,10 @@ export const AppSettings = z.object({
   automations_enabled: z.boolean().optional(),
   /** Suggest replies after a turn ends, from the agent's last message. Defaults to true. */
   follow_up_suggestions: z.boolean().optional(),
+  /** Style drafted commit messages and PRs follow. Defaults to `conventions`. */
+  commit_message_style: z.enum(["conventions", "custom"]).optional(),
+  /** The user's own rules, used when the style is `custom`. */
+  commit_message_instructions: z.string().optional(),
   /** Warm agents kept ready for the sessions clients show, 0 for none. Defaults to 1. */
   warm_agents: z.number().int().min(0).max(2).optional(),
   /** Screen Argus opens on: the project picker, or the inbox. Defaults to home. */

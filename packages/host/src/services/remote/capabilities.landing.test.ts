@@ -15,6 +15,7 @@ const tier = (method: RemoteMethod) => REMOTE_METHODS[method];
 
 const WRITES = [
   "sessions.commit",
+  "sessions.draft_commit_message",
   "sessions.push",
   "sessions.merge_base",
   "sessions.stash_apply",

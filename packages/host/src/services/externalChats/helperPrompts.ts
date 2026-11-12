@@ -10,6 +10,7 @@ import {
   SESSION_TITLE_PROMPT,
 } from "../llm/titleGenerator";
 import { REFINE_ARGUS_JSON_PROMPT } from "../onboarding/refineWithClaude";
+import { COMMIT_MESSAGE_PROMPT } from "../session/commitDraft";
 import {
   PR_DESCRIPTION_PROMPT,
   PR_TEMPLATE_PROMPT,
@@ -22,6 +23,7 @@ const HELPER_PROMPTS = [
   CHAT_TITLE_PROMPT,
   PR_TEMPLATE_PROMPT,
   PR_DESCRIPTION_PROMPT,
+  COMMIT_MESSAGE_PROMPT,
   AUTHORING_PROMPT,
   REVISION_PROMPT,
   INJECTION_SCAN_PROMPT,

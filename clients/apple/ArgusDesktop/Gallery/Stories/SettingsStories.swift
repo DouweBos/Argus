@@ -17,6 +17,12 @@
         GalleryStory("settings/accounts", size: CGSize(width: 760, height: 1000), fixtures: GalleryFixtures.runnerAccounts) {
           AccountsSettingsTab().environment(HostSettingsModel())
         },
+        GalleryStory("settings/drafted-messages/conventions", size: CGSize(width: 760, height: 300)) {
+          DraftedMessagesStage(style: .conventions)
+        },
+        GalleryStory("settings/drafted-messages/custom", size: CGSize(width: 760, height: 420)) {
+          DraftedMessagesStage(style: .custom)
+        },
         account("signed-in", GalleryAccount(selfKind: "mac")),
         account("host-elsewhere", GalleryAccount(selfKind: "mac", hostElsewhere: true)),
         account("signed-out", GalleryAccount(phase: .signedOut, selfKind: "mac")),
@@ -97,6 +103,22 @@
     }
 
     private static let page = CGSize(width: 760, height: 900)
+
+    private struct DraftedMessagesStage: View {
+      @State private var host = HostSettingsModel()
+      let style: ArgusProtocol.AppSettingsCommitMessageStyle
+
+      var body: some View {
+        SettingsPage { CommitMessageStyleSection() }
+          .environment(host)
+          .onAppear {
+            host.galleryFill(
+              .init(
+                commitMessageStyle: style,
+                commitMessageInstructions: "Conventional Commits with a scope, imperative mood, no body."))
+          }
+      }
+    }
 
     private static func account(_ state: String, _ fixture: GalleryAccount) -> GalleryStory {
       GalleryStory(

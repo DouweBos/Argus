@@ -155,6 +155,15 @@ export interface EventMap {
     is_fresh_start: boolean;
     keep_turn_number: number;
   };
+  commit_message_drafted: {
+    style: "conventions" | "custom";
+    /** Staged changes only, or everything uncommitted (the phone). */
+    scope: "all" | "staged";
+    /** The session had a live chat to draw on. */
+    has_chat: boolean;
+    duration_bucket: "<10s" | "10-30s" | "30-90s" | "90s+";
+    success: boolean;
+  };
   agent_side_question: {
     /** The agent was mid-turn when asked. */
     agent_busy: boolean;
@@ -406,6 +415,11 @@ export interface EventMap {
     action: "export" | "import";
     outcome: "invalid_config" | "invalid_json" | "success";
     repo_file: boolean;
+  };
+  pull_request_drafted: {
+    style: "conventions" | "custom";
+    has_template: boolean;
+    success: boolean;
   };
   pr_watch_ended: {
     reason: "closed" | "merged" | "session_deleted" | "stopped";

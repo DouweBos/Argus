@@ -103,6 +103,25 @@ extension HostStore {
     }
   }
 
+  /// Claude's message for the staged changes, or every uncommitted one with
+  /// `allChanges`, in the style set on the computer. Throws for the composer to show.
+  public func draftCommitMessage(sessionId: String, allChanges: Bool = false) async throws -> CommitMessage? {
+    guard let backend else { return nil }
+    struct Params: Encodable {
+      let session_id: String
+      let all_changes: Bool?
+    }
+    struct Result: Decodable {
+      let subject: String
+      let body: String
+    }
+    let draft = try await backend.request(
+      .sessionsDraftCommitMessage,
+      Params(session_id: sessionId, all_changes: allChanges ? true : nil),
+      as: Result.self)
+    return CommitMessage(summary: draft.subject, description: draft.body)
+  }
+
   /// Who a session's commits are authored as, and whether they can be signed.
   public struct CommitIdentity: Decodable, Sendable, Equatable {
     public let name: String

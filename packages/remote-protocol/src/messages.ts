@@ -537,6 +537,11 @@ export const MethodParams = {
     /** Sign the commit with the computer's configured key. */
     sign: z.boolean().optional(),
   }),
+  "sessions.draft_commit_message": z.object({
+    session_id: z.string(),
+    /** Draft from every uncommitted change, as a phone commits them all. */
+    all_changes: z.boolean().optional(),
+  }),
   "sessions.commit_identity": z.object({ session_id: z.string() }),
   "sessions.stashes": z.object({ session_id: z.string() }),
   /** Apply a stash; `drop` also removes it once applied (a pop). */
@@ -1022,6 +1027,10 @@ export const MethodResult = {
   }),
   /** Git's own output, so a refusal reads the same as it does in a terminal. */
   "sessions.commit": z.object({ output: z.string() }),
+  "sessions.draft_commit_message": z.object({
+    subject: z.string(),
+    body: z.string(),
+  }),
   /** Who a commit is authored as; empty strings when git has no identity. */
   "sessions.commit_identity": z.object({
     name: z.string(),
@@ -1146,7 +1155,11 @@ export const MethodResult = {
   /** Null when the repo has no template. */
   "github.pull_request_template": z.object({ template: z.string().nullable() }),
   /** Null when Claude couldn't fill it. */
-  "github.fill_pull_request": z.object({ body: z.string().nullable() }),
+  "github.fill_pull_request": z.object({
+    body: z.string().nullable(),
+    /** Drafted in the configured message style; absent from older computers. */
+    title: z.string().nullish(),
+  }),
   "github.merge_pull_request": z.object({ accepted: z.boolean() }),
   "github.comment_pull_request": z.object({ accepted: z.boolean() }),
   "proposals.list": z.object({ proposals: z.array(RemoteProposal) }),

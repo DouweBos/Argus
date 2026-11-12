@@ -3,13 +3,14 @@ import GroveKit
 import SwiftUI
 
 /// Subject, body and options over the Changes list, as Electron's CommitPanel,
-/// plus templates, gitmoji and the identity switcher, flat on the canvas.
+/// plus a Claude draft, templates, gitmoji and the identity switcher, flat on the canvas.
 struct CommitComposerView: View {
   @Environment(DesktopModel.self) private var model
   @Environment(\.theme) private var theme
   let workspace: GitWorkspace
   @State private var managingTemplates = false
   @State private var pickingGitmoji = false
+  @State private var drafting = false
   @FocusState private var subjectFocused: Bool
 
   private var vm: WorkingCopyViewModel { workspace.workingCopy }
@@ -45,6 +46,7 @@ struct CommitComposerView: View {
           .padding(.vertical, 7)
         HStack(spacing: 2) {
           Spacer()
+          draftButton
           gitmojiButton
           templatesMenu
         }
@@ -80,6 +82,31 @@ struct CommitComposerView: View {
     .font(.scaled(size: 12))
     .padding(12)
     .sheet(isPresented: $managingTemplates) { CommitTemplatesSheet(store: CommitPreferences.templates) }
+  }
+
+  private var draftButton: some View {
+    Button(action: draft) {
+      if drafting {
+        ProgressView().controlSize(.mini)
+      } else {
+        Image(systemName: "sparkles")
+      }
+    }
+    .buttonStyle(FlatIconButtonStyle(size: 22))
+    .keyboardShortcut("g", modifiers: [.command, .option])
+    .disabled(drafting || vm.stagedFiles.isEmpty)
+    .help(vm.stagedFiles.isEmpty ? "Stage changes to draft a message" : "Draft a message with Claude (⌥⌘G)")
+    .accessibilityLabel("Draft commit message")
+  }
+
+  private func draft() {
+    guard !drafting, !vm.stagedFiles.isEmpty else { return }
+    drafting = true
+    Task {
+      await workspace.draftCommitMessage()
+      drafting = false
+      subjectFocused = true
+    }
   }
 
   private var gitmojiButton: some View {

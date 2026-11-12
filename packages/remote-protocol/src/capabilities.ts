@@ -234,6 +234,8 @@ export const REMOTE_METHODS = {
    *  merging lands it on the base branch, which the host still refuses for a
    *  protected branch or a conflicting tree. */
   "sessions.commit": "control",
+  /** Spends a Claude call on the computer's account. */
+  "sessions.draft_commit_message": "control",
   "sessions.commit_identity": "monitor",
   "sessions.push": "control",
   "sessions.merge_base": "control",
