@@ -39,6 +39,7 @@ export interface RawToolCall {
   result?: RawResultBlock[] | string;
   isError?: boolean;
   pendingPermission?: boolean;
+  expired?: boolean;
   children?: RawChild[];
   background?: { status: string; startedAt: number; durationMs?: number };
 }
@@ -183,6 +184,7 @@ function toRemoteToolCall(messageId: string, tc: RawToolCall): RemoteToolCall {
     result_blocks: resultBlocks(messageId, id, tc.result),
     ...(children && children.length > 0 ? { children } : {}),
     ...(tc.pendingPermission ? { pending_permission: true } : {}),
+    ...(tc.expired ? { expired: true } : {}),
     ...(tc.isError ? { is_error: true } : {}),
     status,
     ...(tc.background ? { background: toRemoteBackground(tc.background) } : {}),

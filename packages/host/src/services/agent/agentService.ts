@@ -277,6 +277,17 @@ function seedResumedConversation(
   }
 }
 
+/** The process that asked is gone, so its prompts can't be answered any more. */
+function dropPendingPrompts(agentId: string): void {
+  const pending = appState.agentPendingPermissions.get(agentId);
+  appState.agentPendingPermissions.delete(agentId);
+  for (const toolUseId of pending?.keys() ?? []) {
+    emitHostEvent(`agent:permission-cancel:${agentId}`, {
+      tool_use_id: toolUseId,
+    });
+  }
+}
+
 function liveSession(sessionId: string): Session & { path: string } {
   const argusSession = appState.sessions.get(sessionId);
   if (!argusSession) {
@@ -995,6 +1006,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     // the frontend's running indicator stays lit until the new child is up.
     if (agentEntry?.suppressStatus) {
       info(`[agent:${agentId}] old child closed during restore — suppressed`);
+      dropPendingPrompts(agentId);
 
       return;
     }
@@ -1020,6 +1032,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     });
 
     emitHostEvent(`agent:exit:${agentId}`, exitCode);
+    dropPendingPrompts(agentId);
     info(`[agent:${agentId}] process exited with code ${exitCode}`);
     forgetLimitResume(agentId);
 

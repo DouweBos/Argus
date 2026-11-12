@@ -190,6 +190,8 @@ export interface RemoteToolCall {
   children?: RemoteToolCallChild[];
   /** Whether this call is awaiting a user permission decision. */
   pending_permission?: boolean;
+  /** A prompt that lapsed unanswered; it can no longer be answered. */
+  expired?: boolean;
   is_error?: boolean;
   status: "done" | "error" | "pending" | "running";
   /** Set when the call runs in the background past its own tool_result. */
@@ -209,6 +211,7 @@ export const RemoteToolCall: z.ZodType<RemoteToolCall> = z.lazy(() =>
     result_blocks: z.array(RemoteToolResultBlock),
     children: z.array(RemoteToolCallChild).optional(),
     pending_permission: z.boolean().optional(),
+    expired: z.boolean().optional(),
     is_error: z.boolean().optional(),
     status: z.enum(["done", "error", "pending", "running"]),
     background: RemoteBackgroundTask.optional(),

@@ -195,6 +195,8 @@ export interface ToolCallInfo {
    * blocks with `parent_tool_use_id === this.id`.
    */
   children?: ToolCallChild[];
+  /** A prompt that lapsed unanswered: its process is gone or its turn moved on. */
+  expired?: boolean;
   id: string;
   input: Record<string, unknown>;
   isError?: boolean;

@@ -419,9 +419,11 @@ public struct RemoteToolCall: Codable, Hashable, Sendable, Identifiable {
   public var isError: Bool?
   public var status: RemoteToolStatus
   public var background: RemoteBackgroundTask? = nil
+  /// A prompt that lapsed unanswered; it can no longer be answered.
+  public var expired: Bool? = nil
 
   enum CodingKeys: String, CodingKey {
-    case id, name, input, children, status, background
+    case id, name, input, children, status, background, expired
     case resultBlocks = "result_blocks"
     case pendingPermission = "pending_permission"
     case isError = "is_error"

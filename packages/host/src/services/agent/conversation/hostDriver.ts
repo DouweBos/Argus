@@ -39,12 +39,9 @@ import {
   userMessage,
 } from "./folded";
 import { clearFollowUps, suggestFollowUps } from "./followUps";
-import {
-  isAwaitingAnswerTool,
-  notifyFinished,
-  notifyPrompt,
-} from "./hostNotifications";
+import { notifyFinished, notifyPrompt } from "./hostNotifications";
 import { flushLive } from "./live";
+import { isAwaitingAnswerTool, withPromptsExpired } from "./prompts";
 import {
   reduceEvent,
   withCapabilities,
@@ -113,7 +110,9 @@ function route(channel: string, payload: unknown): void {
     case "exit":
       entry.inflight = false;
       flushStderr(id, entry, payload as number);
-      update(id, entry, (c) => withBackgroundSettled(c, Date.now()));
+      update(id, entry, (c) =>
+        withPromptsExpired(withBackgroundSettled(c, Date.now())),
+      );
       save(id);
       flushLive(id);
       break;
@@ -221,6 +220,14 @@ function streamLine(agentId: string, entry: Tracked, line: string): void {
   }
   // A result isn't the agent going idle; hold it until the turn ends.
   if (event.type === "result") {
+    // The turn is over, so a prompt in it the runner isn't holding never gets an answer.
+    const live = appState.agentPendingPermissions.get(agentId);
+    update(agentId, entry, (c) =>
+      withPromptsExpired(c, {
+        live: (id) => live?.has(id) ?? false,
+        topLevelOnly: true,
+      }),
+    );
     entry.finished = {
       durationMs: event.duration_ms,
       failed: event.subtype === "error",
@@ -239,7 +246,9 @@ function statusChanged(agentId: string, entry: Tracked, status: string): void {
   }
   if (status === "stopped" || status === "error") {
     entry.inflight = false;
-    update(agentId, entry, (c) => withBackgroundSettled(c, Date.now()));
+    update(agentId, entry, (c) =>
+      withPromptsExpired(withBackgroundSettled(c, Date.now())),
+    );
     save(agentId);
     untrack(agentId);
 

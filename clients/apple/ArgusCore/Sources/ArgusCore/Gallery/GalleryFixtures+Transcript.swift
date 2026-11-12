@@ -16,6 +16,8 @@ extension GalleryFixtures {
     case permission
     /// Waiting on an AskUserQuestion answer.
     case question
+    /// Resumed past a question its previous run never got answered.
+    case expiredQuestion
     /// Waiting on plan approval.
     case plan
     /// A sub-agent and a background shell still running.
@@ -97,7 +99,7 @@ extension GalleryFixtures {
   private static func agentStatus(_ state: TranscriptState) -> [String: Any] {
     let status: String =
       switch state {
-      case .idle, .empty, .limit, .handoff, .command: "idle"
+      case .idle, .empty, .limit, .handoff, .command, .expiredQuestion: "idle"
       case .working, .subagents: "running"
       case .permission, .question, .plan: "requires_action"
       case .stopped: "stopped"
@@ -162,6 +164,11 @@ extension GalleryFixtures {
     case .working: return conversation + working
     case .permission: return conversation + [pending(bashPermission)]
     case .question: return conversation + [pending(question)]
+    case .expiredQuestion:
+      return conversation + [
+        pending(expired(question)), user("u9", 20, "continue"),
+        assistant("m7", 27, text: ["No answer on the width, so I went with the reading column, as on the Mac."]),
+      ]
     case .plan: return conversation + [pending(plan)]
     case .subagents: return conversation + subagents
     case .handoff: return handedOff
@@ -385,6 +392,21 @@ extension GalleryFixtures {
           4. Add a patch changeset.
           """
       ], status: "pending")
+  }
+
+  /// The question a resumed agent's previous run never got answered, as its card gets it.
+  public static var expiredQuestionCall: RemoteToolCall {
+    let json = GalleryJSON.encode(expired(question))
+    return try! JSONDecoder().decode(RemoteToolCall.self, from: Data(json.utf8))
+  }
+
+  /// How the host settles a prompt nobody can answer any more.
+  private static func expired(_ call: [String: Any]) -> [String: Any] {
+    var call = call
+    call["status"] = "done"
+    call["expired"] = true
+    call["result_blocks"] = [["type": "text", "text": "Not answered"]]
+    return call
   }
 
   private static func pending(_ call: [String: Any]) -> [String: Any] {

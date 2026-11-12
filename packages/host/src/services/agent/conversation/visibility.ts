@@ -7,6 +7,8 @@
  * `TranscriptVisibility`.
  */
 
+import { isAwaitingAnswerTool, UNANSWERED_RESULT } from "./prompts";
+
 /** Tools that manage the agent's own context rather than do any work. */
 const META_TOOL_NAMES = new Set(["ToolSearch"]);
 
@@ -26,6 +28,7 @@ export interface ToolCallLike<T> {
   isError?: boolean;
   name?: string;
   pendingPermission?: boolean;
+  expired?: boolean;
   result?: unknown;
 }
 
@@ -77,8 +80,20 @@ export function visibleToolCall<T extends ToolCallLike<T>>(
       next = { ...next, children };
     }
   }
-  if (options.settled && tc.result == null && !tc.pendingPermission) {
-    next = { ...next, result: INTERRUPTED_RESULT, isError: true };
+  if (options.settled && tc.result == null) {
+    // Nobody is left to answer a prompt.
+    next =
+      tc.pendingPermission || (tc.name && isAwaitingAnswerTool(tc.name))
+        ? {
+            ...next,
+            pendingPermission: false,
+            result: UNANSWERED_RESULT,
+            isError: false,
+            expired: true,
+          }
+        : { ...next, result: INTERRUPTED_RESULT, isError: true };
+  } else if (options.settled && tc.pendingPermission) {
+    next = { ...next, pendingPermission: false };
   }
   // Its CLI is gone, so it will never report back.
   if (options.settled && tc.background?.status === "running") {

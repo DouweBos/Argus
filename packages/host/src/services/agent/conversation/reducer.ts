@@ -22,6 +22,7 @@ import {
   withTaskNotification,
   withTaskStarted,
 } from "./background";
+import { expirePrompts } from "./prompts";
 import {
   applyTaskCallsLive,
   extractTasksFromMessages,
@@ -380,7 +381,8 @@ export function fromSavedMessages(
   const tasks = extractTasksFromMessages(messages);
 
   return {
-    messages,
+    // The process that asked is gone, so nothing in a saved history is still waiting.
+    messages: expirePrompts(messages),
     model: meta.model,
     sessionId: meta.sessionId,
     resuming: meta.resuming,

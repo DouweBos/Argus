@@ -54,6 +54,7 @@ export interface ConversationToolCall {
   background?: ConversationBackgroundTask;
   /** What a Task/Agent call's subagent streamed. */
   children?: ConversationToolCallChild[];
+  expired?: boolean;
   id: string;
   input: Record<string, unknown>;
   isError?: boolean;
@@ -71,6 +72,7 @@ export const ConversationToolCall: z.ZodType<ConversationToolCall> = z.lazy(
     z.object({
       background: ConversationBackgroundTask.optional(),
       children: z.array(ConversationToolCallChild).optional(),
+      expired: z.boolean().optional(),
       id: z.string(),
       input: z.record(z.string(), z.unknown()),
       isError: z.boolean().optional(),

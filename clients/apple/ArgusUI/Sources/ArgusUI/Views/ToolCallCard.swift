@@ -130,6 +130,7 @@ public struct ToolCallCard: View {
         Spacer(minLength: 4)
         editStats
         if isPending { Badge(label: "needs approval", tone: .warning) }
+        if call.expired == true { Badge(label: "not answered", tone: .muted) }
         if call.isError == true { Badge(label: "error", tone: .danger) }
         if let background = call.background {
           BackgroundTaskStatus(task: background)
@@ -212,7 +213,7 @@ public struct ToolCallCard: View {
 
   /// The answer text an AskUserQuestion came back with, once it has one.
   private var answeredQuestions: (questions: [Questions.Question], answer: String)? {
-    guard call.name == "AskUserQuestion", !isPending,
+    guard call.name == "AskUserQuestion", !isPending, call.expired != true,
       let questions = Questions.parse(call.input)
     else { return nil }
     let answer = call.resultBlocks.compactMap { block -> String? in
@@ -230,7 +231,8 @@ public struct ToolCallCard: View {
 
     // The answer view already shows what came back; the raw text is the same
     // thing again, one formatting layer down.
-    if !call.resultBlocks.isEmpty && answeredQuestions == nil {
+    // An expired prompt's result only repeats its badge.
+    if !call.resultBlocks.isEmpty && answeredQuestions == nil && call.expired != true {
       resultBlocks
     }
 

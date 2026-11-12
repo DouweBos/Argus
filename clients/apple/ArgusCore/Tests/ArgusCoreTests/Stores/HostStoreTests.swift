@@ -231,6 +231,66 @@ struct HostStoreTests {
     #expect(HostStore.refusedAnswerMessage(gone).hasPrefix("That prompt is no longer waiting"))
   }
 
+  @Test("an answer to a prompt the host no longer holds leaves it settled")
+  func goneDecision() async {
+    let backend = FakeBackend()
+    let gone = Transport.TransportError.gateway(
+      GatewayErrorPayload(code: "bad_request", message: "no such outstanding prompt"))
+    backend.fail(.permissionRespond, with: gone)
+    let store = HostStore()
+    await store.attach(backend)
+    await store.respond(agentId: "a1", toolUseId: "t1", decision: "deny", message: "Postgres")
+    #expect(store.answered.contains(store.promptKey("a1", "t1")))
+    #expect(store.lastError?.hasPrefix("That prompt is no longer waiting") == true)
+  }
+
+  private static func call(_ fields: String) -> RemoteToolCall {
+    let json =
+      #"{"id":"q1","name":"AskUserQuestion","input":{},\#(fields)}"#
+    return try! JSONDecoder().decode(RemoteToolCall.self, from: Data(json.utf8))
+  }
+
+  @Test("a prompt the host settled as expired is not actionable")
+  func expiredPrompt() async throws {
+    let store = HostStore()
+    let backend = FakeBackend()
+    await store.attach(backend)
+    try backend.emit("agent.status", payload: Self.status("a1", "idle"))
+    #expect(await eventually { store.statusByAgent["a1"]?.status == .idle })
+
+    // Restored history or a turn that moved on: the host sends it settled.
+    let expired = Self.call(
+      #""status":"done","expired":true,"result_blocks":[{"type":"text","text":"Not answered"}]"#)
+    #expect(!store.isToolCallPending(agentKey: "a1", call: expired))
+    #expect(store.pendingCalls(agentKey: "a1", in: [Self.message(expired)]).isEmpty)
+  }
+
+  @Test("a prompt the host is holding is actionable")
+  func livePrompt() async throws {
+    let store = HostStore()
+    let backend = FakeBackend()
+    await store.attach(backend)
+    try backend.emit("agent.status", payload: Self.status("a1", "idle"))
+    #expect(await eventually { store.statusByAgent["a1"]?.status == .idle })
+
+    let pending = Self.call(#""result_blocks":[],"status":"pending","pending_permission":true"#)
+    #expect(store.isToolCallPending(agentKey: "a1", call: pending))
+    let running = Self.call(#""result_blocks":[],"status":"running""#)
+    #expect(!store.isToolCallPending(agentKey: "a1", call: running))
+    try backend.emit(
+      "permission.request",
+      payload: #"{"agent_id":"a1","tool_use_id":"q1","tool_name":"AskUserQuestion","tool_input":{}}"#)
+    #expect(await eventually { store.isToolCallPending(agentKey: "a1", call: running) })
+    #expect(store.pendingCalls(agentKey: "a1", in: [Self.message(running)]).map(\.id) == ["q1"])
+  }
+
+  private static func message(_ call: RemoteToolCall) -> RemoteMessage {
+    let json = #"{"id":"m1","role":"assistant","text_blocks":[],"tool_calls":[]}"#
+    var message = try! JSONDecoder().decode(RemoteMessage.self, from: Data(json.utf8))
+    message.toolCalls = [call]
+    return message
+  }
+
   @Test("always allow from a phone asks the gateway for the rule")
   func alwaysAllowOverGateway() async {
     let backend = FakeBackend(kind: .gateway)

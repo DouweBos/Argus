@@ -12,14 +12,9 @@ import {
 } from "../../notifications/osNotification";
 
 const MIN_TURN_DURATION_MS = 10_000;
-const AWAITS_ANSWER = new Set(["AskUserQuestion", "ExitPlanMode"]);
 
 /** Whichever path notices a prompt first wins; the other is a no-op. */
 const notified = new Set<string>();
-
-export function isAwaitingAnswerTool(toolName: string): boolean {
-  return AWAITS_ANSWER.has(toolName);
-}
 
 interface Context {
   name: string;

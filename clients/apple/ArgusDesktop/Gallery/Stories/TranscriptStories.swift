@@ -15,6 +15,14 @@
         }
       } + [
         GalleryStory(
+          "transcript/question-expired-card", size: CGSize(width: 640, height: 80),
+          fixtures: GalleryFixtures.transcript(.expiredQuestion)
+        ) {
+          ToolCallCard(agentKey: GalleryFixtures.transcriptAgent, call: GalleryFixtures.expiredQuestionCall, depth: 0)
+            .padding(16)
+            .frame(maxHeight: .infinity, alignment: .top)
+        },
+        GalleryStory(
           "agent/mcp-servers", size: CGSize(width: 320, height: 420), fixtures: GalleryFixtures.transcript(.idle)
         ) {
           AgentMcpServersView(agentId: GalleryFixtures.transcriptAgent)
@@ -33,7 +41,7 @@
 
     static let states: [(String, GalleryFixtures.TranscriptState)] = [
       ("idle", .idle), ("working", .working), ("permission", .permission), ("question", .question),
-      ("plan", .plan), ("subagents", .subagents), ("stopped", .stopped), ("limit", .limit), ("empty", .empty),
+      ("question-expired", .expiredQuestion), ("plan", .plan), ("subagents", .subagents), ("stopped", .stopped), ("limit", .limit), ("empty", .empty),
       ("handoff", .handoff), ("command", .command),
     ]
   }

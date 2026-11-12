@@ -325,12 +325,21 @@ extension HostStore {
       }
       await refreshTranscript(agentId: agentId)
     } catch {
+      lastError = Self.refusedAnswerMessage(error)
+      // The host has nothing waiting there, so a retry can only fail again.
+      if Self.isPromptGone(error) {
+        await refreshTranscript(agentId: agentId)
+        return
+      }
       // Refused or lost: put the prompt back so it can be answered again.
       answered.remove(key)
       if let prompt { prompts[key] = prompt }
-      lastError = Self.refusedAnswerMessage(error)
       hooks.decisionUndelivered(agentId, toolUseId, decision)
     }
+  }
+
+  nonisolated static func isPromptGone(_ error: Error) -> Bool {
+    describe(error).contains("no such outstanding prompt")
   }
 
   /// An older computer ignores the request and allows the call just once.
@@ -340,7 +349,7 @@ extension HostStore {
   /// Why an answer didn't land, in words: the host's own reason otherwise.
   public nonisolated static func refusedAnswerMessage(_ error: Error) -> String {
     let reason = describe(error)
-    guard reason.contains("no such outstanding prompt") else { return "Your answer didn't reach the agent: \(reason)" }
+    guard isPromptGone(error) else { return "Your answer didn't reach the agent: \(reason)" }
     return "That prompt is no longer waiting — the agent may have stopped or someone else answered it."
   }
 

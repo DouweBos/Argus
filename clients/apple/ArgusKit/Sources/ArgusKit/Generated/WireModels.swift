@@ -4904,6 +4904,7 @@ extension ArgusProtocol {
   public struct ConversationToolCall: Codable, Sendable {
     public var background: ConversationBackgroundTask?
     public var children: [ConversationToolCallChild]?
+    public var expired: Bool?
     public var id: String
     public var input: [String: JSONValue]
     public var isError: Bool?
@@ -4914,6 +4915,7 @@ extension ArgusProtocol {
     enum CodingKeys: String, CodingKey {
       case background = "background"
       case children = "children"
+      case expired = "expired"
       case id = "id"
       case input = "input"
       case isError = "isError"
@@ -4922,9 +4924,10 @@ extension ArgusProtocol {
       case result = "result"
     }
 
-    public init(background: ConversationBackgroundTask? = nil, children: [ConversationToolCallChild]? = nil, id: String, input: [String: JSONValue], isError: Bool? = nil, name: String, pendingPermission: Bool? = nil, result: JSONValue? = nil) {
+    public init(background: ConversationBackgroundTask? = nil, children: [ConversationToolCallChild]? = nil, expired: Bool? = nil, id: String, input: [String: JSONValue], isError: Bool? = nil, name: String, pendingPermission: Bool? = nil, result: JSONValue? = nil) {
       self.background = background
       self.children = children
+      self.expired = expired
       self.id = id
       self.input = input
       self.isError = isError
@@ -4937,6 +4940,7 @@ extension ArgusProtocol {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encodeIfPresent(background, forKey: .background)
       try c.encodeIfPresent(children, forKey: .children)
+      try c.encodeIfPresent(expired, forKey: .expired)
       try c.encode(id, forKey: .id)
       try c.encode(input, forKey: .input)
       try c.encodeIfPresent(isError, forKey: .isError)
@@ -16219,6 +16223,7 @@ extension ArgusProtocol {
     public var resultBlocks: [RemoteToolResultBlock]
     public var children: [RemoteToolCallChild]?
     public var pendingPermission: Bool?
+    public var expired: Bool?
     public var isError: Bool?
     public var status: RemoteToolCallStatus
     public var background: RemoteBackgroundTask?
@@ -16230,18 +16235,20 @@ extension ArgusProtocol {
       case resultBlocks = "result_blocks"
       case children = "children"
       case pendingPermission = "pending_permission"
+      case expired = "expired"
       case isError = "is_error"
       case status = "status"
       case background = "background"
     }
 
-    public init(id: String, name: String, input: [String: JSONValue], resultBlocks: [RemoteToolResultBlock], children: [RemoteToolCallChild]? = nil, pendingPermission: Bool? = nil, isError: Bool? = nil, status: RemoteToolCallStatus, background: RemoteBackgroundTask? = nil) {
+    public init(id: String, name: String, input: [String: JSONValue], resultBlocks: [RemoteToolResultBlock], children: [RemoteToolCallChild]? = nil, pendingPermission: Bool? = nil, expired: Bool? = nil, isError: Bool? = nil, status: RemoteToolCallStatus, background: RemoteBackgroundTask? = nil) {
       self.id = id
       self.name = name
       self.input = input
       self.resultBlocks = resultBlocks
       self.children = children
       self.pendingPermission = pendingPermission
+      self.expired = expired
       self.isError = isError
       self.status = status
       self.background = background
@@ -16255,6 +16262,7 @@ extension ArgusProtocol {
       try c.encode(resultBlocks, forKey: .resultBlocks)
       try c.encodeIfPresent(children, forKey: .children)
       try c.encodeIfPresent(pendingPermission, forKey: .pendingPermission)
+      try c.encodeIfPresent(expired, forKey: .expired)
       try c.encodeIfPresent(isError, forKey: .isError)
       try c.encode(status, forKey: .status)
       try c.encodeIfPresent(background, forKey: .background)

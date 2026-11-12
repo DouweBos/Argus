@@ -1,5 +1,6 @@
 import type { ConversationMessage, ToolCallInfo } from "./types";
 import { describe, expect, it } from "vitest";
+import { UNANSWERED_RESULT } from "./prompts";
 import {
   INTERRUPTED_RESULT,
   visibleMessage,
@@ -110,11 +111,21 @@ describe("visibleMessage", () => {
     });
   });
 
-  it("leaves a pending permission alone even when settled", () => {
+  it("settles a prompt nobody is left to answer as not answered", () => {
     const m = msg({
-      toolCalls: [call({ result: undefined, pendingPermission: true })],
+      toolCalls: [
+        call({ result: undefined, pendingPermission: true }),
+        call({ id: "q", name: "AskUserQuestion", result: undefined }),
+      ],
     });
-    expect(visibleMessage(m, { settled: true })).toBe(m);
+    for (const tc of visibleMessage(m, { settled: true })!.toolCalls) {
+      expect(tc).toMatchObject({
+        pendingPermission: false,
+        result: UNANSWERED_RESULT,
+        isError: false,
+        expired: true,
+      });
+    }
   });
 });
 

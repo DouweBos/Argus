@@ -488,4 +488,113 @@ describe("host conversation driver", () => {
     expect(texts()).toEqual(["user: from last time", "assistant: new"]);
     expect(snapshot()?.title).toBe("Saved");
   });
+
+  describe("prompts", () => {
+    function ask(id: string, name = "AskUserQuestion"): void {
+      line({
+        type: "assistant",
+        message: {
+          content: [{ type: "tool_use", id, name, input: { questions: [] } }],
+          model: "opus",
+          usage: { input_tokens: 1, output_tokens: 1 },
+        },
+      });
+    }
+
+    function promptCall(id: string) {
+      return snapshot()
+        ?.messages.flatMap((m) => m.toolCalls)
+        .find((tc) => tc.id === id);
+    }
+
+    function request(id: string, name = "AskUserQuestion"): void {
+      appState.agentPendingPermissions.set(
+        AGENT,
+        new Map([[id, { tool_use_id: id, tool_name: name } as never]]),
+      );
+      emitHostEvent(`agent:permission:${AGENT}`, {
+        tool_use_id: id,
+        tool_name: name,
+        tool_input: {},
+      });
+    }
+
+    afterEach(() => appState.agentPendingPermissions.clear());
+
+    it("keeps a prompt the runner is holding answerable", async () => {
+      addAgent();
+      started();
+      line(INIT);
+      ask("q1");
+      request("q1");
+      await vi.advanceTimersByTimeAsync(20);
+
+      expect(promptCall("q1")).toMatchObject({ pendingPermission: true });
+      expect(promptCall("q1")?.expired).toBeUndefined();
+    });
+
+    it("settles a prompt the turn moved on from", async () => {
+      addAgent();
+      started();
+      line(INIT);
+      ask("q1");
+      request("q1");
+      emitHostEvent(`agent:permission-cancel:${AGENT}`, { tool_use_id: "q1" });
+      appState.agentPendingPermissions.clear();
+      line(reply("Going with the defaults."));
+      line({ type: "result", subtype: "success", duration_ms: 1 });
+      await vi.advanceTimersByTimeAsync(20);
+
+      expect(promptCall("q1")).toMatchObject({
+        expired: true,
+        result: "Not answered",
+      });
+    });
+
+    it("settles a prompt whose process exited", async () => {
+      addAgent();
+      started();
+      line(INIT);
+      ask("q1", "Bash");
+      request("q1", "Bash");
+      await vi.advanceTimersByTimeAsync(20);
+      emitHostEvent(`agent:exit:${AGENT}`, 0);
+      await vi.advanceTimersByTimeAsync(20);
+
+      expect(promptCall("q1")).toMatchObject({ expired: true });
+      expect(promptCall("q1")?.pendingPermission).toBeUndefined();
+    });
+
+    it("never restores a saved prompt as waiting", async () => {
+      addAgent();
+      const { fromSavedMessages } = await import("./reducer");
+      stageConversation(
+        AGENT,
+        fromSavedMessages(
+          [
+            {
+              id: "old",
+              role: "assistant",
+              textBlocks: [],
+              toolCalls: [
+                {
+                  id: "q0",
+                  name: "AskUserQuestion",
+                  input: {},
+                  pendingPermission: true,
+                },
+              ],
+              timestamp: 1,
+            },
+          ],
+          { resuming: true },
+        ),
+      );
+      started();
+      await vi.advanceTimersByTimeAsync(20);
+
+      expect(promptCall("q0")).toMatchObject({ expired: true });
+      expect(promptCall("q0")?.pendingPermission).toBeUndefined();
+    });
+  });
 });
