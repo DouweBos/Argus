@@ -40,7 +40,8 @@ struct SidebarView: View {
 
   private var sessionList: some View {
     ScrollView {
-      LazyVStack(alignment: .leading, spacing: 10) {
+      // Not lazy: a few uneven project sections send LazyVStack's height estimates into a layout loop.
+      VStack(alignment: .leading, spacing: 10) {
         if projects.isEmpty, store.projectsLoaded {
           Text(filter.isActive ? "Nothing matches" : "No projects yet")
             .font(.scaled(size: 12))

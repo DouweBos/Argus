@@ -457,6 +457,8 @@ extension HostStore {
     guard let result = try? await backend.request(
       .sessionsGitStatus, Params(session_id: sessionId), as: Result.self)
     else { return }
+    // Every sidebar row reads this dictionary; an unchanged write re-lays them all out.
+    guard gitStatusBySession[sessionId] != result.status else { return }
     gitStatusBySession[sessionId] = result.status
   }
 
