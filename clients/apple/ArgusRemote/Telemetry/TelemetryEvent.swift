@@ -58,13 +58,24 @@ enum TelemetryEvent {
     case widget
     /// The Control Center control.
     case control
+    /// A row on the agents' Live Activity.
+    case liveActivity = "live_activity"
 
     init(_ source: WidgetLink.Source) {
       switch source {
       case .widget: self = .widget
       case .control: self = .control
+      case .liveActivity: self = .liveActivity
       }
     }
+  }
+
+  enum LiveActivityAction: String {
+    case started
+    /// Approve or Deny was tapped on it.
+    case answered
+    /// Switched off in Settings.
+    case disabled
   }
 
   /// An App Intent, run from Siri, Shortcuts or Spotlight.
@@ -312,6 +323,8 @@ enum TelemetryEvent {
   case intentRun(intent: IntentKind, success: Bool)
   /// Once a launch: how many of each widget and control are placed, to see whether they are used.
   case widgetsInstalled(agents: Int, inbox: Int, usage: Int, controls: Int)
+  /// The agents' Live Activity started, was answered from, or was switched off.
+  case liveActivity(action: LiveActivityAction)
 
   var name: String {
     switch self {
@@ -382,6 +395,7 @@ enum TelemetryEvent {
     case .linkOpened: "ios_link_opened"
     case .intentRun: "ios_intent_run"
     case .widgetsInstalled: "ios_widgets_installed"
+    case .liveActivity: "ios_live_activity"
     }
   }
 
@@ -517,6 +531,8 @@ enum TelemetryEvent {
       ["intent": intent.rawValue, "success": success]
     case .widgetsInstalled(let agents, let inbox, let usage, let controls):
       ["agents": agents, "inbox": inbox, "usage": usage, "controls": controls]
+    case .liveActivity(let action):
+      ["action": action.rawValue]
     }
   }
 

@@ -107,6 +107,9 @@
 		5B4D00000000000000000006 /* ArgusMenuBar in Frameworks */ = {isa = PBXBuildFile; productRef = 5B4D00000000000000000005 /* ArgusMenuBar */; };
 		A9D6E7000000000000000010 /* ArgusWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A9D6E7000000000000000002 /* ArgusWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A9D6E7000000000000000011 /* ArgusKit in Frameworks */ = {isa = PBXBuildFile; productRef = A9D6E7000000000000000014 /* ArgusKit */; };
+		A9D6E7000000000000000030 /* AgentActivities.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D6E7000000000000000031 /* AgentActivities.swift */; };
+		A9D6E7000000000000000032 /* AgentActivityViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D6E7000000000000000033 /* AgentActivityViews.swift */; };
+		A9D6E7000000000000000034 /* AnswerPromptIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D6E7000000000000000035 /* AnswerPromptIntent.swift */; };
 		A9D6E7000000000000000020 /* WidgetSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D6E7000000000000000021 /* WidgetSync.swift */; };
 		5ABE00000000000000000001 /* ArgusShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5ABE00000000000000000002 /* ArgusShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		5ABE00000000000000000010 /* ArgusKit in Frameworks */ = {isa = PBXBuildFile; productRef = 5ABE00000000000000000020 /* ArgusKit */; };
@@ -264,6 +267,9 @@
 		5E4E00000000000000000002 /* Argus Server.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Argus Server.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5E4F00000000000000000002 /* ArgusServerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArgusServerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9D6E7000000000000000002 /* ArgusWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ArgusWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A9D6E7000000000000000031 /* AgentActivities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentActivities.swift; sourceTree = "<group>"; };
+		A9D6E7000000000000000033 /* AgentActivityViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AgentActivityViews.swift; path = ArgusWidgets/AgentActivityViews.swift; sourceTree = SOURCE_ROOT; };
+		A9D6E7000000000000000035 /* AnswerPromptIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AnswerPromptIntent.swift; path = ArgusWidgets/AnswerPromptIntent.swift; sourceTree = SOURCE_ROOT; };
 		A9D6E7000000000000000021 /* WidgetSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSync.swift; sourceTree = "<group>"; };
 		5ABE00000000000000000002 /* ArgusShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ArgusShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -585,6 +591,9 @@
 				3E4CF7C9E04D0A1D6F57EDA5 /* LockScreen.swift */,
 				0E2171FDF4B199BD1A0795D6 /* NotificationRouter.swift */,
 				A9D6E7000000000000000021 /* WidgetSync.swift */,
+				A9D6E7000000000000000031 /* AgentActivities.swift */,
+				A9D6E7000000000000000033 /* AgentActivityViews.swift */,
+				A9D6E7000000000000000035 /* AnswerPromptIntent.swift */,
 				2A25C129590BCC456E86F7A6 /* DevDriver.swift */,
 				B33859C3DC1F6B2FE094BDF8 /* PushTokens.swift */,
 				9798D9FC585435B89959E156 /* RootView.swift */,
@@ -1080,6 +1089,9 @@
 				1A7E00000000000000000061 /* AppShortcuts.swift in Sources */,
 				1346FB8C6E0119391A82DC4B /* NotificationRouter.swift in Sources */,
 				A9D6E7000000000000000020 /* WidgetSync.swift in Sources */,
+				A9D6E7000000000000000030 /* AgentActivities.swift in Sources */,
+				A9D6E7000000000000000032 /* AgentActivityViews.swift in Sources */,
+				A9D6E7000000000000000034 /* AnswerPromptIntent.swift in Sources */,
 				A279FDAB48CC421077ED1C7A /* DevDriver.swift in Sources */,
 				C230860282D4938F66D435CF /* PairView.swift in Sources */,
 				6897D3167EEB3794CED55DDA /* ProjectView.swift in Sources */,

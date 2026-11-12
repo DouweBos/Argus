@@ -135,6 +135,7 @@ struct RootView: View {
       await automations?.refresh()
     }
     .modifier(WidgetSync(app: app, proposals: proposals))
+    .modifier(LiveActivitySync(app: app))
     // Whether Linear is connected decides if Issues is listed at all.
     .task(id: app.host.connection == .ready) {
       guard app.host.connection == .ready else { return }

@@ -59,6 +59,12 @@ public enum ArgusSeal {
   /// alert in place, and a vague notification beats both a missing one and a
   /// lock screen full of ciphertext.
   public static func open(_ sealed: String, pushKeyBase64: String) -> SealedNotification? {
+    guard let plaintext = openData(sealed, pushKeyBase64: pushKeyBase64) else { return nil }
+    return try? JSONDecoder().decode(SealedNotification.self, from: plaintext)
+  }
+
+  /// The plaintext of anything sealed in this format, or nil if we can't open it.
+  public static func openData(_ sealed: String, pushKeyBase64: String) -> Data? {
     guard let key = ArgusBase64.decode(pushKeyBase64), key.count == 32,
       let blob = ArgusBase64.decode(sealed),
       // 12-byte nonce + 16-byte tag, so anything shorter can't be one of ours.
@@ -71,11 +77,8 @@ public enum ArgusSeal {
       ciphertext: blob.dropFirst(12).dropLast(16),
       tag: blob.suffix(16)
     )
-    guard let box,
-      let plaintext = try? AES.GCM.open(box, using: SymmetricKey(data: key)),
-      let opened = try? JSONDecoder().decode(SealedNotification.self, from: plaintext)
-    else { return nil }
-    return opened
+    guard let box else { return nil }
+    return try? AES.GCM.open(box, using: SymmetricKey(data: key))
   }
 
   /// Seal a notification. Only used by tests here — the desktop does the real
@@ -83,11 +86,15 @@ public enum ArgusSeal {
   public static func seal(
     _ notification: SealedNotification, pushKeyBase64: String, nonce: Data
   ) throws -> String {
+    try seal(JSONEncoder().encode(notification), pushKeyBase64: pushKeyBase64, nonce: nonce)
+  }
+
+  public static func seal(_ plaintext: Data, pushKeyBase64: String, nonce: Data) throws -> String {
     guard let key = ArgusBase64.decode(pushKeyBase64), key.count == 32 else {
       throw CryptoKitError.incorrectKeySize
     }
     let box = try AES.GCM.seal(
-      JSONEncoder().encode(notification),
+      plaintext,
       using: SymmetricKey(data: key),
       nonce: try AES.GCM.Nonce(data: nonce)
     )

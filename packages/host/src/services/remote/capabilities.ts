@@ -295,6 +295,11 @@ import {
   getPushConfigStatus,
   isPushConfigured,
 } from "./push/config";
+import {
+  currentActivitySnapshot,
+  registerLiveActivity,
+  unregisterLiveActivity,
+} from "./push/liveActivity/dispatch";
 import { ShareError } from "./shareError";
 import {
   findImage,
@@ -1232,6 +1237,31 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "device.unregister_push": async (_params, ctx) => {
     await clearDevicePush(ctx.device.device_id);
     ctx.device.push = null;
+
+    return { accepted: true };
+  },
+
+  "live_activity.snapshot": async () => {
+    return { snapshot: currentActivitySnapshot() };
+  },
+
+  "live_activity.register": async (params, ctx) => {
+    const { token, environment, push_key, auth_key } = parse(
+      "live_activity.register",
+      params,
+    );
+    registerLiveActivity(ctx.device.device_id, {
+      token,
+      environment,
+      pushKey: push_key,
+      authKey: auth_key,
+    });
+
+    return { accepted: true, enabled: (await getPushConfigStatus()).enabled };
+  },
+
+  "live_activity.unregister": async (_params, ctx) => {
+    unregisterLiveActivity(ctx.device.device_id);
 
     return { accepted: true };
   },

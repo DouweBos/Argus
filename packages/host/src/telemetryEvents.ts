@@ -347,6 +347,12 @@ export interface EventMap {
     kind: "cloudflare_quick" | "cloudflare_token" | "tailscale_funnel";
     reason: "managed" | "user";
   };
+  /** A phone's Live Activity stopped getting updates from this computer. */
+  live_activity_ended: {
+    failed_sends: number;
+    reason: "settled" | "token_dead" | "unregistered";
+    updates: number;
+  };
   limit_handoff_offered: { eligible_count_bucket: "1" | "2" | "3+" };
   lsp_feature_used: {
     feature:

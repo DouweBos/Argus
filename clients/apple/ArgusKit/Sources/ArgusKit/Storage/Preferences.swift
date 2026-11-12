@@ -7,6 +7,7 @@ public enum PreferenceKey {
   public static let theme = "argus.theme"
   public static let colorTheme = "argus.colorTheme"
   public static let pushEnabled = "push.enabled"
+  public static let liveActivities = "liveActivities.enabled"
   public static let autoExpandImageReads = "transcript.autoExpandImageReads"
   public static let defaultPermissionMode = "agent.defaultPermissionMode"
   /// The project the last Linear issue was started in.

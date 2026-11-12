@@ -113,6 +113,55 @@ export async function sendViaRelay(
   };
 }
 
+/**
+ * A Live Activity update. `payload` is the JSON the relay validates and turns
+ * into an APNs `liveactivity` push; its content-state carries only a coarse
+ * phase and a blob sealed for the device.
+ */
+export async function sendActivityViaRelay(
+  relayUrl: string,
+  target: RelayTarget,
+  payload: string,
+  now: number,
+): Promise<RelaySendResult> {
+  let res: Response;
+  try {
+    res = await fetch(`${relayUrl.replace(/\/$/, "")}/activity`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-argus-auth": sign(
+          target.authKey,
+          "activity",
+          target,
+          now,
+          sha256Hex(payload),
+        ),
+      },
+      body: JSON.stringify({
+        token: target.token,
+        service: target.service,
+        environment: target.environment,
+        payload,
+        ts: now,
+      }),
+    });
+  } catch (err) {
+    return { ok: false, retryable: true, reason: (err as Error).message };
+  }
+
+  const parsed = (await res.json().catch(() => ({}))) as RelayResponse;
+  if (res.ok && parsed.delivered) {
+    return { ok: true, environment: parsed.environment };
+  }
+
+  return {
+    ok: false,
+    retryable: res.status >= 500 || res.status === 429,
+    reason: parsed.reason ?? `HTTP ${res.status}`,
+  };
+}
+
 /** Tell the relay to forget a device (on unpair, or a dead token). */
 export async function revokeViaRelay(
   relayUrl: string,

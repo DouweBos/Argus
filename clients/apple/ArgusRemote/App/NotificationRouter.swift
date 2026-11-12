@@ -221,6 +221,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
   ) -> Bool {
     MainActor.assumeIsolated {
       NotificationRouter.shared.attach()
+      AgentActivities.shared.install()
       Telemetry.start()
     }
     return true

@@ -216,6 +216,7 @@ public enum WidgetLink {
 
   public enum Source: String, Sendable {
     case widget, control
+    case liveActivity = "live_activity"
   }
 
   /// The phone's new-agent composer, on the last active project.
@@ -232,6 +233,16 @@ public enum WidgetLink {
   public static func source(of url: URL) -> Source? {
     URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?
       .first { $0.name == sourceItem }?.value.flatMap(Source.init(rawValue:))
+  }
+
+  /// An agent's chat on the computer that runs it, from a Live Activity.
+  public static func agentURL(sessionId: String, agentId: String, hostId: String) -> URL {
+    var allowed = CharacterSet.urlPathAllowed
+    allowed.remove(charactersIn: "/?#&=")
+    func encode(_ s: String) -> String { s.addingPercentEncoding(withAllowedCharacters: allowed) ?? s }
+    return url(
+      path: "/sessions/\(encode(sessionId))/agents/\(encode(agentId))?host=\(encode(hostId))",
+      source: .liveActivity)
   }
 
   /// Whether a link is the new-agent composer, which only the phone has.

@@ -4647,6 +4647,233 @@ extension ArgusProtocol {
       }
     }
 
+    public struct LiveActivityRegisterParamsEnvironment: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let production = LiveActivityRegisterParamsEnvironment(rawValue: "production")
+      public static let sandbox = LiveActivityRegisterParamsEnvironment(rawValue: "sandbox")
+    }
+
+    public struct LiveActivityRegisterParams: Codable, Sendable {
+      public var token: String
+      public var environment: LiveActivityRegisterParamsEnvironment?
+      public var pushKey: String
+      public var authKey: String
+
+      enum CodingKeys: String, CodingKey {
+        case token = "token"
+        case environment = "environment"
+        case pushKey = "push_key"
+        case authKey = "auth_key"
+      }
+
+      public init(token: String, environment: LiveActivityRegisterParamsEnvironment? = nil, pushKey: String, authKey: String) {
+        self.token = token
+        self.environment = environment
+        self.pushKey = pushKey
+        self.authKey = authKey
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(token, forKey: .token)
+        try c.encodeIfPresent(environment, forKey: .environment)
+        try c.encode(pushKey, forKey: .pushKey)
+        try c.encode(authKey, forKey: .authKey)
+      }
+    }
+
+    public struct LiveActivityRegisterResult: Codable, Sendable {
+      public var accepted: Bool
+      public var enabled: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+        case enabled = "enabled"
+      }
+
+      public init(accepted: Bool, enabled: Bool) {
+        self.accepted = accepted
+        self.enabled = enabled
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+        try c.encode(enabled, forKey: .enabled)
+      }
+    }
+
+    public struct LiveActivitySnapshotParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct LiveActivitySnapshotResultSnapshotAgentsItemState: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let working = LiveActivitySnapshotResultSnapshotAgentsItemState(rawValue: "working")
+      public static let needsYou = LiveActivitySnapshotResultSnapshotAgentsItemState(rawValue: "needsYou")
+      public static let done = LiveActivitySnapshotResultSnapshotAgentsItemState(rawValue: "done")
+      public static let failed = LiveActivitySnapshotResultSnapshotAgentsItemState(rawValue: "failed")
+    }
+
+    public struct LiveActivitySnapshotResultSnapshotAgentsItemPrompt: Codable, Sendable {
+      public var toolUseId: String
+      public var summary: String
+
+      enum CodingKeys: String, CodingKey {
+        case toolUseId = "toolUseId"
+        case summary = "summary"
+      }
+
+      public init(toolUseId: String, summary: String) {
+        self.toolUseId = toolUseId
+        self.summary = summary
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(toolUseId, forKey: .toolUseId)
+        try c.encode(summary, forKey: .summary)
+      }
+    }
+
+    public struct LiveActivitySnapshotResultSnapshotAgentsItem: Codable, Sendable {
+      public var id: String
+      public var sessionId: String
+      public var title: String
+      public var project: String?
+      public var state: LiveActivitySnapshotResultSnapshotAgentsItemState
+      public var startedAt: Double
+      public var endedAt: Double?
+      public var step: String?
+      public var prompt: LiveActivitySnapshotResultSnapshotAgentsItemPrompt?
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case sessionId = "sessionId"
+        case title = "title"
+        case project = "project"
+        case state = "state"
+        case startedAt = "startedAt"
+        case endedAt = "endedAt"
+        case step = "step"
+        case prompt = "prompt"
+      }
+
+      public init(id: String, sessionId: String, title: String, project: String? = nil, state: LiveActivitySnapshotResultSnapshotAgentsItemState, startedAt: Double, endedAt: Double? = nil, step: String? = nil, prompt: LiveActivitySnapshotResultSnapshotAgentsItemPrompt? = nil) {
+        self.id = id
+        self.sessionId = sessionId
+        self.title = title
+        self.project = project
+        self.state = state
+        self.startedAt = startedAt
+        self.endedAt = endedAt
+        self.step = step
+        self.prompt = prompt
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(title, forKey: .title)
+        try c.encode(project, forKey: .project)
+        try c.encode(state, forKey: .state)
+        try c.encode(startedAt, forKey: .startedAt)
+        try c.encode(endedAt, forKey: .endedAt)
+        try c.encode(step, forKey: .step)
+        try c.encode(prompt, forKey: .prompt)
+      }
+    }
+
+    public struct LiveActivitySnapshotResultSnapshot: Codable, Sendable {
+      public var agents: [LiveActivitySnapshotResultSnapshotAgentsItem]
+      public var more: Double
+
+      enum CodingKeys: String, CodingKey {
+        case agents = "agents"
+        case more = "more"
+      }
+
+      public init(agents: [LiveActivitySnapshotResultSnapshotAgentsItem], more: Double) {
+        self.agents = agents
+        self.more = more
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agents, forKey: .agents)
+        try c.encode(more, forKey: .more)
+      }
+    }
+
+    public struct LiveActivitySnapshotResult: Codable, Sendable {
+      public var snapshot: LiveActivitySnapshotResultSnapshot
+
+      enum CodingKeys: String, CodingKey {
+        case snapshot = "snapshot"
+      }
+
+      public init(snapshot: LiveActivitySnapshotResultSnapshot) {
+        self.snapshot = snapshot
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(snapshot, forKey: .snapshot)
+      }
+    }
+
+    public struct LiveActivityUnregisterParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct LiveActivityUnregisterResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
     public struct PermissionRespondParamsDecision: RawRepresentable, Codable, Hashable, Sendable {
       public var rawValue: String
       public init(rawValue: String) { self.rawValue = rawValue }
@@ -7511,6 +7738,24 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.LinearUpdateIssueParams
       public typealias Result = ArgusProtocol.MethodsTypes.LinearUpdateIssueResult
       public static let name = "linear.update_issue"
+    }
+
+    public enum LiveActivityRegister: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.LiveActivityRegisterParams
+      public typealias Result = ArgusProtocol.MethodsTypes.LiveActivityRegisterResult
+      public static let name = "live_activity.register"
+    }
+
+    public enum LiveActivitySnapshot: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.LiveActivitySnapshotParams
+      public typealias Result = ArgusProtocol.MethodsTypes.LiveActivitySnapshotResult
+      public static let name = "live_activity.snapshot"
+    }
+
+    public enum LiveActivityUnregister: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.LiveActivityUnregisterParams
+      public typealias Result = ArgusProtocol.MethodsTypes.LiveActivityUnregisterResult
+      public static let name = "live_activity.unregister"
     }
 
     public enum PermissionRespond: RemoteCommand {

@@ -55,6 +55,8 @@ final class AppStore {
   var telemetryMode: TelemetryMode = .presence
   var pushState: PushState = .off
   var pushEnabled = true
+  /// Running agents on the Lock Screen and in the Dynamic Island.
+  var liveActivitiesEnabled = true
 
   /// The connected computer's data and actions.
   let host = HostStore()
@@ -134,6 +136,7 @@ final class AppStore {
   private func load() async {
     telemetryMode = Telemetry.currentMode
     pushEnabled = preferences.string(PreferenceKey.pushEnabled) != "off"
+    liveActivitiesEnabled = preferences.string(PreferenceKey.liveActivities) != "off"
     deviceName = UIDeviceName.stored(preferences)
     themePreference =
       ThemePreference(rawValue: preferences.string(PreferenceKey.theme) ?? "") ?? .system
@@ -328,6 +331,7 @@ final class AppStore {
 
     await registerPush(backend)
     await flushPendingDecisions(backend)
+    await AgentActivities.shared.sync(self, connected: true)
     await account.sync(over: .backend(backend))
 
     // Re-sync addresses so a phone paired over Wi-Fi learns the tunnels, without

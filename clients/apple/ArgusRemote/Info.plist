@@ -45,6 +45,8 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Unlock Argus to look in on your agents.</string>
 	<key>NSCameraUsageDescription</key>

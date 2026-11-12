@@ -124,6 +124,12 @@ export const REMOTE_METHODS = {
   "device.register_push": "monitor",
   /** Forget this device's push token (user turned notifications off). */
   "device.unregister_push": "monitor",
+  /** The agents a Live Activity shows, for its first frame. */
+  "live_activity.snapshot": "monitor",
+  /** Have this host push agent progress to the phone's Live Activity. */
+  "live_activity.register": "monitor",
+  /** Stop pushing to it (the user switched Live Activities off). */
+  "live_activity.unregister": "monitor",
   /** Models, slash commands, and subagent types for an agent's input pickers. */
   "agents.capabilities": "control",
   /** Send a chat message (optionally with image attachments) to an agent. */

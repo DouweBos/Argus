@@ -8,5 +8,6 @@ struct ArgusWidgetsBundle: WidgetBundle {
     InboxWidget()
     UsageWidget()
     QuickAgentControl()
+    AgentLiveActivity()
   }
 }

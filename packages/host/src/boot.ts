@@ -64,6 +64,10 @@ import {
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { disconnectDevice } from "./services/remote/gateway";
 import { killManagedTunnelNow } from "./services/remote/managedTunnel";
+import {
+  startLiveActivities,
+  stopLiveActivities,
+} from "./services/remote/push/liveActivity/dispatch";
 import { installRemoteStatusBroadcast } from "./services/remote/remoteAdmin";
 import {
   applyRemoteSettings,
@@ -225,6 +229,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   registerHostCommands();
   // Until a UI claims them, the host folds agent conversations itself.
   startHostConversations();
+  startLiveActivities();
   startWarmPolicy({ spawn: spawnSpare });
   // Pinned chats come back idle once the MCP server is listening.
   startPinnedChats();
@@ -276,6 +281,7 @@ export function stopHostServices(): void {
   stopSessionPullRequests();
   stopPrWatches();
   stopHostConversations();
+  stopLiveActivities();
   stopWarmPolicy();
   stopMcpServer();
   stopRemote();

@@ -46,13 +46,22 @@ export function seal(
   notification: SealedNotification,
   nonce: Buffer = randomBytes(12),
 ): string {
+  return sealJson(pushKey, notification, nonce);
+}
+
+/** Encrypt any JSON value for one device, in the notification format. */
+export function sealJson(
+  pushKey: string,
+  value: unknown,
+  nonce: Buffer = randomBytes(12),
+): string {
   const key = Buffer.from(pushKey, "base64");
   if (key.length !== 32) {
     throw new Error("push key must be 32 bytes");
   }
   const cipher = createCipheriv("aes-256-gcm", key, nonce);
   const ciphertext = Buffer.concat([
-    cipher.update(Buffer.from(JSON.stringify(notification), "utf-8")),
+    cipher.update(Buffer.from(JSON.stringify(value), "utf-8")),
     cipher.final(),
   ]);
 

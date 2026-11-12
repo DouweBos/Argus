@@ -82,6 +82,13 @@ extension AppStore {
     }
   }
 
+  func setLiveActivitiesEnabled(_ enabled: Bool) async {
+    liveActivitiesEnabled = enabled
+    preferences.set(enabled ? "on" : "off", for: PreferenceKey.liveActivities)
+    if !enabled { Telemetry.capture(.liveActivity(action: .disabled)) }
+    await AgentActivities.shared.setEnabled(enabled, app: self)
+  }
+
   /// This install's token and push key, if push is on and already allowed.
   /// Never prompts: that happens on the first connection.
   func accountPushToken() async -> AccountPushToken? {

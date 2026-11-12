@@ -75,6 +75,7 @@ import {
   LinearIssueScope,
   LinearWorkflowState,
 } from "./models/integrations";
+import { RemoteLiveActivitySnapshot } from "./models/liveActivity";
 import { RunnerAccount } from "./models/llm";
 import {
   ClaudeUsageLimits,
@@ -245,6 +246,18 @@ export const MethodParams = {
     auth_key: z.string().min(1).max(128).optional(),
   }),
   "device.unregister_push": z.object({}),
+  "live_activity.snapshot": z.object({}),
+  /** Push this host's agents to a Live Activity the phone started. */
+  "live_activity.register": z.object({
+    /** The activity's APNs push token (hex), already registered with the relay. */
+    token: z.string().min(1).max(512),
+    environment: z.enum(["production", "sandbox"]).optional(),
+    /** Seals each update; the same key the device's notifications use. */
+    push_key: z.string().min(1).max(128),
+    /** What the device registered the token with at the relay. */
+    auth_key: z.string().min(1).max(128),
+  }),
+  "live_activity.unregister": z.object({}),
   "agents.capabilities": z.object({ agent_id: z.string() }),
   "agents.send": z.object({
     agent_id: z.string(),
@@ -911,6 +924,13 @@ export const MethodResult = {
     configured: z.boolean(),
   }),
   "device.unregister_push": z.object({ accepted: z.boolean() }),
+  "live_activity.snapshot": z.object({ snapshot: RemoteLiveActivitySnapshot }),
+  "live_activity.register": z.object({
+    accepted: z.boolean(),
+    /** False when background push is off on this host, so nothing will arrive. */
+    enabled: z.boolean(),
+  }),
+  "live_activity.unregister": z.object({ accepted: z.boolean() }),
   "agents.capabilities": z.object({ capabilities: RemoteAgentCapabilities }),
   "agents.send": z.object({
     accepted: z.boolean(),

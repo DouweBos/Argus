@@ -154,6 +154,15 @@ struct AlertsSettingsPage: View {
             get: { app.pushEnabled },
             set: { enabled in Task { await app.setPushEnabled(enabled) } }))
       }
+      SettingsGroup(footer: "Approve and Deny ask for Face ID first.") {
+        SettingsToggleRow(
+          "Live Activity",
+          description:
+            "Shows running agents on the Lock Screen and in the Dynamic Island, with Approve and Deny for permission prompts.",
+          isOn: Binding(
+            get: { app.liveActivitiesEnabled },
+            set: { enabled in Task { await app.setLiveActivitiesEnabled(enabled) } }))
+      }
     }
     .settingsPage(.alerts)
     .task { status = await NotificationRouter.shared.authorizationStatus() }

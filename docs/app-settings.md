@@ -834,6 +834,29 @@ Nothing here needs configuring. The one editable field is the **push service
 contact** — a `mailto:` or `https:` address Mozilla, Google, and Apple use to
 reach you if a browser notification misbehaves.
 
+### Live Activity
+
+On the iPhone, agents working on the connected computer show up as a Live
+Activity on the Lock Screen and in the Dynamic Island: each agent's state
+(working, needs you, done, failed), how long it has been running, and the tool
+it is on. A permission prompt gets **Approve** and **Deny** buttons there too;
+they ask for Face ID first, since approving runs code on your computer, and an
+answer given while the computer is unreachable waits for it like a
+notification's does. Tap an agent to open its chat. Finished agents stay on the
+card for 15 minutes after the last one stops.
+
+The phone starts the activity while the app is open and an agent is working,
+and hands its push token to the computer. From then on the computer pushes
+every update through the same relay, sealed the same way: the relay and Apple
+see a coarse phase (working, needs you, done, failed) and an encrypted blob,
+which the phone's widget extension opens with the key the notification
+extension uses. One card per computer. A computer that restarts forgets the
+card until the phone reconnects; the card dims as stale if it goes quiet for an
+hour.
+
+Turn it off on the phone in **Settings → Alerts → Live Activity**, or for Argus
+in iOS Settings.
+
 ### Quick actions
 
 A notification asking for approval carries **Approve** and **Deny** buttons, and

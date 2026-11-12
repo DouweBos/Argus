@@ -121,6 +121,8 @@ ciphertext.
   commit, push, merge, open a pull request, author an automation.
 - **Background push** — wakes paired phones and browsers with a real
   notification when they aren't connected.
+- **Live Activity** — the iPhone shows working agents on the Lock Screen and
+  in the Dynamic Island, with Approve and Deny for permission prompts.
 - **Phone or tablet** — the web client is one column on a phone and
   splits into a two-pane layout on an iPad or a desktop browser, with the
   session list beside whatever you have open.
