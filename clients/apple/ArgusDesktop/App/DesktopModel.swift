@@ -62,6 +62,8 @@ final class DesktopModel {
   var newSessionProject: RemoteProject?
   /// The session the Delete sheet is open for.
   var deletingSession: RemoteSession?
+  /// The session the sidebar's Rename… alert is naming.
+  var renamingSession: RemoteSession?
   /// Bumped to put the caret in the chat input in front (⌘L).
   var composerFocusRequest = 0
   /// Elements picked in the runtime panel, by session, until its composer takes them.

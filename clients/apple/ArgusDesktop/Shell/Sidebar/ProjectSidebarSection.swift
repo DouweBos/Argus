@@ -65,6 +65,7 @@ struct ProjectSidebarSection: View {
     }
     PullRequestWatchButton(session: session)
     if session.kind == .worktree {
+      Button("Rename Session…") { model.renamingSession = session }
       Button("Delete Session…") { model.deletingSession = session }
     }
   }

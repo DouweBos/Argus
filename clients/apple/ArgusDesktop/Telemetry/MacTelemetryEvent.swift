@@ -178,6 +178,12 @@ enum MacTelemetryEvent {
     case patchApply = "patch_apply"
   }
 
+  /// Which kind of session a sidebar rename named.
+  enum RenamedSessionKind: String {
+    case worktree
+    case scratchPad = "scratch_pad"
+  }
+
   /// How the sidebar list was narrowed.
   enum SidebarFilterKind: String {
     case search
@@ -262,6 +268,8 @@ enum MacTelemetryEvent {
   case branchRenamed(success: Bool)
   /// A project in the sidebar was folded shut or opened.
   case sidebarProjectToggled(collapsed: Bool)
+  /// A session or scratch pad was renamed from the sidebar.
+  case sessionRenamed(kind: RenamedSessionKind)
   /// The sidebar was searched (once per search) or narrowed to one project.
   case sidebarFiltered(kind: SidebarFilterKind)
   /// A session's context card was shown, hidden, or one of its actions used.
@@ -409,6 +417,7 @@ enum MacTelemetryEvent {
     case .chatHistoryUsed: "mac_chat_history_used"
     case .branchRenamed: "mac_branch_renamed"
     case .sidebarProjectToggled: "mac_sidebar_project_toggled"
+    case .sessionRenamed: "mac_session_renamed"
     case .sidebarFiltered: "mac_sidebar_filtered"
     case .contextCardUsed: "mac_context_card_used"
     case .sessionHoverCardShown: "mac_session_hover_card_shown"
@@ -528,6 +537,8 @@ enum MacTelemetryEvent {
       ["success": success]
     case .sidebarProjectToggled(let collapsed):
       ["collapsed": collapsed]
+    case .sessionRenamed(let kind):
+      ["kind": kind.rawValue]
     case .sidebarFiltered(let kind):
       ["kind": kind.rawValue]
     case .contextCardUsed(let action):

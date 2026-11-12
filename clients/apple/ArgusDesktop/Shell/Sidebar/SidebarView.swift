@@ -35,6 +35,7 @@ struct SidebarView: View {
         if model.route.sessionId == session.id { model.navigate(.home) }
       }
     }
+    .renameSessionAlert()
   }
 
   private var sessionList: some View {
@@ -92,6 +93,7 @@ struct SidebarView: View {
           Button("Open in New Tab") {
             model.openTab(DesktopLocation(route: .session(id: pad.id, agentId: nil), host: model.host(ofSession: pad.id)))
           }
+          Button("Rename Scratch Pad…") { model.renamingSession = pad }
           Button("Delete Scratch Pad…") { model.deletingSession = pad }
         }
       }
