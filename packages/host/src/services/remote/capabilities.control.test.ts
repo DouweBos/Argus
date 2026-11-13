@@ -878,9 +878,10 @@ describe("sessions.create with a prompt", () => {
       makeCtx(["monitor", "control"]),
     );
 
-    await vi.waitFor(() => expect(startAgent).toHaveBeenCalled());
-    const args = vi.mocked(startAgent).mock.calls.at(-1) ?? [];
-    expect(args.slice(0, 3)).toEqual(["s3", "opus", "plan"]);
+    const call = () =>
+      vi.mocked(startAgent).mock.calls.find((c) => c[0] === "s3");
+    await vi.waitFor(() => expect(call()).toBeDefined());
+    expect(call()?.slice(0, 3)).toEqual(["s3", "opus", "plan"]);
   });
 
   it("branches a linear issue on its own branch and hands the agent its context", async () => {

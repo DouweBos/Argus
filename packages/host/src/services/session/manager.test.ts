@@ -7,7 +7,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appState } from "../../state";
 import { humanizeBranchName } from "../llm/titleGenerator";
 import { addWorktree, git } from "./git";
-import { clearSessionSetupError, createSession, listSessions } from "./manager";
+import {
+  clearSessionSetupError,
+  createSession,
+  listSessions,
+  withBranchSuffix,
+} from "./manager";
 import { resolveWorktreeRoot } from "./worktreeLocation";
 
 vi.mock("../../main", () => ({
@@ -346,5 +351,16 @@ describe("listSessions — a worktree made outside Argus", () => {
     clearSessionSetupError(again.id);
     appState.sessions.clear();
     expect((await listSessions(repoRoot))[0].setup_pending).toBeFalsy();
+  });
+});
+
+describe("withBranchSuffix", () => {
+  it("keeps the suffix when the slug is at its length cap", () => {
+    const slug = "a".repeat(30) + "-" + "b".repeat(19);
+    const branch = withBranchSuffix(slug, "acp-gemini");
+    expect(branch.endsWith("-acp-gemini")).toBe(true);
+    expect(branch.length).toBeLessThanOrEqual(50);
+    expect(withBranchSuffix("fix-header", undefined)).toBe("fix-header");
+    expect(withBranchSuffix("fix-header", "codex")).toBe("fix-header-codex");
   });
 });

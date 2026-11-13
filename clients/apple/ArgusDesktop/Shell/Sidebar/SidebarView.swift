@@ -112,7 +112,9 @@ struct SidebarView: View {
   private var visibleSessionIds: [String] {
     func rows(_ sessions: [RemoteSession], fold: String) -> [RemoteSession] {
       let triage = SessionTriage(sessions) { agents(in: $0) }
-      return triage.active + (filter.isSearching || folds.isCollapsed(fold) ? triage.folded : [])
+      // Compare slots sit under their run's header, so step through them in that order.
+      return CompareGroup.displayOrder(triage.active)
+        + (filter.isSearching || folds.isCollapsed(fold) ? CompareGroup.displayOrder(triage.folded) : [])
     }
     let listed = projects.flatMap { project -> [RemoteSession] in
       let sessions = store.sessionsByRepo[project.repoRoot] ?? []
@@ -122,7 +124,7 @@ struct SidebarView: View {
         collapsed: collapse.isCollapsed(project.repoRoot))
       return root + rows(worktrees, fold: project.repoRoot)
     }
-    return (needsYou + listed + rows(scratchPads, fold: Self.scratchPadFold)).filter { !$0.isUnavailable }.map(\.id)
+    return (CompareGroup.displayOrder(needsYou) + listed + rows(scratchPads, fold: Self.scratchPadFold)).filter { !$0.isUnavailable }.map(\.id)
   }
 
   /// Sessions waiting on you across the projects shown, folded shut or not, then scratch pads.

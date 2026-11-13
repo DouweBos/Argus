@@ -182,6 +182,11 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   // Creating, destroying or re-pointing a session/branch is the engineer's
   // call, never a guest's — even for the session their agent runs in.
   "sessions.create": DENIED,
+  "sessions.create_compare": DENIED,
+  "sessions.keep_compare": DENIED,
+  // A compare run spans sessions a guest's agent isn't in.
+  "sessions.compare": DENIED,
+  "sessions.compare_screenshot": session(),
   "scratch_pads.create": DENIED,
   "triage.start": DENIED,
   "sessions.delete": DENIED,

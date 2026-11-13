@@ -16,6 +16,8 @@ enum Route: Hashable {
   case session(id: String, label: String, repoRoot: String)
   /// The start composer on a new worktree; nil opens on the last active project with a project chip.
   case newSession(repoRoot: String?)
+  /// A compare run's slots, scored side by side.
+  case compareRun(groupId: String)
   /// The same screen, opened on one agent before its session is known.
   case agent(id: String, label: String)
   case stoppedAgent(historyId: String, repoRoot: String, label: String, branch: String, runnerSessionId: String)
@@ -88,6 +90,7 @@ enum Route: Hashable {
     switch self {
     case .agents: ArgusRoute.agents.pattern
     case .session, .agent: ArgusRoute.session(id: "", agentId: nil).pattern
+    case .compareRun(let id): ArgusRoute.compareRun(groupId: id).pattern
     case .changes(let id, _): ArgusRoute.sessionGit(id: id, view: .working).pattern
     case .fileDiff: "/sessions/:sessionId/git/working/diff"
     case .stashes(let id, _): ArgusRoute.sessionGit(id: id, view: .stashes).pattern
@@ -515,12 +518,14 @@ final class Router {
 }
 
 extension Route {
-  /// What a start composer lands on: the agent, or a new worktree's session,
-  /// whose agent joins as a tab once setup finishes.
+  /// What a start composer lands on: the agent, a new worktree's session,
+  /// whose agent joins as a tab once setup finishes, or a compare run's slots.
   init(_ started: StartComposerSheet.Started) {
     switch started {
     case .agent(let agent):
       self = .agent(id: agent.agentId, label: Labels.agentName(agent))
+    case .session(let session) where session.compareGroup != nil:
+      self = .compareRun(groupId: session.compareGroup?.id ?? "")
     case .session(let session):
       self = .session(id: session.id, label: SessionActivity.title(session), repoRoot: session.repoRoot)
     }

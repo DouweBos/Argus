@@ -348,6 +348,13 @@ export async function startScreencast(
   );
 }
 
+/** The session's browser is streaming, so `cdpCall` can reach its page. */
+export function isScreencasting(sessionId: string): boolean {
+  const state = screencasts.get(sessionId);
+
+  return Boolean(state && !state.closed && state.send);
+}
+
 /**
  * Send a CDP command over the session's screencast connection, which is
  * attached to the page target. Rejects when the browser isn't streaming.

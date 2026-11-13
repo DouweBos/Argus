@@ -66,6 +66,8 @@ extension PhoneDestination {
         section: .usage, route: .usageModel(tab: tab, runner: runner, model: model, range: range ?? .default))
     case .usagePrices: return PhoneDestination(section: .usage, route: .usagePrices)
     case .usageModels: return PhoneDestination(section: .usage, route: .usageModels)
+    case .compareRun(let groupId):
+      return PhoneDestination(section: .home, route: .compareRun(groupId: groupId))
     case .session(_, let agentId?):
       let label = host.statusByAgent[agentId].map(Labels.agentName) ?? hints.agentLabel ?? "Agent"
       return PhoneDestination(section: .home, route: .agent(id: agentId, label: label))

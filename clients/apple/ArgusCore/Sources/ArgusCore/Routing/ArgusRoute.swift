@@ -19,6 +19,8 @@ public enum ArgusRoute: Hashable, Sendable {
   case sessionGit(id: String, view: GitRoute)
   /// `/sessions/:sessionId/code?path=&line=`: the code view, on a file and 1-based line.
   case sessionCode(id: String, path: String?, line: Int?)
+  /// `/compare/:groupId`: a compare run's slots side by side.
+  case compareRun(groupId: String)
   /// `/pull-requests`: the PRs of interest across open projects.
   case pullRequests
   /// `/issues[/<scope>][/<IDENTIFIER>]`: your open Linear issues in a scope
@@ -108,6 +110,7 @@ public enum ArgusRoute: Hashable, Sendable {
     case .session: "/sessions/:sessionId/agents"
     case .sessionGit(_, let view): "/sessions/:sessionId/git/\(view.segment)"
     case .sessionCode: "/sessions/:sessionId/code"
+    case .compareRun: "/compare/:groupId"
     case .pullRequests: "/pull-requests"
     case .pullRequest: "/pull-requests/:owner/:repo/:number"
     case .pullRequestGuide: "/pull-requests/:owner/:repo/:number/guide"

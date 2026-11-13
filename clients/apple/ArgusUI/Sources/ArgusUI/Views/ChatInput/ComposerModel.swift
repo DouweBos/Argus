@@ -63,6 +63,8 @@ public final class ComposerModel {
   var draftAccount: String?
   /// A start composer's runner; nil is the computer's default.
   public internal(set) var runner: RemoteRunner?
+  /// Two or more turn the start into a compare run; empty is a single start.
+  public internal(set) var compareSlots: [CompareSlot] = []
   /// A start that can't carry images or effort (one per Linear issue) hides both.
   public var offersImagesAndEffort = true
   public internal(set) var starting = false
@@ -80,6 +82,7 @@ public final class ComposerModel {
     self.sessionId = sessionId
     self.host = host
     self.starter = starter
+    compareSlots = starter?.compareSlots ?? []
     self.style = style
     self.editor = editor
     self.preferences = preferences

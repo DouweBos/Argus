@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { DesignRef, LinkedIssue } from "./models/integrations";
-import { SessionPullRequest } from "./models/sessions";
+import { SessionCompareGroup, SessionPullRequest } from "./models/sessions";
 
 export const RemoteProject = z.object({
   repo_root: z.string(),
@@ -76,8 +76,52 @@ export const RemoteSession = z.object({
   snoozed_until: z.number().nullable().optional(),
   /** A turn finished while no client had it open. Absent on older hosts. */
   unread: z.boolean().optional(),
+  /** Set while it is one slot of a compare run. Absent on older hosts. */
+  compare_group: SessionCompareGroup.nullable().optional(),
 });
 export type RemoteSession = z.infer<typeof RemoteSession>;
+
+/** Where a compare slot's run command or test run stands. */
+export const RemoteCompareRunState = z.enum(["failed", "passed", "running"]);
+export type RemoteCompareRunState = z.infer<typeof RemoteCompareRunState>;
+
+/** A `.argus.json` run command a compare slot has started. */
+export const RemoteCompareRun = z.object({
+  title: z.string(),
+  state: RemoteCompareRunState,
+  /** Its title reads as a test run (`test`, `spec`, `e2e`, `check`). */
+  is_test: z.boolean(),
+});
+export type RemoteCompareRun = z.infer<typeof RemoteCompareRun>;
+
+/** One slot of a compare run, as the compare view scores it. */
+export const RemoteCompareSlot = z.object({
+  session_id: z.string(),
+  slot: z.number().int().nonnegative(),
+  runner_id: z.string().nullable(),
+  model: z.string().nullable(),
+  effort: z.string().nullable(),
+  /** The slot's newest agent; null before it starts. */
+  agent_id: z.string().nullable(),
+  agent_status: z
+    .enum(["error", "idle", "requires_action", "running", "stopped"])
+    .nullable(),
+  /** Against the base branch, uncommitted work included; null before setup finishes. */
+  diff: z
+    .object({
+      files: z.number().int().nonnegative(),
+      insertions: z.number().int().nonnegative(),
+      deletions: z.number().int().nonnegative(),
+    })
+    .nullable(),
+  runs: z.array(RemoteCompareRun),
+  /** Summed over the session's agents; a runner that reports no spend is priced from its tokens. */
+  cost_usd: z.number().nonnegative(),
+  tokens: z.number().int().nonnegative(),
+  /** A simulator or browser the slot's agents drive is up, so a screenshot can be asked for. */
+  has_screen: z.boolean(),
+});
+export type RemoteCompareSlot = z.infer<typeof RemoteCompareSlot>;
 
 export const RemoteAgentStatus = z.object({
   agent_id: z.string(),

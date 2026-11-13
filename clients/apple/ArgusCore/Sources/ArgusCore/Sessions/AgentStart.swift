@@ -17,11 +17,15 @@ public struct ComposerStart: Sendable {
   /// The Claude account to pin the session to before the agent starts: `""` follows the
   /// computer's default, nil leaves the session as it is.
   public let accountId: String?
+  /// Two or more: the same start on each, a session per slot, as one compare run.
+  public let compareSlots: [CompareSlot]
+
+  public var isCompare: Bool { compareSlots.count >= CompareSlot.minimum }
 
   public init(
     message: String, displayText: String, images: [RemoteImageAttachment] = [],
     permissionMode: RemotePermissionMode? = nil, model: String? = nil, effort: String? = nil,
-    runnerId: String? = nil, accountId: String? = nil
+    runnerId: String? = nil, accountId: String? = nil, compareSlots: [CompareSlot] = []
   ) {
     self.message = message
     self.displayText = displayText
@@ -31,6 +35,7 @@ public struct ComposerStart: Sendable {
     self.effort = effort
     self.runnerId = runnerId
     self.accountId = accountId
+    self.compareSlots = compareSlots
   }
 }
 

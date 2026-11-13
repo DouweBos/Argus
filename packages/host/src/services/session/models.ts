@@ -6,7 +6,11 @@
  */
 
 import type { AutonomyLevel } from "../automation/models";
-import type { DesignRef, LinkedIssue } from "@argus/remote-protocol";
+import type {
+  DesignRef,
+  LinkedIssue,
+  SessionCompareGroup,
+} from "@argus/remote-protocol";
 
 /**
  * What a session is backed by: a git worktree, the repo root itself, or — for
@@ -103,6 +107,8 @@ export interface Session {
   linked_issue?: LinkedIssue | null;
   /** Figma frames the session's work should match. */
   design_refs?: DesignRef[] | null;
+  /** Set while the session is one slot of a compare run. */
+  compare_group?: SessionCompareGroup | null;
   /**
    * A worktree made outside Argus and adopted from disk: the project's setup
    * never ran in it. Cleared once setup runs or the user marks it ready.

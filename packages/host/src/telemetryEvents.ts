@@ -521,6 +521,17 @@ export interface EventMap {
   session_merge_conflict: { conflicting_files: number; phase: MergePhase };
   session_merged: { phase: MergePhase; strategy: MergeStrategy };
   session_prompt_dispatched: { success: boolean };
+  compare_kept: {
+    deleted: number;
+    land: "merge" | "none" | "pull_request";
+    success: boolean;
+  };
+  compare_started: {
+    distinct_runners: number;
+    from_issue: boolean;
+    has_images: boolean;
+    slots: number;
+  };
   session_setup_recovered: {
     action: "mark_ready" | "retry";
     /** A worktree made outside Argus whose setup never ran, not a failed one. */

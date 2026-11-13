@@ -59,6 +59,7 @@ import {
   RemoteQueuedMessage,
   RemoteRunFeedback,
   RemoteRunner,
+  RemoteCompareSlot,
   RemoteSession,
   RemoteSignalSource,
   RemoteFoldPose,
@@ -419,6 +420,46 @@ export const MethodParams = {
      * `description` are ignored.
      */
     linear_issue: z.string().max(500).optional(),
+  }),
+  /**
+   * The same prompt on 2–5 runners or models at once: one session per slot,
+   * grouped, each agent starting once its setup finishes.
+   */
+  "sessions.create_compare": z.object({
+    repo_root: z.string(),
+    description: z.string(),
+    base_branch: z.string().optional(),
+    prompt: z.string().min(1).max(MAX_PROMPT),
+    images: z.array(RemoteImageAttachment).max(20).optional(),
+    permission_mode: RemotePermissionMode.optional(),
+    /** As on `sessions.create`: branches and names every slot after the issue. */
+    linear_issue: z.string().max(500).optional(),
+    slots: z
+      .array(
+        z.object({
+          runner_id: z.string().optional(),
+          model: z.string().optional(),
+          effort: z.string().optional(),
+        }),
+      )
+      .min(2)
+      .max(5),
+  }),
+  /** Every slot of a compare run, scored. */
+  "sessions.compare": z.object({ group_id: z.string() }),
+  /** What a compare slot's simulator or browser shows right now. */
+  "sessions.compare_screenshot": z.object({ session_id: z.string() }),
+  /**
+   * Keep one slot of a compare run: land it (merge into its base or open a
+   * pull request, committing anything left uncommitted first), then delete
+   * the other slots and their branches, teardown included.
+   */
+  "sessions.keep_compare": z.object({
+    session_id: z.string(),
+    land: z.enum(["merge", "none", "pull_request"]),
+    /** With `merge`. */
+    strategy: z.enum(["keep", "squash"]).optional(),
+    delete_others: z.boolean(),
   }),
   "sessions.files": z.object({ session_id: z.string() }),
   /** One file's contents, read-only: the phone views, it never writes. */
@@ -1075,6 +1116,21 @@ export const MethodResult = {
   "agents.continue_on_runner": z.object({ agent: RemoteAgentStatus }),
   "agents.ask_side": z.object({ answer: z.string() }),
   "sessions.create": z.object({ session: RemoteSession }),
+  "sessions.create_compare": z.object({
+    group_id: z.string(),
+    sessions: z.array(RemoteSession),
+  }),
+  "sessions.compare": z.object({ slots: z.array(RemoteCompareSlot) }),
+  "sessions.compare_screenshot": z.object({
+    /** Base64 PNG; null when nothing is on screen. */
+    image: z.string().nullable(),
+    source: z.enum(["browser", "simulator"]).nullable(),
+  }),
+  "sessions.keep_compare": z.object({
+    pull_request_url: z.string().nullable(),
+    /** Slots deleted; the ones that refused stay put. */
+    deleted: z.number().int().nonnegative(),
+  }),
   "scratch_pads.create": z.object({ session: RemoteSession }),
   "triage.start": z.object({
     session: RemoteSession,

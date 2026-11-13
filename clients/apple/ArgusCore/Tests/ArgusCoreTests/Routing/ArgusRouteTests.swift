@@ -29,6 +29,7 @@ struct ArgusRouteTests {
     ("/usage/cost/models/codex/gpt-5.5", .usageModel(.cost, runner: "codex", model: "gpt-5.5")),
     ("/usage/tokens/models/opencode/openrouter%2Fqwen?range=7d", .usageModel(.tokens, runner: "opencode", model: "openrouter/qwen", range: ._7d)),
     ("/pull-requests", .pullRequests),
+    ("/compare/g1", .compareRun(groupId: "g1")),
     ("/issues", .issues()),
     ("/issues/created", .issues(scope: .created)),
     ("/issues/ENG-1", .issues(issue: "ENG-1")),

@@ -4,7 +4,11 @@
 
 import type { WorktreePurpose } from "./worktreeLocationCore";
 import type { SessionListTrigger } from "../../telemetryEvents";
-import type { DesignRef, LinkedIssue } from "@argus/remote-protocol";
+import type {
+  DesignRef,
+  LinkedIssue,
+  SessionCompareGroup,
+} from "@argus/remote-protocol";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -323,6 +327,7 @@ export async function listSessions(
       ws.claude_account_id = m.claude_account_id ?? null;
       ws.linked_issue = m.linked_issue ?? null;
       ws.design_refs = m.design_refs ?? null;
+      ws.compare_group = m.compare_group ?? null;
       ws.setup_pending = m.setup_pending;
     } else if (existing) {
       ws.setup_pending = existing.setup_pending;
@@ -382,6 +387,7 @@ export async function listSessions(
       claude_account_id: entry.claude_account_id ?? null,
       linked_issue: entry.linked_issue ?? null,
       design_refs: entry.design_refs ?? null,
+      compare_group: entry.compare_group ?? null,
       availability: "unavailable",
       unavailable_reason: "volume_missing",
       unavailable_volume: availability.volume,
@@ -406,6 +412,7 @@ export async function listSessions(
         claude_account_id: w.claude_account_id ?? null,
         linked_issue: w.linked_issue ?? null,
         design_refs: w.design_refs ?? null,
+        compare_group: w.compare_group ?? null,
         setup_pending: w.setup_pending || undefined,
         // Recorded so the row can still be drawn with the files unreachable.
         branch: w.branch,
@@ -470,6 +477,10 @@ export interface CreateSessionOptions {
   /** Names the session after the issue; the issue moves to started. */
   linkedIssue?: LinkedIssue;
   designRefs?: DesignRef[];
+  /** Makes the session one slot of a compare run. */
+  compareGroup?: SessionCompareGroup;
+  /** Appended to the resolved branch, so a compare run's slots don't collide. */
+  branchSuffix?: string;
 }
 
 /**
@@ -496,6 +507,8 @@ export async function createSession(
   opts?: Pick<
     CreateSessionOptions,
     | "awaitWorktreeReady"
+    | "branchSuffix"
+    | "compareGroup"
     | "designRefs"
     | "linkedIssue"
     | "postWorktreeReady"
@@ -558,6 +571,7 @@ export async function createSession(
     model: initialModel,
     linked_issue: linkedIssue,
     design_refs: opts?.designRefs?.length ? opts.designRefs : null,
+    compare_group: opts?.compareGroup ?? null,
   };
   appState.sessions.set(id, { ...pending });
   emitHostEvent("session:created", { ...pending });
@@ -588,6 +602,7 @@ export async function createSession(
     explicitBaseBranch,
     postWorktreeReady: opts?.postWorktreeReady,
     worktreePurpose: opts?.worktreePurpose,
+    branchSuffix: opts?.branchSuffix,
     signalWorktreeReady: signalReady,
     signalWorktreeFailed: signalReadyError,
   }).catch((e: unknown) => {
@@ -599,6 +614,16 @@ export async function createSession(
   }
 
   return { ...pending };
+}
+
+/** The suffix survives the slug's length cap, so slots of one run never collide. */
+export function withBranchSuffix(slug: string, suffix?: string): string {
+  if (!suffix) {
+    return slug;
+  }
+  const head = slug.slice(0, Math.max(8, 50 - suffix.length - 1));
+
+  return `${head.replace(/[-/]+$/, "")}-${suffix}`;
 }
 
 /**
@@ -619,6 +644,7 @@ async function finalizeSession(
     explicitBaseBranch?: string;
     postWorktreeReady?: (session: Session) => Promise<void>;
     worktreePurpose?: WorktreePurpose;
+    branchSuffix?: string;
     signalWorktreeReady?: (session: Session) => void;
     signalWorktreeFailed?: (err: unknown) => void;
   },
@@ -628,6 +654,7 @@ async function finalizeSession(
     explicitBaseBranch,
     postWorktreeReady,
     worktreePurpose,
+    branchSuffix,
     signalWorktreeReady,
     signalWorktreeFailed,
   } = opts;
@@ -667,7 +694,9 @@ async function finalizeSession(
 
     // --- Phase 2: uniqueness check ---------------------------------------
     const branchSlug =
-      useExistingBranch === true ? branchInput : titleToBranchSlug(branchInput);
+      useExistingBranch === true
+        ? branchInput
+        : withBranchSuffix(titleToBranchSlug(branchInput), branchSuffix);
     for (const existing of appState.sessions.values()) {
       if (
         existing.id !== id &&
@@ -807,6 +836,7 @@ async function finalizeSession(
       claude_account_id: ws.claude_account_id ?? null,
       linked_issue: ws.linked_issue ?? null,
       design_refs: ws.design_refs ?? null,
+      compare_group: ws.compare_group ?? null,
     });
     try {
       saveMetadata(repoRoot, meta);

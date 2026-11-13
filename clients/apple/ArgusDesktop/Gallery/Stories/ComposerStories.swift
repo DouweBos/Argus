@@ -22,6 +22,23 @@
           ChatInputView(startingIn: "s-1", starter: ComposerStarter(defaultMode: "auto") { _ in true })
             .padding(.vertical, 12)
         },
+        // A start fanned out over three runners: a slot pill each, "+" for a fourth, ×3 to go back to one.
+        GalleryStory(
+          "composer/start/compare", size: CGSize(width: 760, height: 0), fixtures: GalleryFixtures.composer,
+          setup: { await $0.host.loadRunners() }
+        ) {
+          ChatInputView(
+            startingIn: "s-1",
+            starter: ComposerStarter(
+              defaultMode: "auto", offersCompare: true,
+              compareSlots: [
+                CompareSlot(runnerId: "claude-code", model: "sonnet"), CompareSlot(runnerId: "codex"),
+                CompareSlot(runnerId: "gemini"),
+              ]
+            ) { _ in true }
+          )
+          .padding(.vertical, 12)
+        },
         // Two other accounts and every installed runner: the rows scroll instead of growing off screen.
         GalleryStory(
           "composer/limit-handoff", size: CGSize(width: 760, height: 0),

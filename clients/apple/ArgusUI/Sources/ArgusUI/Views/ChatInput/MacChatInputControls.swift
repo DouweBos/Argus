@@ -10,14 +10,18 @@
       // and squeezed the sidebar.
       ChipFlowLayout(spacing: 2) {
         // First: the models and effort levels on offer depend on it.
-        if composer.starter != nil, host.runners.count > 1 {
-          runnerMenu
-          ComposerPillDivider()
-        }
-        modelMenu
-        if !composer.effortLevels.isEmpty {
-          ComposerPillDivider()
-          effortMenu
+        if composer.isComparing {
+          compareSlotPills
+        } else {
+          if composer.starter != nil, host.runners.count > 1 {
+            runnerMenu
+            ComposerPillDivider()
+          }
+          modelMenu
+          if !composer.effortLevels.isEmpty {
+            ComposerPillDivider()
+            effortMenu
+          }
         }
         ComposerPillDivider()
         permissionMenu
@@ -63,6 +67,12 @@
             checked: runner.id == composer.runner?.id, disabled: !runner.isAvailable && !installable
           ) {
             if runner.isAvailable { pickRunner(runner) } else { runnerSetup?(runner) }
+          }
+        }
+        if composer.offersCompare {
+          ChromeMenuEntry.divider
+          ChromeMenuItem("Compare runners…", subtitle: "Start the prompt on several at once", icon: .symbol(Icon.compare)) {
+            composer.beginCompare()
           }
         }
       } label: { open in

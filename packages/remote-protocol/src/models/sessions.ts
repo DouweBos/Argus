@@ -39,6 +39,20 @@ export const SessionPullRequest = z.object({
 });
 export type SessionPullRequest = z.infer<typeof SessionPullRequest>;
 
+/**
+ * One slot of a compare run: the same prompt started on several runners or
+ * models at once, one session each, grouped under `id`.
+ */
+export const SessionCompareGroup = z.object({
+  id: z.string(),
+  /** 0-based position, so the slots keep the order they were picked in. */
+  slot: z.number().int().nonnegative(),
+  runner_id: z.string().nullable(),
+  model: z.string().nullable(),
+  effort: z.string().nullable(),
+});
+export type SessionCompareGroup = z.infer<typeof SessionCompareGroup>;
+
 /** A single session backed by a git worktree or the repo root. */
 export const Session = z.object({
   /**
@@ -58,6 +72,8 @@ export const Session = z.object({
    * different accounts.
    */
   claude_account_id: z.string().nullish(),
+  /** Set while the session is one slot of a compare run. */
+  compare_group: SessionCompareGroup.nullish(),
   /** Optional human-readable description for the UI. */
   description: z.string(),
   /** Original display name as entered by the user. Shown in the UI when present. */
