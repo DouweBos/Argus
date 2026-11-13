@@ -201,9 +201,19 @@ export async function getSessionBranchDiff(
   id: string,
   opts?: DiffOpts,
 ): Promise<string> {
+  const mergeBase = await sessionMergeBase(id);
+  if (!mergeBase) {
+    return "";
+  }
+
+  return git(sessionPath(id), ["diff", ...diffFlags(opts), mergeBase]);
+}
+
+/** Where the session's branch left its base branch; null without one. */
+export async function sessionMergeBase(id: string): Promise<string | null> {
   const ws = appState.sessions.get(id);
   if (!ws || ws.kind === "project_root" || !ws.base_branch) {
-    return "";
+    return null;
   }
   const wtPath = sessionPath(id);
 
@@ -218,17 +228,11 @@ export async function getSessionBranchDiff(
     }
   }
 
-  let mergeBase: string;
   try {
-    mergeBase = (await git(wtPath, ["merge-base", baseRef, "HEAD"])).trim();
+    return (await git(wtPath, ["merge-base", baseRef, "HEAD"])).trim() || null;
   } catch {
-    return "";
+    return null;
   }
-  if (!mergeBase) {
-    return "";
-  }
-
-  return git(wtPath, ["diff", ...diffFlags(opts), mergeBase]);
 }
 
 /** Return `git diff --cached` output (staged only) for a session. */

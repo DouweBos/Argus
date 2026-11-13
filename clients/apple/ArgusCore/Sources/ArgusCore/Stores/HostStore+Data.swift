@@ -483,19 +483,51 @@ extension HostStore {
   }
 
   /// Throws rather than answering "", which would read as "no changes".
-  public func loadDiff(sessionId: String, mode: String) async throws -> String {
+  public func loadDiff(sessionId: String, mode: String, checkpointId: String? = nil) async throws -> String {
     guard let backend else { return "" }
     struct Params: Encodable {
       let session_id: String
       let mode: String
+      let checkpoint_id: String?
     }
     struct Result: Decodable {
       let diff: String
       let base_branch: String?
     }
     return try await backend.request(
-      .sessionsDiff, Params(session_id: sessionId, mode: mode), as: Result.self
+      .sessionsDiff, Params(session_id: sessionId, mode: mode, checkpoint_id: checkpointId), as: Result.self
     ).diff
+  }
+
+  /// The session's agent turns that can still be diffed, oldest first.
+  public func loadSessionTurns(sessionId: String) async throws -> [SessionTurn] {
+    guard let backend else { return [] }
+    struct Params: Encodable { let session_id: String }
+    struct Result: Decodable { let turns: [SessionTurn] }
+    return try await backend.request(.sessionsTurns, Params(session_id: sessionId), as: Result.self).turns
+  }
+
+  /// The two commits a turn or the whole branch spans; nil for the working copy, which git diffs itself.
+  public func diffRange(sessionId: String, scope: SessionDiffScope) async throws -> (from: String, to: String)? {
+    guard let backend else { return nil }
+    struct Params: Encodable {
+      let session_id: String
+      let scope: String
+      let checkpoint_id: String?
+    }
+    struct Result: Decodable {
+      let from: String
+      let to: String
+    }
+    let params: Params
+    switch scope {
+    case .uncommitted: return nil
+    case .branch: params = Params(session_id: sessionId, scope: "branch", checkpoint_id: nil)
+    case .lastTurn: params = Params(session_id: sessionId, scope: "turn", checkpoint_id: nil)
+    case .turn(let turn): params = Params(session_id: sessionId, scope: "turn", checkpoint_id: turn.checkpointId)
+    }
+    let result = try await backend.request(.sessionsDiffRange, params, as: Result.self)
+    return (result.from, result.to)
   }
 
   public func listBranches(sessionId: String) async -> [RemoteGitBranch] {

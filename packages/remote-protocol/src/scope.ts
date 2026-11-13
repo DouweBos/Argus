@@ -171,6 +171,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.diff": session(),
   "sessions.viewed_files": session(),
   "sessions.set_file_viewed": session(),
+  "sessions.turns": session(),
+  "sessions.diff_range": session(),
   "sessions.merge_blockers": session(),
 
   // Creating, destroying or re-pointing a session/branch is the engineer's

@@ -18,7 +18,7 @@ struct SessionFilesTab: View {
   }
 }
 
-/// The Diff tab: the session's changes over the picked file's diff, with hunk staging.
+/// The Diff tab: the session's changes (uncommitted, one agent turn or the whole branch) over the picked file's diff.
 struct SessionDiffTab: View {
   @Environment(DesktopModel.self) private var model
   let session: RemoteSession
@@ -30,10 +30,15 @@ struct SessionDiffTab: View {
   var body: some View {
     Group {
       if case .open(let workspace) = model.git.slots[session.id] {
-        ResizableVSplit(key: "panel.diff", topMin: 100, bottomMin: 160, bottomIdeal: 360, showsBottom: true) {
-          ChangesListView(workspace: workspace, viewed: viewed)
-        } bottom: {
-          WorkingDiffView(workspace: workspace, viewed: viewed)
+        let uncommitted = workspace.scopedDiff.scope == .uncommitted
+        VStack(spacing: 0) {
+          ResizableVSplit(key: "panel.diff", topMin: 100, bottomMin: 160, bottomIdeal: 360, showsBottom: true) {
+            if uncommitted { ChangesListView(workspace: workspace, viewed: viewed) } else { ScopedChangesList(workspace: workspace) }
+          } bottom: {
+            if uncommitted { WorkingDiffView(workspace: workspace, viewed: viewed) } else { ScopedDiffPane(workspace: workspace) }
+          }
+          // The git view shows the review bar itself.
+          if model.sessionPanel != .git { DiffReviewBar(sessionId: session.id) }
         }
         .modifier(DiffTabDialogs(workspace: workspace, shown: model.sessionPanel != .git))
         .task(id: model.sessionPanel) { await workspace.start() }

@@ -6067,26 +6067,31 @@ extension ArgusProtocol {
 
       public static let branch = SessionsDiffParamsMode(rawValue: "branch")
       public static let working = SessionsDiffParamsMode(rawValue: "working")
+      public static let turn = SessionsDiffParamsMode(rawValue: "turn")
     }
 
     public struct SessionsDiffParams: Codable, Sendable {
       public var sessionId: String
       public var mode: SessionsDiffParamsMode?
+      public var checkpointId: String?
 
       enum CodingKeys: String, CodingKey {
         case sessionId = "session_id"
         case mode = "mode"
+        case checkpointId = "checkpoint_id"
       }
 
-      public init(sessionId: String, mode: SessionsDiffParamsMode? = nil) {
+      public init(sessionId: String, mode: SessionsDiffParamsMode? = nil, checkpointId: String? = nil) {
         self.sessionId = sessionId
         self.mode = mode
+        self.checkpointId = checkpointId
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(sessionId, forKey: .sessionId)
         try c.encodeIfPresent(mode, forKey: .mode)
+        try c.encodeIfPresent(checkpointId, forKey: .checkpointId)
       }
     }
 
@@ -6108,6 +6113,67 @@ extension ArgusProtocol {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(diff, forKey: .diff)
         try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
+      }
+    }
+
+    public struct SessionsDiffRangeParamsScope: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let turn = SessionsDiffRangeParamsScope(rawValue: "turn")
+      public static let branch = SessionsDiffRangeParamsScope(rawValue: "branch")
+    }
+
+    public struct SessionsDiffRangeParams: Codable, Sendable {
+      public var sessionId: String
+      public var scope: SessionsDiffRangeParamsScope
+      public var checkpointId: String?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case scope = "scope"
+        case checkpointId = "checkpoint_id"
+      }
+
+      public init(sessionId: String, scope: SessionsDiffRangeParamsScope, checkpointId: String? = nil) {
+        self.sessionId = sessionId
+        self.scope = scope
+        self.checkpointId = checkpointId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(scope, forKey: .scope)
+        try c.encodeIfPresent(checkpointId, forKey: .checkpointId)
+      }
+    }
+
+    public struct SessionsDiffRangeResult: Codable, Sendable {
+      public var from: String
+      public var to: String
+
+      enum CodingKeys: String, CodingKey {
+        case from = "from"
+        case to = "to"
+      }
+
+      public init(from: String, to: String) {
+        self.from = from
+        self.to = to
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(from, forKey: .from)
+        try c.encode(to, forKey: .to)
       }
     }
 
@@ -7099,6 +7165,40 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(tags, forKey: .tags)
+      }
+    }
+
+    public struct SessionsTurnsParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct SessionsTurnsResult: Codable, Sendable {
+      public var turns: [RemoteSessionTurn]
+
+      enum CodingKeys: String, CodingKey {
+        case turns = "turns"
+      }
+
+      public init(turns: [RemoteSessionTurn]) {
+        self.turns = turns
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(turns, forKey: .turns)
       }
     }
 
@@ -8279,6 +8379,12 @@ extension ArgusProtocol {
       public static let name = "sessions.diff"
     }
 
+    public enum SessionsDiffRange: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsDiffRangeParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsDiffRangeResult
+      public static let name = "sessions.diff_range"
+    }
+
     public enum SessionsDraftCommitMessage: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsDraftCommitMessageParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsDraftCommitMessageResult
@@ -8427,6 +8533,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsTagsParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsTagsResult
       public static let name = "sessions.tags"
+    }
+
+    public enum SessionsTurns: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsTurnsParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsTurnsResult
+      public static let name = "sessions.turns"
     }
 
     public enum SessionsViewedFiles: RemoteCommand {

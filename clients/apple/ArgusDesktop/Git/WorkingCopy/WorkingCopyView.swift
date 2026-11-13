@@ -33,11 +33,21 @@ struct WorkingCopyView: View {
         VStack(spacing: 0) {
           CommitComposerView(workspace: workspace)
           Rectangle().fill(theme.border).frame(height: 1)
-          ChangesListView(workspace: workspace, onShowFileHistory: onShowFileHistory)
-            .frame(maxHeight: .infinity)
+          Group {
+            if workspace.scopedDiff.scope == .uncommitted {
+              ChangesListView(workspace: workspace, onShowFileHistory: onShowFileHistory)
+            } else {
+              ScopedChangesList(workspace: workspace)
+            }
+          }
+          .frame(maxHeight: .infinity)
         }
       } trailing: {
-        WorkingDiffView(workspace: workspace)
+        if workspace.scopedDiff.scope == .uncommitted {
+          WorkingDiffView(workspace: workspace)
+        } else {
+          ScopedDiffPane(workspace: workspace)
+        }
       }
     }
     .modifier(WorkingCopyDialogs(workspace: workspace))

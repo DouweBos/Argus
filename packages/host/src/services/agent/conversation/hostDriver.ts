@@ -17,7 +17,7 @@ import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
 import { capture as telemetryCapture } from "../../telemetry/telemetry";
 import { sendAgentMessage } from "../agentService";
-import { createCheckpoint } from "../checkpoints";
+import { createCheckpoint, recordTurnEnd } from "../checkpoints";
 import {
   dequeueMessage,
   listQueue,
@@ -245,6 +245,7 @@ function statusChanged(agentId: string, entry: Tracked, status: string): void {
     return;
   }
   if (status === "stopped" || status === "error") {
+    pinTurnEnd(agentId, entry);
     entry.inflight = false;
     update(agentId, entry, (c) =>
       withPromptsExpired(withBackgroundSettled(c, Date.now())),
@@ -261,6 +262,10 @@ function statusChanged(agentId: string, entry: Tracked, status: string): void {
   save(agentId);
   const finished = entry.finished;
   entry.finished = undefined;
+  // A queued message's checkpoint marks this turn's end itself.
+  if (listQueue(agentId).length === 0) {
+    pinTurnEnd(agentId, entry);
+  }
   if (trySendNextQueued(agentId, entry)) {
     return;
   }
@@ -275,6 +280,24 @@ function statusChanged(agentId: string, entry: Tracked, status: string): void {
     if (!finished.failed) {
       suggestFollowUps(agentId, entry);
     }
+  }
+}
+
+/** Snapshot the tree as the end of the agent's latest turn, for turn-scoped diffs. */
+function pinTurnEnd(agentId: string, entry: Tracked): void {
+  const messages = conversationOf(agentId).messages;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i]!;
+    if (message.role !== "user") {
+      continue;
+    }
+    if (message.checkpointId) {
+      recordTurnEnd(entry.sessionId, message.checkpointId).catch(
+        () => undefined,
+      );
+    }
+
+    return;
   }
 }
 

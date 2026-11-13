@@ -15844,6 +15844,39 @@ extension ArgusProtocol {
     }
   }
 
+  public struct RemoteSessionTurn: Codable, Sendable {
+    public var number: Int
+    public var checkpointId: String
+    public var agentId: String
+    public var prompt: String
+    public var timestamp: Double
+
+    enum CodingKeys: String, CodingKey {
+      case number = "number"
+      case checkpointId = "checkpoint_id"
+      case agentId = "agent_id"
+      case prompt = "prompt"
+      case timestamp = "timestamp"
+    }
+
+    public init(number: Int, checkpointId: String, agentId: String, prompt: String, timestamp: Double) {
+      self.number = number
+      self.checkpointId = checkpointId
+      self.agentId = agentId
+      self.prompt = prompt
+      self.timestamp = timestamp
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(number, forKey: .number)
+      try c.encode(checkpointId, forKey: .checkpointId)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(prompt, forKey: .prompt)
+      try c.encode(timestamp, forKey: .timestamp)
+    }
+  }
+
   public struct RemoteSignalSourceMode: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }

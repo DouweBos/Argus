@@ -24,7 +24,9 @@ struct FileDiffView: View {
     var id: UUID { comment.id }
   }
 
-  private var scope: String { mode == "branch" ? "changes on this branch" : "uncommitted changes" }
+  @State private var turns: [SessionTurn] = []
+
+  private var scope: String { SessionDiffScope(mode: mode, turns: turns).reviewScope(in: turns) }
 
   var body: some View {
     Screen {
@@ -97,10 +99,15 @@ struct FileDiffView: View {
   }
 
   private func refresh() async {
-    if viewed == nil { viewed = ViewedFiles(scope: .session(id: sessionId, mode: mode), host: host) }
+    // Viewed marks belong to the branch and the working copy; a turn is a look back.
+    if viewed == nil, !mode.hasPrefix("turn") { viewed = ViewedFiles(scope: .session(id: sessionId, mode: mode), host: host) }
     await viewed?.load()
     do {
-      let diff = try await host.loadDiff(sessionId: sessionId, mode: mode)
+      if mode.hasPrefix("turn"), turns.isEmpty, let loaded = try? await host.loadSessionTurns(sessionId: sessionId) {
+        turns = loaded
+      }
+      let wire = SessionDiffScope.wire(mode: mode)
+      let diff = try await host.loadDiff(sessionId: sessionId, mode: wire.mode, checkpointId: wire.checkpointId)
       file = DiffParser.parse(diff).first { $0.displayPath == path }
       failure = nil
       loaded = true

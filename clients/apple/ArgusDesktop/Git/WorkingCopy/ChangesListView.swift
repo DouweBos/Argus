@@ -20,6 +20,7 @@ struct ChangesListView: View {
   var body: some View {
     VStack(spacing: 0) {
       PanelHeader(title: "Files", detail: headerDetail) {
+        DiffScopeMenu(workspace: workspace)
         viewModeMenu
         optionsMenu
       }

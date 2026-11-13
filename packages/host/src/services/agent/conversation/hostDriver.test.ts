@@ -42,6 +42,7 @@ vi.mock("../chatHistory", () => ({
 }));
 vi.mock("../checkpoints", () => ({
   createCheckpoint: async () => ({ id: "cp1" }),
+  recordTurnEnd: async () => undefined,
 }));
 vi.mock("../../llm/titleGenerator", () => ({
   generateChatTitle: async () => "Fix the login",

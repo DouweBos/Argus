@@ -26,6 +26,8 @@ final class GitWorkspace {
   let reflog: ReflogViewModel
   let branchesReview: BranchesReviewViewModel
   let blame: BlameViewModel
+  /// The working copy's diff scoped to an agent turn or the whole branch.
+  let scopedDiff: ScopedDiffModel
   let undo = GitUndoManager()
 
   /// The sub-view on screen; a refresh reloads it now and the rest on entry.
@@ -84,6 +86,7 @@ final class GitWorkspace {
     reflog = ReflogViewModel(repository: repository)
     branchesReview = BranchesReviewViewModel(repository: repository, refs: refs)
     blame = BlameViewModel(repository: repository)
+    scopedDiff = ScopedDiffModel(sessionId: session.id, repository: repository, host: host)
     let refresh: () async -> Void = { [weak self] in await self?.refreshAll() }
     let report: GroveKitActionHandler = { [weak self] in self?.report($0, success: $1) }
     // The working copy's only config change is switching to a saved identity.

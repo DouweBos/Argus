@@ -118,6 +118,14 @@ public enum StoreEvent: Sendable, Equatable {
     case requestReview = "request_review"
   }
 
+  /// What a session's diff was switched to cover.
+  public enum DiffScopeKind: String, Sendable {
+    case uncommitted
+    case lastTurn = "last_turn"
+    case turn
+    case branch
+  }
+
   /// How work leaves a session.
   public enum LandAction: String, Sendable {
     case commit
@@ -145,5 +153,6 @@ public enum StoreEvent: Sendable, Equatable {
   case memoryEdited(action: MemoryAction)
   /// `comments` is how many drafts the session holds once the action is done (sent: how many went).
   case diffReviewed(action: DiffReviewAction, comments: Int)
+  case diffScoped(scope: DiffScopeKind)
   case offlineReply(action: OfflineReplyAction)
 }

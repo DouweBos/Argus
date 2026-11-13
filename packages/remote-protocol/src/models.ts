@@ -603,6 +603,18 @@ export const RemoteGitBranch = z.object({
 });
 export type RemoteGitBranch = z.infer<typeof RemoteGitBranch>;
 
+/** One prompt an agent ran in a session, for diffs scoped to what it changed. */
+export const RemoteSessionTurn = z.object({
+  /** 1-based, oldest first, across every agent in the session. */
+  number: z.number().int().positive(),
+  checkpoint_id: z.string(),
+  agent_id: z.string(),
+  /** The prompt's first line, cut short. */
+  prompt: z.string(),
+  timestamp: z.number(),
+});
+export type RemoteSessionTurn = z.infer<typeof RemoteSessionTurn>;
+
 /** One commit in a branch's history. */
 export const RemoteCommit = z.object({
   hash: z.string(),

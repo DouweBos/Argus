@@ -14,6 +14,7 @@
     static var all: [GalleryStory] {
       [
         panel("git/changes", worktree: true, view: .working),
+        panel("git/changes/last-turn", worktree: true, view: .working, scope: .lastTurn),
         panel("git/branch", worktree: true, view: .branch),
         panel("git/branches", worktree: false, view: .branches(nil)),
         panel("git/history", worktree: false, view: .history),
@@ -37,13 +38,15 @@
       ]
     }
 
-    private static func panel(_ id: String, worktree: Bool, view: GitRoute) -> GalleryStory {
+    private static func panel(
+      _ id: String, worktree: Bool, view: GitRoute, scope: SessionDiffScope = .uncommitted
+    ) -> GalleryStory {
       let sessionId = worktree ? GalleryGit.worktreeSessionId : GalleryGit.rootSessionId
       let fixtures = GalleryFixtures.git(sessionId: sessionId, path: worktree ? worktreePath : rootPath)
         .merging(GalleryFixtures.pullRequests) { git, _ in git }
       return GalleryStory(id, size: screen, chrome: true, fixtures: fixtures, setup: { stage in
         await attach(stage)
-        await load(stage, sessionId: sessionId, view: view)
+        await load(stage, sessionId: sessionId, view: view, scope: scope)
       }) {
         GitPanelStory(sessionId: sessionId, view: view)
       }
@@ -59,12 +62,14 @@
 
     /// Reads the repository before the shot: GroveKit's first refresh outlasts the render's settle.
     @MainActor
-    private static func load(_ stage: GalleryStage, sessionId: String, view: GitRoute) async {
+    private static func load(_ stage: GalleryStage, sessionId: String, view: GitRoute, scope: SessionDiffScope) async {
       guard let session = stage.host.session(id: sessionId),
         let workspace = await stage.model.git.open(session)
       else { return }
       workspace.visible = view
       await workspace.refreshAll()
+      workspace.scopedDiff.scope = scope
+      await workspace.scopedDiff.load()
       await (workspace.visibleHistory ?? workspace.history).loadIfNeeded()
     }
 

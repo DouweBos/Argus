@@ -14,19 +14,28 @@ struct ChangesView: View {
   let sessionId: String
   let label: String
 
-  @State private var mode = "branch"
+  /// What the diff covers, as `SessionDiffScope.mode`: a branch, the working copy or an agent turn.
+  @State private var mode: String
+  @State private var turns: [SessionTurn] = []
   @State private var diff: String?
   /// Why the diff didn't load; a failed refresh keeps the last diff on screen.
   @State private var failure: String?
   @State private var viewed: ViewedFiles?
+
+  init(sessionId: String, label: String, mode: String = "branch") {
+    self.sessionId = sessionId
+    self.label = label
+    _mode = State(initialValue: mode)
+  }
 
   private var files: [DiffFile] { diff.map(DiffParser.parse) ?? [] }
 
   var body: some View {
     Screen {
       SegmentedControl(
-        value: $mode,
-        options: [("branch", "Vs base branch"), ("working", "Uncommitted")])
+        value: segment,
+        options: [("branch", "Branch"), ("working", "Uncommitted"), ("turn", "Last turn")])
+      if isTurn { turnPicker }
 
       if let status = host.gitStatusBySession[sessionId] {
         HStack(spacing: 8) {
@@ -46,9 +55,7 @@ struct ChangesView: View {
         EmptyState(
           icon: Icon.branch,
           title: "No changes",
-          body: mode == "branch"
-            ? "This session has no changes vs its base branch — try Uncommitted for working-tree edits."
-            : "No uncommitted changes in the working tree.")
+          body: emptyMessage)
       } else {
         if let viewed {
           ViewedProgressBar(viewed: viewed.viewedCount(files.map(\.displayPath)), total: files.count)
@@ -58,7 +65,7 @@ struct ChangesView: View {
           VStack(spacing: 0) {
             ForEach(Array(files.enumerated()), id: \.element.id) { index, file in
               if index > 0 { Divider().padding(.leading, 24) }
-              StackLink(route: .fileDiff(sessionId: sessionId, path: file.displayPath, mode: mode), chevron: false) {
+              StackLink(route: .fileDiff(sessionId: sessionId, path: file.displayPath, mode: pinnedMode), chevron: false) {
                 ChangedFileRow(file: file, viewedState: viewed?.state(file.displayPath)).padding(.vertical, 8)
               }
               .buttonStyle(.argusPlain)
@@ -99,11 +106,59 @@ struct ChangesView: View {
     .liveRefresh(enabled: host.connection == .ready, every: .seconds(5)) { await refresh() }
     .loadsOffline { await refresh() }
     .diffReviewBar(sessionId: sessionId) { openAgent($0) }
-    .onChange(of: mode) { _, _ in
+    .onChange(of: mode) { _, next in
+      host.trackDiffScope(SessionDiffScope(mode: next, turns: turns))
       diff = nil
       failure = nil
       Task { await refresh() }
     }
+  }
+
+  private var isTurn: Bool { mode.hasPrefix("turn") }
+
+  /// The segments pick a kind of scope; a pinned turn still sits under Last turn.
+  private var segment: Binding<String> {
+    Binding(get: { isTurn ? "turn" : mode }, set: { if $0 != (isTurn ? "turn" : mode) { mode = $0 } })
+  }
+
+  private var scope: SessionDiffScope { SessionDiffScope(mode: mode, turns: turns) }
+
+  /// A file opened from the last turn stays on that turn, even once another starts.
+  private var pinnedMode: String {
+    if mode == "turn", let latest = turns.last { return SessionDiffScope.turn(latest).mode }
+    return mode
+  }
+
+  private var emptyMessage: String {
+    switch mode {
+    case "branch": "This session has no changes vs its base branch — try Uncommitted for working-tree edits."
+    case "working": "No uncommitted changes in the working tree."
+    default: turns.isEmpty ? "No agent has run a prompt in this session yet." : "This turn didn't change any files."
+    }
+  }
+
+  /// Which turn: the latest by default, or any earlier one.
+  private var turnPicker: some View {
+    Menu {
+      Button("Last turn") { mode = "turn" }
+      ForEach(turns.reversed()) { turn in
+        Button("Turn \(turn.number) · \(turn.prompt)") { mode = SessionDiffScope.turn(turn).mode }
+      }
+    } label: {
+      HStack(spacing: 6) {
+        MutedText(turnLabel, lineLimit: 1)
+        Image(systemName: Icon.chevronDown).font(.scaled(.caption).weight(.semibold)).foregroundStyle(.tertiary)
+        Spacer(minLength: 0)
+      }
+      .contentShape(Rectangle())
+    }
+    .disabled(turns.isEmpty)
+  }
+
+  private var turnLabel: String {
+    guard let turn = scope.turn(in: turns) else { return "No turns yet" }
+    let which = mode == "turn" ? "Last turn (\(turn.number))" : "Turn \(turn.number)"
+    return turn.prompt.isEmpty ? which : "\(which) · \(turn.prompt)"
   }
 
   /// A new agent, asked to review the session's diff before it's committed.
@@ -133,12 +188,19 @@ struct ChangesView: View {
   private func refresh() async {
     await host.loadGitStatus(sessionId: sessionId)
     let asked = mode
-    if viewed?.scope != .session(id: sessionId, mode: asked) {
-      viewed = ViewedFiles(scope: .session(id: sessionId, mode: asked), host: host)
+    if asked.hasPrefix("turn") {
+      // Viewed marks belong to the branch and the working copy; a turn is a look back.
+      viewed = nil
+      if let loaded = try? await host.loadSessionTurns(sessionId: sessionId) { turns = loaded }
+    } else {
+      if viewed?.scope != .session(id: sessionId, mode: asked) {
+        viewed = ViewedFiles(scope: .session(id: sessionId, mode: asked), host: host)
+      }
+      await viewed?.load()
     }
-    await viewed?.load()
     do {
-      let loaded = try await host.loadDiff(sessionId: sessionId, mode: asked)
+      let wire = SessionDiffScope.wire(mode: asked)
+      let loaded = try await host.loadDiff(sessionId: sessionId, mode: wire.mode, checkpointId: wire.checkpointId)
       // A switch of mode mid-load would otherwise get the other mode's diff.
       guard asked == mode else { return }
       diff = loaded

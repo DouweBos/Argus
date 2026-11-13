@@ -73,6 +73,11 @@ developed, and an existing install updates into Argus for Mac by itself (see
   **Send Review to Agent** at the bottom posts them to the session's agent as
   one message, each with its file, lines and hunk. **Review** beside Commit asks
   a new agent to review the changes before you commit.
+  The scope menu in the Files header (working copy and the side panel's Diff
+  tab) switches the diff from the uncommitted changes to **Last Turn**, any
+  earlier turn, or the **Whole Branch**. A turn is what one prompt changed, from
+  the checkpoint taken before it to the tree when the agent went idle, so files
+  a merge or a rebase pulled in between turns stay out of it.
 - **Pull Requests** at the foot of the sidebar: the pull requests that need you across
   your projects, each with its conversation, checks and changes, and opening
   a new one for a session's branch.

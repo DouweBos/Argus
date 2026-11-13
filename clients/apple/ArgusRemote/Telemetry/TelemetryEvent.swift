@@ -231,6 +231,7 @@ enum TelemetryEvent {
   case memoryEdited(action: MemoryAction)
   /// A diff review comment was added or deleted, the review sent or discarded, or an agent asked to review.
   case diffReviewed(action: DiffReviewAction, comments: Int)
+  case diffScoped(scope: StoreEvent.DiffScopeKind)
   /// The computer was out of reach and the phone showed what it had saved; `age` in seconds.
   case savedShown(age: TimeInterval)
   case offlineReply(action: OfflineReplyAction)
@@ -349,6 +350,7 @@ enum TelemetryEvent {
     case .sessionRenamed: "ios_session_renamed"
     case .memoryEdited: "ios_memory_edited"
     case .diffReviewed: "ios_diff_reviewed"
+    case .diffScoped: "ios_diff_scope_changed"
     case .savedShown: "ios_saved_shown"
     case .offlineReply: "ios_offline_reply"
     case .proposalOpenedAsRun: "ios_proposal_opened"
@@ -467,6 +469,8 @@ enum TelemetryEvent {
       ["action": action.rawValue]
     case .diffReviewed(let action, let comments):
       ["action": action.rawValue, "comment_count": comments]
+    case .diffScoped(let scope):
+      ["scope": scope.rawValue]
     case .savedShown(let age):
       ["age_bucket": Self.ageBucket(age)]
     case .offlineReply(let action):

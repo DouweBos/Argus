@@ -179,7 +179,6 @@ struct FileDiffsView: View {
   /// Viewed marks; nil where the diff doesn't keep them.
   var viewed: ViewedFiles?
   @State private var selected: String?
-  @FocusState private var listFocused: Bool
 
   var body: some View {
     ResizableHSplit(key: "git.files", leadingMin: 180, leadingIdeal: 260, leadingMax: 420, trailingMin: 280) {
@@ -188,15 +187,12 @@ struct FileDiffsView: View {
           ViewedProgress(viewed: viewed.viewedCount(files.map(\.path)), total: files.count)
           Divider()
         }
-        fileList
+        FileDiffList(files: files, selected: $selected, isLoading: isLoading, fileMenu: fileMenu, viewed: viewed)
       }
     } trailing: {
       DiffPane(
         diff: current?.diff, path: current?.path, isLoading: isLoading, review: current.flatMap { review?($0.path) },
         accessory: viewedAccessory)
-    }
-    .onChange(of: files.map(\.path), initial: true) { _, paths in
-      if selected == nil || !paths.contains(selected ?? "") { selected = paths.first }
     }
   }
 
@@ -205,7 +201,28 @@ struct FileDiffsView: View {
     return AnyView(ViewedCheckbox(viewed: viewed, path: path) { advance(from: path) })
   }
 
-  private var fileList: some View {
+  /// The next file after `path` still to review, wrapping round.
+  private func advance(from path: String) {
+    guard let viewed, let index = files.firstIndex(where: { $0.path == path }) else { return }
+    let rest = files[(index + 1)...] + files[..<index]
+    if let next = rest.first(where: { !viewed.isViewed($0.path) }) { selected = next.path }
+  }
+
+  private var current: FileDiff? {
+    files.first { $0.path == selected }
+  }
+}
+
+/// Changed files with their counts and status; keeps a selection, the first file by default.
+struct FileDiffList: View {
+  let files: [FileDiff]
+  @Binding var selected: String?
+  var isLoading = false
+  var fileMenu: ((FileDiff) -> AnyView)?
+  var viewed: ViewedFiles?
+  @FocusState private var listFocused: Bool
+
+  var body: some View {
     List(files, id: \.path) { file in
       HStack(spacing: 6) {
         FileTypeIcon(path: file.path)
@@ -226,6 +243,7 @@ struct FileDiffsView: View {
         selected = file.path
         listFocused = true
       }
+      .clickable()
       .modifier(NavigatorRowHighlight(selected: selected == file.path))
       .contextMenu { fileMenu?(file) }
     }
@@ -238,17 +256,9 @@ struct FileDiffsView: View {
     .overlay {
       if isLoading && files.isEmpty { ProgressView().controlSize(.small) }
     }
-  }
-
-  /// The next file after `path` still to review, wrapping round.
-  private func advance(from path: String) {
-    guard let viewed, let index = files.firstIndex(where: { $0.path == path }) else { return }
-    let rest = files[(index + 1)...] + files[..<index]
-    if let next = rest.first(where: { !viewed.isViewed($0.path) }) { selected = next.path }
-  }
-
-  private var current: FileDiff? {
-    files.first { $0.path == selected }
+    .onChange(of: files.map(\.path), initial: true) { _, paths in
+      if selected == nil || !paths.contains(selected ?? "") { selected = paths.first }
+    }
   }
 
   private func move(by offset: Int) {

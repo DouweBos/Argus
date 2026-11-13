@@ -14,6 +14,11 @@ extension HostStore {
     hooks.track(.diffReviewed(action: .delete, comments: reviews.comments(sessionId).count))
   }
 
+  /// The user switched what a session's diff covers.
+  public func trackDiffScope(_ scope: SessionDiffScope) {
+    hooks.track(.diffScoped(scope: scope.kind))
+  }
+
   public func discardReview(sessionId: String) {
     let count = reviews.comments(sessionId).count
     reviews.clear(sessionId)

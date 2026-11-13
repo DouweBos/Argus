@@ -82,6 +82,7 @@ extension MacTelemetryEvent {
     case .proposalHandled(let action): self = .proposalHandled(action: action)
     case .memoryEdited(let action): self = .memoryEdited(action: action)
     case .diffReviewed(let action, let comments): self = .diffReviewed(action: action, comments: comments)
+    case .diffScoped(let scope): self = .diffScoped(scope: scope)
     default: return nil
     }
   }

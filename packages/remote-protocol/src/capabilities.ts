@@ -234,6 +234,8 @@ export const REMOTE_METHODS = {
   "sessions.viewed_files": "monitor",
   /** Review bookkeeping on the computer, so a watcher doesn't change it. */
   "sessions.set_file_viewed": "control",
+  "sessions.turns": "monitor",
+  "sessions.diff_range": "monitor",
   "sessions.merge_blockers": "monitor",
   /** Writing history. Committing and pushing are the point of the session;
    *  merging lands it on the base branch, which the host still refuses for a

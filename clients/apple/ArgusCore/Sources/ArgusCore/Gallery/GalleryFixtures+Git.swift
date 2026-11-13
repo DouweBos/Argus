@@ -61,6 +61,9 @@ extension GalleryFixtures {
       RemoteMethod.sessionsCommitIdentity.rawValue: GalleryJSON.encode([
         "name": "Maya Chen", "email": "maya.chen@example.com", "can_sign": false,
       ]),
+      RemoteMethod.sessionsTurns.rawValue: GalleryJSON.encode(["turns": turns]),
+      // The branch's last commit stands in for the turn: the gallery repository has no checkpoints.
+      RemoteMethod.sessionsDiffRange.rawValue: GalleryJSON.encode(["from": "HEAD~1", "to": "HEAD"]),
       RemoteMethod.sessionsMergeBlockers.rawValue: GalleryJSON.encode(["blockers": [String]()]),
       RemoteMethod.agentsStopped.rawValue: GalleryJSON.encode(["agents": []]),
       ArgusProtocol.Commands.GetUserProjectSettings.name: GalleryJSON.encode(["pinnedBranches": ["chore/node-24"]]),
@@ -72,6 +75,19 @@ extension GalleryFixtures {
         "browserPresets": [], "protectedBranches": ["main"], "releaseNotePatterns": [], "simulatorDeeplinks": [],
       ]),
     ]
+  }
+
+  private static var turns: [[String: Any]] {
+    [
+      "Add a merge strategy setting per project, defaulting to merge commits",
+      "Use the strategy when merging a session back",
+      "Also cover squash merges in the tests",
+    ].enumerated().map { index, prompt in
+      [
+        "number": index + 1, "checkpoint_id": "gallery-turn-\(index + 1)", "agent_id": "gallery-agent",
+        "prompt": prompt, "timestamp": ago(hours: Double(3 - index)),
+      ]
+    }
   }
 
   private static func commit(_ c: Commit) -> [String: Any] {

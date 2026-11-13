@@ -87,6 +87,7 @@ import {
 } from "../agent/pins/pins";
 import { pinSessionAccount } from "../agent/sessionAccountPin";
 import { getStartOptions } from "../agent/startOptions";
+import { listSessionTurns, sessionDiffRange } from "../agent/turns";
 import { setViewingSession } from "../agent/warmPolicy";
 import { saveAppSettings } from "../appSettings/store";
 import { revisePlaybook } from "../automation/authoring";
@@ -154,6 +155,7 @@ import { listRunnerAccounts } from "../llm/runnerAccounts";
 import { collectAllProjects } from "../mcp/projectDiscovery";
 import { createScratchPad, listScratchPads } from "../scratchPad/manager";
 import { draftCommitMessage } from "../session/commitDraft";
+import { git } from "../session/git";
 import {
   gitCheckout,
   gitCreateBranch,
@@ -2103,9 +2105,21 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   },
 
   "sessions.diff": async (params) => {
-    const { session_id, mode } = parse("sessions.diff", params);
+    const { session_id, mode, checkpoint_id } = parse("sessions.diff", params);
     requireSession(session_id);
     const session = appState.sessions.get(session_id);
+    if (mode === "turn") {
+      const diff = await control(async () => {
+        const { from, to } = await sessionDiffRange(session_id, {
+          kind: "turn",
+          checkpointId: checkpoint_id,
+        });
+
+        return git(session?.path ?? "", ["diff", from, to]);
+      });
+
+      return { diff, base_branch: session?.base_branch ?? null };
+    }
     // `git diff` skips untracked files, which the changed-file count includes.
     const withUntracked =
       mode === "working" ||
@@ -2147,6 +2161,37 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     );
 
     return { files: await getSessionViewedFiles(session_id, diffMode) };
+  },
+  "sessions.turns": async (params) => {
+    const { session_id } = parse("sessions.turns", params);
+    requireSession(session_id);
+    const turns = await listSessionTurns(session_id);
+
+    return {
+      turns: turns.map((t) => ({
+        number: t.number,
+        checkpoint_id: t.checkpointId,
+        agent_id: t.agentId,
+        prompt: t.prompt,
+        timestamp: t.timestamp,
+      })),
+    };
+  },
+  "sessions.diff_range": async (params) => {
+    const { session_id, scope, checkpoint_id } = parse(
+      "sessions.diff_range",
+      params,
+    );
+    requireSession(session_id);
+
+    return control(() =>
+      sessionDiffRange(
+        session_id,
+        scope === "branch"
+          ? { kind: "branch" }
+          : { kind: "turn", checkpointId: checkpoint_id },
+      ),
+    );
   },
   "sessions.commit": async (params) => {
     const { session_id, message, stage_all, amend, sign_off, sign } = parse(

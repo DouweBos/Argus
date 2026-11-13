@@ -40,6 +40,7 @@ import {
   RemoteBranchCompare,
   RemoteCommit,
   RemoteGitBranch,
+  RemoteSessionTurn,
   RemoteGitStatus,
   RemoteTerminal,
   RemoteTerminalOutput,
@@ -533,7 +534,16 @@ export const MethodParams = {
   }),
   "sessions.diff": z.object({
     session_id: z.string(),
-    mode: z.enum(["branch", "working"]).optional(),
+    mode: z.enum(["branch", "working", "turn"]).optional(),
+    /** The turn, for mode "turn"; the latest when absent. */
+    checkpoint_id: z.string().optional(),
+  }),
+  "sessions.turns": z.object({ session_id: z.string() }),
+  /** Two commits to diff: a turn (the latest without `checkpoint_id`) or the whole branch, uncommitted work included. */
+  "sessions.diff_range": z.object({
+    session_id: z.string(),
+    scope: z.enum(["turn", "branch"]),
+    checkpoint_id: z.string().optional(),
   }),
   /** Marks kept on the computer, per diff mode; `branch` when omitted. */
   "sessions.viewed_files": z.object({
@@ -1069,6 +1079,8 @@ export const MethodResult = {
   /** Only the marked files; the rest are unviewed. */
   "sessions.viewed_files": z.object({ files: z.array(RemoteViewedFile) }),
   "sessions.set_file_viewed": z.object({ files: z.array(RemoteViewedFile) }),
+  "sessions.turns": z.object({ turns: z.array(RemoteSessionTurn) }),
+  "sessions.diff_range": z.object({ from: z.string(), to: z.string() }),
   /** Git's own output, so a refusal reads the same as it does in a terminal. */
   "sessions.commit": z.object({ output: z.string() }),
   "sessions.draft_commit_message": z.object({

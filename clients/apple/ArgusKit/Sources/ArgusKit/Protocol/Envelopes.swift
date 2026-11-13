@@ -54,6 +54,8 @@ public enum RemoteMethod: String, Codable, Sendable {
   case sessionsDiff = "sessions.diff"
   case sessionsViewedFiles = "sessions.viewed_files"
   case sessionsSetFileViewed = "sessions.set_file_viewed"
+  case sessionsTurns = "sessions.turns"
+  case sessionsDiffRange = "sessions.diff_range"
   case sessionsCommit = "sessions.commit"
   case sessionsDraftCommitMessage = "sessions.draft_commit_message"
   case sessionsCommitIdentity = "sessions.commit_identity"
