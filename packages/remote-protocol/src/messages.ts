@@ -365,6 +365,13 @@ export const MethodParams = {
   "scratch_pads.create": z.object({
     name: z.string().trim().max(80).optional(),
   }),
+  /** A read-only scratch-pad agent that diagnoses a problem with Argus and drafts an issue. */
+  "triage.start": z.object({
+    /** The warning or error being triaged; absent when started from the palette. */
+    message: z.string().max(8000).optional(),
+    level: z.enum(["error", "warning"]).optional(),
+    source: z.string().max(200).optional(),
+  }),
   "sessions.create": z.object({
     repo_root: z.string(),
     branch: z.string(),
@@ -969,6 +976,10 @@ export const MethodResult = {
   "agents.ask_side": z.object({ answer: z.string() }),
   "sessions.create": z.object({ session: RemoteSession }),
   "scratch_pads.create": z.object({ session: RemoteSession }),
+  "triage.start": z.object({
+    session: RemoteSession,
+    agent: RemoteAgentStatus,
+  }),
   "sessions.files": z.object({ files: z.array(z.string()) }),
   "files.read": CodeFile,
   "files.search": z.object({ search_id: z.string() }),

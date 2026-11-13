@@ -15,7 +15,9 @@ struct NotificationsScreen: View {
         )
       } else {
         List(log.entries) { entry in
-          NotificationRow(entry: entry) { log.dismiss(entry.id) }
+          NotificationRow(
+            entry: entry, triage: { Task { await model.triage(entry) } },
+            dismiss: { log.dismiss(entry.id) })
         }
       }
     }
@@ -41,6 +43,7 @@ struct NotificationsScreen: View {
 private struct NotificationRow: View {
   @Environment(\.theme) private var theme
   let entry: NotificationsLog.Entry
+  let triage: () -> Void
   let dismiss: () -> Void
 
   var body: some View {
@@ -61,6 +64,9 @@ private struct NotificationRow: View {
         }
       }
       Spacer()
+      Button(action: triage) { Image(systemName: Icon.triage) }
+        .buttonStyle(.argusBorderless)
+        .help("Triage: diagnose this and draft an issue")
       Button(action: dismiss) { Image(systemName: "xmark") }
         .buttonStyle(.argusBorderless)
         .help("Dismiss")

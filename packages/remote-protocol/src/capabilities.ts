@@ -173,6 +173,8 @@ export const REMOTE_METHODS = {
   "sessions.create": "control",
   /** Create a scratch pad: a session in its own directory, outside any project. */
   "scratch_pads.create": "control",
+  /** Triage starts an agent, which spends. */
+  "triage.start": "control",
   /** Delete a session (optionally its branch). */
   "sessions.delete": "control",
   /** Rename a session's display name. */

@@ -225,6 +225,18 @@ stays in the sidebar until you delete it. Deleting one removes its folder.
 Create one with the **+** next to **Scratch pads** in the sidebar, from the
 command palette, or from the Projects screen on the iOS app.
 
+### Triage a problem
+
+When Argus itself misbehaves — a tunnel that won't come up, a simulator that
+won't stream — **Triage a Problem with Argus** in the command palette, or the
+stethoscope on any entry in **Notifications**, starts a scratch pad with a
+read-only agent. It gets the app version and build commit, the settings that
+shape behaviour (never tokens, URLs, paths or names) and snapshots of the host
+logs, reads the Argus source for that exact build and searches known issues.
+It answers with a diagnosis and a draft GitHub issue plus a pre-filled link;
+nothing is posted until you say so. On the iOS app, swipe right on a
+notification or use the button at the bottom of Notifications.
+
 ---
 
 ## Usage

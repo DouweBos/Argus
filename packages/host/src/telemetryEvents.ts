@@ -451,6 +451,7 @@ export interface EventMap {
     store: "mcp_tokens" | "remote_devices";
   };
   scratch_pad_created: { has_name: boolean };
+  triage_started: { has_problem: boolean; success: boolean };
   session_created: {
     has_description: boolean;
     has_explicit_base_branch: boolean;

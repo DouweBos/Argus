@@ -6,6 +6,9 @@ import SwiftUI
 /// `/notifications`, over the same log.
 struct WarningsView: View {
   @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
+  @Environment(Router.self) private var router
+  @State private var triaging = false
 
   var body: some View {
     let log = app.notifications
@@ -18,12 +21,40 @@ struct WarningsView: View {
               Telemetry.capture(.notificationsCleared(scope: .one))
             }
           }
+          .swipeActions(edge: .leading) {
+            if host.hasControl {
+              Button("Triage", systemImage: Icon.triage) { triage(entry) }
+                .tint(.accentColor)
+            }
+          }
+          .contextMenu {
+            if host.hasControl {
+              Button("Triage", systemImage: Icon.triage) { triage(entry) }
+            }
+          }
+      }
+      // Empty, the empty state carries this button instead.
+      if host.hasControl, !log.entries.isEmpty {
+        Section {
+          Button("Triage a problem with Argus", systemImage: Icon.triage) {
+            triage(nil)
+          }
+          .disabled(triaging)
+        } footer: {
+          Text("A read-only agent on the computer reads its logs, diagnoses the problem and drafts an issue. Nothing is posted until you say so.")
+        }
       }
     }
     .emptyState(when: log.entries.isEmpty) {
       EmptyState(
         icon: Icon.check, title: "Nothing went wrong",
-        body: "Failures shown while you use the app are kept here until it quits.")
+        body: "Failures shown while you use the app are kept here until it quits."
+      ) {
+        if host.hasControl {
+          Button("Triage a problem with Argus", systemImage: Icon.triage) { triage(nil) }
+            .disabled(triaging)
+        }
+      }
     }
     .navigationTitle("Notifications")
     .navigationBarTitleDisplayMode(.inline)
@@ -42,6 +73,15 @@ struct WarningsView: View {
       log.markSeen()
     }
     .onChange(of: log.entries) { log.markSeen() }
+  }
+
+  private func triage(_ entry: NotificationsLog.Entry?) {
+    triaging = true
+    Task {
+      defer { triaging = false }
+      guard let agent = await host.startTriage(entry) else { return }
+      router.push(.agent(id: agent.agentId, label: Labels.agentName(agent)))
+    }
   }
 }
 

@@ -1659,6 +1659,22 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return { session: toRemoteSession(session) };
   },
 
+  "triage.start": async (params) => {
+    const problem = parse("triage.start", params);
+    // Lazy: the manager starts agents, and agentService reaches back here.
+    const { startTriage } = await import("../triage/manager");
+    const { session, agent } = await control(() => startTriage(problem));
+    const status = appState.agents.get(agent.agent_id);
+    if (!status) {
+      throw new GatewayError("internal", "triage agent vanished");
+    }
+
+    return {
+      session: toRemoteSession(session),
+      agent: toRemoteAgentStatus(status),
+    };
+  },
+
   "sessions.files": async (params) => {
     const { session_id } = parse("sessions.files", params);
     const files = await control(() => listSessionFiles(session_id));

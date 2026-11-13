@@ -175,6 +175,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   // call, never a guest's — even for the session their agent runs in.
   "sessions.create": DENIED,
   "scratch_pads.create": DENIED,
+  "triage.start": DENIED,
   "sessions.delete": DENIED,
   "sessions.rename": DENIED,
   "sessions.rename_branch": DENIED,

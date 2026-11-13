@@ -7077,6 +7077,67 @@ extension ArgusProtocol {
       }
     }
 
+    public struct TriageStartParamsLevel: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let error = TriageStartParamsLevel(rawValue: "error")
+      public static let warning = TriageStartParamsLevel(rawValue: "warning")
+    }
+
+    public struct TriageStartParams: Codable, Sendable {
+      public var message: String?
+      public var level: TriageStartParamsLevel?
+      public var source: String?
+
+      enum CodingKeys: String, CodingKey {
+        case message = "message"
+        case level = "level"
+        case source = "source"
+      }
+
+      public init(message: String? = nil, level: TriageStartParamsLevel? = nil, source: String? = nil) {
+        self.message = message
+        self.level = level
+        self.source = source
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(message, forKey: .message)
+        try c.encodeIfPresent(level, forKey: .level)
+        try c.encodeIfPresent(source, forKey: .source)
+      }
+    }
+
+    public struct TriageStartResult: Codable, Sendable {
+      public var session: RemoteSession
+      public var agent: RemoteAgentStatus
+
+      enum CodingKeys: String, CodingKey {
+        case session = "session"
+        case agent = "agent"
+      }
+
+      public init(session: RemoteSession, agent: RemoteAgentStatus) {
+        self.session = session
+        self.agent = agent
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(session, forKey: .session)
+        try c.encode(agent, forKey: .agent)
+      }
+    }
+
     public struct UsageLimitsParams: Codable, Sendable {
       public var refresh: Bool?
 
@@ -8132,6 +8193,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.TerminalsScrollbackParams
       public typealias Result = ArgusProtocol.MethodsTypes.TerminalsScrollbackResult
       public static let name = "terminals.scrollback"
+    }
+
+    public enum TriageStart: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TriageStartParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TriageStartResult
+      public static let name = "triage.start"
     }
 
     public enum UsageLimits: RemoteCommand {

@@ -1,9 +1,19 @@
 import * as esbuild from "esbuild";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 
 // The standalone Node host the Mac app and Argus Server bundle, and `argus-host`
 // runs. Native addons stay in node_modules.
 const pkg = JSON.parse(fs.readFileSync("package.json", "utf-8"));
+// Triage reads the source at the exact commit a build came from.
+let commit = process.env.ARGUS_COMMIT ?? "";
+try {
+  commit ||= execFileSync("git", ["rev-parse", "HEAD"], {
+    encoding: "utf-8",
+  }).trim();
+} catch {
+  // Not a checkout (a source tarball): triage falls back to the version tag.
+}
 const posthogKey =
   process.env.POSTHOG_KEY ?? process.env.VITE_POSTHOG_KEY ?? "";
 const posthogHost =
@@ -22,6 +32,7 @@ await esbuild.build({
     "process.env.POSTHOG_KEY": JSON.stringify(posthogKey),
     "process.env.POSTHOG_HOST": JSON.stringify(posthogHost),
     "process.env.ARGUS_VERSION": JSON.stringify(pkg.version),
+    "process.env.ARGUS_COMMIT": JSON.stringify(commit),
   },
   logLevel: "info",
 });

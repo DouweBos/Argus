@@ -157,6 +157,10 @@ enum BuiltinPalette {
         shortcut: "⌘N"
       ) { model.requestNewSession() },
       PaletteCommand(
+        id: "app.triage", title: "Triage a Problem with Argus", section: "App",
+        keywords: ["bug", "report", "issue", "logs", "diagnose"], systemImage: Icon.triage
+      ) { Task { await model.triage(nil) } },
+      PaletteCommand(
         id: "app.open-session", title: "Open Session…", section: "App", keywords: ["quick switcher"],
         systemImage: "arrow.triangle.branch", shortcut: "⇧⌘O"
       ) { model.palette.present(switcher: true) },

@@ -250,6 +250,37 @@ extension HostStore {
     }
   }
 
+  /// A read-only agent in a new scratch pad that diagnoses a problem with
+  /// Argus from the computer's logs and drafts an issue. `entry` nil asks.
+  public func startTriage(
+    _ entry: NotificationsLog.Entry?
+  ) async -> RemoteAgentStatus? {
+    guard let backend else { return nil }
+    struct Params: Encodable {
+      let message: String?
+      let level: String?
+      let source: String?
+    }
+    struct Result: Decodable {
+      let session: RemoteSession
+      let agent: RemoteAgentStatus
+    }
+    do {
+      let result = try await backend.request(
+        .triageStart,
+        Params(
+          message: entry.map { String($0.message.prefix(8000)) }, level: entry?.level.rawValue,
+          source: entry?.source.map { String($0.prefix(200)) }),
+        as: Result.self)
+      statusByAgent[result.agent.agentId] = result.agent
+      await loadScratchPads()
+      return result.agent
+    } catch {
+      report(error)
+      return nil
+    }
+  }
+
   /// The pad's agent to open: its newest live one, else a fresh one when this
   /// phone may start agents.
   public func scratchPadAgent(_ pad: RemoteSession) async -> RemoteAgentStatus? {

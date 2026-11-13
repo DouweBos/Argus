@@ -226,6 +226,12 @@ extension DesktopModel {
     MacTelemetry.capture(.scratchPadCreated)
     open(spawned: agent.agentId, session: agent.sessionId)
   }
+
+  /// A read-only agent that diagnoses `entry` (or asks what went wrong) and drafts an issue.
+  func triage(_ entry: NotificationsLog.Entry?) async {
+    guard let agent = await store.startTriage(entry) else { return }
+    open(spawned: agent.agentId, session: agent.sessionId)
+  }
 }
 
 /// The panels a session switches between.
