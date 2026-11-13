@@ -131,7 +131,11 @@ function truncateSlug(slug: string, max: number): string {
  * Returns stdout on success; throws a typed `GitError` (classified from
  * stderr) on non-zero exit.
  */
-export async function git(cwd: string, args: string[]): Promise<string> {
+export async function git(
+  cwd: string,
+  args: string[],
+  opts?: { env?: Record<string, string> },
+): Promise<string> {
   // `--no-optional-locks` prevents read-only commands (diff, status, log) from
   // taking `.git/index.lock` to refresh the index. Without it, two concurrent
   // reads — or a read racing a stage/commit — fail with "Another git process
@@ -143,6 +147,7 @@ export async function git(cwd: string, args: string[]): Promise<string> {
     const { stdout } = await execFileAsync("git", finalArgs, {
       cwd,
       maxBuffer: 50 * 1024 * 1024,
+      ...(opts?.env ? { env: { ...process.env, ...opts.env } } : {}),
     });
 
     return stdout;
