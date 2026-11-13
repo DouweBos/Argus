@@ -572,6 +572,30 @@ describe("delete_session", () => {
 // ===========================================================================
 
 describe("spawn_agent", () => {
+  it("opens a repo Argus doesn't know yet when spawning into its root", async () => {
+    await client.callTool({
+      name: "spawn_agent",
+      arguments: {
+        session: "root",
+        project_path: "/projects/new",
+        prompt: "hi",
+      },
+    });
+    expect(mockEnsureRepoRegistered).toHaveBeenCalledWith("/projects/new");
+  });
+
+  it("does not open a repo for a named session", async () => {
+    await client.callTool({
+      name: "spawn_agent",
+      arguments: {
+        session: "ghost",
+        project_path: "/projects/new",
+        prompt: "hi",
+      },
+    });
+    expect(mockEnsureRepoRegistered).not.toHaveBeenCalled();
+  });
+
   it("returns error when session not found", async () => {
     const result = await client.callTool({
       name: "spawn_agent",

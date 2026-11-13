@@ -58,6 +58,7 @@ import {
   writeSessionFile,
 } from "../session/sessionOps";
 import { waitForSessionReady } from "../session/waitForReady";
+import { capture } from "../telemetry/telemetry";
 import {
   createRunTerminal,
   findRunSession,
@@ -68,7 +69,6 @@ import {
   waitForTerminal,
 } from "../terminal/multiplexer";
 import { stopTerminalGracefully } from "../terminal/stop";
-import { capture } from "../telemetry/telemetry";
 import { worktreePurposeForCaller } from "./automationCaller";
 import {
   automationMergeBlock,
@@ -944,6 +944,22 @@ export function createMcpServer(
       parent_agent_id,
       attachments,
     } = args;
+    // The root of a repo Argus hasn't opened yet: open it, as create_session does.
+    if (
+      ROOT_SESSION_ALIASES.has(session) &&
+      !appState.repoRoots.has(project_path) &&
+      !automationWorkBlock(callerAgentId, project_path)
+    ) {
+      try {
+        ensureRepoRegistered(project_path);
+        emitHostEvent("project:added", project_path);
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: (e as Error).message }],
+          isError: true,
+        };
+      }
+    }
     const ws = await resolveSession(session, project_path, callerAgentId);
     if (!ws) {
       return {
