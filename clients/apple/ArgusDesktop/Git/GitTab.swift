@@ -5,13 +5,13 @@ import Foundation
 /// maps onto a `GitRoute`; the bar only navigates.
 enum GitTab: Hashable {
   case changes, branch, history, stashes, pullRequests, branchesReview, conflicts
-  case reflog, blame, bisect, hooks, submodules, settings
+  case reflog, blame, bisect, hooks, submodules, settings, guide
   /// Opened from a ref's or commit's menu, never from the bar; a tab while open.
   case compare, interactiveRebase
 
   /// Always shown; the rest live in the More menu and get a tab only while open.
   static func primary(isProject: Bool) -> [GitTab] {
-    isProject ? [.changes, .history, .stashes, .pullRequests, .branchesReview] : [.changes, .branch, .stashes]
+    isProject ? [.changes, .history, .stashes, .pullRequests, .branchesReview] : [.changes, .branch, .guide, .stashes]
   }
 
   static func secondary(isProject: Bool) -> [GitTab] {
@@ -36,6 +36,7 @@ enum GitTab: Hashable {
     case .settings: self = .settings
     case .compare: self = .compare
     case .interactiveRebase: self = .interactiveRebase
+    case .guide: self = .guide
     }
   }
 
@@ -55,6 +56,7 @@ enum GitTab: Hashable {
     case .hooks: .hooks
     case .submodules: .submodules
     case .settings: .settings
+    case .guide: .guide
     case .compare, .interactiveRebase: nil
     }
   }
@@ -76,6 +78,7 @@ enum GitTab: Hashable {
     case .settings: "Settings"
     case .compare: "Compare"
     case .interactiveRebase: "Interactive Rebase"
+    case .guide: "Guide"
     }
   }
 
@@ -96,6 +99,7 @@ enum GitTab: Hashable {
     case .settings: "gearshape"
     case .compare: "arrow.left.arrow.right"
     case .interactiveRebase: "list.number"
+    case .guide: "map"
     }
   }
 }

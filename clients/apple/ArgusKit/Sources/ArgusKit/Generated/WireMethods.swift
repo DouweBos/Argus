@@ -4489,6 +4489,72 @@ extension ArgusProtocol {
       }
     }
 
+    public struct GithubReviewPullRequestParamsEvent: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let cOMMENT = GithubReviewPullRequestParamsEvent(rawValue: "COMMENT")
+      public static let aPPROVE = GithubReviewPullRequestParamsEvent(rawValue: "APPROVE")
+      public static let rEQUESTCHANGES = GithubReviewPullRequestParamsEvent(rawValue: "REQUEST_CHANGES")
+    }
+
+    public struct GithubReviewPullRequestParams: Codable, Sendable {
+      public var repo: String
+      public var number: Int
+      public var event: GithubReviewPullRequestParamsEvent
+      public var body: String
+      public var comments: [RemotePullRequestReviewComment]
+
+      enum CodingKeys: String, CodingKey {
+        case repo = "repo"
+        case number = "number"
+        case event = "event"
+        case body = "body"
+        case comments = "comments"
+      }
+
+      public init(repo: String, number: Int, event: GithubReviewPullRequestParamsEvent, body: String, comments: [RemotePullRequestReviewComment]) {
+        self.repo = repo
+        self.number = number
+        self.event = event
+        self.body = body
+        self.comments = comments
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repo, forKey: .repo)
+        try c.encode(number, forKey: .number)
+        try c.encode(event, forKey: .event)
+        try c.encode(body, forKey: .body)
+        try c.encode(comments, forKey: .comments)
+      }
+    }
+
+    public struct GithubReviewPullRequestResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
     public struct GithubSetPullRequestFileViewedParams: Codable, Sendable {
       public var repo: String
       public var number: Int
@@ -5409,6 +5475,156 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(proposal, forKey: .proposal)
+      }
+    }
+
+    public struct ReviewGuidesAskParams: Codable, Sendable {
+      public var sessionId: String?
+      public var repo: String?
+      public var number: Int?
+      public var headSha: String?
+      public var stopId: String
+      public var question: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case repo = "repo"
+        case number = "number"
+        case headSha = "head_sha"
+        case stopId = "stop_id"
+        case question = "question"
+      }
+
+      public init(sessionId: String? = nil, repo: String? = nil, number: Int? = nil, headSha: String? = nil, stopId: String, question: String) {
+        self.sessionId = sessionId
+        self.repo = repo
+        self.number = number
+        self.headSha = headSha
+        self.stopId = stopId
+        self.question = question
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(repo, forKey: .repo)
+        try c.encodeIfPresent(number, forKey: .number)
+        try c.encodeIfPresent(headSha, forKey: .headSha)
+        try c.encode(stopId, forKey: .stopId)
+        try c.encode(question, forKey: .question)
+      }
+    }
+
+    public struct ReviewGuidesAskResult: Codable, Sendable {
+      public var answer: String
+
+      enum CodingKeys: String, CodingKey {
+        case answer = "answer"
+      }
+
+      public init(answer: String) {
+        self.answer = answer
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(answer, forKey: .answer)
+      }
+    }
+
+    public struct ReviewGuidesGenerateParams: Codable, Sendable {
+      public var sessionId: String?
+      public var repo: String?
+      public var number: Int?
+      public var headSha: String?
+      public var force: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case repo = "repo"
+        case number = "number"
+        case headSha = "head_sha"
+        case force = "force"
+      }
+
+      public init(sessionId: String? = nil, repo: String? = nil, number: Int? = nil, headSha: String? = nil, force: Bool? = nil) {
+        self.sessionId = sessionId
+        self.repo = repo
+        self.number = number
+        self.headSha = headSha
+        self.force = force
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(repo, forKey: .repo)
+        try c.encodeIfPresent(number, forKey: .number)
+        try c.encodeIfPresent(headSha, forKey: .headSha)
+        try c.encodeIfPresent(force, forKey: .force)
+      }
+    }
+
+    public struct ReviewGuidesGenerateResult: Codable, Sendable {
+      public var guide: RemoteReviewGuideState
+
+      enum CodingKeys: String, CodingKey {
+        case guide = "guide"
+      }
+
+      public init(guide: RemoteReviewGuideState) {
+        self.guide = guide
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(guide, forKey: .guide)
+      }
+    }
+
+    public struct ReviewGuidesGetParams: Codable, Sendable {
+      public var sessionId: String?
+      public var repo: String?
+      public var number: Int?
+      public var headSha: String?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case repo = "repo"
+        case number = "number"
+        case headSha = "head_sha"
+      }
+
+      public init(sessionId: String? = nil, repo: String? = nil, number: Int? = nil, headSha: String? = nil) {
+        self.sessionId = sessionId
+        self.repo = repo
+        self.number = number
+        self.headSha = headSha
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(repo, forKey: .repo)
+        try c.encodeIfPresent(number, forKey: .number)
+        try c.encodeIfPresent(headSha, forKey: .headSha)
+      }
+    }
+
+    public struct ReviewGuidesGetResult: Codable, Sendable {
+      public var guide: RemoteReviewGuideState
+
+      enum CodingKeys: String, CodingKey {
+        case guide = "guide"
+      }
+
+      public init(guide: RemoteReviewGuideState) {
+        self.guide = guide
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(guide, forKey: .guide)
       }
     }
 
@@ -8245,6 +8461,12 @@ extension ArgusProtocol {
       public static let name = "github.pull_requests"
     }
 
+    public enum GithubReviewPullRequest: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.GithubReviewPullRequestParams
+      public typealias Result = ArgusProtocol.MethodsTypes.GithubReviewPullRequestResult
+      public static let name = "github.review_pull_request"
+    }
+
     public enum GithubSetPullRequestFileViewed: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.GithubSetPullRequestFileViewedParams
       public typealias Result = ArgusProtocol.MethodsTypes.GithubSetPullRequestFileViewedResult
@@ -8369,6 +8591,24 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.ProposalsResolveParams
       public typealias Result = ArgusProtocol.MethodsTypes.ProposalsResolveResult
       public static let name = "proposals.resolve"
+    }
+
+    public enum ReviewGuidesAsk: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.ReviewGuidesAskParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ReviewGuidesAskResult
+      public static let name = "review_guides.ask"
+    }
+
+    public enum ReviewGuidesGenerate: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.ReviewGuidesGenerateParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ReviewGuidesGenerateResult
+      public static let name = "review_guides.generate"
+    }
+
+    public enum ReviewGuidesGet: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.ReviewGuidesGetParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ReviewGuidesGetResult
+      public static let name = "review_guides.get"
     }
 
     public enum RunnersAccounts: RemoteCommand {

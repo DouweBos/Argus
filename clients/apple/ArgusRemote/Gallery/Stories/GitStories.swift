@@ -42,6 +42,18 @@
         GalleryStory("git/pull-request", fixtures: GalleryFixtures.pullRequests) {
           PullRequestView(repo: "acme/luma", number: 482, label: "Pick a merge strategy per project")
         },
+        GalleryStory("git/review-guide", fixtures: GalleryFixtures.reviewGuide(.ready), setup: sessions) {
+          ReviewGuideView(target: .session(id: worktree), label: "Guide")
+        },
+        GalleryStory("git/review-guide/pull-request", fixtures: GalleryFixtures.reviewGuide(.ready)) {
+          ReviewGuideView(target: .pullRequest(repo: "acme/luma", number: 482, headSha: nil), label: "#482 guide")
+        },
+        GalleryStory("git/review-guide/generating", fixtures: GalleryFixtures.reviewGuide(.generating)) {
+          ReviewGuideView(target: .session(id: worktree), label: "Guide")
+        },
+        GalleryStory("git/review-guide/failed", fixtures: GalleryFixtures.reviewGuide(.failed)) {
+          ReviewGuideView(target: .session(id: worktree), label: "Guide")
+        },
       ]
     }
 

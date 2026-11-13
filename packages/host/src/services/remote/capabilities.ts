@@ -151,6 +151,12 @@ import {
 import { getRunnerById } from "../llm/registry";
 import { listRunnerAccounts } from "../llm/runnerAccounts";
 import { collectAllProjects } from "../mcp/projectDiscovery";
+import {
+  askAboutStop,
+  generateReviewGuide,
+  getReviewGuide,
+  guideTarget,
+} from "../reviewGuide/service";
 import { createScratchPad, listScratchPads } from "../scratchPad/manager";
 import { draftCommitMessage } from "../session/commitDraft";
 import { git } from "../session/git";
@@ -281,6 +287,7 @@ import {
 } from "./gitRemote";
 import {
   commentOnRemotePullRequest,
+  reviewRemotePullRequest,
   createRemotePullRequest,
   fillRemotePullRequest,
   mergeRemotePullRequest,
@@ -2574,6 +2581,54 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const p = parse("github.set_pull_request_file_viewed", params);
 
     return await control(() => setRemotePullRequestFileViewed(p));
+  },
+  "github.review_pull_request": async (params) => {
+    const { repo, number, event, body, comments } = parse(
+      "github.review_pull_request",
+      params,
+    );
+    await control(() =>
+      reviewRemotePullRequest(repo, number, { event, body, comments }),
+    );
+
+    return { accepted: true };
+  },
+  "review_guides.get": async (params) => {
+    const p = parse("review_guides.get", params);
+    if (p.session_id) {
+      requireSession(p.session_id);
+    }
+
+    return {
+      guide: await control(() => getReviewGuide(guideTarget(p), p.head_sha)),
+    };
+  },
+  "review_guides.generate": async (params) => {
+    const p = parse("review_guides.generate", params);
+    if (p.session_id) {
+      requireSession(p.session_id);
+    }
+
+    return {
+      guide: await control(() =>
+        generateReviewGuide(guideTarget(p), {
+          force: p.force,
+          headHint: p.head_sha,
+        }),
+      ),
+    };
+  },
+  "review_guides.ask": async (params) => {
+    const p = parse("review_guides.ask", params);
+    if (p.session_id) {
+      requireSession(p.session_id);
+    }
+
+    return {
+      answer: await control(() =>
+        askAboutStop(guideTarget(p), p.stop_id, p.question, p.head_sha),
+      ),
+    };
   },
   "proposals.list": async (params) =>
     remoteProposals(parse("proposals.list", params)),

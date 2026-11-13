@@ -9,6 +9,7 @@ import type { RepoRef } from "./remoteUrl";
 import type { GhIssue } from "../github/issues";
 import type { MergeStrategy } from "../github/prActions";
 import type { PullRequestDetail } from "../github/prDetail";
+import type { PullRequestReview } from "../github/prReview";
 import type { InterestingPullRequest } from "../github/pullRequests";
 import { prReferenceSection } from "../design/prSection";
 import { listInterestingPullRequests as listGithubPullRequests } from "../github/pullRequests";
@@ -23,6 +24,7 @@ import {
 } from "../github/viewedFiles";
 import { listInterestingMergeRequests } from "../gitlab/mergeRequests";
 import { pullRequestOpened } from "../integrations/report";
+import { capture } from "../telemetry/telemetry";
 import { codeHost } from "./hosts";
 import { gitlabRepoRefs, preferredRepoRef, resolveRepoSlug } from "./repos";
 
@@ -135,6 +137,42 @@ export async function commentOnPullRequest(params: {
 }): Promise<void> {
   const ref = await resolve(params.owner, params.repo);
   await codeHost(ref.kind).comment(ref, params.number, params.body);
+}
+
+function commentsBucket(n: number): "0" | "1-5" | "6-20" | "21+" {
+  if (n === 0) {
+    return "0";
+  }
+  if (n <= 5) {
+    return "1-5";
+  }
+
+  return n <= 20 ? "6-20" : "21+";
+}
+
+/** One review with line comments, on whichever host the repo lives. */
+export async function reviewPullRequest(
+  params: PullRequestReview & { number: number; owner: string; repo: string },
+): Promise<void> {
+  const ref = await resolve(params.owner, params.repo);
+  const event = {
+    APPROVE: "approve",
+    COMMENT: "comment",
+    REQUEST_CHANGES: "request_changes",
+  } as const;
+  const props = {
+    event: event[params.event],
+    host: ref.kind,
+    comments_bucket: commentsBucket(params.comments.length),
+  };
+  try {
+    await codeHost(ref.kind).review(ref, params.number, params);
+    capture("pull_request_reviewed", { ...props, success: true });
+  } catch (e) {
+    capture("pull_request_reviewed", { ...props, success: false });
+    throw e;
+  }
+  sessionPullRequestMayHaveChanged();
 }
 
 export async function mergePullRequest(params: {

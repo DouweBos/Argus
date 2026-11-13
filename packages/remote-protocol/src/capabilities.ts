@@ -355,6 +355,12 @@ export const REMOTE_METHODS = {
   "github.pull_request_viewed_files": "monitor",
   /** Ticks GitHub's Viewed box as you. */
   "github.set_pull_request_file_viewed": "control",
+  "github.review_pull_request": "control",
+  /** Review guides. Reading one is monitor; writing one or asking about a
+   *  stop runs Claude on the computer's account. */
+  "review_guides.get": "monitor",
+  "review_guides.generate": "control",
+  "review_guides.ask": "control",
   /** The inbox. Reading it is monitor; deciding is not — accepting one spins
    *  up a worktree and starts an agent, which is code execution, and
    *  dismissing writes the signal that calibrates the automation. */

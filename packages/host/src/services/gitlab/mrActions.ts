@@ -4,7 +4,7 @@ import type { RepoRef } from "../codeHost/remoteUrl";
 import type { MergeStrategy } from "../github/prActions";
 import { glabRest, projectApiPath } from "./glab";
 
-function mrPath(ref: RepoRef, number: number): string {
+export function mrPath(ref: RepoRef, number: number): string {
   return `${projectApiPath(ref.path)}/merge_requests/${number}`;
 }
 

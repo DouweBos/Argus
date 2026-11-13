@@ -29,6 +29,12 @@ struct PullRequestView: View {
       }
       if let detail {
         header(detail)
+        if detail.changedFiles > 0 {
+          Card {
+            ReviewGuideLink(
+              target: .pullRequest(repo: repo, number: number, headSha: detail.headSha), label: "#\(number) guide")
+          }
+        }
         if !detail.checks.isEmpty { checks(detail) }
         if !detail.body.isEmpty {
           Card { MarkdownView(text: detail.body, baseSize: 14) }

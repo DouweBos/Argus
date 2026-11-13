@@ -150,6 +150,8 @@ struct GitWorkspaceView: View {
       GitSettingsView(workspace: workspace)
     case .pullRequests:
       ProjectPullRequestsView(repoRoot: session.repoRoot)
+    case .guide:
+      ReviewGuideScreen(target: .session(id: session.id))
     case .working, .branch, .history, .branches, .tags, .stashes:
       EmptyView()
     }

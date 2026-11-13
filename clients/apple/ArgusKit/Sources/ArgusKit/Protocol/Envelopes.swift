@@ -118,6 +118,11 @@ public enum RemoteMethod: String, Codable, Sendable {
   case githubPullRequestDiff = "github.pull_request_diff"
   case githubPullRequestViewedFiles = "github.pull_request_viewed_files"
   case githubSetPullRequestFileViewed = "github.set_pull_request_file_viewed"
+  case githubReviewPullRequest = "github.review_pull_request"
+
+  case reviewGuidesGet = "review_guides.get"
+  case reviewGuidesGenerate = "review_guides.generate"
+  case reviewGuidesAsk = "review_guides.ask"
 
   case permissionRespond = "permission.respond"
 

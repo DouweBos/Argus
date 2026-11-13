@@ -206,6 +206,8 @@ struct RouteScreen: View {
       DesignView(url: url, sessionId: sessionId).id(url)
     case .pullRequest(let repo, let number, let label):
       PullRequestView(repo: repo, number: number, label: label)
+    case .reviewGuide(let target, let label):
+      ReviewGuideView(target: target, label: label).id(target)
     case .automations:
       AutomationsView()
     case .automation(let id, let label):

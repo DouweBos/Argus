@@ -15413,6 +15413,7 @@ extension ArgusProtocol {
     public var mergeable: String
     public var headRef: String
     public var baseRef: String
+    public var headSha: String?
     public var additions: Double
     public var deletions: Double
     public var changedFiles: Double
@@ -15432,6 +15433,7 @@ extension ArgusProtocol {
       case mergeable = "mergeable"
       case headRef = "head_ref"
       case baseRef = "base_ref"
+      case headSha = "head_sha"
       case additions = "additions"
       case deletions = "deletions"
       case changedFiles = "changed_files"
@@ -15439,7 +15441,7 @@ extension ArgusProtocol {
       case comments = "comments"
     }
 
-    public init(number: Double, title: String, repo: String, url: String, author: String? = nil, body: String, state: String, isDraft: Bool, merged: Bool, mergeable: String, headRef: String, baseRef: String, additions: Double, deletions: Double, changedFiles: Double, checks: [RemotePullRequestCheck], comments: [RemotePullRequestComment]) {
+    public init(number: Double, title: String, repo: String, url: String, author: String? = nil, body: String, state: String, isDraft: Bool, merged: Bool, mergeable: String, headRef: String, baseRef: String, headSha: String? = nil, additions: Double, deletions: Double, changedFiles: Double, checks: [RemotePullRequestCheck], comments: [RemotePullRequestComment]) {
       self.number = number
       self.title = title
       self.repo = repo
@@ -15452,6 +15454,7 @@ extension ArgusProtocol {
       self.mergeable = mergeable
       self.headRef = headRef
       self.baseRef = baseRef
+      self.headSha = headSha
       self.additions = additions
       self.deletions = deletions
       self.changedFiles = changedFiles
@@ -15473,11 +15476,60 @@ extension ArgusProtocol {
       try c.encode(mergeable, forKey: .mergeable)
       try c.encode(headRef, forKey: .headRef)
       try c.encode(baseRef, forKey: .baseRef)
+      try c.encodeIfPresent(headSha, forKey: .headSha)
       try c.encode(additions, forKey: .additions)
       try c.encode(deletions, forKey: .deletions)
       try c.encode(changedFiles, forKey: .changedFiles)
       try c.encode(checks, forKey: .checks)
       try c.encode(comments, forKey: .comments)
+    }
+  }
+
+  public struct RemotePullRequestReviewCommentSide: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let lEFT = RemotePullRequestReviewCommentSide(rawValue: "LEFT")
+    public static let rIGHT = RemotePullRequestReviewCommentSide(rawValue: "RIGHT")
+  }
+
+  public struct RemotePullRequestReviewComment: Codable, Sendable {
+    public var path: String
+    public var side: RemotePullRequestReviewCommentSide
+    public var line: Int
+    public var startLine: Int?
+    public var body: String
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+      case side = "side"
+      case line = "line"
+      case startLine = "start_line"
+      case body = "body"
+    }
+
+    public init(path: String, side: RemotePullRequestReviewCommentSide, line: Int, startLine: Int? = nil, body: String) {
+      self.path = path
+      self.side = side
+      self.line = line
+      self.startLine = startLine
+      self.body = body
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+      try c.encode(side, forKey: .side)
+      try c.encode(line, forKey: .line)
+      try c.encodeIfPresent(startLine, forKey: .startLine)
+      try c.encode(body, forKey: .body)
     }
   }
 
@@ -15607,6 +15659,203 @@ extension ArgusProtocol {
       try c.encodeIfPresent(author, forKey: .author)
       try c.encodeIfPresent(images, forKey: .images)
       try c.encode(queuedAt, forKey: .queuedAt)
+    }
+  }
+
+  public struct RemoteReviewGuide: Codable, Sendable {
+    public var headSha: String
+    public var baseRef: String
+    public var overview: String
+    public var stops: [RemoteReviewGuideStop]
+    public var generatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+      case headSha = "head_sha"
+      case baseRef = "base_ref"
+      case overview = "overview"
+      case stops = "stops"
+      case generatedAt = "generated_at"
+    }
+
+    public init(headSha: String, baseRef: String, overview: String, stops: [RemoteReviewGuideStop], generatedAt: String) {
+      self.headSha = headSha
+      self.baseRef = baseRef
+      self.overview = overview
+      self.stops = stops
+      self.generatedAt = generatedAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(headSha, forKey: .headSha)
+      try c.encode(baseRef, forKey: .baseRef)
+      try c.encode(overview, forKey: .overview)
+      try c.encode(stops, forKey: .stops)
+      try c.encode(generatedAt, forKey: .generatedAt)
+    }
+  }
+
+  public struct RemoteReviewGuideFlag: Codable, Sendable {
+    public var note: String
+    public var path: String?
+    public var line: Double?
+
+    enum CodingKeys: String, CodingKey {
+      case note = "note"
+      case path = "path"
+      case line = "line"
+    }
+
+    public init(note: String, path: String? = nil, line: Double? = nil) {
+      self.note = note
+      self.path = path
+      self.line = line
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(note, forKey: .note)
+      try c.encode(path, forKey: .path)
+      try c.encode(line, forKey: .line)
+    }
+  }
+
+  public struct RemoteReviewGuideRangeSide: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let old = RemoteReviewGuideRangeSide(rawValue: "old")
+    public static let new = RemoteReviewGuideRangeSide(rawValue: "new")
+  }
+
+  public struct RemoteReviewGuideRange: Codable, Sendable {
+    public var path: String
+    public var side: RemoteReviewGuideRangeSide
+    public var start: Double
+    public var end: Double
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+      case side = "side"
+      case start = "start"
+      case end = "end"
+    }
+
+    public init(path: String, side: RemoteReviewGuideRangeSide, start: Double, end: Double) {
+      self.path = path
+      self.side = side
+      self.start = start
+      self.end = end
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+      try c.encode(side, forKey: .side)
+      try c.encode(start, forKey: .start)
+      try c.encode(end, forKey: .end)
+    }
+  }
+
+  public struct RemoteReviewGuideStateStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let none = RemoteReviewGuideStateStatus(rawValue: "none")
+    public static let generating = RemoteReviewGuideStateStatus(rawValue: "generating")
+    public static let ready = RemoteReviewGuideStateStatus(rawValue: "ready")
+    public static let failed = RemoteReviewGuideStateStatus(rawValue: "failed")
+  }
+
+  public struct RemoteReviewGuideState: Codable, Sendable {
+    public var status: RemoteReviewGuideStateStatus
+    public var guide: RemoteReviewGuide?
+    public var stale: Bool
+    public var error: String?
+    public var startedAt: String?
+    public var patch: String?
+
+    enum CodingKeys: String, CodingKey {
+      case status = "status"
+      case guide = "guide"
+      case stale = "stale"
+      case error = "error"
+      case startedAt = "started_at"
+      case patch = "patch"
+    }
+
+    public init(status: RemoteReviewGuideStateStatus, guide: RemoteReviewGuide? = nil, stale: Bool, error: String? = nil, startedAt: String? = nil, patch: String? = nil) {
+      self.status = status
+      self.guide = guide
+      self.stale = stale
+      self.error = error
+      self.startedAt = startedAt
+      self.patch = patch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(status, forKey: .status)
+      try c.encode(guide, forKey: .guide)
+      try c.encode(stale, forKey: .stale)
+      try c.encode(error, forKey: .error)
+      try c.encode(startedAt, forKey: .startedAt)
+      try c.encode(patch, forKey: .patch)
+    }
+  }
+
+  public struct RemoteReviewGuideStop: Codable, Sendable {
+    public var id: String
+    public var title: String
+    public var summary: String
+    public var mechanical: Bool
+    public var lookClosely: [RemoteReviewGuideFlag]
+    public var paths: [String]
+    public var ranges: [RemoteReviewGuideRange]
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case title = "title"
+      case summary = "summary"
+      case mechanical = "mechanical"
+      case lookClosely = "look_closely"
+      case paths = "paths"
+      case ranges = "ranges"
+    }
+
+    public init(id: String, title: String, summary: String, mechanical: Bool, lookClosely: [RemoteReviewGuideFlag], paths: [String], ranges: [RemoteReviewGuideRange]) {
+      self.id = id
+      self.title = title
+      self.summary = summary
+      self.mechanical = mechanical
+      self.lookClosely = lookClosely
+      self.paths = paths
+      self.ranges = ranges
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(title, forKey: .title)
+      try c.encode(summary, forKey: .summary)
+      try c.encode(mechanical, forKey: .mechanical)
+      try c.encode(lookClosely, forKey: .lookClosely)
+      try c.encode(paths, forKey: .paths)
+      try c.encode(ranges, forKey: .ranges)
     }
   }
 

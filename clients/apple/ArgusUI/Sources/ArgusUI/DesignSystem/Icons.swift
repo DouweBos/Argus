@@ -80,6 +80,8 @@ public enum Icon {
   /// A Figma frame.
   public static let design = "paintbrush.pointed"
   public static let compare = "square.split.2x1"
+  /// A review guide: a tour of a change, stop by stop.
+  public static let guide = "map"
   public static let openExternal = "arrow.up.forward.square"
   /// A slash command sent to an agent.
   public static let slashCommand = "slash.circle"

@@ -54,6 +54,8 @@ import {
   RemotePullRequest,
   RemotePullRequestDetail,
   RemoteViewedFile,
+  RemotePullRequestReviewComment,
+  RemoteReviewGuideState,
   RemoteQueuedMessage,
   RemoteRunFeedback,
   RemoteRunner,
@@ -139,6 +141,18 @@ export const AutomationInput = z.object({
 export type AutomationInput = z.infer<typeof AutomationInput>;
 
 // --- Request params per method ---------------------------------------------
+
+/**
+ * What a review guide is for: a session (`session_id`) or a pull request
+ * (`repo` + `number`). `head_sha` is the PR head the client last saw, so a
+ * cached guide can say it is stale without a fetch.
+ */
+const ReviewGuideTarget = z.object({
+  session_id: z.string().optional(),
+  repo: z.string().optional(),
+  number: z.number().int().positive().optional(),
+  head_sha: z.string().optional(),
+});
 
 export const MethodParams = {
   "host.endpoints": z.object({}),
@@ -814,6 +828,26 @@ export const MethodParams = {
     path: z.string().min(1),
     viewed: z.boolean(),
   }),
+  /** A review with inline comments, posted as one; `COMMENT` approves nothing. */
+  "github.review_pull_request": z.object({
+    repo: z.string(),
+    number: z.number().int().positive(),
+    event: z.enum(["COMMENT", "APPROVE", "REQUEST_CHANGES"]),
+    body: z.string(),
+    comments: z.array(RemotePullRequestReviewComment),
+  }),
+  /** A session's guide (its branch plus uncommitted work), or a pull request's. */
+  "review_guides.get": ReviewGuideTarget,
+  /** Starts writing one in the background; `get` follows it. A no-op while one is being written. */
+  "review_guides.generate": ReviewGuideTarget.extend({
+    /** Rewrite it even when one exists for this head. */
+    force: z.boolean().optional(),
+  }),
+  /** A read-only agent answers a question about one stop, in the guide's checkout. */
+  "review_guides.ask": ReviewGuideTarget.extend({
+    stop_id: z.string(),
+    question: z.string().trim().min(1).max(4000),
+  }),
   "proposals.list": z.object({
     /** Omit for everything; the inbox asks for `pending`. */
     status: RemoteProposalStatus.optional(),
@@ -1234,6 +1268,10 @@ export const MethodResult = {
   "github.set_pull_request_file_viewed": z.object({
     files: z.array(RemoteViewedFile),
   }),
+  "github.review_pull_request": z.object({ accepted: z.boolean() }),
+  "review_guides.get": z.object({ guide: RemoteReviewGuideState }),
+  "review_guides.generate": z.object({ guide: RemoteReviewGuideState }),
+  "review_guides.ask": z.object({ answer: z.string() }),
   "proposals.list": z.object({ proposals: z.array(RemoteProposal) }),
   /**
    * Answers once the start is under way, not when it is done: building the

@@ -44,6 +44,10 @@ extension PhoneDestination {
     case .pullRequests: return PhoneDestination(section: .pullRequests)
     case .pullRequest(let repo, let number):
       return PhoneDestination(section: .pullRequests, route: .pullRequest(repo: repo, number: number, label: "#\(number)"))
+    case .pullRequestGuide(let repo, let number):
+      return PhoneDestination(
+        section: .pullRequests,
+        route: .reviewGuide(target: .pullRequest(repo: repo, number: number, headSha: nil), label: "#\(number) guide"))
     case .issues(_, let issue, _):
       return PhoneDestination(section: .issues, route: issue.map { .issue(ref: $0) })
     case .design(let url, let sessionId):
@@ -96,6 +100,7 @@ extension PhoneDestination {
       return .branches(sessionId: session.id, repoRoot: session.repoRoot, label: label)
     case .compare(let left, let right) where !left.isEmpty && !right.isEmpty:
       return .branchCompare(sessionId: session.id, left: left, right: right)
+    case .guide: return .reviewGuide(target: .session(id: session.id), label: "Guide")
     default: return .changes(sessionId: session.id, label: label)
     }
   }

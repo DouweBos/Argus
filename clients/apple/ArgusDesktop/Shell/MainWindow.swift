@@ -108,8 +108,8 @@ extension MainWindow {
           DevicesScreen(selection: deviceSelection)
         } else if model.route == .pullRequests {
           PullRequestsScreen()
-        } else if case .pullRequest(let repo, let number) = model.route {
-          PullRequestDetailScreen(repo: repo, number: number)
+        } else if let (repo, number, guide) = model.route.pullRequestDetail {
+          PullRequestDetailScreen(repo: repo, number: number, showsGuide: guide)
             .id("\(repo)#\(number)")
         } else if RouteScreen.handles(model.route) {
           RouteScreen(route: model.route)

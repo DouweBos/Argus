@@ -60,6 +60,9 @@ struct ChangesView: View {
         if let viewed {
           ViewedProgressBar(viewed: viewed.viewedCount(files.map(\.displayPath)), total: files.count)
         }
+        if mode == "branch" {
+          Card { ReviewGuideLink(target: .session(id: sessionId), label: label) }
+        }
         // A list to pick from; each file's diff is a screen of its own.
         Card {
           VStack(spacing: 0) {
