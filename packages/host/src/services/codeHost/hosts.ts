@@ -20,6 +20,8 @@ import {
   ghPrComment,
   ghPrCreate,
   ghPrMerge,
+  ghPrMergeInCheckout,
+  ghPrRetarget,
 } from "../github/prActions";
 import { getPullRequestDetail, getPullRequestDiff } from "../github/prDetail";
 import { ghPrReview } from "../github/prReview";
@@ -32,6 +34,7 @@ import {
   createMergeRequest,
   listGitlabIssues,
   mergeMergeRequest,
+  retargetMergeRequest,
 } from "../gitlab/mrActions";
 import { getMergeRequestDetail, getMergeRequestDiff } from "../gitlab/mrDetail";
 import { reviewMergeRequest } from "../gitlab/mrReview";
@@ -76,6 +79,20 @@ export interface CodeHost {
     strategy: MergeStrategy,
   ) => Promise<void>;
   close: (ref: RepoRef, number: number) => Promise<void>;
+  /** Point it at a different base branch; `cwd` is a checkout of `ref`. */
+  retarget: (
+    ref: RepoRef,
+    cwd: string,
+    number: number,
+    base: string,
+  ) => Promise<void>;
+  /** Merge it from a checkout, for a repo only the checkout can name (GitHub Enterprise). */
+  mergeInCheckout: (
+    ref: RepoRef,
+    cwd: string,
+    number: number,
+    strategy: MergeStrategy,
+  ) => Promise<void>;
   /** Empty when the CLI is missing or signed out. */
   issues: (ref: RepoRef, cwd: string) => Promise<GhIssue[]>;
   /** Null — not false — when CI state is unknowable. */
@@ -122,6 +139,9 @@ export const githubHost: CodeHost = {
   merge: (ref, number, strategy) =>
     ghPrMerge({ ...halves(ref), number, strategy }),
   close: (ref, number) => ghPrClose({ ...halves(ref), number }),
+  retarget: (_ref, cwd, number, base) => ghPrRetarget(cwd, number, base),
+  mergeInCheckout: (_ref, cwd, number, strategy) =>
+    ghPrMergeInCheckout(cwd, number, strategy),
   issues: (_ref, cwd) => listGhIssues(cwd),
   checksClean: (_ref, cwd, branch) => branchChecksClean(cwd, branch),
   async openForBranch(_ref, cwd, branch) {
@@ -164,6 +184,10 @@ export const gitlabHost: CodeHost = {
   headRef: (number) => `merge-requests/${number}/head`,
   merge: mergeMergeRequest,
   close: closeMergeRequest,
+  retarget: (ref, _cwd, number, base) =>
+    retargetMergeRequest(ref, number, base),
+  mergeInCheckout: (ref, _cwd, number, strategy) =>
+    mergeMergeRequest(ref, number, strategy),
   issues: (ref) => listGitlabIssues(ref).catch(() => []),
   checksClean: (ref, _cwd, branch) => gitlabBranchChecksClean(ref, branch),
   openForBranch: (ref, _cwd, branch) =>

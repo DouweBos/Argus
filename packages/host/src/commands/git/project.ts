@@ -22,6 +22,8 @@ import {
   rebaseSessionOnBase,
   setSessionBaseBranch,
 } from "../../services/session/sessionOps";
+import { restackSession } from "../../services/session/stack";
+import { landStack } from "../../services/session/stackLand";
 import {
   executeWorktreeMove,
   planWorktreeMove,
@@ -101,4 +103,6 @@ export function registerGitProjectCommands(): void {
     rebaseSessionOnBase(p.id),
   );
   defineTypedCommand("push_session_branch", (p) => pushSessionBranch(p.id));
+  defineTypedCommand("restack_session", (p) => restackSession(p.id));
+  defineTypedCommand("land_stack", (p) => landStack(p.id, p.strategy));
 }

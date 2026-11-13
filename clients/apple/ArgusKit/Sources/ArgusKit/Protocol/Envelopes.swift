@@ -68,6 +68,8 @@ public enum RemoteMethod: String, Codable, Sendable {
   case sessionsCompare = "sessions.compare"
   case sessionsCompareScreenshot = "sessions.compare_screenshot"
   case sessionsKeepCompare = "sessions.keep_compare"
+  case sessionsRestack = "sessions.restack"
+  case sessionsLandStack = "sessions.land_stack"
   case sessionsStashes = "sessions.stashes"
   case sessionsStashApply = "sessions.stash_apply"
   case sessionsStashDrop = "sessions.stash_drop"

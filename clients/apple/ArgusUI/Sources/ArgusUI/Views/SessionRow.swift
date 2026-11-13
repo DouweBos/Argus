@@ -16,10 +16,14 @@ public struct SessionRow: View {
   var caption: String?
   /// Replaces the session's own title, as a compare run's slot rows name their runner.
   var title: String?
+  /// Levels under a parent row: a compare run's header, or the session it's stacked on.
+  var indent: Int
+  /// Stacked on another session: an arrow sits in the last indent level's gutter.
+  var stacked: Bool
 
   public init(
     session: RemoteSession, agents: [RemoteAgentStatus], git: RemoteGitStatus? = nil, detailed: Bool = false,
-    selected: Bool = false, caption: String? = nil, title: String? = nil
+    selected: Bool = false, caption: String? = nil, title: String? = nil, indent: Int = 0, stacked: Bool = false
   ) {
     activity = SessionActivity(session: session, agents: agents)
     self.git = git
@@ -27,6 +31,8 @@ public struct SessionRow: View {
     self.selected = selected
     self.caption = caption
     self.title = title
+    self.indent = indent
+    self.stacked = stacked && indent > 0
   }
 
   private var session: RemoteSession { activity.session }
@@ -53,6 +59,18 @@ public struct SessionRow: View {
       trailing
     }
     .padding(.vertical, detailed ? 2 : 4)
+    .padding(.leading, CGFloat(indent) * Self.indentStep)
+    // In the last indent level's gutter, so a stacked child lines up with a compare slot.
+    .overlay(alignment: .leading) {
+      if stacked {
+        Image(systemName: Icon.stacked)
+          .font(Self.detailFont)
+          .foregroundStyle(theme.textMuted)
+          .frame(width: Self.indentStep, alignment: .leading)
+          .offset(x: CGFloat(indent - 1) * Self.indentStep)
+          .accessibilityLabel("Stacked")
+      }
+    }
     .opacity(session.isUnavailable ? 0.5 : 1)
     .accessibilityElement(children: .combine)
   }
@@ -101,11 +119,15 @@ public struct SessionRow: View {
 
   #if os(iOS)
     private static let spacing: CGFloat = 10
+    /// One indent level, shared by stacked sessions and compare slots.
+    static let indentStep: CGFloat = 16
     private static let prIconSize: CGFloat = 14
     private static var titleFont: Font { .scaled(.body) }
     private static var detailFont: Font { .scaled(.footnote) }
   #else
     private static let spacing: CGFloat = 6
+    /// One indent level, shared by stacked sessions and compare slots.
+    static let indentStep: CGFloat = 14
     private static let prIconSize: CGFloat = 12
     private static var titleFont: Font { .scaled(size: 13) }
     private static var detailFont: Font { .scaled(size: 11) }

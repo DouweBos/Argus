@@ -8,6 +8,8 @@ struct NewSessionSheet: View {
   @Environment(\.dismiss) private var dismiss
   /// More than one shows a project picker; the session goes in the picked one.
   let projects: [RemoteProject]
+  /// Stacks the new session on this one: it branches from its branch.
+  let parent: RemoteSession?
   let onCreated: (RemoteSession) -> Void
 
   @State private var projectRoot: String
@@ -25,9 +27,10 @@ struct NewSessionSheet: View {
 
   init(
     project: RemoteProject, choices: [RemoteProject] = [], issues: [HostStore.LinearIssue] = [],
-    onCreated: @escaping (RemoteSession) -> Void
+    parent: RemoteSession? = nil, onCreated: @escaping (RemoteSession) -> Void
   ) {
     self.projects = choices.isEmpty ? [project] : choices
+    self.parent = parent
     self.onCreated = onCreated
     _projectRoot = State(initialValue: project.repoRoot)
     _issues = State(initialValue: issues)
@@ -56,14 +59,14 @@ struct NewSessionSheet: View {
 
   var body: some View {
     Form {
-      if projects.count > 1 {
+      if projects.count > 1, parent == nil {
         Section {
           Picker("Project", selection: $projectRoot) {
             ForEach(projects) { Text($0.name).tag($0.repoRoot) }
           }
         }
       }
-      if store.linearConnected {
+      if store.linearConnected, parent == nil {
         Section {
           if !issues.isEmpty { PickedIssueChips(issues: $issues) }
           Button("Add Linear Issue…", systemImage: Icon.issue) { pickingIssues = true }
@@ -82,17 +85,26 @@ struct NewSessionSheet: View {
           Text("The branch is named from this.").foregroundStyle(.secondary)
         }
       }
-      Section {
-        if issues.isEmpty { Toggle("Use an existing branch", isOn: $useExisting) }
-        if useExisting && issues.isEmpty {
-          Picker("Branch", selection: $existingBranch) {
-            Text("Pick a branch").tag("")
-            ForEach(localBranches, id: \.self) { Text($0).tag($0) }
-          }
-        } else {
-          Picker("Base", selection: $baseBranch) {
-            Text("Project default").tag("")
-            ForEach(localBranches, id: \.self) { Text($0).tag($0) }
+      if let parent {
+        Section {
+          LabeledContent("Branches from", value: parent.branch)
+        } footer: {
+          Text("Stacked on \(parent.displayName ?? parent.branch). Restack moves it along when that session changes, and its pull request targets that branch.")
+            .foregroundStyle(.secondary)
+        }
+      } else {
+        Section {
+          if issues.isEmpty { Toggle("Use an existing branch", isOn: $useExisting) }
+          if useExisting && issues.isEmpty {
+            Picker("Branch", selection: $existingBranch) {
+              Text("Pick a branch").tag("")
+              ForEach(localBranches, id: \.self) { Text($0).tag($0) }
+            }
+          } else {
+            Picker("Base", selection: $baseBranch) {
+              Text("Project default").tag("")
+              ForEach(localBranches, id: \.self) { Text($0).tag($0) }
+            }
           }
         }
       }
@@ -112,7 +124,7 @@ struct NewSessionSheet: View {
     .toggleStyle(.argusSwitch)
     .safeAreaInset(edge: .top) {
       // A sheet shows no navigation title; say where the session goes.
-      Text("New Session in \(project.name)")
+      Text(parent.map { "New Session on Top of \($0.displayName ?? $0.branch)" } ?? "New Session in \(project.name)")
         .font(.scaled(.headline))
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding([.top, .horizontal], 20)
@@ -161,10 +173,11 @@ struct NewSessionSheet: View {
     Task {
       let session = await store.createSession(
         repoRoot: project.repoRoot,
-        branch: useExisting ? existingBranch : "",
+        branch: useExisting && parent == nil ? existingBranch : "",
         description: description.trimmingCharacters(in: .whitespacesAndNewlines),
-        useExistingBranch: useExisting ? true : nil,
-        baseBranch: useExisting || baseBranch.isEmpty ? nil : baseBranch,
+        useExistingBranch: useExisting && parent == nil ? true : nil,
+        baseBranch: useExisting || baseBranch.isEmpty || parent != nil ? nil : baseBranch,
+        parentSessionId: parent?.id,
         prompt: trimmedPrompt.isEmpty ? nil : trimmedPrompt)
       creating = false
       guard let session else { return }

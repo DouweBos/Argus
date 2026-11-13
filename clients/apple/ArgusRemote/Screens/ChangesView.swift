@@ -21,6 +21,12 @@ struct ChangesView: View {
   /// Why the diff didn't load; a failed refresh keeps the last diff on screen.
   @State private var failure: String?
   @State private var viewed: ViewedFiles?
+  /// The session the stacked-session sheet is open for.
+  @State private var stackingOn: RemoteSession?
+
+  private var stackSession: RemoteSession? {
+    host.sessionsByRepo.values.lazy.flatMap { $0 }.first { $0.id == sessionId }
+  }
 
   init(sessionId: String, label: String, mode: String = "branch") {
     self.sessionId = sessionId
@@ -83,6 +89,17 @@ struct ChangesView: View {
         } onDeleted: {
           router.popToRoot()
         }
+        StackCard(sessionId: sessionId) {
+          Telemetry.capture(.newSessionOpened(source: .stack))
+          stackingOn = stackSession
+        } onChanged: {
+          await refresh()
+        }
+      }
+    }
+    .sheet(item: $stackingOn) { parent in
+      StackedSessionSheet(parent: parent) { session in
+        router.push(.session(id: session.id, label: session.displayName ?? session.branch, repoRoot: session.repoRoot))
       }
     }
     .navigationTitle("Changes · \(label)")

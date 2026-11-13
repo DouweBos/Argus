@@ -34,6 +34,13 @@ export interface SessionMeta {
   display_name?: string | null;
   description: string;
   base_branch?: string | null;
+  /** See `Session.parent_session_id`. */
+  parent_session_id?: string | null;
+  /**
+   * The parent commit this stacked session was last rebased onto, so a
+   * restack replays only its own commits after the parent is rewritten.
+   */
+  stack_base?: string | null;
   /**
    * LLM runner bound to this session at creation time. Legacy entries
    * persisted before this field existed default to `"claude-code"` on read

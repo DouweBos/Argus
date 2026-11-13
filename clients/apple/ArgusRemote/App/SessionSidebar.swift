@@ -81,13 +81,21 @@ struct SessionSidebar: View {
     }
   }
 
+  private var allSessions: [RemoteSession] { host.sessionsByRepo.values.flatMap { $0 } }
+
   /// Session rows, a compare run's slots under its header; they share a section since a run sorts as one.
+  /// A stacked session sits under its parent when both are here; apart, its caption names the parent.
   @ViewBuilder
   private func items(_ groups: [SessionGroup], in project: RemoteProject, caption: String? = nil) -> some View {
-    ForEach(CompareSessionRow.make(groups)) { item in
+    let arranged = SessionStack.arrange(groups, session: \.session, all: allSessions)
+    ForEach(CompareSessionRow.make(arranged.items)) { item in
       switch item {
       case .session(let group):
-        sessionItem(group, in: project, caption: caption)
+        let nesting = arranged.nesting[group.id] ?? .none
+        sessionItem(
+          group, in: project,
+          caption: [caption, nesting.caption].compactMap { $0 }.joined(separator: " · ").nilIfEmpty,
+          indent: nesting.depth, stacked: nesting.depth > 0)
       case .compare(let run, let slots):
         // Not a selection: the sidebar selects sessions, so the run opens in the detail column.
         Button {
@@ -96,16 +104,16 @@ struct SessionSidebar: View {
           CompareRunHeaderRow(run: run, selected: router.detailStack.last == .compareRun(groupId: run.id))
         }
         .buttonStyle(.argusPlain)
-        ForEach(slots) { sessionItem($0, in: project, caption: caption, slot: true) }
+        ForEach(slots) { sessionItem($0, in: project, caption: caption, slot: true, indent: 1) }
       }
     }
   }
 
   private func sessionItem(
-    _ group: SessionGroup, in project: RemoteProject, caption: String? = nil, slot: Bool = false
+    _ group: SessionGroup, in project: RemoteProject, caption: String? = nil, slot: Bool = false, indent: Int = 0,
+    stacked: Bool = false
   ) -> some View {
-    row(group, caption: caption, slot: slot)
-      .padding(.leading, slot ? 14 : 0)
+    row(group, caption: caption, slot: slot, indent: indent, stacked: stacked)
       .tag(
         SidebarItem.session(
           id: group.id, label: group.label, repoRoot: project.repoRoot, projectName: project.name))
@@ -132,12 +140,15 @@ struct SessionSidebar: View {
   }
 
   @ViewBuilder
-  private func row(_ group: SessionGroup, caption: String? = nil, slot: Bool = false) -> some View {
+  private func row(
+    _ group: SessionGroup, caption: String? = nil, slot: Bool = false, indent: Int = 0, stacked: Bool = false
+  ) -> some View {
     if let session = group.session {
       SessionRow(
         session: session, agents: group.agents,
         selected: router.sidebarSelection == .session(id: group.id, label: "", repoRoot: "", projectName: ""),
-        caption: caption, title: slot ? session.compareGroup.map(host.compareSlotTitle) : nil)
+        caption: caption, title: slot ? session.compareGroup.map(host.compareSlotTitle) : nil, indent: indent,
+        stacked: stacked)
     } else {
       // Known only from its agents until the project's sessions load.
       Text(group.label).lineLimit(1).padding(.leading, 18)

@@ -9,11 +9,14 @@ struct SidebarSessionRow: View {
   let agents: [RemoteAgentStatus]
   var caption: String?
   var title: String?
+  var indent = 0
+  var stacked = false
 
   private var activity: SessionActivity { SessionActivity(session: session, agents: agents) }
 
   var body: some View {
-    SessionRow(session: session, agents: agents, caption: caption, title: title)
+    SessionRow(
+      session: session, agents: agents, caption: caption, title: title, indent: indent, stacked: stacked)
       .help(hasCard ? "" : help)
       // Fetched as the pointer arrives, so the card opens on a fresh status.
       .onHover { inside in

@@ -207,6 +207,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.commit_identity": DENIED,
   "sessions.push": DENIED,
   "sessions.merge_base": DENIED,
+  "sessions.restack": DENIED,
+  "sessions.land_stack": DENIED,
   "sessions.stashes": DENIED,
   "sessions.stash_apply": DENIED,
   "sessions.stash_drop": DENIED,

@@ -81,6 +81,7 @@ import { clearSessionProgress, trackDeleteProgress } from "./progress";
 import { loadPersistedRepoRoots, persistRepoRoots } from "./repoRootsStore";
 import { runSetupPipeline } from "./setup";
 import { evacuateWorktreeRoots } from "./sidecars";
+import { reparentChildrenOf, requireStackParent, revParse } from "./stack";
 import { teardownSession } from "./teardown";
 import {
   assertWorktreeBaseAvailable,
@@ -322,6 +323,7 @@ export async function listSessions(
       ws.display_name = m.display_name;
       ws.description = m.description;
       ws.base_branch = m.base_branch;
+      ws.parent_session_id = m.parent_session_id ?? null;
       ws.runner_id = m.runner_id ?? null;
       ws.model = m.model ?? null;
       ws.claude_account_id = m.claude_account_id ?? null;
@@ -382,6 +384,7 @@ export async function listSessions(
       status: "ready",
       env_index: null,
       base_branch: entry.base_branch ?? null,
+      parent_session_id: entry.parent_session_id ?? null,
       runner_id: entry.runner_id ?? null,
       model: entry.model ?? null,
       claude_account_id: entry.claude_account_id ?? null,
@@ -407,6 +410,8 @@ export async function listSessions(
         display_name: w.display_name,
         description: w.description,
         base_branch: w.base_branch,
+        parent_session_id: w.parent_session_id ?? null,
+        stack_base: getMeta(meta, w.path)?.stack_base ?? null,
         runner_id: w.runner_id ?? null,
         model: w.model ?? null,
         claude_account_id: w.claude_account_id ?? null,
@@ -481,6 +486,8 @@ export interface CreateSessionOptions {
   compareGroup?: SessionCompareGroup;
   /** Appended to the resolved branch, so a compare run's slots don't collide. */
   branchSuffix?: string;
+  /** Stack the session on this one: branch from its branch and record it as the parent. */
+  parentSessionId?: string;
 }
 
 /**
@@ -511,12 +518,20 @@ export async function createSession(
     | "compareGroup"
     | "designRefs"
     | "linkedIssue"
+    | "parentSessionId"
     | "postWorktreeReady"
     | "worktreePurpose"
   >,
 ): Promise<Session> {
   requireKnownProject(repoRoot);
   const id = crypto.randomUUID();
+  if (opts?.parentSessionId && opts.compareGroup) {
+    throw "A session can be stacked or a compare slot, not both";
+  }
+  const parent = opts?.parentSessionId
+    ? requireStackParent(repoRoot, opts.parentSessionId)
+    : null;
+  const baseBranch = parent?.branch ?? explicitBaseBranch;
 
   // Resolve the runner *now* — it's immutable for the session's lifetime.
   // The cascade (project → app → single registered) is shared with future
@@ -566,7 +581,8 @@ export async function createSession(
     repo_root: repoRoot,
     status: "initializing",
     env_index: nextIndex,
-    base_branch: explicitBaseBranch ?? null,
+    base_branch: baseBranch ?? null,
+    parent_session_id: parent?.id ?? null,
     runner_id: chosenRunner.id,
     model: initialModel,
     linked_issue: linkedIssue,
@@ -581,6 +597,7 @@ export async function createSession(
     has_description: description.trim().length > 0,
     use_existing_branch: Boolean(useExistingBranch),
     has_explicit_base_branch: Boolean(explicitBaseBranch),
+    stacked: Boolean(parent),
   });
   if (linkedIssue) {
     issueSessionStarted(linkedIssue);
@@ -599,7 +616,7 @@ export async function createSession(
   // `awaitWorktreeReady` get the pending session back immediately.
   finalizeSession(id, repoRoot, branch, description, {
     useExistingBranch,
-    explicitBaseBranch,
+    explicitBaseBranch: baseBranch,
     postWorktreeReady: opts?.postWorktreeReady,
     worktreePurpose: opts?.worktreePurpose,
     branchSuffix: opts?.branchSuffix,
@@ -725,6 +742,11 @@ async function finalizeSession(
       }
     }
 
+    // The parent commit the stack starts from, for the first restack.
+    const stackBase = appState.sessions.get(id)?.parent_session_id
+      ? await revParse(repoRoot, baseBranch)
+      : null;
+
     if (!appState.sessions.has(id)) {
       return;
     }
@@ -831,6 +853,8 @@ async function finalizeSession(
       display_name: ws.display_name,
       description: ws.description,
       base_branch: ws.base_branch,
+      parent_session_id: ws.parent_session_id ?? null,
+      stack_base: stackBase,
       runner_id: ws.runner_id ?? null,
       model: ws.model ?? null,
       claude_account_id: ws.claude_account_id ?? null,
@@ -1665,6 +1689,7 @@ export async function deleteSession(
     delete_branch: Boolean(shouldDeleteBranch),
     teardown_skipped: Boolean(options.skipTeardown),
   });
+  reparentChildrenOf(session);
 
   // Kill all agent sessions for this session.
   const killedAgentIds: string[] = [];

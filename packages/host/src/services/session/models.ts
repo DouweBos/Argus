@@ -73,6 +73,8 @@ export interface Session {
   env_index?: number | null;
   /** The branch this session was created from (e.g. "main"). */
   base_branch?: string | null;
+  /** The session this one is stacked on; its branch is `base_branch`. */
+  parent_session_id?: string | null;
   /**
    * Transient terminal id for the setup pipeline's PTY, included on the
    * response from `create_session` so the renderer can attach a Setup tab

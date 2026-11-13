@@ -13,6 +13,7 @@ import {
   WorktreePurpose,
   WorktreeStorage,
 } from "../../models/git";
+import { LandStackResult, RestackResult } from "../../models/sessions";
 import { type CommandSpec, NoParams, Void } from "../spec";
 import { RepoRoot, SessionId } from "./shared";
 
@@ -145,6 +146,16 @@ export const GIT_PROJECT_COMMANDS = {
     result: Void,
   },
   rebase_session_on_base: { tier: "admin", params: SessionId, result: Void },
+  /** Rebase the sessions stacked in this one's stack onto their parents, and push their PRs. */
+  restack_session: { tier: "admin", params: SessionId, result: RestackResult },
+  /** Merge the stack bottom-up, moving each session onto the landed base. */
+  land_stack: {
+    tier: "admin",
+    params: SessionId.extend({
+      strategy: z.enum(["keep", "squash"]).default("squash"),
+    }),
+    result: LandStackResult,
+  },
   push_session_branch: {
     tier: "admin",
     params: SessionId,

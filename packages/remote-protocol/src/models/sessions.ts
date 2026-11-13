@@ -64,6 +64,8 @@ export const Session = z.object({
   availability: z.enum(["available", "unavailable"]).optional(),
   /** The branch this session was created from (e.g. "main"). */
   base_branch: z.string().nullish(),
+  /** The session this one is stacked on; its branch is `base_branch`. */
+  parent_session_id: z.string().nullish(),
   /** The feature branch checked out in this worktree. */
   branch: z.string(),
   /**
@@ -278,3 +280,30 @@ export const WorktreeCleanupPreview = z.object({
   last_sweep: WorktreeCleanupSweep.nullable(),
 });
 export type WorktreeCleanupPreview = z.infer<typeof WorktreeCleanupPreview>;
+/** What a restack moved, and where it stopped on a conflict. */
+export const RestackResult = z.object({
+  /** The session left paused on a conflict, for the resolver. */
+  conflict: z
+    .object({ files: z.array(z.string()), session_id: z.string() })
+    .nullable(),
+  /** Sessions whose open pull request was force-pushed and retargeted. */
+  pushed: z.array(z.string()),
+  /** Sessions rebased onto their parent's new tip. */
+  restacked: z.array(z.string()),
+});
+export type RestackResult = z.infer<typeof RestackResult>;
+
+/** Which sessions of a stack landed, and where it stopped. */
+export const LandStackResult = z.object({
+  landed: z.array(z.string()),
+  /** Where it stopped; null when the whole stack landed. */
+  stopped: z
+    .object({
+      /** Set when it stopped on a conflict, paused for the resolver. */
+      files: z.array(z.string()).nullable(),
+      reason: z.string(),
+      session_id: z.string(),
+    })
+    .nullable(),
+});
+export type LandStackResult = z.infer<typeof LandStackResult>;

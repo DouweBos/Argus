@@ -18,6 +18,10 @@ public enum Icon {
   public static let file = "doc"
   public static let branch = "arrow.triangle.branch"
   public static let merge = "arrow.triangle.merge"
+  /// A session stacked on another.
+  public static let stacked = "arrow.turn.down.right"
+  public static let restack = "arrow.triangle.2.circlepath"
+  public static let landStack = "square.stack.3d.down.forward"
   public static let pullRequest = "arrow.triangle.pull"
   public static let push = "arrow.up"
   public static let repo = "shippingbox"

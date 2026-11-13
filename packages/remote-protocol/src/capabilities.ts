@@ -255,6 +255,8 @@ export const REMOTE_METHODS = {
   "sessions.commit_identity": "monitor",
   "sessions.push": "control",
   "sessions.merge_base": "control",
+  "sessions.restack": "control",
+  "sessions.land_stack": "control",
   /** Stashes and tags are reads; applying or dropping a stash rewrites the
    *  tree or throws work away, like a checkout or a delete. */
   "sessions.stashes": "monitor",

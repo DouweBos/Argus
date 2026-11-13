@@ -8833,6 +8833,52 @@ extension ArgusProtocol {
     }
   }
 
+  public struct LandStackResultStopped: Codable, Sendable {
+    public var files: [String]?
+    public var reason: String
+    public var sessionId: String
+
+    enum CodingKeys: String, CodingKey {
+      case files = "files"
+      case reason = "reason"
+      case sessionId = "session_id"
+    }
+
+    public init(files: [String]? = nil, reason: String, sessionId: String) {
+      self.files = files
+      self.reason = reason
+      self.sessionId = sessionId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(files, forKey: .files)
+      try c.encode(reason, forKey: .reason)
+      try c.encode(sessionId, forKey: .sessionId)
+    }
+  }
+
+  public struct LandStackResult: Codable, Sendable {
+    public var landed: [String]
+    public var stopped: LandStackResultStopped?
+
+    enum CodingKeys: String, CodingKey {
+      case landed = "landed"
+      case stopped = "stopped"
+    }
+
+    public init(landed: [String], stopped: LandStackResultStopped? = nil) {
+      self.landed = landed
+      self.stopped = stopped
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(landed, forKey: .landed)
+      try c.encode(stopped, forKey: .stopped)
+    }
+  }
+
   public struct LegacyTunnelKind: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -16286,6 +16332,7 @@ extension ArgusProtocol {
     public var branch: String
     public var displayName: String?
     public var baseBranch: String?
+    public var parentSessionId: String?
     public var claudeAccountId: String?
     public var status: RemoteSessionStatus
     public var setupError: String?
@@ -16311,6 +16358,7 @@ extension ArgusProtocol {
       case branch = "branch"
       case displayName = "display_name"
       case baseBranch = "base_branch"
+      case parentSessionId = "parent_session_id"
       case claudeAccountId = "claude_account_id"
       case status = "status"
       case setupError = "setup_error"
@@ -16330,13 +16378,14 @@ extension ArgusProtocol {
       case compareGroup = "compare_group"
     }
 
-    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, deleteFailed: RemoteSessionDeleteFailed? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, settled: Bool? = nil, snoozedUntil: Double? = nil, unread: Bool? = nil, compareGroup: SessionCompareGroup? = nil) {
+    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, deleteFailed: RemoteSessionDeleteFailed? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, settled: Bool? = nil, snoozedUntil: Double? = nil, unread: Bool? = nil, compareGroup: SessionCompareGroup? = nil) {
       self.id = id
       self.repoRoot = repoRoot
       self.kind = kind
       self.branch = branch
       self.displayName = displayName
       self.baseBranch = baseBranch
+      self.parentSessionId = parentSessionId
       self.claudeAccountId = claudeAccountId
       self.status = status
       self.setupError = setupError
@@ -16364,6 +16413,7 @@ extension ArgusProtocol {
       try c.encode(branch, forKey: .branch)
       try c.encodeIfPresent(displayName, forKey: .displayName)
       try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
+      try c.encodeIfPresent(parentSessionId, forKey: .parentSessionId)
       try c.encodeIfPresent(claudeAccountId, forKey: .claudeAccountId)
       try c.encode(status, forKey: .status)
       try c.encodeIfPresent(setupError, forKey: .setupError)
@@ -17531,6 +17581,52 @@ extension ArgusProtocol {
     }
   }
 
+  public struct RestackResultConflict: Codable, Sendable {
+    public var files: [String]
+    public var sessionId: String
+
+    enum CodingKeys: String, CodingKey {
+      case files = "files"
+      case sessionId = "session_id"
+    }
+
+    public init(files: [String], sessionId: String) {
+      self.files = files
+      self.sessionId = sessionId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(files, forKey: .files)
+      try c.encode(sessionId, forKey: .sessionId)
+    }
+  }
+
+  public struct RestackResult: Codable, Sendable {
+    public var conflict: RestackResultConflict?
+    public var pushed: [String]
+    public var restacked: [String]
+
+    enum CodingKeys: String, CodingKey {
+      case conflict = "conflict"
+      case pushed = "pushed"
+      case restacked = "restacked"
+    }
+
+    public init(conflict: RestackResultConflict? = nil, pushed: [String], restacked: [String]) {
+      self.conflict = conflict
+      self.pushed = pushed
+      self.restacked = restacked
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(conflict, forKey: .conflict)
+      try c.encode(pushed, forKey: .pushed)
+      try c.encode(restacked, forKey: .restacked)
+    }
+  }
+
   public struct RevokeReason: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -18051,6 +18147,7 @@ extension ArgusProtocol {
   public struct Session: Codable, Sendable {
     public var availability: SessionAvailability?
     public var baseBranch: String?
+    public var parentSessionId: String?
     public var branch: String
     public var claudeAccountId: String?
     public var compareGroup: SessionCompareGroup?
@@ -18078,6 +18175,7 @@ extension ArgusProtocol {
     enum CodingKeys: String, CodingKey {
       case availability = "availability"
       case baseBranch = "base_branch"
+      case parentSessionId = "parent_session_id"
       case branch = "branch"
       case claudeAccountId = "claude_account_id"
       case compareGroup = "compare_group"
@@ -18103,9 +18201,10 @@ extension ArgusProtocol {
       case volume = "volume"
     }
 
-    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, branch: String, claudeAccountId: String? = nil, compareGroup: SessionCompareGroup? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, deleteFailed: SessionDeleteFailed? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
+    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, branch: String, claudeAccountId: String? = nil, compareGroup: SessionCompareGroup? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, deleteFailed: SessionDeleteFailed? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
       self.availability = availability
       self.baseBranch = baseBranch
+      self.parentSessionId = parentSessionId
       self.branch = branch
       self.claudeAccountId = claudeAccountId
       self.compareGroup = compareGroup
@@ -18135,6 +18234,7 @@ extension ArgusProtocol {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encodeIfPresent(availability, forKey: .availability)
       try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
+      try c.encodeIfPresent(parentSessionId, forKey: .parentSessionId)
       try c.encode(branch, forKey: .branch)
       try c.encodeIfPresent(claudeAccountId, forKey: .claudeAccountId)
       try c.encodeIfPresent(compareGroup, forKey: .compareGroup)

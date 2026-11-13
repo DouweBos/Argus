@@ -29,6 +29,14 @@
         setup("sessions/setup/failed", "s-failed"),
         setup("sessions/delete/teardown", "s-teardown"),
         setup("sessions/delete/teardown-failed", "s-teardown-failed"),
+        GalleryStory("sessions/stack/context-card", fixtures: GalleryFixtures.home, setup: load) {
+          Screen {
+            StackCard(sessionId: "s-stack-2", onNewSessionOnTop: {}, onChanged: {})
+          }
+        },
+        GalleryStory("sessions/stack/new-sheet", fixtures: GalleryFixtures.home, setup: load) {
+          StackedSessionSheet(parent: GalleryFixtures.argusSession("s-stack-2")) { _ in }
+        },
         GalleryStory("sessions/context-card", fixtures: GalleryFixtures.home, setup: load) {
           SessionDetailsView(
             session: GalleryFixtures.argusSession("s-long"), agentId: "a-perm", open: { _ in }, newAgent: {},

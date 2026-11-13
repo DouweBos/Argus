@@ -188,6 +188,8 @@ enum TelemetryEvent {
     case projectRow = "project_row"
     /// A project's `+` in the iPad sidebar.
     case sidebar
+    /// A session's Stack card, to start one on top of it.
+    case stack
   }
 
   /// What was done with the iPad session's side panel.

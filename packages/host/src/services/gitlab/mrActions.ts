@@ -89,3 +89,15 @@ export async function listGitlabIssues(
 
   return rows.map((r) => ({ number: r.iid, title: r.title }));
 }
+
+/** Point a merge request at a different target branch. */
+export async function retargetMergeRequest(
+  ref: RepoRef,
+  number: number,
+  base: string,
+): Promise<void> {
+  await glabRest(ref.host, mrPath(ref, number), {
+    method: "PUT",
+    fields: { target_branch: base },
+  });
+}

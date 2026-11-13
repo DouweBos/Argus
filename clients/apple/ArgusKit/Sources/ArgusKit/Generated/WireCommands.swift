@@ -1809,6 +1809,7 @@ extension ArgusProtocol {
       public var description: String
       public var useExistingBranch: Bool?
       public var baseBranch: String?
+      public var parentSessionId: String?
       public var llm: CreateSessionParamsLlm?
       public var linkedIssue: LinkedIssue?
       public var designRefs: [DesignRef]?
@@ -1819,17 +1820,19 @@ extension ArgusProtocol {
         case description = "description"
         case useExistingBranch = "useExistingBranch"
         case baseBranch = "baseBranch"
+        case parentSessionId = "parentSessionId"
         case llm = "llm"
         case linkedIssue = "linkedIssue"
         case designRefs = "designRefs"
       }
 
-      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, llm: CreateSessionParamsLlm? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil) {
+      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, llm: CreateSessionParamsLlm? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil) {
         self.repoRoot = repoRoot
         self.branch = branch
         self.description = description
         self.useExistingBranch = useExistingBranch
         self.baseBranch = baseBranch
+        self.parentSessionId = parentSessionId
         self.llm = llm
         self.linkedIssue = linkedIssue
         self.designRefs = designRefs
@@ -1842,6 +1845,7 @@ extension ArgusProtocol {
         try c.encode(description, forKey: .description)
         try c.encodeIfPresent(useExistingBranch, forKey: .useExistingBranch)
         try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
+        try c.encodeIfPresent(parentSessionId, forKey: .parentSessionId)
         try c.encodeIfPresent(llm, forKey: .llm)
         try c.encodeIfPresent(linkedIssue, forKey: .linkedIssue)
         try c.encodeIfPresent(designRefs, forKey: .designRefs)
@@ -5961,6 +5965,42 @@ extension ArgusProtocol {
       }
     }
 
+    public struct LandStackParamsStrategy: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let keep = LandStackParamsStrategy(rawValue: "keep")
+      public static let squash = LandStackParamsStrategy(rawValue: "squash")
+    }
+
+    public struct LandStackParams: Codable, Sendable {
+      public var id: String
+      public var strategy: LandStackParamsStrategy?
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case strategy = "strategy"
+      }
+
+      public init(id: String, strategy: LandStackParamsStrategy? = nil) {
+        self.id = id
+        self.strategy = strategy
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encodeIfPresent(strategy, forKey: .strategy)
+      }
+    }
+
     public struct LinearCommentIssueParams: Codable, Sendable {
       public var issueId: String
       public var body: String
@@ -8240,6 +8280,23 @@ extension ArgusProtocol {
         try c.encodeIfPresent(allowRule, forKey: .allowRule)
         try c.encodeIfPresent(allowAll, forKey: .allowAll)
         try c.encodeIfPresent(denyMessage, forKey: .denyMessage)
+      }
+    }
+
+    public struct RestackSessionParams: Codable, Sendable {
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: String) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
       }
     }
 
@@ -11954,6 +12011,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum LandStack: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LandStackParams
+      public typealias Result = ArgusProtocol.LandStackResult
+      public static let name = "land_stack"
+      public static let tier = "admin"
+    }
+
     public enum LegacySecretStores: RemoteCommand {
       public typealias Params = EmptyParams
       public typealias Result = [ArgusProtocol.SecretStoreId]
@@ -12896,6 +12960,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.RespondToPermissionParams
       public typealias Result = IgnoredResult
       public static let name = "respond_to_permission"
+      public static let tier = "admin"
+    }
+
+    public enum RestackSession: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.RestackSessionParams
+      public typealias Result = ArgusProtocol.RestackResult
+      public static let name = "restack_session"
       public static let tier = "admin"
     }
 

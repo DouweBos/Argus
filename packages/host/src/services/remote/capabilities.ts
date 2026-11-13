@@ -197,6 +197,8 @@ import {
   setSessionBaseBranch,
   stageAll,
 } from "../session/sessionOps";
+import { restackSession } from "../session/stack";
+import { landStack } from "../session/stackLand";
 import {
   sessionTriage,
   setSessionSettled,
@@ -520,6 +522,7 @@ function toRemoteSession(s: Session): RemoteSession {
     branch: s.branch,
     display_name: s.display_name ?? null,
     base_branch: s.base_branch ?? null,
+    parent_session_id: s.parent_session_id ?? null,
     claude_account_id: s.claude_account_id ?? null,
     status: sessionStatus(s.status),
     setup_error:
@@ -1563,6 +1566,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       description,
       use_existing_branch,
       base_branch,
+      parent_session_id,
       prompt,
       model,
       permission_mode,
@@ -1592,7 +1596,11 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
           false,
           base_branch,
           undefined,
-          { linkedIssue: start.linkedIssue, designRefs: start.designRefs },
+          {
+            linkedIssue: start.linkedIssue,
+            designRefs: start.designRefs,
+            parentSessionId: parent_session_id,
+          },
         ),
       );
       await pin(session.id);
@@ -1613,6 +1621,8 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         description.trim() || prompt?.trim() || "",
         use_existing_branch,
         base_branch,
+        undefined,
+        { parentSessionId: parent_session_id },
       ),
     );
     await pin(session.id);
@@ -2332,6 +2342,18 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     await control(() => mergeSessionIntoBase(session_id, strategy));
 
     return { accepted: true };
+  },
+  "sessions.restack": async (params) => {
+    const { session_id } = parse("sessions.restack", params);
+    requireSession(session_id);
+
+    return control(() => restackSession(session_id));
+  },
+  "sessions.land_stack": async (params) => {
+    const { session_id, strategy } = parse("sessions.land_stack", params);
+    requireSession(session_id);
+
+    return control(() => landStack(session_id, strategy));
   },
   "automations.list": async () => remoteAutomations(),
   "automations.runs": async (params) =>
