@@ -64,8 +64,10 @@ public struct SessionTriage: Sendable {
   ) {
     var working: [RemoteSession] = []
     var idle: [RemoteSession] = []
-    for session in sessions {
-      switch SessionActivity(session: session, agents: agents(session)).attention(now: now) {
+    let attention = sessions.map { SessionActivity(session: $0, agents: agents($0)).attention(now: now) }
+    let runs = Self.runAttention(zip(sessions.map(\.compareGroup?.id), attention))
+    for (session, own) in zip(sessions, attention) {
+      switch session.compareGroup.flatMap({ runs[$0.id] }) ?? own {
       case .needsYou: needsYou.append(session)
       case .working: working.append(session)
       case .idle: idle.append(session)
@@ -78,6 +80,15 @@ public struct SessionTriage: Sendable {
 
   /// Everything folded away.
   public var folded: [RemoteSession] { done + snoozed }
+
+  /// A compare run sorts as its most urgent slot, so its slots stay together under one header.
+  static func runAttention(
+    _ pairs: some Sequence<(String?, SessionAttention)>
+  ) -> [String: SessionAttention] {
+    var runs: [String: SessionAttention] = [:]
+    for case (let run?, let attention) in pairs { runs[run] = min(runs[run] ?? attention, attention) }
+    return runs
+  }
 }
 
 /// The ready-made times a session can be snoozed until.
@@ -123,13 +134,17 @@ public struct SessionGroupTriage: Sendable {
   public init(_ groups: [SessionGroup], now: Date = .now) {
     var working: [SessionGroup] = []
     var idle: [SessionGroup] = []
-    for group in groups {
-      guard let session = group.session else {
+    let own = groups.map { group in
+      group.session.map { SessionActivity(session: $0, agents: group.agents).attention(now: now) }
+    }
+    let runs = SessionTriage.runAttention(
+      zip(groups, own).compactMap { group, attention in attention.map { (group.session?.compareGroup?.id, $0) } })
+    for (group, attention) in zip(groups, own) {
+      guard let session = group.session, let attention else {
         idle.append(group)
         continue
       }
-      let attention = SessionActivity(session: session, agents: group.agents).attention(now: now)
-      switch attention {
+      switch session.compareGroup.flatMap({ runs[$0.id] }) ?? attention {
       case .needsYou: needsYou.append(group)
       case .working: working.append(group)
       case .done where !group.isRoot: done.append(group)

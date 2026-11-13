@@ -33,12 +33,15 @@
 
     @ViewBuilder
     private func pills(compact: Bool, dividers: Bool = true) -> some View {
-        modelMenu(compact: compact)
-        if !composer.effortLevels.isEmpty {
+        // A compare run's slots carry their own runner and model.
+        if !composer.isComparing {
+          modelMenu(compact: compact)
+          if !composer.effortLevels.isEmpty {
+            if dividers { ComposerPillDivider() }
+            effortMenu(compact: compact)
+          }
           if dividers { ComposerPillDivider() }
-          effortMenu(compact: compact)
         }
-        if dividers { ComposerPillDivider() }
         modeMenu(compact: compact)
         if dividers { ComposerPillDivider() }
         Button { picker = .project } label: {

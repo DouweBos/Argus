@@ -112,16 +112,29 @@ struct ProjectView: View {
     .onResume(connected: host.connection == .ready) { await refreshGitStatus() }
   }
 
+  /// Session links, a compare run's slots under its header; they share a section since a run sorts as one.
   private func links(_ groups: [SessionGroup]) -> some View {
-    ForEach(groups) { group in
-      NavigationLink(value: Route.session(id: group.id, label: group.label, repoRoot: repoRoot)) {
-        sessionRow(group)
+    ForEach(CompareSessionRow.make(groups)) { row in
+      switch row {
+      case .session(let group):
+        sessionLink(group)
+      case .compare(let run, let slots):
+        NavigationLink(value: Route.compareRun(groupId: run.id)) { CompareRunHeaderRow(run: run) }
+        ForEach(slots) { sessionLink($0, slot: true) }
       }
-      .contextMenu {
-        if let session = group.session {
-          PullRequestWatchButton(session: session)
-          SessionTriageMenu(session: session) { snoozing = session }
-        }
+    }
+  }
+
+  /// A compare run's slot sits under its header, named by its runner and model.
+  private func sessionLink(_ group: SessionGroup, slot: Bool = false) -> some View {
+    NavigationLink(value: Route.session(id: group.id, label: group.label, repoRoot: repoRoot)) {
+      sessionRow(group, slot: slot)
+    }
+    .padding(.leading, slot ? 16 : 0)
+    .contextMenu {
+      if let session = group.session {
+        PullRequestWatchButton(session: session)
+        SessionTriageMenu(session: session) { snoozing = session }
       }
     }
   }
@@ -133,9 +146,11 @@ struct ProjectView: View {
   }
 
   @ViewBuilder
-  private func sessionRow(_ group: SessionGroup) -> some View {
+  private func sessionRow(_ group: SessionGroup, slot: Bool = false) -> some View {
     if let session = group.session {
-      SessionRow(session: session, agents: group.agents, git: host.gitStatusBySession[group.id], detailed: true)
+      SessionRow(
+        session: session, agents: group.agents, git: host.gitStatusBySession[group.id], detailed: true,
+        title: slot ? session.compareGroup.map(host.compareSlotTitle) : nil)
         // Nothing to fetch for a session the computer itself can't read.
         .task(id: group.id) {
           guard !session.isUnavailable else { return }

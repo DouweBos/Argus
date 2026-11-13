@@ -73,7 +73,8 @@ extension ComposerModel {
       permissionMode: draftMode ?? (live ? permissionMode : nil),
       model: draftModel ?? (live ? status?.model : nil),
       effort: offersImagesAndEffort ? draftEffort ?? (live ? host.effortByAgent[agentId] : nil) : nil,
-      runnerId: runner?.id, accountId: starter != nil && offersAccounts ? draftAccount : nil)
+      runnerId: runner?.id, accountId: starter != nil && offersAccounts ? draftAccount : nil,
+      compareSlots: isComparing ? compareSlots : [])
     Task {
       let started = await target.start(request)
       starting = false
@@ -84,6 +85,7 @@ extension ComposerModel {
       draftModel = nil
       draftEffort = nil
       draftAccount = nil
+      compareSlots = []
     }
   }
 

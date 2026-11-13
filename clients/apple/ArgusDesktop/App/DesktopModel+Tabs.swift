@@ -89,6 +89,7 @@ extension DesktopModel {
     case .agents: screen = "Agents"
     case .runtimes: screen = "Runtimes"
     case .devices, .device: screen = "Devices"
+    case .compareRun(let groupId): screen = CompareGroup(id: groupId, sessions: store.compareSessions(groupId: groupId)).title
     case .pullRequests: screen = "Pull Requests"
     case .pullRequest(let repo, let number), .pullRequestGuide(let repo, let number): screen = "\(repo)#\(number)"
     case .issues: screen = "Issues"

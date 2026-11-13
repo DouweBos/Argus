@@ -149,6 +149,8 @@ struct RouteScreen: View {
       NewSessionView(repoRoot: repoRoot)
     case .session(let id, let label, let repoRoot):
       SessionView(sessionId: id, label: label, repoRoot: repoRoot)
+    case .compareRun(let groupId):
+      CompareRunScreen(groupId: groupId).id(groupId)
     case .agent(let id, let label):
       SessionView(sessionId: nil, label: label, agentId: id)
     case .stoppedAgent(let historyId, let repoRoot, let label, let branch, let runner):

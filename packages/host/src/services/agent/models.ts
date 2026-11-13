@@ -91,6 +91,8 @@ export interface AgentSession {
    * turn; this is what an automation's cost ceiling is measured against.
    */
   costUsd: number;
+  /** Cumulative tokens (input, cached and output) the runner reported across turns. */
+  tokensTotal?: number;
   /**
    * Unix ms timestamp of the most recent observed tool-use block, or null if
    * the agent has not made any tool calls yet. Reads better than

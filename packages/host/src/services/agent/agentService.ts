@@ -114,6 +114,7 @@ import {
 import { clearSpares, hasSpare, killSpare, takeSpare } from "./spares";
 import { spawnConfigStamp } from "./spawnStamp";
 import { rememberStartOptions } from "./startOptions";
+import { usageTokens } from "./usageTokens";
 
 // ---------------------------------------------------------------------------
 // Lazy device helpers
@@ -881,6 +882,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     lastEventAt: Date.now(),
     toolUsesTotal: previous?.toolUsesTotal ?? 0,
     costUsd: previous?.costUsd ?? 0,
+    tokensTotal: previous?.tokensTotal ?? 0,
     lastToolUseAt: previous?.lastToolUseAt ?? null,
     lastToolName: previous?.lastToolName ?? null,
     contextWindow: previous?.contextWindow ?? null,
@@ -1235,6 +1237,9 @@ export function onStreamLine(agentId: string, line: string): void {
           duration_ms: parsed.duration_ms ?? 0,
         };
         session.costUsd += turnCost;
+        session.tokensTotal =
+          (session.tokensTotal ?? 0) +
+          usageTokens(parsed.usage as Record<string, unknown> | undefined);
         if (session.inflightPrompts > 0) {
           session.inflightPrompts -= 1;
         }

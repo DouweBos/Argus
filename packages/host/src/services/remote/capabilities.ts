@@ -23,7 +23,6 @@ import {
   UNKNOWN_COMMAND,
   type Capability,
   type GrantScope,
-  type ImageAttachment,
   type RemoteAgentCapabilities,
   type RemoteAgentStatus,
   type RemoteClaudeAccount,
@@ -39,14 +38,12 @@ import {
 } from "@argus/remote-protocol";
 import type { z } from "zod";
 import { emitHostEvent } from "@argus/host/bus";
-import { error as logError, info as logInfo } from "@argus/host/logger";
 import { appState } from "../../state";
 import { applyPushedEntries } from "../account/lifecycle";
 import { remoteAccountStatus, requestLinkFromPaired } from "../account/service";
 import {
   interruptAgent,
   respondToPermission,
-  sendAgentMessage,
   setAgentEffort,
   setAgentModel,
   setAgentPermissionMode,
@@ -209,7 +206,6 @@ import {
   getSessionViewedFiles,
   setSessionFileViewed,
 } from "../session/viewedFiles";
-import { waitForSessionReady } from "../session/waitForReady";
 import { computeSessionDiffStats } from "../session/watcher";
 import {
   androidButton,
@@ -230,7 +226,6 @@ import {
 } from "../simulator/ios";
 import { devicePng } from "../simulator/screenshot";
 import { getVideoDims } from "../simulator/videoForward";
-import { capture } from "../telemetry/telemetry";
 import {
   listTerminals,
   readTerminalOutput,
@@ -264,6 +259,12 @@ import {
   toRemoteAutomationRun,
   updateRemoteAutomation,
 } from "./automationsRemote";
+import {
+  compareScreenshot,
+  createCompareRun,
+  keepCompareSlot,
+  scoreCompareRun,
+} from "./compareRemote";
 import {
   claimDevice,
   claimState,
@@ -329,6 +330,7 @@ import {
   unregisterLiveActivity,
 } from "./push/liveActivity/dispatch";
 import { ShareError } from "./shareError";
+import { startAgentWhenReady } from "./startWhenReady";
 import {
   findImage,
   type RawConversation,
@@ -506,63 +508,6 @@ function androidToRemoteDevice(d: {
 
 // --- Mappers (desktop model → monitor-scoped remote model) -----------------
 
-/**
- * Start an agent in a session that was just created and hand it `prompt`
- * once setup finishes. Runs on the host so the client that asked can go away
- * — a backgrounded phone or a reloaded window must not strand the prompt.
- */
-export async function startAgentWhenReady(
-  sessionId: string,
-  prompt: string,
-  options: {
-    model?: string;
-    permissionMode?: string;
-    runnerId?: string;
-    images?: ImageAttachment[];
-  } = {},
-): Promise<void> {
-  try {
-    await waitForSessionReady(sessionId);
-    const agent = await startAgent(
-      sessionId,
-      options.model,
-      options.permissionMode,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      options.runnerId,
-    );
-    // Backend-initiated spawns are invisible to the UI without this.
-    emitHostEvent("agent:started", {
-      agent_id: agent.agent_id,
-      session_id: agent.session_id,
-      status: agent.status,
-      parent_agent_id: agent.parent_agent_id,
-      created_at: agent.created_at,
-      initial_prompt: prompt,
-      model: agent.model,
-    });
-    if (options.images?.length) {
-      sendAgentMessage(agent.agent_id, prompt, options.images);
-    } else {
-      sendAgentMessage(agent.agent_id, prompt);
-    }
-    // The renderer only draws user bubbles for sends it made itself.
-    emitHostEvent(`agent:remote-message:${agent.agent_id}`, {
-      message: prompt,
-      author: null,
-    });
-    logInfo(`Started agent ${agent.agent_id} with its prompt in ${sessionId}`);
-    capture("session_prompt_dispatched", { success: true });
-  } catch (e) {
-    logError(`Couldn't start the prompted agent in ${sessionId}: ${String(e)}`);
-    capture("session_prompt_dispatched", { success: false });
-  }
-}
-
 function sessionStatus(status: Session["status"]): RemoteSession["status"] {
   return typeof status === "string" ? status : "error";
 }
@@ -600,6 +545,7 @@ function toRemoteSession(s: Session): RemoteSession {
     pull_request: sessionPullRequest(s.id),
     pull_request_watched: isPullRequestWatched(s.id),
     ...sessionTriage(s.id),
+    compare_group: s.compare_group ?? null,
   };
 }
 
@@ -1680,6 +1626,64 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     }
 
     return { session: toRemoteSession(session) };
+  },
+
+  "sessions.create_compare": async (params) => {
+    const p = parse("sessions.create_compare", params);
+    requireKnownRepoRoot(p.repo_root);
+    requireRemotePermissionMode(p.permission_mode);
+    for (const slot of p.slots) {
+      requireKnownRunner(slot.runner_id);
+    }
+    const run = await control(() =>
+      createCompareRun({
+        repoRoot: p.repo_root,
+        description: p.description,
+        baseBranch: p.base_branch,
+        prompt: p.prompt,
+        images: p.images,
+        permissionMode: p.permission_mode,
+        linearIssue: p.linear_issue,
+        slots: p.slots,
+      }),
+    );
+
+    return {
+      group_id: run.groupId,
+      sessions: run.sessions.map(toRemoteSession),
+    };
+  },
+
+  "sessions.compare": async (params) => {
+    const { group_id } = parse("sessions.compare", params);
+    const slots = await control(() => scoreCompareRun(group_id));
+
+    return { slots };
+  },
+
+  "sessions.compare_screenshot": async (params) => {
+    const { session_id } = parse("sessions.compare_screenshot", params);
+    requireSession(session_id);
+
+    return compareScreenshot(session_id);
+  },
+
+  "sessions.keep_compare": async (params) => {
+    const { session_id, land, strategy, delete_others } = parse(
+      "sessions.keep_compare",
+      params,
+    );
+    requireSession(session_id);
+    const kept = await control(() =>
+      keepCompareSlot({
+        sessionId: session_id,
+        land,
+        strategy,
+        deleteOthers: delete_others,
+      }),
+    );
+
+    return { pull_request_url: kept.pullRequestUrl, deleted: kept.deleted };
   },
 
   "scratch_pads.create": async (params) => {

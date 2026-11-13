@@ -8,7 +8,9 @@ struct RouteScreen: View {
 
   static func handles(_ route: DesktopRoute) -> Bool {
     switch route {
-    case .automations, .quickRun, .describeAutomation, .automation, .inbox, .proposal, .notifications, .usage, .usageModel, .usagePrices, .usageModels, .issues, .design: true
+    case .automations, .quickRun, .describeAutomation, .automation, .inbox, .proposal, .notifications, .usage, .usageModel,
+      .usagePrices, .usageModels, .issues, .design, .compareRun:
+      true
     default: false
     }
   }
@@ -29,6 +31,7 @@ struct RouteScreen: View {
     case .usageModels: UsageModelsScreen()
     case .issues(let scope, let issue, let query): IssuesScreen(scope: scope, issueRef: issue, query: query)
     case .design(let url, let sessionId): DesignScreen(url: url, sessionId: sessionId).id("\(url)|\(sessionId ?? "")")
+    case .compareRun(let groupId): CompareRunView(groupId: groupId).id(groupId)
     default: EmptyView()
     }
   }

@@ -8,11 +8,12 @@ struct SidebarSessionRow: View {
   let session: RemoteSession
   let agents: [RemoteAgentStatus]
   var caption: String?
+  var title: String?
 
   private var activity: SessionActivity { SessionActivity(session: session, agents: agents) }
 
   var body: some View {
-    SessionRow(session: session, agents: agents, caption: caption)
+    SessionRow(session: session, agents: agents, caption: caption, title: title)
       .help(hasCard ? "" : help)
       // Fetched as the pointer arrives, so the card opens on a fresh status.
       .onHover { inside in

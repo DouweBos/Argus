@@ -14,16 +14,19 @@ public struct SessionRow: View {
   var selected: Bool
   /// A line under the title once ready, as a list across projects names the project.
   var caption: String?
+  /// Replaces the session's own title, as a compare run's slot rows name their runner.
+  var title: String?
 
   public init(
     session: RemoteSession, agents: [RemoteAgentStatus], git: RemoteGitStatus? = nil, detailed: Bool = false,
-    selected: Bool = false, caption: String? = nil
+    selected: Bool = false, caption: String? = nil, title: String? = nil
   ) {
     activity = SessionActivity(session: session, agents: agents)
     self.git = git
     self.detailed = detailed
     self.selected = selected
     self.caption = caption
+    self.title = title
   }
 
   private var session: RemoteSession { activity.session }
@@ -34,7 +37,7 @@ public struct SessionRow: View {
         .opacity(activity.showsDot ? 1 : 0)
         .frame(width: 8)
       VStack(alignment: .leading, spacing: detailed ? 2 : 1) {
-        Text(activity.title)
+        Text(title ?? activity.title)
           .font(Self.titleFont)
           .foregroundStyle(selected ? AnyShapeStyle(.primary) : AnyShapeStyle(theme.text))
           .lineLimit(1)

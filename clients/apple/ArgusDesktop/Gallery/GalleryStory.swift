@@ -77,7 +77,7 @@
     static var all: [GalleryStory] {
       AutomationStories.all + ComposerStories.all + SessionStories.all + DiffReviewStories.all + ReviewGuideStories.all
         + SettingsStories.all + DeviceStories.all + FileStories.all + HomeStories.all + GitStories.all
-        + TranscriptStories.all
+        + TranscriptStories.all + CompareStories.all
     }
   }
 #endif

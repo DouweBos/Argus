@@ -8,7 +8,11 @@
  * and kind, so a session can be drawn with no access to its files at all.
  */
 
-import type { DesignRef, LinkedIssue } from "@argus/remote-protocol";
+import type {
+  DesignRef,
+  LinkedIssue,
+  SessionCompareGroup,
+} from "@argus/remote-protocol";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -44,6 +48,7 @@ export interface SessionMeta {
   claude_account_id?: string | null;
   linked_issue?: LinkedIssue | null;
   design_refs?: DesignRef[] | null;
+  compare_group?: SessionCompareGroup | null;
   /**
    * Last known branch. Recorded so a session whose drive is disconnected can
    * still be listed — `git worktree list` is not readable for it.

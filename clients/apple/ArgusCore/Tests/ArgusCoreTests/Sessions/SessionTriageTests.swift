@@ -43,6 +43,21 @@ struct SessionTriageTests {
     #expect(triage.snoozed.map(\.id) == ["snoozed"])
   }
 
+  @Test func aCompareRunSortsAsItsMostUrgentSlot() {
+    func slot(_ id: String, _ n: Int, _ extra: [String: Any] = [:]) -> RemoteSession {
+      session(id, extra: extra.merging(["compare_group": ["id": "g", "slot": n]]) { $1 })
+    }
+    let asking = [slot("x", 0), slot("y", 1, ["pull_request": pr("merged")]), slot("z", 2), session("other")]
+    let triage = SessionTriage(asking, now: now) {
+      $0.id == "z" ? [agent("z", status: "requires_action", awaiting: "plan")] : []
+    }
+    #expect(triage.needsYou.map(\.id) == ["x", "y", "z"])
+    #expect(triage.active.map(\.id) == ["other"])
+
+    let settled = [slot("x", 0, ["pull_request": pr("merged")]), slot("y", 1, ["settled": true])]
+    #expect(SessionTriage(settled, now: now) { _ in [] }.done.map(\.id) == ["x", "y"])
+  }
+
   @Test func aManualMarkBeatsThePullRequest() {
     #expect(session("a", extra: ["pull_request": pr("merged"), "settled": false]).isDone == false)
     #expect(session("b", extra: ["pull_request": pr("open"), "settled": true]).isDone)

@@ -54,6 +54,10 @@ extension HostStore {
     request: ComposerStart, defaults: AgentStartDefaults, hostWaits: Bool = false,
     onSpawned: (@MainActor (_ agentId: String, _ sessionId: String) -> Void)? = nil
   ) async -> RemoteSession? {
+    if request.isCompare, existingBranch == nil {
+      return await startCompare(repoRoot: repoRoot, baseBranch: baseBranch, request: request, defaults: defaults)?
+        .first
+    }
     let effort = request.effort(or: defaults)
     // `hostWaits`: the caller goes away at once (a share sheet), so the computer starts it, effort aside.
     let hostStarts = hostWaits || (request.images.isEmpty && effort == nil)

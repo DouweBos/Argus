@@ -55,6 +55,9 @@
       branches = []
     }
 
+    /// Only a new worktree fans out over runners: an existing branch or session has one place to work.
+    var offersCompare: Bool { issues.isEmpty && workspace.kind == .worktree }
+
     /// Issues always start in worktrees of their own.
     var chosen: StartWorkspace.Kind { issues.isEmpty ? workspace.kind : .worktree }
 
@@ -83,7 +86,8 @@
       case .worktree:
         // The computer names the branch from the prompt.
         return ComposerStarter(
-          defaultMode: defaultMode, needsText: true, ready: repoRoot != nil, placeholder: placeholder, start: start)
+          defaultMode: defaultMode, needsText: true, ready: repoRoot != nil, placeholder: placeholder,
+          offersCompare: true, start: start)
       case .existing:
         return ComposerStarter(
           defaultMode: defaultMode, ready: repoRoot != nil && workspace.existingBranch != nil,

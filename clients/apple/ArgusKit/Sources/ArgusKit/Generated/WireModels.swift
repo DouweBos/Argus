@@ -14085,6 +14085,151 @@ extension ArgusProtocol {
     }
   }
 
+  public struct RemoteCompareRun: Codable, Sendable {
+    public var title: String
+    public var state: RemoteCompareRunState
+    public var isTest: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case title = "title"
+      case state = "state"
+      case isTest = "is_test"
+    }
+
+    public init(title: String, state: RemoteCompareRunState, isTest: Bool) {
+      self.title = title
+      self.state = state
+      self.isTest = isTest
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(title, forKey: .title)
+      try c.encode(state, forKey: .state)
+      try c.encode(isTest, forKey: .isTest)
+    }
+  }
+
+  public struct RemoteCompareRunState: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let failed = RemoteCompareRunState(rawValue: "failed")
+    public static let passed = RemoteCompareRunState(rawValue: "passed")
+    public static let running = RemoteCompareRunState(rawValue: "running")
+  }
+
+  public struct RemoteCompareSlotAgentStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let error = RemoteCompareSlotAgentStatus(rawValue: "error")
+    public static let idle = RemoteCompareSlotAgentStatus(rawValue: "idle")
+    public static let requiresAction = RemoteCompareSlotAgentStatus(rawValue: "requires_action")
+    public static let running = RemoteCompareSlotAgentStatus(rawValue: "running")
+    public static let stopped = RemoteCompareSlotAgentStatus(rawValue: "stopped")
+  }
+
+  public struct RemoteCompareSlotDiff: Codable, Sendable {
+    public var files: Int
+    public var insertions: Int
+    public var deletions: Int
+
+    enum CodingKeys: String, CodingKey {
+      case files = "files"
+      case insertions = "insertions"
+      case deletions = "deletions"
+    }
+
+    public init(files: Int, insertions: Int, deletions: Int) {
+      self.files = files
+      self.insertions = insertions
+      self.deletions = deletions
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(files, forKey: .files)
+      try c.encode(insertions, forKey: .insertions)
+      try c.encode(deletions, forKey: .deletions)
+    }
+  }
+
+  public struct RemoteCompareSlot: Codable, Sendable {
+    public var sessionId: String
+    public var slot: Int
+    public var runnerId: String?
+    public var model: String?
+    public var effort: String?
+    public var agentId: String?
+    public var agentStatus: RemoteCompareSlotAgentStatus?
+    public var diff: RemoteCompareSlotDiff?
+    public var runs: [RemoteCompareRun]
+    public var costUsd: Double
+    public var tokens: Int
+    public var hasScreen: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "session_id"
+      case slot = "slot"
+      case runnerId = "runner_id"
+      case model = "model"
+      case effort = "effort"
+      case agentId = "agent_id"
+      case agentStatus = "agent_status"
+      case diff = "diff"
+      case runs = "runs"
+      case costUsd = "cost_usd"
+      case tokens = "tokens"
+      case hasScreen = "has_screen"
+    }
+
+    public init(sessionId: String, slot: Int, runnerId: String? = nil, model: String? = nil, effort: String? = nil, agentId: String? = nil, agentStatus: RemoteCompareSlotAgentStatus? = nil, diff: RemoteCompareSlotDiff? = nil, runs: [RemoteCompareRun], costUsd: Double, tokens: Int, hasScreen: Bool) {
+      self.sessionId = sessionId
+      self.slot = slot
+      self.runnerId = runnerId
+      self.model = model
+      self.effort = effort
+      self.agentId = agentId
+      self.agentStatus = agentStatus
+      self.diff = diff
+      self.runs = runs
+      self.costUsd = costUsd
+      self.tokens = tokens
+      self.hasScreen = hasScreen
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(slot, forKey: .slot)
+      try c.encode(runnerId, forKey: .runnerId)
+      try c.encode(model, forKey: .model)
+      try c.encode(effort, forKey: .effort)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(agentStatus, forKey: .agentStatus)
+      try c.encode(diff, forKey: .diff)
+      try c.encode(runs, forKey: .runs)
+      try c.encode(costUsd, forKey: .costUsd)
+      try c.encode(tokens, forKey: .tokens)
+      try c.encode(hasScreen, forKey: .hasScreen)
+    }
+  }
+
   public struct RemoteConfigPatch: Codable, Sendable {
     public var enabled: Bool?
     public var notifyWhenFocused: Bool?
@@ -16157,6 +16302,7 @@ extension ArgusProtocol {
     public var settled: Bool?
     public var snoozedUntil: Double?
     public var unread: Bool?
+    public var compareGroup: SessionCompareGroup?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -16181,9 +16327,10 @@ extension ArgusProtocol {
       case settled = "settled"
       case snoozedUntil = "snoozed_until"
       case unread = "unread"
+      case compareGroup = "compare_group"
     }
 
-    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, deleteFailed: RemoteSessionDeleteFailed? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, settled: Bool? = nil, snoozedUntil: Double? = nil, unread: Bool? = nil) {
+    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, deleteFailed: RemoteSessionDeleteFailed? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, settled: Bool? = nil, snoozedUntil: Double? = nil, unread: Bool? = nil, compareGroup: SessionCompareGroup? = nil) {
       self.id = id
       self.repoRoot = repoRoot
       self.kind = kind
@@ -16206,6 +16353,7 @@ extension ArgusProtocol {
       self.settled = settled
       self.snoozedUntil = snoozedUntil
       self.unread = unread
+      self.compareGroup = compareGroup
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -16232,6 +16380,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(settled, forKey: .settled)
       try c.encodeIfPresent(snoozedUntil, forKey: .snoozedUntil)
       try c.encodeIfPresent(unread, forKey: .unread)
+      try c.encodeIfPresent(compareGroup, forKey: .compareGroup)
     }
   }
 
@@ -17904,6 +18053,7 @@ extension ArgusProtocol {
     public var baseBranch: String?
     public var branch: String
     public var claudeAccountId: String?
+    public var compareGroup: SessionCompareGroup?
     public var description: String
     public var displayName: String?
     public var envIndex: Double?
@@ -17930,6 +18080,7 @@ extension ArgusProtocol {
       case baseBranch = "base_branch"
       case branch = "branch"
       case claudeAccountId = "claude_account_id"
+      case compareGroup = "compare_group"
       case description = "description"
       case displayName = "display_name"
       case envIndex = "env_index"
@@ -17952,11 +18103,12 @@ extension ArgusProtocol {
       case volume = "volume"
     }
 
-    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, branch: String, claudeAccountId: String? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, deleteFailed: SessionDeleteFailed? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
+    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, branch: String, claudeAccountId: String? = nil, compareGroup: SessionCompareGroup? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, deleteFailed: SessionDeleteFailed? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
       self.availability = availability
       self.baseBranch = baseBranch
       self.branch = branch
       self.claudeAccountId = claudeAccountId
+      self.compareGroup = compareGroup
       self.description = description
       self.displayName = displayName
       self.envIndex = envIndex
@@ -17985,6 +18137,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
       try c.encode(branch, forKey: .branch)
       try c.encodeIfPresent(claudeAccountId, forKey: .claudeAccountId)
+      try c.encodeIfPresent(compareGroup, forKey: .compareGroup)
       try c.encode(description, forKey: .description)
       try c.encodeIfPresent(displayName, forKey: .displayName)
       try c.encodeIfPresent(envIndex, forKey: .envIndex)
@@ -18005,6 +18158,39 @@ extension ArgusProtocol {
       try c.encodeIfPresent(deleteFailed, forKey: .deleteFailed)
       try c.encodeIfPresent(unavailableVolume, forKey: .unavailableVolume)
       try c.encodeIfPresent(volume, forKey: .volume)
+    }
+  }
+
+  public struct SessionCompareGroup: Codable, Sendable {
+    public var id: String
+    public var slot: Int
+    public var runnerId: String?
+    public var model: String?
+    public var effort: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case slot = "slot"
+      case runnerId = "runner_id"
+      case model = "model"
+      case effort = "effort"
+    }
+
+    public init(id: String, slot: Int, runnerId: String? = nil, model: String? = nil, effort: String? = nil) {
+      self.id = id
+      self.slot = slot
+      self.runnerId = runnerId
+      self.model = model
+      self.effort = effort
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(slot, forKey: .slot)
+      try c.encode(runnerId, forKey: .runnerId)
+      try c.encode(model, forKey: .model)
+      try c.encode(effort, forKey: .effort)
     }
   }
 

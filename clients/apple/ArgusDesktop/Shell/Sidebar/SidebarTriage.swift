@@ -30,7 +30,8 @@ struct SidebarSessionMenu: View {
   }
 }
 
-/// Session rows with their menu; `caption` adds a line under the title, as Needs you names the project.
+/// Session rows with their menu, a compare run's under its header; `caption` adds a line under the
+/// title, as Needs you names the project.
 struct SidebarSessionRows: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
@@ -38,14 +39,27 @@ struct SidebarSessionRows: View {
   var caption: (RemoteSession) -> String? = { _ in nil }
 
   var body: some View {
-    ForEach(sessions) { session in
-      SidebarRow(selected: model.route.sessionId == session.id, enabled: !session.isUnavailable) {
-        model.open(session: session.id)
-      } content: {
-        SidebarSessionRow(session: session, agents: store.agents(inSession: session), caption: caption(session))
+    ForEach(CompareGroup.split(sessions)) { item in
+      switch item {
+      case .session(let session): row(session)
+      case .group(let run):
+        // A compare run's slots sort as one, so they share a section under their run's header.
+        SidebarCompareHeader(run: run)
+        ForEach(run.sessions) { session in
+          row(session, title: session.compareGroup.map(store.compareSlotTitle)).padding(.leading, 14)
+        }
       }
-      .contextMenu { SidebarSessionMenu(session: session) }
     }
+  }
+
+  private func row(_ session: RemoteSession, title: String? = nil) -> some View {
+    SidebarRow(selected: model.route.sessionId == session.id, enabled: !session.isUnavailable) {
+      model.open(session: session.id)
+    } content: {
+      SidebarSessionRow(
+        session: session, agents: store.agents(inSession: session), caption: caption(session), title: title)
+    }
+    .contextMenu { SidebarSessionMenu(session: session) }
   }
 }
 

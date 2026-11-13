@@ -25,13 +25,13 @@ struct SessionSidebar: View {
         ForEach(AppSection.secondary) { sectionRow($0) }
       }
 
-      let needsYou = host.projects.flatMap { project in
-        SessionGroupTriage(host.sessionGroups(repoRoot: project.repoRoot)).needsYou.map { (project, $0) }
-      }
+      let needsYou = host.projects.map { project in
+        (project, SessionGroupTriage(host.sessionGroups(repoRoot: project.repoRoot)).needsYou)
+      }.filter { !$0.1.isEmpty }
       if !needsYou.isEmpty {
         Section("Needs you") {
-          ForEach(needsYou, id: \.1.id) { project, group in
-            sessionItem(group, in: project, caption: project.name)
+          ForEach(needsYou, id: \.0.repoRoot) { project, groups in
+            items(groups, in: project, caption: project.name)
           }
         }
       }
@@ -43,11 +43,11 @@ struct SessionSidebar: View {
           if groups.isEmpty {
             Text("No sessions").font(.scaled(.footnote)).foregroundStyle(theme.textSecondary)
           }
-          ForEach(triage.active) { sessionItem($0, in: project) }
+          items(triage.active, in: project)
           if !triage.folded.isEmpty {
             foldToggle(project, triage: triage)
             if unfolded.contains(project.repoRoot) {
-              ForEach(triage.folded) { sessionItem($0, in: project) }
+              items(triage.folded, in: project)
             }
           }
         } header: {
@@ -81,8 +81,31 @@ struct SessionSidebar: View {
     }
   }
 
-  private func sessionItem(_ group: SessionGroup, in project: RemoteProject, caption: String? = nil) -> some View {
-    row(group, caption: caption)
+  /// Session rows, a compare run's slots under its header; they share a section since a run sorts as one.
+  @ViewBuilder
+  private func items(_ groups: [SessionGroup], in project: RemoteProject, caption: String? = nil) -> some View {
+    ForEach(CompareSessionRow.make(groups)) { item in
+      switch item {
+      case .session(let group):
+        sessionItem(group, in: project, caption: caption)
+      case .compare(let run, let slots):
+        // Not a selection: the sidebar selects sessions, so the run opens in the detail column.
+        Button {
+          router.open(.compareRun(groupId: run.id), in: .home)
+        } label: {
+          CompareRunHeaderRow(run: run, selected: router.detailStack.last == .compareRun(groupId: run.id))
+        }
+        .buttonStyle(.argusPlain)
+        ForEach(slots) { sessionItem($0, in: project, caption: caption, slot: true) }
+      }
+    }
+  }
+
+  private func sessionItem(
+    _ group: SessionGroup, in project: RemoteProject, caption: String? = nil, slot: Bool = false
+  ) -> some View {
+    row(group, caption: caption, slot: slot)
+      .padding(.leading, slot ? 14 : 0)
       .tag(
         SidebarItem.session(
           id: group.id, label: group.label, repoRoot: project.repoRoot, projectName: project.name))
@@ -109,12 +132,12 @@ struct SessionSidebar: View {
   }
 
   @ViewBuilder
-  private func row(_ group: SessionGroup, caption: String? = nil) -> some View {
+  private func row(_ group: SessionGroup, caption: String? = nil, slot: Bool = false) -> some View {
     if let session = group.session {
       SessionRow(
         session: session, agents: group.agents,
         selected: router.sidebarSelection == .session(id: group.id, label: "", repoRoot: "", projectName: ""),
-        caption: caption)
+        caption: caption, title: slot ? session.compareGroup.map(host.compareSlotTitle) : nil)
     } else {
       // Known only from its agents until the project's sessions load.
       Text(group.label).lineLimit(1).padding(.leading, 18)

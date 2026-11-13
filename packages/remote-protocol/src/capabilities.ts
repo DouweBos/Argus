@@ -174,6 +174,10 @@ export const REMOTE_METHODS = {
   "agents.ask_side": "control",
   /** Create a new session inside an existing project (never a new project). */
   "sessions.create": "control",
+  "sessions.create_compare": "control",
+  "sessions.compare": "monitor",
+  "sessions.compare_screenshot": "monitor",
+  "sessions.keep_compare": "control",
   /** Create a scratch pad: a session in its own directory, outside any project. */
   "scratch_pads.create": "control",
   /** Triage starts an agent, which spends. */

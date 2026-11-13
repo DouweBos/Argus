@@ -6033,6 +6033,40 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsCompareParams: Codable, Sendable {
+      public var groupId: String
+
+      enum CodingKeys: String, CodingKey {
+        case groupId = "group_id"
+      }
+
+      public init(groupId: String) {
+        self.groupId = groupId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(groupId, forKey: .groupId)
+      }
+    }
+
+    public struct SessionsCompareResult: Codable, Sendable {
+      public var slots: [RemoteCompareSlot]
+
+      enum CodingKeys: String, CodingKey {
+        case slots = "slots"
+      }
+
+      public init(slots: [RemoteCompareSlot]) {
+        self.slots = slots
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(slots, forKey: .slots)
+      }
+    }
+
     public struct SessionsCompareBranchesParams: Codable, Sendable {
       public var sessionId: String
       public var left: String
@@ -6055,6 +6089,59 @@ extension ArgusProtocol {
         try c.encode(sessionId, forKey: .sessionId)
         try c.encode(left, forKey: .left)
         try c.encode(right, forKey: .right)
+      }
+    }
+
+    public struct SessionsCompareScreenshotParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct SessionsCompareScreenshotResultSource: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let browser = SessionsCompareScreenshotResultSource(rawValue: "browser")
+      public static let simulator = SessionsCompareScreenshotResultSource(rawValue: "simulator")
+    }
+
+    public struct SessionsCompareScreenshotResult: Codable, Sendable {
+      public var image: String?
+      public var source: SessionsCompareScreenshotResultSource?
+
+      enum CodingKeys: String, CodingKey {
+        case image = "image"
+        case source = "source"
+      }
+
+      public init(image: String? = nil, source: SessionsCompareScreenshotResultSource? = nil) {
+        self.image = image
+        self.source = source
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(image, forKey: .image)
+        try c.encode(source, forKey: .source)
       }
     }
 
@@ -6179,6 +6266,97 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct SessionsCreateCompareParamsSlotsItem: Codable, Sendable {
+      public var runnerId: String?
+      public var model: String?
+      public var effort: String?
+
+      enum CodingKeys: String, CodingKey {
+        case runnerId = "runner_id"
+        case model = "model"
+        case effort = "effort"
+      }
+
+      public init(runnerId: String? = nil, model: String? = nil, effort: String? = nil) {
+        self.runnerId = runnerId
+        self.model = model
+        self.effort = effort
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(runnerId, forKey: .runnerId)
+        try c.encodeIfPresent(model, forKey: .model)
+        try c.encodeIfPresent(effort, forKey: .effort)
+      }
+    }
+
+    public struct SessionsCreateCompareParams: Codable, Sendable {
+      public var repoRoot: String
+      public var description: String
+      public var baseBranch: String?
+      public var prompt: String
+      public var images: [RemoteImageAttachment]?
+      public var permissionMode: RemotePermissionMode?
+      public var linearIssue: String?
+      public var slots: [SessionsCreateCompareParamsSlotsItem]
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoot = "repo_root"
+        case description = "description"
+        case baseBranch = "base_branch"
+        case prompt = "prompt"
+        case images = "images"
+        case permissionMode = "permission_mode"
+        case linearIssue = "linear_issue"
+        case slots = "slots"
+      }
+
+      public init(repoRoot: String, description: String, baseBranch: String? = nil, prompt: String, images: [RemoteImageAttachment]? = nil, permissionMode: RemotePermissionMode? = nil, linearIssue: String? = nil, slots: [SessionsCreateCompareParamsSlotsItem]) {
+        self.repoRoot = repoRoot
+        self.description = description
+        self.baseBranch = baseBranch
+        self.prompt = prompt
+        self.images = images
+        self.permissionMode = permissionMode
+        self.linearIssue = linearIssue
+        self.slots = slots
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repoRoot, forKey: .repoRoot)
+        try c.encode(description, forKey: .description)
+        try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
+        try c.encode(prompt, forKey: .prompt)
+        try c.encodeIfPresent(images, forKey: .images)
+        try c.encodeIfPresent(permissionMode, forKey: .permissionMode)
+        try c.encodeIfPresent(linearIssue, forKey: .linearIssue)
+        try c.encode(slots, forKey: .slots)
+      }
+    }
+
+    public struct SessionsCreateCompareResult: Codable, Sendable {
+      public var groupId: String
+      public var sessions: [RemoteSession]
+
+      enum CodingKeys: String, CodingKey {
+        case groupId = "group_id"
+        case sessions = "sessions"
+      }
+
+      public init(groupId: String, sessions: [RemoteSession]) {
+        self.groupId = groupId
+        self.sessions = sessions
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(groupId, forKey: .groupId)
+        try c.encode(sessions, forKey: .sessions)
       }
     }
 
@@ -6500,6 +6678,87 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(status, forKey: .status)
+      }
+    }
+
+    public struct SessionsKeepCompareParamsLand: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let merge = SessionsKeepCompareParamsLand(rawValue: "merge")
+      public static let none = SessionsKeepCompareParamsLand(rawValue: "none")
+      public static let pullRequest = SessionsKeepCompareParamsLand(rawValue: "pull_request")
+    }
+
+    public struct SessionsKeepCompareParamsStrategy: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let keep = SessionsKeepCompareParamsStrategy(rawValue: "keep")
+      public static let squash = SessionsKeepCompareParamsStrategy(rawValue: "squash")
+    }
+
+    public struct SessionsKeepCompareParams: Codable, Sendable {
+      public var sessionId: String
+      public var land: SessionsKeepCompareParamsLand
+      public var strategy: SessionsKeepCompareParamsStrategy?
+      public var deleteOthers: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case land = "land"
+        case strategy = "strategy"
+        case deleteOthers = "delete_others"
+      }
+
+      public init(sessionId: String, land: SessionsKeepCompareParamsLand, strategy: SessionsKeepCompareParamsStrategy? = nil, deleteOthers: Bool) {
+        self.sessionId = sessionId
+        self.land = land
+        self.strategy = strategy
+        self.deleteOthers = deleteOthers
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(land, forKey: .land)
+        try c.encodeIfPresent(strategy, forKey: .strategy)
+        try c.encode(deleteOthers, forKey: .deleteOthers)
+      }
+    }
+
+    public struct SessionsKeepCompareResult: Codable, Sendable {
+      public var pullRequestUrl: String?
+      public var deleted: Int
+
+      enum CodingKeys: String, CodingKey {
+        case pullRequestUrl = "pull_request_url"
+        case deleted = "deleted"
+      }
+
+      public init(pullRequestUrl: String? = nil, deleted: Int) {
+        self.pullRequestUrl = pullRequestUrl
+        self.deleted = deleted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(pullRequestUrl, forKey: .pullRequestUrl)
+        try c.encode(deleted, forKey: .deleted)
       }
     }
 
@@ -8767,10 +9026,22 @@ extension ArgusProtocol {
       public static let name = "sessions.commit_identity"
     }
 
+    public enum SessionsCompare: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsCompareParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsCompareResult
+      public static let name = "sessions.compare"
+    }
+
     public enum SessionsCompareBranches: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsCompareBranchesParams
       public typealias Result = ArgusProtocol.RemoteBranchCompare
       public static let name = "sessions.compare_branches"
+    }
+
+    public enum SessionsCompareScreenshot: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsCompareScreenshotParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsCompareScreenshotResult
+      public static let name = "sessions.compare_screenshot"
     }
 
     public enum SessionsCreate: RemoteCommand {
@@ -8783,6 +9054,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsCreateBranchParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsCreateBranchResult
       public static let name = "sessions.create_branch"
+    }
+
+    public enum SessionsCreateCompare: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsCreateCompareParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsCreateCompareResult
+      public static let name = "sessions.create_compare"
     }
 
     public enum SessionsDelete: RemoteCommand {
@@ -8825,6 +9102,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsGitStatusParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsGitStatusResult
       public static let name = "sessions.git_status"
+    }
+
+    public enum SessionsKeepCompare: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsKeepCompareParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsKeepCompareResult
+      public static let name = "sessions.keep_compare"
     }
 
     public enum SessionsList: RemoteCommand {

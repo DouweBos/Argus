@@ -17,12 +17,17 @@ public struct ComposerStarter {
   public let ready: Bool
   /// The empty field's ghost text; nil is the composer's own.
   public let placeholder: String?
+  /// A new worktree can fan out into a compare run: a session per runner or model.
+  public let offersCompare: Bool
+  /// Slots the composer opens already comparing on, as a gallery story shows it.
+  public let compareSlots: [CompareSlot]
   /// Starts the agent and sends the message; false keeps the draft for another try.
   public let start: @MainActor (ComposerStart) async -> Bool
 
   public init(
     defaultMode: String, defaultModel: String? = nil, needsText: Bool = false, needsContent: Bool = true,
-    ready: Bool = true, placeholder: String? = nil, start: @escaping @MainActor (ComposerStart) async -> Bool
+    ready: Bool = true, placeholder: String? = nil, offersCompare: Bool = false,
+    compareSlots: [CompareSlot] = [], start: @escaping @MainActor (ComposerStart) async -> Bool
   ) {
     self.defaultMode = defaultMode
     self.defaultModel = defaultModel
@@ -30,6 +35,8 @@ public struct ComposerStarter {
     self.needsContent = needsContent
     self.ready = ready
     self.placeholder = placeholder
+    self.offersCompare = offersCompare
+    self.compareSlots = compareSlots
     self.start = start
   }
 

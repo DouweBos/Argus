@@ -161,7 +161,10 @@
         defaults: AgentStartDefaults(mode: defaultMode?.rawValue), issues: issues,
         picksProject: picksProject && sessionId == nil, hostWaits: hostWaits, onStarted: onStarted)
       let mode = (defaultMode ?? .auto).rawValue
-      let starter = ComposerStarter(defaultMode: mode) { [weak flow] in await flow?.start($0) ?? false }
+      // Offered here, shown only while the footer's choice is a new worktree.
+      let starter = ComposerStarter(defaultMode: mode, offersCompare: true) { [weak flow] in
+        await flow?.start($0) ?? false
+      }
       let controller = PastingTextController()
       let composer = ComposerModel(
         agentId: Self.draftKey(repoRoot: repoRoot, sessionId: sessionId, issues: issues), sessionId: sessionId,
@@ -215,6 +218,7 @@
         await flow.workspace.loadBases(repoRoot: repoRoot, store: host)
       }
       .onChange(of: flow.issues.isEmpty) { _, none in composer.offersImagesAndEffort = none }
+      .onChange(of: flow.offersCompare) { _, offered in if !offered { composer.endCompare() } }
       .onDisappear {
         guard let viewingToken else { return }
         Task { await host.stopViewing(token: viewingToken, restoring: coveredSession) }

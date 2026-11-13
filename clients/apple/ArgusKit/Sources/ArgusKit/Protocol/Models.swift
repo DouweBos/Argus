@@ -78,6 +78,8 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var snoozedUntil: Double?
   /// A turn finished while nobody had it open. Nil on older computers.
   public var unread: Bool?
+  /// Set while it is one slot of a compare run. Nil on older computers.
+  public var compareGroup: RemoteCompareGroup?
 
   public var isUnavailable: Bool { availability == .unavailable }
   /// A scratch pad or automation run: its own folder, no project, no git.
@@ -103,6 +105,30 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case settled
     case snoozedUntil = "snoozed_until"
     case unread
+    case compareGroup = "compare_group"
+  }
+}
+
+/// One slot of a compare run: the same prompt started on several runners or models.
+public struct RemoteCompareGroup: Codable, Hashable, Sendable {
+  public var id: String
+  /// 0-based, in the order the slots were picked.
+  public var slot: Int
+  public var runnerId: String?
+  public var model: String?
+  public var effort: String?
+
+  public init(id: String, slot: Int, runnerId: String? = nil, model: String? = nil, effort: String? = nil) {
+    self.id = id
+    self.slot = slot
+    self.runnerId = runnerId
+    self.model = model
+    self.effort = effort
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case id, slot, model, effort
+    case runnerId = "runner_id"
   }
 }
 

@@ -14,6 +14,7 @@ public protocol ComposerHost: AnyObject {
   var claudeAccounts: [RemoteClaudeAccount]? { get }
   var activeClaudeAccountId: String? { get }
   var projects: [RemoteProject] { get }
+  var runners: [RemoteRunner] { get }
   var sessionsByRepo: [String: [RemoteSession]] { get }
   var usageLimits: ArgusProtocol.ClaudeUsageLimits? { get }
 

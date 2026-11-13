@@ -247,7 +247,7 @@ private struct LegacyCardSurface: ViewModifier {
 }
 
 extension View {
-  fileprivate func cardSurface(stroke: Color? = nil) -> some View {
+  func cardSurface(stroke: Color? = nil) -> some View {
     modifier(LegacyCardSurface(stroke: stroke))
   }
 }

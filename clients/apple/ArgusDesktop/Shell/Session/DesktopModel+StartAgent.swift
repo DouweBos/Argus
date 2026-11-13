@@ -35,7 +35,7 @@ extension DesktopModel {
   func worktreeStarter(repoRoot: String, baseBranch: String?, replacing agentId: String? = nil) -> ComposerStarter {
     ComposerStarter(
       defaultMode: AppPreferences.shared.defaultPermissionMode.rawValue, defaultModel: Self.defaultModel,
-      needsText: true
+      needsText: true, offersCompare: true
     ) { [weak self] request in
       guard let self else { return false }
       return await startInNewWorktree(
@@ -56,7 +56,11 @@ extension DesktopModel {
         })
     else { return false }
     if let agentId { await store.stopAgent(agentId: agentId) }
-    openAgents(session: session.id)
+    if let group = session.compareGroup {
+      navigate(.compareRun(groupId: group.id))
+    } else {
+      openAgents(session: session.id)
+    }
     return true
   }
 

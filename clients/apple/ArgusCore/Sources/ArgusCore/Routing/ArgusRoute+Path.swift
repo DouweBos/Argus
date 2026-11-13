@@ -26,6 +26,7 @@ extension ArgusRoute {
       // An unknown tab falls back to limits, as in Electron.
       let tab = UsageTab(rawValue: parts[1]) ?? .limits
       self = .usage(tab, range: tab == .limits ? nil : Self.usageRange(query["range"]))
+    case ("compare", 2): self = .compareRun(groupId: parts[1])
     case ("pull-requests", 1): self = .pullRequests
     case ("issues", 1...3):
       // Electron's `/issues[/<scope>][/<IDENTIFIER>]`, and `/issues/search[/<IDENTIFIER>]?q=`;
@@ -99,6 +100,7 @@ extension ArgusRoute {
         + Self.query([("range", range?.rawValue)])
     case .usagePrices: "/usage/prices"
     case .usageModels: "/usage/models"
+    case .compareRun(let groupId): "/compare/\(Self.encode(groupId))"
     case .pullRequests: "/pull-requests"
     case .pullRequest(let repo, let number): "/pull-requests/\(repo)/\(number)"
     case .pullRequestGuide(let repo, let number): "/pull-requests/\(repo)/\(number)/guide"

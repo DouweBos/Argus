@@ -217,6 +217,44 @@ struct ComposerModelTests {
     #expect(started.first?.model == nil)
   }
 
+  @Test("compare slots: two to start, a new runner per added slot, a runner switch drops the model, below two ends it")
+  func compareSlots() async throws {
+    var started: [ComposerStart] = []
+    let starter = ComposerStarter(defaultMode: "auto", offersCompare: true) { request in
+      started.append(request)
+      return true
+    }
+    host.runners = try ["claude-code", "codex", "gemini"].map { id in
+      let json = #"{"id":"\#(id)","display_name":"\#(id)","is_custom":false,"models":[{"value":"\#(id)-m","display_name":"M"}]}"#
+      return try JSONDecoder().decode(RemoteRunner.self, from: Data(json.utf8))
+    }
+    let composer = model(status: nil, starter: starter)
+    #expect(composer.offersCompare && !composer.isComparing)
+    composer.setRunner(host.runners[0])
+    composer.beginCompare()
+    #expect(composer.isComparing)
+    #expect(composer.compareSlots.map(\.runnerId) == ["claude-code", "codex"])
+    composer.addCompareSlot()
+    #expect(composer.compareSlots.last?.runnerId == "gemini")
+    composer.addCompareSlot()
+    composer.addCompareSlot()
+    #expect(composer.compareSlots.count == CompareSlot.maximum && !composer.canAddCompareSlot)
+    let second = composer.compareSlots[1].id
+    composer.setCompareSlot(second, runnerId: "codex", model: "codex-m")
+    #expect(composer.compareSlots[1].model == "codex-m")
+    composer.setCompareSlot(second, runnerId: "gemini")
+    #expect(composer.compareSlots[1].model == nil)
+    for slot in composer.compareSlots.dropFirst(2) { composer.removeCompareSlot(slot.id) }
+    composer.text = "go"
+    composer.submit()
+    await settle()
+    #expect(started.first?.compareSlots.map(\.runnerId) == ["claude-code", "gemini"])
+    #expect(composer.compareSlots.isEmpty)
+    composer.beginCompare()
+    composer.removeCompareSlot(composer.compareSlots[0].id)
+    #expect(composer.compareSlots.isEmpty && !composer.isComparing)
+  }
+
   @Test("a start picks its account, which rides the start; other runners get no account section")
   func startAccount() async throws {
     var started: [ComposerStart] = []
@@ -421,6 +459,7 @@ private final class FakeEditor: ComposerEditor {
 
 @MainActor
 final class FakeComposerHost: ComposerHost {
+  var runners: [RemoteRunner] = []
   struct Sent {
     let message: String
     let displayText: String?
