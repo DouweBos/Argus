@@ -1625,6 +1625,10 @@ extension ArgusProtocol {
   public struct AppSettings: Codable, Sendable {
     public var worktreesBaseDir: String?
     public var automationWorktreesBaseDir: String?
+    public var worktreeCleanupEnabled: Bool?
+    public var worktreeCleanupLandedDays: Int?
+    public var worktreeCleanupIdleDays: Int?
+    public var worktreeCleanupMaxGb: Double?
     public var defaultLlm: AppSettingsDefaultLlm?
     public var mcpServers: [String: [String: JSONValue]]?
     public var updaterChannel: AppSettingsUpdaterChannel?
@@ -1669,6 +1673,10 @@ extension ArgusProtocol {
     enum CodingKeys: String, CodingKey {
       case worktreesBaseDir = "worktrees_base_dir"
       case automationWorktreesBaseDir = "automation_worktrees_base_dir"
+      case worktreeCleanupEnabled = "worktree_cleanup_enabled"
+      case worktreeCleanupLandedDays = "worktree_cleanup_landed_days"
+      case worktreeCleanupIdleDays = "worktree_cleanup_idle_days"
+      case worktreeCleanupMaxGb = "worktree_cleanup_max_gb"
       case defaultLlm = "default_llm"
       case mcpServers = "mcp_servers"
       case updaterChannel = "updater_channel"
@@ -1711,9 +1719,13 @@ extension ArgusProtocol {
       case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, usageModelFilter: UsageModelFilter? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, remoteLanWebClient: Bool? = nil, remoteMcpEnabled: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, worktreeCleanupEnabled: Bool? = nil, worktreeCleanupLandedDays: Int? = nil, worktreeCleanupIdleDays: Int? = nil, worktreeCleanupMaxGb: Double? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, usageModelFilter: UsageModelFilter? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, remoteLanWebClient: Bool? = nil, remoteMcpEnabled: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
+      self.worktreeCleanupEnabled = worktreeCleanupEnabled
+      self.worktreeCleanupLandedDays = worktreeCleanupLandedDays
+      self.worktreeCleanupIdleDays = worktreeCleanupIdleDays
+      self.worktreeCleanupMaxGb = worktreeCleanupMaxGb
       self.defaultLlm = defaultLlm
       self.mcpServers = mcpServers
       self.updaterChannel = updaterChannel
@@ -1760,6 +1772,10 @@ extension ArgusProtocol {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encodeIfPresent(worktreesBaseDir, forKey: .worktreesBaseDir)
       try c.encodeIfPresent(automationWorktreesBaseDir, forKey: .automationWorktreesBaseDir)
+      try c.encodeIfPresent(worktreeCleanupEnabled, forKey: .worktreeCleanupEnabled)
+      try c.encodeIfPresent(worktreeCleanupLandedDays, forKey: .worktreeCleanupLandedDays)
+      try c.encodeIfPresent(worktreeCleanupIdleDays, forKey: .worktreeCleanupIdleDays)
+      try c.encodeIfPresent(worktreeCleanupMaxGb, forKey: .worktreeCleanupMaxGb)
       try c.encodeIfPresent(defaultLlm, forKey: .defaultLlm)
       try c.encodeIfPresent(mcpServers, forKey: .mcpServers)
       try c.encodeIfPresent(updaterChannel, forKey: .updaterChannel)
@@ -19082,6 +19098,198 @@ extension ArgusProtocol {
 
     public static let hash = WorkspaceEnvStrategy(rawValue: "hash")
     public static let sequential = WorkspaceEnvStrategy(rawValue: "sequential")
+  }
+
+  public struct WorktreeCleanupEntry: Codable, Sendable {
+    public var sessionId: String
+    public var repoRoot: String
+    public var projectName: String
+    public var branch: String
+    public var displayName: String?
+    public var bytes: Double?
+    public var lastActivityAt: Double
+    public var landedAt: Double?
+    public var reason: WorktreeCleanupReason
+    public var blockedBy: WorktreeCleanupGuard?
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "session_id"
+      case repoRoot = "repo_root"
+      case projectName = "project_name"
+      case branch = "branch"
+      case displayName = "display_name"
+      case bytes = "bytes"
+      case lastActivityAt = "last_activity_at"
+      case landedAt = "landed_at"
+      case reason = "reason"
+      case blockedBy = "blocked_by"
+    }
+
+    public init(sessionId: String, repoRoot: String, projectName: String, branch: String, displayName: String? = nil, bytes: Double? = nil, lastActivityAt: Double, landedAt: Double? = nil, reason: WorktreeCleanupReason, blockedBy: WorktreeCleanupGuard? = nil) {
+      self.sessionId = sessionId
+      self.repoRoot = repoRoot
+      self.projectName = projectName
+      self.branch = branch
+      self.displayName = displayName
+      self.bytes = bytes
+      self.lastActivityAt = lastActivityAt
+      self.landedAt = landedAt
+      self.reason = reason
+      self.blockedBy = blockedBy
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(projectName, forKey: .projectName)
+      try c.encode(branch, forKey: .branch)
+      try c.encode(displayName, forKey: .displayName)
+      try c.encode(bytes, forKey: .bytes)
+      try c.encode(lastActivityAt, forKey: .lastActivityAt)
+      try c.encode(landedAt, forKey: .landedAt)
+      try c.encode(reason, forKey: .reason)
+      try c.encode(blockedBy, forKey: .blockedBy)
+    }
+  }
+
+  public struct WorktreeCleanupGuard: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let agentRunning = WorktreeCleanupGuard(rawValue: "agent_running")
+    public static let uncommitted = WorktreeCleanupGuard(rawValue: "uncommitted")
+    public static let unpushed = WorktreeCleanupGuard(rawValue: "unpushed")
+    public static let unreadable = WorktreeCleanupGuard(rawValue: "unreadable")
+  }
+
+  public struct WorktreeCleanupPolicy: Codable, Sendable {
+    public var enabled: Bool
+    public var landedDays: Int
+    public var idleDays: Int
+    public var maxGb: Double
+
+    enum CodingKeys: String, CodingKey {
+      case enabled = "enabled"
+      case landedDays = "landed_days"
+      case idleDays = "idle_days"
+      case maxGb = "max_gb"
+    }
+
+    public init(enabled: Bool, landedDays: Int, idleDays: Int, maxGb: Double) {
+      self.enabled = enabled
+      self.landedDays = landedDays
+      self.idleDays = idleDays
+      self.maxGb = maxGb
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(enabled, forKey: .enabled)
+      try c.encode(landedDays, forKey: .landedDays)
+      try c.encode(idleDays, forKey: .idleDays)
+      try c.encode(maxGb, forKey: .maxGb)
+    }
+  }
+
+  public struct WorktreeCleanupPreview: Codable, Sendable {
+    public var policy: WorktreeCleanupPolicy
+    public var entries: [WorktreeCleanupEntry]
+    public var totalBytes: Double
+    public var lastSweep: WorktreeCleanupSweep?
+
+    enum CodingKeys: String, CodingKey {
+      case policy = "policy"
+      case entries = "entries"
+      case totalBytes = "total_bytes"
+      case lastSweep = "last_sweep"
+    }
+
+    public init(policy: WorktreeCleanupPolicy, entries: [WorktreeCleanupEntry], totalBytes: Double, lastSweep: WorktreeCleanupSweep? = nil) {
+      self.policy = policy
+      self.entries = entries
+      self.totalBytes = totalBytes
+      self.lastSweep = lastSweep
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(policy, forKey: .policy)
+      try c.encode(entries, forKey: .entries)
+      try c.encode(totalBytes, forKey: .totalBytes)
+      try c.encode(lastSweep, forKey: .lastSweep)
+    }
+  }
+
+  public struct WorktreeCleanupReason: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let idle = WorktreeCleanupReason(rawValue: "idle")
+    public static let landed = WorktreeCleanupReason(rawValue: "landed")
+    public static let overCap = WorktreeCleanupReason(rawValue: "over_cap")
+  }
+
+  public struct WorktreeCleanupSweepTrigger: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let manual = WorktreeCleanupSweepTrigger(rawValue: "manual")
+    public static let scheduled = WorktreeCleanupSweepTrigger(rawValue: "scheduled")
+  }
+
+  public struct WorktreeCleanupSweep: Codable, Sendable {
+    public var at: Double
+    public var trigger: WorktreeCleanupSweepTrigger
+    public var removed: [WorktreeCleanupEntry]
+    public var freedBytes: Double
+    public var failed: Int
+
+    enum CodingKeys: String, CodingKey {
+      case at = "at"
+      case trigger = "trigger"
+      case removed = "removed"
+      case freedBytes = "freed_bytes"
+      case failed = "failed"
+    }
+
+    public init(at: Double, trigger: WorktreeCleanupSweepTrigger, removed: [WorktreeCleanupEntry], freedBytes: Double, failed: Int) {
+      self.at = at
+      self.trigger = trigger
+      self.removed = removed
+      self.freedBytes = freedBytes
+      self.failed = failed
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(at, forKey: .at)
+      try c.encode(trigger, forKey: .trigger)
+      try c.encode(removed, forKey: .removed)
+      try c.encode(freedBytes, forKey: .freedBytes)
+      try c.encode(failed, forKey: .failed)
+    }
   }
 
   public struct WorktreeLocationProbe: Codable, Sendable {

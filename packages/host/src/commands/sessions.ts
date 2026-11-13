@@ -25,6 +25,7 @@ import {
   retrySessionSetup,
 } from "../services/session/manager";
 import { setSessionDesignRefs } from "../services/session/sessionOps";
+import { previewCleanup, runCleanup } from "../services/worktreeCleanup/sweep";
 
 export function registerSessionCommands(): void {
   defineTypedCommand("add_repo_root", (p) => addRepoRoot(p.path));
@@ -101,4 +102,6 @@ export function registerSessionCommands(): void {
     ),
   );
   defineTypedCommand("get_session", (p) => getSession(p.id));
+  defineTypedCommand("worktree_cleanup_preview", () => previewCleanup());
+  defineTypedCommand("worktree_cleanup_run", () => runCleanup("manual"));
 }

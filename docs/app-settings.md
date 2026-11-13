@@ -415,6 +415,33 @@ or deleted while a drive is away. If it's the automation drive that's
 missing, scheduled runs skip that project with a "… isn't connected" reason
 rather than quietly falling back to your boot disk.
 
+### Cleanup
+
+Worktrees carry their own `node_modules`, Pods and build output, so finished
+sessions add up. **Settings → Worktrees → Cleanup** removes the worktrees that
+are done with, and lists exactly what it would remove right now — with each
+one's size — before anything goes.
+
+| Setting                    | Default | Description                                                                                                                                       |
+| -------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Clean up automatically** | Off     | Every six hours (first ten minutes after launch), remove what the list shows and note it in **Notifications**. **Clean Up Now** works either way. |
+| **After merging**          | 7 days  | Days after a session is merged from Argus, or its pull request is merged or closed. Never turns this off.                                         |
+| **When untouched**         | 30 days | Days without a commit or agent activity. Never turns this off.                                                                                    |
+| **Disk limit**             | None    | Total worktree size to stay under. Past it, the least recently used worktrees go first — never one touched in the last day.                       |
+
+A worktree is always kept when it has uncommitted changes, commits that are
+on no remote and not in its base branch (a merged pull request's commits count
+as saved), or a running agent — the list shows those under **Kept** with the
+reason. Only plain session worktrees are considered: never the project's own
+checkout, a scratch pad, or a session on a drive that isn't connected.
+Cleanup removes the worktree and keeps the branch.
+
+Stored in `app-settings.json` as `worktree_cleanup_enabled`,
+`worktree_cleanup_landed_days`, `worktree_cleanup_idle_days` and
+`worktree_cleanup_max_gb` (`0` turns a rule off); when each session was first
+seen merged and the last sweep live in `~/.argus/worktree-cleanup.json`. The
+same page is on the iPhone under the computer's **Worktrees** settings.
+
 ---
 
 ## Integrations

@@ -91,8 +91,8 @@ private struct NotificationRow: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: 10) {
-      Image(systemName: Icon.warning)
-        .foregroundStyle(entry.level == .error ? theme.error : theme.warning)
+      Image(systemName: entry.level == .info ? "checkmark.circle.fill" : Icon.warning)
+        .foregroundStyle(entry.level == .error ? theme.error : entry.level == .info ? theme.success : theme.warning)
       VStack(alignment: .leading, spacing: 4) {
         BodyText(entry.message)
           .textSelection(.enabled)

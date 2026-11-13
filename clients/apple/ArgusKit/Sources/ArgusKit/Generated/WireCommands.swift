@@ -13403,6 +13403,20 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum WorktreeCleanupPreview: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.WorktreeCleanupPreview
+      public static let name = "worktree_cleanup_preview"
+      public static let tier = "admin"
+    }
+
+    public enum WorktreeCleanupRun: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.WorktreeCleanupSweep
+      public static let name = "worktree_cleanup_run"
+      public static let tier = "admin"
+    }
+
     public enum WriteFile: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.WriteFileParams
       public typealias Result = IgnoredResult

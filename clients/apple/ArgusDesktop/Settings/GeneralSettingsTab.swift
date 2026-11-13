@@ -3,12 +3,11 @@ import ArgusMenuBar
 import ArgusUI
 import SwiftUI
 
-/// This Mac's name, where Argus opens, the menu bar and login item, where worktrees go, extra "Open in" apps, and telemetry.
+/// This Mac's name, where Argus opens, the menu bar and login item, extra "Open in" apps, and telemetry.
 struct GeneralSettingsTab: View {
   @Environment(HostSettingsModel.self) private var host
   @Environment(DesktopModel.self) private var model
   @State private var telemetry = TelemetryConsent.sanitize(MacTelemetry.mode)
-  @State private var defaultWorktreeBase = ""
 
   var body: some View {
     SettingsPage {
@@ -40,39 +39,6 @@ struct GeneralSettingsTab: View {
           isOn: MenuBarVisibility.binding(AppPreferences.shared, via: .settings))
       }
 
-      SettingsGroup(
-        "Worktrees",
-        footer: "A project can override either of these from its own settings — that override is personal "
-          + "and never written into the repository. If the automation drive isn't connected, "
-          + "scheduled runs skip that project instead of falling back to your boot disk."
-      ) {
-        if let settings = host.settings {
-          WorktreeLocationField(
-            label: "Worktree location", defaultPath: defaultWorktreeBase,
-            value: settings.worktreesBaseDir ?? ""
-          ) { next in
-            await host.save(.worktreeLocation, ["worktrees_base_dir": .string(next)]) {
-              $0.worktreesBaseDir = next
-            }
-          }
-          WorktreeLocationField(
-            label: "Automation worktree location",
-            caption: "Where automations create their worktrees. They open far more than anyone merges, "
-              + "so a roomier drive keeps a busy automation from filling up your boot disk. Leave it "
-              + "empty to use the location above.",
-            defaultPath: settings.worktreesBaseDir.flatMap { $0.isEmpty ? nil : $0 }
-              ?? defaultWorktreeBase,
-            value: settings.automationWorktreesBaseDir ?? ""
-          ) { next in
-            await host.save(.automationWorktreeLocation, ["automation_worktrees_base_dir": .string(next)]) {
-              $0.automationWorktreesBaseDir = next
-            }
-          }
-        } else {
-          SettingsLoading()
-        }
-      }
-
       CustomEditorsSection()
 
       SettingsGroup("Privacy") {
@@ -87,12 +53,6 @@ struct GeneralSettingsTab: View {
       SettingsError(text: host.error)
     }
     .onAppear { menuBar.refreshLoginState() }
-    .task(id: host.loaded) {
-      guard let backend = model.backend else { return }
-      defaultWorktreeBase =
-        (try? await backend.request(ArgusProtocol.Commands.GetWorktreesDefaultBase.self, EmptyParams()))
-        ?? ""
-    }
   }
 
   private var menuBar: MenuBarModel { model.menuBar }

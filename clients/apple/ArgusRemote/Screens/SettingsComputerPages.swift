@@ -113,6 +113,39 @@ struct AutomationsSettingsPage: View {
   }
 }
 
+/// The computer's worktree cleanup: the policy, what it would remove now, and Clean Up Now.
+struct WorktreesSettingsPage: View {
+  @Environment(HostStore.self) private var host
+  @State private var cleanup: WorktreeCleanupModel?
+
+  var body: some View {
+    SettingsPage {
+      if let cleanup {
+        WorktreeCleanupSettings(model: cleanup, canEdit: host.hasControl) { field, value in
+          Telemetry.capture(.defaultChanged(setting: Self.setting(field), value: value))
+        }
+      }
+    }
+    .settingsPage(.worktrees)
+    .task(id: host.connection == .ready) {
+      let model = cleanup ?? WorktreeCleanupModel(host: host)
+      cleanup = model
+      guard host.connection == .ready else { return }
+      await model.load()
+    }
+    .refreshable { await cleanup?.load() }
+  }
+
+  private static func setting(_ field: WorktreeCleanupSettings.Field) -> TelemetryEvent.DefaultSetting {
+    switch field {
+    case .enabled: .worktreeCleanupEnabled
+    case .landedDays: .worktreeCleanupLandedDays
+    case .idleDays: .worktreeCleanupIdleDays
+    case .maxSize: .worktreeCleanupMaxSize
+    }
+  }
+}
+
 struct DeviceHostsSettingsPage: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host

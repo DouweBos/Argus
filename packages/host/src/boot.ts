@@ -106,6 +106,10 @@ import {
 } from "./services/terminal/multiplexer";
 import { reapOrphanedSpawnHelpers } from "./services/terminal/reapOrphans";
 import { fixProcessPath } from "./services/terminal/shellEnv";
+import {
+  startWorktreeCleanup,
+  stopWorktreeCleanup,
+} from "./services/worktreeCleanup/sweep";
 
 const log = createLogger("boot");
 
@@ -180,6 +184,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   startVolumeWatcher();
   startSessionPullRequests();
   startPrWatches();
+  startWorktreeCleanup();
 
   initAutomations();
   initAutomationOutcomes();
@@ -295,6 +300,7 @@ export function stopHostServices(): void {
   stopAllBranchTracking();
   stopSessionPullRequests();
   stopPrWatches();
+  stopWorktreeCleanup();
   stopHostConversations();
   stopLiveActivities();
   stopWarmPolicy();

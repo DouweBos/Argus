@@ -16,6 +16,9 @@
         GalleryStory("settings/privacy") { PrivacySettingsPage() },
         GalleryStory("settings/connection", fixtures: GalleryFixtures.deviceHosts, setup: connect) { ConnectionSettingsPage() },
         GalleryStory("settings/agents") { AgentsSettingsPage() },
+        GalleryStory("settings/worktrees", fixtures: GalleryFixtures.worktreeCleanup, setup: connect) {
+          WorktreesSettingsPage()
+        },
         GalleryStory("settings/device-hosts", fixtures: GalleryFixtures.deviceHosts, setup: connect) {
           DeviceHostsSettingsPage()
         },

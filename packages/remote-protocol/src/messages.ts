@@ -80,6 +80,11 @@ import {
 import { RemoteLiveActivitySnapshot } from "./models/liveActivity";
 import { RunnerAccount } from "./models/llm";
 import {
+  WorktreeCleanupPolicy,
+  WorktreeCleanupPreview,
+  WorktreeCleanupSweep,
+} from "./models/sessions";
+import {
   ClaudeUsageLimits,
   ClaudeUsageSummary,
   LimitHandoffAccount,
@@ -730,6 +735,9 @@ export const MethodParams = {
     autonomy: z.enum(["auto_merge", "draft", "pr", "propose"]).nullable(),
   }),
   "automations.mark_run_read": z.object({ run_id: z.string() }),
+  "worktrees.cleanup_preview": z.object({}),
+  "worktrees.cleanup_run": z.object({}),
+  "worktrees.set_cleanup_policy": WorktreeCleanupPolicy,
   "automations.run_feedback": z.object({
     run_id: z.string(),
     note: z.string(),
@@ -1192,6 +1200,10 @@ export const MethodResult = {
   "automations.set_default_autonomy": z.object({
     autonomy: z.enum(["auto_merge", "draft", "pr", "propose"]).nullable(),
   }),
+  /** A dry run: what the cleanup would remove now, and what it keeps. */
+  "worktrees.cleanup_preview": WorktreeCleanupPreview,
+  "worktrees.cleanup_run": WorktreeCleanupSweep,
+  "worktrees.set_cleanup_policy": WorktreeCleanupPolicy,
   /** The run as it now stands — read. */
   "automations.mark_run_read": z.object({ run: RemoteAutomationRun }),
   "automations.run_feedback": z.object({ run: RemoteAutomationRun }),

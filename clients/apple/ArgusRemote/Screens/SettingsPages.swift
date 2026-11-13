@@ -6,7 +6,7 @@ import UserNotifications
 /// A settings sub-page. The phone's own pages first, then the computer's.
 enum SettingsPane: String, Hashable {
   case name, appearance, alerts, privacy
-  case connection, agents, automations
+  case connection, agents, automations, worktrees
   case deviceHosts = "device_hosts"
 
   var title: String {
@@ -18,6 +18,7 @@ enum SettingsPane: String, Hashable {
     case .connection: "Connection"
     case .agents: "Agents"
     case .automations: "Automations"
+    case .worktrees: "Worktrees"
     case .deviceHosts: "Device Hosts"
     }
   }
@@ -31,6 +32,7 @@ enum SettingsPane: String, Hashable {
     case .connection: "antenna.radiowaves.left.and.right"
     case .agents: Icon.agents
     case .automations: Icon.automations
+    case .worktrees: "externaldrive"
     case .deviceHosts: Icon.devices
     }
   }
@@ -45,6 +47,7 @@ enum SettingsPane: String, Hashable {
     case .connection: ConnectionSettingsPage()
     case .agents: AgentsSettingsPage()
     case .automations: AutomationsSettingsPage()
+    case .worktrees: WorktreesSettingsPage()
     case .deviceHosts: DeviceHostsSettingsPage()
     }
   }

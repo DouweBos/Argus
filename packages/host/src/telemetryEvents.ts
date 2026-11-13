@@ -490,6 +490,13 @@ export interface EventMap {
     setup_pending: boolean;
     trigger: SessionListTrigger;
   };
+  worktree_cleanup_swept: {
+    trigger: "manual" | "scheduled";
+    removed_bucket: "0" | "1" | "2-5" | "6+";
+    freed_bucket: "<1gb" | "0" | "1-10gb" | "10-100gb" | "100gb+";
+    protected_bucket: "0" | "1" | "2-5" | "6+";
+    failed: boolean;
+  };
   session_deleted: {
     delete_branch: boolean;
     kind: SessionKind;

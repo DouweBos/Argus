@@ -198,3 +198,67 @@ export const CliProjectScan = z.object({
   truncated: z.boolean(),
 });
 export type CliProjectScan = z.infer<typeof CliProjectScan>;
+
+/** Why a worktree would be cleaned up. `over_cap` is the disk cap evicting the least recently used. */
+export const WorktreeCleanupReason = z.enum(["idle", "landed", "over_cap"]);
+export type WorktreeCleanupReason = z.infer<typeof WorktreeCleanupReason>;
+
+/** What keeps a worktree that would otherwise go. */
+export const WorktreeCleanupGuard = z.enum([
+  "agent_running",
+  "uncommitted",
+  "unpushed",
+  "unreadable",
+]);
+export type WorktreeCleanupGuard = z.infer<typeof WorktreeCleanupGuard>;
+
+/** The policy, from app settings with defaults applied. Zero turns a rule off. */
+export const WorktreeCleanupPolicy = z.object({
+  /** Run the sweep on a schedule. "Clean up now" works either way. */
+  enabled: z.boolean(),
+  /** Days after a session merged, or its pull request closed. */
+  landed_days: z.number().int().nonnegative(),
+  /** Days without a commit or agent activity. */
+  idle_days: z.number().int().nonnegative(),
+  /** Total worktree size to stay under, in GB. */
+  max_gb: z.number().nonnegative(),
+});
+export type WorktreeCleanupPolicy = z.infer<typeof WorktreeCleanupPolicy>;
+
+export const WorktreeCleanupEntry = z.object({
+  session_id: z.string(),
+  repo_root: z.string(),
+  project_name: z.string(),
+  branch: z.string(),
+  display_name: z.string().nullable(),
+  /** Size on disk; null when it couldn't be measured. */
+  bytes: z.number().nullable(),
+  /** Epoch ms of the last commit or agent activity. */
+  last_activity_at: z.number(),
+  /** Epoch ms it was first seen merged or its pull request closed. */
+  landed_at: z.number().nullable(),
+  reason: WorktreeCleanupReason,
+  /** Set when a guard keeps it; such an entry is never removed. */
+  blocked_by: WorktreeCleanupGuard.nullable(),
+});
+export type WorktreeCleanupEntry = z.infer<typeof WorktreeCleanupEntry>;
+
+export const WorktreeCleanupSweep = z.object({
+  at: z.number(),
+  trigger: z.enum(["manual", "scheduled"]),
+  removed: z.array(WorktreeCleanupEntry),
+  freed_bytes: z.number(),
+  /** Removals that were attempted and failed. */
+  failed: z.number().int().nonnegative(),
+});
+export type WorktreeCleanupSweep = z.infer<typeof WorktreeCleanupSweep>;
+
+/** A dry run: what the policy would remove right now, and what it keeps. */
+export const WorktreeCleanupPreview = z.object({
+  policy: WorktreeCleanupPolicy,
+  entries: z.array(WorktreeCleanupEntry),
+  /** Size of every worktree session, removable or not. */
+  total_bytes: z.number(),
+  last_sweep: WorktreeCleanupSweep.nullable(),
+});
+export type WorktreeCleanupPreview = z.infer<typeof WorktreeCleanupPreview>;

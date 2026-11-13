@@ -49,6 +49,7 @@ struct SettingsWindow: View {
     case .integrations: IntegrationsSettingsTab()
     case .tools: ToolsSettingsTab()
     case .git: GitSettingsTab()
+    case .worktrees: WorktreesSettingsTab()
     case .editor: EditorTab()
     case .remote: RemoteSettingsTab()
     case .hosts: HostsSettingsTab()
@@ -83,7 +84,7 @@ private struct SettingsNavList: View {
 }
 
 enum SettingsTab: String, Hashable, CaseIterable {
-  case general, appearance, account, accounts, agents, llm, mcp, integrations, tools, git, editor, remote, hosts, advanced
+  case general, appearance, account, accounts, agents, llm, mcp, integrations, tools, git, worktrees, editor, remote, hosts, advanced
 
   var title: String {
     switch self {
@@ -97,6 +98,7 @@ enum SettingsTab: String, Hashable, CaseIterable {
     case .integrations: "Integrations"
     case .tools: "Tools"
     case .git: "Git"
+    case .worktrees: "Worktrees"
     case .editor: "Editor"
     case .remote: "Remote"
     case .hosts: "Hosts"
@@ -116,6 +118,7 @@ enum SettingsTab: String, Hashable, CaseIterable {
     case .integrations: "puzzlepiece.extension"
     case .tools: "wrench.and.screwdriver"
     case .git: "arrow.triangle.branch"
+    case .worktrees: "externaldrive"
     case .editor: "chevron.left.forwardslash.chevron.right"
     case .remote: "antenna.radiowaves.left.and.right"
     case .hosts: "desktopcomputer"

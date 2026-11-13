@@ -255,6 +255,12 @@ final class DesktopModel {
       guard channel == "prefs:changed", let change = args.first else { return }
       Task { await self?.hostPrefsChanged(change) }
     }
+    _ = store.observeIpc { [weak self] channel, args, _ in
+      guard channel == "worktrees:cleaned", case .object(let sweep)? = args.first,
+        case .string(let message)? = sweep["message"]
+      else { return }
+      self?.notificationsLog.push(.info, message, source: "Worktree cleanup")
+    }
     await MacTelemetry.attach(local, applyMode: !isAttached)
     if supplied > 0 { MacTelemetry.capture(.prefsSupplied(keys: supplied)) }
     hosts.bind(router)

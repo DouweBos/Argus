@@ -256,6 +256,9 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "automations.draft": DENIED,
   "automations.default_autonomy": DENIED,
   "automations.set_default_autonomy": DENIED,
+  "worktrees.cleanup_preview": DENIED,
+  "worktrees.cleanup_run": DENIED,
+  "worktrees.set_cleanup_policy": DENIED,
   "automations.mark_run_read": DENIED,
   "automations.run_feedback": DENIED,
   // The host owner's Linear account; a guest has no claim on it.

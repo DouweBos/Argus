@@ -324,6 +324,10 @@ export const REMOTE_METHODS = {
    *  unattended, the same bar as editing one automation's autonomy. */
   "automations.default_autonomy": "monitor",
   "automations.set_default_autonomy": "control",
+  "worktrees.cleanup_preview": "monitor",
+  /** Deletes worktrees, guarded like the scheduled sweep. */
+  "worktrees.cleanup_run": "control",
+  "worktrees.set_cleanup_policy": "control",
   /** Reading a report on the phone is reading it — it clears nowhere else.
    *  Monitor, not control: it records that you looked, and can do nothing else. */
   "automations.mark_run_read": "monitor",

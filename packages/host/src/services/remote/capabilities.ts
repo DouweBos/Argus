@@ -230,6 +230,11 @@ import { getClaudeUsageSummary } from "../usage/summary";
 import { getUsagePrices, setUsagePrices } from "../usage/usagePrices";
 import { listPinnedBranches } from "../userProjectSettings/store";
 import {
+  cleanupPolicy,
+  previewCleanup,
+  runCleanup,
+} from "../worktreeCleanup/sweep";
+import {
   createRemoteAutomation,
   deleteRemoteAutomation,
   markRemoteRunRead,
@@ -2445,6 +2450,29 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     await control(() => saveAppSettings({ default_autonomy: autonomy }));
 
     return { autonomy: appDefaultAutonomy() };
+  },
+  "worktrees.cleanup_preview": async (params) => {
+    parse("worktrees.cleanup_preview", params);
+
+    return previewCleanup();
+  },
+  "worktrees.cleanup_run": async (params) => {
+    parse("worktrees.cleanup_run", params);
+
+    return control(() => runCleanup("manual"));
+  },
+  "worktrees.set_cleanup_policy": async (params) => {
+    const p = parse("worktrees.set_cleanup_policy", params);
+    await control(() =>
+      saveAppSettings({
+        worktree_cleanup_enabled: p.enabled,
+        worktree_cleanup_landed_days: p.landed_days,
+        worktree_cleanup_idle_days: p.idle_days,
+        worktree_cleanup_max_gb: p.max_gb,
+      }),
+    );
+
+    return cleanupPolicy();
   },
   "integrations.list": async () => ({ integrations: listIntegrations() }),
 

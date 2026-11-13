@@ -44,7 +44,7 @@ vi.mock("../../llm/registry", () => ({
     ),
 }));
 vi.mock("../../telemetry/telemetry", () => ({ capture: h.capture }));
-vi.mock("../accountSwitch", () => ({ isAgentBusy: () => h.busy }));
+vi.mock("../busy", () => ({ isAgentBusy: () => h.busy }));
 vi.mock("../agentService", () => ({
   launchAgent: h.launch,
   telemetryRunner: (r: { id: string }) => r.id,

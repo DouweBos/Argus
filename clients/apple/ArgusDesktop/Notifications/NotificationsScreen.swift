@@ -1,7 +1,7 @@
 import ArgusUI
 import SwiftUI
 
-/// `/notifications`: every warning and error the app raised this run.
+/// `/notifications`: every warning and error the app raised this run, and what it cleaned up.
 struct NotificationsScreen: View {
   @Environment(DesktopModel.self) private var model
 
@@ -10,8 +10,8 @@ struct NotificationsScreen: View {
     Group {
       if log.entries.isEmpty {
         EmptyState(
-          icon: "checkmark.circle", title: "No warnings or errors",
-          body: "Anything that goes wrong shows up here."
+          icon: "checkmark.circle", title: "No notifications",
+          body: "Anything that goes wrong, or that Argus cleans up, shows up here."
         )
       } else {
         List(log.entries) { entry in
@@ -35,7 +35,7 @@ struct NotificationsScreen: View {
 
   private func subtitle(_ log: NotificationsLog) -> String {
     let errors = log.entries.count { $0.level == .error }
-    let warnings = log.entries.count - errors
+    let warnings = log.entries.count { $0.level == .warning }
     return "\(errors) error\(errors == 1 ? "" : "s"), \(warnings) warning\(warnings == 1 ? "" : "s")"
   }
 }
@@ -46,10 +46,18 @@ private struct NotificationRow: View {
   let triage: () -> Void
   let dismiss: () -> Void
 
+  private var color: Color {
+    switch entry.level {
+    case .error: theme.error
+    case .warning: theme.warning
+    case .info: theme.success
+    }
+  }
+
   var body: some View {
     HStack(alignment: .top, spacing: 10) {
-      Image(systemName: "exclamationmark.triangle.fill")
-        .foregroundStyle(entry.level == .error ? theme.error : theme.warning)
+      Image(systemName: entry.level == .info ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+        .foregroundStyle(color)
       VStack(alignment: .leading, spacing: 4) {
         Text(entry.message).textSelection(.enabled)
         HStack(spacing: 6) {
