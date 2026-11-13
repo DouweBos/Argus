@@ -70,6 +70,12 @@ export const RemoteSession = z.object({
   pull_request: SessionPullRequest.nullable().optional(),
   /** An agent is woken on this PR's CI results, conflicts and comments. Absent on older hosts. */
   pull_request_watched: z.boolean().optional(),
+  /** Marked done (true) or kept active (false); null follows the pull request. Absent on older hosts. */
+  settled: z.boolean().nullable().optional(),
+  /** Hidden until this epoch ms. Absent on older hosts. */
+  snoozed_until: z.number().nullable().optional(),
+  /** A turn finished while no client had it open. Absent on older hosts. */
+  unread: z.boolean().optional(),
 });
 export type RemoteSession = z.infer<typeof RemoteSession>;
 

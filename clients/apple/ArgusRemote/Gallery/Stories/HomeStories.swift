@@ -22,6 +22,9 @@
             Spacer(minLength: 0)
           }
         },
+        GalleryStory("sessions/snooze-sheet", fixtures: GalleryFixtures.home, setup: load) {
+          NavigationStack { SnoozeUntilForm(session: GalleryFixtures.argusSession("s-long")) }
+        },
         setup("sessions/setup/progress", "s-setup"),
         setup("sessions/setup/failed", "s-failed"),
         setup("sessions/delete/teardown", "s-teardown"),

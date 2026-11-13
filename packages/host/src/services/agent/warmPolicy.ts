@@ -20,6 +20,7 @@ import {
   onConnectionClose,
 } from "../remote/connectionScope";
 import { sessionRunnerId } from "../session/models";
+import { markSessionRead } from "../session/triage";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import {
   clearSpares,
@@ -94,7 +95,13 @@ export function setViewingSession(
   }
   viewers.set(key, { sessionId, runnerId: opts.runnerId ?? null });
   lastViewedAt.set(sessionId, Date.now());
+  markSessionRead(sessionId);
   reconcile();
+}
+
+/** Whether any client has the session open right now. */
+export function isSessionViewed(sessionId: string): boolean {
+  return [...viewers.values()].some((v) => v.sessionId === sessionId);
 }
 
 function forgetViewer(key: string): void {

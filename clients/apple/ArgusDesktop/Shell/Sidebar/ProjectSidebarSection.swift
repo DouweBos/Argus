@@ -3,7 +3,8 @@ import ArgusUI
 import SwiftUI
 
 /// One project in the sidebar: a header that is also its root checkout, then
-/// its worktree sessions as flat rows.
+/// its worktree sessions as flat rows, working ones first, done and snoozed ones folded.
+/// Those that need you sit in the sidebar's Needs you section instead.
 struct ProjectSidebarSection: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
@@ -12,21 +13,24 @@ struct ProjectSidebarSection: View {
   /// The sessions the sidebar's search leaves; nil when not searching.
   let shown: Set<String>?
   @Binding var collapsed: Bool
+  /// Which projects show their done and snoozed sessions.
+  let folds: SidebarCollapse
 
   private var sessions: [RemoteSession] { store.sessionsByRepo[project.repoRoot] ?? [] }
   private var root: RemoteSession? { sessions.first { $0.kind == .projectRoot } }
   private var worktrees: [RemoteSession] { sessions.filter { $0.kind != .projectRoot } }
 
   var body: some View {
+    let visible = SessionSearch.visibleWorktrees(worktrees, shown: shown, collapsed: collapsed)
+    let triage = SessionTriage(visible) { store.agents(inSession: $0) }
     VStack(alignment: .leading, spacing: 1) {
       header
-      ForEach(SessionSearch.visibleWorktrees(worktrees, shown: shown, collapsed: collapsed)) { session in
-        SidebarRow(selected: model.route.sessionId == session.id, enabled: !session.isUnavailable) {
-          model.open(session: session.id)
-        } content: {
-          SidebarSessionRow(session: session, agents: agents(in: session))
-        }
-        .contextMenu { sessionMenu(session) }
+      if shown != nil {
+        // A search shows every match where it sits, folded or not; Needs you stays on top.
+        SidebarSessionRows(sessions: triage.active + triage.folded)
+      } else {
+        SidebarSessionRows(sessions: triage.active)
+        FoldedSessions(triage: triage, expanded: folds.binding(project.repoRoot, triage: triage))
       }
     }
   }
@@ -56,17 +60,6 @@ struct ProjectSidebarSection: View {
     }
     if !worktrees.isEmpty {
       Button(collapsed ? "Expand" : "Collapse") { collapsed.toggle() }
-    }
-  }
-
-  @ViewBuilder private func sessionMenu(_ session: RemoteSession) -> some View {
-    if !session.isUnavailable {
-      Button("Open in New Tab") { openInTab(session) }
-    }
-    PullRequestWatchButton(session: session)
-    if session.kind == .worktree {
-      Button("Rename Session…") { model.renamingSession = session }
-      Button("Delete Session…") { model.deletingSession = session }
     }
   }
 
@@ -107,14 +100,16 @@ struct SidebarRow<Content: View>: View {
   }
 }
 
-/// Which projects are folded shut, kept per Argus home.
+/// Which projects are folded shut (or show their done sessions), kept per Argus home.
 @MainActor @Observable
 final class SidebarCollapse {
-  private static let key = "sidebar.collapsedProjects"
+  private let key: String
   private var collapsed: Set<String>
 
-  init() {
-    collapsed = Set(HomeDefaults.shared.stringArray(forKey: Self.key) ?? [])
+  /// `key` names the set: folded projects by default, or the projects showing their done sessions.
+  init(key: String = "sidebar.collapsedProjects") {
+    self.key = key
+    collapsed = Set(HomeDefaults.shared.stringArray(forKey: key) ?? [])
   }
 
   func isCollapsed(_ repoRoot: String) -> Bool { collapsed.contains(repoRoot) }
@@ -124,8 +119,20 @@ final class SidebarCollapse {
       get: { self.collapsed.contains(repoRoot) },
       set: { isCollapsed in
         if isCollapsed { self.collapsed.insert(repoRoot) } else { self.collapsed.remove(repoRoot) }
-        HomeDefaults.shared.set(self.collapsed.sorted(), forKey: Self.key)
+        HomeDefaults.shared.set(self.collapsed.sorted(), forKey: self.key)
         MacTelemetry.capture(.sidebarProjectToggled(collapsed: isCollapsed))
+      })
+  }
+
+  /// The same set read as "expanded": a fold of done and snoozed sessions.
+  func binding(_ id: String, triage: SessionTriage) -> Binding<Bool> {
+    Binding(
+      get: { self.collapsed.contains(id) },
+      set: { expanded in
+        if expanded { self.collapsed.insert(id) } else { self.collapsed.remove(id) }
+        HomeDefaults.shared.set(self.collapsed.sorted(), forKey: self.key)
+        MacTelemetry.capture(
+          .sidebarFoldToggled(expanded: expanded, done: triage.done.count, snoozed: triage.snoozed.count))
       })
   }
 }

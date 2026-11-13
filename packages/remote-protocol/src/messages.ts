@@ -459,6 +459,16 @@ export const MethodParams = {
     session_id: z.string(),
     watching: z.boolean(),
   }),
+  /** Mark done (true), keep active (false), or follow the pull request again (null). */
+  "sessions.settle": z.object({
+    session_id: z.string(),
+    settled: z.boolean().nullable(),
+  }),
+  /** Hide until `until` (epoch ms), then notify; null brings it back now. */
+  "sessions.snooze": z.object({
+    session_id: z.string(),
+    until: z.number().nullable(),
+  }),
   "sessions.git_status": z.object({ session_id: z.string() }),
   "terminals.list": z.object({ session_id: z.string() }),
   "terminals.read": z.object({ terminal_id: z.string() }),
@@ -1048,6 +1058,8 @@ export const MethodResult = {
   "sessions.retry_setup": z.object({ accepted: z.boolean() }),
   "sessions.mark_ready": z.object({ accepted: z.boolean() }),
   "sessions.watch_pull_request": z.object({ watching: z.boolean() }),
+  "sessions.settle": z.object({ accepted: z.boolean() }),
+  "sessions.snooze": z.object({ accepted: z.boolean() }),
   "sessions.git_status": z.object({ status: RemoteGitStatus }),
   "terminals.list": z.object({ terminals: z.array(RemoteTerminal) }),
   "terminals.read": RemoteTerminalOutput,

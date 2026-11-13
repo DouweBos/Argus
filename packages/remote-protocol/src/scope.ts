@@ -192,6 +192,9 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.mark_ready": DENIED,
   // Wakes agents and spends turns on GitHub chatter: the engineer's call.
   "sessions.watch_pull_request": DENIED,
+  // Sorting the engineer's own list.
+  "sessions.settle": DENIED,
+  "sessions.snooze": DENIED,
   "sessions.checkout": DENIED,
   // Landing work is the engineer's call too — a guest reviews, never ships.
   "sessions.commit": DENIED,

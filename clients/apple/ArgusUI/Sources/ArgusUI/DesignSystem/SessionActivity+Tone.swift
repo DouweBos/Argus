@@ -5,7 +5,7 @@ extension SessionActivity.State {
     switch self {
     case .failed: .danger
     case .waiting: .warning
-    case .working: .accent
+    case .working, .unread: .accent
     case .unavailable, .preparing, .idle: .muted
     }
   }

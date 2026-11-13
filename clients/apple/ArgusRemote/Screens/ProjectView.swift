@@ -14,6 +14,8 @@ struct ProjectView: View {
 
   @State private var showingStopped = false
   @State private var searchingChats = false
+  @State private var showingFolded = false
+  @State private var snoozing: RemoteSession?
 
   private var sessions: [RemoteSession] { host.sessionsByRepo[repoRoot] ?? [] }
 
@@ -22,14 +24,21 @@ struct ProjectView: View {
 
   var body: some View {
     List {
-      Section {
-        ForEach(groups) { group in
-          NavigationLink(value: Route.session(id: group.id, label: group.label, repoRoot: repoRoot)) {
-            sessionRow(group)
+      let triage = SessionGroupTriage(groups)
+      if !triage.needsYou.isEmpty {
+        Section("Needs you") { links(triage.needsYou) }
+      }
+      Section { links(triage.active) }
+      if !triage.folded.isEmpty {
+        Section {
+          Button {
+            toggleFolded(triage)
+          } label: {
+            Label(triage.foldedLabel, systemImage: showingFolded ? Icon.chevronDown : Icon.chevronRight)
+              .foregroundStyle(theme.textSecondary)
           }
-          .contextMenu {
-            if let session = group.session { PullRequestWatchButton(session: session) }
-          }
+          .accessibilityValue(showingFolded ? "Expanded" : "Collapsed")
+          if showingFolded { links(triage.folded) }
         }
       }
       stoppedSection
@@ -78,6 +87,10 @@ struct ProjectView: View {
         }
       }
     }
+    .sheet(item: $snoozing) { session in
+      NavigationStack { SnoozeUntilForm(session: session) }
+        .presentationDetents([.large])
+    }
     .sheet(isPresented: $searchingChats) {
       ChatSearchSheet(repoRoot: repoRoot) { chat in
         router.push(
@@ -97,6 +110,26 @@ struct ProjectView: View {
     // Git state is fetched per session rather than polled, so it goes stale
     // while the phone is locked.
     .onResume(connected: host.connection == .ready) { await refreshGitStatus() }
+  }
+
+  private func links(_ groups: [SessionGroup]) -> some View {
+    ForEach(groups) { group in
+      NavigationLink(value: Route.session(id: group.id, label: group.label, repoRoot: repoRoot)) {
+        sessionRow(group)
+      }
+      .contextMenu {
+        if let session = group.session {
+          PullRequestWatchButton(session: session)
+          SessionTriageMenu(session: session) { snoozing = session }
+        }
+      }
+    }
+  }
+
+  private func toggleFolded(_ triage: SessionGroupTriage) {
+    showingFolded.toggle()
+    Telemetry.capture(
+      .sessionsFoldToggled(expanded: showingFolded, done: triage.done.count, snoozed: triage.snoozed.count))
   }
 
   @ViewBuilder
