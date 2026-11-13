@@ -21,6 +21,8 @@ public struct AgentTranscriptView: View {
   /// Opening an agent lands at the newest message; the first content pass
   /// jumps there without animating so it never reads as a scroll.
   @State private var hasLandedAtBottom = false
+  /// Still re-pinning the first landing at the end; the reader scrolling ends it.
+  @State private var landing = false
   @State private var rows = Rows()
   @State private var expandedLogs: Set<String> = []
   /// A turn's work log was opened; says whether the agent was still on it.
@@ -93,12 +95,7 @@ public struct AgentTranscriptView: View {
         guard count > 0 else { return }
         if !hasLandedAtBottom {
           hasLandedAtBottom = true
-          // After the new rows lay out, and only when they overflow: scrolling a
-          // chat that fits to its bottom leaves a blank band above it on iOS.
-          Task { @MainActor in
-            await Task.yield()
-            if overflows { proxy.scrollTo(Self.bottomAnchor, anchor: .bottom) }
-          }
+          Task { await landAtBottom(proxy) }
           return
         }
         // Follow the tail only while the reader is already at it. Yanking
@@ -108,6 +105,9 @@ public struct AgentTranscriptView: View {
         withAnimation(.easeOut(duration: 0.2)) {
           proxy.scrollTo(Self.bottomAnchor, anchor: .bottom)
         }
+      }
+      .onScrollPhaseChange { _, phase in
+        if phase == .interacting { landing = false }
       }
       .onChange(of: agentKey) { _, _ in
         hasLandedAtBottom = false
@@ -256,6 +256,19 @@ public struct AgentTranscriptView: View {
       ForEach(sending) { message in
         QueuedMessageCard(agentKey: agentKey, message: message, sending: true)
       }
+    }
+  }
+
+  /// Only when the rows overflow: scrolling a chat that fits to its bottom leaves a blank band above it.
+  /// Repeated as rows lay out: the lazy stack's first jump uses estimated heights, and once the real
+  /// ones land it sits at an offset with no rows drawn until the reader scrolls.
+  private func landAtBottom(_ proxy: ScrollViewProxy) async {
+    landing = true
+    defer { landing = false }
+    for delay in [0, 50, 150, 300] {
+      if delay > 0 { try? await Task.sleep(for: .milliseconds(delay)) } else { await Task.yield() }
+      guard landing, overflows else { return }
+      proxy.scrollTo(Self.bottomAnchor, anchor: .bottom)
     }
   }
 
