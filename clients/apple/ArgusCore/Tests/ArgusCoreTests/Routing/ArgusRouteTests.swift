@@ -37,6 +37,7 @@ struct ArgusRouteTests {
     ("/design?url=https%3A%2F%2Ffigma.com%2Fdesign%2Fk%2FA%3Fnode-id%3D1-2", .design(url: "https://figma.com/design/k/A?node-id=1-2")),
     ("/design?url=https%3A%2F%2Ffigma.com%2Fdesign%2Fk&session=s1", .design(url: "https://figma.com/design/k", sessionId: "s1")),
     ("/pull-requests/houwert/argus/42", .pullRequest(repo: "houwert/argus", number: 42)),
+    ("/pull-requests/acme/web/app/12", .pullRequest(repo: "acme/web/app", number: 12)),
     ("/automations", .automations),
     ("/automations/quick", .quickRun(runId: nil)),
     ("/automations/describe", .describeAutomation),

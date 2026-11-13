@@ -1,7 +1,7 @@
 import ArgusKit
 import Foundation
 
-/// Pull requests across a few repositories, in every review state, and one in
+/// Pull requests across a few repositories (one a GitLab merge request), in every review state, and one in
 /// full: the phone's `github.*` replies and the Mac's `get_pull_request_*`.
 extension GalleryFixtures {
   private static func iso(daysAgo: Double) -> String {
@@ -25,14 +25,20 @@ extension GalleryFixtures {
         "maya/bluetooth-pairing", ["author"], 6),
       (301, "acme/grove", "Fix rebase todo parsing with empty lines", "sam-okafor", false, "REVIEW_REQUIRED",
         "fix/rebase-todo", ["mentioned", "commenter"], 9),
+      // A GitLab merge request in nested groups.
+      (57, "acme/platform/billing", "Retry failed invoice webhooks with backoff", "lena-fischer", false, "APPROVED",
+        "lena/webhook-retries", ["reviewer"], 0.7),
     ]
 
   public static var pullRequestList: [[String: Any]] {
     pullRequestRows.map { number, repo, title, author, draft, decision, head, reasons, days in
       var row: [String: Any] = [
-        "number": number, "title": title, "repo": repo, "repo_root": "/Users/dev/Projects/\(repo.split(separator: "/")[1])",
+        "number": number, "title": title, "repo": repo,
+        "repo_root": "/Users/dev/Projects/\(repo.split(separator: "/").last ?? "")",
         "author": author, "is_draft": draft, "head_ref": head, "base_ref": "main",
-        "url": "https://github.com/\(repo)/pull/\(number)", "updated_at": iso(daysAgo: days), "reasons": reasons,
+        // Nested groups only exist on GitLab.
+        "url": repo.split(separator: "/").count > 2
+          ? "https://gitlab.com/\(repo)/-/merge_requests/\(number)" : "https://github.com/\(repo)/pull/\(number)", "updated_at": iso(daysAgo: days), "reasons": reasons,
       ]
       if let decision { row["review_decision"] = decision }
       return row

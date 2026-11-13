@@ -3,7 +3,7 @@ import Foundation
 import GroveKit
 import Observation
 
-/// One pull request's full detail and diff from the host's GitHub service,
+/// One pull or merge request's full detail and diff from the host's code-host service,
 /// and the writes (comment, merge, close) on it.
 @MainActor
 @Observable
@@ -32,8 +32,9 @@ final class PullRequestDetailModel {
     viewed = ViewedFiles(scope: .pullRequest(repo: repo, number: number), host: store)
   }
 
-  private var owner: String { String(repo.split(separator: "/").first ?? "") }
-  private var name: String { String(repo.split(separator: "/").dropFirst().first ?? "") }
+  /// Split at the last slash: a GitLab project's groups all go in `owner`.
+  private var owner: String { repo.split(separator: "/").dropLast().joined(separator: "/") }
+  private var name: String { String(repo.split(separator: "/").last ?? "") }
 
   func load() async {
     guard let backend = store.backend else { return }

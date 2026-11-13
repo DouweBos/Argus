@@ -96,6 +96,15 @@ A real git workflow lives inside Argus:
   Argus checks every few minutes, when you come back to the window, and
   right after a push or a PR action from Argus. It needs the GitHub CLI
   (`gh`) signed in; without it the icon simply doesn't appear.
+- **GitLab** — a project whose remote is on GitLab gets the same for its
+  merge requests: the state icon, the Pull Requests list and detail
+  (pipeline jobs as checks), opening a merge request, and watching. It goes
+  through the GitLab CLI (`glab`): run `glab auth login`, and
+  `glab auth login --hostname <host>` for a self-hosted instance — Argus
+  recognises gitlab.com, any host with `gitlab` in its name, and every host
+  `glab` is signed in to. GitLab sets merge-commit or fast-forward per
+  project, so merging from Argus takes the project's method; only squash is
+  chosen per merge.
 
 ---
 
@@ -208,7 +217,8 @@ Work Argus starts on its own: triggers on a schedule or a signal,
 proposals queued in an inbox for you to accept, mark as done or dismiss, and an
 autonomy ladder that decides how far a run may go unsupervised.
 
-Signal sources today are GitHub issues and pull requests natively, plus
+Signal sources today are GitHub issues and pull requests and GitLab issues
+and merge requests natively, plus
 anything an agent can reach over MCP (e.g. Linear).
 
 See [Automations](/argus/docs/automations) for the full story.
@@ -273,7 +283,7 @@ holds, and no other agent is given them until it ends.
 An agent that opened a pull request can call `watch_pull_request` and end
 its turn. Argus checks the PR every two minutes and messages the agent when
 a check fails (with GitHub's failure annotations and the end of the failing
-job's log), when the checks that gate the merge all pass, when the branch
+job's log, or the end of a failed GitLab pipeline job's trace), when the checks that gate the merge all pass, when the branch
 conflicts with its base, or when someone comments or reviews. Your own
 comments don't count — the agent posts as you. Messages wait in the agent's
 queue if it is busy. Watching stops when the PR merges or closes, or when

@@ -14,19 +14,22 @@
 import type { MergeStrategy } from "../github/prActions";
 import type { PullRequestDetail } from "../github/prDetail";
 import type { InterestingPullRequest } from "../github/pullRequests";
+import type { ViewedFile } from "../github/viewedFiles";
 import type {
   RemotePullRequest,
   RemotePullRequestDetail,
 } from "@argus/remote-protocol";
 import { appState } from "../../state";
-import { ghPrComment, ghPrCreate, ghPrMerge } from "../github/prActions";
-import { getPullRequestDetail, getPullRequestDiff } from "../github/prDetail";
-import { listInterestingPullRequests } from "../github/pullRequests";
 import {
+  commentOnPullRequest,
+  createPullRequest,
+  getPullRequestDetail,
+  getPullRequestDiff,
   getPullRequestViewedFiles,
+  listInterestingPullRequests,
+  mergePullRequest,
   setPullRequestFileViewed,
-  type ViewedFile,
-} from "../github/viewedFiles";
+} from "../codeHost/pullRequests";
 import { autofillPullRequest } from "../session/prAutofill";
 import { readPullRequestTemplate } from "../session/pullRequest";
 import { capture } from "../telemetry/telemetry";
@@ -85,10 +88,12 @@ function toRemotePullRequestDetail(
   };
 }
 
-/** `owner/repo` is how the wire addresses a PR; `gh` wants the halves. */
+/** `owner/repo` (or a GitLab `group/sub/project`) split at its last slash. */
 function splitRepo(repo: string): { owner: string; name: string } {
-  const [owner, name] = repo.split("/");
-  if (!owner || !name) {
+  const cut = repo.lastIndexOf("/");
+  const owner = repo.slice(0, cut);
+  const name = repo.slice(cut + 1);
+  if (cut <= 0 || !name) {
     throw `Not an owner/repo slug: ${repo}`;
   }
 
@@ -138,7 +143,7 @@ export async function createRemotePullRequest(params: {
     throw "This session has no base branch set.";
   }
 
-  return await ghPrCreate({
+  return await createPullRequest({
     repoRoot: session.repo_root,
     title: params.title,
     body: params.body,
@@ -184,7 +189,7 @@ export async function mergeRemotePullRequest(
   strategy: MergeStrategy,
 ): Promise<{ accepted: boolean }> {
   const { owner, name } = splitRepo(repo);
-  await ghPrMerge({ owner, repo: name, number, strategy });
+  await mergePullRequest({ owner, repo: name, number, strategy });
 
   return { accepted: true };
 }
@@ -195,7 +200,7 @@ export async function commentOnRemotePullRequest(
   body: string,
 ): Promise<{ accepted: boolean }> {
   const { owner, name } = splitRepo(repo);
-  await ghPrComment({ owner, repo: name, number, body });
+  await commentOnPullRequest({ owner, repo: name, number, body });
 
   return { accepted: true };
 }

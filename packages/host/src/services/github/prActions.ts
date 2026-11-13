@@ -1,18 +1,12 @@
 /**
  * Mutating GitHub PR actions — create, comment, merge, close — all via the
  * `gh` CLI. Each function throws a descriptive string when `gh` is not
- * installed or the user is not authenticated, matching the pattern used
- * throughout the rest of the github services.
+ * installed or the user is not authenticated. Callers go through
+ * `codeHost/pullRequests`, which refreshes session state afterwards.
  */
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { prReferenceSection } from "../design/prSection";
-import { pullRequestOpened } from "../integrations/report";
-import {
-  requestSessionPullRequestRefresh,
-  sessionPullRequestMayHaveChanged,
-} from "./sessionPullRequests";
 
 const execFileAsync = promisify(execFile);
 
@@ -35,11 +29,7 @@ export async function ghPrCreate(params: {
   repoRoot: string;
   title: string;
 }): Promise<{ number: number; url: string }> {
-  const { repoRoot, title, base, head, draft } = params;
-  const references = prReferenceSection(repoRoot, head);
-  const body = references
-    ? `${params.body.trimEnd()}\n\n${references}`
-    : params.body;
+  const { repoRoot, title, body, base, head, draft } = params;
   const args = [
     "pr",
     "create",
@@ -89,11 +79,8 @@ export async function ghPrCreate(params: {
   if (!match) {
     throw `Could not parse PR number from URL: ${url}`;
   }
-  const number = Number(match[1]);
-  pullRequestOpened(repoRoot, head, url);
-  requestSessionPullRequestRefresh([repoRoot], { force: true });
 
-  return { url, number };
+  return { url, number: Number(match[1]) };
 }
 
 /**
@@ -167,7 +154,6 @@ export async function ghPrMerge(params: {
       ],
       { maxBuffer: 1024 * 1024 },
     );
-    sessionPullRequestMayHaveChanged();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("command not found") || msg.includes("ENOENT")) {
@@ -199,7 +185,6 @@ export async function ghPrClose(params: {
       ["pr", "close", String(number), "--repo", `${owner}/${repo}`],
       { maxBuffer: 1024 * 1024 },
     );
-    sessionPullRequestMayHaveChanged();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("command not found") || msg.includes("ENOENT")) {

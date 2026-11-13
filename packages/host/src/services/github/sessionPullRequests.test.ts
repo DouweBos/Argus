@@ -10,6 +10,13 @@ vi.mock("./pullRequests", () => ({
     root === "/repo" ? ["me/app", "upstream/app"] : [],
   ),
 }));
+vi.mock("../codeHost/repos", () => ({
+  gitlabRepoRefs: vi.fn(async (root: string) =>
+    root === "/gl"
+      ? [{ kind: "gitlab", host: "gitlab.com", path: "acme/web/app" }]
+      : [],
+  ),
+}));
 vi.mock("../session/argusConfig", () => ({
   isBranchProtected: (_root: string, branch: string) => branch === "main",
 }));
@@ -167,5 +174,51 @@ describe("refreshRepoPullRequests", () => {
     await refreshRepoPullRequests(["/other"]);
     expect(execFileMock).not.toHaveBeenCalled();
     expect(sessionPullRequest("s1")).toBeNull();
+  });
+
+  it("looks GitLab sessions up through glab", async () => {
+    appState.sessions.set("g1", session({ id: "g1", repo_root: "/gl" }));
+    execFileMock.mockImplementationOnce(
+      (
+        cmd: string,
+        args: string[],
+        _opts: unknown,
+        cb: (err: null, out: { stderr: string; stdout: string }) => void,
+      ) => {
+        expect(cmd).toBe("glab");
+        expect(args).toContain("gitlab.com");
+        cb(null, {
+          stdout: JSON.stringify({
+            data: {
+              p0: {
+                mergeRequests: {
+                  nodes: [
+                    {
+                      iid: "12",
+                      webUrl:
+                        "https://gitlab.com/acme/web/app/-/merge_requests/12",
+                      state: "opened",
+                      draft: false,
+                      createdAt: "2026-01-01T00:00:00Z",
+                      sourceBranch: "feat/x",
+                      sourceProject: { fullPath: "acme/web/app" },
+                    },
+                  ],
+                },
+              },
+            },
+          }),
+          stderr: "",
+        });
+      },
+    );
+
+    await refreshRepoPullRequests(["/gl"]);
+
+    expect(sessionPullRequest("g1")).toEqual({
+      number: 12,
+      state: "open",
+      url: "https://gitlab.com/acme/web/app/-/merge_requests/12",
+    });
   });
 });

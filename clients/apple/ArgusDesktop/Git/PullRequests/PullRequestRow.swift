@@ -43,7 +43,7 @@ struct PullRequestRow: View {
       HStack(spacing: 6) {
         Button { act(.openInBrowser) } label: { Image(systemName: "safari") }
           .buttonStyle(.argusBorderless)
-          .help("Open on GitHub")
+          .help(PullRequestLabels.openOn(pullRequest.url))
         if let sessionId {
           Button("Open Session") { act(.openSession(sessionId)) }
         } else {
@@ -58,7 +58,7 @@ struct PullRequestRow: View {
   private var meta: String {
     var parts: [String] = []
     if showsRepo { parts.append(pullRequest.repo) }
-    parts.append("#\(pullRequest.number)")
+    parts.append(PullRequestLabels.ref(number: pullRequest.number, url: pullRequest.url))
     parts.append(pullRequest.author.map { "by \($0)" } ?? "unknown author")
     parts.append("updated \(PullRequestLabels.relative(pullRequest.updatedAt))")
     return parts.joined(separator: " · ")
@@ -68,11 +68,12 @@ struct PullRequestRow: View {
 /// A PR's context menu; the list shows it for the selection.
 struct PullRequestMenu: View {
   let sessionId: String?
+  var url: String?
   let act: (PullRequestRow.Action) -> Void
 
   var body: some View {
     Button("Open") { act(.openDetail) }
-    Button("Open on GitHub") { act(.openInBrowser) }
+    Button(PullRequestLabels.openOn(url)) { act(.openInBrowser) }
     Button("Copy Link") { act(.copyURL) }
     Divider()
     if let sessionId {

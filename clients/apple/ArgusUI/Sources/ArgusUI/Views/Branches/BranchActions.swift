@@ -118,7 +118,7 @@ public final class BranchActions {
       if let url = await host.branchPullRequestURL(sessionId: sessionId, branch: branch.name) {
         open(url)
       } else {
-        host.showError("This repo has no GitHub remote.")
+        host.showError("This repo has no GitHub or GitLab remote.")
       }
     }
   }

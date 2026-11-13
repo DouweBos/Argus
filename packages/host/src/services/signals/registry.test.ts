@@ -16,6 +16,7 @@ import {
 import {
   GITHUB_PRS_SOURCE_ID,
   GITHUB_SOURCE_ID,
+  GITLAB_SOURCE_ID,
   LINEAR_SOURCE_ID,
 } from "./sourceIds";
 
@@ -34,6 +35,7 @@ describe("signal source registry", () => {
     for (const id of [
       GITHUB_SOURCE_ID,
       GITHUB_PRS_SOURCE_ID,
+      GITLAB_SOURCE_ID,
       LINEAR_SOURCE_ID,
     ]) {
       expect(getSignalSource(id)?.id).toBe(id);

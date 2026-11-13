@@ -4,7 +4,23 @@ import Foundation
 
 /// How a PR's reasons, review state and dates read, on the Mac and the phone alike.
 public enum PullRequestLabels {
-  /// "Pull request #123 · Merged".
+  /// Whether a pull request URL is a GitLab merge request.
+  public static func isGitLab(_ url: String?) -> Bool {
+    guard let url else { return false }
+    return url.contains("/-/merge_requests/") || (URL(string: url)?.host?.contains("gitlab") ?? false)
+  }
+
+  /// "GitHub" or "GitLab", for "Open on …".
+  public static func host(_ url: String?) -> String { isGitLab(url) ? "GitLab" : "GitHub" }
+
+  public static func openOn(_ url: String?) -> String { "Open on \(host(url))" }
+
+  /// `#123` on GitHub, `!123` on GitLab.
+  public static func ref(number: Int, url: String?) -> String {
+    isGitLab(url) ? "!\(number)" : "#\(number)"
+  }
+
+  /// "Pull request #123 · Merged", or "Merge request !123" on GitLab.
   public static func state(_ pr: RemoteSessionPullRequest) -> String {
     let state =
       switch pr.state {
@@ -13,7 +29,8 @@ public enum PullRequestLabels {
       case .merged: "Merged"
       case .closed: "Closed"
       }
-    return "Pull request #\(pr.number) · \(state)"
+    let noun = isGitLab(pr.url) ? "Merge request" : "Pull request"
+    return "\(noun) \(ref(number: pr.number, url: pr.url)) · \(state)"
   }
 
   /// The state, plus that an agent is watching it.
@@ -57,9 +74,17 @@ public enum PullRequestLabels {
     return date.formatted(.relative(presentation: .named))
   }
 
-  /// `gh` missing or signed out is the usual failure; say how to fix it.
+  /// `gh` or `glab` missing or signed out is the usual failure; say how to fix it.
   public static func explain(_ error: String) -> String {
     let lower = error.lowercased()
+    if lower.contains("glab") || lower.contains("gitlab") {
+      if lower.contains("not installed") || lower.contains("enoent") {
+        return "The GitLab CLI (glab) is required. Install it and run `glab auth login`, then try again."
+      }
+      if lower.contains("signed in") || lower.contains("auth login") {
+        return "The GitLab CLI isn't signed in. Run `glab auth login`, then try again."
+      }
+    }
     if lower.contains("enoent") || lower.contains("not found") && lower.contains("gh") {
       return "The GitHub CLI (gh) is required. Install it and run `gh auth login`, then try again."
     }

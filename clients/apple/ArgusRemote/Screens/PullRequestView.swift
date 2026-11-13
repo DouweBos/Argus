@@ -46,7 +46,7 @@ struct PullRequestView: View {
       Button("Cancel", role: .cancel) {}
       Button("Merge") { merge() }
     } message: {
-      Text(strategy.label + " on GitHub. This can't be undone from here.")
+      Text(strategy.label + " on \(PullRequestLabels.host(detail?.url)). This can't be undone from here.")
     }
     .task(id: number) {
       let marks = ViewedFiles(scope: .pullRequest(repo: repo, number: number), host: host)

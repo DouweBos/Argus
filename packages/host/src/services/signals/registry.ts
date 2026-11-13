@@ -16,9 +16,15 @@ import {
 } from "./injectionScan";
 import { githubSource } from "./sources/github";
 import { githubPrsSource } from "./sources/githubPrs";
+import { gitlabSource } from "./sources/gitlab";
 import { linearSource } from "./sources/linear";
 
-const SOURCES: SignalSource[] = [githubSource, githubPrsSource, linearSource];
+const SOURCES: SignalSource[] = [
+  githubSource,
+  githubPrsSource,
+  gitlabSource,
+  linearSource,
+];
 
 export function listSignalSources(): SignalSource[] {
   return [...SOURCES];

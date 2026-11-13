@@ -86,7 +86,7 @@ private struct PullRequestDetailContent: View {
     .confirmationDialog("Close pull request #\(model.number)?", isPresented: $confirmingClose) {
       Button("Close Pull Request", role: .destructive) { Task { await model.close() } }
     } message: {
-      Text("It can be reopened on GitHub. The branch is kept.")
+      Text("It can be reopened on \(PullRequestLabels.host(model.detail?.url)). The branch is kept.")
     }
     .liveRefresh(enabled: store.connection == .ready, every: .seconds(60)) { await model.load() }
   }
@@ -122,7 +122,12 @@ private struct PullRequestDetailContent: View {
     case .files:
       FileDiffsView(
         files: model.files, isLoading: !model.diffLoaded,
-        fileMenu: { _ in AnyView(Button("View on GitHub") { model.openOnGitHub("\(detail.url)/files") }) },
+        fileMenu: { _ in
+          AnyView(
+            Button("View on \(PullRequestLabels.host(detail.url))") {
+              model.openOnGitHub(PullRequestLabels.isGitLab(detail.url) ? "\(detail.url)/diffs" : "\(detail.url)/files")
+            })
+        },
         viewed: model.viewed)
       .overlay {
         if model.diffLoaded, let error = model.diffError {
@@ -142,13 +147,13 @@ private struct PullRequestDetailContent: View {
       if let busy = model.busy {
         ProgressView().controlSize(.small).help(busy)
       }
-      Button { model.openOnGitHub() } label: { Label("Open on GitHub", systemImage: "safari") }
-        .help("Open on GitHub")
+      Button { model.openOnGitHub() } label: { Label(PullRequestLabels.openOn(detail.url), systemImage: "safari") }
+        .help(PullRequestLabels.openOn(detail.url))
       if detail.state == "OPEN" {
         Button("Close…") { confirmingClose = true }.disabled(model.busy != nil)
         Button("Merge…") { merging = true }
           .disabled(model.busy != nil || detail.isDraft || detail.mergeable == "CONFLICTING")
-          .help(detail.isDraft ? "Drafts can't be merged" : detail.mergeable == "CONFLICTING" ? "This branch conflicts with its base" : "Merge on GitHub")
+          .help(detail.isDraft ? "Drafts can't be merged" : detail.mergeable == "CONFLICTING" ? "This branch conflicts with its base" : "Merge on \(PullRequestLabels.host(detail.url))")
       }
     }
   }
@@ -178,7 +183,7 @@ private struct PullRequestWindowChrome<Actions: View>: ViewModifier {
     } else {
       content
         .navigationTitle(detail.title)
-        .navigationSubtitle("\(detail.repoNameWithOwner) #\(Int(detail.number))")
+        .navigationSubtitle("\(detail.repoNameWithOwner) \(PullRequestLabels.ref(number: Int(detail.number), url: detail.url))")
         .toolbar { ToolbarItemGroup { actions() } }
     }
   }
@@ -255,8 +260,8 @@ private struct MergePullRequestSheet: View {
     .formStyle(.grouped)
     .safeAreaInset(edge: .top) {
       VStack(alignment: .leading, spacing: 4) {
-        Text("Merge #\(Int(detail.number))?").font(.scaled(.headline))
-        Text("\(detail.headRefName) into \(detail.baseRefName) on GitHub. This can't be undone from here.")
+        Text("Merge \(PullRequestLabels.ref(number: Int(detail.number), url: detail.url))?").font(.scaled(.headline))
+        Text("\(detail.headRefName) into \(detail.baseRefName) on \(PullRequestLabels.host(detail.url)). This can't be undone from here.")
           .foregroundStyle(.secondary)
       }
       .frame(maxWidth: .infinity, alignment: .leading)

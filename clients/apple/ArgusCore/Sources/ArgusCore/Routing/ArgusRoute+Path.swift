@@ -36,9 +36,10 @@ extension ArgusRoute {
     case ("design", 1):
       guard let url = query["url"].flatMap(\.nonEmpty) else { return nil }
       self = .design(url: url, sessionId: query["session"].flatMap(\.nonEmpty))
-    case ("pull-requests", 4):
-      guard let number = Int(parts[3]) else { return nil }
-      self = .pullRequest(repo: "\(parts[1])/\(parts[2])", number: number)
+    case ("pull-requests", 4...):
+      // A GitLab project can sit in nested groups: `/pull-requests/group/sub/project/12`.
+      guard let last = parts.last, let number = Int(last) else { return nil }
+      self = .pullRequest(repo: parts.dropFirst().dropLast().joined(separator: "/"), number: number)
     case ("automations", 1): self = .automations
     case ("automations", 2) where parts[1] == "quick": self = .quickRun(runId: nil)
     case ("automations", 2) where parts[1] == "describe": self = .describeAutomation

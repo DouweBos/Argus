@@ -246,11 +246,12 @@ is bounded by its own timeout and by the daily budget if you set one.
 What a run is handed before it starts thinking. Sources are per-automation, and
 one that is not configured drops out of the run rather than failing it.
 
-| Source                   | Mode   | Needs                          | Provides                                                       |
-| ------------------------ | ------ | ------------------------------ | -------------------------------------------------------------- |
-| **GitHub**               | native | `gh` logged in                 | Issues assigned to you, PRs requesting your review.            |
-| **GitHub pull requests** | native | `gh` logged in                 | Your open PRs, with CI state and comments since the last push. |
-| **Linear**               | agent  | A Linear MCP server configured | Your assigned issues, fetched by the agent itself.             |
+| Source                   | Mode   | Needs                          | Provides                                                                                                             |
+| ------------------------ | ------ | ------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| **GitHub**               | native | `gh` logged in                 | Issues assigned to you, PRs requesting your review.                                                                  |
+| **GitHub pull requests** | native | `gh` logged in                 | Your open PRs, with CI state and comments since the last push.                                                       |
+| **GitLab**               | native | `glab` logged in               | Issues assigned to you and merge requests requesting your review, on every GitLab instance an open project lives on. |
+| **Linear**               | agent  | A Linear MCP server configured | Your assigned issues, fetched by the agent itself.                                                                   |
 
 _Native_ sources are fetched by Argus and serialized into the run's prompt.
 _Agent_ sources hand the agent instructions and let it do the fetching. With

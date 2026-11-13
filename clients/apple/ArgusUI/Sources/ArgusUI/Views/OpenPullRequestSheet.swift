@@ -45,7 +45,7 @@ public struct OpenPullRequestSheet: View {
 
   public var body: some View {
     content
-      .confirmationDialog("Open this pull request on GitHub?", isPresented: $confirming, titleVisibility: .visible) {
+      .confirmationDialog("Open this pull request?", isPresented: $confirming, titleVisibility: .visible) {
         Button(draft ? "Push and Open Draft" : "Push and Open") { open() }
         Button("Cancel", role: .cancel) {}
       } message: {
@@ -122,7 +122,7 @@ public struct OpenPullRequestSheet: View {
             Label("Pull request opened", systemImage: Icon.check).font(.scaled(.headline))
             Text(createdURL).font(.scaled(size: 12, design: .monospaced)).textSelection(.enabled)
             HStack {
-              Button("Open on GitHub") { openOnGitHub(createdURL) }
+              Button(PullRequestLabels.openOn(createdURL)) { openOnGitHub(createdURL) }
               Button("Copy Link") { Clipboard.copy(createdURL) }
             }
           }
@@ -183,7 +183,7 @@ public struct OpenPullRequestSheet: View {
               SectionHeader(title: "Pull request opened")
               MutedText(createdURL, lineLimit: 2).textSelection(.enabled)
               FlowRow(spacing: 8) {
-                Btn(label: "Open on GitHub", small: true, icon: Icon.openExternal, hugs: true) {
+                Btn(label: PullRequestLabels.openOn(createdURL), small: true, icon: Icon.openExternal, hugs: true) {
                   openOnGitHub(createdURL)
                 }
                 Btn(label: "Copy link", tone: .secondary, small: true, icon: Icon.copy, hugs: true) {

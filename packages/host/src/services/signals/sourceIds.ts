@@ -9,4 +9,5 @@
 
 export const GITHUB_SOURCE_ID = "github";
 export const GITHUB_PRS_SOURCE_ID = "github-prs";
+export const GITLAB_SOURCE_ID = "gitlab";
 export const LINEAR_SOURCE_ID = "linear";
