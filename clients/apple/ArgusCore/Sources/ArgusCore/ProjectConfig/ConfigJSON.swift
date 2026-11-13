@@ -60,13 +60,14 @@ public enum ConfigJSON {
 
   private static let keyOrder: [String: [String]] = [
     "": [
-      "setup", "terminals", "run", "workspace_env",
+      "setup", "teardown", "terminals", "run", "workspace_env",
       "related_projects", "browser_url", "browser_presets", "simulator_deeplinks",
       "auto_continue_on_limit", "protected_branches",
       "default_base_branch", "single_runtime",
       "auto_fetch_minutes", "release_note_patterns", "llm", "tools", "automations",
     ],
     "setup": ["copy", "symlink", "commands"],
+    "teardown": ["commands"],
     "setup.copy.[]": ["path", "exclude"],
     "setup.symlink.[]": ["path", "exclude"],
     "terminals.[]": ["name", "dir"],

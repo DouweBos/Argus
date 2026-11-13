@@ -288,15 +288,9 @@ struct SessionView: View {
 
   /// A bar while the computer removes the session; a spinner until there is a count.
   private func setupProgress(_ session: RemoteSession) -> some View {
-    VStack(spacing: 12) {
-      if let fraction = session.progress?.fraction {
-        ProgressView(value: fraction).frame(maxWidth: 220)
-      } else {
-        ProgressView()
-      }
-      MutedText(SessionActivity.statusLabel(session.status) ?? "")
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    SessionDeletingView(progress: session.progress)
+      .padding(theme.space)
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 
   // MARK: Toolbar

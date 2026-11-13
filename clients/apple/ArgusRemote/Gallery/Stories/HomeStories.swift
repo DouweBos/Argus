@@ -24,6 +24,8 @@
         },
         setup("sessions/setup/progress", "s-setup"),
         setup("sessions/setup/failed", "s-failed"),
+        setup("sessions/delete/teardown", "s-teardown"),
+        setup("sessions/delete/teardown-failed", "s-teardown-failed"),
         GalleryStory("sessions/context-card", fixtures: GalleryFixtures.home, setup: load) {
           SessionDetailsView(
             session: GalleryFixtures.argusSession("s-long"), agentId: "a-perm", open: { _ in }, newAgent: {},

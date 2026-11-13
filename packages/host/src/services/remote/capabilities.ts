@@ -565,6 +565,8 @@ function toRemoteSession(s: Session): RemoteSession {
       s.status === "initializing" || s.status === "deleting"
         ? getSessionProgress(s.id)
         : null,
+    delete_failed:
+      typeof s.status === "object" ? (s.delete_failed ?? null) : null,
     availability: s.availability ?? "available",
     // The drive's name, not its mount point — this schema keeps host paths
     // off the wire, and the name is what the user has to go and plug in.
@@ -1731,9 +1733,14 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   },
 
   "sessions.delete": async (params) => {
-    const { id, delete_branch } = parse("sessions.delete", params);
+    const { id, delete_branch, skip_teardown } = parse(
+      "sessions.delete",
+      params,
+    );
     requireSession(id);
-    await control(() => deleteSession(id, delete_branch));
+    await control(() =>
+      deleteSession(id, delete_branch, { skipTeardown: skip_teardown }),
+    );
 
     return { accepted: true };
   },

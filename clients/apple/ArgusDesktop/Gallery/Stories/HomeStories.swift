@@ -26,6 +26,8 @@
         ) { SidebarView() },
         setup("sessions/setup/progress", "s-setup"),
         setup("sessions/setup/failed", "s-failed"),
+        setup("sessions/delete/teardown", "s-teardown"),
+        setup("sessions/delete/teardown-failed", "s-teardown-failed"),
         GalleryStory(
           "sessions/context-card", size: CGSize(width: 900, height: 700), fixtures: GalleryFixtures.home,
           setup: load

@@ -13,6 +13,7 @@ import {
 interface Config {
   run: { command: string; cwd?: string; title: string }[];
   setup: { commands: string[] };
+  teardown?: { commands: string[] };
   workspace_env: { name: string }[];
 }
 
@@ -128,8 +129,9 @@ SECRET = "nope"
       expect(config.setup.commands[0]).toContain("CONDUCTOR_ROOT_PATH=");
       expect(config.run.map((r) => r.title)).toEqual(["Run"]);
       expect(config.workspace_env.map((e) => e.name)).toContain(PORT_SLOT_ENV);
+      expect(config.teardown?.commands).toEqual(["./archive.sh"]);
       expect(result?.suggestion.signals[0].label).toBe("Conductor");
-      expect(result?.notes).toHaveLength(2);
+      expect(result?.notes).toHaveLength(1);
     });
   });
 

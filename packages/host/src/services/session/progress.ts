@@ -6,6 +6,10 @@ import { emitHostEvent } from "@argus/host/bus";
 export interface SessionProgress {
   current: number;
   total: number;
+  /** Set while `.argus.json` teardown commands run, before the removal. */
+  phase?: "teardown";
+  /** The running step's latest output line. */
+  detail?: string | null;
 }
 
 const progressBySession = new Map<string, SessionProgress>();

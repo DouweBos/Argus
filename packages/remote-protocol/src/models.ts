@@ -34,9 +34,21 @@ export const RemoteSession = z.object({
    * `deleting`. Absent before the first count, and on older hosts.
    */
   progress: z
-    .object({ current: z.number(), total: z.number() })
+    .object({
+      current: z.number(),
+      total: z.number(),
+      /** `teardown` while the project's teardown commands run. */
+      phase: z.enum(["teardown"]).nullish(),
+      /** The running step's latest output line. */
+      detail: z.string().nullish(),
+    })
     .nullable()
     .optional(),
+  /**
+   * Which step of the last delete failed while `status` is `error`; null when
+   * it was setup that failed. Absent on older hosts.
+   */
+  delete_failed: z.enum(["remove", "teardown"]).nullish(),
   /**
    * Whether the session's files are reachable. Orthogonal to `status`: the
    * usual cause is the external drive holding its worktree being unplugged

@@ -46,7 +46,7 @@ struct ArgusJsonReviewView: View {
       if generator.conductor != nil {
         option(
           title: "Import from Conductor",
-          detail: "Use the setup script and run actions from this repo's Conductor settings. Argus fills in the CONDUCTOR_ variables they read, like CONDUCTOR_PORT.",
+          detail: "Use the setup, run and archive scripts from this repo's Conductor settings. Argus fills in the CONDUCTOR_ variables they read, like CONDUCTOR_PORT.",
           button: "Import from Conductor", busy: false, prominent: true
         ) { _ in generator.importConductor() }
       }

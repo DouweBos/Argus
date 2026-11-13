@@ -61,6 +61,15 @@ struct ArgusConfigDraftTests {
     #expect(draft.applied(to: file) == file)
   }
 
+  @Test func teardownRoundTripsAndDropsWhenEmpty() throws {
+    let file = try raw(#"{ "teardown": { "commands": ["docker compose down"] } }"#)
+    var draft = ArgusConfigDraft(raw: file)
+    #expect(draft.teardownCommands.map(\.value) == ["docker compose down"])
+    #expect(draft.applied(to: file)["teardown"] == file["teardown"])
+    draft.teardownCommands = [.init("  ")]
+    #expect(draft.applied(to: file)["teardown"] == nil)
+  }
+
   @Test func dropsRetiredKeys() throws {
     var file = try raw(#"{ "custom": 1 }"#)
     for key in ArgusConfigDraft.retiredKeys { file[key] = .string("old") }

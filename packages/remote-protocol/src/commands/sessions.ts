@@ -82,7 +82,10 @@ export const SESSION_COMMANDS = {
   },
   delete_session: {
     tier: "admin",
-    params: SessionId.extend({ shouldDeleteBranch: z.boolean().optional() }),
+    params: SessionId.extend({
+      shouldDeleteBranch: z.boolean().optional(),
+      skipTeardown: z.boolean().optional(),
+    }),
     result: Void,
   },
   rename_session: {

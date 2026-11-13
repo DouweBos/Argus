@@ -35,6 +35,7 @@
         projectSheet("mac-only", repoFile: false, section: .setup),
         projectSheet("layered", repoFile: true, section: .setup),
         projectSheet("overridden", repoFile: true, section: .run),
+        projectSheet("teardown", repoFile: true, section: .teardown),
       ]
     }
 
@@ -49,7 +50,7 @@
           .init(
             config: projectConfig,
             repoFile: repoFile,
-            repoKeys: repoFile ? ["setup", "run", "protected_branches"] : [],
+            repoKeys: repoFile ? ["setup", "teardown", "run", "protected_branches"] : [],
             hostKeys: repoFile ? ["run", "browser_url"] : Array(projectConfig.keys)),
           branchPrefix: "sam/")
         return ProjectSettingsSheet(repoRoot: root, settings: settings, section: section)
@@ -60,7 +61,10 @@
       "setup": .object([
         "copy": .array([.string("node_modules"), .string("ios/Pods")]),
         "symlink": .array([.string(".env.local")]),
-        "commands": .array([.string("pnpm install --frozen-lockfile")]),
+        "commands": .array([.string("pnpm install --frozen-lockfile"), .string("docker compose up -d")]),
+      ]),
+      "teardown": .object([
+        "commands": .array([.string("docker compose down -v"), .string("dropdb --if-exists storefront_$ARGUS_SLOT")])
       ]),
       "run": .array([
         .object(["title": .string("Web"), "command": .string("pnpm dev"), "restartOnRerun": .bool(true)]),

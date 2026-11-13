@@ -117,6 +117,11 @@ export interface Session {
   availability?: "available" | "unavailable";
   /** Why it is unreachable. Only set when `availability` is "unavailable". */
   unavailable_reason?: "volume_missing";
+  /**
+   * Which step of the last delete failed, while `status` is an error. A failed
+   * teardown leaves the worktree intact and can be skipped with "delete anyway".
+   */
+  delete_failed?: "remove" | "teardown" | null;
   /** Mount point the session lives on, for the message naming the drive. */
   unavailable_volume?: string | null;
   /** Mount point of the external drive holding the session; null on the boot volume. */
@@ -267,6 +272,15 @@ export interface SetupConfig {
   commands: string[];
 }
 
+/** The `teardown` block inside `.argus.json`. */
+export interface TeardownConfig {
+  /**
+   * Shell commands run in the worktree, with `workspace_env` set, before it is
+   * removed (e.g. `docker compose down`). Each entry is passed to `sh -c`.
+   */
+  commands: string[];
+}
+
 /** Read the path string from a `SetupCopyEntry` regardless of its shape. */
 export function setupEntryPath(entry: SetupCopyEntry): string {
   return typeof entry === "string" ? entry : entry.path;
@@ -301,6 +315,8 @@ export interface LlmConfig {
 export interface ArgusConfig {
   /** Setup instructions run once when a new session is created. */
   setup: SetupConfig;
+  /** Commands run in the worktree before it is removed. */
+  teardown?: TeardownConfig | null;
   /** Terminals to auto-open when a session is selected. */
   terminals: TerminalConfig[];
   /** Env vars with a unique integer per session (e.g. for port allocation). */
@@ -453,6 +469,7 @@ export function defaultSetupConfig(): SetupConfig {
 export function defaultArgusConfig(): ArgusConfig {
   return {
     setup: defaultSetupConfig(),
+    teardown: null,
     terminals: [],
     workspace_env: [],
     run: [],

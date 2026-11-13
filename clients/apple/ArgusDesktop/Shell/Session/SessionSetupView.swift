@@ -14,7 +14,7 @@ struct SessionSetupView: View {
       case .error:
         SetupFailedRow(session: session).frame(maxWidth: 520)
       case .deleting:
-        progress("Deleting the worktree…")
+        SessionDeletingView(progress: progress)
       case .initializing:
         SetupProgressCard(session: session).frame(maxWidth: 520)
       default:

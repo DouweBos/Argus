@@ -37,7 +37,7 @@ extension GalleryFixtures {
     return json
   }
 
-  /// Argus's sessions: the project root, then worktrees ready, setting up, failed and on a missing disk.
+  /// Argus's sessions: the project root, then worktrees ready, setting up, failed, tearing down and on a missing disk.
   public static var argusSessions: [[String: Any]] {
     [
       session("s-root", branch: "main", kind: "project_root"),
@@ -53,6 +53,21 @@ extension GalleryFixtures {
       session(
         "s-failed", branch: "pnpm-upgrade", name: "Upgrade pnpm", status: "error",
         extra: ["setup_error": "pnpm install exited with code 1: ERR_PNPM_OUTDATED_LOCKFILE Cannot install with \"frozen-lockfile\""]),
+      session(
+        "s-teardown", branch: "checkout-db", name: "Per-branch checkout database", status: "deleting",
+        extra: [
+          "progress": [
+            "current": 0, "total": 2, "phase": "teardown",
+            "detail": "Container storefront-db-14  Stopping",
+          ]
+        ]),
+      session(
+        "s-teardown-failed", branch: "search-index", name: "Search index rebuild", status: "error",
+        extra: [
+          "delete_failed": "teardown",
+          "setup_error":
+            "Teardown command failed (exit 1): docker compose down -v\nCannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?",
+        ]),
       session(
         "s-offline", branch: "external-disk", name: "Archive on the external disk",
         extra: ["availability": "unavailable", "unavailable_volume": "Samsung T7"]),

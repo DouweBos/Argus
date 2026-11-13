@@ -287,6 +287,7 @@ export interface EventMap {
   };
   conductor_config_imported: {
     format: "conductor_json" | "settings_toml";
+    has_archive: boolean;
     has_setup: boolean;
     note_count: number;
     run_count: number;
@@ -468,6 +469,7 @@ export interface EventMap {
   session_deleted: {
     delete_branch: boolean;
     kind: SessionKind;
+    teardown_skipped: boolean;
   };
   session_merge_aborted: { kind: MergeAbortKind };
   session_merge_conflict: { conflicting_files: number; phase: MergePhase };
@@ -478,6 +480,11 @@ export interface EventMap {
     /** A worktree made outside Argus whose setup never ran, not a failed one. */
     pending: boolean;
     success: boolean;
+  };
+  session_teardown_ran: {
+    command_count: number;
+    success: boolean;
+    duration_bucket: "<1m" | "<10m" | "<10s" | ">=10m";
   };
   session_started_from_issue: { source: "linear" };
   simulator_boot_failed: {

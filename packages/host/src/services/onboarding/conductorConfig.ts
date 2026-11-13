@@ -282,8 +282,8 @@ export function convertCommand(
 
 /**
  * The `.argus.json` Argus would infer for the repo, with Conductor's setup
- * script and run actions in place of the guessed ones. Null without a
- * Conductor config.
+ * script and run actions in place of the guessed ones, and its archive script
+ * as the teardown. Null without a Conductor config.
  */
 export function importConductorConfig(
   repoRoot: string,
@@ -310,6 +310,9 @@ export function importConductorConfig(
     const setup = config.setup as { commands: string[] };
     config.setup = { ...setup, commands: [convert(scripts.setup)] };
   }
+  if (scripts.archive) {
+    config.teardown = { commands: [convert(scripts.archive)] };
+  }
   if (scripts.run.length) {
     config.run = scripts.run.map((a) => ({
       title: a.title,
@@ -330,11 +333,6 @@ export function importConductorConfig(
     ];
   }
 
-  if (scripts.archive) {
-    notes.push(
-      "The archive script isn't imported: Argus has no step that runs when a session is deleted.",
-    );
-  }
   if (scripts.runMode === "nonconcurrent") {
     notes.push(
       "Run actions no longer stop each other when one starts; each one restarts itself when run again.",
@@ -353,6 +351,7 @@ export function importConductorConfig(
   capture("conductor_config_imported", {
     format: scripts.format,
     has_setup: Boolean(scripts.setup),
+    has_archive: Boolean(scripts.archive),
     run_count: scripts.run.length,
     note_count: notes.length,
   });

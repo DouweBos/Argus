@@ -1,8 +1,8 @@
 import ArgusCore
 import SwiftUI
 
-/// Why a session's setup failed, with the desktop's two ways out: run setup
-/// again, or mark it ready once the failing step was fixed by hand.
+/// Why a session's setup or delete failed, with the ways out: run setup again
+/// or mark it ready; retry the delete, or after a failed teardown delete anyway.
 public struct SetupFailedRow: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
@@ -18,7 +18,7 @@ public struct SetupFailedRow: View {
 
   public var body: some View {
     VStack(alignment: .leading, spacing: 8) {
-      Label("Setup failed", systemImage: Icon.warning)
+      Label(title, systemImage: Icon.warning)
         .font(.scaled(.subheadline).weight(.semibold))
         .foregroundStyle(theme.error)
       if let message = session.setupError, !message.isEmpty {
@@ -33,17 +33,39 @@ public struct SetupFailedRow: View {
       }
       if host.hasControl {
         FlowRow(spacing: 8) {
-          Btn(label: "Retry", small: true, icon: Icon.refresh) {
-            run { await host.retrySessionSetup(id: session.id, repoRoot: session.repoRoot) }
-          }
-          Btn(label: "Mark as ready", tone: .secondary, small: true, icon: Icon.check) {
-            run { await host.markSessionReady(id: session.id, repoRoot: session.repoRoot) }
+          if session.deleteFailed != nil {
+            Btn(label: "Retry", small: true, icon: Icon.refresh) {
+              run { await host.deleteSession(id: session.id, repoRoot: session.repoRoot, deleteBranch: nil) }
+            }
+            if session.deleteFailed == .teardown {
+              Btn(label: "Delete anyway", tone: .danger, small: true, icon: Icon.trash) {
+                run {
+                  await host.deleteSession(
+                    id: session.id, repoRoot: session.repoRoot, deleteBranch: nil, skipTeardown: true)
+                }
+              }
+            }
+          } else {
+            Btn(label: "Retry", small: true, icon: Icon.refresh) {
+              run { await host.retrySessionSetup(id: session.id, repoRoot: session.repoRoot) }
+            }
+            Btn(label: "Mark as ready", tone: .secondary, small: true, icon: Icon.check) {
+              run { await host.markSessionReady(id: session.id, repoRoot: session.repoRoot) }
+            }
           }
         }
         .disabled(busy)
       }
     }
     .padding(.vertical, 4)
+  }
+
+  private var title: String {
+    switch session.deleteFailed {
+    case .teardown: "Teardown failed"
+    case .remove: "Delete failed"
+    case nil: "Setup failed"
+    }
   }
 
   private func run(_ action: @escaping () async -> Void) {

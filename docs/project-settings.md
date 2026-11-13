@@ -101,6 +101,7 @@ tool also save to this Mac, never to the repo.
 ```jsonc
 {
   "setup":              { "copy": [...], "symlink": [...], "commands": [...] },
+  "teardown":           { "commands": [...] },
   "terminals":          [{ "name": "...", "dir": "..." }],
   "run":                [{ "title": "...", "command": "...", "restartOnRerun": true }],
   "workspace_env":      [{ "name": "...", "base_value": 0, "range": 100, "strategy": "sequential" }],
@@ -147,6 +148,32 @@ Order: copy → symlink → commands.
 | `copy`     | `(string \| { path, exclude? })[]` | `[]`    | Files/dirs to copy from the main repo into the worktree. Each entry is either a path/glob string or `{ path, exclude }` — `exclude` patterns are forwarded to `rsync --exclude`, so they prune mid-tree (e.g. excluding Claude Code's per-session worktrees nested deep inside `.claude`). |
 | `symlink`  | `(string \| { path, exclude? })[]` | `[]`    | Files to symlink into the worktree (changes flow both ways). Glob patterns supported. The object form is accepted for symmetry, but `exclude` only filters glob expansions — symlinking a literal directory is a single link with no subtree to prune.                                     |
 | `commands` | `string[]`                         | `[]`    | Shell commands run in the worktree after copy/symlink. Each entry is passed to `sh -c`.                                                                                                                                                                                                    |
+
+---
+
+## `teardown` — what happens before a worktree is deleted
+
+Runs in the worktree, with [`workspace_env`](#workspace_env--per-session-env-vars)
+set, right before it is removed: when you delete a session, when a merge
+deletes it, and on any other cleanup. Agents and terminals are stopped
+first. Use it to undo what setup started — stop a `docker compose` stack,
+drop a per-branch database, uninstall a simulator app or free a port.
+
+```jsonc
+"teardown": {
+  "commands": ["docker compose down -v", "dropdb --if-exists app_$ARGUS_SLOT"]
+}
+```
+
+| Field      | Type       | Default | Description                                                                                                                     |
+| ---------- | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `commands` | `string[]` | `[]`    | Shell commands run in order. Each entry is passed to `bash -c`; the first one that fails stops the rest and keeps the worktree. |
+
+The delete progress shows the running command's latest output. If a
+command fails, the session shows its output with **Retry** and **Delete
+anyway**, which removes the worktree without running teardown again. A
+command silent for ten minutes is stopped and counts as failed. Edit it
+under **Project Settings → Teardown**.
 
 ---
 

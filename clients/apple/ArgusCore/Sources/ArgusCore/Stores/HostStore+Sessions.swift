@@ -309,15 +309,21 @@ extension HostStore {
     } catch { report(error) }
   }
 
-  public func deleteSession(id: String, repoRoot: String, deleteBranch: Bool = false) async {
+  /// `deleteBranch` nil keeps what a failed delete asked for; `skipTeardown`
+  /// is "delete anyway" after the project's teardown commands failed.
+  public func deleteSession(
+    id: String, repoRoot: String, deleteBranch: Bool? = false, skipTeardown: Bool = false
+  ) async {
     guard let backend else { return }
     struct Params: Encodable {
       let id: String
-      let delete_branch: Bool
+      let delete_branch: Bool?
+      let skip_teardown: Bool?
     }
     do {
       try await backend.request(
-        .sessionsDelete, Params(id: id, delete_branch: deleteBranch),
+        .sessionsDelete,
+        Params(id: id, delete_branch: deleteBranch, skip_teardown: skipTeardown ? true : nil),
         as: IgnoredResult.self)
       mergedSessionIds.remove(id)
       await loadSessions(repoRoot: repoRoot)

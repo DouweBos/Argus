@@ -19,6 +19,20 @@ struct SetupSection: View {
   }
 }
 
+struct TeardownSection: View {
+  @Binding var draft: ArgusConfigDraft
+
+  var body: some View {
+    SectionIntro(
+      title: "Session teardown",
+      text: "Commands run in the worktree, with the workspace environment set, right before a session is deleted — after a merge too. Use them to stop containers, drop a per-branch database or free a port. If one fails, you can retry or delete anyway."
+    )
+    StringListEditor(
+      label: "Commands", items: $draft.teardownCommands, placeholder: "docker compose down",
+      emptyLabel: "No teardown commands")
+  }
+}
+
 struct WorkspaceEnvSection: View {
   @Binding var draft: ArgusConfigDraft
   @Environment(\.theme) private var theme

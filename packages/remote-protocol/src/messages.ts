@@ -426,6 +426,8 @@ export const MethodParams = {
   "sessions.delete": z.object({
     id: z.string(),
     delete_branch: z.boolean().optional(),
+    /** "Delete anyway": skip the project's teardown commands after they failed. */
+    skip_teardown: z.boolean().optional(),
   }),
   "sessions.rename": z.object({
     id: z.string(),

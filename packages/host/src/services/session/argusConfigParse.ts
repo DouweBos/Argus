@@ -15,6 +15,7 @@ import {
   normalizeRunCommands,
   normalizeSetupEntries,
   normalizeSimulatorDeeplinks,
+  normalizeTeardownConfig,
   normalizeToolsConfig,
   normalizeWorkspaceEnv,
 } from "./argusConfigNormalize";
@@ -56,6 +57,7 @@ export function parseArgusConfig(
       symlink: normalizeSetupEntries(setup.symlink, repoRoot, "setup.symlink"),
       commands: (setup.commands as string[]) ?? [],
     },
+    teardown: normalizeTeardownConfig(parsed.teardown),
     terminals: (parsed.terminals as ArgusConfig["terminals"]) ?? [],
     workspace_env: normalizeWorkspaceEnv(
       parsed.workspace_env ?? parsed.workspace_port_env,
@@ -93,7 +95,7 @@ export function parseArgusConfig(
  * - `setup.copy`, `setup.symlink`, `setup.commands` — concatenated (deduped).
  * - `terminals` — concatenated.
  * - `workspace_env` — local replaces base if present.
- * - `run` — local replaces base if present.
+ * - `run`, `teardown` — local replaces base if present.
  */
 export function mergeConfig(
   base: ArgusConfig,
@@ -129,6 +131,7 @@ export function mergeConfig(
       symlink: dedupExtendSetup(base.setup.symlink, local.setup.symlink),
       commands: dedupExtend(base.setup.commands, local.setup.commands),
     },
+    teardown: local.teardown ?? base.teardown ?? null,
     terminals: dedupTerminals(base.terminals, local.terminals),
     workspace_env:
       local.workspace_env.length > 0 ? local.workspace_env : base.workspace_env,

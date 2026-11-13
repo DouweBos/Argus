@@ -77,6 +77,7 @@ import { clearSessionProgress, trackDeleteProgress } from "./progress";
 import { loadPersistedRepoRoots, persistRepoRoots } from "./repoRootsStore";
 import { runSetupPipeline } from "./setup";
 import { evacuateWorktreeRoots } from "./sidecars";
+import { teardownSession } from "./teardown";
 import {
   assertWorktreeBaseAvailable,
   isOnMissingVolume,
@@ -1396,6 +1397,7 @@ export function clearSessionSetupError(id: string): void {
   }
 
   session.status = "ready";
+  session.delete_failed = null;
   appState.sessions.set(id, session);
   emitHostEvent(`session:status:${id}`, "ready");
   telemetryCapture("session_setup_recovered", {
@@ -1426,6 +1428,7 @@ export function retrySessionSetup(id: string): void {
     clearSetupPending(session);
   }
 
+  session.delete_failed = null;
   session.status = "initializing";
   appState.sessions.set(id, session);
   emitHostEvent(`session:status:${id}`, "initializing");
@@ -1605,25 +1608,32 @@ export async function renameSessionBranch(
 }
 
 /**
- * Delete a session: kill its agent and terminals, remove the worktree.
+ * Delete a session: kill its agent and terminals, run the project's teardown
+ * commands, remove the worktree.
  *
- * Returns immediately after cleaning up in-memory state. The actual
- * `git worktree remove` runs asynchronously. On background failure, emits
- * `session:delete-failed` with `{ id, error }`.
+ * Returns immediately after cleaning up in-memory state. Teardown and
+ * `git worktree remove` run asynchronously. On background failure, emits
+ * `session:delete-failed` with `{ id, error, stage }`. `skipTeardown` is the
+ * "delete anyway" after a failed teardown; an omitted `shouldDeleteBranch`
+ * then keeps what the failed attempt asked for.
  */
 export async function deleteSession(
   id: string,
   shouldDeleteBranch?: boolean,
+  options: { skipTeardown?: boolean } = {},
 ): Promise<void> {
   const session = appState.sessions.get(id);
   if (!session) {
     throw `Session not found: ${id}`;
   }
   const repoRoot = session.repo_root;
+  shouldDeleteBranch ??= failedDeleteBranch.get(id);
+  failedDeleteBranch.delete(id);
 
   telemetryCapture("session_deleted", {
     kind: session.kind,
     delete_branch: Boolean(shouldDeleteBranch),
+    teardown_skipped: Boolean(options.skipTeardown),
   });
 
   // Kill all agent sessions for this session.
@@ -1684,6 +1694,7 @@ export async function deleteSession(
   // state instead of showing stale content (e.g. a spike of reported
   // deletions from the file watcher) while the worktree is removed on disk.
   session.status = "deleting";
+  session.delete_failed = null;
   appState.sessions.set(id, session);
   emitHostEvent(`session:status:${id}`, "deleting");
 
@@ -1693,8 +1704,37 @@ export async function deleteSession(
   const taskDeleteBranch = shouldDeleteBranch ?? false;
   const taskId = id;
 
+  const fail = (stage: "remove" | "teardown", e: unknown) => {
+    clearSessionProgress(taskId);
+    const errMsg = typeof e === "string" ? e : String(e);
+    error(`Background delete failed for session ${taskId}: ${errMsg}`);
+    // Restore the session's status so the user can retry.
+    const ws = appState.sessions.get(taskId);
+    if (ws) {
+      ws.status = { error: errMsg };
+      ws.delete_failed = stage;
+      appState.sessions.set(taskId, ws);
+    }
+    failedDeleteBranch.set(taskId, taskDeleteBranch);
+    emitHostEvent(`session:status:${taskId}`, `error:${errMsg}`);
+    emitHostEvent("session:delete-failed", {
+      id: taskId,
+      error: errMsg,
+      stage,
+    });
+  };
+
   // Run the heavy work in the background.
   (async () => {
+    if (!options.skipTeardown) {
+      try {
+        await teardownSession(session);
+      } catch (e) {
+        fail("teardown", e);
+
+        return;
+      }
+    }
     // git removes the files in one opaque call; counting what is left is the
     // only way to tell a slow removal from a stuck one.
     const stopTracking = await trackDeleteProgress(taskId, taskSessionPath);
@@ -1702,20 +1742,7 @@ export async function deleteSession(
       await removeWorktree(taskRepoRoot, taskSessionPath);
     } catch (e) {
       stopTracking();
-      clearSessionProgress(taskId);
-      const errMsg = typeof e === "string" ? e : String(e);
-      error(`Background delete failed for session ${taskId}: ${errMsg}`);
-      // Restore the session's status so the user can retry.
-      const ws = appState.sessions.get(taskId);
-      if (ws) {
-        ws.status = { error: errMsg };
-        appState.sessions.set(taskId, ws);
-      }
-      emitHostEvent(`session:status:${taskId}`, `error:${errMsg}`);
-      emitHostEvent("session:delete-failed", {
-        id: taskId,
-        error: errMsg,
-      });
+      fail("remove", e);
 
       return;
     }
@@ -1744,6 +1771,9 @@ export async function deleteSession(
     info(`Deleted session ${taskId} (background)`);
   })();
 }
+
+/** What a failed delete asked for, so "delete anyway" removes the branch too. */
+const failedDeleteBranch = new Map<string, boolean>();
 
 // ---------------------------------------------------------------------------
 // Internal helpers: createWorktree / checkoutBranchIntoWorktree

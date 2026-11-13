@@ -16,6 +16,9 @@ public struct ArgusConfigDraft: Equatable, Sendable {
   var copyExcludes: [String: JSONValue] = [:]
   var symlinkExcludes: [String: JSONValue] = [:]
 
+  // Teardown
+  public var teardownCommands: [ListItem] = []
+
   // Runtime
   public var workspaceEnv: [EnvVar] = []
   public var run: [RunCommand] = []

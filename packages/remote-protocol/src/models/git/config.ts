@@ -124,10 +124,18 @@ export const ProjectAutomationConfig = z.object({
 });
 export type ProjectAutomationConfig = z.infer<typeof ProjectAutomationConfig>;
 
+/** The `teardown` block of `.argus.json`: commands run before a worktree is removed. */
+export const TeardownConfig = z.object({
+  commands: z.array(z.string()),
+});
+export type TeardownConfig = z.infer<typeof TeardownConfig>;
+
 /** A project's `.argus.json`, normalized. */
 export const ArgusConfig = z.object({
   /** Setup instructions run once when a new session is created. */
   setup: ArgusSetupConfig,
+  /** Commands run in the worktree before it is removed. */
+  teardown: TeardownConfig.nullish(),
   /** Terminals to auto-open when a session is selected. */
   terminals: z.array(ArgusTerminalConfig),
   /** Env vars with a unique integer per session (e.g. for port allocation). */

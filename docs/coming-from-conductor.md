@@ -27,6 +27,7 @@ older `conductor.json` work too.
 | Conductor                           | Argus `.argus.json`                                 |
 | ----------------------------------- | --------------------------------------------------- |
 | `scripts.setup`                     | `setup.commands`                                    |
+| `scripts.archive`                   | `teardown.commands`                                 |
 | `scripts.run` (each action)         | `run` (the default action first; its `cwd` is kept) |
 | `[environment_variables]`           | Exported in front of each imported command          |
 | `CONDUCTOR_PORT`                    | A port per session, ten apart, from 55000 upwards   |
@@ -36,8 +37,6 @@ older `conductor.json` work too.
 
 Argus doesn't import:
 
-- **The archive script.** Argus has nothing that runs when a session is
-  deleted.
 - **`run_mode = "nonconcurrent"`.** Each run command restarts itself when
   you run it again, but starting one doesn't stop the others.
 - **Cloud-only actions**, and the cloud and API variables

@@ -50,6 +50,9 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   /// How far setup or removal has got. Nil before the first count, and on
   /// older computers.
   public var progress: RemoteSessionProgress?
+  /// Which step of the last delete failed while `status` is `.error`; nil when
+  /// setup failed, and on older computers.
+  public var deleteFailed: RemoteDeleteFailure?
   /// Whether the computer can currently reach this session's files. Separate
   /// from `status` — the usual cause is an external drive unplugged from the
   /// computer, which the phone can only report, not fix. Absent on older
@@ -83,6 +86,7 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case claudeAccountId = "claude_account_id"
     case status, progress, availability
     case setupError = "setup_error"
+    case deleteFailed = "delete_failed"
     case unavailableVolume = "unavailable_volume"
     case volume
     case linkedIssue = "linked_issue"
@@ -141,9 +145,24 @@ public struct RemoteDesignRef: Codable, Hashable, Sendable {
   }
 }
 
+/// The step a session's delete stopped at.
+public enum RemoteDeleteFailure: String, Codable, Sendable {
+  /// The project's teardown commands; the worktree is still intact.
+  case teardown
+  /// Removing the worktree itself.
+  case remove
+}
+
 public struct RemoteSessionProgress: Codable, Hashable, Sendable {
   public var current: Double
   public var total: Double
+  /// `teardown` while the project's teardown commands run. A string so a
+  /// newer computer's phase doesn't fail the whole session list.
+  public var phase: String?
+  /// The running step's latest output line.
+  public var detail: String?
+
+  public var isTeardown: Bool { phase == "teardown" }
 
   /// 0...1, or nil when there is nothing to measure against.
   public var fraction: Double? {

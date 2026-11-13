@@ -18,6 +18,7 @@ import type {
   RunCommand,
   SetupCopyEntry,
   SimulatorDeeplinkConfig,
+  TeardownConfig,
   WorkspaceEnvConfig,
 } from "./models";
 import { warn } from "@argus/host/logger";
@@ -102,6 +103,22 @@ export function normalizeToolsConfig(
   }
 
   return { disabled: cleaned };
+}
+
+/** `teardown` block: trimmed non-empty commands, null when there are none. */
+export function normalizeTeardownConfig(input: unknown): TeardownConfig | null {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return null;
+  }
+  const raw = (input as Record<string, unknown>).commands;
+  const commands = Array.isArray(raw)
+    ? raw
+        .filter((x): x is string => typeof x === "string")
+        .map((x) => x.trim())
+        .filter((x) => x.length > 0)
+    : [];
+
+  return commands.length ? { commands } : null;
 }
 
 /**

@@ -57,7 +57,9 @@ export function registerSessionCommands(): void {
     createHeadSession(p.repoRoot),
   );
   defineTypedCommand("delete_session", (p) =>
-    deleteSession(p.id, p.shouldDeleteBranch),
+    deleteSession(p.id, p.shouldDeleteBranch, {
+      skipTeardown: p.skipTeardown,
+    }),
   );
   defineTypedCommand("rename_session", (p) =>
     renameSession(p.id, p.displayName),

@@ -154,7 +154,7 @@ extension ProjectSettingsSheet {
 }
 
 enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
-  case setup, workspaceEnv
+  case setup, teardown, workspaceEnv
   case run, terminals, browser, deeplinks
   case branchProtection, releaseNotes, agent, llm, relatedProjects, automations, tools
   case branchPrefix, worktreeLocation
@@ -165,6 +165,7 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
   var title: String {
     switch self {
     case .setup: "Setup"
+    case .teardown: "Teardown"
     case .workspaceEnv: "Workspace env"
     case .run: "Run commands"
     case .terminals: "Terminals"
@@ -186,6 +187,7 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
   var icon: String {
     switch self {
     case .setup: "folder"
+    case .teardown: "trash"
     case .workspaceEnv: "number"
     case .run: "play"
     case .terminals: "terminal"
@@ -208,6 +210,7 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
   var configKeys: [String] {
     switch self {
     case .setup: ["setup"]
+    case .teardown: ["teardown"]
     case .workspaceEnv: ["workspace_env"]
     case .run: ["run", "single_runtime"]
     case .terminals: ["terminals"]
@@ -225,7 +228,7 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
   }
 
   static let groups: [(title: String, sections: [ProjectSettingsSection])] = [
-    ("Workspace", [.setup, .workspaceEnv]),
+    ("Workspace", [.setup, .teardown, .workspaceEnv]),
     ("Runtime", [.run, .terminals, .browser, .deeplinks]),
     ("Workflow", [.branchProtection, .releaseNotes, .agent, .llm, .relatedProjects, .automations, .tools]),
     ("Personal", [.branchPrefix, .worktreeLocation]),
@@ -247,6 +250,7 @@ struct ProjectSettingsDetail: View {
     Form {
       switch section {
       case .setup: SetupSection(draft: $settings.draft)
+      case .teardown: TeardownSection(draft: $settings.draft)
       case .workspaceEnv: WorkspaceEnvSection(draft: $settings.draft)
       case .run: RunCommandsSection(draft: $settings.draft)
       case .terminals: TerminalsSection(draft: $settings.draft)

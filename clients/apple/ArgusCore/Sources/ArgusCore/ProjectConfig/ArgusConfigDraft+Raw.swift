@@ -6,7 +6,7 @@ import Foundation
 extension ArgusConfigDraft {
   /// Every key the draft owns. Anything else in the file is left untouched.
   static let ownedKeys: Set<String> = [
-    "setup", "terminals", "run", "workspace_env", "related_projects",
+    "setup", "teardown", "terminals", "run", "workspace_env", "related_projects",
     "browser_url", "browser_presets", "simulator_deeplinks",
     "auto_continue_on_limit", "protected_branches", "default_base_branch",
     "single_runtime", "auto_fetch_minutes",
@@ -25,6 +25,7 @@ extension ArgusConfigDraft {
     (copy, copyExcludes) = Self.setupEntries(setup["copy"])
     (symlink, symlinkExcludes) = Self.setupEntries(setup["symlink"])
     commands = Self.strings(setup["commands"]).map { ListItem($0) }
+    teardownCommands = Self.strings(raw["teardown"]?.objectValue?["commands"]).map { ListItem($0) }
 
     workspaceEnv = Self.objects(raw["workspace_env"]).map {
       EnvVar(
@@ -88,6 +89,10 @@ extension ArgusConfigDraft {
     setup["symlink"] = Self.setupValue(symlink, excludes: symlinkExcludes)
     setup["commands"] = Self.nonEmpty(commands.map(\.value).filter { !$0.isEmpty }.map(JSONValue.string))
     out["setup"] = .object(setup)
+
+    var teardown = raw["teardown"]?.objectValue ?? [:]
+    teardown["commands"] = Self.nonEmpty(Self.values(teardownCommands))
+    set("teardown", teardown.isEmpty ? nil : .object(teardown))
 
     set("terminals", Self.nonEmpty(terminals.filter { !$0.name.isEmpty || !$0.dir.isEmpty }.map {
       .object(["name": .string($0.name), "dir": .string($0.dir)])

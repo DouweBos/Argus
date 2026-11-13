@@ -106,6 +106,8 @@ export const Session = z.object({
   status: SessionStatus,
   /** Why it is unreachable. Only set when `availability` is "unavailable". */
   unavailable_reason: z.literal("volume_missing").optional(),
+  /** Which step of the last delete failed, while `status` is an error. */
+  delete_failed: z.enum(["remove", "teardown"]).nullish(),
   /** Mount point the session lives on, for the message naming the drive. */
   unavailable_volume: z.string().nullish(),
   /** Mount point of the external drive holding the session; null on the boot volume. */

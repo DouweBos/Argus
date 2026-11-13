@@ -5969,21 +5969,25 @@ extension ArgusProtocol {
     public struct SessionsDeleteParams: Codable, Sendable {
       public var id: String
       public var deleteBranch: Bool?
+      public var skipTeardown: Bool?
 
       enum CodingKeys: String, CodingKey {
         case id = "id"
         case deleteBranch = "delete_branch"
+        case skipTeardown = "skip_teardown"
       }
 
-      public init(id: String, deleteBranch: Bool? = nil) {
+      public init(id: String, deleteBranch: Bool? = nil, skipTeardown: Bool? = nil) {
         self.id = id
         self.deleteBranch = deleteBranch
+        self.skipTeardown = skipTeardown
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(id, forKey: .id)
         try c.encodeIfPresent(deleteBranch, forKey: .deleteBranch)
+        try c.encodeIfPresent(skipTeardown, forKey: .skipTeardown)
       }
     }
 

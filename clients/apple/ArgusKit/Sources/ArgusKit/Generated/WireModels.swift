@@ -1814,6 +1814,7 @@ extension ArgusProtocol {
 
   public struct ArgusConfig: Codable, Sendable {
     public var setup: ArgusSetupConfig
+    public var teardown: TeardownConfig?
     public var terminals: [ArgusTerminalConfig]
     public var workspaceEnv: [WorkspaceEnvConfig]
     public var run: [ArgusRunCommand]
@@ -1833,6 +1834,7 @@ extension ArgusProtocol {
 
     enum CodingKeys: String, CodingKey {
       case setup = "setup"
+      case teardown = "teardown"
       case terminals = "terminals"
       case workspaceEnv = "workspace_env"
       case run = "run"
@@ -1851,8 +1853,9 @@ extension ArgusProtocol {
       case automations = "automations"
     }
 
-    public init(setup: ArgusSetupConfig, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], protectedBranches: [String], defaultBaseBranch: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
+    public init(setup: ArgusSetupConfig, teardown: TeardownConfig? = nil, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], protectedBranches: [String], defaultBaseBranch: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
       self.setup = setup
+      self.teardown = teardown
       self.terminals = terminals
       self.workspaceEnv = workspaceEnv
       self.run = run
@@ -1874,6 +1877,7 @@ extension ArgusProtocol {
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(setup, forKey: .setup)
+      try c.encodeIfPresent(teardown, forKey: .teardown)
       try c.encode(terminals, forKey: .terminals)
       try c.encode(workspaceEnv, forKey: .workspaceEnv)
       try c.encode(run, forKey: .run)
@@ -15678,25 +15682,62 @@ extension ArgusProtocol {
     public static let error = RemoteSessionStatus(rawValue: "error")
   }
 
+  public struct RemoteSessionProgressPhase: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let teardown = RemoteSessionProgressPhase(rawValue: "teardown")
+  }
+
   public struct RemoteSessionProgress: Codable, Sendable {
     public var current: Double
     public var total: Double
+    public var phase: RemoteSessionProgressPhase?
+    public var detail: String?
 
     enum CodingKeys: String, CodingKey {
       case current = "current"
       case total = "total"
+      case phase = "phase"
+      case detail = "detail"
     }
 
-    public init(current: Double, total: Double) {
+    public init(current: Double, total: Double, phase: RemoteSessionProgressPhase? = nil, detail: String? = nil) {
       self.current = current
       self.total = total
+      self.phase = phase
+      self.detail = detail
     }
 
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(current, forKey: .current)
       try c.encode(total, forKey: .total)
+      try c.encodeIfPresent(phase, forKey: .phase)
+      try c.encodeIfPresent(detail, forKey: .detail)
     }
+  }
+
+  public struct RemoteSessionDeleteFailed: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let remove = RemoteSessionDeleteFailed(rawValue: "remove")
+    public static let teardown = RemoteSessionDeleteFailed(rawValue: "teardown")
   }
 
   public struct RemoteSessionAvailability: RawRepresentable, Codable, Hashable, Sendable {
@@ -15725,6 +15766,7 @@ extension ArgusProtocol {
     public var status: RemoteSessionStatus
     public var setupError: String?
     public var progress: RemoteSessionProgress?
+    public var deleteFailed: RemoteSessionDeleteFailed?
     public var availability: RemoteSessionAvailability?
     public var unavailableVolume: String?
     public var volume: String?
@@ -15745,6 +15787,7 @@ extension ArgusProtocol {
       case status = "status"
       case setupError = "setup_error"
       case progress = "progress"
+      case deleteFailed = "delete_failed"
       case availability = "availability"
       case unavailableVolume = "unavailable_volume"
       case volume = "volume"
@@ -15755,7 +15798,7 @@ extension ArgusProtocol {
       case pullRequestWatched = "pull_request_watched"
     }
 
-    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil) {
+    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, deleteFailed: RemoteSessionDeleteFailed? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil) {
       self.id = id
       self.repoRoot = repoRoot
       self.kind = kind
@@ -15766,6 +15809,7 @@ extension ArgusProtocol {
       self.status = status
       self.setupError = setupError
       self.progress = progress
+      self.deleteFailed = deleteFailed
       self.availability = availability
       self.unavailableVolume = unavailableVolume
       self.volume = volume
@@ -15788,6 +15832,7 @@ extension ArgusProtocol {
       try c.encode(status, forKey: .status)
       try c.encodeIfPresent(setupError, forKey: .setupError)
       try c.encodeIfPresent(progress, forKey: .progress)
+      try c.encodeIfPresent(deleteFailed, forKey: .deleteFailed)
       try c.encodeIfPresent(availability, forKey: .availability)
       try c.encodeIfPresent(unavailableVolume, forKey: .unavailableVolume)
       try c.encodeIfPresent(volume, forKey: .volume)
@@ -17342,6 +17387,21 @@ extension ArgusProtocol {
     public static let unavailable = SessionAvailability(rawValue: "unavailable")
   }
 
+  public struct SessionDeleteFailed: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let remove = SessionDeleteFailed(rawValue: "remove")
+    public static let teardown = SessionDeleteFailed(rawValue: "teardown")
+  }
+
   public struct Session: Codable, Sendable {
     public var availability: SessionAvailability?
     public var baseBranch: String?
@@ -17364,6 +17424,7 @@ extension ArgusProtocol {
     public var setupTerminalId: String?
     public var status: SessionStatus
     public var unavailableReason: String?
+    public var deleteFailed: SessionDeleteFailed?
     public var unavailableVolume: String?
     public var volume: String?
 
@@ -17389,11 +17450,12 @@ extension ArgusProtocol {
       case setupTerminalId = "setup_terminal_id"
       case status = "status"
       case unavailableReason = "unavailable_reason"
+      case deleteFailed = "delete_failed"
       case unavailableVolume = "unavailable_volume"
       case volume = "volume"
     }
 
-    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, branch: String, claudeAccountId: String? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
+    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, branch: String, claudeAccountId: String? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, deleteFailed: SessionDeleteFailed? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
       self.availability = availability
       self.baseBranch = baseBranch
       self.branch = branch
@@ -17415,6 +17477,7 @@ extension ArgusProtocol {
       self.setupTerminalId = setupTerminalId
       self.status = status
       self.unavailableReason = unavailableReason
+      self.deleteFailed = deleteFailed
       self.unavailableVolume = unavailableVolume
       self.volume = volume
     }
@@ -17442,6 +17505,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(setupTerminalId, forKey: .setupTerminalId)
       try c.encode(status, forKey: .status)
       try c.encodeIfPresent(unavailableReason, forKey: .unavailableReason)
+      try c.encodeIfPresent(deleteFailed, forKey: .deleteFailed)
       try c.encodeIfPresent(unavailableVolume, forKey: .unavailableVolume)
       try c.encodeIfPresent(volume, forKey: .volume)
     }
@@ -17992,6 +18056,23 @@ extension ArgusProtocol {
       try c.encode(seq, forKey: .seq)
       try c.encode(action, forKey: .action)
       try c.encode(agentId, forKey: .agentId)
+    }
+  }
+
+  public struct TeardownConfig: Codable, Sendable {
+    public var commands: [String]
+
+    enum CodingKeys: String, CodingKey {
+      case commands = "commands"
+    }
+
+    public init(commands: [String]) {
+      self.commands = commands
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(commands, forKey: .commands)
     }
   }
 

@@ -208,6 +208,23 @@ describe("loadArgusConfig", () => {
     expect(config).not.toHaveProperty("verify");
   });
 
+  it("trims teardown commands and drops an empty block", () => {
+    mockExistsSync.mockImplementation((p) => !String(p).includes("local"));
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({
+        teardown: { commands: [" docker compose down ", "", 3] },
+      }),
+    );
+    expect(loadArgusConfig("/repo").teardown).toEqual({
+      commands: ["docker compose down"],
+    });
+
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({ teardown: { commands: [] } }),
+    );
+    expect(loadArgusConfig("/repo").teardown).toBeNull();
+  });
+
   it("defaults unset booleans after merging", () => {
     mockExistsSync.mockReturnValue(true);
     mockReadFileSync.mockReturnValue(JSON.stringify({}));
