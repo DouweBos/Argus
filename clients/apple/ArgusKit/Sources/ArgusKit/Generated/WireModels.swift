@@ -1651,6 +1651,7 @@ extension ArgusProtocol {
     public var remotePublicUrl: String?
     public var remoteNotifyWhenFocused: Bool?
     public var remoteLanWebClient: Bool?
+    public var remoteMcpEnabled: Bool?
     public var theme: AppSettingsTheme?
     public var colorTheme: ColorTheme?
     public var importCliChats: Bool?
@@ -1693,6 +1694,7 @@ extension ArgusProtocol {
       case remotePublicUrl = "remote_public_url"
       case remoteNotifyWhenFocused = "remote_notify_when_focused"
       case remoteLanWebClient = "remote_lan_web_client"
+      case remoteMcpEnabled = "remote_mcp_enabled"
       case theme = "theme"
       case colorTheme = "color_theme"
       case importCliChats = "import_cli_chats"
@@ -1707,7 +1709,7 @@ extension ArgusProtocol {
       case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, remoteLanWebClient: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, remoteLanWebClient: Bool? = nil, remoteMcpEnabled: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
       self.defaultLlm = defaultLlm
@@ -1736,6 +1738,7 @@ extension ArgusProtocol {
       self.remotePublicUrl = remotePublicUrl
       self.remoteNotifyWhenFocused = remoteNotifyWhenFocused
       self.remoteLanWebClient = remoteLanWebClient
+      self.remoteMcpEnabled = remoteMcpEnabled
       self.theme = theme
       self.colorTheme = colorTheme
       self.importCliChats = importCliChats
@@ -1780,6 +1783,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(remotePublicUrl, forKey: .remotePublicUrl)
       try c.encodeIfPresent(remoteNotifyWhenFocused, forKey: .remoteNotifyWhenFocused)
       try c.encodeIfPresent(remoteLanWebClient, forKey: .remoteLanWebClient)
+      try c.encodeIfPresent(remoteMcpEnabled, forKey: .remoteMcpEnabled)
       try c.encodeIfPresent(theme, forKey: .theme)
       try c.encodeIfPresent(colorTheme, forKey: .colorTheme)
       try c.encodeIfPresent(importCliChats, forKey: .importCliChats)
@@ -10957,6 +10961,96 @@ extension ArgusProtocol {
     }
   }
 
+  public struct McpAccess: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let monitor = McpAccess(rawValue: "monitor")
+    public static let control = McpAccess(rawValue: "control")
+    public static let admin = McpAccess(rawValue: "admin")
+  }
+
+  public struct McpAccessRequest: Codable, Sendable {
+    public var requestId: String
+    public var clientName: String
+    public var requestedAccess: McpAccess?
+    public var matchCode: String
+    public var redirectHost: String
+    public var createdAt: Double
+
+    enum CodingKeys: String, CodingKey {
+      case requestId = "requestId"
+      case clientName = "clientName"
+      case requestedAccess = "requestedAccess"
+      case matchCode = "matchCode"
+      case redirectHost = "redirectHost"
+      case createdAt = "createdAt"
+    }
+
+    public init(requestId: String, clientName: String, requestedAccess: McpAccess? = nil, matchCode: String, redirectHost: String, createdAt: Double) {
+      self.requestId = requestId
+      self.clientName = clientName
+      self.requestedAccess = requestedAccess
+      self.matchCode = matchCode
+      self.redirectHost = redirectHost
+      self.createdAt = createdAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(requestId, forKey: .requestId)
+      try c.encode(clientName, forKey: .clientName)
+      try c.encode(requestedAccess, forKey: .requestedAccess)
+      try c.encode(matchCode, forKey: .matchCode)
+      try c.encode(redirectHost, forKey: .redirectHost)
+      try c.encode(createdAt, forKey: .createdAt)
+    }
+  }
+
+  public struct McpClientGrant: Codable, Sendable {
+    public var grantId: String
+    public var clientName: String
+    public var access: McpAccess
+    public var createdAt: Double
+    public var lastUsedAt: Double?
+    public var connected: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case grantId = "grantId"
+      case clientName = "clientName"
+      case access = "access"
+      case createdAt = "createdAt"
+      case lastUsedAt = "lastUsedAt"
+      case connected = "connected"
+    }
+
+    public init(grantId: String, clientName: String, access: McpAccess, createdAt: Double, lastUsedAt: Double? = nil, connected: Bool) {
+      self.grantId = grantId
+      self.clientName = clientName
+      self.access = access
+      self.createdAt = createdAt
+      self.lastUsedAt = lastUsedAt
+      self.connected = connected
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(grantId, forKey: .grantId)
+      try c.encode(clientName, forKey: .clientName)
+      try c.encode(access, forKey: .access)
+      try c.encode(createdAt, forKey: .createdAt)
+      try c.encode(lastUsedAt, forKey: .lastUsedAt)
+      try c.encode(connected, forKey: .connected)
+    }
+  }
+
   public struct McpOAuthStatus: Codable, Sendable {
     public var resource: String
     public var hasRefreshToken: Bool
@@ -13963,19 +14057,22 @@ extension ArgusProtocol {
     public var enabled: Bool?
     public var notifyWhenFocused: Bool?
     public var lanWebClient: Bool?
+    public var mcpClients: Bool?
     public var retireLegacyTunnels: Bool?
 
     enum CodingKeys: String, CodingKey {
       case enabled = "enabled"
       case notifyWhenFocused = "notifyWhenFocused"
       case lanWebClient = "lanWebClient"
+      case mcpClients = "mcpClients"
       case retireLegacyTunnels = "retireLegacyTunnels"
     }
 
-    public init(enabled: Bool? = nil, notifyWhenFocused: Bool? = nil, lanWebClient: Bool? = nil, retireLegacyTunnels: Bool? = nil) {
+    public init(enabled: Bool? = nil, notifyWhenFocused: Bool? = nil, lanWebClient: Bool? = nil, mcpClients: Bool? = nil, retireLegacyTunnels: Bool? = nil) {
       self.enabled = enabled
       self.notifyWhenFocused = notifyWhenFocused
       self.lanWebClient = lanWebClient
+      self.mcpClients = mcpClients
       self.retireLegacyTunnels = retireLegacyTunnels
     }
 
@@ -13984,6 +14081,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(enabled, forKey: .enabled)
       try c.encodeIfPresent(notifyWhenFocused, forKey: .notifyWhenFocused)
       try c.encodeIfPresent(lanWebClient, forKey: .lanWebClient)
+      try c.encodeIfPresent(mcpClients, forKey: .mcpClients)
       try c.encodeIfPresent(retireLegacyTunnels, forKey: .retireLegacyTunnels)
     }
   }
@@ -15956,6 +16054,10 @@ extension ArgusProtocol {
     public var legacyTunnels: [LegacyTunnelState]
     public var notifyWhenFocused: Bool
     public var lanWebClient: Bool?
+    public var mcpClients: Bool?
+    public var mcpGrants: [McpClientGrant]?
+    public var mcpRequests: [McpAccessRequest]?
+    public var mcpUrls: [String]?
     public var devices: [PairedDevice]
     public var connectedDeviceIds: [String]
 
@@ -15969,11 +16071,15 @@ extension ArgusProtocol {
       case legacyTunnels = "legacyTunnels"
       case notifyWhenFocused = "notifyWhenFocused"
       case lanWebClient = "lanWebClient"
+      case mcpClients = "mcpClients"
+      case mcpGrants = "mcpGrants"
+      case mcpRequests = "mcpRequests"
+      case mcpUrls = "mcpUrls"
       case devices = "devices"
       case connectedDeviceIds = "connectedDeviceIds"
     }
 
-    public init(enabled: Bool, endpoints: [RemoteEndpoint], publicUrl: String? = nil, lanUrl: String? = nil, tailscaleUrl: String? = nil, managedTunnel: ManagedTunnelState, legacyTunnels: [LegacyTunnelState], notifyWhenFocused: Bool, lanWebClient: Bool? = nil, devices: [PairedDevice], connectedDeviceIds: [String]) {
+    public init(enabled: Bool, endpoints: [RemoteEndpoint], publicUrl: String? = nil, lanUrl: String? = nil, tailscaleUrl: String? = nil, managedTunnel: ManagedTunnelState, legacyTunnels: [LegacyTunnelState], notifyWhenFocused: Bool, lanWebClient: Bool? = nil, mcpClients: Bool? = nil, mcpGrants: [McpClientGrant]? = nil, mcpRequests: [McpAccessRequest]? = nil, mcpUrls: [String]? = nil, devices: [PairedDevice], connectedDeviceIds: [String]) {
       self.enabled = enabled
       self.endpoints = endpoints
       self.publicUrl = publicUrl
@@ -15983,6 +16089,10 @@ extension ArgusProtocol {
       self.legacyTunnels = legacyTunnels
       self.notifyWhenFocused = notifyWhenFocused
       self.lanWebClient = lanWebClient
+      self.mcpClients = mcpClients
+      self.mcpGrants = mcpGrants
+      self.mcpRequests = mcpRequests
+      self.mcpUrls = mcpUrls
       self.devices = devices
       self.connectedDeviceIds = connectedDeviceIds
     }
@@ -15998,6 +16108,10 @@ extension ArgusProtocol {
       try c.encode(legacyTunnels, forKey: .legacyTunnels)
       try c.encode(notifyWhenFocused, forKey: .notifyWhenFocused)
       try c.encodeIfPresent(lanWebClient, forKey: .lanWebClient)
+      try c.encodeIfPresent(mcpClients, forKey: .mcpClients)
+      try c.encodeIfPresent(mcpGrants, forKey: .mcpGrants)
+      try c.encodeIfPresent(mcpRequests, forKey: .mcpRequests)
+      try c.encodeIfPresent(mcpUrls, forKey: .mcpUrls)
       try c.encode(devices, forKey: .devices)
       try c.encode(connectedDeviceIds, forKey: .connectedDeviceIds)
     }

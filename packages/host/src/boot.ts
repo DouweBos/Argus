@@ -35,6 +35,7 @@ import {
   applyActiveAccountToProcessEnv,
   ensureDefaultAccountSeeded,
 } from "./services/claudeAuth/accounts";
+import { writeCliShim } from "./services/cli/argus/shim";
 import { initCodeService, stopCodeService } from "./services/code/lifecycle";
 import { stopAllDebugStreams } from "./services/conductor/debug";
 import { initConductorOverride } from "./services/conductor/override";
@@ -61,9 +62,13 @@ import {
   initLanguageServers,
   stopAllLanguageServers,
 } from "./services/lsp/watchedFiles";
-import { writeCliShim } from "./services/cli/argus/shim";
+import {
+  handleOutsideMcp,
+  isOutsideMcpRoute,
+} from "./services/mcp/outside/endpoint";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { disconnectDevice } from "./services/remote/gateway";
+import { setOutsideHttpHandler } from "./services/remote/localGatewayServer";
 import { killManagedTunnelNow } from "./services/remote/managedTunnel";
 import {
   startLiveActivities,
@@ -220,6 +225,10 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
 
   startMcpServer().catch((err) => {
     log.error("Failed to start MCP server:", err);
+  });
+  setOutsideHttpHandler({
+    matches: isOutsideMcpRoute,
+    handle: handleOutsideMcp,
   });
   try {
     writeCliShim();

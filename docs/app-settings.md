@@ -954,6 +954,14 @@ those routes are encrypted: the tailnet address or the managed tunnel's URL
 opens the same app in a browser. You can also reach
 it from the Home screen's **Remote access** button. (Build the bundle once with `pnpm --filter argus-web build`.)
 
+### MCP clients
+
+Off by default (`remote_mcp_enabled`). Turn on **Let MCP clients sign in**
+(Settings → Remote Access → MCP clients) and agents outside Argus can add its
+MCP server and sign in over OAuth. Each sign-in waits for you to approve it
+there, with read only, supervised or full access; signed-in clients are listed
+with Revoke. See [Command line and MCP](cli.md#mcp-for-agents-outside-argus).
+
 **Pairing** shows a QR code (and a copy-paste code) plus a 6-digit confirmation
 number. Scan it on the device, confirm the number matches on both screens, and
 the device is enrolled. The pairing secret travels only in the QR/code — never

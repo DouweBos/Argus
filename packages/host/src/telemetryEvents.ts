@@ -400,6 +400,10 @@ export interface EventMap {
     created: boolean;
     install: "downloaded" | "managed" | "override" | "path";
   };
+  mcp_access_changed: {
+    access: "admin" | "control" | "monitor";
+    action: "approved" | "changed" | "denied" | "requested" | "revoked";
+  };
   mcp_client_connected: {
     /** The CLI always has `admin`; an OAuth client has its grant. */
     access: "admin" | "control" | "monitor";

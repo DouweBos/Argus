@@ -6,6 +6,13 @@
  */
 
 import { loadAppSettings, saveAppSettings } from "../appSettings/store";
+import {
+  mcpGrantViews,
+  mcpRequestViews,
+  type McpAccessRequestView,
+  type McpClientGrantView,
+} from "../mcp/outside/admin";
+import { onOutsideMcpChanged } from "../mcp/outside/store";
 import { CloudflaredInstallError, ensureCloudflared } from "./cloudflared";
 import {
   getDesktopIdentity,
@@ -109,9 +116,32 @@ export interface RemoteStatus {
   notifyWhenFocused: boolean;
   /** Serve the web client to browsers connecting straight over the local network. */
   lanWebClient?: boolean;
+  mcpClients?: boolean;
+  mcpGrants?: McpClientGrantView[];
+  mcpRequests?: McpAccessRequestView[];
+  mcpUrls?: string[];
   devices: PairedDevice[];
   /** Device IDs with a live connection right now. */
   connectedDeviceIds: string[];
+}
+
+/**
+ * The MCP endpoint on each route that keeps tokens off the wire in the clear:
+ * the tunnel (https), the tailnet (WireGuard) and loopback — never the LAN.
+ */
+export function mcpUrls(endpoints: RemoteEndpoint[]): string[] {
+  const urls = endpoints
+    .filter((e) => e.kind !== "lan")
+    .map((e) => {
+      const u = new URL(e.url);
+      u.protocol = u.protocol === "wss:" ? "https:" : "http:";
+      u.pathname = "/mcp";
+      u.search = "";
+
+      return u.toString();
+    });
+
+  return [...urls, `http://127.0.0.1:${LOCAL_GATEWAY_PORT}/mcp`];
 }
 
 export async function getRemoteStatus(): Promise<RemoteStatus> {
@@ -128,6 +158,10 @@ export async function getRemoteStatus(): Promise<RemoteStatus> {
     legacyTunnels: running ? legacyTunnelStates() : [],
     notifyWhenFocused: Boolean(settings.remote_notify_when_focused),
     lanWebClient: Boolean(settings.remote_lan_web_client),
+    mcpClients: Boolean(settings.remote_mcp_enabled),
+    mcpGrants: mcpGrantViews(),
+    mcpRequests: mcpRequestViews(),
+    mcpUrls: mcpUrls(endpoints),
     devices: await listDevices(),
     connectedDeviceIds: getConnectedDeviceIds(),
   };
@@ -137,6 +171,7 @@ export async function setRemoteConfig(cfg: {
   enabled?: boolean;
   notifyWhenFocused?: boolean;
   lanWebClient?: boolean;
+  mcpClients?: boolean;
   retireLegacyTunnels?: boolean;
 }): Promise<RemoteStatus> {
   const patch: Parameters<typeof saveAppSettings>[0] = {};
@@ -148,6 +183,9 @@ export async function setRemoteConfig(cfg: {
   }
   if (cfg.lanWebClient !== undefined) {
     patch.remote_lan_web_client = cfg.lanWebClient;
+  }
+  if (cfg.mcpClients !== undefined) {
+    patch.remote_mcp_enabled = cfg.mcpClients;
   }
   if (Object.keys(patch).length > 0) {
     saveAppSettings(patch);
@@ -173,6 +211,7 @@ export async function setRemoteConfig(cfg: {
  */
 let statusListener: (() => void) | null = null;
 let unsubscribeDevices: (() => void) | null = null;
+let unsubscribeMcp: (() => void) | null = null;
 export function setRemoteStatusListener(cb: (() => void) | null): void {
   statusListener = cb;
   // A tunnel coming up or dying changes the routes a phone can take, so tell
@@ -188,6 +227,8 @@ export function setRemoteStatusListener(cb: (() => void) | null): void {
   setConnectionsChangedListener(cb ? () => cb() : null);
   unsubscribeDevices?.();
   unsubscribeDevices = cb ? onDevicesChanged(() => cb()) : null;
+  unsubscribeMcp?.();
+  unsubscribeMcp = cb ? onOutsideMcpChanged(() => cb()) : null;
 }
 
 /**

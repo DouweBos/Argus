@@ -1,4 +1,4 @@
-# Command line
+# Command line and MCP
 
 Argus ships an `argus` command that starts, messages and reads agents from a
 terminal or a script. It talks to the Argus running on this computer through
@@ -62,3 +62,37 @@ esac
 
 git diff | argus send "$id" - --wait
 ```
+
+## MCP for agents outside Argus
+
+Agents running outside Argus can use the same tools over MCP: Claude Code or
+Codex in a terminal, a cloud assistant, a bot. They sign in over OAuth, and
+you approve each one on this Mac.
+
+1. Turn on **Remote Access**, then **Let MCP clients sign in** under
+   **Settings → Remote Access → MCP clients**.
+2. Add the address shown there to your client. For Claude Code:
+
+   ```sh
+   claude mcp add --transport http argus https://<your-mac>/mcp
+   ```
+
+   On this Mac itself, `http://127.0.0.1:47615/mcp` works too.
+
+3. Sign in from the client (`/mcp` in Claude Code). A browser page opens with a
+   six-digit code. In Argus, the same request shows up under **MCP clients**
+   with that code: pick what it may do and click **Approve**.
+
+| Access      | What the client can do                                                                                                                                                       |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Read only   | List projects, sessions and agents, read diffs, transcripts, terminals and results, wait on agents                                                                           |
+| Supervised  | Also start, message, interrupt and stop agents, and run a project's run commands. Agents it starts ask you before every tool use, and only in projects already open in Argus |
+| Full access | Also merge, delete sessions, write files and start agents in any permission mode                                                                                             |
+
+No client gets the tools that act on your Linear, Figma or GitHub sign-ins,
+or on automations. The endpoint is only served over this Mac's tunnel (https),
+your tailnet and the Mac itself, never in the clear on your local network.
+
+Each signed-in client is listed under **MCP clients** with when it was last
+used. Change its access there, or **Revoke** it: its tokens stop working and
+any live connection drops at once.

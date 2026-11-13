@@ -1,4 +1,9 @@
 import { defineTypedCommand } from "../services/command/registry";
+import {
+  decideMcpRequest,
+  revokeMcpGrant,
+  setMcpGrantAccess,
+} from "../services/mcp/outside/admin";
 import { claimState } from "../services/remote/deviceClaims";
 import { getHostKey, listDevices } from "../services/remote/deviceStore";
 import {
@@ -50,6 +55,21 @@ export function registerRemoteCommands(): void {
   defineTypedCommand("remote_set_device_control", (p) =>
     setRemoteDeviceGrants(p.deviceId, { control: p.control, admin: p.admin }),
   );
+  defineTypedCommand("remote_mcp_decide", (p) => {
+    decideMcpRequest(p.requestId, p.approve, p.access);
+
+    return getRemoteStatus();
+  });
+  defineTypedCommand("remote_mcp_revoke", (p) => {
+    revokeMcpGrant(p.grantId);
+
+    return getRemoteStatus();
+  });
+  defineTypedCommand("remote_mcp_set_access", (p) => {
+    setMcpGrantAccess(p.grantId, p.access);
+
+    return getRemoteStatus();
+  });
   defineTypedCommand("huddle_start", (p) =>
     startHuddle({
       agent_id: p.agentId,

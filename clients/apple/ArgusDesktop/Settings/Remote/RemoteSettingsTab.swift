@@ -111,6 +111,15 @@ private struct RemoteSettingsForm: View {
         }
       }
 
+      RemoteMcpSection(
+        status: status, busy: model.busy,
+        setEnabled: { next in
+          Task { _ = await model.apply(.init(mcpClients: next), setting: .mcpClients, on: next) }
+        },
+        decide: { request, access in Task { await model.decideMcp(request, access: access) } },
+        setAccess: { grant, access in Task { await model.setMcpAccess(grant, access: access) } },
+        revoke: { model.revokingMcp = $0 })
+
       RemotePushSection(model: model, gatewayOn: enabled)
 
       SettingsGroup("Notifications") {
@@ -166,6 +175,18 @@ private struct RemoteSettingsForm: View {
       Button("Cancel", role: .cancel) {}
     } message: { _ in
       Text("Its pinned key is deleted and any live connection drops immediately. It has to pair again to come back.")
+    }
+    .alert(
+      "Revoke “\(model.revokingMcp?.clientName ?? "")”?",
+      isPresented: Binding(get: { model.revokingMcp != nil }, set: { if !$0 { model.revokingMcp = nil } }),
+      presenting: model.revokingMcp
+    ) { grant in
+      Button("Revoke", role: .destructive) {
+        Task { await model.revokeMcp(grant) }
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: { _ in
+      Text("Its tokens stop working and any live connection drops immediately. It has to sign in again to come back.")
     }
   }
 

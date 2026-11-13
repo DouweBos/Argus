@@ -1592,3 +1592,14 @@ describe("resolveSession (via delete_session)", () => {
     expect(mockDeleteSession).not.toHaveBeenCalled();
   });
 });
+
+describe("outside MCP access", () => {
+  it("decides every tool for outside clients", async () => {
+    const { OUTSIDE_TOOL_ACCESS } = await import("./outside/tools");
+    const { tools } = await client.listTools();
+    const undecided = tools
+      .map((t) => t.name)
+      .filter((name) => !(name in OUTSIDE_TOOL_ACCESS));
+    expect(undecided).toEqual([]);
+  });
+});

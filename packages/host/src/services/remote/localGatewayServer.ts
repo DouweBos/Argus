@@ -10,6 +10,8 @@
  *   /pair   — enrollment. Delegated to the active PairingSession (IKpsk1).
  *   GET /huddle/host-key — the desktop's static public key, so a huddle guest
  *             with only a link can handshake. Served only while a room is open.
+ *   /mcp, /oauth/*, /.well-known/oauth-* — the MCP server for outside clients,
+ *             behind OAuth (see `services/mcp/outside`). Off unless enabled.
  *   GET /__argus/health — unauthenticated liveness probe, so a caller can tell
  *             a tunnel that published a URL from one that actually reaches us.
  *   GET *   — the static web client bundle (when a dir is configured). Over a
@@ -21,7 +23,12 @@
  */
 
 import { createReadStream, existsSync, statSync } from "node:fs";
-import { createServer, type Server, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  type Server,
+  type ServerResponse,
+} from "node:http";
 import path from "node:path";
 import { WebSocketServer, type WebSocket } from "ws";
 import { warn } from "@argus/host/logger";
@@ -111,6 +118,21 @@ let httpServer: Server | null = null;
 let wss: WebSocketServer | null = null;
 let pairingHandler: PairingSocketHandler | null = null;
 let socketCount = 0;
+
+/** Plain-HTTP routes served beside the gateway: the outside MCP endpoint. */
+export interface OutsideHttpHandler {
+  matches: (pathname: string) => boolean;
+  handle: (req: IncomingMessage, res: ServerResponse) => Promise<void>;
+}
+
+let outsideHttp: OutsideHttpHandler | null = null;
+
+/** Set at boot; injected rather than imported so remote never imports mcp. */
+export function setOutsideHttpHandler(
+  handler: OutsideHttpHandler | null,
+): void {
+  outsideHttp = handler;
+}
 
 export function setPairingHandler(handler: PairingSocketHandler | null): void {
   pairingHandler = handler;
@@ -471,7 +493,13 @@ export function startLocalGateway(
   return new Promise((resolve, reject) => {
     const server = createServer((req, res) => {
       const route = (req.url ?? "").split("?")[0];
-      if (req.method === "GET" && route === HEALTH_PATH) {
+      if (outsideHttp?.matches(route)) {
+        outsideHttp.handle(req, res).catch(() => {
+          if (!res.headersSent) {
+            res.writeHead(500).end();
+          }
+        });
+      } else if (req.method === "GET" && route === HEALTH_PATH) {
         res
           .writeHead(200, {
             "content-type": "application/json",

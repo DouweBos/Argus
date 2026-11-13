@@ -142,6 +142,11 @@ export interface AppSettings {
    * same network could tamper with it.
    */
   remote_lan_web_client?: boolean;
+  /**
+   * Serve Argus's MCP server on the gateway to clients that sign in over
+   * OAuth. Off by default; each client is still approved on this computer.
+   */
+  remote_mcp_enabled?: boolean;
   // Preferences both desktop apps (Electron and Argus for Mac) read and
   // write, so switching apps keeps them.
   theme?: "dark" | "light" | "system";

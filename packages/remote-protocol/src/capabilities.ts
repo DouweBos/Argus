@@ -48,6 +48,9 @@ export const HOST_ONLY_COMMANDS = new Set([
   "remote_revoke_device",
   "remote_set_device_control",
   "remote_set_config",
+  "remote_mcp_decide",
+  "remote_mcp_revoke",
+  "remote_mcp_set_access",
   // Reconfiguring how the host is reachable is console-only, like pairing.
   // Sharing an agent, letting a guest in, and ending a share are trust
   // decisions — same root as pairing, and `huddle_list` hands back room tokens.

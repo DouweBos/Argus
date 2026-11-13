@@ -20,6 +20,8 @@ final class RemoteSettingsModel {
   let pairing: PairingModel
   /// The device Revoke is asking about.
   var revoking: ArgusProtocol.PairedDevice?
+  /// The MCP client Revoke is asking about.
+  var revokingMcp: ArgusProtocol.McpClientGrant?
 
   init(store: HostStore) {
     self.store = store
@@ -157,6 +159,36 @@ final class RemoteSettingsModel {
       self.error = HostStore.describe(error)
       MacTelemetry.capture(.remoteDeviceManaged(action: .revoke, success: false))
     }
+  }
+
+  // MARK: MCP clients
+
+  /// The host records approvals and revocations; nothing to capture here.
+  private func mcp<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async
+  where C.Result == ArgusProtocol.RemoteStatus {
+    guard let backend else { return }
+    busy = true
+    error = nil
+    defer { busy = false }
+    do {
+      status = try await backend.request(command, params)
+    } catch {
+      self.error = HostStore.describe(error)
+    }
+  }
+
+  func decideMcp(_ request: ArgusProtocol.McpAccessRequest, access: ArgusProtocol.McpAccess?) async {
+    await mcp(
+      ArgusProtocol.Commands.RemoteMcpDecide.self,
+      .init(requestId: request.requestId, approve: access != nil, access: access ?? .monitor))
+  }
+
+  func setMcpAccess(_ grant: ArgusProtocol.McpClientGrant, access: ArgusProtocol.McpAccess) async {
+    await mcp(ArgusProtocol.Commands.RemoteMcpSetAccess.self, .init(grantId: grant.grantId, access: access))
+  }
+
+  func revokeMcp(_ grant: ArgusProtocol.McpClientGrant) async {
+    await mcp(ArgusProtocol.Commands.RemoteMcpRevoke.self, .init(grantId: grant.grantId))
   }
 
   // MARK: Managed tunnel

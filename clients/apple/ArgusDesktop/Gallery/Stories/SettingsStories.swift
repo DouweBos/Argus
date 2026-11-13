@@ -32,6 +32,13 @@
         account("awaiting-approval", GalleryAccount(phase: .awaitingApproval, selfKind: "mac")),
         customRunner("acp-agent", acpDraft),
         customRunner("gateway", gatewayDraft),
+        GalleryStory("settings/remote/mcp-clients", size: CGSize(width: 760, height: 560)) {
+          SettingsPage {
+            RemoteMcpSection(
+              status: mcpStatus, busy: false, setEnabled: { _ in }, decide: { _, _ in },
+              setAccess: { _, _ in }, revoke: { _ in })
+          }
+        },
         projectSheet("mac-only", repoFile: false, section: .setup),
         projectSheet("layered", repoFile: true, section: .setup),
         projectSheet("overridden", repoFile: true, section: .run),
@@ -107,6 +114,28 @@
     }
 
     private static let page = CGSize(width: 760, height: 900)
+
+    /// One sign-in waiting, a connected supervised client, two idle ones.
+    private static var mcpStatus: ArgusProtocol.RemoteStatus {
+      let now = Date().timeIntervalSince1970 * 1000
+      let hour = 3_600_000.0
+      return .init(
+        enabled: true,
+        endpoints: [.init(kind: .cloudflare, url: "wss://sam-mbp.argus.houwert.dev", priority: 0)],
+        publicUrl: "wss://sam-mbp.argus.houwert.dev",
+        managedTunnel: .init(phase: .running, url: "wss://sam-mbp.argus.houwert.dev"),
+        legacyTunnels: [], notifyWhenFocused: false, mcpClients: true,
+        mcpGrants: [
+          .init(grantId: "g1", clientName: "Claude Code", access: .control, createdAt: now - 26 * hour, lastUsedAt: now, connected: true),
+          .init(grantId: "g2", clientName: "Codex", access: .monitor, createdAt: now - 72 * hour, lastUsedAt: now - 2 * hour, connected: false),
+          .init(grantId: "g3", clientName: "Release bot", access: .admin, createdAt: now - 400 * hour, lastUsedAt: now - 75 * hour, connected: false),
+        ],
+        mcpRequests: [
+          .init(requestId: "r1", clientName: "ChatGPT", requestedAccess: .monitor, matchCode: "482913", redirectHost: "chatgpt.com", createdAt: now)
+        ],
+        mcpUrls: ["https://sam-mbp.argus.houwert.dev/mcp", "http://127.0.0.1:47615/mcp"],
+        devices: [], connectedDeviceIds: [])
+    }
 
     private struct DraftedMessagesStage: View {
       @State private var host = HostSettingsModel()

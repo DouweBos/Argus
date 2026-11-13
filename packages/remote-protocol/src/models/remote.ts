@@ -106,6 +106,33 @@ export const ManagedTunnelState = z.object({
 });
 export type ManagedTunnelState = z.infer<typeof ManagedTunnelState>;
 
+/** What an outside MCP client may do: read only, supervised or full access. */
+export const McpAccess = z.enum(["monitor", "control", "admin"]);
+export type McpAccess = z.infer<typeof McpAccess>;
+
+/** An MCP client outside Argus that signed in over OAuth. */
+export const McpClientGrant = z.object({
+  grantId: z.string(),
+  clientName: z.string(),
+  access: McpAccess,
+  createdAt: z.number(),
+  lastUsedAt: z.number().nullable(),
+  connected: z.boolean(),
+});
+export type McpClientGrant = z.infer<typeof McpClientGrant>;
+
+/** A sign-in waiting for the user to approve it on this computer. */
+export const McpAccessRequest = z.object({
+  requestId: z.string(),
+  clientName: z.string(),
+  requestedAccess: McpAccess.nullable(),
+  /** Also shown on the client's browser page, so the right one is approved. */
+  matchCode: z.string(),
+  redirectHost: z.string(),
+  createdAt: z.number(),
+});
+export type McpAccessRequest = z.infer<typeof McpAccessRequest>;
+
 export const RemoteStatus = z.object({
   enabled: z.boolean(),
   /** Every address a phone could use right now, best first. */
@@ -124,6 +151,12 @@ export const RemoteStatus = z.object({
    * network. Absent from an older host.
    */
   lanWebClient: z.boolean().optional(),
+  /** Serve Argus's MCP server to outside clients over OAuth. Absent from an older host. */
+  mcpClients: z.boolean().optional(),
+  mcpGrants: z.array(McpClientGrant).optional(),
+  mcpRequests: z.array(McpAccessRequest).optional(),
+  /** Where an outside client adds Argus's MCP server, best first; loopback last. */
+  mcpUrls: z.array(z.string()).optional(),
   devices: z.array(PairedDevice),
   /** Device IDs with a live connection right now. */
   connectedDeviceIds: z.array(z.string()),
@@ -135,6 +168,7 @@ export const RemoteConfigPatch = z.object({
   enabled: z.boolean().optional(),
   notifyWhenFocused: z.boolean().optional(),
   lanWebClient: z.boolean().optional(),
+  mcpClients: z.boolean().optional(),
   /** Stop and forget every tunnel an earlier version configured. */
   retireLegacyTunnels: z.boolean().optional(),
 });

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { RemoteDeviceClaimState } from "../models";
 import {
   HuddleRoomModel,
+  McpAccess,
   PairedDevice,
   RemoteConfigPatch,
   RemotePairingStart,
@@ -77,6 +78,28 @@ export const REMOTE_COMMANDS = {
     tier: "host",
     params: DeviceId.extend(Grants),
     result: z.array(PairedDevice),
+  },
+  /** Answer an outside MCP client's sign-in, choosing what it may do. */
+  remote_mcp_decide: {
+    tier: "host",
+    params: z.object({
+      requestId: z.string(),
+      approve: z.boolean(),
+      access: McpAccess,
+    }),
+    result: RemoteStatus,
+  },
+  /** Its live connections drop at once. */
+  remote_mcp_revoke: {
+    tier: "host",
+    params: z.object({ grantId: z.string() }),
+    result: RemoteStatus,
+  },
+  /** Its live connections drop and reconnect with the new tools. */
+  remote_mcp_set_access: {
+    tier: "host",
+    params: z.object({ grantId: z.string(), access: McpAccess }),
+    result: RemoteStatus,
   },
   /** An empty or null `deviceKey` makes the room chat-only. */
   huddle_start: {

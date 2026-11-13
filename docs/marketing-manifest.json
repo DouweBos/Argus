@@ -45,8 +45,8 @@
         {
           "slug": "cli",
           "file": "cli.md",
-          "title": "Command line",
-          "summary": "Start, message and wait on Argus agents from a terminal or a script with the argus command."
+          "title": "Command line and MCP",
+          "summary": "Start, message and wait on Argus agents from a script with the argus command, or let outside agents sign in to its MCP server."
         },
         {
           "slug": "git",

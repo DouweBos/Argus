@@ -7869,6 +7869,69 @@ extension ArgusProtocol {
       }
     }
 
+    public struct RemoteMcpDecideParams: Codable, Sendable {
+      public var requestId: String
+      public var approve: Bool
+      public var access: McpAccess
+
+      enum CodingKeys: String, CodingKey {
+        case requestId = "requestId"
+        case approve = "approve"
+        case access = "access"
+      }
+
+      public init(requestId: String, approve: Bool, access: McpAccess) {
+        self.requestId = requestId
+        self.approve = approve
+        self.access = access
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(requestId, forKey: .requestId)
+        try c.encode(approve, forKey: .approve)
+        try c.encode(access, forKey: .access)
+      }
+    }
+
+    public struct RemoteMcpRevokeParams: Codable, Sendable {
+      public var grantId: String
+
+      enum CodingKeys: String, CodingKey {
+        case grantId = "grantId"
+      }
+
+      public init(grantId: String) {
+        self.grantId = grantId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(grantId, forKey: .grantId)
+      }
+    }
+
+    public struct RemoteMcpSetAccessParams: Codable, Sendable {
+      public var grantId: String
+      public var access: McpAccess
+
+      enum CodingKeys: String, CodingKey {
+        case grantId = "grantId"
+        case access = "access"
+      }
+
+      public init(grantId: String, access: McpAccess) {
+        self.grantId = grantId
+        self.access = access
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(grantId, forKey: .grantId)
+        try c.encode(access, forKey: .access)
+      }
+    }
+
     public struct RemoteRevokeDeviceParams: Codable, Sendable {
       public var deviceId: String
 
@@ -12674,6 +12737,27 @@ extension ArgusProtocol {
       public typealias Result = [ArgusProtocol.PairedDevice]
       public static let name = "remote_list_devices"
       public static let tier = "admin"
+    }
+
+    public enum RemoteMcpDecide: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.RemoteMcpDecideParams
+      public typealias Result = ArgusProtocol.RemoteStatus
+      public static let name = "remote_mcp_decide"
+      public static let tier = "host"
+    }
+
+    public enum RemoteMcpRevoke: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.RemoteMcpRevokeParams
+      public typealias Result = ArgusProtocol.RemoteStatus
+      public static let name = "remote_mcp_revoke"
+      public static let tier = "host"
+    }
+
+    public enum RemoteMcpSetAccess: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.RemoteMcpSetAccessParams
+      public typealias Result = ArgusProtocol.RemoteStatus
+      public static let name = "remote_mcp_set_access"
+      public static let tier = "host"
     }
 
     public enum RemoteRevokeDevice: RemoteCommand {
