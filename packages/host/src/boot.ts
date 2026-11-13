@@ -61,6 +61,7 @@ import {
   initLanguageServers,
   stopAllLanguageServers,
 } from "./services/lsp/watchedFiles";
+import { writeCliShim } from "./services/cli/argus/shim";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { disconnectDevice } from "./services/remote/gateway";
 import { killManagedTunnelNow } from "./services/remote/managedTunnel";
@@ -220,6 +221,11 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   startMcpServer().catch((err) => {
     log.error("Failed to start MCP server:", err);
   });
+  try {
+    writeCliShim();
+  } catch (err) {
+    log.warn("Failed to write the argus CLI shim:", err);
+  }
 
   // Before any listing: EAS devices resolve through their own namespace, and
   // billed sessions an earlier process left running get stopped.

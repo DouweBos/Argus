@@ -43,6 +43,12 @@
           "summary": "Work Argus starts on its own: triggers, signal sources, the autonomy ladder, guardrails, the inbox, and the built-in templates."
         },
         {
+          "slug": "cli",
+          "file": "cli.md",
+          "title": "Command line",
+          "summary": "Start, message and wait on Argus agents from a terminal or a script with the argus command."
+        },
+        {
           "slug": "git",
           "file": "git.md",
           "title": "Git",

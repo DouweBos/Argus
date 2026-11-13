@@ -68,6 +68,7 @@ import {
   waitForTerminal,
 } from "../terminal/multiplexer";
 import { stopTerminalGracefully } from "../terminal/stop";
+import { capture } from "../telemetry/telemetry";
 import { worktreePurposeForCaller } from "./automationCaller";
 import {
   automationMergeBlock,
@@ -76,6 +77,7 @@ import {
   recordAutomationSessionForCaller,
 } from "./automationGuards";
 import { registerAutomationTools } from "./automationTools";
+import { removeEndpointFile, writeEndpointFile } from "./endpointFile";
 import { registerIntegrationTools } from "./integrationTools";
 import { findPastAgent, registerPastAgentTools } from "./pastAgentTools";
 import { registerPrWatchTools } from "./prWatchTools";
@@ -108,6 +110,9 @@ import { localAgentHint, registerTranscriptTools } from "./transcriptTools";
 let httpServer: http.Server | null = null;
 let mcpPort: number | null = null;
 let mcpAuthToken: string | null = null;
+
+/** Set by the `argus` CLI, so its connections can be counted. */
+export const CLIENT_HEADER = "x-argus-client";
 
 /**
  * Constant-time comparison of two strings to avoid timing oracles when
@@ -3182,6 +3187,9 @@ export async function startMcpServer(): Promise<number> {
         const callerAgentId =
           (req.headers["x-argus-agent-id"] as string | undefined) ?? null;
         const mcpServer = createMcpServer(callerAgentId);
+        if (req.headers[CLIENT_HEADER] === "cli") {
+          capture("mcp_client_connected", { via: "cli", access: "admin" });
+        }
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => crypto.randomUUID(),
         });
@@ -3243,6 +3251,15 @@ export async function startMcpServer(): Promise<number> {
       if (typeof addr === "object" && addr) {
         mcpPort = addr.port;
         info(`[mcp] Argus MCP server listening on 127.0.0.1:${mcpPort}`);
+        try {
+          writeEndpointFile({
+            url: `http://127.0.0.1:${mcpPort}/mcp`,
+            token: mcpAuthToken!,
+            pid: process.pid,
+          });
+        } catch (e) {
+          createLogger("mcp").warn("could not write the CLI endpoint:", e);
+        }
         resolve(mcpPort);
       } else {
         reject(new Error("Failed to get server address"));
@@ -3257,6 +3274,9 @@ export async function startMcpServer(): Promise<number> {
 export function stopMcpServer(): void {
   if (httpServer) {
     closeAllMcpSessions();
+    if (mcpAuthToken) {
+      removeEndpointFile(mcpAuthToken);
+    }
     httpServer.close();
     httpServer = null;
     mcpPort = null;

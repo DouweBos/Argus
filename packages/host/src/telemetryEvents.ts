@@ -400,6 +400,11 @@ export interface EventMap {
     created: boolean;
     install: "downloaded" | "managed" | "override" | "path";
   };
+  mcp_client_connected: {
+    /** The CLI always has `admin`; an OAuth client has its grant. */
+    access: "admin" | "control" | "monitor";
+    via: "cli" | "oauth";
+  };
   mcp_task_finished: {
     /** `task`: the client took a task handle and moved on; `blocking`: it waited in the call. */
     mode: "blocking" | "task";

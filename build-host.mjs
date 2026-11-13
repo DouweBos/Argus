@@ -48,4 +48,16 @@ await esbuild.build({
   logLevel: "info",
 });
 
+// The `argus` CLI; the host writes a shim to it into `$ARGUS_HOME/cli`.
+await esbuild.build({
+  entryPoints: ["packages/host/src/bin/argus.ts"],
+  outfile: "dist-host/argus-cli.js",
+  bundle: true,
+  platform: "node",
+  target: "node20",
+  format: "cjs",
+  define: { "process.env.ARGUS_VERSION": JSON.stringify(pkg.version) },
+  logLevel: "info",
+});
+
 fs.writeFileSync("dist-host/package.json", '{"type":"commonjs"}');
