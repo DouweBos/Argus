@@ -15,6 +15,7 @@ struct FileDiffView: View {
   @State private var loaded = false
   @State private var failure: String?
   @State private var composing: Composing?
+  @State private var viewed: ViewedFiles?
 
   /// The comment sheet: a new comment on a line, or an edit of a draft.
   private struct Composing: Identifiable {
@@ -31,6 +32,12 @@ struct FileDiffView: View {
         ChangedFileRow(file: file, showsChevron: false)
         if file.status == .renamed {
           MutedText("from \(file.oldPath)", lineLimit: 1)
+        }
+        if let viewed {
+          ViewedToggle(
+            state: viewed.state(file.displayPath),
+            onChange: host.hasControl ? { on in Task { await viewed.set(file.displayPath, viewed: on) } } : nil)
+          if let error = viewed.error { Banner(text: error, tone: .danger) }
         }
         if host.hasControl {
           ReviewableDiffHunksView(
@@ -90,6 +97,8 @@ struct FileDiffView: View {
   }
 
   private func refresh() async {
+    if viewed == nil { viewed = ViewedFiles(scope: .session(id: sessionId, mode: mode), host: host) }
+    await viewed?.load()
     do {
       let diff = try await host.loadDiff(sessionId: sessionId, mode: mode)
       file = DiffParser.parse(diff).first { $0.displayPath == path }
@@ -107,6 +116,7 @@ struct ChangedFileRow: View {
   @Environment(\.dynamicTypeSize) private var typeSize
   let file: DiffFile
   var showsChevron = true
+  var viewedState: ViewedFiles.State?
 
   var body: some View {
     HStack(spacing: 8) {
@@ -123,12 +133,22 @@ struct ChangedFileRow: View {
         Spacer(minLength: 6)
         facts
       }
+      switch viewedState {
+      case .viewed?:
+        Image(systemName: "checkmark.circle.fill").foregroundStyle(theme.textMuted).accessibilityLabel("Viewed")
+      case .changed?:
+        Image(systemName: "circle.lefthalf.filled").foregroundStyle(theme.warning)
+          .accessibilityLabel("Changed since viewed")
+      default:
+        EmptyView()
+      }
       if showsChevron {
         Image(systemName: Icon.chevronRight)
           .font(.scaled(.caption).weight(.semibold))
           .foregroundStyle(.tertiary)
       }
     }
+    .opacity(viewedState == .viewed ? 0.6 : 1)
     .contentShape(Rectangle())
     .accessibilityElement(children: .combine)
   }

@@ -29,6 +29,11 @@
         ) {
           PullRequestDetailScreen(repo: "acme/luma", number: 482)
         },
+        GalleryStory(
+          "git/pull-request-files", size: screen, chrome: true, fixtures: GalleryFixtures.pullRequests, setup: attach
+        ) {
+          PullRequestDetailScreen(repo: "acme/luma", number: 482, initialTab: .files)
+        },
       ]
     }
 

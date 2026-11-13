@@ -169,6 +169,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   // Only useful for creating a session, which a guest can't.
   "projects.base_branches": DENIED,
   "sessions.diff": session(),
+  "sessions.viewed_files": session(),
+  "sessions.set_file_viewed": session(),
   "sessions.merge_blockers": session(),
 
   // Creating, destroying or re-pointing a session/branch is the engineer's
@@ -266,6 +268,9 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "github.fill_pull_request": DENIED,
   "github.merge_pull_request": DENIED,
   "github.comment_pull_request": DENIED,
+  "github.pull_request_diff": DENIED,
+  "github.pull_request_viewed_files": DENIED,
+  "github.set_pull_request_file_viewed": DENIED,
   "proposals.list": DENIED,
   "proposals.accept": DENIED,
   "proposals.dismiss": DENIED,

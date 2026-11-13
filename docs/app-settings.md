@@ -1060,6 +1060,7 @@ Argus keeps everything under `~/.argus/`:
   mcp-tokens.json             ← MCP sign-ins (encrypted)
   ui-state.json               ← Recent projects, the device each session last used, favourite branches, the Devices view
   user-project-settings.json  ← Per-developer project prefs (branch prefix, worktree locations, …)
+  viewed-files.json           ← Files ticked as viewed in session diffs (pull requests keep theirs on GitHub)
   device-hosts.json           ← Other Macs whose simulators Argus streams over SSH
   telemetry-id                ← Anonymous install id
 ```

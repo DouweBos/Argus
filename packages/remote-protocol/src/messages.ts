@@ -52,6 +52,7 @@ import {
   RemoteProposalStatus,
   RemotePullRequest,
   RemotePullRequestDetail,
+  RemoteViewedFile,
   RemoteQueuedMessage,
   RemoteRunFeedback,
   RemoteRunner,
@@ -532,6 +533,17 @@ export const MethodParams = {
     session_id: z.string(),
     mode: z.enum(["branch", "working"]).optional(),
   }),
+  /** Marks kept on the computer, per diff mode; `branch` when omitted. */
+  "sessions.viewed_files": z.object({
+    session_id: z.string(),
+    mode: z.enum(["branch", "working"]).optional(),
+  }),
+  "sessions.set_file_viewed": z.object({
+    session_id: z.string(),
+    mode: z.enum(["branch", "working"]).optional(),
+    path: z.string().min(1),
+    viewed: z.boolean(),
+  }),
   "sessions.commit": z.object({
     session_id: z.string(),
     message: z.string().trim().min(1),
@@ -770,6 +782,22 @@ export const MethodParams = {
     repo: z.string(),
     number: z.number().int().positive(),
     body: z.string().trim().min(1),
+  }),
+  /** The unified diff, as GitHub serves it. */
+  "github.pull_request_diff": z.object({
+    repo: z.string(),
+    number: z.number().int().positive(),
+  }),
+  /** GitHub's own Viewed marks, as the computer's `gh` user. */
+  "github.pull_request_viewed_files": z.object({
+    repo: z.string(),
+    number: z.number().int().positive(),
+  }),
+  "github.set_pull_request_file_viewed": z.object({
+    repo: z.string(),
+    number: z.number().int().positive(),
+    path: z.string().min(1),
+    viewed: z.boolean(),
   }),
   "proposals.list": z.object({
     /** Omit for everything; the inbox asks for `pending`. */
@@ -1036,6 +1064,9 @@ export const MethodResult = {
     diff: z.string(),
     base_branch: z.string().nullable().optional(),
   }),
+  /** Only the marked files; the rest are unviewed. */
+  "sessions.viewed_files": z.object({ files: z.array(RemoteViewedFile) }),
+  "sessions.set_file_viewed": z.object({ files: z.array(RemoteViewedFile) }),
   /** Git's own output, so a refusal reads the same as it does in a terminal. */
   "sessions.commit": z.object({ output: z.string() }),
   "sessions.draft_commit_message": z.object({
@@ -1173,6 +1204,14 @@ export const MethodResult = {
   }),
   "github.merge_pull_request": z.object({ accepted: z.boolean() }),
   "github.comment_pull_request": z.object({ accepted: z.boolean() }),
+  "github.pull_request_diff": z.object({ diff: z.string() }),
+  /** Only the marked files; the rest are unviewed. */
+  "github.pull_request_viewed_files": z.object({
+    files: z.array(RemoteViewedFile),
+  }),
+  "github.set_pull_request_file_viewed": z.object({
+    files: z.array(RemoteViewedFile),
+  }),
   "proposals.list": z.object({ proposals: z.array(RemoteProposal) }),
   /**
    * Answers once the start is under way, not when it is done: building the

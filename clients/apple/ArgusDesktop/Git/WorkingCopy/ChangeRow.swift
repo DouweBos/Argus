@@ -1,4 +1,5 @@
 import AppKit
+import ArgusCore
 import ArgusUI
 import GroveKit
 import SwiftUI
@@ -10,6 +11,7 @@ struct ChangeRow: View {
   let section: ChangeSection
   let showsDirectory: Bool
   var isLFS = false
+  var viewedState: ViewedFiles.State?
   let toggleStage: () -> Void
 
   private var status: FileStatus {
@@ -32,6 +34,7 @@ struct ChangeRow: View {
           .truncationMode(.head)
       }
       Spacer(minLength: 4)
+      ViewedMark(state: viewedState)
       FileStatusBadge(status: status)
       if isLFS {
         Text("LFS")
@@ -51,6 +54,7 @@ struct ChangeRow: View {
       }
     }
     .font(.scaled(size: 12))
+    .opacity(viewedState == .viewed ? 0.6 : 1)
     .help(entry.path)
     .contentShape(.rect)
   }

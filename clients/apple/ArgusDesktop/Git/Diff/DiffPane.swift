@@ -176,47 +176,75 @@ struct FileDiffsView: View {
   var fileMenu: ((FileDiff) -> AnyView)?
   /// Review comments on the shown file, by its path; nil where the diffs can't take them.
   var review: ((String) -> DiffReviewContext)?
+  /// Viewed marks; nil where the diff doesn't keep them.
+  var viewed: ViewedFiles?
   @State private var selected: String?
   @FocusState private var listFocused: Bool
 
   var body: some View {
     ResizableHSplit(key: "git.files", leadingMin: 180, leadingIdeal: 260, leadingMax: 420, trailingMin: 280) {
-      List(files, id: \.path) { file in
-        HStack(spacing: 6) {
-          FileTypeIcon(path: file.path)
-          Text((file.path as NSString).lastPathComponent).lineLimit(1)
-          Text((file.path as NSString).deletingLastPathComponent)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-            .truncationMode(.head)
-          Spacer(minLength: 4)
-          DiffStatsLabel(stats: file.stats)
-          FileStatusBadge(status: file.status)
+      VStack(spacing: 0) {
+        if let viewed, !files.isEmpty {
+          ViewedProgress(viewed: viewed.viewedCount(files.map(\.path)), total: files.count)
+          Divider()
         }
-        .font(.scaled(size: 12))
-        .contentShape(.rect)
-        .onTapGesture {
-          selected = file.path
-          listFocused = true
-        }
-        .modifier(NavigatorRowHighlight(selected: selected == file.path))
-        .contextMenu { fileMenu?(file) }
-      }
-      .navigatorList()
-      .focused($listFocused)
-      .onKeyPress(keys: [.upArrow, .downArrow]) { press in
-        move(by: press.key == .upArrow ? -1 : 1)
-        return .handled
-      }
-      .overlay {
-        if isLoading && files.isEmpty { ProgressView().controlSize(.small) }
+        fileList
       }
     } trailing: {
-      DiffPane(diff: current?.diff, path: current?.path, isLoading: isLoading, review: current.flatMap { review?($0.path) })
+      DiffPane(
+        diff: current?.diff, path: current?.path, isLoading: isLoading, review: current.flatMap { review?($0.path) },
+        accessory: viewedAccessory)
     }
     .onChange(of: files.map(\.path), initial: true) { _, paths in
       if selected == nil || !paths.contains(selected ?? "") { selected = paths.first }
     }
+  }
+
+  private var viewedAccessory: AnyView? {
+    guard let viewed, let path = current?.path else { return nil }
+    return AnyView(ViewedCheckbox(viewed: viewed, path: path) { advance(from: path) })
+  }
+
+  private var fileList: some View {
+    List(files, id: \.path) { file in
+      HStack(spacing: 6) {
+        FileTypeIcon(path: file.path)
+        Text((file.path as NSString).lastPathComponent).lineLimit(1)
+        Text((file.path as NSString).deletingLastPathComponent)
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+          .truncationMode(.head)
+        Spacer(minLength: 4)
+        if let viewed { ViewedMark(state: viewed.state(file.path)) }
+        DiffStatsLabel(stats: file.stats)
+        FileStatusBadge(status: file.status)
+      }
+      .font(.scaled(size: 12))
+      .opacity(viewed?.isViewed(file.path) == true ? 0.6 : 1)
+      .contentShape(.rect)
+      .onTapGesture {
+        selected = file.path
+        listFocused = true
+      }
+      .modifier(NavigatorRowHighlight(selected: selected == file.path))
+      .contextMenu { fileMenu?(file) }
+    }
+    .navigatorList()
+    .focused($listFocused)
+    .onKeyPress(keys: [.upArrow, .downArrow]) { press in
+      move(by: press.key == .upArrow ? -1 : 1)
+      return .handled
+    }
+    .overlay {
+      if isLoading && files.isEmpty { ProgressView().controlSize(.small) }
+    }
+  }
+
+  /// The next file after `path` still to review, wrapping round.
+  private func advance(from path: String) {
+    guard let viewed, let index = files.firstIndex(where: { $0.path == path }) else { return }
+    let rest = files[(index + 1)...] + files[..<index]
+    if let next = rest.first(where: { !viewed.isViewed($0.path) }) { selected = next.path }
   }
 
   private var current: FileDiff? {

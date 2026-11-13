@@ -735,6 +735,13 @@ export const RemotePullRequestDetail = z.object({
 });
 export type RemotePullRequestDetail = z.infer<typeof RemotePullRequestDetail>;
 
+/** A file ticked as viewed; `changed` once it changed after the tick. */
+export const RemoteViewedFile = z.object({
+  path: z.string(),
+  state: z.enum(["viewed", "changed"]),
+});
+export type RemoteViewedFile = z.infer<typeof RemoteViewedFile>;
+
 /** The limits a run is held to, whatever its playbook says. */
 export const RemoteAutomationGuardrails = z.object({
   confidence_threshold: z.number(),

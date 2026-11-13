@@ -7,12 +7,19 @@ public struct FileDiffCard: View {
   let file: DiffFile
   /// Shown as "View file" unless the file was deleted; gets the first changed line.
   let onViewFile: ((Int?) -> Void)?
+  /// Viewed marks; nil where the diff doesn't keep them.
+  let viewed: ViewedFiles?
+  /// False shows the mark without letting it change.
+  let canMarkViewed: Bool
   @State private var expanded = false
 
-
-  public init(file: DiffFile, onViewFile: ((Int?) -> Void)? = nil) {
+  public init(
+    file: DiffFile, onViewFile: ((Int?) -> Void)? = nil, viewed: ViewedFiles? = nil, canMarkViewed: Bool = true
+  ) {
     self.file = file
     self.onViewFile = onViewFile
+    self.viewed = viewed
+    self.canMarkViewed = canMarkViewed
   }
 
 
@@ -43,8 +50,13 @@ public struct FileDiffCard: View {
           Badge(label: file.status.label, tone: file.status.tone)
         }
         .contentShape(Rectangle())
+        .opacity(viewed?.isViewed(file.displayPath) == true ? 0.6 : 1)
       }
       .buttonStyle(.argusPlain)
+
+      if let viewed {
+        ViewedToggle(state: viewed.state(file.displayPath), onChange: canMarkViewed ? { mark(viewed, $0) } : nil)
+      }
 
       if file.status == .renamed {
         MutedText("from \(file.oldPath)", lineLimit: 1)
@@ -61,6 +73,14 @@ public struct FileDiffCard: View {
 
       if expanded { DiffHunksView(file: file) }
     }
+  }
+}
+
+extension FileDiffCard {
+  /// A viewed file folds away, as on GitHub.
+  fileprivate func mark(_ viewed: ViewedFiles, _ on: Bool) {
+    if on { expanded = false }
+    Task { await viewed.set(file.displayPath, viewed: on) }
   }
 }
 
@@ -217,5 +237,59 @@ extension DiffFile {
   public var firstChangedLine: Int? {
     hunks.lazy.flatMap(\.lines).first { $0.kind == .add }?.newNumber
       ?? hunks.first?.lines.first?.newNumber
+  }
+}
+
+/// "Viewed" as a tick, with "Changed" once the file moved on after it.
+public struct ViewedToggle: View {
+  @Environment(\.theme) private var theme
+  let state: ViewedFiles.State?
+  let onChange: ((Bool) -> Void)?
+
+  public init(state: ViewedFiles.State?, onChange: ((Bool) -> Void)?) {
+    self.state = state
+    self.onChange = onChange
+  }
+
+  public var body: some View {
+    HStack(spacing: 8) {
+      Button {
+        onChange?(state != .viewed)
+      } label: {
+        Label(
+          "Viewed", systemImage: state == .viewed ? "checkmark.circle.fill" : "circle"
+        )
+        .font(.scaled(size: 12, weight: .medium))
+        .foregroundStyle(state == .viewed ? theme.accent : theme.textSecondary)
+      }
+      .buttonStyle(.argusPlain)
+      .disabled(onChange == nil)
+      .accessibilityAddTraits(state == .viewed ? .isSelected : [])
+      if state == .changed {
+        Badge(label: "Changed since viewed", tone: .warning)
+      }
+    }
+  }
+}
+
+/// "12 of 40 viewed" over a thin bar.
+public struct ViewedProgressBar: View {
+  @Environment(\.theme) private var theme
+  let viewed: Int
+  let total: Int
+
+  public init(viewed: Int, total: Int) {
+    self.viewed = viewed
+    self.total = total
+  }
+
+  public var body: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      MutedText("\(viewed) of \(total) viewed")
+      ProgressView(value: Double(viewed), total: Double(max(total, 1)))
+        .progressViewStyle(.linear)
+        .tint(theme.accent)
+    }
+    .accessibilityElement(children: .combine)
   }
 }

@@ -151,6 +151,12 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `session_merge_conflict` | host   | Merge stopped on conflicts       | `phase`, `conflicting_files` (count, not paths)                  |
 | `session_merge_aborted`  | host   | An in-progress merge was aborted | `kind: "rebase" \| "merge"`                                      |
 
+## Diff review
+
+| Event              | Source | When                                                                                                                                           | Extra props                                                                         |
+| ------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `diff_file_viewed` | host   | A file was ticked or unticked as viewed, on a pull request (GitHub's own Viewed mark) or a session's diff (kept on the computer), from any app | `source: "pull_request" \| "session"`, `viewed` — false when the tick was taken off |
+
 ## Agent orchestration
 
 | Event               | Source | When                                                                                                                 | Extra props                                                                                                                                                                                                                                                                                                  |

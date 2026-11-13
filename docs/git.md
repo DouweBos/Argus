@@ -52,6 +52,21 @@ The working-copy view is the entry point for every commit.
 - **LFS warning** appears on files that aren't tracked by LFS but should
   be (configurable thresholds in project settings).
 
+### Viewed files
+
+Tick **Viewed** in a diff's header to mark a file reviewed; the list dims
+it and counts your progress ("3 of 40 viewed"). If the file changes after
+you ticked it, it shows **Changed** until you look again.
+
+- On a pull request's **Files** tab the marks are GitHub's own, so
+  github.com shows the same progress (and a push there flips them to
+  Changed).
+- On a session's diff, for branches with no pull request to hold them, the
+  marks are kept on the computer in `~/.argus/viewed-files.json` and go
+  away with the session.
+- The iPhone shows and sets the same marks on a pull request and on a
+  session's Changes.
+
 ### Commit composer
 
 The composer sits below the file list.

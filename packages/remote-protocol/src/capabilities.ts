@@ -231,6 +231,9 @@ export const REMOTE_METHODS = {
   "sessions.pin_branch": "control",
   /** Read a session's diff (what the agent changed) as unified-diff text. */
   "sessions.diff": "monitor",
+  "sessions.viewed_files": "monitor",
+  /** Review bookkeeping on the computer, so a watcher doesn't change it. */
+  "sessions.set_file_viewed": "control",
   "sessions.merge_blockers": "monitor",
   /** Writing history. Committing and pushing are the point of the session;
    *  merging lands it on the base branch, which the host still refuses for a
@@ -343,6 +346,10 @@ export const REMOTE_METHODS = {
   "github.fill_pull_request": "control",
   "github.merge_pull_request": "control",
   "github.comment_pull_request": "control",
+  "github.pull_request_diff": "monitor",
+  "github.pull_request_viewed_files": "monitor",
+  /** Ticks GitHub's Viewed box as you. */
+  "github.set_pull_request_file_viewed": "control",
   /** The inbox. Reading it is monitor; deciding is not — accepting one spins
    *  up a worktree and starts an agent, which is code execution, and
    *  dismissing writes the signal that calibrates the automation. */

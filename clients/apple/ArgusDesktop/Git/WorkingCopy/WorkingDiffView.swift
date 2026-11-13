@@ -1,3 +1,4 @@
+import ArgusCore
 import ArgusUI
 import GroveKit
 import SwiftUI
@@ -6,6 +7,7 @@ import SwiftUI
 struct WorkingDiffView: View {
   @Environment(DesktopModel.self) private var model
   let workspace: GitWorkspace
+  var viewed: ViewedFiles?
 
   private var vm: WorkingCopyViewModel { workspace.workingCopy }
 
@@ -43,9 +45,21 @@ struct WorkingDiffView: View {
         },
         ignoreWhitespace: Binding(
           get: { vm.ignoreWhitespace }, set: { on in Task { await vm.setIgnoreWhitespace(on) } }),
-        accessory: vm.canSwitchDiffSide ? AnyView(sidePicker) : nil
+        accessory: accessory
       )
+      // An edit to the shown file can turn its mark to changed.
+      .task(id: vm.currentDiff?.stats) { await viewed?.load() }
     }
+  }
+
+  private var accessory: AnyView? {
+    let mark = vm.selectedEntry.flatMap { entry in viewed.map { ViewedCheckbox(viewed: $0, path: entry.path) } }
+    guard mark != nil || vm.canSwitchDiffSide else { return nil }
+    return AnyView(
+      HStack(spacing: 8) {
+        mark
+        if vm.canSwitchDiffSide { sidePicker }
+      })
   }
 
   /// A deleted file has no lines to open.

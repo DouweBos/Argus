@@ -71,8 +71,16 @@ extension GalleryFixtures {
       RemoteMethod.githubPullRequest.rawValue: GalleryJSON.encode(["pull_request": phoneDetail]),
       ArgusProtocol.Commands.GetPullRequestDetail.name: GalleryJSON.encode(macDetail),
       ArgusProtocol.Commands.GetPullRequestDiff.name: jsonString(GalleryGit.workingDiff),
+      RemoteMethod.githubPullRequestDiff.rawValue: GalleryJSON.encode(["diff": GalleryGit.workingDiff]),
+      RemoteMethod.githubPullRequestViewedFiles.rawValue: GalleryJSON.encode(["files": viewedFiles]),
     ]
   }
+
+  /// Review half done: one file viewed, one pushed to since.
+  public static let viewedFiles: [[String: String]] = [
+    ["path": "README.md", "state": "viewed"],
+    ["path": "src/session/merge.ts", "state": "changed"],
+  ]
 
   /// A bare JSON string, as a command answering `String` replies.
   private static func jsonString(_ text: String) -> String {

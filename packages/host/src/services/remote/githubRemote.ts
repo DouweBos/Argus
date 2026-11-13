@@ -20,10 +20,16 @@ import type {
 } from "@argus/remote-protocol";
 import { appState } from "../../state";
 import { ghPrComment, ghPrCreate, ghPrMerge } from "../github/prActions";
-import { getPullRequestDetail } from "../github/prDetail";
+import { getPullRequestDetail, getPullRequestDiff } from "../github/prDetail";
 import { listInterestingPullRequests } from "../github/pullRequests";
+import {
+  getPullRequestViewedFiles,
+  setPullRequestFileViewed,
+  type ViewedFile,
+} from "../github/viewedFiles";
 import { autofillPullRequest } from "../session/prAutofill";
 import { readPullRequestTemplate } from "../session/pullRequest";
+import { capture } from "../telemetry/telemetry";
 
 function toRemotePullRequest(pr: InterestingPullRequest): RemotePullRequest {
   return {
@@ -192,4 +198,38 @@ export async function commentOnRemotePullRequest(
   await ghPrComment({ owner, repo: name, number, body });
 
   return { accepted: true };
+}
+
+export async function remotePullRequestDiff(
+  repo: string,
+  number: number,
+): Promise<{ diff: string }> {
+  const { owner, name } = splitRepo(repo);
+
+  return { diff: await getPullRequestDiff(owner, name, number) };
+}
+
+export async function remotePullRequestViewedFiles(
+  repo: string,
+  number: number,
+): Promise<{ files: ViewedFile[] }> {
+  const { owner, name } = splitRepo(repo);
+
+  return { files: await getPullRequestViewedFiles(owner, name, number) };
+}
+
+export async function setRemotePullRequestFileViewed(params: {
+  number: number;
+  path: string;
+  repo: string;
+  viewed: boolean;
+}): Promise<{ files: ViewedFile[] }> {
+  const { owner, name } = splitRepo(params.repo);
+  await setPullRequestFileViewed({ ...params, owner, repo: name });
+  capture("diff_file_viewed", {
+    source: "pull_request",
+    viewed: params.viewed,
+  });
+
+  return remotePullRequestViewedFiles(params.repo, params.number);
 }

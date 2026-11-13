@@ -11,12 +11,14 @@ struct PullRequestDetailScreen: View {
   let number: Int
   /// In a side panel tab: the actions sit in the view, not the window's toolbar or title.
   var embedded = false
+  /// The gallery opens a tab other than the conversation.
+  var initialTab: PullRequestDetailTab = .conversation
   @State private var model: PullRequestDetailModel?
 
   var body: some View {
     Group {
       if let model {
-        PullRequestDetailContent(model: model, embedded: embedded)
+        PullRequestDetailContent(model: model, embedded: embedded, tab: initialTab)
       } else {
         ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
       }
@@ -35,18 +37,20 @@ private struct PullRequestDetailContent: View {
   @Environment(HostStore.self) private var store
   let model: PullRequestDetailModel
   let embedded: Bool
-  @State private var tab: Tab = .conversation
+  @State var tab: PullRequestDetailTab
   @State private var merging = false
   @State private var confirmingClose = false
 
-  enum Tab: Hashable { case conversation, commits, checks, files }
 
   var body: some View {
     Group {
       if let detail = model.detail {
         VStack(spacing: 0) {
-          if let error = model.actionError {
-            GitErrorBanner(message: error) { model.actionError = nil }
+          if let error = model.actionError ?? model.viewed.error {
+            GitErrorBanner(message: error) {
+              model.actionError = nil
+              model.viewed.error = nil
+            }
           }
           PullRequestHeader(detail: detail)
           if embedded {
@@ -89,7 +93,7 @@ private struct PullRequestDetailContent: View {
 
   private func tabs(_ detail: ArgusProtocol.PullRequestDetail) -> some View {
     let passed = detail.checks.filter { PullRequestCheckTone($0) == .success }.count
-    let items: [(Tab, String)] = [
+    let items: [(PullRequestDetailTab, String)] = [
       (.conversation, "Conversation (\(detail.comments.count))"),
       (.commits, "Commits (\(Int(detail.commits)))"),
       (.checks, detail.checks.isEmpty ? "Checks" : "Checks (\(passed)/\(detail.checks.count))"),
@@ -116,9 +120,10 @@ private struct PullRequestDetailContent: View {
     case .checks:
       PullRequestChecks(checks: detail.checks) { model.openOnGitHub($0) }
     case .files:
-      FileDiffsView(files: model.files, isLoading: !model.diffLoaded) { file in
-        AnyView(Button("View on GitHub") { model.openOnGitHub("\(detail.url)/files") })
-      }
+      FileDiffsView(
+        files: model.files, isLoading: !model.diffLoaded,
+        fileMenu: { _ in AnyView(Button("View on GitHub") { model.openOnGitHub("\(detail.url)/files") }) },
+        viewed: model.viewed)
       .overlay {
         if model.diffLoaded, let error = model.diffError {
           QuietEmptyState(icon: "exclamationmark.triangle", title: "Couldn't load diff", message: error)
@@ -148,6 +153,8 @@ private struct PullRequestDetailContent: View {
     }
   }
 }
+
+enum PullRequestDetailTab: Hashable { case conversation, commits, checks, files }
 
 /// "#123" in the window's title until the pull request loads, unless it's in a panel.
 private struct PullRequestLoadingTitle: ViewModifier {

@@ -16447,6 +16447,42 @@ extension ArgusProtocol {
     public static let stopped = RemoteTunnelStatus(rawValue: "stopped")
   }
 
+  public struct RemoteViewedFileState: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let viewed = RemoteViewedFileState(rawValue: "viewed")
+    public static let changed = RemoteViewedFileState(rawValue: "changed")
+  }
+
+  public struct RemoteViewedFile: Codable, Sendable {
+    public var path: String
+    public var state: RemoteViewedFileState
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+      case state = "state"
+    }
+
+    public init(path: String, state: RemoteViewedFileState) {
+      self.path = path
+      self.state = state
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+      try c.encode(state, forKey: .state)
+    }
+  }
+
   public typealias ReportBlock = JSONValue
 
   public struct ReportDocument: Codable, Sendable {

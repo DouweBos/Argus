@@ -52,6 +52,8 @@ public enum RemoteMethod: String, Codable, Sendable {
   case sessionsRenameLocalBranch = "sessions.rename_local_branch"
   case sessionsPinBranch = "sessions.pin_branch"
   case sessionsDiff = "sessions.diff"
+  case sessionsViewedFiles = "sessions.viewed_files"
+  case sessionsSetFileViewed = "sessions.set_file_viewed"
   case sessionsCommit = "sessions.commit"
   case sessionsDraftCommitMessage = "sessions.draft_commit_message"
   case sessionsCommitIdentity = "sessions.commit_identity"
@@ -111,6 +113,9 @@ public enum RemoteMethod: String, Codable, Sendable {
   case githubCommentPullRequest = "github.comment_pull_request"
   case githubPullRequestTemplate = "github.pull_request_template"
   case githubFillPullRequest = "github.fill_pull_request"
+  case githubPullRequestDiff = "github.pull_request_diff"
+  case githubPullRequestViewedFiles = "github.pull_request_viewed_files"
+  case githubSetPullRequestFileViewed = "github.set_pull_request_file_viewed"
 
   case permissionRespond = "permission.respond"
 

@@ -52,6 +52,7 @@ extension GalleryFixtures {
         "merge_base": mainLog[1].hash, "would_conflict": false,
       ]),
       RemoteMethod.sessionsDiff.rawValue: GalleryJSON.encode(["diff": GalleryGit.workingDiff, "base_branch": "main"]),
+      RemoteMethod.sessionsViewedFiles.rawValue: GalleryJSON.encode(["files": viewedFiles]),
       RemoteMethod.sessionsCommitDiff.rawValue: GalleryJSON.encode(["diff": GalleryGit.commitDiff]),
       RemoteMethod.sessionsStashes.rawValue: GalleryJSON.encode(["stashes": stashes]),
       RemoteMethod.sessionsTags.rawValue: GalleryJSON.encode(["tags": tags]),

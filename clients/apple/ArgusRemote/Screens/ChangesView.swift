@@ -18,6 +18,7 @@ struct ChangesView: View {
   @State private var diff: String?
   /// Why the diff didn't load; a failed refresh keeps the last diff on screen.
   @State private var failure: String?
+  @State private var viewed: ViewedFiles?
 
   private var files: [DiffFile] { diff.map(DiffParser.parse) ?? [] }
 
@@ -49,13 +50,16 @@ struct ChangesView: View {
             ? "This session has no changes vs its base branch — try Uncommitted for working-tree edits."
             : "No uncommitted changes in the working tree.")
       } else {
+        if let viewed {
+          ViewedProgressBar(viewed: viewed.viewedCount(files.map(\.displayPath)), total: files.count)
+        }
         // A list to pick from; each file's diff is a screen of its own.
         Card {
           VStack(spacing: 0) {
             ForEach(Array(files.enumerated()), id: \.element.id) { index, file in
               if index > 0 { Divider().padding(.leading, 24) }
               StackLink(route: .fileDiff(sessionId: sessionId, path: file.displayPath, mode: mode), chevron: false) {
-                ChangedFileRow(file: file).padding(.vertical, 8)
+                ChangedFileRow(file: file, viewedState: viewed?.state(file.displayPath)).padding(.vertical, 8)
               }
               .buttonStyle(.argusPlain)
             }
@@ -129,6 +133,10 @@ struct ChangesView: View {
   private func refresh() async {
     await host.loadGitStatus(sessionId: sessionId)
     let asked = mode
+    if viewed?.scope != .session(id: sessionId, mode: asked) {
+      viewed = ViewedFiles(scope: .session(id: sessionId, mode: asked), host: host)
+    }
+    await viewed?.load()
     do {
       let loaded = try await host.loadDiff(sessionId: sessionId, mode: asked)
       // A switch of mode mid-load would otherwise get the other mode's diff.

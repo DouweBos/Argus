@@ -18,6 +18,8 @@ final class PullRequestDetailModel {
   /// The last write that failed, for the banner.
   var actionError: String?
   private(set) var busy: String?
+  /// GitHub's Viewed marks on the files, as the `gh` user.
+  let viewed: ViewedFiles
 
   private let store: HostStore
   private let pullRequests: PullRequestsStore
@@ -27,6 +29,7 @@ final class PullRequestDetailModel {
     self.number = number
     self.store = store
     self.pullRequests = pullRequests
+    viewed = ViewedFiles(scope: .pullRequest(repo: repo, number: number), host: store)
   }
 
   private var owner: String { String(repo.split(separator: "/").first ?? "") }
@@ -41,12 +44,15 @@ final class PullRequestDetailModel {
     } catch {
       loadError = HostStore.describe(error)
     }
+    // A push since flips viewed files to changed; GitHub decides which.
+    if diffLoaded { await viewed.load() }
   }
 
   /// The diff loads once, when the Files tab first shows.
   func loadDiffIfNeeded() async {
     guard !diffLoaded, let backend = store.backend else { return }
     defer { diffLoaded = true }
+    async let marks: Void = viewed.load()
     do {
       let patch = try await backend.request(
         ArgusProtocol.Commands.GetPullRequestDiff.self, .init(owner: owner, repo: name, number: Double(number)))
@@ -55,6 +61,7 @@ final class PullRequestDetailModel {
     } catch {
       diffError = HostStore.describe(error)
     }
+    await marks
   }
 
   func comment(_ body: String) async -> Bool {

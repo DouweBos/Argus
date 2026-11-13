@@ -16,6 +16,9 @@ struct PullRequestView: View {
   @State private var busy = false
   @AppStorage(RemoteMergeStrategy.preferenceKey) private var strategy: RemoteMergeStrategy = .squash
   @State private var confirmingMerge = false
+  @State private var files: [DiffFile]?
+  @State private var filesFailure: String?
+  @State private var viewed: ViewedFiles?
 
   private var detail: RemotePullRequestDetail? { store.detailById["\(repo)#\(number)"] }
 
@@ -31,6 +34,7 @@ struct PullRequestView: View {
           Card { MarkdownView(text: detail.body, baseSize: 14) }
         }
         conversation(detail)
+        filesSection
         if host.hasControl && !detail.merged { actions(detail) }
       } else {
         Loading(label: "Reading the pull request…")
@@ -44,9 +48,18 @@ struct PullRequestView: View {
     } message: {
       Text(strategy.label + " on GitHub. This can't be undone from here.")
     }
-    .task(id: number) { await store.loadDetail(repo: repo, number: number) }
+    .task(id: number) {
+      let marks = ViewedFiles(scope: .pullRequest(repo: repo, number: number), host: host)
+      viewed = marks
+      async let marksLoaded: Void = marks.load()
+      async let filesLoaded: Void = loadFiles()
+      await store.loadDetail(repo: repo, number: number)
+      _ = await (marksLoaded, filesLoaded)
+    }
     .liveRefresh(enabled: host.connection == .ready, every: .seconds(30)) {
       await store.loadDetail(repo: repo, number: number)
+      // A push since flips viewed files to changed; GitHub decides which.
+      await viewed?.load()
     }
   }
 
@@ -103,6 +116,32 @@ struct PullRequestView: View {
         }
       }
     }
+  }
+
+  /// Every changed file, folded; a viewed one stays folded, as on GitHub.
+  @ViewBuilder
+  private var filesSection: some View {
+    if let files, !files.isEmpty {
+      SectionHeader(title: "Files", count: files.count)
+      if let viewed {
+        ViewedProgressBar(viewed: viewed.viewedCount(files.map(\.displayPath)), total: files.count)
+        if let error = viewed.error { Banner(text: error, tone: .danger) }
+      }
+      ForEach(files) { file in
+        FileDiffCard(file: file, viewed: viewed, canMarkViewed: host.hasControl)
+      }
+    } else if let filesFailure {
+      MutedText("Couldn't load the files — \(filesFailure)")
+    }
+  }
+
+  private func loadFiles() async {
+    do {
+      files = DiffParser.parse(try await store.diff(repo: repo, number: number))
+      filesFailure = nil
+    } catch where !HostStore.isQuiet(error) {
+      filesFailure = HostStore.describe(error)
+    } catch {}
   }
 
   private func actions(_ detail: RemotePullRequestDetail) -> some View {

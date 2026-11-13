@@ -194,6 +194,10 @@ import {
   setSessionBaseBranch,
   stageAll,
 } from "../session/sessionOps";
+import {
+  getSessionViewedFiles,
+  setSessionFileViewed,
+} from "../session/viewedFiles";
 import { waitForSessionReady } from "../session/waitForReady";
 import { computeSessionDiffStats } from "../session/watcher";
 import {
@@ -277,9 +281,12 @@ import {
   createRemotePullRequest,
   fillRemotePullRequest,
   mergeRemotePullRequest,
+  remotePullRequestDiff,
   remotePullRequestTemplate,
   remotePullRequest,
   remotePullRequests,
+  remotePullRequestViewedFiles,
+  setRemotePullRequestFileViewed,
 } from "./githubRemote";
 import { hostLabelForAgent } from "./huddle";
 import {
@@ -2110,6 +2117,30 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
 
     return { diff, base_branch: base };
   },
+  "sessions.viewed_files": async (params) => {
+    const { session_id, mode } = parse("sessions.viewed_files", params);
+    requireSession(session_id);
+
+    return { files: await getSessionViewedFiles(session_id, mode ?? "branch") };
+  },
+  "sessions.set_file_viewed": async (params) => {
+    const { session_id, mode, path, viewed } = parse(
+      "sessions.set_file_viewed",
+      params,
+    );
+    requireSession(session_id);
+    const diffMode = mode ?? "branch";
+    await control(() =>
+      setSessionFileViewed({
+        sessionId: session_id,
+        mode: diffMode,
+        path,
+        viewed,
+      }),
+    );
+
+    return { files: await getSessionViewedFiles(session_id, diffMode) };
+  },
   "sessions.commit": async (params) => {
     const { session_id, message, stage_all, amend, sign_off, sign } = parse(
       "sessions.commit",
@@ -2475,6 +2506,21 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const { repo, number, body } = parse("github.comment_pull_request", params);
 
     return await control(() => commentOnRemotePullRequest(repo, number, body));
+  },
+  "github.pull_request_diff": async (params) => {
+    const { repo, number } = parse("github.pull_request_diff", params);
+
+    return await remotePullRequestDiff(repo, number);
+  },
+  "github.pull_request_viewed_files": async (params) => {
+    const { repo, number } = parse("github.pull_request_viewed_files", params);
+
+    return await remotePullRequestViewedFiles(repo, number);
+  },
+  "github.set_pull_request_file_viewed": async (params) => {
+    const p = parse("github.set_pull_request_file_viewed", params);
+
+    return await control(() => setRemotePullRequestFileViewed(p));
   },
   "proposals.list": async (params) =>
     remoteProposals(parse("proposals.list", params)),

@@ -297,6 +297,8 @@ export interface EventMap {
     mode: "component" | "screen";
     source: "agent" | "app";
   };
+  /** A file in a diff was ticked or unticked as viewed. */
+  diff_file_viewed: { source: "pull_request" | "session"; viewed: boolean };
   device_host_added: { has_identity_file: boolean; has_port: boolean };
   device_host_removed: undefined;
   device_name_changed: {

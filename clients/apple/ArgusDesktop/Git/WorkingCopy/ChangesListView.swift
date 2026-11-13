@@ -9,6 +9,8 @@ struct ChangesListView: View {
   @Environment(\.theme) private var theme
   let workspace: GitWorkspace
   var onShowFileHistory: ((String) -> Void)?
+  /// Viewed marks, in the session's Diff tab.
+  var viewed: ViewedFiles?
   @State private var filter = ""
   @FocusState private var listFocused: Bool
 
@@ -17,7 +19,7 @@ struct ChangesListView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      PanelHeader(title: "Files", detail: vm.changedCount == 0 ? nil : "\(vm.changedCount) changed") {
+      PanelHeader(title: "Files", detail: headerDetail) {
         viewModeMenu
         optionsMenu
       }
@@ -26,6 +28,9 @@ struct ChangesListView: View {
           .quietField()
           .padding(.horizontal, 8)
           .padding(.vertical, 6)
+      }
+      if let error = viewed?.error {
+        GitErrorBanner(message: error) { viewed?.error = nil }
       }
       if vm.lfs.status.isMissing, !workspace.suppressLfsWarning {
         Text(LFSStatus.missingMessage)
@@ -37,9 +42,17 @@ struct ChangesListView: View {
       }
       content
     }
+    .task(id: vm.statusEntries) { await viewed?.load() }
     .sheet(item: Binding(get: { vm.patchApply }, set: { if $0 == nil { vm.cancelApplyPatch() } })) { request in
       PatchApplySheet(workspace: workspace, request: request)
     }
+  }
+
+  private var headerDetail: String? {
+    guard vm.changedCount > 0 else { return nil }
+    guard let viewed else { return "\(vm.changedCount) changed" }
+    let paths = Array(Set(vm.statusEntries.map(\.path)))
+    return "\(vm.changedCount) changed · \(viewed.viewedCount(paths)) of \(paths.count) viewed"
   }
 
   /// List, tree or every tracked file, as Grove's Files header picks it.
@@ -185,6 +198,7 @@ struct ChangesListView: View {
     } label: {
       ChangeRow(
         entry: entry, section: section, showsDirectory: showsDirectory, isLFS: vm.isLFS(entry),
+        viewedState: viewed?.state(entry.path),
         toggleStage: {
           Task { section == .staged ? await actions.unstage(entry) : await actions.stage(entry) }
         }

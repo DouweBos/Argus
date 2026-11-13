@@ -4345,6 +4345,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct GithubPullRequestDiffParams: Codable, Sendable {
+      public var repo: String
+      public var number: Int
+
+      enum CodingKeys: String, CodingKey {
+        case repo = "repo"
+        case number = "number"
+      }
+
+      public init(repo: String, number: Int) {
+        self.repo = repo
+        self.number = number
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repo, forKey: .repo)
+        try c.encode(number, forKey: .number)
+      }
+    }
+
+    public struct GithubPullRequestDiffResult: Codable, Sendable {
+      public var diff: String
+
+      enum CodingKeys: String, CodingKey {
+        case diff = "diff"
+      }
+
+      public init(diff: String) {
+        self.diff = diff
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(diff, forKey: .diff)
+      }
+    }
+
     public struct GithubPullRequestTemplateParams: Codable, Sendable {
       public var sessionId: String
 
@@ -4379,6 +4417,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct GithubPullRequestViewedFilesParams: Codable, Sendable {
+      public var repo: String
+      public var number: Int
+
+      enum CodingKeys: String, CodingKey {
+        case repo = "repo"
+        case number = "number"
+      }
+
+      public init(repo: String, number: Int) {
+        self.repo = repo
+        self.number = number
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repo, forKey: .repo)
+        try c.encode(number, forKey: .number)
+      }
+    }
+
+    public struct GithubPullRequestViewedFilesResult: Codable, Sendable {
+      public var files: [RemoteViewedFile]
+
+      enum CodingKeys: String, CodingKey {
+        case files = "files"
+      }
+
+      public init(files: [RemoteViewedFile]) {
+        self.files = files
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(files, forKey: .files)
+      }
+    }
+
     public struct GithubPullRequestsParams: Codable, Sendable {
       public var repoRoots: [String]?
 
@@ -4410,6 +4486,52 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(pullRequests, forKey: .pullRequests)
+      }
+    }
+
+    public struct GithubSetPullRequestFileViewedParams: Codable, Sendable {
+      public var repo: String
+      public var number: Int
+      public var path: String
+      public var viewed: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case repo = "repo"
+        case number = "number"
+        case path = "path"
+        case viewed = "viewed"
+      }
+
+      public init(repo: String, number: Int, path: String, viewed: Bool) {
+        self.repo = repo
+        self.number = number
+        self.path = path
+        self.viewed = viewed
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repo, forKey: .repo)
+        try c.encode(number, forKey: .number)
+        try c.encode(path, forKey: .path)
+        try c.encode(viewed, forKey: .viewed)
+      }
+    }
+
+    public struct GithubSetPullRequestFileViewedResult: Codable, Sendable {
+      public var files: [RemoteViewedFile]
+
+      enum CodingKeys: String, CodingKey {
+        case files = "files"
+      }
+
+      public init(files: [RemoteViewedFile]) {
+        self.files = files
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(files, forKey: .files)
       }
     }
 
@@ -6729,6 +6851,67 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsSetFileViewedParamsMode: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let branch = SessionsSetFileViewedParamsMode(rawValue: "branch")
+      public static let working = SessionsSetFileViewedParamsMode(rawValue: "working")
+    }
+
+    public struct SessionsSetFileViewedParams: Codable, Sendable {
+      public var sessionId: String
+      public var mode: SessionsSetFileViewedParamsMode?
+      public var path: String
+      public var viewed: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case mode = "mode"
+        case path = "path"
+        case viewed = "viewed"
+      }
+
+      public init(sessionId: String, mode: SessionsSetFileViewedParamsMode? = nil, path: String, viewed: Bool) {
+        self.sessionId = sessionId
+        self.mode = mode
+        self.path = path
+        self.viewed = viewed
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(mode, forKey: .mode)
+        try c.encode(path, forKey: .path)
+        try c.encode(viewed, forKey: .viewed)
+      }
+    }
+
+    public struct SessionsSetFileViewedResult: Codable, Sendable {
+      public var files: [RemoteViewedFile]
+
+      enum CodingKeys: String, CodingKey {
+        case files = "files"
+      }
+
+      public init(files: [RemoteViewedFile]) {
+        self.files = files
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(files, forKey: .files)
+      }
+    }
+
     public struct SessionsStartOptionsParams: Codable, Sendable {
       public var sessionId: String
       public var runnerId: String?
@@ -6912,6 +7095,59 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(tags, forKey: .tags)
+      }
+    }
+
+    public struct SessionsViewedFilesParamsMode: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let branch = SessionsViewedFilesParamsMode(rawValue: "branch")
+      public static let working = SessionsViewedFilesParamsMode(rawValue: "working")
+    }
+
+    public struct SessionsViewedFilesParams: Codable, Sendable {
+      public var sessionId: String
+      public var mode: SessionsViewedFilesParamsMode?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case mode = "mode"
+      }
+
+      public init(sessionId: String, mode: SessionsViewedFilesParamsMode? = nil) {
+        self.sessionId = sessionId
+        self.mode = mode
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(mode, forKey: .mode)
+      }
+    }
+
+    public struct SessionsViewedFilesResult: Codable, Sendable {
+      public var files: [RemoteViewedFile]
+
+      enum CodingKeys: String, CodingKey {
+        case files = "files"
+      }
+
+      public init(files: [RemoteViewedFile]) {
+        self.files = files
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(files, forKey: .files)
       }
     }
 
@@ -7793,16 +8029,34 @@ extension ArgusProtocol {
       public static let name = "github.pull_request"
     }
 
+    public enum GithubPullRequestDiff: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.GithubPullRequestDiffParams
+      public typealias Result = ArgusProtocol.MethodsTypes.GithubPullRequestDiffResult
+      public static let name = "github.pull_request_diff"
+    }
+
     public enum GithubPullRequestTemplate: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.GithubPullRequestTemplateParams
       public typealias Result = ArgusProtocol.MethodsTypes.GithubPullRequestTemplateResult
       public static let name = "github.pull_request_template"
     }
 
+    public enum GithubPullRequestViewedFiles: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.GithubPullRequestViewedFilesParams
+      public typealias Result = ArgusProtocol.MethodsTypes.GithubPullRequestViewedFilesResult
+      public static let name = "github.pull_request_viewed_files"
+    }
+
     public enum GithubPullRequests: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.GithubPullRequestsParams
       public typealias Result = ArgusProtocol.MethodsTypes.GithubPullRequestsResult
       public static let name = "github.pull_requests"
+    }
+
+    public enum GithubSetPullRequestFileViewed: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.GithubSetPullRequestFileViewedParams
+      public typealias Result = ArgusProtocol.MethodsTypes.GithubSetPullRequestFileViewedResult
+      public static let name = "github.set_pull_request_file_viewed"
     }
 
     public enum HostEndpoints: RemoteCommand {
@@ -8135,6 +8389,12 @@ extension ArgusProtocol {
       public static let name = "sessions.set_base_branch"
     }
 
+    public enum SessionsSetFileViewed: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsSetFileViewedParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsSetFileViewedResult
+      public static let name = "sessions.set_file_viewed"
+    }
+
     public enum SessionsStartOptions: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsStartOptionsParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsStartOptionsResult
@@ -8163,6 +8423,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsTagsParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsTagsResult
       public static let name = "sessions.tags"
+    }
+
+    public enum SessionsViewedFiles: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsViewedFilesParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsViewedFilesResult
+      public static let name = "sessions.viewed_files"
     }
 
     public enum SessionsViewing: RemoteCommand {

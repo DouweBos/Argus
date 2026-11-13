@@ -22,6 +22,7 @@ struct SessionFilesTab: View {
 struct SessionDiffTab: View {
   @Environment(DesktopModel.self) private var model
   let session: RemoteSession
+  @State private var viewed: ViewedFiles?
 
   /// The git and code views run the same repository; leaving them must not stop it under this tab.
   private var sharedOnScreen: Bool { model.sessionPanel == .git || model.sessionPanel == .code }
@@ -30,9 +31,9 @@ struct SessionDiffTab: View {
     Group {
       if case .open(let workspace) = model.git.slots[session.id] {
         ResizableVSplit(key: "panel.diff", topMin: 100, bottomMin: 160, bottomIdeal: 360, showsBottom: true) {
-          ChangesListView(workspace: workspace)
+          ChangesListView(workspace: workspace, viewed: viewed)
         } bottom: {
-          WorkingDiffView(workspace: workspace)
+          WorkingDiffView(workspace: workspace, viewed: viewed)
         }
         .modifier(DiffTabDialogs(workspace: workspace, shown: model.sessionPanel != .git))
         .task(id: model.sessionPanel) { await workspace.start() }
@@ -43,7 +44,10 @@ struct SessionDiffTab: View {
         ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
       }
     }
-    .task(id: session.id) { await model.git.open(session) }
+    .task(id: session.id) {
+      viewed = ViewedFiles(scope: .session(id: session.id, mode: "working"), host: model.store)
+      await model.git.open(session)
+    }
   }
 }
 

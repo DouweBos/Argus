@@ -68,6 +68,14 @@ public final class PullRequestsStore {
     }
   }
 
+  /// The unified diff; throws for the screen to show rather than the list's banner.
+  public func diff(repo: String, number: Int) async throws -> String {
+    guard let backend = host.backend else { return "" }
+    return try await backend.request(
+      ArgusProtocol.Methods.GithubPullRequestDiff.self, .init(repo: repo, number: number)
+    ).diff
+  }
+
   /// Open a PR for a session's branch. The computer works out the base and
   /// head from the session itself.
   public func create(sessionId: String, title: String, body: String, draft: Bool) async -> String? {
