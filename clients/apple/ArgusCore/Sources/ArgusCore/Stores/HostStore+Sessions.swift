@@ -415,6 +415,56 @@ extension HostStore {
     } catch { report(error, scope: "session:watch_pull_request") }
   }
 
+  // MARK: Triage
+
+  /// Mark done (true), keep active (false), or follow its pull request again (nil).
+  /// The computer records it, so the phone sends no telemetry.
+  public func setSessionSettled(_ session: RemoteSession, settled: Bool?) async {
+    guard let backend else { return }
+    struct Params: Encodable {
+      let session_id: String
+      let settled: Bool?
+
+      func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(session_id, forKey: .session_id)
+        try c.encode(settled, forKey: .settled)
+      }
+      enum CodingKeys: String, CodingKey { case session_id, settled }
+    }
+    do {
+      try await backend.request(
+        .sessionsSettle, Params(session_id: session.id, settled: settled), as: IgnoredResult.self)
+      await reloadTriaged(session)
+    } catch { report(error, scope: "session:settle") }
+  }
+
+  /// Hide it until `until`, when the computer brings it back with a notification; nil unsnoozes.
+  public func snoozeSession(_ session: RemoteSession, until: Date?) async {
+    guard let backend else { return }
+    struct Params: Encodable {
+      let session_id: String
+      let until: Double?
+
+      func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(session_id, forKey: .session_id)
+        try c.encode(until, forKey: .until)
+      }
+      enum CodingKeys: String, CodingKey { case session_id, until }
+    }
+    let millis = until.map { ($0.timeIntervalSince1970 * 1000).rounded() }
+    do {
+      try await backend.request(
+        .sessionsSnooze, Params(session_id: session.id, until: millis), as: IgnoredResult.self)
+      await reloadTriaged(session)
+    } catch { report(error, scope: "session:snooze") }
+  }
+
+  private func reloadTriaged(_ session: RemoteSession) async {
+    if session.kind == .scratchPad { await loadScratchPads() } else { await loadSessions(repoRoot: session.repoRoot) }
+  }
+
   // MARK: Mentions
 
   public func listFiles(sessionId: String) async -> [String] {

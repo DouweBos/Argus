@@ -15,6 +15,7 @@ import type {
 import { addHostEventSink } from "@argus/host/bus";
 import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
+import { markSessionUnread } from "../../session/triage";
 import { capture as telemetryCapture } from "../../telemetry/telemetry";
 import { sendAgentMessage } from "../agentService";
 import { createCheckpoint, recordTurnEnd } from "../checkpoints";
@@ -24,6 +25,7 @@ import {
   promoteQueuedMessage,
 } from "../messageQueue";
 import { runnerCommandFor } from "../runnerCommand";
+import { isSessionViewed } from "../warmPolicy";
 import { withBackgroundSettled } from "./background";
 import { parseCliDiagnostic } from "./cliDiagnostics";
 import {
@@ -268,6 +270,9 @@ function statusChanged(agentId: string, entry: Tracked, status: string): void {
   }
   if (trySendNextQueued(agentId, entry)) {
     return;
+  }
+  if (finished && entry.sessionId && !isSessionViewed(entry.sessionId)) {
+    markSessionUnread(entry.sessionId);
   }
   if (finished) {
     notifyFinished(

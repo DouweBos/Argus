@@ -7,11 +7,12 @@ struct SidebarSessionRow: View {
   @Environment(HostStore.self) private var store
   let session: RemoteSession
   let agents: [RemoteAgentStatus]
+  var caption: String?
 
   private var activity: SessionActivity { SessionActivity(session: session, agents: agents) }
 
   var body: some View {
-    SessionRow(session: session, agents: agents)
+    SessionRow(session: session, agents: agents, caption: caption)
       .help(hasCard ? "" : help)
       // Fetched as the pointer arrives, so the card opens on a fresh status.
       .onHover { inside in
@@ -35,6 +36,9 @@ struct SidebarSessionRow: View {
   private var help: String {
     var lines = [session.branch]
     if let text = activity.statusText { lines.append(text) }
+    if let until = session.snoozedUntilDate, session.isSnoozed() {
+      lines.append("Snoozed until \(until.formatted(date: .abbreviated, time: .shortened))")
+    }
     if let volume = session.volume { lines.append("Stored on \(volume)") }
     if session.isUnavailable { lines.append("\(session.unavailableVolume ?? "Its drive") isn't connected") }
     return lines.joined(separator: " · ")

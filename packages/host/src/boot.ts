@@ -87,6 +87,10 @@ import { migrateLegacySecretStores } from "./services/secrets/legacyStores";
 import { stopAllBranchTracking } from "./services/session/branchTracker";
 import { restoreRepoRoots } from "./services/session/manager";
 import {
+  startSessionTriage,
+  stopSessionTriage,
+} from "./services/session/triage";
+import {
   startVolumeWatcher,
   stopVolumeWatcher,
 } from "./services/session/volumeWatcher";
@@ -180,6 +184,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   startVolumeWatcher();
   startSessionPullRequests();
   startPrWatches();
+  startSessionTriage();
 
   initAutomations();
   initAutomationOutcomes();
@@ -295,6 +300,7 @@ export function stopHostServices(): void {
   stopAllBranchTracking();
   stopSessionPullRequests();
   stopPrWatches();
+  stopSessionTriage();
   stopHostConversations();
   stopLiveActivities();
   stopWarmPolicy();

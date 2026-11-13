@@ -269,6 +269,8 @@ enum MacTelemetryEvent {
   case branchRenamed(success: Bool)
   /// A project in the sidebar was folded shut or opened.
   case sidebarProjectToggled(collapsed: Bool)
+  /// A project's (or the scratch pads') folded Done and Snoozed sessions were shown or hidden.
+  case sidebarFoldToggled(expanded: Bool, done: Int, snoozed: Int)
   /// A session or scratch pad was renamed from the sidebar.
   case sessionRenamed(kind: RenamedSessionKind)
   /// The sidebar was searched (once per search) or narrowed to one project.
@@ -423,6 +425,7 @@ enum MacTelemetryEvent {
     case .chatHistoryUsed: "mac_chat_history_used"
     case .branchRenamed: "mac_branch_renamed"
     case .sidebarProjectToggled: "mac_sidebar_project_toggled"
+    case .sidebarFoldToggled: "mac_sidebar_fold_toggled"
     case .sessionRenamed: "mac_session_renamed"
     case .sidebarFiltered: "mac_sidebar_filtered"
     case .contextCardUsed: "mac_context_card_used"
@@ -552,6 +555,8 @@ enum MacTelemetryEvent {
       ["success": success]
     case .sidebarProjectToggled(let collapsed):
       ["collapsed": collapsed]
+    case .sidebarFoldToggled(let expanded, let done, let snoozed):
+      ["expanded": expanded, "done": done, "snoozed": snoozed]
     case .sessionRenamed(let kind):
       ["kind": kind.rawValue]
     case .sidebarFiltered(let kind):

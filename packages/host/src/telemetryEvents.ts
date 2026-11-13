@@ -511,6 +511,11 @@ export interface EventMap {
     duration_bucket: "<1m" | "<10m" | "<10s" | ">=10m";
   };
   session_started_from_issue: { source: "linear" };
+  session_triaged: {
+    action: "settled" | "snoozed" | "unsettled" | "unsnoozed" | "woke";
+    /** Only on `snoozed`. */
+    duration_bucket?: "<1d" | "<1w" | "<4h" | "1w+";
+  };
   simulator_boot_failed: {
     reason:
       | "disk_full"

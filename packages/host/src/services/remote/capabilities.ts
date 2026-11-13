@@ -195,6 +195,11 @@ import {
   stageAll,
 } from "../session/sessionOps";
 import {
+  sessionTriage,
+  setSessionSettled,
+  snoozeSession,
+} from "../session/triage";
+import {
   getSessionViewedFiles,
   setSessionFileViewed,
 } from "../session/viewedFiles";
@@ -582,6 +587,7 @@ function toRemoteSession(s: Session): RemoteSession {
     setup_pending: s.setup_pending ?? false,
     pull_request: sessionPullRequest(s.id),
     pull_request_watched: isPullRequestWatched(s.id),
+    ...sessionTriage(s.id),
   };
 }
 
@@ -1812,6 +1818,22 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     }
 
     return { watching: isPullRequestWatched(session_id) };
+  },
+
+  "sessions.settle": async (params) => {
+    const { session_id, settled } = parse("sessions.settle", params);
+    requireSession(session_id);
+    await control(() => setSessionSettled(session_id, settled));
+
+    return { accepted: true };
+  },
+
+  "sessions.snooze": async (params) => {
+    const { session_id, until } = parse("sessions.snooze", params);
+    requireSession(session_id);
+    await control(() => snoozeSession(session_id, until));
+
+    return { accepted: true };
   },
 
   "terminals.list": async (params) => {

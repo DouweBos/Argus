@@ -6982,6 +6982,82 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsSettleParams: Codable, Sendable {
+      public var sessionId: String
+      public var settled: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case settled = "settled"
+      }
+
+      public init(sessionId: String, settled: Bool? = nil) {
+        self.sessionId = sessionId
+        self.settled = settled
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(settled, forKey: .settled)
+      }
+    }
+
+    public struct SessionsSettleResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct SessionsSnoozeParams: Codable, Sendable {
+      public var sessionId: String
+      public var until: Double?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case until = "until"
+      }
+
+      public init(sessionId: String, until: Double? = nil) {
+        self.sessionId = sessionId
+        self.until = until
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(until, forKey: .until)
+      }
+    }
+
+    public struct SessionsSnoozeResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
     public struct SessionsStartOptionsParams: Codable, Sendable {
       public var sessionId: String
       public var runnerId: String?
@@ -8591,6 +8667,18 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsSetFileViewedParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsSetFileViewedResult
       public static let name = "sessions.set_file_viewed"
+    }
+
+    public enum SessionsSettle: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsSettleParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsSettleResult
+      public static let name = "sessions.settle"
+    }
+
+    public enum SessionsSnooze: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsSnoozeParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsSnoozeResult
+      public static let name = "sessions.snooze"
     }
 
     public enum SessionsStartOptions: RemoteCommand {

@@ -15889,6 +15889,9 @@ extension ArgusProtocol {
     public var setupPending: Bool?
     public var pullRequest: SessionPullRequest?
     public var pullRequestWatched: Bool?
+    public var settled: Bool?
+    public var snoozedUntil: Double?
+    public var unread: Bool?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -15910,9 +15913,12 @@ extension ArgusProtocol {
       case setupPending = "setup_pending"
       case pullRequest = "pull_request"
       case pullRequestWatched = "pull_request_watched"
+      case settled = "settled"
+      case snoozedUntil = "snoozed_until"
+      case unread = "unread"
     }
 
-    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, deleteFailed: RemoteSessionDeleteFailed? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil) {
+    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, deleteFailed: RemoteSessionDeleteFailed? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, settled: Bool? = nil, snoozedUntil: Double? = nil, unread: Bool? = nil) {
       self.id = id
       self.repoRoot = repoRoot
       self.kind = kind
@@ -15932,6 +15938,9 @@ extension ArgusProtocol {
       self.setupPending = setupPending
       self.pullRequest = pullRequest
       self.pullRequestWatched = pullRequestWatched
+      self.settled = settled
+      self.snoozedUntil = snoozedUntil
+      self.unread = unread
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -15955,6 +15964,9 @@ extension ArgusProtocol {
       try c.encodeIfPresent(setupPending, forKey: .setupPending)
       try c.encodeIfPresent(pullRequest, forKey: .pullRequest)
       try c.encodeIfPresent(pullRequestWatched, forKey: .pullRequestWatched)
+      try c.encodeIfPresent(settled, forKey: .settled)
+      try c.encodeIfPresent(snoozedUntil, forKey: .snoozedUntil)
+      try c.encodeIfPresent(unread, forKey: .unread)
     }
   }
 

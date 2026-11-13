@@ -13,7 +13,7 @@ public struct SessionActivity: Sendable {
 
   /// One step coarser than the status: what a dot beside the session says.
   public enum State: Sendable, Equatable {
-    case unavailable, failed, preparing, waiting, working, idle
+    case unavailable, failed, preparing, waiting, working, unread, idle
   }
 
   public var isBusy: Bool {
@@ -27,14 +27,15 @@ public struct SessionActivity: Sendable {
     case .initializing, .deleting: return .preparing
     case .ready:
       if agents.contains(where: { $0.awaiting != nil }) { return .waiting }
-      return isBusy ? .working : .idle
+      if isBusy { return .working }
+      return session.unread == true ? .unread : .idle
     }
   }
 
-  /// Worth a dot: working, waiting on you, broken, or setting up. An idle session shows none.
+  /// Worth a dot: working, waiting on you, finished unread, broken, or setting up. An idle session shows none.
   public var showsDot: Bool {
     switch state {
-    case .failed, .waiting, .working: true
+    case .failed, .waiting, .working, .unread: true
     case .preparing: session.status == .initializing
     case .unavailable, .idle: false
     }

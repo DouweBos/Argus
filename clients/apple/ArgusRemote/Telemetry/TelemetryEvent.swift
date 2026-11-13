@@ -228,6 +228,8 @@ enum TelemetryEvent {
   case branchActed(action: BranchAction)
   /// `target` says whether the session's display name or its branch moved.
   case sessionRenamed(target: String)
+  /// A project's (or the iPad sidebar's) folded Done and Snoozed sessions were shown or hidden.
+  case sessionsFoldToggled(expanded: Bool, done: Int, snoozed: Int)
   case memoryEdited(action: MemoryAction)
   /// A diff review comment was added or deleted, the review sent or discarded, or an agent asked to review.
   case diffReviewed(action: DiffReviewAction, comments: Int)
@@ -348,6 +350,7 @@ enum TelemetryEvent {
     case .pullRequestActed: "ios_pull_request_acted"
     case .branchActed: "ios_branch_acted"
     case .sessionRenamed: "ios_session_renamed"
+    case .sessionsFoldToggled: "ios_sessions_fold_toggled"
     case .memoryEdited: "ios_memory_edited"
     case .diffReviewed: "ios_diff_reviewed"
     case .diffScoped: "ios_diff_scope_changed"
@@ -465,6 +468,8 @@ enum TelemetryEvent {
       ["action": action.rawValue]
     case .sessionRenamed(let target):
       ["target": target]
+    case .sessionsFoldToggled(let expanded, let done, let snoozed):
+      ["expanded": expanded, "done": done, "snoozed": snoozed]
     case .memoryEdited(let action):
       ["action": action.rawValue]
     case .diffReviewed(let action, let comments):

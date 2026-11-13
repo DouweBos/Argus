@@ -12,15 +12,18 @@ public struct SessionRow: View {
   var detailed: Bool
   /// On a selected iPad sidebar row: the system colours its labels for the fill, tinted or greyed.
   var selected: Bool
+  /// A line under the title once ready, as a list across projects names the project.
+  var caption: String?
 
   public init(
     session: RemoteSession, agents: [RemoteAgentStatus], git: RemoteGitStatus? = nil, detailed: Bool = false,
-    selected: Bool = false
+    selected: Bool = false, caption: String? = nil
   ) {
     activity = SessionActivity(session: session, agents: agents)
     self.git = git
     self.detailed = detailed
     self.selected = selected
+    self.caption = caption
   }
 
   private var session: RemoteSession { activity.session }
@@ -58,6 +61,12 @@ public struct SessionRow: View {
       Image(systemName: Icon.drive).font(Self.detailFont).foregroundStyle(theme.textMuted)
     } else {
       HStack(spacing: 8) {
+        if session.isSnoozed() {
+          Image(systemName: Icon.snooze)
+            .font(Self.detailFont)
+            .foregroundStyle(theme.textMuted)
+            .accessibilityLabel("Snoozed")
+        }
         if let pullRequest = session.pullRequest {
           PullRequestStateIcon(pullRequest, size: Self.prIconSize, watching: session.pullRequestWatched == true)
             #if os(macOS)
@@ -82,8 +91,8 @@ public struct SessionRow: View {
   private var detail: String? {
     if session.isUnavailable { return "\(session.unavailableVolume ?? "Drive") unavailable" }
     if session.status != .ready { return activity.statusText }
-    guard detailed else { return nil }
-    let parts = [activity.subtitle, activity.statusText].compactMap { $0 }
+    guard detailed else { return caption }
+    let parts = [caption, activity.subtitle, activity.statusText].compactMap { $0 }
     return parts.isEmpty ? nil : parts.joined(separator: " · ")
   }
 

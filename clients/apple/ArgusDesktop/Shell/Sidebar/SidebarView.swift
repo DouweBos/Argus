@@ -10,6 +10,7 @@ struct SidebarView: View {
   @Environment(RemoteHostsStore.self) private var hosts
   @Environment(\.theme) private var theme
   @State private var collapse = SidebarCollapse()
+  @State private var folds = SidebarCollapse(key: "sidebar.expandedFolds")
   @State private var filter = SidebarFilter()
   /// Clicking a row focuses the list, so ↑ and ↓ carry on from there.
   @FocusState private var listFocused: Bool
@@ -36,6 +37,7 @@ struct SidebarView: View {
       }
     }
     .renameSessionAlert()
+    .snoozeSessionSheet()
   }
 
   private var sessionList: some View {
@@ -48,10 +50,13 @@ struct SidebarView: View {
             .foregroundStyle(theme.textMuted)
             .padding(.horizontal, 8)
         }
+        if !needsYou.isEmpty {
+          NeedsYouSidebarSection(sessions: needsYou)
+        }
         ForEach(projects) { project in
           ProjectSidebarSection(
             project: project, showsHost: showsHosts, shown: shownSessions,
-            collapsed: collapse.binding(project.repoRoot))
+            collapsed: collapse.binding(project.repoRoot), folds: folds)
         }
         if !scratchPads.isEmpty || !filter.isActive {
           scratchPadSection
@@ -69,12 +74,9 @@ struct SidebarView: View {
   }
 
   private var scratchPadSection: some View {
-    VStack(alignment: .leading, spacing: 1) {
-      HStack {
-        Text("Scratch pads")
-          .font(.scaled(size: 11, weight: .medium))
-          .foregroundStyle(theme.textMuted)
-        Rectangle().fill(theme.border).frame(height: 1)
+    let triage = SessionTriage(scratchPads) { agents(in: $0) }
+    return VStack(alignment: .leading, spacing: 1) {
+      SidebarSectionHeader(title: "Scratch pads") {
         Button {
           Task { await model.newScratchPad() }
         } label: {
@@ -83,23 +85,16 @@ struct SidebarView: View {
         .buttonStyle(FlatIconButtonStyle(size: 20))
         .help("New scratch pad")
       }
-      .padding(.leading, 8)
-      ForEach(scratchPads) { pad in
-        SidebarRow(selected: model.route.sessionId == pad.id) {
-          model.open(session: pad.id)
-        } content: {
-          SidebarSessionRow(session: pad, agents: agents(in: pad))
-        }
-        .contextMenu {
-          Button("Open in New Tab") {
-            model.openTab(DesktopLocation(route: .session(id: pad.id, agentId: nil), host: model.host(ofSession: pad.id)))
-          }
-          Button("Rename Scratch Pad…") { model.renamingSession = pad }
-          Button("Delete Scratch Pad…") { model.deletingSession = pad }
-        }
+      if filter.isSearching {
+        SidebarSessionRows(sessions: triage.active + triage.folded)
+      } else {
+        SidebarSessionRows(sessions: triage.active)
+        FoldedSessions(triage: triage, expanded: folds.binding(Self.scratchPadFold, triage: triage))
       }
     }
   }
+
+  private static let scratchPadFold = "scratch-pads"
 
   /// ↑ and ↓ step through the rows as they're shown.
   private func move(_ direction: MoveCommandDirection) {
@@ -112,16 +107,33 @@ struct SidebarView: View {
     if ids[next] != model.route.sessionId { model.open(session: ids[next]) }
   }
 
+  /// In the order they're drawn: Needs you, then each project's root, active
+  /// sessions and any unfolded done ones, then the scratch pads.
   private var visibleSessionIds: [String] {
+    func rows(_ sessions: [RemoteSession], fold: String) -> [RemoteSession] {
+      let triage = SessionTriage(sessions) { agents(in: $0) }
+      return triage.active + (filter.isSearching || folds.isCollapsed(fold) ? triage.folded : [])
+    }
     let listed = projects.flatMap { project -> [RemoteSession] in
       let sessions = store.sessionsByRepo[project.repoRoot] ?? []
       let root = sessions.filter { $0.kind == .projectRoot }
       let worktrees = SessionSearch.visibleWorktrees(
         sessions.filter { $0.kind != .projectRoot }, shown: shownSessions,
         collapsed: collapse.isCollapsed(project.repoRoot))
-      return root + worktrees
+      return root + rows(worktrees, fold: project.repoRoot)
     }
-    return (listed + scratchPads).filter { !$0.isUnavailable }.map(\.id)
+    return (needsYou + listed + rows(scratchPads, fold: Self.scratchPadFold)).filter { !$0.isUnavailable }.map(\.id)
+  }
+
+  /// Sessions waiting on you across the projects shown, folded shut or not, then scratch pads.
+  private var needsYou: [RemoteSession] {
+    let shown = shownSessions
+    let worktrees = projects.flatMap { project in
+      (store.sessionsByRepo[project.repoRoot] ?? []).filter {
+        $0.kind != .projectRoot && (shown?.contains($0.id) ?? true)
+      }
+    }
+    return SessionTriage(worktrees + scratchPads) { agents(in: $0) }.needsYou
   }
 
   private var deletingSession: Binding<RemoteSession?> {

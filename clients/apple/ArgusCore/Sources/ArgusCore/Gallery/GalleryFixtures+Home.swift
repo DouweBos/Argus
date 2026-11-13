@@ -47,6 +47,10 @@ extension GalleryFixtures {
         name: "Rework the onboarding flow so a brand new machine gets from download to first agent in one go",
         pr: (415, "draft")),
       session("s-merged", branch: "linear-picker", name: "Linear issue picker", pr: (398, "merged")),
+      session("s-unread", branch: "toolbar-spacing", name: "Tighten the toolbar spacing", extra: ["unread": true]),
+      session(
+        "s-snoozed", branch: "release-notes", name: "Draft the release notes", extra: ["snoozed_until": ago(-18 * 60)]),
+      session("s-done", branch: "spike-tabs", name: "Spike: tab overflow", extra: ["settled": true]),
       session(
         "s-setup", branch: "gallery-stories", name: "Gallery stories for sessions", status: "initializing",
         extra: ["progress": ["current": 3, "total": 5]]),

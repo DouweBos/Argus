@@ -72,6 +72,12 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var pullRequest: RemoteSessionPullRequest?
   /// An agent is woken on the PR's CI results, conflicts and comments. Nil on older computers.
   public var pullRequestWatched: Bool?
+  /// Marked done (true) or kept active (false); nil follows the pull request, and on older computers.
+  public var settled: Bool?
+  /// Hidden until then, in epoch milliseconds. Nil on older computers.
+  public var snoozedUntil: Double?
+  /// A turn finished while nobody had it open. Nil on older computers.
+  public var unread: Bool?
 
   public var isUnavailable: Bool { availability == .unavailable }
   /// A scratch pad or automation run: its own folder, no project, no git.
@@ -94,6 +100,9 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case setupPending = "setup_pending"
     case pullRequest = "pull_request"
     case pullRequestWatched = "pull_request_watched"
+    case settled
+    case snoozedUntil = "snoozed_until"
+    case unread
   }
 }
 
