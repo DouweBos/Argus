@@ -36,7 +36,7 @@ struct PullRequestsScreen: View {
         }
         Button(action: refresh) { Label("Refresh", systemImage: "arrow.clockwise") }
           .disabled(refreshing)
-          .help("Ask GitHub again")
+          .help("Refresh pull requests")
       }
     }
     .task { await load() }
@@ -50,7 +50,7 @@ struct PullRequestsScreen: View {
     return prs.pullRequests.filter { pr in
       (repo == nil || pr.repo == repo)
         && (query.isEmpty || pr.title.lowercased().contains(query) || pr.headRef.lowercased().contains(query)
-          || "#\(pr.number)".contains(query) || (pr.author?.lowercased().contains(query) ?? false))
+          || PullRequestLabels.ref(number: pr.number, url: pr.url).contains(query) || (pr.author?.lowercased().contains(query) ?? false))
     }
   }
 
@@ -92,7 +92,7 @@ struct PullRequestList: View {
   private var states: some View {
     switch LoadPhase(loaded: loaded, error: error, isEmpty: pullRequests.isEmpty) {
     case .loading:
-      ProgressView("Asking GitHub…").controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
+      ProgressView("Loading pull requests…").controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
     case .failed(let error):
       QuietEmptyState(
         icon: "exclamationmark.triangle", title: "Couldn't fetch pull requests",
@@ -138,7 +138,7 @@ struct PullRequestList: View {
     .navigatorList()
     .contextMenu(forSelectionType: String.self) { ids in
       if let pr = pullRequests.first(where: { ids.contains($0.id) }) {
-        PullRequestMenu(sessionId: actions.session(for: pr)) { actions.perform($0, pr, starting: $starting) }
+        PullRequestMenu(sessionId: actions.session(for: pr), url: pr.url) { actions.perform($0, pr, starting: $starting) }
       }
     } primaryAction: { ids in
       guard let pr = pullRequests.first(where: { ids.contains($0.id) }) else { return }

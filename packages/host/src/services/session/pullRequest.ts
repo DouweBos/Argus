@@ -1,5 +1,5 @@
 /**
- * Helpers for the "Push & open PR" flow: GitHub compare-URL construction
+ * Helpers for the "Push & open PR" flow: compare / new-MR URL construction
  * and pull-request template discovery.
  *
  * Kept in its own module (no Electron imports) so the helpers can be tested
@@ -8,6 +8,8 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { newPullRequestUrl, repoRefFromUrl } from "../codeHost/remoteUrl";
+import { knownGitlabHosts } from "../codeHost/repos";
 
 /**
  * Locations GitHub scans for a single pull-request template file. A file at
@@ -21,6 +23,8 @@ const PR_TEMPLATE_FILE_LOCATIONS: string[] = [
   "docs/pull_request_template.md",
   ".github/PULL_REQUEST_TEMPLATE.md",
   ".github/pull_request_template.md",
+  // GitLab applies `Default` to new merge requests on its own.
+  ".gitlab/merge_request_templates/Default.md",
 ];
 
 /**
@@ -109,13 +113,13 @@ export function pickPullRequestTemplate(repoRoot: string): string | null {
 }
 
 /**
- * Convert a git remote URL into a GitHub "open PR" URL. Returns `null` for
- * non-GitHub hosts so callers can decide how to handle (e.g. just open the
- * remote URL, or show the branch name so the user can file the PR manually).
+ * Convert a git remote URL into an "open PR" URL — GitHub's compare page or
+ * GitLab's new-merge-request form. Returns `null` for other hosts so callers
+ * can fall back (e.g. show the branch name so the user can file it manually).
  *
- * When `template` is provided, appends a `template=<name>` query parameter
+ * When `template` is provided, GitHub gets a `template=<name>` query parameter
  * so repos with multiple templates in `.github/PULL_REQUEST_TEMPLATE/` open
- * the correct one (GitHub requires this — otherwise the PR body is empty).
+ * the correct one (otherwise the PR body is empty).
  */
 export function buildPullRequestUrl(
   remoteUrl: string,
@@ -123,25 +127,7 @@ export function buildPullRequestUrl(
   baseBranch: string | null,
   template?: string | null,
 ): string | null {
-  // ssh: git@github.com:owner/repo(.git)   |  https://github.com/owner/repo(.git)
-  const match =
-    remoteUrl.match(/github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/i) ?? null;
-  if (!match) {
-    return null;
-  }
-  const [, owner, repo] = match;
-  const encBranch = encodeURIComponent(branch);
-  const templateParam =
-    template && template.trim().length > 0
-      ? `&template=${encodeURIComponent(template.trim())}`
-      : "";
-  if (baseBranch) {
-    const encBase = encodeURIComponent(baseBranch);
+  const ref = repoRefFromUrl(remoteUrl, knownGitlabHosts());
 
-    return `https://github.com/${owner}/${repo}/compare/${encBase}...${encBranch}?expand=1${templateParam}`;
-  }
-
-  return `https://github.com/${owner}/${repo}/pull/new/${encBranch}${
-    templateParam ? `?expand=1${templateParam}` : ""
-  }`;
+  return ref ? newPullRequestUrl(ref, branch, baseBranch, template) : null;
 }

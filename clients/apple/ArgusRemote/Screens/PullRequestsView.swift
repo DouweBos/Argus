@@ -39,7 +39,7 @@ struct PullRequestsView: View {
       LoadPhase(
         loaded: store.loaded, error: store.error.map(PullRequestLabels.explain),
         isEmpty: store.pullRequests.isEmpty),
-      loading: "Asking GitHub…", failedTitle: "Couldn't fetch pull requests",
+      loading: "Loading pull requests…", failedTitle: "Couldn't fetch pull requests",
       retry: { await store.refresh() }
     ) {
       EmptyState(
@@ -98,6 +98,6 @@ struct PullRequestRow: View {
 
   private var meta: String {
     let author = pullRequest.author.map { "by \($0)" } ?? "unknown author"
-    return "\(pullRequest.repo) #\(pullRequest.number) · \(author) · updated \(PullRequestLabels.relative(pullRequest.updatedAt))"
+    return "\(pullRequest.repo) \(PullRequestLabels.ref(number: pullRequest.number, url: pullRequest.url)) · \(author) · updated \(PullRequestLabels.relative(pullRequest.updatedAt))"
   }
 }

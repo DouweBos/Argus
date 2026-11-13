@@ -439,6 +439,10 @@ export interface EventMap {
     outcome: "invalid_config" | "invalid_json" | "success";
     repo_file: boolean;
   };
+  code_host_lookup: {
+    host: "github" | "gitlab";
+    success: boolean;
+  };
   pull_request_drafted: {
     style: "conventions" | "custom";
     has_template: boolean;

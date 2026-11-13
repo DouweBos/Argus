@@ -130,15 +130,15 @@ public struct SessionFactValue: View {
     } label: {
       HStack(spacing: 4) {
         PullRequestStateIcon(pr, size: size ?? 12, opensPullRequest: false)
-        Text("#\(pr.number)")
+        Text(PullRequestLabels.ref(number: pr.number, url: pr.url))
           .font(size.map { .scaled(size: $0) })
           .foregroundStyle(theme.accent)
       }
     }
     .buttonStyle(.argusPlain)
-    .help("Open on GitHub")
+    .help(PullRequestLabels.openOn(pr.url))
     .accessibilityLabel(PullRequestLabels.state(pr))
-    .accessibilityHint("Opens it on GitHub")
+    .accessibilityHint("Opens it on \(PullRequestLabels.host(pr.url))")
   }
 
   private func label(_ text: String, mono: Bool) -> some View {

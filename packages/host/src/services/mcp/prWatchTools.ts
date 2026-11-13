@@ -29,7 +29,7 @@ export function registerPrWatchTools(
 ): void {
   server.tool(
     "watch_pull_request",
-    `Watch your session's open GitHub pull request after you push it, instead of polling CI yourself. Argus checks it every ${POLL_MS / 60_000} minutes and sends you a message when a check fails (with its annotations and the end of the failing log), when the checks that gate the merge all pass, when the branch conflicts with its base, or when someone comments or reviews. End your turn after calling this; the message arrives as your next prompt. Watching stops by itself when the PR merges or closes. Pass stop: true to stop earlier.`,
+    `Watch your session's open pull request (GitHub) or merge request (GitLab) after you push it, instead of polling CI yourself. Argus checks it every ${POLL_MS / 60_000} minutes and sends you a message when a check fails (with its annotations and the end of the failing log or job trace), when the checks that gate the merge all pass, when the branch conflicts with its base, or when someone comments or reviews. End your turn after calling this; the message arrives as your next prompt. Watching stops by itself when the PR merges or closes. Pass stop: true to stop earlier.`,
     {
       session: z
         .string()

@@ -19,7 +19,7 @@ import {
   recordAutomationSession,
 } from "../automation/ownedSessions";
 import { listProposals } from "../automation/proposals/manager";
-import { branchChecksClean } from "../github/checks";
+import { branchChecksClean } from "../codeHost/pullRequests";
 import { automationRunForAgent } from "./automationCaller";
 
 /** The automation behind a caller, with its policy resolved for `repoRoot`. */

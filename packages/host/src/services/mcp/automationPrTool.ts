@@ -10,7 +10,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { evaluatePush } from "../automation/guardrails";
-import { ghPrCreate } from "../github/prActions";
+import { createPullRequest } from "../codeHost/pullRequests";
 import { getSessionStatus, pushSessionBranch } from "../session/sessionOps";
 import { callerPolicy, sessionById } from "./automationGuards";
 
@@ -80,7 +80,7 @@ export function registerAutomationPrTool(
 
       try {
         await pushSessionBranch(session.id);
-        const pr = await ghPrCreate({
+        const pr = await createPullRequest({
           repoRoot: session.path,
           title,
           body,

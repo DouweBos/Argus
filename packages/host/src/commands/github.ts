@@ -1,16 +1,14 @@
-import { defineTypedCommand } from "../services/command/registry";
-import { listGhIssues } from "../services/github/issues";
 import {
-  ghPrClose,
-  ghPrComment,
-  ghPrCreate,
-  ghPrMerge,
-} from "../services/github/prActions";
-import {
+  closePullRequest,
+  commentOnPullRequest,
+  createPullRequest,
   getPullRequestDetail,
   getPullRequestDiff,
-} from "../services/github/prDetail";
-import { listInterestingPullRequests } from "../services/github/pullRequests";
+  listInterestingPullRequests,
+  listIssues,
+  mergePullRequest,
+} from "../services/codeHost/pullRequests";
+import { defineTypedCommand } from "../services/command/registry";
 import { autofillPullRequestBody } from "../services/session/prAutofill";
 import { readPullRequestTemplate } from "../services/session/pullRequest";
 
@@ -28,9 +26,9 @@ export function registerGithubCommands(): void {
     readPullRequestTemplate(p.repoRoot),
   );
   defineTypedCommand("autofill_pr_template", (p) => autofillPullRequestBody(p));
-  defineTypedCommand("gh_pr_create", (p) => ghPrCreate(p));
-  defineTypedCommand("gh_pr_comment", (p) => ghPrComment(p));
-  defineTypedCommand("gh_pr_merge", (p) => ghPrMerge(p));
-  defineTypedCommand("gh_pr_close", (p) => ghPrClose(p));
-  defineTypedCommand("gh_list_issues", (p) => listGhIssues(p.repoRoot));
+  defineTypedCommand("gh_pr_create", (p) => createPullRequest(p));
+  defineTypedCommand("gh_pr_comment", (p) => commentOnPullRequest(p));
+  defineTypedCommand("gh_pr_merge", (p) => mergePullRequest(p));
+  defineTypedCommand("gh_pr_close", (p) => closePullRequest(p));
+  defineTypedCommand("gh_list_issues", (p) => listIssues(p.repoRoot));
 }

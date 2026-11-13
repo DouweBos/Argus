@@ -1,13 +1,15 @@
 /**
- * Each session's GitHub pull request, looked up by branch head and pushed to
- * clients as a `session:updated` patch.
+ * Each session's pull request (GitHub) or merge request (GitLab), looked up by
+ * branch head and pushed to clients as a `session:updated` patch.
  *
  * Every (repo slug, branch) pair across all open projects goes into one
- * aliased GraphQL query (chunked at {@link PAIRS_PER_QUERY}), so a refresh
- * costs one `gh` call however many sessions there are. Lookups degrade
- * silently: no `gh`, signed out or no GitHub remote just means no PR.
+ * aliased GraphQL query per host (chunked at {@link PAIRS_PER_QUERY}), so a
+ * refresh costs one `gh` / `glab` call however many sessions there are.
+ * Lookups degrade silently: a missing or signed-out CLI, or no code-host
+ * remote, just means no PR.
  */
 
+import type { RepoRef } from "../codeHost/remoteUrl";
 import type { Session, SessionPullRequest } from "../session/models";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -15,7 +17,11 @@ import { addHostEventSink, emitHostEvent } from "@argus/host/bus";
 import { warn } from "@argus/host/logger";
 import { hostPlatform } from "../../platform";
 import { appState } from "../../state";
+import { gitlabRepoRefs } from "../codeHost/repos";
+import { GlabUnavailable } from "../gitlab/glab";
+import { lookupSessionMergeRequests } from "../gitlab/mergeRequests";
 import { isBranchProtected } from "../session/argusConfig";
+import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { isPullRequestWatched } from "./prWatch/watched";
 import { getGithubSlugs } from "./pullRequests";
 
@@ -30,7 +36,7 @@ const FOREGROUND_INTERVAL_MS = 3 * 60_000;
 const BACKGROUND_INTERVAL_MS = 15 * 60_000;
 /** Coming back to the window refreshes, unless the last one was this recent. */
 const FOCUS_MIN_GAP_MS = 60_000;
-/** After `gh` fails outright (missing, signed out), stop asking for a while. */
+/** After a CLI fails outright (missing, signed out), stop asking it for a while. */
 const FAILURE_BACKOFF_MS = 15 * 60_000;
 
 interface PrNode {
@@ -195,7 +201,9 @@ function publish(session: Session, pr: SessionPullRequest | null): void {
   });
 }
 
-let backoffUntil = 0;
+type HostKind = RepoRef["kind"];
+
+const backoffUntil: Record<HostKind, number> = { github: 0, gitlab: 0 };
 let lastFullRefresh = 0;
 let wasForeground = false;
 let running: Promise<void> | null = null;
@@ -205,29 +213,15 @@ let ticker: ReturnType<typeof setInterval> | null = null;
 let removeSink: (() => void) | null = null;
 let initial: ReturnType<typeof setTimeout> | null = null;
 
-/** Look up every session in these repos. One `gh` call per 40 branches. */
-export async function refreshRepoPullRequests(
-  repoRoots: string[],
-): Promise<void> {
-  const targets: { session: Session; branch: string; slugs: string[] }[] = [];
-  for (const root of new Set(repoRoots)) {
-    const sessions = [...appState.sessions.values()].filter(
-      (s) => s.repo_root === root,
-    );
-    if (sessions.length === 0) {
-      continue;
-    }
-    const slugs = await getGithubSlugs(root);
-    for (const session of sessions) {
-      const branch = lookupBranch(session);
-      if (!branch || slugs.length === 0) {
-        publish(session, null);
-      } else {
-        targets.push({ session, branch, slugs });
-      }
-    }
-  }
+interface Target {
+  branch: string;
+  session: Session;
+}
 
+/** The newest GitHub PR per target. One `gh` call per 40 (slug, branch) pairs. */
+async function lookupGithub(
+  targets: (Target & { slugs: string[] })[],
+): Promise<(SessionPullRequest | null)[]> {
   const lookups = new Map<string, PrLookup>();
   for (const { branch, slugs } of targets) {
     for (const slug of slugs) {
@@ -247,17 +241,92 @@ export async function refreshRepoPullRequests(
     });
   }
 
-  for (const { session, branch, slugs } of targets) {
+  return targets.map(({ branch, slugs }) =>
+    pickPullRequest(
+      slugs.flatMap(
+        (slug) => nodesByKey.get(`${slug.toLowerCase()}\0${branch}`) ?? [],
+      ),
+      slugs,
+    ),
+  );
+}
+
+/** `kind:success` pairs already reported this run: once each is enough to see who uses which host. */
+const reported = new Set<string>();
+
+function reportLookup(kind: HostKind, success: boolean): void {
+  const key = `${kind}:${success}`;
+  if (!reported.has(key)) {
+    reported.add(key);
+    telemetryCapture("code_host_lookup", { host: kind, success });
+  }
+}
+
+/** Run one host's lookup, backing off from it alone when its CLI can't answer. */
+async function lookupOn<T extends Target>(
+  kind: HostKind,
+  targets: T[],
+  lookup: (targets: T[]) => Promise<(SessionPullRequest | null)[]>,
+): Promise<void> {
+  if (targets.length === 0 || Date.now() < backoffUntil[kind]) {
+    return;
+  }
+  let found: (SessionPullRequest | null)[];
+  try {
+    found = await lookup(targets);
+  } catch (e) {
+    if (e instanceof GhUnavailable || e instanceof GlabUnavailable) {
+      reportLookup(kind, false);
+      if (backoffUntil[kind] === 0) {
+        warn(
+          `Session PR lookup unavailable on ${kind} (CLI missing or signed out)`,
+        );
+      }
+      backoffUntil[kind] = Date.now() + FAILURE_BACKOFF_MS;
+
+      return;
+    }
+    throw e;
+  }
+  reportLookup(kind, true);
+  targets.forEach(({ session, branch }, i) => {
     // The session may have gone, or moved branch, while the query ran.
     const live = appState.sessions.get(session.id);
-    if (!live || live.branch !== branch) {
+    if (live && live.branch === branch) {
+      publish(live, found[i] ?? null);
+    }
+  });
+}
+
+/** Look up every session in these repos, on each host its remotes live on. */
+export async function refreshRepoPullRequests(
+  repoRoots: string[],
+): Promise<void> {
+  const github: (Target & { slugs: string[] })[] = [];
+  const gitlab: (Target & { refs: RepoRef[] })[] = [];
+  for (const root of new Set(repoRoots)) {
+    const sessions = [...appState.sessions.values()].filter(
+      (s) => s.repo_root === root,
+    );
+    if (sessions.length === 0) {
       continue;
     }
-    const nodes = slugs.flatMap(
-      (slug) => nodesByKey.get(`${slug.toLowerCase()}\0${branch}`) ?? [],
-    );
-    publish(live, pickPullRequest(nodes, slugs));
+    const slugs = await getGithubSlugs(root);
+    const refs = await gitlabRepoRefs(root);
+    for (const session of sessions) {
+      const branch = lookupBranch(session);
+      if (!branch || (slugs.length === 0 && refs.length === 0)) {
+        publish(session, null);
+      } else if (slugs.length > 0) {
+        github.push({ session, branch, slugs });
+      } else {
+        gitlab.push({ session, branch, refs });
+      }
+    }
   }
+
+  await lookupOn("github", github, lookupGithub);
+  await lookupOn("gitlab", gitlab, lookupSessionMergeRequests);
 }
 
 function allRepoRoots(): string[] {
@@ -271,30 +340,26 @@ async function drain(): Promise<void> {
     try {
       await refreshRepoPullRequests(roots);
     } catch (e) {
-      if (e instanceof GhUnavailable) {
-        if (backoffUntil === 0) {
-          warn("Session PR lookup unavailable (gh missing or signed out)");
-        }
-        backoffUntil = Date.now() + FAILURE_BACKOFF_MS;
-        pending.clear();
-      } else {
-        warn("Session PR lookup failed:", e);
-      }
+      warn("Session PR lookup failed:", e);
     }
   }
 }
 
 /**
  * Queue a lookup for these repos (all when omitted), debounced. `force`
- * skips the failure backoff — something just proved `gh` works.
+ * clears the failure backoff — something just proved the CLI works.
  */
 export function requestSessionPullRequestRefresh(
   repoRoots?: string[],
   { force = false }: { force?: boolean } = {},
 ): void {
   if (force) {
-    backoffUntil = 0;
-  } else if (Date.now() < backoffUntil) {
+    backoffUntil.github = 0;
+    backoffUntil.gitlab = 0;
+  } else if (
+    Date.now() < backoffUntil.github &&
+    Date.now() < backoffUntil.gitlab
+  ) {
     return;
   }
   const roots = repoRoots ?? allRepoRoots();
@@ -319,7 +384,7 @@ export function requestSessionPullRequestRefresh(
   }, DEBOUNCE_MS);
 }
 
-/** After a push or a PR action from Argus: look again now, `gh` evidently works. */
+/** After a push or a PR action from Argus: look again now, the CLI evidently works. */
 export function sessionPullRequestMayHaveChanged(sessionId?: string): void {
   const root = sessionId
     ? appState.sessions.get(sessionId)?.repo_root
@@ -411,7 +476,9 @@ export function stopSessionPullRequests(): void {
 export function resetSessionPullRequests(): void {
   stopSessionPullRequests();
   cache.clear();
-  backoffUntil = 0;
+  reported.clear();
+  backoffUntil.github = 0;
+  backoffUntil.gitlab = 0;
   lastFullRefresh = 0;
   wasForeground = false;
 }

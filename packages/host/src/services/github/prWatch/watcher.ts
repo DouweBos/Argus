@@ -9,20 +9,21 @@
  */
 
 import type { PrSnapshot, WatchEvent, WatchMemory } from "./snapshot";
+import type { RepoRef } from "../../codeHost/remoteUrl";
 import type { Session } from "../../session/models";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { addHostEventSink, emitHostEvent } from "@argus/host/bus";
 import { warn } from "@argus/host/logger";
 import { hostPlatform } from "../../../platform";
 import { appState } from "../../../state";
 import { submitAgentMessage } from "../../agent/conversation/actions";
+import { codeHost } from "../../codeHost/hosts";
+import { pullRequestFromUrl } from "../../codeHost/remoteUrl";
+import { preferredRepoRef } from "../../codeHost/repos";
 import { capture as telemetryCapture } from "../../telemetry/telemetry";
 import {
   sessionPullRequest,
   sessionPullRequestMayHaveChanged,
 } from "../sessionPullRequests";
-import { failedLogExcerpt, fetchPrSnapshot } from "./fetch";
 import {
   checksGreen,
   diffSnapshot,
@@ -36,8 +37,6 @@ import {
   POLL_MS,
 } from "./watched";
 
-const execFileAsync = promisify(execFile);
-
 /** Consecutive failed polls before the log hears about it. */
 const QUIET_FAILURES = 3;
 
@@ -49,9 +48,8 @@ interface Watch {
   failures: number;
   memory: WatchMemory;
   number: number;
-  owner: string;
   polling: boolean;
-  repo: string;
+  ref: RepoRef;
   sessionId: string;
   url: string;
   wakes: number;
@@ -70,47 +68,41 @@ const watches = new Map<string, Watch>();
 let ticker: ReturnType<typeof setInterval> | null = null;
 let removeSink: (() => void) | null = null;
 
-const PR_URL = /github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/;
-
-/** The session's open PR, from the cache or straight from `gh` for a fresh one. */
+/** The session's open PR, from the cache or straight from its host for a fresh one. */
 async function resolvePullRequest(
   session: Session,
-): Promise<{ number: number; owner: string; repo: string; url: string }> {
+): Promise<{ number: number; ref: RepoRef; url: string }> {
   const cached = sessionPullRequest(session.id);
-  let url =
+  const url =
     cached && (cached.state === "open" || cached.state === "draft")
       ? cached.url
       : null;
-  if (!url) {
-    let view: { state?: string; url?: string };
-    try {
-      const { stdout } = await execFileAsync(
-        "gh",
-        ["pr", "view", "--json", "url,state"],
-        { cwd: session.path },
-      );
-      view = JSON.parse(stdout) as typeof view;
-    } catch {
-      throw `No pull request found for branch ${session.branch}. Open one first.`;
-    }
-    if (view.state !== "OPEN" || !view.url) {
-      throw `The pull request for ${session.branch} is ${view.state?.toLowerCase() ?? "not open"}.`;
-    }
-    url = view.url;
-    // Argus hasn't seen this PR yet; let the session row pick it up too.
-    sessionPullRequestMayHaveChanged(session.id);
+  const known = url ? pullRequestFromUrl(url) : null;
+  if (url && known) {
+    return { ...known, url };
   }
-  const match = PR_URL.exec(url);
-  if (!match) {
-    throw `Not a GitHub pull request: ${url}`;
+  const branch = session.branch ?? "";
+  const ref = await preferredRepoRef(session.repo_root, branch);
+  const found = await codeHost(ref?.kind ?? "github").openForBranch(
+    ref ?? { kind: "github", host: "github.com", path: "" },
+    session.path,
+    branch,
+  );
+  const parsed = found ? pullRequestFromUrl(found.url) : null;
+  if (!found || !parsed) {
+    throw `No open pull request found for branch ${session.branch}. Open one first.`;
   }
+  // Argus hasn't seen this PR yet; let the session row pick it up too.
+  sessionPullRequestMayHaveChanged(session.id);
 
-  return {
-    owner: match[1]!,
-    repo: match[2]!,
-    number: Number(match[3]),
-    url,
-  };
+  return { ...parsed, url: found.url };
+}
+
+function snapshotOf(watch: {
+  number: number;
+  ref: RepoRef;
+}): Promise<PrSnapshot> {
+  return codeHost(watch.ref.kind).snapshot(watch.ref, watch.number);
 }
 
 function isLive(agentId: string | null): agentId is string {
@@ -201,7 +193,9 @@ async function wake(
   const logs = new Map<string, string>();
   for (const e of events) {
     if (e.kind === "check_failed") {
-      const excerpt = await failedLogExcerpt(e.check.detailsUrl);
+      const excerpt = await codeHost(watch.ref.kind).failedLog(
+        e.check.detailsUrl,
+      );
       if (excerpt) {
         logs.set(e.check.name, excerpt);
       }
@@ -259,7 +253,7 @@ async function poll(watch: Watch): Promise<void> {
   }
   watch.polling = true;
   try {
-    const snap = await fetchPrSnapshot(watch.owner, watch.repo, watch.number);
+    const snap = await snapshotOf(watch);
     watch.failures = 0;
     await apply(watch, snap);
   } catch (e) {
@@ -308,11 +302,7 @@ export async function watchPullRequest(
   const existing = watches.get(sessionId);
   if (existing) {
     existing.agentId = target ?? existing.agentId;
-    const snap = await fetchPrSnapshot(
-      existing.owner,
-      existing.repo,
-      existing.number,
-    );
+    const snap = await snapshotOf(existing);
 
     return toStatus(existing, snap);
   }
@@ -320,7 +310,7 @@ export async function watchPullRequest(
   let snap: PrSnapshot;
   try {
     pr = await resolvePullRequest(session);
-    snap = await fetchPrSnapshot(pr.owner, pr.repo, pr.number);
+    snap = await snapshotOf(pr);
   } catch (e) {
     telemetryCapture("pr_watch_toggled", {
       action: "start",

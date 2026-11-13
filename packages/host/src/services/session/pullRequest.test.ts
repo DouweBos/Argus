@@ -29,9 +29,17 @@ describe("buildPullRequestUrl", () => {
     ).toBe("https://github.com/acme/thing/compare/main...feat?expand=1");
   });
 
-  it("returns null for non-github hosts", () => {
+  it("opens the new merge request form for gitlab remotes", () => {
     expect(
-      buildPullRequestUrl("git@gitlab.com:owner/repo.git", "feat", "main"),
+      buildPullRequestUrl("git@gitlab.com:group/sub/repo.git", "feat", "main"),
+    ).toBe(
+      "https://gitlab.com/group/sub/repo/-/merge_requests/new?merge_request%5Bsource_branch%5D=feat&merge_request%5Btarget_branch%5D=main",
+    );
+  });
+
+  it("returns null for other hosts", () => {
+    expect(
+      buildPullRequestUrl("git@example.com:owner/repo.git", "feat", "main"),
     ).toBeNull();
   });
 

@@ -204,6 +204,14 @@ extension GalleryFixtures {
       "conductor": [
         session("c-root", repo: "conductor", branch: "main", kind: "project_root"),
         session("c-1", repo: "conductor", branch: "long-press", name: "Long press gesture"),
+        // Conductor lives on GitLab: its session shows a merge request.
+        session(
+          "c-mr", repo: "conductor", branch: "pinch-zoom", name: "Pinch to zoom",
+          extra: [
+            "pull_request": [
+              "number": 57, "state": "open", "url": "https://gitlab.com/acme/devices/conductor/-/merge_requests/57",
+            ]
+          ]),
       ],
       "luma": [
         session("l-root", repo: "luma", branch: "main", kind: "project_root"),

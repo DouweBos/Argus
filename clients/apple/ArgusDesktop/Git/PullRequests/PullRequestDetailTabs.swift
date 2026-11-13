@@ -36,10 +36,10 @@ struct PullRequestConversation: View {
       .frame(maxWidth: 820, alignment: .leading)
       .frame(maxWidth: .infinity, alignment: .leading)
     }
-    .confirmationDialog("Post this comment on GitHub?", isPresented: $confirmingComment) {
+    .confirmationDialog("Post this comment on \(PullRequestLabels.host(detail.url))?", isPresented: $confirmingComment) {
       Button("Comment") { post() }
     } message: {
-      Text("It's posted as you, on \(detail.repoNameWithOwner) #\(Int(detail.number)).")
+      Text("It's posted as you, on \(detail.repoNameWithOwner) \(PullRequestLabels.ref(number: Int(detail.number), url: detail.url)).")
     }
   }
 
@@ -126,7 +126,7 @@ struct PullRequestCommits: View {
           if let rollup = commit.statusRollup { Badge(label: rollup.lowercased(), tone: tone(rollup)) }
         }
         .contextMenu {
-          Button("Open on GitHub") { open(commit.url) }
+          Button(PullRequestLabels.openOn(commit.url)) { open(commit.url) }
           Button("Copy SHA") { Clipboard.copy(commit.oid) }
         }
       }

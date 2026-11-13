@@ -329,7 +329,7 @@ struct SessionContextCard: View {
       MacTelemetry.capture(.contextCardUsed(action: .pullRequest))
       if let url = URL(string: pr.url) { openURL(url) }
     } row: {
-      ContextCardRow(icon: Icon.pullRequest, title: "Pull Request #\(pr.number)") {
+      ContextCardRow(icon: Icon.pullRequest, title: (PullRequestLabels.isGitLab(pr.url) ? "Merge Request " : "Pull Request ") + PullRequestLabels.ref(number: pr.number, url: pr.url)) {
         if pr.state == .draft {
           Text("Draft").font(.scaled(size: 11)).foregroundStyle(theme.textSecondary)
         }
@@ -343,7 +343,7 @@ struct SessionContextCard: View {
       }
       ChromeMenuItem("Copy Link", icon: .symbol(Icon.copy)) { Clipboard.copy(pr.url) }
     }
-    .help("Open pull request #\(pr.number) on GitHub")
+    .help("\(PullRequestLabels.openOn(pr.url)): \(PullRequestLabels.ref(number: pr.number, url: pr.url))")
   }
 
   private var changesRow: some View {
