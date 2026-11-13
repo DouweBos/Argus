@@ -98,6 +98,11 @@ enum TelemetryEvent {
     case permissionMode = "permission_mode"
     /// The computer's cap on how far any automation may go.
     case autonomy
+    /// The computer's worktree cleanup policy: `value` is `true`/`false`, a number of days, or GB.
+    case worktreeCleanupEnabled = "worktree_cleanup_enabled"
+    case worktreeCleanupLandedDays = "worktree_cleanup_landed_days"
+    case worktreeCleanupIdleDays = "worktree_cleanup_idle_days"
+    case worktreeCleanupMaxSize = "worktree_cleanup_max_size"
   }
 
   /// How work leaves a session.

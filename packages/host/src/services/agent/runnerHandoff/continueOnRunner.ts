@@ -9,8 +9,8 @@ import type { AgentInfo } from "../models";
 import { appState } from "../../../state";
 import { getRunnerById, runnerAvailability } from "../../llm/registry";
 import { capture as telemetryCapture } from "../../telemetry/telemetry";
-import { isAgentBusy } from "../accountSwitch";
 import { launchAgent, telemetryRunner } from "../agentService";
+import { isAgentBusy } from "../busy";
 import { submitAgentMessage } from "../conversation/actions";
 import { conversationOf, reseedConversation } from "../conversation/folded";
 import {

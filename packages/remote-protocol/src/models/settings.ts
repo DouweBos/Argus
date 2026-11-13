@@ -27,6 +27,14 @@ export const AppSettings = z.object({
    * falls through to `worktrees_base_dir`.
    */
   automation_worktrees_base_dir: z.string().optional(),
+  /** Sweep stale worktrees on a schedule. Off by default. */
+  worktree_cleanup_enabled: z.boolean().optional(),
+  /** Days after merging, or the pull request closing, before cleanup. Defaults to 7; 0 never. */
+  worktree_cleanup_landed_days: z.number().int().min(0).optional(),
+  /** Days without commits or agent activity before cleanup. Defaults to 30; 0 never. */
+  worktree_cleanup_idle_days: z.number().int().min(0).optional(),
+  /** Total worktree size to stay under, in GB. 0 or unset is no cap. */
+  worktree_cleanup_max_gb: z.number().min(0).optional(),
   /** App-level default LLM picked in Settings, mirrored for the host. */
   default_llm: z
     .object({

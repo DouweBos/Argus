@@ -15,6 +15,7 @@ import {
 import { setSessionClaudeAccount } from "../session/sessionOps";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { respawnAgent, sendAgentMessage } from "./agentService";
+import { isAgentBusy } from "./busy";
 import { liveConversation } from "./conversation/live";
 import { handoffCandidates } from "./limitHandoff";
 import {
@@ -38,15 +39,6 @@ interface QueuedSwitch {
 
 /** Busy agents waiting to move. The session pin holds the target, so the latest pick wins. */
 const queued = new Map<string, QueuedSwitch>();
-
-export function isAgentBusy(agent: AgentSession): boolean {
-  return (
-    agent.status === "running" ||
-    agent.status === "requires_action" ||
-    agent.inflightPrompts > 0 ||
-    (appState.agentPendingPermissions.get(agent.agentId)?.size ?? 0) > 0
-  );
-}
 
 function isGone(agent: AgentSession | undefined): boolean {
   return !agent || agent.status === "stopped" || agent.status === "error";

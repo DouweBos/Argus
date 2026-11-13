@@ -175,6 +175,9 @@ public enum RemoteMethod: String, Codable, Sendable {
   case automationsDraft = "automations.draft"
   case automationsDefaultAutonomy = "automations.default_autonomy"
   case automationsSetDefaultAutonomy = "automations.set_default_autonomy"
+  case worktreesCleanupPreview = "worktrees.cleanup_preview"
+  case worktreesCleanupRun = "worktrees.cleanup_run"
+  case worktreesSetCleanupPolicy = "worktrees.set_cleanup_policy"
 
   case proposalsList = "proposals.list"
   case proposalsAccept = "proposals.accept"

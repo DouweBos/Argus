@@ -6,6 +6,10 @@ enum SettingsField: String {
   case launchRoute = "launch_route"
   case worktreeLocation = "worktree_location"
   case automationWorktreeLocation = "automation_worktree_location"
+  case worktreeCleanupEnabled = "worktree_cleanup_enabled"
+  case worktreeCleanupLandedDays = "worktree_cleanup_landed_days"
+  case worktreeCleanupIdleDays = "worktree_cleanup_idle_days"
+  case worktreeCleanupMaxSize = "worktree_cleanup_max_size"
   case customEditors = "custom_editors"
   case telemetryMode = "telemetry_mode"
   case accountSelected = "account_selected"
@@ -58,8 +62,10 @@ enum SettingsField: String {
   var section: SettingsTab {
     switch self {
     case .theme, .colorTheme, .displaySize, .usageLimitsInDetails: .appearance
-    case .launchRoute, .worktreeLocation, .automationWorktreeLocation, .customEditors, .telemetryMode:
-      .general
+    case .launchRoute, .customEditors, .telemetryMode: .general
+    case .worktreeLocation, .automationWorktreeLocation, .worktreeCleanupEnabled, .worktreeCleanupLandedDays,
+      .worktreeCleanupIdleDays, .worktreeCleanupMaxSize:
+      .worktrees
     case .accountSelected, .accountAdded, .accountRemoved, .accountRenamed, .accountReauth:
       .accounts
     case .permissionMode, .automationsEnabled, .followUpSuggestions, .warmAgents, .defaultAutonomy,

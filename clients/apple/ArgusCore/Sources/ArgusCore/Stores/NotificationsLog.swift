@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// The warnings and errors list behind Notifications, on the Mac and the
+/// The warnings, errors and housekeeping notes behind Notifications, on the Mac and the
 /// phone: in memory, newest first, capped.
 @MainActor
 @Observable
@@ -9,6 +9,8 @@ public final class NotificationsLog {
   public enum Level: String, Sendable {
     case error
     case warning
+    /// Something Argus did on its own that you'd want to know about, like a cleanup.
+    case info
   }
 
   public struct Entry: Identifiable, Equatable, Sendable {

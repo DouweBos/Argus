@@ -30,6 +30,14 @@ export interface AppSettings {
    * roomier drive. Absent falls through to `worktrees_base_dir`.
    */
   automation_worktrees_base_dir?: string;
+  /** Sweep stale worktrees on a schedule. Off by default. */
+  worktree_cleanup_enabled?: boolean;
+  /** Days after merging, or the pull request closing, before cleanup. Defaults to 7; 0 never. */
+  worktree_cleanup_landed_days?: number;
+  /** Days without commits or agent activity before cleanup. Defaults to 30; 0 never. */
+  worktree_cleanup_idle_days?: number;
+  /** Total worktree size to stay under, in GB. 0 or unset is no cap. */
+  worktree_cleanup_max_gb?: number;
   /**
    * App-level default LLM picked in Settings. Mirrored here from the renderer
    * so sessions created outside the UI (MCP, remote) resolve the same runner.

@@ -42,6 +42,8 @@ const FAILURE_BACKOFF_MS = 15 * 60_000;
 interface PrNode {
   createdAt: string;
   headRepository: { nameWithOwner: string } | null;
+  /** The commit the PR's head pointed at; after a merge, what GitHub holds of the branch. */
+  headRefOid?: string;
   isDraft: boolean;
   number: number;
   state: "CLOSED" | "MERGED" | "OPEN";
@@ -56,11 +58,17 @@ export interface PrLookup {
 }
 
 const cache = new Map<string, SessionPullRequest | null>();
+const headShas = new Map<string, string>();
 
 export function sessionPullRequest(
   sessionId: string,
 ): SessionPullRequest | null {
   return cache.get(sessionId) ?? null;
+}
+
+/** The head commit of the session's newest PR, as GitHub last reported it. */
+export function sessionPullRequestHeadSha(sessionId: string): string | null {
+  return headShas.get(sessionId) ?? null;
 }
 
 /** The session with its cached PR attached, for listings. */
@@ -106,7 +114,7 @@ export function buildPullRequestQuery(lookups: PrLookup[]): {
   lookups.forEach((l, i) => {
     decls.push(`$o${i}: String!, $n${i}: String!, $h${i}: String!`);
     fields.push(
-      `q${i}: repository(owner: $o${i}, name: $n${i}) { pullRequests(headRefName: $h${i}, first: 5, orderBy: {field: CREATED_AT, direction: DESC}) { nodes { number url state isDraft createdAt headRepository { nameWithOwner } } } }`,
+      `q${i}: repository(owner: $o${i}, name: $n${i}) { pullRequests(headRefName: $h${i}, first: 5, orderBy: {field: CREATED_AT, direction: DESC}) { nodes { number url state isDraft createdAt headRefOid headRepository { nameWithOwner } } } }`,
     );
     variables.push(`o${i}=${l.owner}`, `n${i}=${l.name}`, `h${i}=${l.branch}`);
   });
@@ -136,6 +144,12 @@ export function pickPullRequest(
   nodes: PrNode[],
   slugs: string[],
 ): SessionPullRequest | null {
+  const newest = pickPullRequestNode(nodes, slugs);
+
+  return newest ? toSessionPullRequest(newest) : null;
+}
+
+function pickPullRequestNode(nodes: PrNode[], slugs: string[]): PrNode | null {
   const own = new Set(slugs.map((s) => s.toLowerCase()));
   const newest = nodes
     .filter((n) => {
@@ -145,7 +159,7 @@ export function pickPullRequest(
     })
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
 
-  return newest ? toSessionPullRequest(newest) : null;
+  return newest ?? null;
 }
 
 class GhUnavailable extends Error {}
@@ -241,14 +255,21 @@ async function lookupGithub(
     });
   }
 
-  return targets.map(({ branch, slugs }) =>
-    pickPullRequest(
+  return targets.map(({ session, branch, slugs }) => {
+    const node = pickPullRequestNode(
       slugs.flatMap(
         (slug) => nodesByKey.get(`${slug.toLowerCase()}\0${branch}`) ?? [],
       ),
       slugs,
-    ),
-  );
+    );
+    if (node?.headRefOid) {
+      headShas.set(session.id, node.headRefOid);
+    } else {
+      headShas.delete(session.id);
+    }
+
+    return node ? toSessionPullRequest(node) : null;
+  });
 }
 
 /** `kind:success` pairs already reported this run: once each is enough to see who uses which host. */

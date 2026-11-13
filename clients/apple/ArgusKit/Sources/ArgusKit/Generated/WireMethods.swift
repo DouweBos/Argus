@@ -7599,6 +7599,26 @@ extension ArgusProtocol {
         try c.encode(range, forKey: .range)
       }
     }
+
+    public struct WorktreesCleanupPreviewParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct WorktreesCleanupRunParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
   }
 
   /// The typed remote methods (`REMOTE_METHODS`), monitor and control tier.
@@ -8705,6 +8725,24 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.UsageSummaryParams
       public typealias Result = ArgusProtocol.ClaudeUsageSummary
       public static let name = "usage.summary"
+    }
+
+    public enum WorktreesCleanupPreview: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.WorktreesCleanupPreviewParams
+      public typealias Result = ArgusProtocol.WorktreeCleanupPreview
+      public static let name = "worktrees.cleanup_preview"
+    }
+
+    public enum WorktreesCleanupRun: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.WorktreesCleanupRunParams
+      public typealias Result = ArgusProtocol.WorktreeCleanupSweep
+      public static let name = "worktrees.cleanup_run"
+    }
+
+    public enum WorktreesSetCleanupPolicy: RemoteCommand {
+      public typealias Params = ArgusProtocol.WorktreeCleanupPolicy
+      public typealias Result = ArgusProtocol.WorktreeCleanupPolicy
+      public static let name = "worktrees.set_cleanup_policy"
     }
   }
 }

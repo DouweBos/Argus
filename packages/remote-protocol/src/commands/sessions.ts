@@ -9,6 +9,8 @@ import {
   HostSnapshot,
   ProjectEntry,
   Session,
+  WorktreeCleanupPreview,
+  WorktreeCleanupSweep,
 } from "../models/sessions";
 import { type CommandSpec, NoParams, Void } from "./spec";
 
@@ -147,4 +149,16 @@ export const SESSION_COMMANDS = {
     result: Void,
   },
   get_session: { tier: "admin", params: SessionId, result: Session.nullable() },
+  /** Dry run of the worktree cleanup policy. Removes nothing. */
+  worktree_cleanup_preview: {
+    tier: "admin",
+    params: NoParams,
+    result: WorktreeCleanupPreview,
+  },
+  /** Remove what the preview lists as removable, now. */
+  worktree_cleanup_run: {
+    tier: "admin",
+    params: NoParams,
+    result: WorktreeCleanupSweep,
+  },
 } as const satisfies Record<string, CommandSpec>;

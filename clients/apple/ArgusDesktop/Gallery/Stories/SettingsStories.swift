@@ -14,6 +14,9 @@
           SettingsWindow()
         },
         GalleryStory("settings/appearance", size: page) { AppearanceSettingsTab() },
+        GalleryStory("settings/worktrees", size: CGSize(width: 760, height: 1100), fixtures: GalleryFixtures.worktreeCleanup) {
+          WorktreesSettingsTab().environment(HostSettingsModel())
+        },
         GalleryStory("settings/accounts", size: CGSize(width: 760, height: 1000), fixtures: GalleryFixtures.runnerAccounts) {
           AccountsSettingsTab().environment(HostSettingsModel())
         },
