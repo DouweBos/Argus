@@ -44,6 +44,11 @@ import { useProjectsStore } from "../stores/projects";
 import { useRunnerSupport } from "../stores/runnerSupport";
 import { useTranscriptsStore } from "../stores/transcripts";
 import { AccountChip } from "./AccountChip";
+import {
+  AgentLimits,
+  USAGE_LIMITS_COMMAND,
+  useUsageLimitsCommand,
+} from "./AgentLimits";
 import { SideQuestionsDialog } from "./SideQuestionsDialog";
 import { useMentionPicker } from "./useMentionPicker";
 
@@ -159,6 +164,7 @@ export function ChatInput({
   const setHuddleTyping = useHuddleStore((s) => s.setHuddleTyping);
   const hasControl = useConnectionStore((s) => s.hasControl());
   const [askingSide, setAskingSide] = useState(false);
+  const usageLimits = useUsageLimitsCommand(agentId);
 
   // A no-op outside a huddle, so the composer reports either way and never has
   // to know which kind of connection it is sitting on.
@@ -205,7 +211,15 @@ export function ChatInput({
   const mode = canonicalMode(status?.permission_mode);
   const modelValue = status?.model ?? null;
   const models = caps?.models ?? [];
-  const commands = caps?.commands ?? [];
+  const runnerCommands = caps?.commands;
+  // `/usage-limits` is answered here and never reaches the agent.
+  const commands = useMemo(
+    () =>
+      usageLimits.command
+        ? [usageLimits.command, ...(runnerCommands ?? [])]
+        : (runnerCommands ?? []),
+    [usageLimits.command, runnerCommands],
+  );
   const currentModel = models.find((m) => m.value === modelValue);
   const modelLabel = currentModel?.displayName ?? modelValue ?? "Model";
   const effortLevels = currentModel?.supportsEffort
@@ -298,6 +312,19 @@ export function ChatInput({
     if (!value && pending.length === 0) {
       return;
     }
+    if (usageLimits.command && value === `/${USAGE_LIMITS_COMMAND.name}`) {
+      if (textareaRef.current) {
+        textareaRef.current.value = "";
+        adjustHeight();
+      }
+      setHasText(false);
+      setSuggestions([]);
+      localStorage.removeItem(draftKey(agentId));
+      usageLimits.show();
+
+      return;
+    }
+    usageLimits.close();
     const images =
       pending.length > 0 ? pending.map((p) => p.attachment) : undefined;
     const displayText = value || "(see attached images)";
@@ -332,6 +359,7 @@ export function ChatInput({
     adjustHeight,
     dismissMention,
     linked,
+    usageLimits,
   ]);
 
   const applySuggestion = useCallback(
@@ -340,13 +368,24 @@ export function ChatInput({
       if (!el) {
         return;
       }
+      if (cmd.name === USAGE_LIMITS_COMMAND.name) {
+        el.value = "";
+        el.focus();
+        setSuggestions([]);
+        setHasText(false);
+        adjustHeight();
+        localStorage.removeItem(draftKey(agentId));
+        usageLimits.show();
+
+        return;
+      }
       el.value = `/${cmd.name} `;
       el.focus();
       setSuggestions([]);
       adjustHeight();
       localStorage.setItem(draftKey(agentId), el.value);
     },
-    [adjustHeight, agentId],
+    [adjustHeight, agentId, usageLimits],
   );
 
   // Fills the input, never sends: the user reads it over first.
@@ -497,6 +536,9 @@ export function ChatInput({
 
   const above = (
     <>
+      {usageLimits.open && (
+        <AgentLimits agentId={agentId} onDismiss={usageLimits.close} />
+      )}
       <SlashCommandList
         items={suggestions}
         selectedIndex={selectedIndex}

@@ -88,6 +88,10 @@ export function parentOf(screen: Screen): Screen {
 
       return repoRoot ? projectScreen(repoRoot) : HOME;
     }
+    case "usageModel":
+      return { name: "usage", tab: screen.tab, range: screen.range };
+    case "usagePrices":
+      return { name: "usage", tab: "cost", range: "30d" };
     case "automationRun":
       return { name: "automation", automationId: screen.automationId };
     case "quickRunDetail":

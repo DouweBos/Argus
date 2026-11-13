@@ -38,6 +38,8 @@ struct SidebarDestination {
     },
     .init(title: "Usage", symbol: Icon.usage, shortcut: nil, route: .usage(.limits)) {
       if case .usage = $0 { return true }
+      if case .usageModel = $0 { return true }
+      if $0 == .usagePrices || $0 == .usageModels { return true }
       return false
     },
   ]

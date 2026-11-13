@@ -89,7 +89,7 @@ import { pinSessionAccount } from "../agent/sessionAccountPin";
 import { getStartOptions } from "../agent/startOptions";
 import { listSessionTurns, sessionDiffRange } from "../agent/turns";
 import { setViewingSession } from "../agent/warmPolicy";
-import { saveAppSettings } from "../appSettings/store";
+import { loadAppSettings, saveAppSettings } from "../appSettings/store";
 import { revisePlaybook } from "../automation/authoring";
 import { appDefaultAutonomy } from "../automation/autonomy";
 import {
@@ -121,8 +121,6 @@ import {
   getClaudeLoginState,
 } from "../claudeAuth/claudeAuth";
 import { recheckFlaggedAccounts } from "../claudeAuth/probe";
-import { getClaudeUsageLimits } from "../claudeUsage/limits";
-import { getClaudeUsageSummary } from "../claudeUsage/summary";
 import {
   CommandParamsError,
   getCommand,
@@ -227,6 +225,9 @@ import {
   readTerminalOutput,
   terminalScrollback,
 } from "../terminal/multiplexer";
+import { getUsageLimits } from "../usage/runnerLimits";
+import { getClaudeUsageSummary } from "../usage/summary";
+import { getUsagePrices, setUsagePrices } from "../usage/usagePrices";
 import { listPinnedBranches } from "../userProjectSettings/store";
 import {
   createRemoteAutomation,
@@ -2835,13 +2836,37 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "usage.limits": async (params) => {
     const { refresh } = parse("usage.limits", params);
 
-    return getClaudeUsageLimits(refresh ?? false);
+    return getUsageLimits(refresh ?? false);
   },
 
   "usage.summary": async (params) => {
     const { range } = parse("usage.summary", params);
 
     return getClaudeUsageSummary(range);
+  },
+
+  "usage.prices": () => getUsagePrices(),
+
+  "usage.set_prices": async (params) => {
+    const { overrides } = parse("usage.set_prices", params);
+
+    return control(() => setUsagePrices(overrides));
+  },
+
+  "usage.model_filter": async () => ({
+    filter: loadAppSettings().usage_model_filter ?? null,
+  }),
+
+  "usage.set_model_filter": async (params) => {
+    const { filter } = parse("usage.set_model_filter", params);
+    const empty =
+      !filter || (filter.include.length === 0 && filter.exclude.length === 0);
+
+    return control(() => ({
+      filter:
+        saveAppSettings({ usage_model_filter: empty ? undefined : filter })
+          .usage_model_filter ?? null,
+    }));
   },
 
   "claude_accounts.set_active": async (params) => {

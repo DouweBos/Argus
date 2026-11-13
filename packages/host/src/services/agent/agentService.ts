@@ -61,7 +61,6 @@ import {
   resolveAccountForSession,
 } from "../claudeAuth/accounts";
 import { emitAccountsChanged } from "../claudeAuth/claudeAuth";
-import { noteUsageRateLimitLine } from "../claudeUsage/limits";
 import { getConductorBinDir } from "../cli/conductor";
 import { getRunnerById, resolveDefaultRunner } from "../llm/registry";
 import { resolveModelForAgent } from "../llm/resolve";
@@ -74,6 +73,8 @@ import { incrementCommandMetric } from "../session/commandMetrics";
 import { sessionRunnerId } from "../session/models";
 import { simulatorPool } from "../simulator/pool";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
+import { noteUsageRateLimitLine } from "../usage/limits";
+import { recordTurnUsage } from "../usage/turns";
 import { loadConversationByRunnerSession } from "./chatHistory";
 import {
   CONDUCTOR_DISALLOWED,
@@ -1202,9 +1203,20 @@ export function onStreamLine(agentId: string, line: string): void {
         result?: string;
         total_cost_usd?: number;
         duration_ms?: number;
+        usage?: unknown;
         modelUsage?: unknown;
       };
       if (parsed.type === "result") {
+        // Priced from tokens when the runner reports no spend, so budgets see every runner.
+        const turnCost = recordTurnUsage(
+          {
+            agentId,
+            runnerId: session.runner.id,
+            baseRunnerId: session.runner.baseRunnerId,
+            model: session.resolvedModel,
+          },
+          parsed,
+        );
         // Before the status change below, so the idle push carries it.
         const reported = contextWindowFromModelUsage(
           parsed.modelUsage,
@@ -1219,10 +1231,10 @@ export function onStreamLine(agentId: string, line: string): void {
         session.resultSummary = {
           subtype: resultSubtype(parsed),
           result: parsed.result,
-          total_cost_usd: parsed.total_cost_usd ?? 0,
+          total_cost_usd: turnCost,
           duration_ms: parsed.duration_ms ?? 0,
         };
-        session.costUsd += parsed.total_cost_usd ?? 0;
+        session.costUsd += turnCost;
         if (session.inflightPrompts > 0) {
           session.inflightPrompts -= 1;
         }

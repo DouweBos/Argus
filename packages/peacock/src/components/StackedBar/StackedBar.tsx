@@ -8,10 +8,12 @@ export interface StackedBarSegment {
   display?: ReactNode;
   /** Secondary legend text, e.g. the share of the whole. */
   detail?: ReactNode;
+  /** A catch-all ("Other"), drawn in the neutral colour rather than a hue. */
+  other?: boolean;
 }
 
 export interface StackedBarProps {
-  /** Parts of one whole, in fixed order; up to four series colours. */
+  /** Parts of one whole, in fixed order; up to four series colours plus catch-alls. */
   segments: StackedBarSegment[];
   caption?: string;
   className?: string;
@@ -19,12 +21,26 @@ export interface StackedBarProps {
 
 const SERIES = [styles.s1, styles.s2, styles.s3, styles.s4];
 
+/** Hue per segment in order; past the fourth a segment has no colour to take. */
+function colourSegments(segments: StackedBarSegment[]) {
+  let hue = 0;
+
+  return segments.flatMap((s) => {
+    if (s.other) {
+      return [{ ...s, tone: styles.other }];
+    }
+    const tone = SERIES[hue++];
+
+    return tone ? [{ ...s, tone }] : [];
+  });
+}
+
 /**
  * One whole split into parts: a single horizontal bar, one series colour per
  * part, with a labelled legend so identity never rests on colour alone.
  */
 export function StackedBar({ segments, caption, className }: StackedBarProps) {
-  const parts = segments.slice(0, SERIES.length);
+  const parts = colourSegments(segments);
   const total = parts.reduce((sum, s) => sum + Math.max(0, s.value), 0);
   const summary = parts
     .map(
@@ -42,10 +58,10 @@ export function StackedBar({ segments, caption, className }: StackedBarProps) {
         role="img"
       >
         {total > 0 &&
-          parts.map((s, i) =>
+          parts.map((s) =>
             s.value > 0 ? (
               <span
-                className={`${styles.segment} ${SERIES[i]}`}
+                className={`${styles.segment} ${s.tone}`}
                 key={s.label}
                 style={{ flexGrow: s.value / total }}
                 title={`${s.label}: ${typeof s.display === "string" ? s.display : s.value}`}
@@ -54,9 +70,9 @@ export function StackedBar({ segments, caption, className }: StackedBarProps) {
           )}
       </div>
       <ul className={styles.legend}>
-        {parts.map((s, i) => (
+        {parts.map((s) => (
           <li className={styles.item} key={s.label}>
-            <span className={`${styles.swatch} ${SERIES[i]}`} />
+            <span className={`${styles.swatch} ${s.tone}`} />
             <span className={styles.label}>{s.label}</span>
             <span className={styles.value}>{s.display ?? s.value}</span>
             {s.detail != null && (

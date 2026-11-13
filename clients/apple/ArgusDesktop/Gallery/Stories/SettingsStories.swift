@@ -23,6 +23,9 @@
         GalleryStory("settings/drafted-messages/custom", size: CGSize(width: 760, height: 420)) {
           DraftedMessagesStage(style: .custom)
         },
+        GalleryStory("settings/usage-model-filter", size: CGSize(width: 760, height: 620)) {
+          UsageModelFilterStory()
+        },
         account("signed-in", GalleryAccount(selfKind: "mac")),
         account("host-elsewhere", GalleryAccount(selfKind: "mac", hostElsewhere: true)),
         account("signed-out", GalleryAccount(phase: .signedOut, selfKind: "mac")),
@@ -149,6 +152,33 @@
               .init(
                 commitMessageStyle: style,
                 commitMessageInstructions: "Conventional Commits with a scope, imperative mood, no body."))
+          }
+      }
+    }
+
+    /// Settings → Agents' Usage lists: one rule counted only, two left out.
+    private struct UsageModelFilterStory: View {
+      @State private var host = HostSettingsModel()
+
+      var body: some View {
+        SettingsPage { UsageModelFilterSection() }
+          .environment(host)
+          .onAppear {
+            let rule = ArgusProtocol.UsageModelRule.init(runner:model:)
+            host.galleryFill(
+              ArgusProtocol.AppSettings(
+                usageModelFilter: .init(
+                  include: [],
+                  exclude: [rule(nil, "claude-haiku-4-5"), rule("codex", "gpt-5.5-codex-mini")])),
+              runners: [("claude-code", "Claude Code"), ("codex", "Codex"), ("opencode", "OpenCode")].map {
+                ArgusProtocol.RegisteredRunner(
+                  id: $0.0, displayName: $0.1,
+                  capabilities: .init(
+                    supportsMcp: true, supportsTranscriptFork: false, supportsSetModel: true,
+                    supportsSetPermissionMode: true, supportsSetEffort: false, supportsInterrupt: true,
+                    supportsSideQuestion: false),
+                  isCustom: false, models: [])
+              })
           }
       }
     }

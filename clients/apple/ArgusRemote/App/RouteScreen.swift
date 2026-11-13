@@ -233,11 +233,81 @@ struct RouteScreen: View {
     case .claudeAccounts:
       ClaudeAccountsView()
     case .usage:
-      HostUsageView()
-        .navigationTitle("Usage")
+      PhoneUsageRoot()
+    case .usageModel(let tab, let runner, let model, let range):
+      HostUsageModelView(metric: tab.metric ?? .cost, key: UsageModelKey(runner: runner, model: model), range: range)
+        .phoneUsageNavigation(push)
+        .navigationTitle(model)
         .navigationBarTitleDisplayMode(.inline)
+    case .usagePrices:
+      PhoneUsagePricesView()
+    case .usageModels:
+      PhoneUsageModelsView()
     case .more:
       MoreView()
     }
+  }
+}
+
+/// Usage as a tab's root or a pushed screen; its rows push onto that stack.
+struct PhoneUsageRoot: View {
+  @Environment(Router.self) private var router
+  @Environment(\.stackPush) private var stackPush
+
+  var body: some View {
+    HostUsageView()
+      .phoneUsageNavigation(stackPush ?? router.push)
+      .navigationTitle("Usage")
+      .navigationBarTitleDisplayMode(.inline)
+  }
+}
+
+/// The price editor on the phone: editing needs the control tier, and Save or
+/// Cancel pops back to where it was opened.
+private struct PhoneUsagePricesView: View {
+  @Environment(HostStore.self) private var host
+  @Environment(\.dismiss) private var dismiss
+
+  var body: some View {
+    HostUsagePricesView(canEdit: host.hasControl) { dismiss() }
+      .navigationTitle("Model prices")
+      .navigationBarTitleDisplayMode(.inline)
+  }
+}
+
+/// Which models Usage counts; editing needs the control tier.
+private struct PhoneUsageModelsView: View {
+  @Environment(HostStore.self) private var host
+
+  var body: some View {
+    HostUsageModelFilterView(canEdit: host.hasControl)
+      .navigationTitle("Counted models")
+      .navigationBarTitleDisplayMode(.inline)
+  }
+}
+
+private struct PhoneUsageNavigation: ViewModifier {
+  @Environment(HostStore.self) private var host
+  let push: @MainActor (Route) -> Void
+
+  func body(content: Content) -> some View {
+    content.environment(
+      \.usageNavigation,
+      UsageNavigation(
+        openModel: { key, tab, range in
+          push(.usageModel(tab: tab, runner: key.runner, model: key.model, range: range))
+        },
+        openPrices: { added in
+          host.pendingPriceModel = added
+          push(.usagePrices)
+        },
+        openCountedModels: { push(.usageModels) }))
+  }
+}
+
+extension View {
+  /// Usage's model rows and price actions push onto the stack this screen is on.
+  func phoneUsageNavigation(_ push: @escaping @MainActor (Route) -> Void) -> some View {
+    modifier(PhoneUsageNavigation(push: push))
   }
 }

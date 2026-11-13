@@ -117,6 +117,14 @@ public final class HostStore {
   public internal(set) var usageSummaryError: String?
   /// The range a summary request is in flight for.
   public internal(set) var usageSummaryLoadingRange: ArgusProtocol.UsageRange?
+  /// Hand-set and list model prices; `nil` until the price editor loads them.
+  public internal(set) var usagePrices: ArgusProtocol.UsagePrices?
+  public internal(set) var usagePricesError: String?
+  /// Which models Usage counts; `nil` until the editor loads it, empty when unset.
+  public internal(set) var usageModelFilter: ArgusProtocol.UsageModelFilter?
+  public internal(set) var usageModelFilterError: String?
+  /// A model "Set price" asked the price editor to add, taken when it opens.
+  public var pendingPriceModel: String?
   /// The computer's in-flight Claude sign-in, if any.
   public internal(set) var claudeLogin: RemoteClaudeLoginState? {
     didSet { if claudeLogin?.pending != true { claudeLoginURL = nil } }
@@ -300,6 +308,10 @@ public final class HostStore {
     usageSummary = nil
     usageSummaryError = nil
     usageSummaryLoadingRange = nil
+    usagePrices = nil
+    usagePricesError = nil
+    usageModelFilter = nil
+    usageModelFilterError = nil
     claudeLogin = nil
     deviceStates = [:]
     deviceClaims = [:]

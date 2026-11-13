@@ -55,3 +55,46 @@ public enum UsageLimitFormat {
     }
   }
 }
+
+/// One labelled set of plan windows: a Claude account or another runner.
+public struct UsageLimitGroup: Sendable, Identifiable {
+  public let id: String
+  public let label: String
+  public let windows: [ArgusProtocol.UsageLimitWindow]
+}
+
+extension UsageLimitFormat {
+  /// Every account and runner with windows to show, Claude accounts first.
+  /// A lone Claude account is just "Claude"; several go by their own names.
+  public static func groups(_ limits: ArgusProtocol.ClaudeUsageLimits?) -> [UsageLimitGroup] {
+    let all = limits?.accounts ?? []
+    let accounts = all
+      .filter { $0.status == .ok && !$0.windows.isEmpty }
+      .map {
+        UsageLimitGroup(id: "claude:\($0.accountId)", label: all.count > 1 ? $0.label : "Claude", windows: $0.windows)
+      }
+    let runners = (limits?.runners ?? [])
+      .filter { $0.status == .ok && !$0.windows.isEmpty }
+      .map { UsageLimitGroup(id: "runner:\($0.runner)", label: $0.label, windows: $0.windows) }
+    return accounts + runners
+  }
+
+  /// When limits were last read, epoch ms, across accounts and runners.
+  public static func checkedAt(_ limits: ArgusProtocol.ClaudeUsageLimits) -> Double? {
+    (limits.accounts.map(\.checkedAt) + (limits.runners ?? []).map(\.checkedAt)).max()
+  }
+}
+
+extension UsageLimitFormat {
+  /// Claude Code's runner id; its limits are the Claude accounts, not a `runners` entry.
+  public static let claudeRunner = "claude-code"
+
+  /// The limits an agent on `runner` draws on: every Claude account for Claude
+  /// Code, else that runner's own windows. Empty when the snapshot has none.
+  public static func groups(_ limits: ArgusProtocol.ClaudeUsageLimits?, runner: String?) -> [UsageLimitGroup] {
+    let runner = runner ?? claudeRunner
+    return groups(limits).filter { group in
+      runner == claudeRunner ? group.id.hasPrefix("claude:") : group.id == "runner:\(runner)"
+    }
+  }
+}

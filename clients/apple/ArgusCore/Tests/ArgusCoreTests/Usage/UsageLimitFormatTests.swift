@@ -50,4 +50,39 @@ struct UsageLimitFormatTests {
     #expect(UsageLimitFormat.paceCaption(.under) == "Under pace")
     #expect(UsageLimitFormat.paceCaption(nil) == nil)
   }
+
+  private func window(_ id: String) -> ArgusProtocol.UsageLimitWindow {
+    .init(id: id, kind: .session, label: id, usedPercent: 10)
+  }
+
+  @Test func groupsCoverAccountsAndRunnersWithWindows() {
+    let limits = ArgusProtocol.ClaudeUsageLimits(
+      accounts: [.init(accountId: "a", label: "Work", status: .ok, windows: [window("s")], checkedAt: 5)],
+      runners: [
+        .init(runner: "codex", label: "Codex", status: .ok, plan: "pro", windows: [window("s")], checkedAt: 9),
+        .init(runner: "cursor", label: "Cursor", status: .failed, windows: [], checkedAt: 7),
+        .init(runner: "grok", label: "Grok", status: .unsupported, windows: [], checkedAt: 3),
+      ])
+    #expect(UsageLimitFormat.groups(limits).map(\.label) == ["Claude", "Codex"])
+    #expect(UsageLimitFormat.checkedAt(limits) == 9)
+    #expect(UsageLimitFormat.groups(nil).isEmpty)
+  }
+
+  @Test func severalAccountsGoByTheirNames() {
+    let limits = ArgusProtocol.ClaudeUsageLimits(accounts: [
+      .init(accountId: "a", label: "Work", status: .ok, windows: [window("s")], checkedAt: 1),
+      .init(accountId: "b", label: "Personal", status: .ok, windows: [window("s")], checkedAt: 1),
+    ])
+    #expect(UsageLimitFormat.groups(limits).map(\.label) == ["Work", "Personal"])
+  }
+
+  @Test func runnerGroupsPickTheAgentsRunner() {
+    let limits = ArgusProtocol.ClaudeUsageLimits(
+      accounts: [.init(accountId: "a", label: "Work", status: .ok, windows: [window("s")], checkedAt: 1)],
+      runners: [.init(runner: "codex", label: "Codex", status: .ok, plan: nil, windows: [window("s")], checkedAt: 1)])
+    #expect(UsageLimitFormat.groups(limits, runner: "claude-code").map(\.label) == ["Claude"])
+    #expect(UsageLimitFormat.groups(limits, runner: nil).map(\.label) == ["Claude"])
+    #expect(UsageLimitFormat.groups(limits, runner: "codex").map(\.label) == ["Codex"])
+    #expect(UsageLimitFormat.groups(limits, runner: "grok").isEmpty)
+  }
 }

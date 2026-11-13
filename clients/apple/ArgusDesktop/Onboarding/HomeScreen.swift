@@ -42,7 +42,7 @@ struct HomeScreen: View {
           Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 32, height: 32)
           Text("Argus").font(.scaled(size: 24, weight: .semibold))
         }
-        if !UsageLimitsStrip.accounts(store.usageLimits).isEmpty {
+        if !UsageLimitsStrip.groups(store.usageLimits).isEmpty {
           section("Plan limits") {
             Button("View usage") {
               MacTelemetry.capture(.homeUsageOpened(level: usageLevel))
@@ -74,7 +74,7 @@ struct HomeScreen: View {
 
   /// The most severe plan limit on the strip, for telemetry.
   private var usageLevel: String {
-    let used = (store.usageLimits?.accounts ?? []).flatMap(\.windows).map(\.usedPercent).max() ?? 0
+    let used = UsageLimitsStrip.groups(store.usageLimits).flatMap(\.windows).map(\.usedPercent).max() ?? 0
     return switch UsageLimitFormat.level(usedPercent: used) {
     case .normal: "normal"
     case .warning: "warning"

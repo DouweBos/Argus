@@ -83,6 +83,9 @@ import {
   ClaudeUsageLimits,
   ClaudeUsageSummary,
   LimitHandoffAccount,
+  UsageModelFilter,
+  UsagePriceOverride,
+  UsagePrices,
   UsageRange,
 } from "./models/usage";
 import { ReportBlock } from "./report";
@@ -845,6 +848,11 @@ export const MethodParams = {
   "runners.accounts": z.object({ refresh: z.boolean().optional() }),
   "usage.limits": z.object({ refresh: z.boolean().optional() }),
   "usage.summary": z.object({ range: UsageRange }),
+  "usage.prices": z.object({}),
+  "usage.set_prices": z.object({ overrides: z.array(UsagePriceOverride) }),
+  "usage.model_filter": z.object({}),
+  /** Null counts every model again. */
+  "usage.set_model_filter": z.object({ filter: UsageModelFilter.nullable() }),
   "claude_accounts.set_active": z.object({ id: z.string() }),
   "claude_accounts.add": z.object({
     use_console: z.boolean().optional(),
@@ -1254,6 +1262,10 @@ export const MethodResult = {
   "runners.accounts": z.object({ runners: z.array(RunnerAccount) }),
   "usage.limits": ClaudeUsageLimits,
   "usage.summary": ClaudeUsageSummary,
+  "usage.prices": UsagePrices,
+  "usage.set_prices": UsagePrices,
+  "usage.model_filter": z.object({ filter: UsageModelFilter.nullable() }),
+  "usage.set_model_filter": z.object({ filter: UsageModelFilter.nullable() }),
   "claude_accounts.set_active": z.object({ accepted: z.boolean() }),
   /** The sign-in URL. It opens in the host owner's browser; the code still has
    *  to be pasted back here for the browser callback to be seen. */

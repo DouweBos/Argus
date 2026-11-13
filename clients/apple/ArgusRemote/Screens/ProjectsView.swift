@@ -99,7 +99,7 @@ struct ProjectsView: View {
 
   @ViewBuilder
   private var planLimits: some View {
-    if !UsageLimitsStrip.accounts(host.usageLimits).isEmpty {
+    if !UsageLimitsStrip.groups(host.usageLimits).isEmpty {
       Section {
         UsageLimitsStrip(limits: host.usageLimits)
           .padding(.vertical, 4)

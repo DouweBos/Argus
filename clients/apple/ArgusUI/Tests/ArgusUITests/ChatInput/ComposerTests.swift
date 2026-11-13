@@ -44,6 +44,8 @@ struct SlashCommandMenuTests {
     #expect(SlashCommandMenu.local(" /model ") == .openModelPicker)
     #expect(SlashCommandMenu.local("/model opus") == .setModel("opus"))
     #expect(SlashCommandMenu.local("/compact") == nil)
+    #expect(SlashCommandMenu.local("/usage-limits") == .showUsageLimits)
+    #expect(SlashCommandMenu.local("/usage-limits now") == nil)
     #expect(SlashCommandMenu.local("plan") == nil)
   }
 }

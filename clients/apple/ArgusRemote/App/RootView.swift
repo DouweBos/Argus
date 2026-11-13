@@ -282,10 +282,7 @@ struct RootView: View {
     case .automations: AutomationsView()
     case .issues: IssuesView()
     case .pullRequests: PullRequestsView()
-    case .usage:
-      HostUsageView()
-        .navigationTitle("Usage")
-        .navigationBarTitleDisplayMode(.inline)
+    case .usage: PhoneUsageRoot()
     case .notifications: WarningsView()
     case .settings: SettingsView()
     case .more: MoreView()

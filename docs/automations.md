@@ -223,6 +223,10 @@ Two more caps live above the individual automation, in
 across all of them (default 3), and a **daily spend budget** in USD, also off
 unless you set it.
 
+Spend counts every runner. Claude Code and agents that report their own cost
+count what they report; Codex and agents that report only tokens are priced at
+API list rates, the same estimate the Usage screen shows.
+
 A "session in flight" frees its slot when the session is **deleted**, not when
 its agent goes idle — the branch is still open, unreviewed and unmerged, and
 counting it as finished would let an automation stack up branches forever.

@@ -52,17 +52,19 @@ enum SettingsField: String {
   case linearReport = "linear_report"
   case commitMessageStyle = "commit_message_style"
   case commitMessageInstructions = "commit_message_instructions"
+  case usageLimitsInDetails = "usage_limits_in_details"
+  case usageModelFilter = "usage_model_filter"
 
   var section: SettingsTab {
     switch self {
-    case .theme, .colorTheme, .displaySize: .appearance
+    case .theme, .colorTheme, .displaySize, .usageLimitsInDetails: .appearance
     case .launchRoute, .worktreeLocation, .automationWorktreeLocation, .customEditors, .telemetryMode:
       .general
     case .accountSelected, .accountAdded, .accountRemoved, .accountRenamed, .accountReauth:
       .accounts
     case .permissionMode, .automationsEnabled, .followUpSuggestions, .warmAgents, .defaultAutonomy,
       .concurrency, .dailyBudget, .importCliChats, .saveChatHistory, .allowedCommands, .allowedTools, .refusalAllowed,
-      .refusalDismissed:
+      .refusalDismissed, .usageModelFilter:
       .agents
     case .runner, .llmModel, .customRunnerSaved, .customAcpAgentSaved, .customRunnerDeleted: .llm
     case .mcpServers, .mcpTested, .mcpSignedIn, .mcpSignedOut: .mcp

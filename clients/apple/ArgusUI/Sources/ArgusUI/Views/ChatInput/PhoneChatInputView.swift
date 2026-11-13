@@ -49,6 +49,9 @@
         if let failure = composer.dictation.failure {
           Banner(text: failure, actionLabel: "Dismiss") { composer.dismissDictationError() }
         }
+        if composer.showingUsageLimits, !composer.usageLimitGroups.isEmpty {
+          ComposerUsageLimitsPanel(groups: composer.usageLimitGroups) { composer.showingUsageLimits = false }
+        }
         if !composer.slashItems.isEmpty {
           PhoneSlashList(commands: composer.slashItems) { composer.acceptSlash($0) }
         } else if !composer.mentionItems.isEmpty {

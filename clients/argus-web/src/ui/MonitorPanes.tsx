@@ -33,6 +33,7 @@ import {
   LazyShipScreen,
 } from "./SessionToolActions";
 import { SettingsSplit } from "./settings/SettingsSplit";
+import { UsagePricesView } from "./UsagePricesView";
 import { UsageView } from "./UsageView";
 import { SavedChat } from "./start/SavedChat";
 import { SessionHome } from "./start/SessionHome";
@@ -98,6 +99,16 @@ export function ScreenBody({ screen }: { screen: Screen }) {
       return <SettingsSplit page={screen.page} />;
     case "usage":
       return <UsageView range={screen.range} tab={screen.tab} />;
+    case "usageModel":
+      return (
+        <UsageView
+          model={{ runner: screen.runner, model: screen.model }}
+          range={screen.range}
+          tab={screen.tab}
+        />
+      );
+    case "usagePrices":
+      return <UsagePricesView />;
     case "notifications":
       return <NotificationsView />;
     case "design":

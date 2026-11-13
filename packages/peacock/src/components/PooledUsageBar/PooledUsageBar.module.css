@@ -1,0 +1,95 @@
+.bar {
+  --pool-fill: var(--accent);
+
+  display: flex;
+  gap: 3px;
+  width: 100%;
+  height: 8px;
+}
+
+.sm {
+  height: 4px;
+  gap: 2px;
+}
+
+.accent {
+  --pool-fill: var(--accent);
+}
+
+.warning {
+  --pool-fill: var(--warning);
+}
+
+.danger {
+  --pool-fill: var(--error);
+}
+
+.segment {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: var(--border-radius-pill);
+  background: var(--border-subtle);
+  overflow: hidden;
+}
+
+/* An account without this window: an outline where its share would be. */
+.gap {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+
+.interactive {
+  cursor: pointer;
+}
+
+.interactive:hover {
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
+.interactive:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.selected,
+.selected:hover {
+  box-shadow: 0 0 0 1px var(--text-primary);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  background: var(--pool-fill);
+  transition: width 300ms ease;
+}
+
+/* Comes back at the next reset. */
+.restoring {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--pool-fill) 0 3px,
+    color-mix(in srgb, var(--pool-fill) 35%, transparent) 3px 6px
+  );
+}
+
+.swatch {
+  --pool-fill: var(--accent);
+
+  display: inline-block;
+  width: 12px;
+  height: 8px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+.swatch.warning {
+  --pool-fill: var(--warning);
+}
+
+.swatch.danger {
+  --pool-fill: var(--error);
+}

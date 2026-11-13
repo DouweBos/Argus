@@ -540,6 +540,16 @@ export interface EventMap {
   usage_summary_loaded: {
     prices_available: boolean;
     range: "7d" | "24h" | "30d" | "90d";
+    runner_count: number;
+  };
+  usage_prices_saved: {
+    override_count: number;
+    mapped_count: number;
+  };
+  runner_usage_limits_fetched: {
+    runner: "antigravity" | "codex" | "cursor" | "grok" | "opencode";
+    outcome: "failed" | "ok" | "unsupported";
+    window_count: number;
   };
   usage_limits_fetched: {
     outcome: "failed" | "ok" | "unsupported";

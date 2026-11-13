@@ -23,6 +23,11 @@ struct ArgusRouteTests {
     ("/usage/tokens?range=30d", .usage(.tokens)),
     ("/usage/tokens?range=1y", .usage(.tokens)),
     ("/usage?range=7d", .usage(.limits)),
+    ("/usage/prices", .usagePrices),
+    ("/usage/models", .usageModels),
+    ("/usage/models?range=7d", .usageModels),
+    ("/usage/cost/models/codex/gpt-5.5", .usageModel(.cost, runner: "codex", model: "gpt-5.5")),
+    ("/usage/tokens/models/opencode/openrouter%2Fqwen?range=7d", .usageModel(.tokens, runner: "opencode", model: "openrouter/qwen", range: ._7d)),
     ("/pull-requests", .pullRequests),
     ("/issues", .issues()),
     ("/issues/created", .issues(scope: .created)),
@@ -94,6 +99,8 @@ struct ArgusRouteTests {
 
   @Test(arguments: [
     ArgusRoute.home, .agents, .runtimes, .devices, .device(platform: "android", deviceKey: "avd:P 9"), .inbox, .proposal(id: "p 1"), .notifications, .usage(.limits), .usage(.cost), .usage(.tokens, range: ._90d),
+    .usagePrices, .usageModels, .usageModel(.cost, runner: "claude-code", model: "claude-opus-5-5"),
+    .usageModel(.tokens, runner: "opencode", model: "a/b c", range: ._24h),
     .pullRequests, .pullRequest(repo: "o/r", number: 7), .issues(), .issues(scope: .created),
     .issues(issue: "ENG-1"), .issues(scope: .subscribed, issue: "ENG-1"),
     .issues(query: "a&b c"), .issues(issue: "ENG-1", query: "login?"),
@@ -124,6 +131,13 @@ struct ArgusRouteTests {
     #expect(ArgusRoute.issues(scope: .created, query: "login bug").path == "/issues/search?q=login%20bug")
     #expect(ArgusRoute.usage(.cost, range: ._24h).path == "/usage/cost?range=24h")
     #expect(ArgusRoute.usage(.cost, range: ._24h).pattern == "/usage/cost")
+    #expect(ArgusRoute.usageModel(.tokens, runner: "codex", model: "m").pattern == "/usage/tokens/models/:runner/:model")
+    #expect(ArgusRoute.usagePrices.pattern == "/usage/prices")
+    #expect(ArgusRoute.usageModels.pattern == "/usage/models")
+    // `models` is a tab's child only under cost or tokens, never a tab itself.
+    #expect(ArgusRoute(path: "/usage/models/codex/m") == nil)
+    #expect(ArgusRoute(path: "/usage/cost/models/codex/models") == .usageModel(.cost, runner: "codex", model: "models"))
+    #expect(ArgusRoute(path: "/usage/limits/models/codex/m") == nil)
   }
 
   @Test func deepLinksReadTheHostAsThePathsFirstSegment() {

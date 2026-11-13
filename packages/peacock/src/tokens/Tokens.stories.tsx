@@ -275,6 +275,11 @@ export const Colors: Story = {
             value="#c98500 / #eda100"
             preview={<div style={swatch("var(--chart-series-4)")} />}
           />
+          <Token
+            name="--chart-series-other"
+            value="var(--text-muted)"
+            preview={<div style={swatch("var(--chart-series-other)")} />}
+          />
         </div>
       </section>
       <section>

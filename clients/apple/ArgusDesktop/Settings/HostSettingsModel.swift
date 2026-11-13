@@ -71,7 +71,10 @@ final class HostSettingsModel {
 
 #if DEBUG
   extension HostSettingsModel {
-    /// Gallery stories render the Settings tabs without a host.
-    func galleryFill(_ settings: ArgusProtocol.AppSettings) { self.settings = settings }
+    /// Settings and runners as if the host had answered, for gallery stories.
+    func galleryFill(_ settings: ArgusProtocol.AppSettings, runners: [ArgusProtocol.RegisteredRunner] = []) {
+      self.settings = settings
+      self.runners = runners
+    }
   }
 #endif

@@ -47,6 +47,12 @@ public enum ArgusRoute: Hashable, Sendable {
   /// `/usage` (plan limits), `/usage/cost` or `/usage/tokens`, with `?range=`
   /// on the last two; nil is the default 30 days and stays off the URL.
   case usage(UsageTab, range: ArgusProtocol.UsageRange? = nil)
+  /// `/usage/:tab/models/:runner/:model?range=`: one model's detail under Cost or Tokens.
+  case usageModel(UsageTab, runner: String, model: String, range: ArgusProtocol.UsageRange? = nil)
+  /// `/usage/prices`: the model price editor.
+  case usagePrices
+  /// `/usage/models`: which models Usage counts or leaves out.
+  case usageModels
 
   public static let issueSearchSegment = "search"
 
@@ -105,6 +111,9 @@ public enum ArgusRoute: Hashable, Sendable {
     case .proposal: "/inbox/proposals/:proposalId"
     case .notifications: "/notifications"
     case .usage(let tab, _): tab == .limits ? "/usage" : "/usage/\(tab.rawValue)"
+    case .usageModel(let tab, _, _, _): "/usage/\(tab.rawValue)/models/:runner/:model"
+    case .usagePrices: "/usage/prices"
+    case .usageModels: "/usage/models"
     }
   }
 }

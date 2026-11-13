@@ -350,6 +350,39 @@ struct ComposerModelTests {
     #expect(host.sent.map(\.message) == ["go"])
   }
 
+  @Test("/usage-limits opens the limits panel without sending, and the next send closes it")
+  func usageLimits() async {
+    let composer = model()
+    #expect(!composer.commands.contains { $0.name == "usage-limits" })
+    host.usageLimits = ArgusProtocol.ClaudeUsageLimits(accounts: [
+      .init(
+        accountId: "a", label: "Work", status: .ok,
+        windows: [.init(id: "five_hour", kind: .session, label: "Session", usedPercent: 40)], checkedAt: 1)
+    ])
+    #expect(composer.commands.contains { $0.name == "usage-limits" })
+    composer.text = "/usage-limits"
+    composer.submit()
+    await settle()
+    #expect(composer.showingUsageLimits)
+    #expect(host.sent.isEmpty)
+    #expect(composer.text.isEmpty)
+    composer.text = "carry on"
+    composer.submit()
+    await settle()
+    #expect(!composer.showingUsageLimits)
+    #expect(host.sent.map(\.message) == ["carry on"])
+  }
+
+  @Test("/usage-limits goes to the agent when its runner has no limits")
+  func usageLimitsUnoffered() async {
+    let composer = model()
+    composer.text = "/usage-limits"
+    composer.submit()
+    await settle()
+    #expect(!composer.showingUsageLimits)
+    #expect(host.sent.map(\.message) == ["/usage-limits"])
+  }
+
   private func settle() async {
     for _ in 0..<10 { await Task.yield() }
   }
@@ -403,6 +436,7 @@ final class FakeComposerHost: ComposerHost {
   var activeClaudeAccountId: String?
   var projects: [RemoteProject] = []
   var sessionsByRepo: [String: [RemoteSession]] = [:]
+  var usageLimits: ArgusProtocol.ClaudeUsageLimits?
 
   var files: [String] = []
   var mentionEntries: [String: [String]] = [:]
@@ -442,6 +476,7 @@ final class FakeComposerHost: ComposerHost {
   func loadStartOptions(sessionId: String, runnerId: String?) async {}
   func loadSessions(repoRoot: String) async {}
   func refreshClaudeAccounts() async {}
+  func loadUsageLimits(refresh: Bool) async {}
   func listFiles(sessionId: String) async -> [String] { files }
 
   func resolveMentionPath(sessionId: String, query: String) async -> RemoteMentionPathResult? {

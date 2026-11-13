@@ -80,6 +80,10 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   // The host owner's plan usage, per account.
   "usage.limits": DENIED,
   "usage.summary": DENIED,
+  "usage.prices": DENIED,
+  "usage.set_prices": DENIED,
+  "usage.model_filter": DENIED,
+  "usage.set_model_filter": DENIED,
   "claude_accounts.login_start": DENIED,
   "claude_accounts.login_cancel": DENIED,
   "claude_accounts.login_submit_code": DENIED,

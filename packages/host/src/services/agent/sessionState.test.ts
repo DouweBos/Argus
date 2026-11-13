@@ -28,6 +28,7 @@ function addAgent(over: Partial<AgentSession> = {}): AgentSession {
   const session = {
     agentId: "a1",
     sessionId: "s1",
+    runner: { id: "claude-code" },
     status: "running",
     emitsSessionState: false,
     turnWaiters: [],

@@ -241,17 +241,58 @@ notification or use the button at the bottom of Notifications.
 
 ## Usage
 
-**Usage** in the sidebar shows how much of your Claude plan is left: the
-5-hour session, the weekly caps and monthly spend, each with when it resets
-and whether you are spending ahead of or under pace. Every signed-in account
-gets its own section. API-key and Console sign-ins have no plan limits.
+**Usage** in the sidebar shows how much of each plan is left. For Claude
+that is the 5-hour session, the weekly caps and monthly spend, with a section
+per signed-in account. Codex shows its session and weekly windows, Cursor its
+monthly allowance (with Auto and API usage apart), Grok its current
+subscription period, OpenCode Go its session, weekly and monthly allowance
+(with an OpenCode Go API key) and Antigravity its model quotas, each read with
+the sign-in its CLI saved. Every window says when it resets and whether you
+are spending ahead of or under pace. Apart from OpenCode Go, API-key sign-ins
+have no plan limits. Gemini and the other agents don't report their plan, so
+they show up only in cost and tokens.
 
-The **Cost** and **Tokens** tabs read the Claude Code sessions on this
-machine and show what they used over the past 24 hours, 7, 30 or 90 days:
-a daily (or hourly) chart, totals, how much caching saved, a split by
-input, cache reads, cache writes and output, and a per-model breakdown.
-Costs are estimates at API list prices — what the same work would cost
-billed per token — and appear once the price list has downloaded.
+The **Cost** and **Tokens** tabs cover every runner over the past 24 hours,
+7, 30 or 90 days: a daily (or hourly) chart split by runner, totals, how much
+caching saved, a split by input, cache reads, cache writes and output, and a
+breakdown per runner and per model. Claude Code, Codex, OpenCode, Antigravity
+and Grok are read from their own history files on this machine, including
+work done outside Argus (point `OPENCODE_DATA_DIR` or `ANTIGRAVITY_DATA_DIR`
+at other data folders, comma-separated); Cursor is read from your account
+through Cursor's API, with the last totals kept for when you're offline. The
+other agents are counted from the turns Argus ran, starting with this
+version. Costs are what the agent reported where it reports one, otherwise
+estimates at API list prices — what the same work would cost billed per
+token — once the price list has downloaded.
+
+Requests run in Claude's fast mode or on Codex's fast and ultrafast service
+tiers are priced at those tiers' rates. A **Speed** split shows tokens and
+cost per tier, and **Premium** is what they cost above standard rates (part of
+the totals, not on top). Pick a model in the breakdown to see its own trend,
+cache hit rate and where its price comes from.
+
+**Model prices** lets you set a model's price by hand, per million input,
+output, cache-read and cache-write tokens; blank cache rates use the input
+rate and `0` means free. A saved price replaces the list price for all of
+that model's history, and also the cost a runner reported for it. **Map to**
+counts one model as another — a preview under its released name, say: its
+tokens and cost move to that model and use its price. Prices are kept on the
+computer, so every client shows the same figures. Which models count at all
+is an [app setting](./app-settings.md#usage).
+
+On the Mac and the iPhone, several Claude accounts show as one pool: a card
+per window with how much of the pool is left and a bar with a segment per
+account, soonest session reset first. The card says when the next reset
+lands and how much it gives back, and that part of the bar is striped. An
+account with no weekly quota left has nothing to give its session. Tap a
+segment or an account to see its plan and resets. An unpriced model's detail
+has **Set price**, which opens Model prices with that model added; on the
+phone, editing prices needs control access. **Counted models** next to
+Model prices edits which models count, on the iPhone too. Type `/usage-limits` in the chat
+composer to see the agent's own limits above it without sending anything,
+and turn on **Show usage limits in agent details** to keep them in the Mac's
+session details. On the Mac, `C`, `T` and `L` switch tabs, ⇧⌘1–4 pick the
+range and Escape goes back.
 
 ---
 

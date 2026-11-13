@@ -69,11 +69,29 @@
           "notifications/empty", size: CGSize(width: 900, height: 480), chrome: true,
           setup: { $0.model.notificationsLog.clear() }
         ) { NotificationsScreen() },
-        GalleryStory("usage/limits", size: screen, chrome: true, fixtures: GalleryFixtures.usage) {
+        GalleryStory("usage/limits", size: CGSize(width: 1000, height: 1300), chrome: true, fixtures: GalleryFixtures.usage) {
           UsageScreen(tab: .limits, range: nil)
         },
-        GalleryStory("usage/cost", size: screen, chrome: true, fixtures: GalleryFixtures.usage) {
-          UsageScreen(tab: .cost, range: nil)
+        GalleryStory("usage/cost", size: CGSize(width: 1000, height: 1300), chrome: true, fixtures: GalleryFixtures.usage) {
+          UsageScreen(tab: .cost, range: ._7d)
+        },
+        GalleryStory("usage/tokens", size: CGSize(width: 1000, height: 1300), chrome: true, fixtures: GalleryFixtures.usage) {
+          UsageScreen(tab: .tokens, range: ._7d)
+        },
+        GalleryStory("usage/limits-pooled", size: CGSize(width: 1000, height: 1300), chrome: true, fixtures: GalleryFixtures.usagePooled) {
+          UsageScreen(tab: .limits, range: nil)
+        },
+        GalleryStory("usage/model-detail", size: CGSize(width: 1000, height: 1100), chrome: true, fixtures: GalleryFixtures.usage) {
+          UsageModelScreen(tab: .cost, key: UsageModelKey(runner: "claude-code", model: "claude-opus-5-5"), range: ._7d)
+        },
+        GalleryStory("usage/model-detail-unpriced", size: CGSize(width: 1000, height: 1100), chrome: true, fixtures: GalleryFixtures.usage) {
+          UsageModelScreen(tab: .tokens, key: UsageModelKey(runner: "opencode", model: "qwen3-coder-30b"), range: ._7d)
+        },
+        GalleryStory("usage/prices", size: CGSize(width: 1000, height: 1300), chrome: true, fixtures: GalleryFixtures.usage) {
+          UsagePricesScreen()
+        },
+        GalleryStory("usage/model-filter", size: CGSize(width: 1000, height: 1000), chrome: true, fixtures: GalleryFixtures.usage) {
+          UsageModelsScreen()
         },
       ]
     }

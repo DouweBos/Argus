@@ -19,4 +19,6 @@ public enum ChatInputAffordance: String, Sendable {
   case dictation
   /// Dictated words landed in the draft, from the Mac's hold-to-talk key.
   case dictationShortcut = "dictation_shortcut"
+  /// `/usage-limits` opened the composer's limits panel.
+  case usageLimits = "usage_limits"
 }
