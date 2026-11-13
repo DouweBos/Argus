@@ -13,12 +13,14 @@ struct PullRequestDetailScreen: View {
   var embedded = false
   /// The gallery opens a tab other than the conversation.
   var initialTab: PullRequestDetailTab = .conversation
+  /// On `/pull-requests/…/guide`: the Guide tab is the route's, so back and deep links reach it.
+  var showsGuide = false
   @State private var model: PullRequestDetailModel?
 
   var body: some View {
     Group {
       if let model {
-        PullRequestDetailContent(model: model, embedded: embedded, tab: initialTab)
+        PullRequestDetailContent(model: model, embedded: embedded, showsGuide: showsGuide, tab: initialTab)
       } else {
         ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
       }
@@ -37,10 +39,13 @@ private struct PullRequestDetailContent: View {
   @Environment(HostStore.self) private var store
   let model: PullRequestDetailModel
   let embedded: Bool
+  let showsGuide: Bool
   @State var tab: PullRequestDetailTab
   @State private var merging = false
   @State private var confirmingClose = false
 
+  /// The route decides the Guide tab; the rest are this view's own.
+  private var shown: PullRequestDetailTab { showsGuide ? .guide : tab == .guide && !embedded ? .conversation : tab }
 
   var body: some View {
     Group {
@@ -95,15 +100,16 @@ private struct PullRequestDetailContent: View {
     let passed = detail.checks.filter { PullRequestCheckTone($0) == .success }.count
     let items: [(PullRequestDetailTab, String)] = [
       (.conversation, "Conversation (\(detail.comments.count))"),
+      (.guide, "Guide"),
       (.commits, "Commits (\(Int(detail.commits)))"),
       (.checks, detail.checks.isEmpty ? "Checks" : "Checks (\(passed)/\(detail.checks.count))"),
       (.files, "Files (\(Int(detail.changedFiles)))"),
     ]
     return HStack(spacing: 2) {
       ForEach(items, id: \.0) { item, title in
-        Button(title) { tab = item }
-          .buttonStyle(QuietTabButtonStyle(selected: tab == item))
-          .accessibilityAddTraits(tab == item ? .isSelected : [])
+        Button(title) { select(item) }
+          .buttonStyle(QuietTabButtonStyle(selected: shown == item))
+          .accessibilityAddTraits(shown == item ? .isSelected : [])
       }
     }
     .fixedSize()
@@ -112,9 +118,12 @@ private struct PullRequestDetailContent: View {
 
   @ViewBuilder
   private func tabContent(_ detail: ArgusProtocol.PullRequestDetail) -> some View {
-    switch tab {
+    switch shown {
     case .conversation:
       PullRequestConversation(detail: detail, model: model)
+    case .guide:
+      ReviewGuideScreen(
+        target: .pullRequest(repo: model.repo, number: model.number, headSha: detail.commitList.last?.oid))
     case .commits:
       PullRequestCommits(commits: detail.commitList) { model.openOnGitHub($0) }
     case .checks:
@@ -141,6 +150,16 @@ private struct PullRequestDetailContent: View {
     }
   }
 
+  /// A side panel has no route of its own to put the guide on, so there it's a plain tab.
+  private func select(_ item: PullRequestDetailTab) {
+    tab = item
+    guard !embedded, (item == .guide) != showsGuide else { return }
+    desktop.navigate(
+      item == .guide
+        ? .pullRequestGuide(repo: model.repo, number: model.number)
+        : .pullRequest(repo: model.repo, number: model.number))
+  }
+
   @ViewBuilder
   private func actions(_ detail: ArgusProtocol.PullRequestDetail) -> some View {
     Group {
@@ -159,7 +178,7 @@ private struct PullRequestDetailContent: View {
   }
 }
 
-enum PullRequestDetailTab: Hashable { case conversation, commits, checks, files }
+enum PullRequestDetailTab: Hashable { case conversation, guide, commits, checks, files }
 
 /// "#123" in the window's title until the pull request loads, unless it's in a panel.
 private struct PullRequestLoadingTitle: ViewModifier {

@@ -467,12 +467,27 @@ export interface EventMap {
   proposal_start_failed: {
     stage: "creating_worktree" | "setting_up" | "starting_agent";
   };
+  pull_request_reviewed: {
+    event: "approve" | "comment" | "request_changes";
+    host: "github" | "gitlab";
+    comments_bucket: "0" | "1-5" | "6-20" | "21+";
+    success: boolean;
+  };
   queued_message_sent_now: { mid_turn: boolean };
   remote_connection_opened: {
     trust: "account" | "paired";
     hosted_web: boolean;
   };
   remote_device_watched: { success: boolean };
+  review_guide_asked: { source: "pull_request" | "session"; success: boolean };
+  review_guide_generated: {
+    source: "pull_request" | "session";
+    success: boolean;
+    failure: "claude" | "empty" | "none" | "resolve" | "unreadable";
+    files_bucket: "0" | "1-5" | "6-20" | "21-100" | "100+";
+    stops_bucket: "0" | "1-5" | "6-20" | "21-100" | "100+";
+    duration_bucket: "<1m" | "<3m" | "<10m" | ">=10m";
+  };
   secret_store_migrated: {
     outcome: "failed" | "migrated";
     store: "mcp_tokens" | "remote_devices";

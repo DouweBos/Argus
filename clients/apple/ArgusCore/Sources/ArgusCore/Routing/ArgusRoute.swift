@@ -30,6 +30,8 @@ public enum ArgusRoute: Hashable, Sendable {
   case design(url: String, sessionId: String? = nil)
   /// `/pull-requests/:owner/:repo/:number`; `repo` is `owner/repo`.
   case pullRequest(repo: String, number: Int)
+  /// `/pull-requests/:owner/:repo/:number/guide`: the pull request's review guide.
+  case pullRequestGuide(repo: String, number: Int)
   /// `/automations`: every automation on this host.
   case automations
   /// `/automations/quick`, or one ad-hoc run under it.
@@ -81,6 +83,15 @@ public enum ArgusRoute: Hashable, Sendable {
     return nil
   }
 
+  /// A pull request's detail screen, and whether it's on its Guide tab.
+  public var pullRequestDetail: (repo: String, number: Int, guide: Bool)? {
+    switch self {
+    case .pullRequest(let repo, let number): (repo, number, false)
+    case .pullRequestGuide(let repo, let number): (repo, number, true)
+    default: nil
+    }
+  }
+
   public var gitView: GitRoute? {
     if case .sessionGit(_, let view) = self { return view }
     return nil
@@ -99,6 +110,7 @@ public enum ArgusRoute: Hashable, Sendable {
     case .sessionCode: "/sessions/:sessionId/code"
     case .pullRequests: "/pull-requests"
     case .pullRequest: "/pull-requests/:owner/:repo/:number"
+    case .pullRequestGuide: "/pull-requests/:owner/:repo/:number/guide"
     case .issues(let scope, let issue, let query):
       Self.issuesBase(scope: scope, query: query) + (issue == nil ? "" : "/:issue")
     case .design: "/design"

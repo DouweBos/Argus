@@ -145,6 +145,7 @@ public final class HostStore {
 
   /// Draft diff comments per session, until they're sent to an agent.
   public let reviews = DiffReviewDrafts()
+  public let reviewGuides = ReviewGuides()
 
   /// While offline, when the oldest saved answer on screen was saved; nil
   /// while everything shown came from the connection.

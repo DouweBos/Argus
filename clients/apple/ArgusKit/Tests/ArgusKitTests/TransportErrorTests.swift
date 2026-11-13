@@ -32,6 +32,7 @@ import Testing
     #expect(Transport.timeout(for: "get_claude_usage_limits") == .seconds(30))
     #expect(Transport.timeout(for: "agents.list") == Transport.requestTimeout)
     #expect(Transport.timeout(for: "agents.list", requested: .seconds(60)) == .seconds(60))
-    #expect(Transport.longestRequestTimeout == .seconds(30))
+    #expect(Transport.timeout(for: RemoteMethod.reviewGuidesAsk.rawValue) == .seconds(240))
+    #expect(Transport.longestRequestTimeout == .seconds(240))
   }
 }

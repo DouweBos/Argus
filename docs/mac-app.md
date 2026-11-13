@@ -78,6 +78,14 @@ developed, and an existing install updates into Argus for Mac by itself (see
   earlier turn, or the **Whole Branch**. A turn is what one prompt changed, from
   the checkpoint taken before it to the tree when the agent went idle, so files
   a merge or a rebase pulled in between turns stay out of it.
+  The **Guide** tab (a session's git panel, and a pull request's detail) has a
+  read-only Claude write a tour of the changes: ordered stops pointing at the
+  lines worth reading, **Look closely** flags for judgement calls, and the
+  mechanical changes grouped at the end, every file in one stop. Comment on a
+  stop's lines, or **Ask about this stop**; a session's comments go to its
+  agent, a pull request's are posted as one review (comment, approve or request
+  changes) on GitHub, or as line discussions, a note and an approval on GitLab. Guides are cached per head commit; a pull request's is
+  written in a detached checkout under `$ARGUS_HOME/review-guides`.
 - **Pull Requests** at the foot of the sidebar: the pull requests that need you across
   your projects, each with its conversation, checks and changes, and opening
   a new one for a session's branch.

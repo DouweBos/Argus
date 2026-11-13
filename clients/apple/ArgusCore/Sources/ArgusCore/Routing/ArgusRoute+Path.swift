@@ -41,6 +41,10 @@ extension ArgusRoute {
     case ("design", 1):
       guard let url = query["url"].flatMap(\.nonEmpty) else { return nil }
       self = .design(url: url, sessionId: query["session"].flatMap(\.nonEmpty))
+    case ("pull-requests", 5...) where parts.last == "guide":
+      // A GitLab project can sit in nested groups: `/pull-requests/group/sub/project/12/guide`.
+      guard let number = Int(parts[parts.count - 2]) else { return nil }
+      self = .pullRequestGuide(repo: parts.dropFirst().dropLast(2).joined(separator: "/"), number: number)
     case ("pull-requests", 4...):
       // A GitLab project can sit in nested groups: `/pull-requests/group/sub/project/12`.
       guard let last = parts.last, let number = Int(last) else { return nil }
@@ -97,6 +101,7 @@ extension ArgusRoute {
     case .usageModels: "/usage/models"
     case .pullRequests: "/pull-requests"
     case .pullRequest(let repo, let number): "/pull-requests/\(repo)/\(number)"
+    case .pullRequestGuide(let repo, let number): "/pull-requests/\(repo)/\(number)/guide"
     case .issues(let scope, let issue, let query):
       Self.issuesBase(scope: scope, query: query) + (issue.map { "/\(Self.encode($0))" } ?? "")
         + Self.query([("q", query)])
@@ -204,6 +209,7 @@ extension GitRoute {
     case "pull-requests": self = .pullRequests
     case "branches-review": self = .branchesReview
     case "interactive-rebase": self = .interactiveRebase(from: query["from"] ?? "")
+    case "guide": self = .guide
     default: return nil
     }
   }

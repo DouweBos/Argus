@@ -13,6 +13,7 @@
 
 import type { MergeStrategy } from "../github/prActions";
 import type { PullRequestDetail } from "../github/prDetail";
+import type { PullRequestReview } from "../github/prReview";
 import type { InterestingPullRequest } from "../github/pullRequests";
 import type { ViewedFile } from "../github/viewedFiles";
 import type {
@@ -22,6 +23,7 @@ import type {
 import { appState } from "../../state";
 import {
   commentOnPullRequest,
+  reviewPullRequest,
   createPullRequest,
   getPullRequestDetail,
   getPullRequestDiff,
@@ -67,6 +69,7 @@ function toRemotePullRequestDetail(
     mergeable: pr.mergeable,
     head_ref: pr.headRefName,
     base_ref: pr.baseRefName,
+    head_sha: pr.commitList.at(-1)?.oid ?? null,
     additions: pr.additions,
     deletions: pr.deletions,
     changed_files: pr.changedFiles,
@@ -192,6 +195,15 @@ export async function mergeRemotePullRequest(
   await mergePullRequest({ owner, repo: name, number, strategy });
 
   return { accepted: true };
+}
+
+export async function reviewRemotePullRequest(
+  repo: string,
+  number: number,
+  review: PullRequestReview,
+): Promise<void> {
+  const { owner, name } = splitRepo(repo);
+  await reviewPullRequest({ owner, repo: name, number, ...review });
 }
 
 export async function commentOnRemotePullRequest(

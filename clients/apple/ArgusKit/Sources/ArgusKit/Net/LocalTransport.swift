@@ -16,7 +16,11 @@ public actor LocalTransport {
   private static let requestTimeout: Duration = .seconds(30)
   /// Commands that legitimately wait longer: a simulator boot waits for the
   /// device to come up, and an EAS Simulator session takes minutes to start.
-  private static let longRequests: [String: Duration] = ["boot_simulator": .seconds(16 * 60)]
+  /// A guide question has Claude read the code before it answers.
+  private static let longRequests: [String: Duration] = [
+    "boot_simulator": .seconds(16 * 60),
+    RemoteMethod.reviewGuidesAsk.rawValue: .seconds(4 * 60),
+  ]
   private static let maxBackoff: Duration = .seconds(5)
 
   public let path: String

@@ -757,6 +757,8 @@ export const RemotePullRequestDetail = z.object({
   mergeable: z.string(),
   head_ref: z.string(),
   base_ref: z.string(),
+  /** The head commit, which a review guide is keyed by; null when GitHub listed no commits. */
+  head_sha: z.string().nullable().default(null),
   additions: z.number(),
   deletions: z.number(),
   changed_files: z.number(),
@@ -771,6 +773,75 @@ export const RemoteViewedFile = z.object({
   state: z.enum(["viewed", "changed"]),
 });
 export type RemoteViewedFile = z.infer<typeof RemoteViewedFile>;
+
+/** Lines a guide stop points at; `old` for lines only the removed side has. */
+export const RemoteReviewGuideRange = z.object({
+  path: z.string(),
+  side: z.enum(["old", "new"]),
+  start: z.number(),
+  end: z.number(),
+});
+export type RemoteReviewGuideRange = z.infer<typeof RemoteReviewGuideRange>;
+
+/** A judgement call the reviewer should make, not just read. */
+export const RemoteReviewGuideFlag = z.object({
+  note: z.string(),
+  path: z.string().nullable(),
+  line: z.number().nullable(),
+});
+export type RemoteReviewGuideFlag = z.infer<typeof RemoteReviewGuideFlag>;
+
+/** One stop on a review guide: what to read, why, and what to judge. */
+export const RemoteReviewGuideStop = z.object({
+  id: z.string(),
+  title: z.string(),
+  /** Markdown: what changed here and why it matters. */
+  summary: z.string(),
+  /** Renames, formatting, generated files: skimmed, grouped at the end. */
+  mechanical: z.boolean(),
+  look_closely: z.array(RemoteReviewGuideFlag),
+  /** Every file this stop covers; each changed file is in exactly one stop. */
+  paths: z.array(z.string()),
+  ranges: z.array(RemoteReviewGuideRange),
+});
+export type RemoteReviewGuideStop = z.infer<typeof RemoteReviewGuideStop>;
+
+export const RemoteReviewGuide = z.object({
+  /** The head the guide was written against, `+<hash>` when it had uncommitted changes. */
+  head_sha: z.string(),
+  base_ref: z.string(),
+  /** Markdown: the change in two or three sentences. */
+  overview: z.string(),
+  stops: z.array(RemoteReviewGuideStop),
+  generated_at: z.string(),
+});
+export type RemoteReviewGuide = z.infer<typeof RemoteReviewGuide>;
+
+/** A session's or pull request's guide, and whether one is being written. */
+export const RemoteReviewGuideState = z.object({
+  status: z.enum(["none", "generating", "ready", "failed"]),
+  /** The newest guide, which may predate the head (`stale`). */
+  guide: RemoteReviewGuide.nullable(),
+  /** The diff has moved on since the guide was written. */
+  stale: z.boolean(),
+  error: z.string().nullable(),
+  started_at: z.string().nullable(),
+  /** The unified diff the guide was written against, so stops show the same hunks. */
+  patch: z.string().nullable(),
+});
+export type RemoteReviewGuideState = z.infer<typeof RemoteReviewGuideState>;
+
+/** An inline comment in a GitHub review: on `line` (and up from `start_line`) of `side`. */
+export const RemotePullRequestReviewComment = z.object({
+  path: z.string(),
+  side: z.enum(["LEFT", "RIGHT"]),
+  line: z.number().int().positive(),
+  start_line: z.number().int().positive().optional(),
+  body: z.string().trim().min(1),
+});
+export type RemotePullRequestReviewComment = z.infer<
+  typeof RemotePullRequestReviewComment
+>;
 
 /** The limits a run is held to, whatever its playbook says. */
 export const RemoteAutomationGuardrails = z.object({

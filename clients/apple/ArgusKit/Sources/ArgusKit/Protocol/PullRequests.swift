@@ -89,6 +89,8 @@ public struct RemotePullRequestDetail: Codable, Hashable, Sendable, Identifiable
   public var mergeable: String
   public var headRef: String
   public var baseRef: String
+  /// The head commit a review guide is keyed by; nil from a host that predates guides.
+  public var headSha: String?
   public var additions: Int
   public var deletions: Int
   public var changedFiles: Int
@@ -107,6 +109,7 @@ public struct RemotePullRequestDetail: Codable, Hashable, Sendable, Identifiable
     case isDraft = "is_draft"
     case headRef = "head_ref"
     case baseRef = "base_ref"
+    case headSha = "head_sha"
     case additions, deletions
     case changedFiles = "changed_files"
   }

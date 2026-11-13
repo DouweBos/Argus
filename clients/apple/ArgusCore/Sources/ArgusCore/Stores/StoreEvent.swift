@@ -126,6 +126,14 @@ public enum StoreEvent: Sendable, Equatable {
     case branch
   }
 
+  /// What was done with a review guide; writing one and asking about a stop the host counts.
+  public enum ReviewGuideAction: String, Sendable {
+    /// A guide was shown.
+    case open
+    /// Every stop on it was looked at.
+    case completed
+  }
+
   /// How work leaves a session.
   public enum LandAction: String, Sendable {
     case commit
@@ -154,5 +162,7 @@ public enum StoreEvent: Sendable, Equatable {
   /// `comments` is how many drafts the session holds once the action is done (sent: how many went).
   case diffReviewed(action: DiffReviewAction, comments: Int)
   case diffScoped(scope: DiffScopeKind)
+  /// `stops` is how many stops the guide has.
+  case reviewGuideUsed(action: ReviewGuideAction, stops: Int)
   case offlineReply(action: OfflineReplyAction)
 }

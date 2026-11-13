@@ -44,6 +44,8 @@ export interface RunClaudePrintOptions {
   env?: NodeJS.ProcessEnv;
   /** Log a failure without telling the user — for one-shots nobody asked for. */
   quiet?: boolean;
+  /** Built-in tools it may use, e.g. `["Read", "Grep", "Glob"]`. Defaults to none. */
+  tools?: string[];
 }
 
 let lastBroadcastAt = 0;
@@ -127,7 +129,7 @@ export async function runClaudePrint(
         "--output-format",
         "json",
         "--tools",
-        "",
+        (opts.tools ?? []).join(","),
         "--setting-sources",
         "",
         "--disable-slash-commands",
@@ -138,7 +140,7 @@ export async function runClaudePrint(
       ],
       {
         timeout: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-        maxBuffer: 1024 * 1024,
+        maxBuffer: 4 * 1024 * 1024,
         cwd: opts.cwd,
         env: opts.env,
       },

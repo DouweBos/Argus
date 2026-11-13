@@ -394,6 +394,7 @@ enum MacTelemetryEvent {
   /// A diff review comment was added or deleted, the review sent or discarded, or an agent asked to review.
   case diffReviewed(action: StoreEvent.DiffReviewAction, comments: Int)
   case diffScoped(scope: StoreEvent.DiffScopeKind)
+  case reviewGuideUsed(action: StoreEvent.ReviewGuideAction, stops: Int)
   /// The code view read a file into a tab; `language` is a bundled grammar or `other`.
   case editorFileOpened(source: EditorOpenSource, language: String, sizeBucket: String, readOnly: Bool)
   case editorFileSaved(formatted: Bool, formatter: EditorFormatter, hadConflict: Bool)
@@ -506,6 +507,7 @@ enum MacTelemetryEvent {
     case .memoryEdited: "mac_memory_edited"
     case .diffReviewed: "mac_diff_reviewed"
     case .diffScoped: "mac_diff_scope_changed"
+    case .reviewGuideUsed: "mac_review_guide_used"
     case .editorFileOpened: "mac_editor_file_opened"
     case .editorFileSaved: "mac_editor_file_saved"
     case .editorConflictResolved: "mac_editor_conflict_resolved"
@@ -709,6 +711,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue, "comment_count": comments]
     case .diffScoped(let scope):
       ["scope": scope.rawValue]
+    case .reviewGuideUsed(let action, let stops):
+      ["action": action.rawValue, "stop_count": stops]
     case .editorFileOpened(let source, let language, let sizeBucket, let readOnly):
       ["source": source.rawValue, "language": language, "size_bucket": sizeBucket, "read_only": readOnly]
     case .editorFileSaved(let formatted, let formatter, let hadConflict):

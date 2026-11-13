@@ -9,6 +9,7 @@ import type { CodeHostKind, RepoRef } from "./remoteUrl";
 import type { GhIssue } from "../github/issues";
 import type { MergeStrategy } from "../github/prActions";
 import type { PullRequestDetail } from "../github/prDetail";
+import type { PullRequestReview } from "../github/prReview";
 import type { PrSnapshot } from "../github/prWatch/snapshot";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -21,6 +22,7 @@ import {
   ghPrMerge,
 } from "../github/prActions";
 import { getPullRequestDetail, getPullRequestDiff } from "../github/prDetail";
+import { ghPrReview } from "../github/prReview";
 import { failedLogExcerpt, fetchPrSnapshot } from "../github/prWatch/fetch";
 import { gitlabJobLogExcerpt } from "../gitlab/jobs";
 import { openMergeRequestForBranch } from "../gitlab/mergeRequests";
@@ -32,6 +34,7 @@ import {
   mergeMergeRequest,
 } from "../gitlab/mrActions";
 import { getMergeRequestDetail, getMergeRequestDiff } from "../gitlab/mrDetail";
+import { reviewMergeRequest } from "../gitlab/mrReview";
 import { fetchMrSnapshot, gitlabBranchChecksClean } from "../gitlab/mrWatch";
 
 const execFileAsync = promisify(execFile);
@@ -59,6 +62,14 @@ export interface CodeHost {
     params: NewPullRequest,
   ) => Promise<{ number: number; url: string }>;
   comment: (ref: RepoRef, number: number, body: string) => Promise<void>;
+  /** Line comments, a summary and a verdict, posted as one review. */
+  review: (
+    ref: RepoRef,
+    number: number,
+    review: PullRequestReview,
+  ) => Promise<void>;
+  /** The ref `git fetch` reads the head from: `pull/12/head`, `merge-requests/12/head`. */
+  headRef: (number: number) => string;
   merge: (
     ref: RepoRef,
     number: number,
@@ -106,6 +117,8 @@ export const githubHost: CodeHost = {
   },
   create: (_ref, cwd, params) => ghPrCreate({ ...params, repoRoot: cwd }),
   comment: (ref, number, body) => ghPrComment({ ...halves(ref), number, body }),
+  review: (ref, number, review) => ghPrReview(ref.path, number, review),
+  headRef: (number) => `pull/${number}/head`,
   merge: (ref, number, strategy) =>
     ghPrMerge({ ...halves(ref), number, strategy }),
   close: (ref, number) => ghPrClose({ ...halves(ref), number }),
@@ -147,6 +160,8 @@ export const gitlabHost: CodeHost = {
   diff: getMergeRequestDiff,
   create: (ref, _cwd, params) => createMergeRequest(ref, params),
   comment: commentOnMergeRequest,
+  review: reviewMergeRequest,
+  headRef: (number) => `merge-requests/${number}/head`,
   merge: mergeMergeRequest,
   close: closeMergeRequest,
   issues: (ref) => listGitlabIssues(ref).catch(() => []),

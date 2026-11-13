@@ -52,6 +52,8 @@ enum Route: Hashable {
   /// A Figma frame in the design viewer, for a session when it has one.
   case design(url: String, sessionId: String?)
   case pullRequest(repo: String, number: Int, label: String)
+  /// A session's or pull request's review guide.
+  case reviewGuide(target: ReviewGuideTarget, label: String)
   case automations
   case automation(id: String, label: String)
   case quickRun
@@ -100,6 +102,9 @@ enum Route: Hashable {
     case .proposal(let id): ArgusRoute.proposal(id: id).pattern
     case .pullRequests: ArgusRoute.pullRequests.pattern
     case .pullRequest(let repo, let number, _): ArgusRoute.pullRequest(repo: repo, number: number).pattern
+    case .reviewGuide(.session(let id), _): ArgusRoute.sessionGit(id: id, view: .guide).pattern
+    case .reviewGuide(.pullRequest(let repo, let number, _), _):
+      ArgusRoute.pullRequestGuide(repo: repo, number: number).pattern
     case .issues: ArgusRoute.issues().pattern
     case .issue(let ref): ArgusRoute.issues(issue: ref).pattern
     case .design(let url, let sessionId): ArgusRoute.design(url: url, sessionId: sessionId).pattern

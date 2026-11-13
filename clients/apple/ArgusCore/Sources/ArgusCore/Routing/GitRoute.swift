@@ -23,6 +23,8 @@ public enum GitRoute: Hashable, Sendable {
   case pullRequests
   case branchesReview
   case interactiveRebase(from: String)
+  /// The review guide: an agent-written tour of the branch's changes.
+  case guide
 
   /// The `:gitView` segment, never a ref name or a path — what telemetry may see.
   public var segment: String {
@@ -44,6 +46,7 @@ public enum GitRoute: Hashable, Sendable {
     case .pullRequests: "pull-requests"
     case .branchesReview: "branches-review"
     case .interactiveRebase: "interactive-rebase"
+    case .guide: "guide"
     }
   }
 
