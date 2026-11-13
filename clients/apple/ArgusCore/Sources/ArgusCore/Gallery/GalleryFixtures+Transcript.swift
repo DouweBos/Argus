@@ -288,6 +288,7 @@ extension GalleryFixtures {
         | iPhone SE | 320pt | 288pt |
         | iPhone 17 Pro Max | 440pt | 408pt |
         | iPad Pro 13" | 1032pt | 700pt |
+        | iPad in Split View | Whatever the other app leaves it, from a third of the screen up to two thirds | The column, or the full width when that is narrower |
 
         Both builds pass. See `clients/apple/ArgusUI/Sources/ArgusUI/Views/AgentTranscriptView.swift:88`.
         """

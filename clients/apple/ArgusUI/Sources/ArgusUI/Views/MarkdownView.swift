@@ -180,15 +180,44 @@ private struct MarkdownTable: View {
   private func row(_ cells: [String], isHeader: Bool) -> some View {
     GridRow(alignment: .top) {
       ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
-        inline(cell)
-          .font(.scaled(size: 13, weight: isHeader ? .semibold : .regular))
-          .frame(maxWidth: 240, alignment: .leading)
-          .fixedSize(horizontal: false, vertical: true)
-          .padding(.horizontal, 8)
+        CappedWidth(maxWidth: 240) {
+          inline(cell)
+            .font(.scaled(size: 13, weight: isHeader ? .semibold : .regular))
+        }
+        .padding(.horizontal, 8)
           .padding(.vertical, 5)
       }
     }
   }
+}
+
+/// Sizes its child to its ideal width capped at `maxWidth`, measuring the height at that width.
+/// A horizontal ScrollView proposes no width, so `.frame(maxWidth:)` measured cells as one line while they rendered wrapped.
+private struct CappedWidth: SwiftUI.Layout {
+  let maxWidth: CGFloat
+
+  func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+    guard let child = subviews.first else { return .zero }
+    let width = min(child.sizeThatFits(.unspecified).width, maxWidth)
+    let height = child.sizeThatFits(ProposedViewSize(width: width, height: nil)).height
+    return CGSize(width: width, height: height)
+  }
+
+  func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+    let width = min(bounds.width, maxWidth)
+    subviews.first?.place(at: bounds.origin, anchor: .topLeading, proposal: ProposedViewSize(width: width, height: nil))
+  }
+}
+
+#Preview("Markdown table with wrapping cells") {
+  MarkdownView(text: """
+    | Area | Legacy | New |
+    |---|---|---|
+    | Invites | Pub-sub (an SSE event stream) is on on phones; an invite triggers a rooms refetch | Same as the legacy app |
+    | Drift | Ahead >1.5 s: play at **0.95×** until <0.1 s; ahead >4 s: seek back | Adjusts both ways |
+    """)
+    .padding()
+    .frame(width: 360)
 }
 
 #Preview("Highlighted code block") {
