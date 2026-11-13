@@ -13,6 +13,14 @@ vi.mock("../llm/runners/claudeCode/transcriptFork", () => ({
 }));
 const liveConversation = vi.fn();
 vi.mock("./conversation/live", () => ({ liveConversation }));
+vi.mock("./agentService", () => ({
+  telemetryRunner: (r: { id: string }) => r.id,
+}));
+vi.mock("./conversation/actions", () => ({
+  historySeed: () => "## Turns\n\n**User:** fix it",
+}));
+
+const CAPS = { capabilities: () => ({ supportsSideQuestion: true }) };
 
 const { appState } = await import("../../state");
 const { capture } = vi.mocked(await import("../telemetry/telemetry"));
@@ -75,7 +83,7 @@ describe("askSideQuestion", () => {
       sessionId: "s1",
       status: "running",
       model: "sonnet",
-      runner: { id: "claude-code" },
+      runner: { id: "claude-code", ...CAPS },
     } as never);
     liveConversation.mockReturnValue({ sessionId: "c1" });
   });
@@ -94,6 +102,7 @@ describe("askSideQuestion", () => {
     expect(capture).toHaveBeenCalledWith("agent_side_question", {
       agent_busy: true,
       duration_bucket: "<10s",
+      runner: "claude-code",
       success: true,
     });
   });
@@ -107,13 +116,46 @@ describe("askSideQuestion", () => {
     expect(execFile).not.toHaveBeenCalled();
   });
 
-  it("refuses an empty question and other runners", async () => {
+  it("refuses an empty question and runners that can't answer", async () => {
     await expect(askSideQuestion("a1", "  ")).rejects.toMatch(/Ask a question/);
     appState.agents.set("a1", {
       ...appState.agents.get("a1")!,
-      runner: { id: "custom" },
+      runner: {
+        id: "custom",
+        displayName: "Custom",
+        capabilities: () => ({ supportsSideQuestion: false }),
+      },
     } as never);
-    await expect(askSideQuestion("a1", "hi")).rejects.toMatch(/Claude Code/);
+    await expect(askSideQuestion("a1", "hi")).rejects.toMatch(/Custom can't/);
+  });
+
+  it("asks other runners through a one-shot on the chat's history", async () => {
+    const oneShot = vi.fn(async () => "In bar.ts.");
+    appState.agents.set("a1", {
+      ...appState.agents.get("a1")!,
+      runner: { id: "codex", oneShot, ...CAPS },
+    } as never);
+    liveConversation.mockReturnValue({
+      sessionId: "thread-1",
+      messages: [{ role: "user" }],
+    });
+
+    await expect(askSideQuestion("a1", "where?")).resolves.toEqual({
+      answer: "In bar.ts.",
+    });
+    expect(execFile).not.toHaveBeenCalled();
+    expect(oneShot).toHaveBeenCalledWith(
+      expect.objectContaining({ cwd: "/wt", model: "sonnet" }),
+    );
+    const { prompt } = (
+      oneShot.mock.calls[0] as unknown as [{ prompt: string }]
+    )[0];
+    expect(prompt).toContain("fix it");
+    expect(prompt.endsWith("where?")).toBe(true);
+    expect(capture).toHaveBeenCalledWith(
+      "agent_side_question",
+      expect.objectContaining({ runner: "codex", success: true }),
+    );
   });
 
   it("reports a CLI error result and a timeout", async () => {

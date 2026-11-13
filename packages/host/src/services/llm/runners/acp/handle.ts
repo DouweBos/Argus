@@ -1,8 +1,8 @@
 /**
  * Runtime handle for one ACP agent subprocess.
  *
- * Holds one ACP session for the agent's lifetime. Prompts run one at a time
- * (ACP has no steering), so a message sent mid-turn waits for the turn to end.
+ * Holds one ACP session for the agent's lifetime. Prompts run one at a time;
+ * ACP has no mid-turn input, so steering cancels the turn and runs next.
  * Permission requests go through Argus's mode policy first and reach the user
  * as the same `permission-request` payload Claude Code's do.
  */
@@ -75,6 +75,7 @@ export class AcpHandle extends EventEmitter implements LlmRunnerHandle {
   private agent: AcpInitializeResult | null = null;
   private sessionId: string | null = null;
   private model: string | null;
+  private effort: string | null = null;
   private mode: CanonicalPermissionMode;
   private settings: AcpSessionSettings | null = null;
   private capabilities: InitializeResponse | null = null;
@@ -140,7 +141,19 @@ export class AcpHandle extends EventEmitter implements LlmRunnerHandle {
   // LlmRunnerHandle
   // -------------------------------------------------------------------------
 
-  send(message: string, images: ImageAttachment[] = []): void {
+  send(
+    message: string,
+    images: ImageAttachment[] = [],
+    opts: { steer?: boolean } = {},
+  ): void {
+    if (opts.steer && this.running) {
+      this.queue.unshift({ message, images });
+      this.interrupt().catch((e) =>
+        warn(`[agent:${this.agentId}] acp steer cancel failed: ${String(e)}`),
+      );
+
+      return;
+    }
     this.queue.push({ message, images });
     this.init.then(() => this.pump()).catch(() => undefined);
   }
@@ -175,8 +188,13 @@ export class AcpHandle extends EventEmitter implements LlmRunnerHandle {
     await this.settings?.applyMode(this.mode);
   }
 
-  async setEffort(): Promise<void> {
-    // ACP has no portable effort setting.
+  async setEffort(level: string | null): Promise<void> {
+    this.effort = level;
+    await this.settings
+      ?.applyEffort(level)
+      .catch((e) =>
+        this.emitStderr(`${this.preset.displayName} kept its effort: ${e}`),
+      );
   }
 
   respondToPermission(decision: PermissionDecisionInput): void {
@@ -275,6 +293,13 @@ export class AcpHandle extends EventEmitter implements LlmRunnerHandle {
         );
     }
     this.model = this.model ?? agentModel;
+    if (this.effort) {
+      await this.settings
+        .applyEffort(this.effort)
+        .catch((e) =>
+          warn(`[agent:${this.agentId}] acp set effort failed: ${String(e)}`),
+        );
+    }
 
     for (const l of this.transcript.init(
       this.sessionId,
@@ -352,6 +377,8 @@ export class AcpHandle extends EventEmitter implements LlmRunnerHandle {
   }
 
   private publishCapabilities(): void {
+    // A thought-level option belongs to the session, so every model offers it.
+    const efforts = this.settings?.effortChoices() ?? [];
     this.capabilities = {
       commands: [],
       agents: [],
@@ -362,7 +389,8 @@ export class AcpHandle extends EventEmitter implements LlmRunnerHandle {
         value: m.value,
         displayName: m.name,
         description: m.description ?? "",
-        supportsEffort: false,
+        supportsEffort: efforts.length > 0,
+        ...(efforts.length > 0 ? { supportedEffortLevels: efforts } : {}),
       })),
     };
     this.emit("capabilities", this.capabilities);

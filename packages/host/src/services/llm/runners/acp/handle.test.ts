@@ -240,6 +240,59 @@ describe("acpHandle", () => {
     ).toHaveLength(2);
   });
 
+  it("steers by cancelling the turn and running the message next", async () => {
+    const agent = fakeAgent({ "session/prompt": () => HOLD });
+    const { h } = handle(agent);
+    await h.waitForInit();
+    h.send("one");
+    h.send("queued");
+    await tick();
+    h.send("now", [], { steer: true });
+    await tick();
+    expect(agent.received.some((m) => m.method === "session/cancel")).toBe(
+      true,
+    );
+    agent.finish("cancelled");
+    await tick();
+    const prompts = agent.received.filter((m) => m.method === "session/prompt");
+    expect(prompts).toHaveLength(2);
+    expect(JSON.stringify(prompts[1]!.params)).toContain('"now"');
+  });
+
+  it("maps effort onto the agent's thought-level option", async () => {
+    const thought = {
+      id: "reasoning",
+      name: "Reasoning",
+      category: "thought_level",
+      type: "select",
+      currentValue: "medium",
+      options: [
+        { value: "low", name: "Low" },
+        { value: "medium", name: "Medium" },
+        { value: "high", name: "High" },
+      ],
+    };
+    const agent = fakeAgent({
+      "session/new": () => ({ sessionId: "s-1", configOptions: [thought] }),
+      "session/set_config_option": () => ({}),
+    });
+    const { h } = handle(agent);
+    await h.setEffort("high");
+    await h.waitForInit();
+    await tick();
+    const sets = () =>
+      agent.received
+        .filter((m) => m.method === "session/set_config_option")
+        .map((m) => m.params?.value);
+    expect(sets()).toEqual(["high"]);
+    expect(h.initializeResponse()?.models).toEqual([]);
+
+    await h.setEffort("max");
+    await h.setEffort(null);
+    // An unknown level is skipped; null goes back to where it started.
+    expect(sets()).toEqual(["high", "medium"]);
+  });
+
   it("asks the user under ask mode and answers with the picked option", async () => {
     const agent = fakeAgent({ "session/prompt": () => HOLD });
     const { h, asks } = handle(agent);

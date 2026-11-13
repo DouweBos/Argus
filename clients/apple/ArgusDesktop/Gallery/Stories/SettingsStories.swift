@@ -101,9 +101,9 @@
       .init(
         id: id, displayName: name,
         capabilities: .init(
-          supportsMcp: true, supportsTranscriptFork: false, supportsSetModel: true,
-          supportsSetPermissionMode: true, supportsSetEffort: false, supportsInterrupt: true,
-          supportsSideQuestion: false),
+          supportsMcp: true, supportsTranscriptFork: true, supportsSetModel: true,
+          supportsSetPermissionMode: true, supportsSetEffort: true, supportsInterrupt: true,
+          supportsSideQuestion: true),
         isCustom: false, models: [])
     }
 

@@ -1,7 +1,9 @@
 /**
  * What a chat continued on another runner starts from: the original request,
  * the last todo list, files touched, command outcomes and as many recent turns
- * as the token budget leaves room for.
+ * as the token budget leaves room for. {@link buildHistorySeed} is the same
+ * digest for a chat rewound, forked or asked about on a runner that can't fork
+ * its own transcript.
  */
 
 import type {
@@ -211,6 +213,54 @@ function recentTurns(
   }
 
   return { text: picked.reverse().join("\n\n"), omitted: i + 1 };
+}
+
+/**
+ * The chat so far, for an agent that starts with none of it: a rewind or fork
+ * on a runner with no transcript fork, or a side question. Inline only, since
+ * the source transcript may hold turns past the point this one starts from.
+ */
+export function buildHistorySeed(
+  messages: ConversationMessage[],
+  runnerName: string,
+  budgetTokens = INLINE_SEED_TOKENS,
+): Seed {
+  const budget = budgetTokens * CHARS_PER_TOKEN;
+  const calls = allCalls(messages);
+  const sections: string[] = [];
+  const add = (title: string, body: string | null, maxChars: number) => {
+    if (body) {
+      sections.push(`## ${title}\n\n${clip(body, maxChars)}`);
+    }
+  };
+  add("Original request", originalRequest(messages), budget * 0.2);
+  add("Files changed", filesSection(calls), budget * 0.06);
+  add("Commands run (oldest first)", commandsSection(calls), budget * 0.16);
+  const spent = sections.reduce((n, s) => n + s.length + 2, 0);
+  const turns = recentTurns(
+    messages,
+    runnerName,
+    Math.max(budget - spent, budget * 0.2),
+  );
+  if (turns.text) {
+    const note =
+      turns.omitted > 0
+        ? `_${turns.omitted} earlier message${turns.omitted === 1 ? "" : "s"} left out._\n\n`
+        : "";
+    sections.push(`## Turns\n\n${note}${turns.text}`);
+  }
+
+  return { text: sections.join("\n\n"), omittedMessages: turns.omitted };
+}
+
+/** A history seed ahead of the first message an agent gets after it. */
+export function withHistorySeed(seed: string, message: string): string {
+  return (
+    "<conversation-so-far>\n" +
+    "This conversation started before you joined it; this is what was said and done up to now. " +
+    "Treat it as your own history, check the worktree before relying on it, and answer the message after it.\n\n" +
+    `${seed}\n</conversation-so-far>\n\n${message}`
+  );
 }
 
 export function buildHandoffSeed(input: SeedInput): Seed {

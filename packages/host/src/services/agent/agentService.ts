@@ -104,6 +104,7 @@ import {
 } from "./limitResume";
 import { resultSubtype } from "./models";
 import { adoptPinOnResume, isPinned, refreshPin } from "./pins/pins";
+import { withHistorySeed } from "./runnerHandoff/seed";
 import {
   buildRuntimeSection,
   deviceControlEnabled,
@@ -1261,18 +1262,22 @@ export function onStreamLine(agentId: string, line: string): void {
 
 export async function restoreAgentAtTurn(args: {
   agentId: string;
-  sourceClaudeSessionId: string;
+  sourceClaudeSessionId: string | null;
   keepTurnNumber: number;
   cutoffTimestampMs: number;
+  /** History to start from when the runner can't fork natively. */
+  seed?: string;
 }): Promise<{ claude_session_id: string | null }> {
   const session = appState.agents.get(args.agentId);
   if (!session) {
     throw `No agent found: ${args.agentId}`;
   }
-
-  if (!session.runner.forkTranscript) {
+  const forkTranscript = session.runner.forkTranscript;
+  if (!forkTranscript && args.seed === undefined) {
     throw `Restore-at-turn is not supported by runner "${session.runner.id}"`;
   }
+  const onClaude =
+    (session.runner.baseRunnerId ?? session.runner.id) === "claude-code";
 
   const sessionId = session.sessionId;
   const argusSession = appState.sessions.get(sessionId);
@@ -1292,23 +1297,34 @@ export async function restoreAgentAtTurn(args: {
   await oldHandle.kill();
   oldHandle.cleanup();
 
-  // Fork the transcript via the runner.
+  // Fork the transcript via the runner, or fall back to seeding the history.
   let newClaudeSessionId: string | null = null;
+  let seeded = false;
   if (args.keepTurnNumber > 0) {
-    const forked = await session.runner.forkTranscript({
-      sourceCwd: argusSession.path,
-      sourceRef: args.sourceClaudeSessionId,
-      destCwd: argusSession.path,
-      destBranch: argusSession.branch,
-      cutoffTimestampMs: args.cutoffTimestampMs,
-      keepTurnNumber: args.keepTurnNumber,
-    });
+    const sourceRef = args.sourceClaudeSessionId;
+    const forked =
+      forkTranscript && sourceRef
+        ? await forkTranscript({
+            sourceCwd: argusSession.path,
+            sourceRef,
+            destCwd: argusSession.path,
+            destBranch: argusSession.branch,
+            cutoffTimestampMs: args.cutoffTimestampMs,
+            keepTurnNumber: args.keepTurnNumber,
+          }).catch((e: unknown) => {
+            warn(`[agent:${args.agentId}] native fork failed: ${String(e)}`);
+
+            return { resumeRef: null };
+          })
+        : { resumeRef: null };
     newClaudeSessionId = forked.resumeRef;
-    if (!newClaudeSessionId) {
+    seeded = !newClaudeSessionId && args.seed !== undefined;
+    if (!newClaudeSessionId && !seeded) {
       session.suppressStatus = false;
       throw "Failed to truncate Claude session JSONL — nothing to resume";
     }
-
+  }
+  if (newClaudeSessionId && onClaude && args.sourceClaudeSessionId) {
     // Delete the old JSONL now that the new one is written.
     try {
       const oldFile = path.join(
@@ -1341,16 +1357,19 @@ export async function restoreAgentAtTurn(args: {
   telemetryCapture("agent_restored", {
     is_fresh_start: args.keepTurnNumber === 0,
     keep_turn_number: args.keepTurnNumber,
+    runner: telemetryRunner(session.runner),
+    history: seeded ? "seeded" : "native",
   });
 
   const fresh = appState.agents.get(args.agentId);
   if (fresh) {
     fresh.suppressStatus = false;
     fresh.status = "running";
+    fresh.pendingSeed = seeded ? args.seed : undefined;
   }
 
   // Verify the truncated JSONL.
-  if (newClaudeSessionId) {
+  if (newClaudeSessionId && onClaude) {
     try {
       const fs = await import("node:fs");
       const newFile = path.join(
@@ -1707,6 +1726,7 @@ export function sendAgentMessage(
   agentId: string,
   message: string,
   images?: ImageAttachment[],
+  opts: { steer?: boolean } = {},
 ): void {
   const agentEntry = appState.agents.get(agentId);
   if (!agentEntry) {
@@ -1720,7 +1740,7 @@ export function sendAgentMessage(
   const pendingRespawn = respawning.get(agentId);
   if (pendingRespawn) {
     pendingRespawn
-      .then(() => sendAgentMessage(agentId, message, images))
+      .then(() => sendAgentMessage(agentId, message, images, opts))
       .catch((e) => {
         warn(`[agent:${agentId}] message after respawn failed: ${String(e)}`);
       });
@@ -1740,8 +1760,14 @@ export function sendAgentMessage(
     }
   }
 
+  // A slash command has to stay first; the seed rides the next message.
+  const seed = trimmed.startsWith("/") ? undefined : agentEntry.pendingSeed;
+  const outgoing = seed ? withHistorySeed(seed, message) : message;
   try {
-    agentEntry.handle.send(message, images ?? []);
+    agentEntry.handle.send(outgoing, images ?? [], opts);
+    if (seed) {
+      agentEntry.pendingSeed = undefined;
+    }
   } catch (e) {
     throw `Failed to write to agent stdin: ${String(e)}`;
   }

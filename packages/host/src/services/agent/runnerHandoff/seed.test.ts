@@ -8,7 +8,9 @@ import {
   INLINE_SEED_TOKENS,
   MCP_SEED_TOKENS,
   buildHandoffSeed,
+  buildHistorySeed,
   estimateTokens,
+  withHistorySeed,
 } from "./seed";
 
 function msg(
@@ -121,5 +123,27 @@ describe("buildHandoffSeed", () => {
     });
 
     expect(text).toContain("error TS2322: boom");
+  });
+});
+
+describe("buildHistorySeed", () => {
+  it("keeps the chat inline, with no transcript tool to page past the cut", () => {
+    const { text } = buildHistorySeed(
+      [
+        msg("user", "Add a login page"),
+        msg("assistant", "Done", [bash("pnpm test", "ok")]),
+      ],
+      "Gemini CLI",
+    );
+    expect(text).toContain("Add a login page");
+    expect(text).toContain("**Gemini CLI:** Done");
+    expect(text).toContain("`pnpm test` → ok");
+    expect(text).not.toContain("read_agent_transcript");
+  });
+
+  it("puts the seed ahead of the message it rides on", () => {
+    const sent = withHistorySeed("HISTORY", "Now try again");
+    expect(sent.indexOf("HISTORY")).toBeLessThan(sent.indexOf("Now try"));
+    expect(sent.endsWith("Now try again")).toBe(true);
   });
 });

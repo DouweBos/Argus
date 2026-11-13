@@ -124,7 +124,10 @@ export interface LlmRunnerSpawnArgs {
 export interface RunnerCapabilities {
   /** Whether the runner accepts an `--mcp-config` style server map. */
   supportsMcp: boolean;
-  /** Whether the runner supports forking a transcript at a turn (resume). */
+  /**
+   * Whether a chat can be rewound or forked at a turn: natively through
+   * `forkTranscript`, or by seeding a fresh agent with the history.
+   */
   supportsTranscriptFork: boolean;
   /** Whether the runner supports mid-session model switching. */
   supportsSetModel: boolean;
@@ -134,7 +137,7 @@ export interface RunnerCapabilities {
   supportsSetEffort: boolean;
   /** Whether the runner supports a graceful interrupt without killing. */
   supportsInterrupt: boolean;
-  /** Whether a running agent can be asked a side question (a forked read-only run). */
+  /** Whether a running agent can be asked a side question (a read-only run on its history). */
   supportsSideQuestion: boolean;
 }
 
@@ -184,8 +187,16 @@ export interface LlmRunnerHandle {
     ((event: "permission-request", cb: (payload: unknown) => void) => void) &
     ((event: "stderr", cb: (line: string) => void) => void) &
     ((event: "stream-event", cb: (line: string) => void) => void);
-  /** Send a user prompt + optional image attachments. */
-  send: (message: string, images?: ImageAttachment[]) => void;
+  /**
+   * Send a user prompt + optional image attachments. `steer` asks for it to
+   * reach the turn in flight now; a runner that can't inject mid-turn cancels
+   * the turn and runs it next.
+   */
+  send: (
+    message: string,
+    images?: ImageAttachment[],
+    opts?: { steer?: boolean },
+  ) => void;
   /** Gracefully interrupt the in-flight turn (process stays alive). */
   interrupt: () => Promise<void>;
   /** Switch the active model mid-session. */
@@ -288,6 +299,8 @@ export interface ForkTranscriptArgs {
   cutoffTimestampMs: number;
   /** Real user-turn index to keep through (inclusive). */
   keepTurnNumber: number;
+  /** Environment for any helper process the fork needs. */
+  env?: NodeJS.ProcessEnv;
 }
 
 export interface LlmRunner {
@@ -310,7 +323,10 @@ export interface LlmRunner {
   spawn: (args: LlmRunnerSpawnArgs) => Promise<LlmRunnerHandle>;
   /** One-shot title/slug invocation (replaces direct claudePrint). */
   oneShot: (args: OneShotArgs) => Promise<string | null>;
-  /** Optional: fork transcript at turn boundary. */
+  /**
+   * Optional: fork the transcript natively at a turn boundary. Without it (or
+   * when it fails) a rewind or fork seeds a fresh agent with the history.
+   */
   forkTranscript?: (
     args: ForkTranscriptArgs,
   ) => Promise<{ resumeRef: string | null }>;

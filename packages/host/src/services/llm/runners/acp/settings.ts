@@ -22,6 +22,7 @@ export class AcpSessionSettings {
   private readonly models: AcpModelInfo[];
   private readonly initialModelId: string | null;
   private config: AcpConfigOption[];
+  private readonly initialEffort: string | null;
 
   constructor(
     private readonly rpc: JsonRpcPeer,
@@ -36,6 +37,8 @@ export class AcpSessionSettings {
     this.models = session.models?.availableModels ?? [];
     this.initialModelId = session.models?.currentModelId ?? null;
     this.config = session.configOptions ?? [];
+    const effort = this.effortOption()?.currentValue;
+    this.initialEffort = typeof effort === "string" ? effort : null;
   }
 
   /** The model the agent is on, as far as it has said. */
@@ -48,9 +51,7 @@ export class AcpSessionSettings {
   modelChoices(): AcpConfigSelectOption[] {
     const option = this.modelOption();
     if (option) {
-      return (option.options ?? []).flatMap((o) =>
-        "options" in o ? o.options : [o],
-      );
+      return flatChoices(option);
     }
 
     return this.models.map((m) => ({
@@ -58,6 +59,23 @@ export class AcpSessionSettings {
       name: m.name,
       description: m.description,
     }));
+  }
+
+  /** The agent's reasoning levels, when it exposes a `thought_level` option. */
+  effortChoices(): string[] {
+    return flatChoices(this.effortOption()).map((o) => o.value);
+  }
+
+  /** Sets the agent's thought level; null puts back the one it started on. */
+  async applyEffort(level: string | null): Promise<void> {
+    const option = this.effortOption();
+    if (!option) {
+      return;
+    }
+    const value = level ?? this.initialEffort;
+    if (value && this.effortChoices().includes(value)) {
+      await this.setConfig(option.id, value);
+    }
   }
 
   hasPlanMode(): boolean {
@@ -116,6 +134,14 @@ export class AcpSessionSettings {
     );
   }
 
+  private effortOption(): AcpConfigOption | null {
+    return (
+      this.config.find(
+        (o) => o.category === "thought_level" && o.type === "select",
+      ) ?? null
+    );
+  }
+
   private targetModeId(mode: CanonicalPermissionMode): string | null {
     const wanted = [this.preset.modeIds?.[mode] ?? []].flat();
     const preset = wanted.find((id) => this.modes.some((m) => m.id === id));
@@ -148,4 +174,10 @@ export class AcpSessionSettings {
       this.config = res.configOptions;
     }
   }
+}
+
+function flatChoices(option: AcpConfigOption | null): AcpConfigSelectOption[] {
+  return (option?.options ?? []).flatMap((o) =>
+    "options" in o ? o.options : [o],
+  );
 }

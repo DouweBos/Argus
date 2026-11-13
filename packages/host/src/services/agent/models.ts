@@ -170,6 +170,11 @@ export interface AgentSession {
   /** Effort last set on the agent; null keeps the model's default. Carried into a fork or resume. */
   effort?: string | null;
   /**
+   * History the agent started without (a rewind or fork its runner couldn't
+   * fork natively), sent ahead of its next message.
+   */
+  pendingSeed?: string;
+  /**
    * Mode the agent was in immediately before transitioning into `plan` —
    * stashed so that approving `ExitPlanMode` can restore the pre-plan mode
    * (e.g. `auto`) instead of leaving the agent stuck in the CLI's post-plan

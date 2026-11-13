@@ -1,7 +1,8 @@
 /**
  * Side questions: ask a running agent something without touching its turn.
- * A forked, read-only, unpersisted `claude -p` reads the agent's transcript
- * and answers; nothing is written back to the conversation the agent works from.
+ * On stock Claude Code a forked, read-only, unpersisted `claude -p` reads the agent's
+ * transcript; other runners get a read-only one-shot seeded with the chat.
+ * Nothing is written back to the conversation the agent works from.
  */
 
 import { execFile } from "node:child_process";
@@ -13,6 +14,8 @@ import {
 } from "../claudeAuth/accounts";
 import { ensureClaudeTranscriptAt } from "../llm/runners/claudeCode/transcriptFork";
 import { capture } from "../telemetry/telemetry";
+import { telemetryRunner } from "./agentService";
+import { historySeed } from "./conversation/actions";
 import { liveConversation } from "./conversation/live";
 
 const TIMEOUT_MS = 180_000;
@@ -85,15 +88,18 @@ export async function askSideQuestion(
   if (!agent) {
     throw `Agent not found: ${agentId}`;
   }
-  if (agent.runner.id !== "claude-code") {
-    throw "Side questions need a Claude Code agent";
+  if (!agent.runner.capabilities().supportsSideQuestion) {
+    throw `${agent.runner.displayName} can't answer side questions`;
   }
   const session = appState.sessions.get(agent.sessionId);
   if (!session) {
     throw `Session not found: ${agent.sessionId}`;
   }
-  const claudeSessionId = liveConversation(agentId)?.sessionId;
-  if (!claudeSessionId) {
+  const conversation = liveConversation(agentId);
+  const claudeSessionId = conversation?.sessionId;
+  // A custom runner's gateway env lives in its one-shot, not in `claude`'s.
+  const claude = agent.runner.id === "claude-code";
+  if (claude ? !claudeSessionId : !conversation?.messages.length) {
     throw "This agent has no conversation to ask about yet";
   }
 
@@ -103,9 +109,30 @@ export async function askSideQuestion(
     capture("agent_side_question", {
       agent_busy: busy,
       duration_bucket: durationBucket(Date.now() - started),
+      runner: telemetryRunner(agent.runner),
       success,
     });
+  const env = envForAccount(
+    agent.accountId ?? resolveAccountForSession(session),
+  );
   try {
+    if (!claude || !claudeSessionId) {
+      const answer = await agent.runner.oneShot({
+        prompt: `${historySeed(conversation?.messages ?? [], agent.runner)}\n\n## Side question\n\n${text}`,
+        systemPrompt: SYSTEM_PROMPT,
+        cwd: session.path,
+        model: agent.model ?? undefined,
+        env,
+        timeoutMs: TIMEOUT_MS,
+        source: "side_question",
+      });
+      if (!answer) {
+        throw "The side question got no answer";
+      }
+      report(true);
+
+      return { answer };
+    }
     try {
       ensureClaudeTranscriptAt(session.path, claudeSessionId);
     } catch {
@@ -121,9 +148,7 @@ export async function askSideQuestion(
         }),
         {
           cwd: session.path,
-          env: envForAccount(
-            agent.accountId ?? resolveAccountForSession(session),
-          ),
+          env,
           timeout: TIMEOUT_MS,
           maxBuffer: 4 * 1024 * 1024,
         },

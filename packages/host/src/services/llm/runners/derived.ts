@@ -35,6 +35,11 @@ export class DerivedRunner implements LlmRunner {
     this.id = config.id;
     this.displayName = config.displayName;
     this.baseRunnerId = base.id;
+    const fork = base.forkTranscript?.bind(base);
+    if (fork) {
+      this.forkTranscript = (args) =>
+        fork({ ...args, env: this.applyEnv(args.env ?? process.env) });
+    }
   }
 
   capabilities(): RunnerCapabilities {
@@ -78,15 +83,10 @@ export class DerivedRunner implements LlmRunner {
     });
   }
 
-  async forkTranscript(
+  /** Absent when the base has none, so callers fall back to a seed. */
+  readonly forkTranscript?: (
     args: ForkTranscriptArgs,
-  ): Promise<{ resumeRef: string | null }> {
-    if (!this.base.forkTranscript) {
-      throw `${this.displayName} does not support restoring a conversation`;
-    }
-
-    return this.base.forkTranscript(args);
-  }
+  ) => Promise<{ resumeRef: string | null }>;
 
   async latestTranscriptRef(cwd: string): Promise<string | null> {
     return (await this.base.latestTranscriptRef?.(cwd)) ?? null;

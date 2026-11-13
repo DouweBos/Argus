@@ -18,6 +18,7 @@ import { restoreAgentAtTurn, sendAgentMessage } from "../agentService";
 import { createCheckpoint, restoreCheckpoint } from "../checkpoints";
 import { clearQueue, enqueueMessage, listQueue } from "../messageQueue";
 import { runnerCommandFor } from "../runnerCommand";
+import { buildHistorySeed } from "../runnerHandoff/seed";
 import {
   changeConversation,
   isFolding,
@@ -146,7 +147,8 @@ function indexOfMessage(conv: AgentConversation, messageId: string): number {
 
 /**
  * Rewind the agent to just before one of the user's messages: the transcript
- * is cut there, the CLI respawns on a transcript forked at that turn, and the
+ * is cut there, the CLI respawns on a transcript forked at that turn (or, on a
+ * runner that can't fork, fresh with the history before it as a seed), and the
  * queue (written against turns that no longer exist) is dropped. `resend`
  * sends an edited message in its place; `restoreFiles` also puts the worktree
  * back to the message's checkpoint.
@@ -163,10 +165,7 @@ export async function rewindAgent(
   // Before the transcript is cut: a refusal afterwards would lose turns.
   requireTranscriptFork(agent.runner);
   const conv = requireConversation(agentId);
-  const claudeSessionId = conv.sessionId;
-  if (!claudeSessionId) {
-    throw "Session is missing a Claude session id to restore from";
-  }
+  const claudeSessionId = conv.sessionId ?? null;
   const idx = indexOfMessage(conv, messageId);
   const target = conv.messages[idx]!;
   if (target.role !== "user") {
@@ -208,6 +207,7 @@ export async function rewindAgent(
     sourceClaudeSessionId: claudeSessionId,
     keepTurnNumber: userTurnsBefore(conv.messages, idx),
     cutoffTimestampMs: target.timestamp,
+    seed: historySeed(conv.messages.slice(0, idx), agent.runner),
   });
   if (options.restoreFiles && target.checkpointId) {
     await restoreCheckpoint(agent.sessionId, target.checkpointId);
@@ -226,11 +226,24 @@ export async function rewindAgent(
   };
 }
 
-/** Rewind and fork both rebuild the CLI's transcript; Codex can't. */
+/** Rewind and fork rebuild the CLI's transcript, natively or from a seed. */
 export function requireTranscriptFork(runner: LlmRunner): void {
   if (!runner.capabilities().supportsTranscriptFork) {
     throw `${runner.displayName} can't rewind or fork a conversation`;
   }
+}
+
+/** Claude Code replays its last turn on `--resume`; other runners don't. */
+export function isClaudeRunner(runner: LlmRunner): boolean {
+  return (runner.baseRunnerId ?? runner.id) === "claude-code";
+}
+
+/** The history up to a point, for an agent that starts without it. */
+export function historySeed(
+  messages: ConversationMessage[],
+  runner: LlmRunner,
+): string {
+  return buildHistorySeed(messages, runner.displayName).text;
 }
 
 export interface AgentForkPoint {
@@ -262,14 +275,26 @@ export function agentForkPoint(
   };
 }
 
+/** The chat through the fork message, for a runner that can't fork natively. */
+export function forkSeed(agentId: string, messageId: string): string {
+  const conv = requireConversation(agentId);
+  const idx = indexOfMessage(conv, messageId);
+
+  return historySeed(
+    conv.messages.slice(0, idx + 1),
+    requireAgent(agentId).runner,
+  );
+}
+
 /**
  * Give a freshly started fork the history up to and including the fork
- * message. `resuming` skips the turn the CLI replays on `--resume`.
+ * message. `replays` skips the turn Claude Code replays on `--resume`.
  */
 export function seedForkedConversation(
   agentId: string,
   from: { agentId: string; throughMessageId: string },
   resumeSessionId: string | undefined,
+  replays = resumeSessionId != null,
 ): void {
   const source = requireConversation(from.agentId);
   const idx = indexOfMessage(source, from.throughMessageId);
@@ -278,7 +303,7 @@ export function seedForkedConversation(
     fromSavedMessages(source.messages.slice(0, idx + 1), {
       model: source.model,
       sessionId: resumeSessionId,
-      resuming: resumeSessionId != null,
+      resuming: replays,
       title: source.title,
     }),
   );

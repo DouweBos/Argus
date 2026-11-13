@@ -94,6 +94,17 @@ export interface CodexTurn {
   durationMs: number | null;
 }
 
+/** A turn as `thread/read` returns it with `includeTurns`. */
+export interface CodexTurnWithItems {
+  id: string;
+  status: CodexTurn["status"];
+  items?: { type: string }[];
+}
+
+export interface CodexThreadReadResponse {
+  thread: { id: string; turns?: CodexTurnWithItems[] };
+}
+
 export interface CodexModel {
   id: string;
   model: string;

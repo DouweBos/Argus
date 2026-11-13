@@ -263,9 +263,12 @@ and approval policy:
 | **Plan**    | read-only       | nothing — it can't change anything       |
 | **Trusted** | full access     | nothing                                  |
 
-A few things stay Claude Code only, and are hidden on Codex chats: editing or
-forking from an earlier message, and side questions. Codex reports tokens
-but not spend, so a Codex chat's cost reads $0.
+Editing or forking from an earlier message uses Codex's own thread fork, so
+the new chat picks up exactly where that turn left off; when Codex can't fork
+there (a message sent into the middle of a running turn), the new chat starts
+with the conversation up to that point instead. Side questions run as a
+read-only Codex call that sees the chat so far. Codex reports tokens but not
+spend, so a Codex chat's cost reads $0.
 
 ### ACP agents
 
@@ -301,9 +304,14 @@ Plan mode switches the agent into its own plan mode when it has one. Picking
 **Always allow** on a prompt keeps the approval for the rest of the session
 (Kiro, OpenCode and Grok Build save those project-wide, so there it only allows once).
 
-Things that differ from Claude Code, and are hidden on ACP chats: editing or
-forking from an earlier message, side questions and the effort picker. A
-message sent while the agent is busy waits for its turn to end. The Argus MCP
+Editing or forking from an earlier message, and side questions, work too. ACP
+can't fork a conversation at an earlier turn, so the new chat starts a fresh
+session that gets the conversation up to that point with its first message,
+and a side question is a read-only session that sees the chat so far. The
+effort picker shows when the agent offers a reasoning level, with the levels
+it offers. **Send now** on a queued message stops the agent's current turn
+and sends the message straight away, since ACP agents can't take a message
+mid-turn. The Argus MCP
 tools reach every agent: ones that only take stdio MCP servers (Cursor, so far)
 get them through a small bridge Argus ships, along with any other HTTP MCP
 servers you've configured. Resuming a chat needs the agent to support it; one that can't

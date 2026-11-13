@@ -3,8 +3,8 @@
  * configured by an {@link AcpPreset} per vendor (Gemini CLI, Antigravity,
  * Kiro, ...).
  *
- * No transcript fork or side questions: both lean on Claude Code's on-disk
- * transcript, and the capabilities say so.
+ * ACP can't fork a session at an earlier turn, so rewinds, forks and side
+ * questions start a fresh session seeded with the chat's history.
  */
 
 import type { AcpPreset } from "./preset";
@@ -44,12 +44,12 @@ export class AcpRunner implements LlmRunner {
   capabilities(): RunnerCapabilities {
     return {
       supportsMcp: true,
-      supportsTranscriptFork: false,
+      supportsTranscriptFork: true,
       supportsSetModel: true,
       supportsSetPermissionMode: true,
-      supportsSetEffort: false,
+      supportsSetEffort: true,
       supportsInterrupt: true,
-      supportsSideQuestion: false,
+      supportsSideQuestion: true,
     };
   }
 

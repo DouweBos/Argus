@@ -151,9 +151,19 @@ export interface EventMap {
     missing_count: number;
     failed_count: number;
   };
+  /** A chat was forked from one of its messages into a new agent. */
+  agent_chat_forked: {
+    /** `native`: the runner forked its own transcript; `seeded`: the history went in as text. */
+    history: "native" | "seeded";
+    into: "agent" | "session";
+    runner: TelemetryRunner;
+  };
   agent_restored: {
+    /** `native`: the runner forked its own transcript; `seeded`: the history went in as text. */
+    history: "native" | "seeded";
     is_fresh_start: boolean;
     keep_turn_number: number;
+    runner: TelemetryRunner;
   };
   commit_message_drafted: {
     style: "conventions" | "custom";
@@ -168,6 +178,7 @@ export interface EventMap {
     /** The agent was mid-turn when asked. */
     agent_busy: boolean;
     duration_bucket: "<10s" | "10-30s" | "30-90s" | "90s+";
+    runner: TelemetryRunner;
     success: boolean;
   };
   agent_started: {

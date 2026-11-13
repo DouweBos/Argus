@@ -99,9 +99,18 @@ public enum GalleryFixtures {
             "id": "claude-code", "display_name": "Claude Code", "is_custom": false, "models": [],
             "reported_models": models,
           ],
-          ["id": "codex", "display_name": "Codex", "is_custom": false, "models": []],
-          ["id": "gemini", "display_name": "Gemini CLI", "is_custom": false, "models": []],
-          ["id": "cursor", "display_name": "Cursor", "is_custom": false, "models": []],
+          [
+            "id": "codex", "display_name": "Codex", "is_custom": false, "models": [],
+            "supports_transcript_fork": true, "supports_side_question": true,
+          ],
+          [
+            "id": "gemini", "display_name": "Gemini CLI", "is_custom": false, "models": [],
+            "supports_transcript_fork": true, "supports_side_question": true,
+          ],
+          [
+            "id": "cursor", "display_name": "Cursor", "is_custom": false, "models": [],
+            "supports_transcript_fork": true, "supports_side_question": true,
+          ],
           [
             "id": "kiro", "display_name": "Kiro", "is_custom": false, "models": [], "available": false,
             "unavailable_reason": "Install the Kiro CLI.",

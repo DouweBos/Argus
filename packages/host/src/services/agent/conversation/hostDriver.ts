@@ -474,7 +474,7 @@ function sendMidTurn(agentId: string, entry: Tracked): void {
     return;
   }
   // Sent before the dequeue, so a failed write leaves it queued.
-  sendAgentMessage(agentId, next.text, next.images);
+  sendAgentMessage(agentId, next.text, next.images, { steer: true });
   entry.inflight = true;
   dequeueMessage(agentId);
   userMessage(agentId, entry, next.display_text ?? next.text, {

@@ -2,11 +2,12 @@
  * Codex runner: OpenAI's Codex CLI driven over `codex app-server`'s JSON-RPC
  * protocol, behind the runner-agnostic {@link LlmRunner} interface.
  *
- * No transcript fork (restore-at-turn) or side questions: both lean on Claude
- * Code's on-disk transcript, and the capabilities say so.
+ * Rewinds and forks go through Codex's own `thread/fork`; side questions run
+ * as a read-only `codex exec` on the chat's history.
  */
 
 import type {
+  ForkTranscriptArgs,
   LlmRunner,
   LlmRunnerHandle,
   LlmRunnerSpawnArgs,
@@ -21,6 +22,7 @@ import { promisify } from "node:util";
 import { info } from "@argus/host/logger";
 import { hostPlatform } from "@argus/host/platform";
 import { runAuthProbe } from "../authProbe";
+import { forkCodexThread } from "./fork";
 import { CODEX_RUNNER_ID, CodexHandle } from "./handle";
 import { toCodexMcpServers } from "./mcpConfig";
 import { runCodexExec } from "./oneShot";
@@ -37,12 +39,12 @@ export class CodexRunner implements LlmRunner {
   capabilities(): RunnerCapabilities {
     return {
       supportsMcp: true,
-      supportsTranscriptFork: false,
+      supportsTranscriptFork: true,
       supportsSetModel: true,
       supportsSetPermissionMode: true,
       supportsSetEffort: true,
       supportsInterrupt: true,
-      supportsSideQuestion: false,
+      supportsSideQuestion: true,
     };
   }
 
@@ -104,6 +106,12 @@ export class CodexRunner implements LlmRunner {
 
   async oneShot(args: OneShotArgs): Promise<string | null> {
     return runCodexExec(CODEX_BIN, args);
+  }
+
+  async forkTranscript(
+    args: ForkTranscriptArgs,
+  ): Promise<{ resumeRef: string | null }> {
+    return forkCodexThread(CODEX_BIN, args);
   }
 }
 
