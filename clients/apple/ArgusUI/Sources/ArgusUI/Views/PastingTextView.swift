@@ -177,6 +177,10 @@
       view.delegate?.textViewDidChange?(view)
     }
 
+    func restore(_ text: String) {
+      textView?.text = text
+    }
+
     func focus() {
       textView?.becomeFirstResponder()
     }

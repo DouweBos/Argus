@@ -5,7 +5,7 @@ import Foundation
 /// Sending, queueing and starting, the draft's load and save, and attachments.
 extension ComposerModel {
   public func submit(redirect: ComposerStarter? = nil) {
-    guard isEnabled, hasContent || sendTarget(redirect: redirect)?.needsContent == false else { return }
+    guard isEnabled, !dictation.isActive, hasContent || sendTarget(redirect: redirect)?.needsContent == false else { return }
     let typed = trimmedText
 
     // Handled here rather than sent to the CLI, as on the desktop.

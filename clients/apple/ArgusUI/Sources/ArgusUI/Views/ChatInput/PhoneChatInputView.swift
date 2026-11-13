@@ -46,6 +46,9 @@
         {
           LimitHandoffCard(agentId: composer.agentId, accounts: handoffAccounts ?? []) { handoffAccounts = [] }
         }
+        if let failure = composer.dictation.failure {
+          Banner(text: failure, actionLabel: "Dismiss") { composer.dismissDictationError() }
+        }
         if !composer.slashItems.isEmpty {
           PhoneSlashList(commands: composer.slashItems) { composer.acceptSlash($0) }
         } else if !composer.mentionItems.isEmpty {
@@ -70,6 +73,7 @@
       // Runs to the bottom edge, so it fills the home-indicator strip as the keyboard moves.
       .background(theme.bg.ignoresSafeArea(edges: .bottom))
       .task(id: composer.agentId) { await composer.load() }
+      .onDisappear { composer.stopDictation() }
       // Which affordances the agent's runner supports.
       .task { await host.loadRunners() }
       .limitHandoffOffer(agentId: composer.agentId, status: composer.status, into: $handoffAccounts)
@@ -131,6 +135,8 @@
         if composer.contextTokens > 0 {
           ContextMeter(tokens: composer.contextTokens, limit: composer.contextLimit)
         }
+        DictationButton(phase: composer.dictation, size: 34) { composer.toggleDictation() }
+          .disabled(!composer.isEnabled)
         if composer.offersImagesAndEffort {
           Button { showingAttachMenu = true } label: { Label("Attach images", systemImage: Icon.paperclip) }
             .buttonStyle(FlatIconButtonStyle(size: 34))
@@ -164,6 +170,7 @@
     /// "Message" while empty; otherwise a command's argument hint or the rest of a follow-up, as ghost text.
     private var placeholder: Text? {
       if composer.text.isEmpty {
+        if let listening = composer.dictation.placeholder { return Text(listening).foregroundStyle(theme.textMuted) }
         let ghost =
           !composer.isEnabled
           ? "Agent is not running" : (redirect ?? composer.starter)?.placeholder ?? "Ask anything, @ for files, / for commands"

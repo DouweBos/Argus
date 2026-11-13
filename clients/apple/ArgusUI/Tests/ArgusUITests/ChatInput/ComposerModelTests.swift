@@ -382,6 +382,7 @@ private final class FakeEditor: ComposerEditor {
   }
 
   func reset() { composer?.text = "" }
+  func restore(_ text: String) { composer?.text = text }
   func focus() {}
 }
 

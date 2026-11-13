@@ -15,4 +15,8 @@ public enum ChatInputAffordance: String, Sendable {
   case sideAnswerSent = "side_answer_sent"
   /// A start composer's runner was picked.
   case runnerPicked = "runner_picked"
+  /// Dictated words landed in the draft, from the mic button.
+  case dictation
+  /// Dictated words landed in the draft, from the Mac's hold-to-talk key.
+  case dictationShortcut = "dictation_shortcut"
 }

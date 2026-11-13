@@ -64,11 +64,15 @@ public final class ComposerModel {
   /// A start that can't carry images or effort (one per Linear issue) hides both.
   public var offersImagesAndEffort = true
   public internal(set) var starting = false
+  public internal(set) var dictation: DictationPhase = .idle
+  @ObservationIgnored let makeDictationEngine: @MainActor () -> any DictationEngine
+  @ObservationIgnored var dictationRun: DictationRun?
 
   public init(
     agentId: String, sessionId: String?, host: any ComposerHost, starter: ComposerStarter? = nil,
     style: Style, editor: (any ComposerEditor)? = nil, preferences: Preferences = Preferences(),
-    draftImages: DraftAttachments = DraftAttachments()
+    draftImages: DraftAttachments = DraftAttachments(),
+    dictationEngine: @escaping @MainActor () -> any DictationEngine = DictationEngines.live
   ) {
     self.agentId = agentId
     self.sessionId = sessionId
@@ -78,6 +82,7 @@ public final class ComposerModel {
     self.editor = editor
     self.preferences = preferences
     self.draftImages = draftImages
+    self.makeDictationEngine = dictationEngine
   }
 
   // MARK: Agent
@@ -109,6 +114,8 @@ public final class ComposerModel {
   func sendTarget(redirect: ComposerStarter?) -> ComposerStarter? { redirect ?? starter }
 
   public func canSend(redirect: ComposerStarter? = nil) -> Bool {
+    // Dictated words land for review; nothing goes out mid-sentence.
+    guard !dictation.isActive else { return false }
     let target = sendTarget(redirect: redirect)
     guard target?.ready != false, hasContent || target?.needsContent == false else { return false }
     return target?.needsText != true || !trimmedText.isEmpty

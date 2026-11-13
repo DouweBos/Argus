@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Dictate messages to your agents. Speech is transcribed on this Mac.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Turn what you dictate into text on this Mac, without sending it anywhere.</string>
 	<key>SUPublicEDKey</key>
 	<string>$(SPARKLE_PUBLIC_ED_KEY)</string>
 	<key>SUEnableAutomaticChecks</key>

@@ -7,6 +7,7 @@
   enum ComposerStories {
     static var all: [GalleryStory] {
       [
+        GalleryStory("composer/dictation", size: CGSize(width: 520, height: 0)) { DictationStory(size: 26) },
         GalleryStory("composer/picked-elements", size: CGSize(width: 720, height: 0)) {
           AttachmentStrip(
             images: [], elements: [browser, browserNoReact, device, deviceNoCrop], remove: { _ in }
@@ -124,6 +125,32 @@
         let png = rep.representation(using: .png, properties: [:])
       else { return nil }
       return RemoteImageAttachment(data: png.base64EncodedString(), mediaType: "image/png")
+    }
+  }
+
+  /// The mic in each phase, and the banner a refused microphone leaves above the composer.
+  private struct DictationStory: View {
+    @Environment(\.theme) private var theme
+    let size: CGFloat
+    private let phases: [(String, DictationPhase)] = [
+      ("Idle", .idle), ("Getting ready", .starting), ("Listening", .listening), ("Finishing", .finishing),
+    ]
+
+    var body: some View {
+      VStack(alignment: .leading, spacing: 12) {
+        Banner(text: DictationError.microphoneDenied.errorDescription ?? "", actionLabel: "Dismiss") {}
+        ForEach(phases, id: \.0) { name, phase in
+          HStack(spacing: 10) {
+            DictationButton(phase: phase, size: size) {}
+            Text(name).font(.scaled(size: 13)).foregroundStyle(theme.textSecondary)
+          }
+        }
+        HStack(spacing: 10) {
+          DictationButton(phase: .idle, size: size) {}.disabled(true)
+          Text("Agent not running").font(.scaled(size: 13)).foregroundStyle(theme.textSecondary)
+        }
+      }
+      .padding(16)
     }
   }
 #endif

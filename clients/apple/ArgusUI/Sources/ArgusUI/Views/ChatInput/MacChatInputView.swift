@@ -50,6 +50,9 @@
         {
           LimitHandoffCard(agentId: composer.agentId, accounts: handoffAccounts ?? []) { handoffAccounts = [] }
         }
+        if let failure = composer.dictation.failure {
+          Banner(text: failure, actionLabel: "Dismiss") { composer.dismissDictationError() }
+        }
         if composer.slashItems.isEmpty, composer.mentionItems.isEmpty, !composer.hasContent,
           !composer.followUps.isEmpty
         {
@@ -82,6 +85,7 @@
       }
       .limitHandoffOffer(agentId: composer.agentId, status: composer.status, into: $handoffAccounts)
       .onChange(of: focusRequest) { _, _ in controller.focus() }
+      .onDisappear { composer.stopDictation() }
       .onChange(of: composer.text) { _, value in
         if value.isEmpty { height = ComposerField.minHeight }
         if composer.starter == nil { composerTyping?(composer.agentId, !value.isEmpty) }
@@ -121,13 +125,14 @@
         ComposerField(
           text: $composer.text, caret: $composer.caret, height: $height, isDropTarget: $isDropTarget,
           controller: controller,
-          placeholder: composer.isEnabled
-            ? composer.followUps.first.map { "\($0)  (Tab)" } ?? "Ask anything, @ for files, / for commands"
-            : "Agent is not running",
+          placeholder: placeholder,
           argumentHint: composer.argumentHint,
           isEnabled: composer.isEnabled,
           onKey: { composer.handle($0, redirect: redirect) },
-          onDrop: composer.receive)
+          onDrop: composer.receive,
+          onPushToTalk: { pressed in
+            pressed ? composer.startDictation(via: .pushToTalk) : composer.stopDictation()
+          })
           .frame(height: height)
           .padding(.horizontal, 6)
           .padding(.top, 4)
@@ -148,12 +153,22 @@
 
     private static let radius: CGFloat = 16
 
+    private var placeholder: String {
+      if let listening = composer.dictation.placeholder { return listening }
+      guard composer.isEnabled else { return "Agent is not running" }
+      return composer.followUps.first.map { "\($0)  (Tab)" } ?? "Ask anything, @ for files, / for commands"
+    }
+
     /// Attach, then send — or, while the agent works, queue and stop.
     private var actions: some View {
       HStack(spacing: 6) {
         if composer.contextTokens > 0 {
           ContextMeter(tokens: composer.contextTokens, limit: composer.contextLimit)
         }
+        DictationButton(phase: composer.dictation, size: 26, help: "Dictate (hold ⌥Space)") {
+          composer.toggleDictation()
+        }
+        .disabled(!composer.isEnabled)
         Button(action: pickImages) { Label("Attach images", systemImage: Icon.paperclip) }
           .buttonStyle(FlatIconButtonStyle(size: 26))
           .help("Attach images")

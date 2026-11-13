@@ -24,6 +24,7 @@
           .navigationTitle("New Session")
           .inlineNavigationTitle()
         },
+        GalleryStory("composer/dictation") { DictationStory(size: 34) },
         GalleryStory("composer/chat", fixtures: GalleryFixtures.composer) { ChatComposerStory() },
         // An agent running on Work while the computer's default is Personal; then a start composer.
         GalleryStory(
@@ -66,6 +67,32 @@
         Spacer()
         ChatInputView(agentId: "a1")
       }
+    }
+  }
+
+  /// The mic in each phase, and the banner a refused microphone leaves above the composer.
+  private struct DictationStory: View {
+    @Environment(\.theme) private var theme
+    let size: CGFloat
+    private let phases: [(String, DictationPhase)] = [
+      ("Idle", .idle), ("Getting ready", .starting), ("Listening", .listening), ("Finishing", .finishing),
+    ]
+
+    var body: some View {
+      VStack(alignment: .leading, spacing: 12) {
+        Banner(text: DictationError.microphoneDenied.errorDescription ?? "", actionLabel: "Dismiss") {}
+        ForEach(phases, id: \.0) { name, phase in
+          HStack(spacing: 10) {
+            DictationButton(phase: phase, size: size) {}
+            Text(name).font(.scaled(size: 13)).foregroundStyle(theme.textSecondary)
+          }
+        }
+        HStack(spacing: 10) {
+          DictationButton(phase: .idle, size: size) {}.disabled(true)
+          Text("Agent not running").font(.scaled(size: 13)).foregroundStyle(theme.textSecondary)
+        }
+      }
+      .padding(16)
     }
   }
 #endif

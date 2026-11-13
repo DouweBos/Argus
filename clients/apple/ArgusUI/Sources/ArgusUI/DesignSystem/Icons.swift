@@ -38,6 +38,8 @@ public enum Icon {
   /// A suggested reply to the agent.
   public static let reply = "arrowshape.turn.up.left"
   public static let paperclip = "paperclip"
+  public static let mic = "mic"
+  public static let micActive = "mic.fill"
   public static let camera = "camera"
   public static let qrCode = "qrcode.viewfinder"
   public static let plus = "plus"

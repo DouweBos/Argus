@@ -53,6 +53,8 @@ public protocol ComposerEditor: AnyObject {
   func replace(with text: String, caret: Int?)
   /// Start over — after a send, undo shouldn't resurrect the message.
   func reset()
+  /// Put `text` back without recording an edit, so the next `replace` undoes to it.
+  func restore(_ text: String)
   func focus()
 }
 

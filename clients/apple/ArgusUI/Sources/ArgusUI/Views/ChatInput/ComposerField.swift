@@ -34,6 +34,10 @@
       view.didChangeText()
     }
 
+    func restore(_ text: String) {
+      textView?.string = text
+    }
+
     func focus() {
       guard let view = textView, let window = view.window else {
         wantsFocus = true
@@ -61,6 +65,8 @@
     var isEnabled = true
     var onKey: (ComposerKey) -> Bool
     var onDrop: (ComposerDrop) -> Void
+    /// Hold-to-talk: true on the key's press, false on its release.
+    var onPushToTalk: ((Bool) -> Void)?
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -112,6 +118,7 @@
       view.argumentHint = argumentHint
       view.onKey = onKey
       view.onDrop = onDrop
+      view.onPushToTalk = onPushToTalk
       view.onDragHighlight = { isDropTarget = $0 }
       let theme = context.environment.theme
       view.textColor = NSColor(theme.text)
@@ -179,6 +186,8 @@
     var onKey: ((ComposerKey) -> Bool)?
     var onDrop: ((ComposerDrop) -> Void)?
     var onDragHighlight: ((Bool) -> Void)?
+    var onPushToTalk: ((Bool) -> Void)?
+    private var talking = false
 
     override func viewDidMoveToWindow() {
       super.viewDidMoveToWindow()
@@ -190,8 +199,42 @@
     // MARK: Keys
 
     override func keyDown(with event: NSEvent) {
+      if Self.isPushToTalk(event), let onPushToTalk, !hasMarkedText() {
+        // Held keys repeat; only the first press starts listening.
+        if !event.isARepeat, !talking {
+          talking = true
+          onPushToTalk(true)
+        }
+        return
+      }
       if !hasMarkedText(), let key = composerKey(event), onKey?(key) == true { return }
       super.keyDown(with: event)
+    }
+
+    /// Releasing Space ends it, whether or not ⌥ is still down.
+    override func keyUp(with event: NSEvent) {
+      if talking, event.keyCode == Self.spaceKey {
+        talking = false
+        onPushToTalk?(false)
+        return
+      }
+      super.keyUp(with: event)
+    }
+
+    override func resignFirstResponder() -> Bool {
+      if talking {
+        talking = false
+        onPushToTalk?(false)
+      }
+      return super.resignFirstResponder()
+    }
+
+    private static let spaceKey: UInt16 = 49
+
+    /// ⌥Space, held.
+    static func isPushToTalk(_ event: NSEvent) -> Bool {
+      event.keyCode == spaceKey
+        && event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting([.capsLock, .function]) == .option
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {

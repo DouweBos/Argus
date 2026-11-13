@@ -55,6 +55,10 @@
 	<string>Connect directly to Argus on your Mac over your local network, instead of routing through a tunnel.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Attach screenshots and photos to messages you send an agent.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Dictate messages to your agents. Speech is transcribed on this iPhone.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Turn what you dictate into text on this iPhone, without sending it anywhere.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
