@@ -115,6 +115,9 @@ struct SessionContextCard: View {
       } else if ready, session.kind == .worktree, session.baseBranch != nil {
         mergeRow
       }
+      if ready, session.kind == .worktree, session.compareGroup == nil, !store.mergedSessionIds.contains(session.id) {
+        StackContextRows(session: session)
+      }
       if ready { changesRow }
     }
     ContextCardDivider()

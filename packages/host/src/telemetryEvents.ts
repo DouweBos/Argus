@@ -498,6 +498,7 @@ export interface EventMap {
     has_description: boolean;
     has_explicit_base_branch: boolean;
     has_explicit_branch: boolean;
+    stacked: boolean;
     use_existing_branch: boolean;
   };
   session_adopted: {
@@ -518,6 +519,12 @@ export interface EventMap {
     teardown_skipped: boolean;
   };
   session_merge_aborted: { kind: MergeAbortKind };
+  session_stack_acted: {
+    action: "land" | "restack";
+    conflict: boolean;
+    size: number;
+    success: boolean;
+  };
   session_merge_conflict: { conflicting_files: number; phase: MergePhase };
   session_merged: { phase: MergePhase; strategy: MergeStrategy };
   session_prompt_dispatched: { success: boolean };

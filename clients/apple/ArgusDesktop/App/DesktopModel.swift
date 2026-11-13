@@ -60,6 +60,10 @@ final class DesktopModel {
   }
   /// The project the New Session sheet is open for.
   var newSessionProject: RemoteProject?
+  /// The session the New Session sheet stacks the new one on.
+  var newSessionParent: RemoteSession?
+  /// What the last restack or landing did, by the bottom session of its stack.
+  var stackNotes: [String: String] = [:]
   /// The session the Delete sheet is open for.
   var deletingSession: RemoteSession?
   /// The session the sidebar's Rename… alert is naming.

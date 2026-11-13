@@ -16,6 +16,8 @@ struct ProjectView: View {
   @State private var searchingChats = false
   @State private var showingFolded = false
   @State private var snoozing: RemoteSession?
+  /// The session the stacked-session sheet is open for.
+  @State private var stackingOn: RemoteSession?
 
   private var sessions: [RemoteSession] { host.sessionsByRepo[repoRoot] ?? [] }
 
@@ -91,6 +93,11 @@ struct ProjectView: View {
       NavigationStack { SnoozeUntilForm(session: session) }
         .presentationDetents([.large])
     }
+    .sheet(item: $stackingOn) { parent in
+      StackedSessionSheet(parent: parent) { session in
+        router.push(.session(id: session.id, label: session.displayName ?? session.branch, repoRoot: repoRoot))
+      }
+    }
     .sheet(isPresented: $searchingChats) {
       ChatSearchSheet(repoRoot: repoRoot) { chat in
         router.push(
@@ -113,28 +120,38 @@ struct ProjectView: View {
   }
 
   /// Session links, a compare run's slots under its header; they share a section since a run sorts as one.
+  /// A stacked session sits under its parent when both are here; apart, its caption names the parent.
   private func links(_ groups: [SessionGroup]) -> some View {
-    ForEach(CompareSessionRow.make(groups)) { row in
+    let arranged = SessionStack.arrange(groups, session: \.session, all: sessions)
+    return ForEach(CompareSessionRow.make(arranged.items)) { row in
       switch row {
       case .session(let group):
-        sessionLink(group)
+        let nesting = arranged.nesting[group.id] ?? .none
+        sessionLink(group, indent: nesting.depth, stacked: nesting.depth > 0, caption: nesting.caption)
       case .compare(let run, let slots):
         NavigationLink(value: Route.compareRun(groupId: run.id)) { CompareRunHeaderRow(run: run) }
-        ForEach(slots) { sessionLink($0, slot: true) }
+        ForEach(slots) { sessionLink($0, slot: true, indent: 1) }
       }
     }
   }
 
   /// A compare run's slot sits under its header, named by its runner and model.
-  private func sessionLink(_ group: SessionGroup, slot: Bool = false) -> some View {
+  private func sessionLink(
+    _ group: SessionGroup, slot: Bool = false, indent: Int = 0, stacked: Bool = false, caption: String? = nil
+  ) -> some View {
     NavigationLink(value: Route.session(id: group.id, label: group.label, repoRoot: repoRoot)) {
-      sessionRow(group, slot: slot)
+      sessionRow(group, slot: slot, indent: indent, stacked: stacked, caption: caption)
     }
-    .padding(.leading, slot ? 16 : 0)
     .contextMenu {
       if let session = group.session {
         PullRequestWatchButton(session: session)
         SessionTriageMenu(session: session) { snoozing = session }
+        if host.hasControl, session.kind == .worktree, session.status == .ready, session.compareGroup == nil {
+          Button("New session on top", systemImage: Icon.stacked) {
+            Telemetry.capture(.newSessionOpened(source: .stack))
+            stackingOn = session
+          }
+        }
       }
     }
   }
@@ -146,11 +163,14 @@ struct ProjectView: View {
   }
 
   @ViewBuilder
-  private func sessionRow(_ group: SessionGroup, slot: Bool = false) -> some View {
+  private func sessionRow(
+    _ group: SessionGroup, slot: Bool = false, indent: Int = 0, stacked: Bool = false, caption: String? = nil
+  ) -> some View {
     if let session = group.session {
       SessionRow(
         session: session, agents: group.agents, git: host.gitStatusBySession[group.id], detailed: true,
-        title: slot ? session.compareGroup.map(host.compareSlotTitle) : nil)
+        caption: caption, title: slot ? session.compareGroup.map(host.compareSlotTitle) : nil, indent: indent,
+        stacked: stacked)
         // Nothing to fetch for a session the computer itself can't read.
         .task(id: group.id) {
           guard !session.isUnavailable else { return }

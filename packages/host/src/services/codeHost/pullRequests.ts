@@ -236,3 +236,39 @@ export async function setPullRequestFileViewed(params: {
     await setGithubFileViewed(params);
   }
 }
+
+/** The host a session branch's PR lives on; unknown remotes fall back to `gh`. */
+async function branchHost(repoRoot: string, head: string) {
+  const ref = (await preferredRepoRef(repoRoot, head)) ?? UNKNOWN_REPO;
+
+  return { ref, host: codeHost(ref.kind) };
+}
+
+/** Point a branch's PR or MR at a new base, wherever it is hosted. */
+export async function retargetBranchPullRequest(params: {
+  base: string;
+  head: string;
+  number: number;
+  repoRoot: string;
+}): Promise<void> {
+  const { ref, host } = await branchHost(params.repoRoot, params.head);
+  await host.retarget(ref, params.repoRoot, params.number, params.base);
+  sessionPullRequestMayHaveChanged();
+}
+
+/** Merge a branch's PR or MR, wherever it is hosted. */
+export async function mergeBranchPullRequest(params: {
+  head: string;
+  number: number;
+  repoRoot: string;
+  strategy: MergeStrategy;
+}): Promise<void> {
+  const { ref, host } = await branchHost(params.repoRoot, params.head);
+  await host.mergeInCheckout(
+    ref,
+    params.repoRoot,
+    params.number,
+    params.strategy,
+  );
+  sessionPullRequestMayHaveChanged();
+}

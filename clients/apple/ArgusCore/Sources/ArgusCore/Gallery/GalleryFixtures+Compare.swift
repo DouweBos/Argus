@@ -68,6 +68,8 @@ extension GalleryFixtures {
     var fixtures = composer
     let sessions = [session("s-root", branch: "main", kind: "project_root")] + compareSessions
       + Array(argusSessions.dropFirst().prefix(2))
+      // A stack beside the run: both indent under a parent row, the same step deep.
+      + argusSessions.filter { ["s-stack-1", "s-stack-2"].contains($0["id"] as? String ?? "") }
     fixtures[RemoteMethod.projectsList.rawValue] = GalleryJSON.projects(["Argus"])
     fixtures[RemoteMethod.automationsRunners.rawValue] = GalleryJSON.encode([
       "runners": [

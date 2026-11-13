@@ -51,6 +51,15 @@ extension GalleryFixtures {
       session(
         "s-snoozed", branch: "release-notes", name: "Draft the release notes", extra: ["snoozed_until": ago(-18 * 60)]),
       session("s-done", branch: "spike-tabs", name: "Spike: tab overflow", extra: ["settled": true]),
+      // A stack of three: each branches from the one before, its PR against that branch.
+      session("s-stack-1", branch: "stack-protocol", name: "Stack: wire protocol", pr: (420, "open")),
+      session(
+        "s-stack-2", branch: "stack-host", name: "Stack: host restack", pr: (421, "open"),
+        extra: ["base_branch": "stack-protocol", "parent_session_id": "s-stack-1"]),
+      session(
+        "s-stack-3", branch: "stack-ui", name: "Stack: sidebar and menus",
+        // Unread: it sits in Needs you, away from its parent, and says what it's on.
+        extra: ["base_branch": "stack-host", "parent_session_id": "s-stack-2", "unread": true]),
       session(
         "s-setup", branch: "gallery-stories", name: "Gallery stories for sessions", status: "initializing",
         extra: ["progress": ["current": 3, "total": 5]]),

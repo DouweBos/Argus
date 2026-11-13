@@ -51,7 +51,11 @@ export function registerSessionCommands(): void {
       p.useExistingBranch,
       p.baseBranch,
       p.llm,
-      { designRefs: p.designRefs, linkedIssue: p.linkedIssue },
+      {
+        designRefs: p.designRefs,
+        linkedIssue: p.linkedIssue,
+        parentSessionId: p.parentSessionId,
+      },
     ),
   );
   defineTypedCommand("create_project_root_session", (p) =>

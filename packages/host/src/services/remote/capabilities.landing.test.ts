@@ -18,6 +18,8 @@ const WRITES = [
   "sessions.draft_commit_message",
   "sessions.push",
   "sessions.merge_base",
+  "sessions.restack",
+  "sessions.land_stack",
   "sessions.stash_apply",
   "sessions.stash_drop",
   "github.create_pull_request",

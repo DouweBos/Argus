@@ -148,6 +148,38 @@ branch: a remote-tracking ref like `origin/main` cannot be
 fast-forwarded, and a session pointed at one is repaired automatically
 to the local branch behind it.
 
+### Stacked sessions
+
+Split work into layers by starting a session **on top of** another one:
+**New Session on Top of This One…** in a session's sidebar menu or its
+context card on the Mac, or **New session on top** in a session's menu and
+its Stack card on the phone. The new session branches from the other
+session's branch, which becomes its base, so its pull request targets that
+branch. In the sidebar it sits under its parent, indented.
+
+- **Restack** (any session in the stack) rebases every session above the
+  bottom one onto its parent's current tip, parents first. Only each
+  session's own commits are replayed, so amending or rebasing a parent
+  doesn't bring its old commits back. Sessions with an open pull request
+  are force-pushed (with lease) and their pull request is pointed at the
+  parent's branch. A conflict stops the restack and leaves the rebase
+  paused in that session for the conflict resolver; resolve it, then
+  restack again.
+- **Land Stack…** merges the stack bottom-up with the strategy you pick:
+  each session merges its pull request when it has one, or merges locally
+  into its base otherwise. Its children then move onto that base, their
+  pull requests are retargeted, and landing carries on with them. It stops
+  at the first conflict, failing check or blocked pull request and says
+  where.
+
+Pull requests here include GitLab merge requests: Restack retargets and
+Land Stack merges them the same way.
+
+A compare run's slots can't be stacked on: keep one of them first.
+
+Deleting a session in the middle of a stack moves its children down onto
+its base.
+
 ### Renaming the session branch
 
 In session scope, the toolbar offers **Rename branch**. Argus renames

@@ -56,6 +56,17 @@
           Color.clear.sessionContextCard(
             GalleryFixtures.argusSession("s-long", overrides: ["setup_pending": true]), panel: .agents)
         },
+        GalleryStory(
+          "sessions/stack/context-card", size: CGSize(width: 900, height: 760), fixtures: GalleryFixtures.home,
+          setup: load
+        ) {
+          Color.clear.sessionContextCard(GalleryFixtures.argusSession("s-stack-2"), panel: .agents)
+        },
+        GalleryStory(
+          "sessions/stack/new-sheet", size: CGSize(width: 480, height: 420), fixtures: GalleryFixtures.home, setup: load
+        ) {
+          NewSessionSheet(project: GalleryFixtures.argusProject, parent: GalleryFixtures.argusSession("s-stack-2")) { _ in }
+        },
         // Mac only: the phone starts a session from its composer, and deletes through a confirmation dialog.
         GalleryStory(
           "sessions/new-sheet", size: CGSize(width: 480, height: 560), fixtures: GalleryFixtures.home, setup: load

@@ -6151,6 +6151,7 @@ extension ArgusProtocol {
       public var description: String
       public var useExistingBranch: Bool?
       public var baseBranch: String?
+      public var parentSessionId: String?
       public var prompt: String?
       public var model: String?
       public var permissionMode: RemotePermissionMode?
@@ -6165,6 +6166,7 @@ extension ArgusProtocol {
         case description = "description"
         case useExistingBranch = "use_existing_branch"
         case baseBranch = "base_branch"
+        case parentSessionId = "parent_session_id"
         case prompt = "prompt"
         case model = "model"
         case permissionMode = "permission_mode"
@@ -6174,12 +6176,13 @@ extension ArgusProtocol {
         case linearIssue = "linear_issue"
       }
 
-      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil, model: String? = nil, permissionMode: RemotePermissionMode? = nil, runnerId: String? = nil, claudeAccountId: String? = nil, images: [RemoteImageAttachment]? = nil, linearIssue: String? = nil) {
+      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, prompt: String? = nil, model: String? = nil, permissionMode: RemotePermissionMode? = nil, runnerId: String? = nil, claudeAccountId: String? = nil, images: [RemoteImageAttachment]? = nil, linearIssue: String? = nil) {
         self.repoRoot = repoRoot
         self.branch = branch
         self.description = description
         self.useExistingBranch = useExistingBranch
         self.baseBranch = baseBranch
+        self.parentSessionId = parentSessionId
         self.prompt = prompt
         self.model = model
         self.permissionMode = permissionMode
@@ -6196,6 +6199,7 @@ extension ArgusProtocol {
         try c.encode(description, forKey: .description)
         try c.encodeIfPresent(useExistingBranch, forKey: .useExistingBranch)
         try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
+        try c.encodeIfPresent(parentSessionId, forKey: .parentSessionId)
         try c.encodeIfPresent(prompt, forKey: .prompt)
         try c.encodeIfPresent(model, forKey: .model)
         try c.encodeIfPresent(permissionMode, forKey: .permissionMode)
@@ -6762,6 +6766,42 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsLandStackParamsStrategy: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let keep = SessionsLandStackParamsStrategy(rawValue: "keep")
+      public static let squash = SessionsLandStackParamsStrategy(rawValue: "squash")
+    }
+
+    public struct SessionsLandStackParams: Codable, Sendable {
+      public var sessionId: String
+      public var strategy: SessionsLandStackParamsStrategy
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case strategy = "strategy"
+      }
+
+      public init(sessionId: String, strategy: SessionsLandStackParamsStrategy) {
+        self.sessionId = sessionId
+        self.strategy = strategy
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(strategy, forKey: .strategy)
+      }
+    }
+
     public struct SessionsListParams: Codable, Sendable {
       public var repoRoot: String
 
@@ -7321,6 +7361,23 @@ extension ArgusProtocol {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(sessionId, forKey: .sessionId)
         try c.encode(query, forKey: .query)
+      }
+    }
+
+    public struct SessionsRestackParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
       }
     }
 
@@ -9110,6 +9167,12 @@ extension ArgusProtocol {
       public static let name = "sessions.keep_compare"
     }
 
+    public enum SessionsLandStack: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsLandStackParams
+      public typealias Result = ArgusProtocol.LandStackResult
+      public static let name = "sessions.land_stack"
+    }
+
     public enum SessionsList: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsListParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsListResult
@@ -9192,6 +9255,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsResolveMentionPathParams
       public typealias Result = ArgusProtocol.RemoteMentionPathResult
       public static let name = "sessions.resolve_mention_path"
+    }
+
+    public enum SessionsRestack: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsRestackParams
+      public typealias Result = ArgusProtocol.RestackResult
+      public static let name = "sessions.restack"
     }
 
     public enum SessionsRetrySetup: RemoteCommand {

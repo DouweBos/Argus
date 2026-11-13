@@ -219,6 +219,9 @@ enum MacTelemetryEvent {
     case mcp
     case setup
     case usageLimits = "usage_limits"
+    case newStackedSession = "new_stacked_session"
+    case restack
+    case landStack = "land_stack"
   }
 
   case launched

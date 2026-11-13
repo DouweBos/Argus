@@ -9,7 +9,8 @@ extension HostStore {
   @discardableResult
   public func createSession(
     repoRoot: String, branch: String, description: String,
-    useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil,
+    useExistingBranch: Bool? = nil, baseBranch: String? = nil, parentSessionId: String? = nil,
+    prompt: String? = nil,
     model: String? = nil, permissionMode: RemotePermissionMode? = nil, runnerId: String? = nil,
     linearIssue: String? = nil, images: [RemoteImageAttachment]? = nil,
     claudeAccountId: String? = nil
@@ -21,6 +22,8 @@ extension HostStore {
       let description: String
       let use_existing_branch: Bool?
       let base_branch: String?
+      /// Stacks the session on this one: it branches from its branch.
+      let parent_session_id: String?
       let prompt: String?
       /// What the prompted agent starts on; nil leaves it to the computer.
       let model: String?
@@ -38,7 +41,8 @@ extension HostStore {
         .sessionsCreate,
         Params(
           repo_root: repoRoot, branch: branch, description: description,
-          use_existing_branch: useExistingBranch, base_branch: baseBranch, prompt: prompt,
+          use_existing_branch: useExistingBranch, base_branch: baseBranch,
+          parent_session_id: parentSessionId, prompt: prompt,
           model: model, permission_mode: permissionMode?.rawValue, runner_id: runnerId,
           linear_issue: linearIssue, images: images, claude_account_id: claudeAccountId),
         as: Result.self

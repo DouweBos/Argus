@@ -82,6 +82,7 @@ import {
 } from "./models/integrations";
 import { RemoteLiveActivitySnapshot } from "./models/liveActivity";
 import { RunnerAccount } from "./models/llm";
+import { LandStackResult, RestackResult } from "./models/sessions";
 import {
   WorktreeCleanupPolicy,
   WorktreeCleanupPreview,
@@ -403,6 +404,8 @@ export const MethodParams = {
     description: z.string(),
     use_existing_branch: z.boolean().optional(),
     base_branch: z.string().optional(),
+    /** Stack on this session: branch from its branch and record it as the parent. Wins over `base_branch`. */
+    parent_session_id: z.string().optional(),
     /** Start an agent on this once setup finishes — the host waits, not the client. */
     prompt: z.string().max(MAX_PROMPT).optional(),
     /** What that agent starts on; each falls back to the host's default. */
@@ -664,6 +667,13 @@ export const MethodParams = {
   "sessions.merge_base": z.object({
     session_id: z.string(),
     /** Squashing rewrites history, so the client always says which it wants. */
+    strategy: z.enum(["keep", "squash"]),
+  }),
+  /** Rebase every session stacked on this one's stack onto its parent, and push their PRs. */
+  "sessions.restack": z.object({ session_id: z.string() }),
+  /** Merge the stack bottom-up, moving each session onto the landed base. */
+  "sessions.land_stack": z.object({
+    session_id: z.string(),
     strategy: z.enum(["keep", "squash"]),
   }),
   "devices.list": z.object({}),
@@ -1226,6 +1236,8 @@ export const MethodResult = {
   /** Empty means the merge would go through. */
   "sessions.merge_blockers": z.object({ blockers: z.array(z.string()) }),
   "sessions.merge_base": z.object({ accepted: z.boolean() }),
+  "sessions.restack": RestackResult,
+  "sessions.land_stack": LandStackResult,
   "devices.list": z.object({ devices: z.array(RemoteDevice) }),
   "device_hosts.list": z.object({ hosts: z.array(RemoteDeviceHost) }),
   "device_hosts.start_eas_session": z.object({ device_id: z.string() }),

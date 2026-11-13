@@ -200,3 +200,35 @@ export async function ghPrClose(params: {
     throw msg;
   }
 }
+
+/** `gh` in a checkout, so it finds the repo (GitHub Enterprise too) from its remotes. */
+async function ghInCheckout(cwd: string, args: string[]): Promise<void> {
+  try {
+    await execFileAsync("gh", args, { cwd, maxBuffer: 1024 * 1024 });
+  } catch (err) {
+    const e = err as { message?: string; stderr?: string };
+    const msg = e.stderr?.trim() || e.message || String(err);
+    if (msg.includes("ENOENT")) {
+      throw "gh CLI is not installed. Install it from https://cli.github.com and run `gh auth login`.";
+    }
+    throw msg;
+  }
+}
+
+/** Point a pull request at a different base branch. */
+export async function ghPrRetarget(
+  cwd: string,
+  number: number,
+  base: string,
+): Promise<void> {
+  await ghInCheckout(cwd, ["pr", "edit", String(number), "--base", base]);
+}
+
+/** Merge a pull request from inside its checkout. */
+export async function ghPrMergeInCheckout(
+  cwd: string,
+  number: number,
+  strategy: MergeStrategy,
+): Promise<void> {
+  await ghInCheckout(cwd, ["pr", "merge", String(number), `--${strategy}`]);
+}

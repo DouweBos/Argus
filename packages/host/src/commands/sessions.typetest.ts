@@ -11,11 +11,15 @@ import type {
   SessionKind as HostSessionKind,
   SessionStatus as HostSessionStatus,
 } from "../services/session/models";
+import type { RestackResult as HostRestackResult } from "../services/session/stack";
+import type { LandStackResult as HostLandStackResult } from "../services/session/stackLand";
 import type {
   ForkReplayOp,
   ForkSessionResult,
   HostSnapshot,
+  LandStackResult,
   ProjectEntry,
+  RestackResult,
   Session,
   SessionKind,
   SessionPullRequest,
@@ -26,6 +30,8 @@ export type SessionModelChecks = [
   Expect<Equal<SessionKind, HostSessionKind>>,
   Expect<Equal<SessionStatus, HostSessionStatus>>,
   Expect<Equal<Session, HostSession>>,
+  Expect<Equal<RestackResult, HostRestackResult>>,
+  Expect<Equal<LandStackResult, HostLandStackResult>>,
   Expect<Equal<SessionPullRequest, HostSessionPullRequest>>,
   Expect<Equal<ProjectEntry, HostProjectEntry>>,
   Expect<Equal<HostSnapshot, HostHostSnapshot>>,

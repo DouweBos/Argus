@@ -31,6 +31,13 @@ struct SidebarView: View {
         model.openAgents(session: session.id)
       }
     }
+    .sheet(item: newSessionParent) { parent in
+      if let project = store.projects.first(where: { $0.repoRoot == parent.repoRoot }) {
+        NewSessionSheet(project: project, parent: parent) { session in
+          model.openAgents(session: session.id)
+        }
+      }
+    }
     .sheet(item: deletingSession) { session in
       DeleteSessionSheet(session: session) {
         if model.route.sessionId == session.id { model.navigate(.home) }
@@ -140,6 +147,10 @@ struct SidebarView: View {
 
   private var deletingSession: Binding<RemoteSession?> {
     Binding(get: { model.deletingSession }, set: { model.deletingSession = $0 })
+  }
+
+  private var newSessionParent: Binding<RemoteSession?> {
+    Binding(get: { model.newSessionParent }, set: { model.newSessionParent = $0 })
   }
 
   private var newSessionProject: Binding<RemoteProject?> {

@@ -5,7 +5,10 @@ import SwiftUI
 /// A session's sidebar menu, wherever its row sits: its project, Needs you or the scratch pads.
 struct SidebarSessionMenu: View {
   @Environment(DesktopModel.self) private var model
+  @Environment(HostStore.self) private var store
   let session: RemoteSession
+
+  private var stack: StackActions { StackActions(model: model, store: store) }
 
   var body: some View {
     if !session.isUnavailable {
@@ -17,6 +20,14 @@ struct SidebarSessionMenu: View {
     Divider()
     SessionTriageMenu(session: session) { model.snoozingSession = session }
     Divider()
+    if session.kind == .worktree, session.status == .ready, !session.isUnavailable, session.compareGroup == nil {
+      Button("New Session on Top of This One…") { model.newSessionParent = session }
+      if !stack.members(of: session).isEmpty {
+        Button("Restack") { Task { await stack.restack(session) } }
+        Button("Land Stack…") { Task { await stack.land(session) } }
+      }
+      Divider()
+    }
     switch session.kind {
     case .worktree:
       Button("Rename Session…") { model.renamingSession = session }
@@ -32,6 +43,7 @@ struct SidebarSessionMenu: View {
 
 /// Session rows with their menu, a compare run's under its header; `caption` adds a line under the
 /// title, as Needs you names the project.
+/// A stacked session sits under its parent when both are in these rows; apart, it says what it's on.
 struct SidebarSessionRows: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
@@ -39,25 +51,31 @@ struct SidebarSessionRows: View {
   var caption: (RemoteSession) -> String? = { _ in nil }
 
   var body: some View {
-    ForEach(CompareGroup.split(sessions)) { item in
+    let arranged = SessionStack.arrange(sessions, session: { $0 }, all: store.sessionsByRepo.values.flatMap { $0 })
+    ForEach(CompareGroup.split(arranged.items)) { item in
       switch item {
-      case .session(let session): row(session)
+      case .session(let session): row(session, nesting: arranged.nesting[session.id] ?? .none)
       case .group(let run):
         // A compare run's slots sort as one, so they share a section under their run's header.
         SidebarCompareHeader(run: run)
         ForEach(run.sessions) { session in
-          row(session, title: session.compareGroup.map(store.compareSlotTitle)).padding(.leading, 14)
+          row(session, title: session.compareGroup.map(store.compareSlotTitle), indent: 1)
         }
       }
     }
   }
 
-  private func row(_ session: RemoteSession, title: String? = nil) -> some View {
+  /// A compare slot sits one level under its run's header; a stacked session under its parent.
+  private func row(
+    _ session: RemoteSession, title: String? = nil, indent: Int? = nil, nesting: SessionStack.Nesting = .none
+  ) -> some View {
     SidebarRow(selected: model.route.sessionId == session.id, enabled: !session.isUnavailable) {
       model.open(session: session.id)
     } content: {
       SidebarSessionRow(
-        session: session, agents: store.agents(inSession: session), caption: caption(session), title: title)
+        session: session, agents: store.agents(inSession: session),
+        caption: [caption(session), nesting.caption].compactMap { $0 }.joined(separator: " · ").nilIfEmpty,
+        title: title, indent: indent ?? nesting.depth, stacked: nesting.depth > 0)
     }
     .contextMenu { SidebarSessionMenu(session: session) }
   }

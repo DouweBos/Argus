@@ -41,6 +41,8 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var displayName: String?
   /// The branch a merge lands on. Nil on older computers.
   public var baseBranch: String?
+  /// The session this one is stacked on; its branch is `baseBranch`. Nil on older computers.
+  public var parentSessionId: String?
   /// Claude account the session is pinned to; nil follows the computer's
   /// active one.
   public var claudeAccountId: String?
@@ -91,6 +93,7 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case kind, branch
     case displayName = "display_name"
     case baseBranch = "base_branch"
+    case parentSessionId = "parent_session_id"
     case claudeAccountId = "claude_account_id"
     case status, progress, availability
     case setupError = "setup_error"

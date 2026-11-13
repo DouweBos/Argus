@@ -65,6 +65,8 @@ export const SESSION_COMMANDS = {
       description: z.string(),
       useExistingBranch: z.boolean().optional(),
       baseBranch: z.string().optional(),
+      /** Stack on this session: branch from its branch and record it as the parent. */
+      parentSessionId: z.string().optional(),
       llm: z
         .object({
           runner: z.string().nullish(),

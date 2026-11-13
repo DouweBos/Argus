@@ -92,7 +92,8 @@ public struct SessionGroup: Identifiable, Hashable, Sendable {
   ) -> [SessionGroup] {
     var order: [String] = []
     var byId: [String: SessionGroup] = [:]
-    for session in sessions where byId[session.id] == nil {
+    // Stacked sessions follow their parent, as the Mac sidebar draws them.
+    for session in SessionStack.ordered(sessions).map(\.session) where byId[session.id] == nil {
       order.append(session.id)
       byId[session.id] = SessionGroup(
         id: session.id, label: session.displayName ?? session.branch, session: session, agents: [])
