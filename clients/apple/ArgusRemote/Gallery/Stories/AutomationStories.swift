@@ -44,9 +44,11 @@
         },
         GalleryStory("usage/model-detail-unpriced", fixtures: GalleryFixtures.usage) {
           HostUsageModelView(metric: .tokens, key: UsageModelKey(runner: "opencode", model: "qwen3-coder-30b"), range: ._7d)
-            .environment(\.usageNavigation, UsageNavigation(openModel: { _, _, _ in }, openPrices: { _ in }))
+            .environment(\.usageNavigation, UsageNavigation(openModel: { _, _, _ in }, openPrices: { _ in }, openCountedModels: {}))
         },
         GalleryStory("usage/prices", fixtures: GalleryFixtures.usage) { HostUsagePricesView {} },
+        GalleryStory("usage/model-filter", fixtures: GalleryFixtures.usage) { HostUsageModelFilterView() },
+        GalleryStory("usage/model-filter-viewing", fixtures: GalleryFixtures.usage) { HostUsageModelFilterView(canEdit: false) },
       ]
     }
 

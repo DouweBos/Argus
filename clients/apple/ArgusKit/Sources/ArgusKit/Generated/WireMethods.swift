@@ -7391,6 +7391,33 @@ extension ArgusProtocol {
       }
     }
 
+    public struct UsageModelFilterParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct UsageModelFilterResult: Codable, Sendable {
+      public var filter: UsageModelFilter?
+
+      enum CodingKeys: String, CodingKey {
+        case filter = "filter"
+      }
+
+      public init(filter: UsageModelFilter? = nil) {
+        self.filter = filter
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(filter, forKey: .filter)
+      }
+    }
+
     public struct UsagePricesParams: Codable, Sendable {
 
       public init() {
@@ -7398,6 +7425,40 @@ extension ArgusProtocol {
 
       public func encode(to encoder: Encoder) throws {
         _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct UsageSetModelFilterParams: Codable, Sendable {
+      public var filter: UsageModelFilter?
+
+      enum CodingKeys: String, CodingKey {
+        case filter = "filter"
+      }
+
+      public init(filter: UsageModelFilter? = nil) {
+        self.filter = filter
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(filter, forKey: .filter)
+      }
+    }
+
+    public struct UsageSetModelFilterResult: Codable, Sendable {
+      public var filter: UsageModelFilter?
+
+      enum CodingKeys: String, CodingKey {
+        case filter = "filter"
+      }
+
+      public init(filter: UsageModelFilter? = nil) {
+        self.filter = filter
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(filter, forKey: .filter)
       }
     }
 
@@ -8500,10 +8561,22 @@ extension ArgusProtocol {
       public static let name = "usage.limits"
     }
 
+    public enum UsageModelFilter: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.UsageModelFilterParams
+      public typealias Result = ArgusProtocol.MethodsTypes.UsageModelFilterResult
+      public static let name = "usage.model_filter"
+    }
+
     public enum UsagePrices: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.UsagePricesParams
       public typealias Result = ArgusProtocol.UsagePrices
       public static let name = "usage.prices"
+    }
+
+    public enum UsageSetModelFilter: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.UsageSetModelFilterParams
+      public typealias Result = ArgusProtocol.MethodsTypes.UsageSetModelFilterResult
+      public static let name = "usage.set_model_filter"
     }
 
     public enum UsageSetPrices: RemoteCommand {

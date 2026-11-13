@@ -241,6 +241,8 @@ struct RouteScreen: View {
         .navigationBarTitleDisplayMode(.inline)
     case .usagePrices:
       PhoneUsagePricesView()
+    case .usageModels:
+      PhoneUsageModelsView()
     case .more:
       MoreView()
     }
@@ -273,6 +275,17 @@ private struct PhoneUsagePricesView: View {
   }
 }
 
+/// Which models Usage counts; editing needs the control tier.
+private struct PhoneUsageModelsView: View {
+  @Environment(HostStore.self) private var host
+
+  var body: some View {
+    HostUsageModelFilterView(canEdit: host.hasControl)
+      .navigationTitle("Counted models")
+      .navigationBarTitleDisplayMode(.inline)
+  }
+}
+
 private struct PhoneUsageNavigation: ViewModifier {
   @Environment(HostStore.self) private var host
   let push: @MainActor (Route) -> Void
@@ -287,7 +300,8 @@ private struct PhoneUsageNavigation: ViewModifier {
         openPrices: { added in
           host.pendingPriceModel = added
           push(.usagePrices)
-        }))
+        },
+        openCountedModels: { push(.usageModels) }))
   }
 }
 

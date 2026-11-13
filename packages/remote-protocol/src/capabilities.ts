@@ -394,6 +394,9 @@ export const REMOTE_METHODS = {
   "usage.prices": "monitor",
   /** Changes how every cost on the host is estimated. */
   "usage.set_prices": "control",
+  /** Which models Usage counts, the phone's copy of the Mac's Settings list. */
+  "usage.model_filter": "monitor",
+  "usage.set_model_filter": "control",
   /** Sign an existing account back in. The browser opens on the host and the
    *  login completes there; the client just drives it and reads the result. */
   "claude_accounts.login_start": "control",

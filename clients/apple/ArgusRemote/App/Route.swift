@@ -74,6 +74,8 @@ enum Route: Hashable {
   case usageModel(tab: UsageTab, runner: String, model: String, range: ArgusProtocol.UsageRange)
   /// The model price editor, as the desktop's `/usage/prices`.
   case usagePrices
+  /// Which models Usage counts, as the desktop's `/usage/models`.
+  case usageModels
   /// The phone's fifth tab: every destination without a tab of its own.
   case more
 
@@ -109,6 +111,7 @@ enum Route: Hashable {
     case .usage: ArgusRoute.usage(.limits).pattern
     case .usageModel(let tab, let runner, let model, _): ArgusRoute.usageModel(tab, runner: runner, model: model).pattern
     case .usagePrices: ArgusRoute.usagePrices.pattern
+    case .usageModels: ArgusRoute.usageModels.pattern
     case .projects: ArgusRoute.home.pattern
     case .project: "/projects/:repoRoot"
     case .newSession: "/sessions/new"

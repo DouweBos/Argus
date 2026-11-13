@@ -38,7 +38,12 @@ public struct HostUsageView: View {
     #if os(iOS)
       .toolbar {
         if let navigation, tab.wrappedValue != .limits {
-          ToolbarItem(placement: .primaryAction) {
+          ToolbarItemGroup(placement: .primaryAction) {
+            Button {
+              navigation.openCountedModels()
+            } label: {
+              Label("Counted models", systemImage: Icon.filter)
+            }
             Button {
               navigation.openPrices(nil)
             } label: {

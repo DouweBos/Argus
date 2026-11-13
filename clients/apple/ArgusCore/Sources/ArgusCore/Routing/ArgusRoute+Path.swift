@@ -18,6 +18,7 @@ extension ArgusRoute {
     case ("notifications", 1): self = .notifications
     case ("usage", 1): self = .usage(.limits)
     case ("usage", 2) where parts[1] == "prices": self = .usagePrices
+    case ("usage", 2) where parts[1] == "models": self = .usageModels
     case ("usage", 5) where parts[2] == "models":
       guard let tab = UsageTab(rawValue: parts[1]), tab != .limits else { return nil }
       self = .usageModel(tab, runner: parts[3], model: parts[4], range: Self.usageRange(query["range"]))
@@ -92,6 +93,7 @@ extension ArgusRoute {
       "/usage/\(tab.rawValue)/models/\(Self.encode(runner))/\(Self.encode(model))"
         + Self.query([("range", range?.rawValue)])
     case .usagePrices: "/usage/prices"
+    case .usageModels: "/usage/models"
     case .pullRequests: "/pull-requests"
     case .pullRequest(let repo, let number): "/pull-requests/\(repo)/\(number)"
     case .issues(let scope, let issue, let query):

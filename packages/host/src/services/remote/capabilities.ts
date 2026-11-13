@@ -88,7 +88,7 @@ import {
 import { pinSessionAccount } from "../agent/sessionAccountPin";
 import { getStartOptions } from "../agent/startOptions";
 import { setViewingSession } from "../agent/warmPolicy";
-import { saveAppSettings } from "../appSettings/store";
+import { loadAppSettings, saveAppSettings } from "../appSettings/store";
 import { revisePlaybook } from "../automation/authoring";
 import { appDefaultAutonomy } from "../automation/autonomy";
 import {
@@ -2799,6 +2799,22 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const { overrides } = parse("usage.set_prices", params);
 
     return control(() => setUsagePrices(overrides));
+  },
+
+  "usage.model_filter": async () => ({
+    filter: loadAppSettings().usage_model_filter ?? null,
+  }),
+
+  "usage.set_model_filter": async (params) => {
+    const { filter } = parse("usage.set_model_filter", params);
+    const empty =
+      !filter || (filter.include.length === 0 && filter.exclude.length === 0);
+
+    return control(() => ({
+      filter:
+        saveAppSettings({ usage_model_filter: empty ? undefined : filter })
+          .usage_model_filter ?? null,
+    }));
   },
 
   "claude_accounts.set_active": async (params) => {

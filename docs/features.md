@@ -287,7 +287,8 @@ lands and how much it gives back, and that part of the bar is striped. An
 account with no weekly quota left has nothing to give its session. Tap a
 segment or an account to see its plan and resets. An unpriced model's detail
 has **Set price**, which opens Model prices with that model added; on the
-phone, editing prices needs control access. Type `/usage-limits` in the chat
+phone, editing prices needs control access. **Counted models** next to
+Model prices edits which models count, on the iPhone too. Type `/usage-limits` in the chat
 composer to see the agent's own limits above it without sending anything,
 and turn on **Show usage limits in agent details** to keep them in the Mac's
 session details. On the Mac, `C`, `T` and `L` switch tabs, ⇧⌘1–4 pick the

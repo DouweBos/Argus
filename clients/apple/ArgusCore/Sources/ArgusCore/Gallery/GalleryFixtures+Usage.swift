@@ -3,7 +3,8 @@ import Foundation
 
 /// Plan limits for one Claude account (or three, pooled) and five other runners
 /// (fine, failing, without limits), a week of usage across four runners, and
-/// model prices with a hand-set price and a mapping.
+/// model prices with a hand-set price and a mapping, and a model filter with
+/// both lists in use.
 extension GalleryFixtures {
   private static let hour = 3_600_000.0
   private static let day = 86_400_000.0
@@ -13,6 +14,23 @@ extension GalleryFixtures {
       RemoteMethod.usageLimits.rawValue: GalleryJSON.encode(usageLimits(accounts: [workAccount])),
       RemoteMethod.usageSummary.rawValue: GalleryJSON.encode(usageSummary),
       RemoteMethod.usagePrices.rawValue: GalleryJSON.encode(usagePrices),
+      RemoteMethod.usageModelFilter.rawValue: GalleryJSON.encode(["filter": usageModelFilter]),
+      RemoteMethod.automationsRunners.rawValue: composer[RemoteMethod.automationsRunners.rawValue] ?? "{}",
+    ]
+  }
+
+  /// Counts two Claude models on any runner and one on Codex; leaves two out.
+  private static var usageModelFilter: [String: Any] {
+    [
+      "include": [
+        ["runner": NSNull(), "model": "claude-opus-5-5"],
+        ["runner": NSNull(), "model": "claude-sonnet-5-5"],
+        ["runner": "codex", "model": "gpt-5.5-codex"],
+      ],
+      "exclude": [
+        ["runner": NSNull(), "model": "claude-haiku-4-5"],
+        ["runner": "gemini", "model": "gemini-2.5-flash"],
+      ],
     ]
   }
 

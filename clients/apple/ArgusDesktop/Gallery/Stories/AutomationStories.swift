@@ -90,6 +90,9 @@
         GalleryStory("usage/prices", size: CGSize(width: 1000, height: 1300), chrome: true, fixtures: GalleryFixtures.usage) {
           UsagePricesScreen()
         },
+        GalleryStory("usage/model-filter", size: CGSize(width: 1000, height: 1000), chrome: true, fixtures: GalleryFixtures.usage) {
+          UsageModelsScreen()
+        },
       ]
     }
 

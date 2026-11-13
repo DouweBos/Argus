@@ -51,6 +51,8 @@ public enum ArgusRoute: Hashable, Sendable {
   case usageModel(UsageTab, runner: String, model: String, range: ArgusProtocol.UsageRange? = nil)
   /// `/usage/prices`: the model price editor.
   case usagePrices
+  /// `/usage/models`: which models Usage counts or leaves out.
+  case usageModels
 
   public static let issueSearchSegment = "search"
 
@@ -111,6 +113,7 @@ public enum ArgusRoute: Hashable, Sendable {
     case .usage(let tab, _): tab == .limits ? "/usage" : "/usage/\(tab.rawValue)"
     case .usageModel(let tab, _, _, _): "/usage/\(tab.rawValue)/models/:runner/:model"
     case .usagePrices: "/usage/prices"
+    case .usageModels: "/usage/models"
     }
   }
 }

@@ -43,3 +43,18 @@ struct UsagePricesScreen: View {
     }
   }
 }
+
+/// `/usage/models`: which models Usage counts, the same lists as Settings → Agents.
+struct UsageModelsScreen: View {
+  @Environment(DesktopModel.self) private var model
+
+  var body: some View {
+    HostUsageModelFilterView()
+      .navigationTitle("Counted models")
+      .pageKeys { typed in
+        guard typed == UsageKeys.escape else { return false }
+        if model.canGoBack { model.goBack(via: .shortcut) } else { model.navigate(.usage(.cost)) }
+        return true
+      }
+  }
+}

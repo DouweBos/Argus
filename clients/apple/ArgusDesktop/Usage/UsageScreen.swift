@@ -41,6 +41,14 @@ struct UsageScreen: View {
             }
             .help("Set prices for models the price list doesn't know")
           }
+          ToolbarItem {
+            Button {
+              model.navigate(.usageModels)
+            } label: {
+              Label("Counted models", systemImage: Icon.filter)
+            }
+            .help("Choose which models Usage counts or leaves out")
+          }
         }
         ToolbarItem {
           Button {
@@ -97,6 +105,7 @@ extension UsageNavigation {
       openPrices: { added in
         host.pendingPriceModel = added
         model.navigate(.usagePrices)
-      })
+      },
+      openCountedModels: { model.navigate(.usageModels) })
   }
 }

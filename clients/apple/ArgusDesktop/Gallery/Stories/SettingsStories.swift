@@ -22,6 +22,7 @@
         },
         GalleryStory("settings/drafted-messages/custom", size: CGSize(width: 760, height: 420)) {
           DraftedMessagesStage(style: .custom)
+        },
         GalleryStory("settings/usage-model-filter", size: CGSize(width: 760, height: 620)) {
           UsageModelFilterStory()
         },
@@ -118,6 +119,10 @@
               .init(
                 commitMessageStyle: style,
                 commitMessageInstructions: "Conventional Commits with a scope, imperative mood, no body."))
+          }
+      }
+    }
+
     /// Settings → Agents' Usage lists: one rule counted only, two left out.
     private struct UsageModelFilterStory: View {
       @State private var host = HostSettingsModel()
