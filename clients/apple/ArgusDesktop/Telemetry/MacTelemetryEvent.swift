@@ -395,10 +395,10 @@ enum MacTelemetryEvent {
   case automationEdited(action: StoreEvent.AutomationAction)
   case runActed(action: StoreEvent.RunAction)
   case proposalHandled(action: StoreEvent.ProposalAction)
-  case memoryEdited(action: StoreEvent.MemoryAction)
-  /// A diff review comment was added or deleted, the review sent or discarded, or an agent asked to review.
   /// The inbox was narrowed to one automation or project, or cleared.
   case inboxFiltered(by: InboxFilterField)
+  case memoryEdited(action: StoreEvent.MemoryAction)
+  /// A diff review comment was added or deleted, the review sent or discarded, or an agent asked to review.
   case diffReviewed(action: StoreEvent.DiffReviewAction, comments: Int)
   case diffScoped(scope: StoreEvent.DiffScopeKind)
   case reviewGuideUsed(action: StoreEvent.ReviewGuideAction, stops: Int)
@@ -512,10 +512,10 @@ enum MacTelemetryEvent {
     case .automationEdited: "mac_automation_edited"
     case .runActed: "mac_run_acted"
     case .proposalHandled: "mac_proposal_handled"
+    case .inboxFiltered: "mac_inbox_filtered"
     case .memoryEdited: "mac_memory_edited"
     case .diffReviewed: "mac_diff_reviewed"
     case .diffScoped: "mac_diff_scope_changed"
-    case .inboxFiltered: "mac_inbox_filtered"
     case .reviewGuideUsed: "mac_review_guide_used"
     case .editorFileOpened: "mac_editor_file_opened"
     case .editorFileSaved: "mac_editor_file_saved"
@@ -716,13 +716,13 @@ enum MacTelemetryEvent {
       ["action": action.rawValue]
     case .proposalHandled(let action):
       ["action": action.rawValue]
+    case .inboxFiltered(let field):
+      ["by": field.rawValue]
     case .memoryEdited(let action):
       ["action": action.rawValue]
     case .diffReviewed(let action, let comments):
       ["action": action.rawValue, "comment_count": comments]
     case .diffScoped(let scope):
-    case .inboxFiltered(let field):
-      ["by": field.rawValue]
       ["scope": scope.rawValue]
     case .reviewGuideUsed(let action, let stops):
       ["action": action.rawValue, "stop_count": stops]

@@ -370,9 +370,9 @@ enum TelemetryEvent {
     case .savedShown: "ios_saved_shown"
     case .offlineReply: "ios_offline_reply"
     case .proposalOpenedAsRun: "ios_proposal_opened"
+    case .inboxFiltered: "ios_inbox_filtered"
     case .followUpUsed: "ios_follow_up_used"
     case .inputUsed: "ios_input_used"
-    case .inboxFiltered: "ios_inbox_filtered"
     case .settingChanged: "ios_setting_changed"
     case .colorThemeChanged: "ios_color_theme_changed"
     case .appearanceChanged: "ios_appearance_changed"
@@ -428,11 +428,11 @@ enum TelemetryEvent {
       ["outcome": outcome.rawValue]
     case .accountRemovedNotice(let action):
       ["action": action.rawValue]
+    case .inboxFiltered(let field):
+      ["by": field.rawValue]
     case .accountSignedIn(let provider, let firstDevice):
       ["provider": provider.rawValue, "first_device": firstDevice]
     case .memberRemoved(let role), .memberRenamed(let role):
-    case .inboxFiltered(let field):
-      ["by": field.rawValue]
       ["role": role.rawValue]
     case .joinActed(let action, let role):
       ["action": action.rawValue, "role": role.rawValue]
