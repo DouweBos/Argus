@@ -36,9 +36,10 @@ extension RemoteSession {
 
 extension SessionActivity {
   /// Blocked on a permission, a question or a plan, a turn finished unread, or setup failed.
+  /// A new turn running supersedes the unread one: the host only clears it when a client opens the session.
   public var needsYou: Bool {
     guard !session.isUnavailable else { return false }
-    return session.status == .error || session.unread == true
+    return session.status == .error || (session.unread == true && !isBusy)
       || agents.contains { $0.awaiting != nil || $0.status == .requiresAction }
   }
 

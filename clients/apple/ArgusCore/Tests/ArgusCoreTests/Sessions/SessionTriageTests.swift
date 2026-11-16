@@ -30,15 +30,17 @@ struct SessionTriageTests {
       session("unread", extra: ["unread": true]),
       session("snoozed", extra: ["snoozed_until": (now.timeIntervalSince1970 + 60) * 1000]),
       session("watched", extra: ["pull_request": pr("open"), "pull_request_watched": true]),
+      session("rerunning", extra: ["unread": true]),
     ]
     let agents: [String: [RemoteAgentStatus]] = [
       "running": [agent("running", status: "running")],
+      "rerunning": [agent("rerunning", status: "running")],
       "asking": [agent("asking", status: "requires_action", awaiting: "question")],
     ]
     let triage = SessionTriage(sessions, now: now) { agents[$0.id] ?? [] }
 
     #expect(triage.needsYou.map(\.id) == ["asking", "unread"])
-    #expect(triage.active.map(\.id) == ["running", "watched", "idle"])
+    #expect(triage.active.map(\.id) == ["running", "watched", "rerunning", "idle"])
     #expect(triage.done.map(\.id) == ["merged"])
     #expect(triage.snoozed.map(\.id) == ["snoozed"])
   }
