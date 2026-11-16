@@ -1,5 +1,101 @@
 # argus
 
+## 0.75.0
+
+### Minor Changes
+
+- 0eb82f3: Your Mac and iPhone now stay on your Argus account when the sign-in runs out, and keep syncing. You're asked to sign in again only to add a new device, reset or delete your account, and a device another one removed says so, with Join again.
+- d21c81f: Settings → Claude Accounts is now Accounts, and also shows whether each of your computer's other runners is installed and signed in.
+- d21c81f: Settings → Claude Accounts is now Accounts: your Claude accounts first, then every other runner with whether it's installed and signed in, and Install, Sign In, Sign Out and Check Again on each.
+- 0c66048: Agents that only support local MCP servers, like Cursor, now get the Argus tools too: device control, pull request watching and spawning other agents.
+- 76cf74e: An orchestrating agent can hand a child agent several devices, such as an iPhone and an iPad, and the child's instructions list every device it holds.
+- 76cf74e: While Linear or Figma is connected, agents are told to read the ticket and its designs before coding and to compare the app with the design after their last change.
+- 76cf74e: Agents now know your project's related projects and their run commands, so they start a backend's dev server in a visible Argus terminal instead of in the background.
+- 76cf74e: An orchestrating agent can start a child agent with device control off, for a run that must not touch simulators, emulators or the browser.
+- 8917a29: Add an `argus` command line tool that starts, messages and waits on agents from a terminal or a script, with exit codes for failed and waiting agents.
+- 7e77baa: Codex, Gemini CLI, Antigravity, Kiro, OpenCode, Cursor, Grok Build and fx chats can now edit or fork from an earlier message and answer side questions. ACP agents that offer a reasoning level get the effort picker, and Send now on a queued message stops their turn and sends it straight away.
+- 11a77d7: Claude Code agents can publish Artifacts again. A published Artifact opens in the session's side panel on the Mac, and from its card in the chat on iPhone. Turn it off in Settings → Agents.
+- 2b44b5a: Slash commands sent to the agent, like `/compact`, show as a chip in the chat, with anything typed after them as the message text.
+- 67cccc9: Start one prompt on two to five runners or models at once and compare the results side by side: changes, run and test status, review comments, cost, tokens and a screenshot of each one's simulator or browser. Keep this one merges the winner or opens its pull request and deletes the rest.
+- d7817b4: Dictate messages with the new mic button in the chat composer, or hold ⌥Space on the Mac. Speech is transcribed on your device and lands in the message for you to review before sending.
+- 91bbde0: Continue a chat on another installed agent, such as Codex, Gemini or Cursor, from the agent's menu or the usage-limit card. The new agent picks up from the chat so far, and the transcript marks where it took over.
+- a41cae6: Add any agent that speaks the Agent Client Protocol, like Goose or Qwen Code, under Settings → Custom runners by giving its command. It then appears in every runner picker with chat, permissions and the model picker working like the built-in ACP agents.
+- 68ae31a: Claude can draft your commit message from the changes and the session's chat: press the sparkles button (⌥⌘G) in the Mac's commit composer or Draft on the phone, then edit it before committing. Drafts follow the repository's conventions or your own instructions from Settings → Git, and Fill In with Claude now drafts the pull request title in the same style.
+- 966eca5: Projects hosted on GitLab, including self-hosted instances, now get the same merge request support as GitHub pull requests: the state icon on each session, the Pull Requests list and detail, opening a merge request, watched pipelines that wake the agent when a job fails, and GitLab issues as an automation source. It goes through the GitLab CLI (`glab`), so sign in with `glab auth login`.
+- 0cc21d0: Filter the Inbox by the automation that raised each item or by project. A run's report now shows its proposals as cards you can act on right there, instead of a link to the Inbox.
+- 7a22939: The iPhone app works with Siri, Shortcuts and Spotlight: start an agent on a project, message an agent, approve a waiting request, ask which agents need you, run an automation or open a session, and find your sessions in Spotlight.
+- ac34076: Working agents now show as a Live Activity on the Lock Screen and in the Dynamic Island, with their progress and Approve and Deny buttons for permission prompts.
+- 620f475: The iPhone app keeps the chats, changes, diffs, pull requests and inbox you looked at last, encrypted on the phone, so they stay readable when your computer can't be reached. Replies you send meanwhile wait on the phone and go out when the connection is back.
+- 1472615: Share a screenshot, link or text from any app on your iPhone straight into Argus: pick a computer, a project and a new or existing session, add a prompt, and an agent starts on your Mac.
+- e66c6b7: The iPhone and iPad chat reads like the Mac's: replies are plain text without a box, the iPad keeps the chat in a centred reading column, and tasks and pending questions or permissions sit at the foot of the chat.
+- 19989a4: The iPhone app has Home Screen and Lock Screen widgets for your agents, the inbox and plan usage, plus a Control Center button that starts a new agent.
+- e6ecb4d: Agents reading a Linear issue now see the Figma designs it links to, ready to open.
+- d43b26f: Rename a session or scratch pad on the Mac from its right-click menu in the sidebar, the same way you rename an agent from its tab.
+- 7a433b8: A worktree made outside Argus shows "Setup never ran" in its session card on the Mac, so you can run the project's setup or skip it even once an agent is open.
+- 98744a7: Agents can call `refresh_sessions` after creating a git worktree themselves, and any Argus tool that's given an unknown session rescans first, so a new worktree's run commands work straight away. The new worktree also shows up in the apps immediately.
+- 56a3cb1: Merging a session that would conflict with its base no longer fails with an error. Argus lists the conflicting files and offers to start an agent that rebases the session and resolves them.
+- 45e2c50: Agents outside Argus, like Claude Code in a terminal or a cloud assistant, can now sign in to Argus's MCP server over OAuth. You approve each one under Settings → Remote Access with read only, supervised or full access, and can revoke it there.
+- ce742d1: Project Settings can export a project's config as an `.argus.json` file and import one, and shows which settings come from a checked-in `.argus.json`.
+- ce742d1: Project settings are now stored on your Mac, so you never have to create or commit an `.argus.json`; a checked-in one still works as a shared baseline underneath. An existing `.argus.local.json` is imported automatically.
+- f57e238: Remove a project from Argus with Remove Project… in its sidebar menu on the Mac, or by long-pressing its card on the iPhone. The repository and its worktrees stay on disk.
+- 672d1e1: Agents now ask for tokens, PINs and pairing codes through a secure card instead of in chat. What you type never appears in the transcript, and the agent only gets a private file that deletes itself within 24 hours.
+- f96857c: A new Guide tab on sessions and pull requests has Claude write a tour of the changes: an ordered set of stops pointing at the lines worth reading, with Look closely flags for judgement calls and mechanical changes grouped at the end. Comment on any line or ask about a stop as you go, then send the review to the agent or post it to GitHub or GitLab as one review.
+- 2324f83: Install a runner's CLI and sign in to it straight from its greyed-out picker entry, or from a card on Home when it's your default runner. The commands run in a terminal inside Argus, and the runner is ready to pick as soon as they finish.
+- d21c81f: Argus now checks whether Codex, Cursor, Kiro and OpenCode are signed in, and as whom when they say, and can sign you out of Codex, Cursor, Kiro, OpenCode and Grok Build.
+- fd403d8: Projects can run teardown commands before a session's worktree is deleted, such as stopping containers started in setup. The delete shows their output, and if one fails you can retry or delete anyway. Importing from Conductor brings its archive script along as the teardown.
+- 84e62e3: Sessions that need you now sit at the top of the sidebar, done ones (a merged or closed pull request, or marked done) fold away on their own, and you can snooze a session until a time, when it comes back with a notification.
+- 1f5f68d: Start a session on top of another one: it branches from that session's branch, sits under it in the sidebar, and its pull request targets it. Restack moves the whole stack along after a session in it changes, and Land Stack merges it bottom-up, retargeting each pull request as it goes.
+- b4379c2: With more than one Claude account signed in, the start composer's model menu lets you pick the account a new agent runs on, so its very first turn uses that account.
+- bce7c60: Agents reviewing another agent's transcript now see the subagents it ran, with what each did, and can read any of them in full.
+- 3fd572d: Triage a problem with Argus from the command palette or any notification: a read-only agent reads the app's logs, diagnoses what went wrong and drafts a GitHub issue that is only filed once you confirm.
+- 59881bc: The session diff can now show just what the agent's last turn changed, any earlier turn, or the whole branch. Line comments and Send Review to Agent work in every scope, and the side panel's Diff tab gets the review bar too.
+- 0cd6daa: Usage now covers every agent, not only Claude: Codex, Cursor and Grok plan limits sit next to Claude's, and Cost and Tokens split by runner. The daily automation budget now counts Codex and other agents' spend too.
+- eb1c3ca: Choose which models Usage counts from the iPhone too, under Usage → Counted models.
+- 09015fc: Usage reads OpenCode, Antigravity, Grok and Cursor history, pools several accounts into one bar per limit, and shows OpenCode Go and Antigravity limits. Set model prices by hand, see each model's trend and cache hit rate, split cost by speed, and check limits with `/usage-limits` or in the agent's details.
+- ad074d0: Tick files as viewed while reviewing a pull request or a session's changes: viewed files fold away, a counter tracks your progress, and a file that changes afterwards shows as Changed. On pull requests these are GitHub's own Viewed marks, so github.com shows the same progress.
+- 1e29b03: Slash commands sent to the agent, like `/compact`, show as a chip in the web transcript, with anything typed after them as the message text.
+- 505f873: Settings → Worktrees → Cleanup removes worktrees of sessions merged or untouched for a while, with an optional disk limit. It lists what would go and how much space each frees, never touches sessions with unsaved work or a running agent, and notes each automatic cleanup in Notifications.
+
+### Patch Changes
+
+- f7eebeb: Settings → Argus Account picks up this Mac's host when it's already on your account, instead of failing to add it. If it's on another account, Move to This Account brings it over.
+- d69c346: Settings → Argus Account no longer says this Mac's host is on your account when it isn't, and the instructions for adding another computer read clearly.
+- d346ebf: Argus no longer signs you out of your account when it starts without a network connection or before the sign-in service has loaded.
+- fe5ff35: The Beta update channel now also offers production releases, so beta installs no longer get stuck when a stable release outpaces the latest beta.
+- 817ba16: Restoring a message's checkpoint no longer deletes files that were new and uncommitted when it was taken: checkpoints now capture them.
+- 184256a: For an agent that has already started talking, the composer's account menu now ticks the Claude account the agent runs on, and a switch that waits for the current turn says "After this turn". "Follow computer default" only shows before an agent's first message.
+- 77ae8ac: The composer's account menu names the Claude account an agent following the computer default runs on, including when it is still on an account the default has since moved away from.
+- b7113e7: A question or approval from an agent that has since stopped or been resumed now shows as not answered, instead of a form that could no longer be answered.
+- e82fdd2: The Code view's file tree, Quick Open and the phone's file browser list gitignored files like `.env`, so you can open them. Wholly ignored folders such as `node_modules` stay hidden.
+- c216d42: The side question button no longer shows before an agent's first message, when there is no conversation to ask about yet.
+- 0d7ad94: Errors from a computer now say what went wrong instead of "The operation couldn't be completed (TransportError error 0)".
+- dd0c7a7: Comparing branches on the iPhone now says when they merge cleanly, as the Mac does.
+- 57ecb2b: Long list items in the iPad chat wrap instead of being cut off.
+- f55110c: Opening a long chat lands on its latest messages instead of a blank screen that only filled in once you scrolled.
+- c368d16: Tables in chat messages no longer draw rows on top of each other when a cell wraps onto several lines.
+- d78c6d3: Pull requests on the iPhone show their author and branch, as on the Mac.
+- 2e9b2c2: The iPhone's stash list matches the Mac's: each stash shows its branch, and you long-press for its actions or swipe to apply or drop it.
+- bc9ec99: Tables in the iPhone and iPad chat size their columns to fit, so every column shows instead of scrolling off screen.
+- db3528d: Pairing a phone now asks to approve "Argus on iPhone" instead of "Argus Remote on iPhone".
+- 9ab2f07: Reading a Linear issue that links Figma designs no longer disconnects the agent from Argus's tools; the designs are listed for the agent to open one at a time.
+- efb1f4e: Imported project settings and values you set in Project Settings stay set, even when they match the repo's `.argus.json` and that file later changes.
+- 96d84bf: The usage-limit card waits until it knows your other Claude accounts before showing, instead of briefly offering only other agents, and a long list of choices scrolls inside the card rather than running off the screen.
+- 6a9ed91: The `@` file picker and `/` command menu float above the chat input on the Mac, over the chat and the start screen's title, instead of pushing the input and the chat around.
+- 7b61279: ⌘S saves the file in the Mac's code editor again, and ⌥⌘S saves all of them. Both are in the File menu too.
+- 5cd18e1: ⇧⌘F in the code view puts the cursor in the search field, so you can start typing straight away.
+- 9fe63b1: The footer of a project's settings no longer shows as a black strip in dark mode.
+- 433fa74: Saving in the Mac's code editor no longer gets stuck when the project's formatter hangs: after a few seconds the file saves without formatting.
+- 89ec0d8: Tables in the Mac app's chat keep their last row inside the table's background.
+- 6744736: Check for Updates now always uses the update channel chosen in Settings, so beta installs see new betas even when settings load late at launch.
+- 19f5aff: An agent's MCP servers update when you switch its Claude account, instead of showing the servers of the account it ran on before.
+- b834819: Button and menu titles no longer end in "…", so they read shorter and take less space.
+- 00b0a84: `/implement-ticket`, the Verify option when starting from an issue and the Verify section in Project Settings are removed. A `verify` block left in a project's config is ignored.
+- 3d21b61: Sessions in the sidebar and a project's session list show how many commits they are ahead of or behind their remote branch, like the project root does.
+- 504e1c6: Scrolling the sidebar no longer freezes the app.
+- 87fb2df: The slash-command list shows every matching command and scrolls, instead of stopping at eight.
+- bf7a309: Starting an agent in the checkout of a project Argus hasn't opened yet now opens the project instead of failing.
+- 5e1a98a: Pasting into a terminal no longer adds a stray `~` at the start or end of the pasted text.
+
 ## 0.74.0
 
 ### Minor Changes

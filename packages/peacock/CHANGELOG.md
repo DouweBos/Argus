@@ -1,5 +1,12 @@
 # @argus/peacock
 
+## 0.31.0
+
+### Minor Changes
+
+- 672d1e1: Adds `SecretRequestForm`, a masked field with Send securely and Decline buttons for an agent's secret request. <!-- platforms: mac, ios -->
+- 1e29b03: Slash commands sent to the agent, like `/compact`, show as a chip in the web transcript, with anything typed after them as the message text. <!-- platforms: mac -->
+
 ## 0.30.0
 
 ### Minor Changes
