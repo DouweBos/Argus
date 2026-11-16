@@ -19,9 +19,9 @@ struct SlashCommandMenuTests {
     #expect(commands.map(\.name) == commands.map(\.name).sorted())
   }
 
-  @Test("open only while the first token is typed, contains-filtered, eight at most")
+  @Test("open only while the first token is typed, contains-filtered, every match listed")
   func suggestions() {
-    #expect(SlashCommandMenu.suggestions(for: "/", in: commands).count == 8)
+    #expect(SlashCommandMenu.suggestions(for: "/", in: commands).count == commands.count)
     #expect(SlashCommandMenu.suggestions(for: "/vie", in: commands).map(\.name) == ["review"])
     #expect(SlashCommandMenu.suggestions(for: "/COMP", in: commands).map(\.name) == ["compact"])
     #expect(SlashCommandMenu.suggestions(for: "/review x", in: commands).isEmpty)

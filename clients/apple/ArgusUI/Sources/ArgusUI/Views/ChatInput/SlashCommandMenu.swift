@@ -4,8 +4,6 @@ import Foundation
 /// The desktop's slash-command menu: the agent's commands plus the built-ins
 /// the CLI hides in headless mode. Mirrors `AgentChat.tsx` / `ChatInput.tsx`.
 public enum SlashCommandMenu {
-  public static let maxResults = 8
-
   public struct Command: Equatable, Sendable, Identifiable {
     public var name: String
     public var description: String
@@ -66,9 +64,8 @@ public enum SlashCommandMenu {
   ) -> [Command] {
     guard text.hasPrefix("/"), !text.contains(" "), !text.contains("\n") else { return [] }
     let needle = text.dropFirst().lowercased()
-    return Array(
-      commands.filter { needle.isEmpty || $0.name.lowercased().contains(needle) }
-        .prefix(maxResults))
+    // Every match: the list scrolls, and a plugin can bring dozens.
+    return commands.filter { needle.isEmpty || $0.name.lowercased().contains(needle) }
   }
 
   public static func accepted(_ command: Command) -> String { "/\(command.name) " }

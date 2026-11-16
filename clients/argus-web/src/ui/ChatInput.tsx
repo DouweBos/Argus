@@ -289,8 +289,9 @@ export function ChatInput({
     const val = el.value;
     if (val.startsWith("/") && !val.includes(" ") && !val.includes("\n")) {
       const q = val.slice(1).toLowerCase();
+      // Every match: the list scrolls, and a plugin can bring dozens.
       setSuggestions(
-        commands.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 8),
+        commands.filter((c) => c.name.toLowerCase().includes(q)),
       );
       setSelectedIndex(0);
     } else {
