@@ -45,6 +45,7 @@ jobs:
           sed -i "s/^const CONDUCTOR_VERSION = \".*\";$/const CONDUCTOR_VERSION = \"$LATEST\";/" scripts/prepare-conductor.ts
           cat > ".changeset/bump-conductor-$LATEST.md" <<EOF
           ---
+          # platforms: mac
           "argus": minor
           ---
 
