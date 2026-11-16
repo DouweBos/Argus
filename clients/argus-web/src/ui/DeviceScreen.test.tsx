@@ -130,34 +130,41 @@ describe("the device screen's pose controls", () => {
   });
 });
 
-describe("a tvOS device", () => {
-  /** jsdom lays nothing out, so the pad needs a box before it can be aimed at. */
-  function clickpadIn(container: HTMLElement): HTMLElement {
-    const pad = container.querySelector<HTMLElement>("[class*='clickpad']")!;
-    pad.getBoundingClientRect = () =>
-      ({ left: 0, top: 0, width: 96, height: 96 }) as DOMRect;
-
-    return pad;
-  }
-
+describe("a TV device", () => {
   it("presses Select from the centre of the pad", () => {
-    const { container } = render(
-      <DeviceScreen deviceId="sim-1" platform="ios" isTv />,
-    );
+    render(<DeviceScreen deviceId="sim-1" platform="ios" isTv />);
 
-    fireEvent.pointerDown(clickpadIn(container), { clientX: 48, clientY: 48 });
+    fireEvent.pointerDown(screen.getByLabelText("Select"));
 
     expect(deviceButton).toHaveBeenCalledWith("sim-1", "ios", "select");
   });
 
-  it("presses Right from the pad's right edge", () => {
+  it("presses Right from the pad's right arrow", () => {
+    render(<DeviceScreen deviceId="sim-1" platform="ios" isTv />);
+
+    fireEvent.pointerDown(screen.getByLabelText("Right"));
+
+    expect(deviceButton).toHaveBeenCalledWith("sim-1", "ios", "right");
+  });
+
+  it("goes Home from the remote, with no second button row", () => {
     const { container } = render(
       <DeviceScreen deviceId="sim-1" platform="ios" isTv />,
     );
 
-    fireEvent.pointerDown(clickpadIn(container), { clientX: 92, clientY: 48 });
+    fireEvent.pointerDown(screen.getByLabelText("Home"));
 
-    expect(deviceButton).toHaveBeenCalledWith("sim-1", "ios", "right");
+    expect(deviceButton).toHaveBeenCalledWith("sim-1", "ios", "home");
+    expect(container.querySelector(".aw-device-buttons")).toBeNull();
+  });
+
+  it("gives Android TV a Back button instead of Menu", () => {
+    render(<DeviceScreen deviceId="tv-1" platform="android" isTv />);
+
+    fireEvent.pointerDown(screen.getByLabelText("Back"));
+
+    expect(deviceButton).toHaveBeenCalledWith("tv-1", "android", "back");
+    expect(screen.queryByLabelText("Menu")).toBeNull();
   });
 });
 
@@ -192,8 +199,8 @@ describe("the device claim bar", () => {
 
     expect(screen.getByText("Ana is driving")).toBeTruthy();
 
-    // The blocking scrim offers the same takeover; the bar's is the first.
-    fireEvent.click(screen.getAllByText("Take control")[0]!);
+    // One takeover, on the picture: the bar only names the driver.
+    fireEvent.click(screen.getByText("Take control"));
 
     expect(claimDevice).toHaveBeenCalledWith("sim-1", true);
   });

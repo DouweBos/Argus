@@ -1,9 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  AndroidBackIcon,
+  ChevronRightIcon,
+  HomeIcon,
+  PlayPauseIcon,
+  RemoteMenuIcon,
+} from "../../icons/Icons";
 import styles from "./AppleTVRemote.module.css";
 
-/** Every press the Siri Remote can send. */
+/** Every press a TV remote can send. */
 export type TvRemoteButton =
+  | "back"
   | "down"
+  | "home"
   | "left"
   | "menu"
   | "playpause"
@@ -11,36 +20,9 @@ export type TvRemoteButton =
   | "select"
   | "up";
 
-function resolveClickpadButton(
-  e: React.PointerEvent<HTMLDivElement>,
-): TvRemoteButton {
-  const rect = e.currentTarget.getBoundingClientRect();
-  const cx = rect.width / 2;
-  const cy = rect.height / 2;
-  const dx = e.clientX - rect.left - cx;
-  const dy = e.clientY - rect.top - cy;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  const radius = rect.width / 2;
+type Direction = "down" | "left" | "right" | "up";
 
-  if (dist < radius * 0.35) {
-    return "select";
-  }
-
-  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-  if (angle >= -45 && angle < 45) {
-    return "right";
-  }
-  if (angle >= 45 && angle < 135) {
-    return "down";
-  }
-  if (angle >= -135 && angle < -45) {
-    return "up";
-  }
-
-  return "left";
-}
-
-type ClickpadZone = Exclude<TvRemoteButton, "menu" | "playpause">;
+const DIRECTIONS: Direction[] = ["up", "right", "down", "left"];
 
 function isEditableElement(el: Element | null): boolean {
   if (!(el instanceof HTMLElement)) {
@@ -53,11 +35,8 @@ function isEditableElement(el: Element | null): boolean {
   if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
     return true;
   }
-  if (el.closest(".xterm")) {
-    return true;
-  }
 
-  return false;
+  return el.closest(".xterm") !== null;
 }
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -67,65 +46,47 @@ function isEditableTarget(target: EventTarget | null): boolean {
 export interface AppleTVRemoteProps {
   /** Someone else holds the device: the remote dims and stops taking presses. */
   blocked?: boolean;
+  /** Android TV has no Menu / Play-Pause pair; it gets Back instead. */
+  android?: boolean;
   /** Send the press. Where it goes is the caller's business (IPC or gateway). */
   onPress: (button: TvRemoteButton) => void;
 }
 
 /**
- * Siri Remote for a tvOS device: a clickpad that resolves a press to a
- * direction, Menu and Play/Pause, and the arrow-key shortcuts that go with
- * them. Presentational — every surface driving a TV renders this one.
+ * TV remote: a clickpad (four directions and Select), the platform's
+ * hardware buttons, and the arrow-key shortcuts that go with them. Mirrors
+ * the Mac app's remote so every surface driving a TV looks the same.
  */
 export function AppleTVRemote({
   blocked = false,
+  android = false,
   onPress,
 }: AppleTVRemoteProps) {
-  const [activeButton, setActiveButton] = useState<TvRemoteButton | null>(null);
-  const [hoveredZone, setHoveredZone] = useState<ClickpadZone | null>(null);
+  const [active, setActive] = useState<TvRemoteButton | null>(null);
 
+  // The stream is a second or so behind, so flash the press or it looks lost.
   const press = useCallback(
     (button: TvRemoteButton) => {
       if (blocked) {
         return;
       }
-      setActiveButton(button);
-      setTimeout(() => setActiveButton(null), 150);
+      setActive(button);
+      setTimeout(() => setActive((a) => (a === button ? null : a)), 150);
       onPress(button);
     },
     [blocked, onPress],
   );
 
-  const handleClickpad = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      press(resolveClickpadButton(e));
-    },
-    [press],
-  );
-
-  const handleClickpadMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      setHoveredZone(resolveClickpadButton(e) as ClickpadZone);
-    },
-    [],
-  );
-
-  const handleClickpadLeave = useCallback(() => {
-    setHoveredZone(null);
-  }, []);
-
-  const zoneClass = (zone: ClickpadZone, variant: string) => {
-    const classes = [styles.zone, variant];
-    if (activeButton === zone) {
-      classes.push(styles.active);
-    } else if (hoveredZone === zone) {
-      classes.push(styles.hovered);
-    }
-
-    return classes.join(" ");
-  };
-
-  // Keyboard shortcuts
   useEffect(() => {
+    const keys: Record<string, TvRemoteButton> = {
+      ArrowUp: "up",
+      ArrowDown: "down",
+      ArrowLeft: "left",
+      ArrowRight: "right",
+      Enter: "select",
+      Escape: android ? "back" : "menu",
+      ...(android ? {} : { " ": "playpause" as const }),
+    };
     const handler = (e: KeyboardEvent) => {
       if (
         isEditableTarget(e.target) ||
@@ -133,73 +94,69 @@ export function AppleTVRemote({
       ) {
         return;
       }
-      let button: TvRemoteButton | null = null;
-      switch (e.key) {
-        case "ArrowUp":
-          button = "up";
-          break;
-        case "ArrowDown":
-          button = "down";
-          break;
-        case "ArrowLeft":
-          button = "left";
-          break;
-        case "ArrowRight":
-          button = "right";
-          break;
-        case "Enter":
-          button = "select";
-          break;
-        case "Escape":
-          button = "menu";
-          break;
-        case " ":
-          button = "playpause";
-          break;
-      }
-
+      const button = keys[e.key];
       if (button) {
         e.preventDefault();
         press(button);
       }
     };
-
     window.addEventListener("keydown", handler);
 
     return () => window.removeEventListener("keydown", handler);
-  }, [press]);
+  }, [press, android]);
+
+  const hardware: { id: TvRemoteButton; label: string; icon: ReactNode }[] =
+    android
+      ? [
+          { id: "back", label: "Back", icon: <AndroidBackIcon size={16} /> },
+          { id: "home", label: "Home", icon: <HomeIcon size={16} /> },
+        ]
+      : [
+          { id: "menu", label: "Menu", icon: <RemoteMenuIcon size={16} /> },
+          {
+            id: "playpause",
+            label: "Play/Pause",
+            icon: <PlayPauseIcon size={16} />,
+          },
+          { id: "home", label: "Home", icon: <HomeIcon size={16} /> },
+        ];
+
+  const pressed = (id: TvRemoteButton) => (active === id ? styles.active : "");
 
   return (
     <div className={`${styles.remote} ${blocked ? styles.blocked : ""}`}>
-      <div
-        className={styles.clickpad}
-        onPointerDown={handleClickpad}
-        onPointerLeave={handleClickpadLeave}
-        onPointerMove={handleClickpadMove}
-      >
-        <div className={zoneClass("up", styles.zoneUp)} />
-        <div className={zoneClass("down", styles.zoneDown)} />
-        <div className={zoneClass("left", styles.zoneLeft)} />
-        <div className={zoneClass("right", styles.zoneRight)} />
-        <div className={zoneClass("select", styles.zoneSelect)} />
-        <span className={`${styles.arrow} ${styles.arrowUp}`}>▲</span>
-        <span className={`${styles.arrow} ${styles.arrowDown}`}>▼</span>
-        <span className={`${styles.arrow} ${styles.arrowLeft}`}>◀</span>
-        <span className={`${styles.arrow} ${styles.arrowRight}`}>▶</span>
+      <div className={styles.clickpad}>
+        {DIRECTIONS.map((d) => (
+          <button
+            key={d}
+            aria-label={d[0]!.toUpperCase() + d.slice(1)}
+            className={`${styles.arrow} ${styles[d]} ${pressed(d)}`}
+            type="button"
+            onPointerDown={() => press(d)}
+          >
+            <ChevronRightIcon size={20} />
+          </button>
+        ))}
+        <button
+          aria-label="Select"
+          className={`${styles.select} ${pressed("select")}`}
+          type="button"
+          onPointerDown={() => press("select")}
+        />
       </div>
       <div className={styles.buttons}>
-        <button
-          className={`${styles.button} ${activeButton === "menu" ? styles.active : ""}`}
-          onPointerDown={() => press("menu")}
-        >
-          Menu
-        </button>
-        <button
-          className={`${styles.button} ${activeButton === "playpause" ? styles.active : ""}`}
-          onPointerDown={() => press("playpause")}
-        >
-          ▶❚❚
-        </button>
+        {hardware.map((b) => (
+          <button
+            key={b.id}
+            aria-label={b.label}
+            className={`${styles.button} ${pressed(b.id)}`}
+            title={b.label}
+            type="button"
+            onPointerDown={() => press(b.id)}
+          >
+            {b.icon}
+          </button>
+        ))}
       </div>
     </div>
   );

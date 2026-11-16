@@ -2086,3 +2086,41 @@ export function FolderPlusIcon(props: IconProps) {
     </StrokeIcon>
   );
 }
+
+/** The Siri Remote's Menu button. */
+export function RemoteMenuIcon({ size = 16, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M3 4.5h10M3 8h10M3 11.5h10" />
+    </svg>
+  );
+}
+
+export function PlayPauseIcon({ size = 16, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M2 4v8l5-4-5-4Z" />
+      <path d="M10.5 4v8M13.5 4v8" strokeLinecap="round" />
+    </svg>
+  );
+}

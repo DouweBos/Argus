@@ -45,45 +45,6 @@ const ANDROID_BUTTONS = [
 /** A swipe shorter than this (px) counts as a tap → dpad select. */
 const TV_SWIPE_THRESHOLD = 24;
 
-/** The "back" affordance differs per TV platform: tvOS Menu vs Android Back. */
-function tvBackButton(platform: RemotePlatform): string {
-  return platform === "ios" ? "menu" : "back";
-}
-
-/** Extra hardware buttons shown for a TV, per platform. */
-function tvButtons(platform: RemotePlatform) {
-  return [
-    {
-      button: tvBackButton(platform),
-      label: platform === "ios" ? "Menu" : "Back",
-      icon: <Icons.ArrowBackIcon size={16} />,
-    },
-    { button: "home", label: "Home", icon: <Icons.HomeIcon size={16} /> },
-  ];
-}
-
-/** Map a keyboard code to a dpad button ("back" is translated per platform). */
-function codeToTvButton(code: string): string | null {
-  switch (code) {
-    case "ArrowUp":
-      return "up";
-    case "ArrowDown":
-      return "down";
-    case "ArrowLeft":
-      return "left";
-    case "ArrowRight":
-      return "right";
-    case "Enter":
-    case "Space":
-      return "select";
-    case "Escape":
-    case "Backspace":
-      return "back";
-    default:
-      return null;
-  }
-}
-
 export function DeviceScreen({
   deviceId,
   platform,
@@ -304,19 +265,6 @@ export function DeviceScreen({
       if (!hasControl || blocked) {
         return;
       }
-      // tvOS is driven by discrete remote presses, so fire on key-down only.
-      if (isTv) {
-        const tvButton = codeToTvButton(e.code);
-        if (tvButton) {
-          e.preventDefault();
-          if (isDown) {
-            const btn = tvButton === "back" ? tvBackButton(platform) : tvButton;
-            deviceButton(deviceId, platform, btn).catch(() => {});
-          }
-        }
-
-        return;
-      }
       const native = toNativeKey(platform, e.code, e.shiftKey);
       if (!native) {
         return;
@@ -330,15 +278,7 @@ export function DeviceScreen({
         isDown,
       );
     },
-    [
-      hasControl,
-      blocked,
-      isTv,
-      platform,
-      deviceButton,
-      deviceKeyboard,
-      deviceId,
-    ],
+    [hasControl, blocked, platform, deviceKeyboard, deviceId],
   );
 
   if (!supported) {
@@ -352,11 +292,7 @@ export function DeviceScreen({
     );
   }
 
-  const buttons = isTv
-    ? tvButtons(platform)
-    : platform === "ios"
-      ? IOS_BUTTONS
-      : ANDROID_BUTTONS;
+  const buttons = platform === "ios" ? IOS_BUTTONS : ANDROID_BUTTONS;
 
   // An EAS Simulator device ends its session here instead of rotating.
   const eas = isEasDevice(deviceId);
@@ -406,16 +342,14 @@ export function DeviceScreen({
     </>
   );
 
-  // The Siri Remote owns the arrow keys for a tvOS device, so the stage does
-  // not also handle them — two listeners would double every press.
-  const siriRemote = isTv && platform === "ios";
-
   return (
     <div className="aw-device">
       {hasControl && (
+        // While someone else drives, the overlay on the picture offers the takeover.
         <DeviceClaimBar
           holderLabel={holder?.label ?? null}
           mine={driving}
+          readOnly={blocked}
           onRelease={() => releaseDevice(deviceId)}
           onTakeControl={() => {
             claimDevice(deviceId, blocked).catch(() => {});
@@ -423,14 +357,12 @@ export function DeviceScreen({
         />
       )}
       {isTv ? (
-        // tvOS maps pointer gestures to the dpad rather than forwarding
-        // touches, and a TV never rotates — so it keeps its own plain stage.
+        // A TV maps pointer gestures to the dpad rather than forwarding touches,
+        // never rotates, and its remote owns the arrow keys.
         <div className="aw-device-tv">
           <div
             className="aw-device-stage"
             tabIndex={0}
-            onKeyDown={siriRemote ? undefined : (e) => onKey(e, true)}
-            onKeyUp={siriRemote ? undefined : (e) => onKey(e, false)}
             onPointerCancel={onTvPointerUp}
             onPointerDown={onTvPointerDown}
             onPointerUp={onTvPointerUp}
@@ -438,8 +370,14 @@ export function DeviceScreen({
             <canvas ref={canvasRef} className="aw-device-canvas" />
             {overlays}
           </div>
-          {siriRemote && hasControl && (
-            <AppleTVRemote blocked={blocked} onPress={onRemotePress} />
+          {hasControl && (
+            <div className="aw-device-remote">
+              <AppleTVRemote
+                android={platform === "android"}
+                blocked={blocked}
+                onPress={onRemotePress}
+              />
+            </div>
           )}
         </div>
       ) : (
@@ -458,7 +396,7 @@ export function DeviceScreen({
         </DeviceStage>
       )}
 
-      {hasControl && (
+      {hasControl && !isTv && (
         <div className="aw-device-buttons">
           {buttons.map((b) => (
             <Button

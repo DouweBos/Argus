@@ -617,6 +617,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  container: aw-device / inline-size;
 }
 
 .aw-device-stage {
@@ -631,18 +632,38 @@ button {
   touch-action: none;
 }
 
-/* tvOS: the stream and its Siri Remote side by side. */
+/* A TV picture is landscape: in a narrow column its remote goes underneath,
+   or the picture shrinks to a sliver. */
 .aw-device-tv {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
 }
 
 .aw-device-tv .aw-device-stage {
   flex: 1 1 auto;
-  align-self: stretch;
+}
+
+.aw-device-remote {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+}
+
+@container aw-device (min-width: 640px) {
+  .aw-device-tv {
+    flex-direction: row;
+  }
+
+  .aw-device-remote {
+    width: 240px;
+    align-items: center;
+    border-top: none;
+    border-left: 1px solid var(--border);
+  }
 }
 
 /* Wrapper for Peacock's DeviceStage, which owns the layout inside it. */

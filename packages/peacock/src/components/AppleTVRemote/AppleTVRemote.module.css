@@ -2,182 +2,118 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  width: 120px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  gap: var(--space-8);
+  padding: var(--space-8);
   user-select: none;
   -webkit-user-select: none;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px var(--scrim-md);
 }
 
-/* Circular trackpad / click area */
 .clickpad {
   position: relative;
-  width: 96px;
-  height: 96px;
+  width: min(220px, 100%);
+  aspect-ratio: 1;
   border-radius: 50%;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
+}
+
+.arrow {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24%;
+  height: 24%;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-secondary);
   cursor: pointer;
-  overflow: hidden;
-  transition: border-color var(--transition-fast);
+  transition: color var(--transition-fast);
 }
 
-/* Inner select ring indicator */
-.clickpad::after {
-  content: "";
+.arrow:hover {
+  color: var(--text-primary);
+}
+
+.up {
+  top: 5%;
+  left: 38%;
+  transform: rotate(-90deg);
+}
+
+.right {
+  top: 38%;
+  right: 5%;
+}
+
+.down {
+  bottom: 5%;
+  left: 38%;
+  transform: rotate(90deg);
+}
+
+.left {
+  top: 38%;
+  left: 5%;
+  transform: rotate(180deg);
+}
+
+.arrow.active {
+  color: var(--accent);
+}
+
+.select {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 36%;
-  height: 36%;
-  transform: translate(-50%, -50%);
+  top: 30%;
+  left: 30%;
+  width: 40%;
+  height: 40%;
+  padding: 0;
   border-radius: 50%;
+  background: var(--bg-tertiary);
   border: 1px solid var(--border);
-  pointer-events: none;
+  cursor: pointer;
+  transition: background var(--transition-fast);
 }
 
-/* Directional zone highlights */
-.zone {
-  position: absolute;
-  opacity: 0;
-  transition: opacity var(--transition-fast);
-  pointer-events: none;
-}
-
-.zone.hovered {
-  opacity: 0.5;
-}
-
-.zone.active {
-  opacity: 1;
-}
-
-.zoneUp {
-  top: 0;
-  left: 25%;
-  width: 50%;
-  height: 32%;
-  background: radial-gradient(
-    ellipse at center bottom,
-    var(--bg-hover),
-    transparent
-  );
-}
-
-.zoneDown {
-  bottom: 0;
-  left: 25%;
-  width: 50%;
-  height: 32%;
-  background: radial-gradient(
-    ellipse at center top,
-    var(--bg-hover),
-    transparent
-  );
-}
-
-.zoneLeft {
-  left: 0;
-  top: 25%;
-  width: 32%;
-  height: 50%;
-  background: radial-gradient(
-    ellipse at right center,
-    var(--bg-hover),
-    transparent
-  );
-}
-
-.zoneRight {
-  right: 0;
-  top: 25%;
-  width: 32%;
-  height: 50%;
-  background: radial-gradient(
-    ellipse at left center,
-    var(--bg-hover),
-    transparent
-  );
-}
-
-.zoneSelect {
-  top: 32%;
-  left: 32%;
-  width: 36%;
-  height: 36%;
-  border-radius: 50%;
+.select:hover {
   background: var(--bg-hover);
 }
 
-/* Direction arrows */
-.arrow {
-  position: absolute;
-  color: var(--text-muted);
-  font-size: 8px;
-  pointer-events: none;
-  line-height: 1;
+.select.active {
+  background: color-mix(in srgb, var(--accent) 25%, var(--bg-tertiary));
 }
 
-.arrowUp {
-  top: 10%;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.arrowDown {
-  bottom: 10%;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.arrowLeft {
-  left: 10%;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.arrowRight {
-  right: 10%;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-/* Auxiliary buttons row */
 .buttons {
   display: flex;
-  gap: 6px;
+  gap: var(--space-6);
 }
 
 .button {
-  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 36px;
   border-radius: var(--border-radius-md);
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary);
   border: 1px solid var(--border);
-  color: var(--text-muted);
-  font-size: 9px;
-  font-weight: 500;
+  color: var(--text-secondary);
   cursor: pointer;
   transition:
     background var(--transition-fast),
-    color var(--transition-fast),
-    border-color var(--transition-fast);
-  line-height: 1;
+    color var(--transition-fast);
 }
 
 .button:hover {
   background: var(--bg-hover);
-  color: var(--text-secondary);
-  border-color: color-mix(in srgb, var(--border) 50%, var(--text-muted));
+  color: var(--text-primary);
 }
 
 .button.active {
-  background: var(--bg-hover);
-  color: var(--text-primary);
+  color: var(--accent);
 }
 
 /* Another client holds the device — the overlay next to it says who. */

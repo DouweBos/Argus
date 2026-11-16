@@ -12,12 +12,12 @@ export default meta;
 
 type Story = StoryObj<typeof AppleTVRemote>;
 
-function Demo({ blocked }: { blocked?: boolean }) {
+function Demo({ blocked, android }: { blocked?: boolean; android?: boolean }) {
   const [last, setLast] = useState<TvRemoteButton | null>(null);
 
   return (
     <div style={{ display: "grid", gap: 12, justifyItems: "center" }}>
-      <AppleTVRemote blocked={blocked} onPress={setLast} />
+      <AppleTVRemote android={android} blocked={blocked} onPress={setLast} />
       <p style={{ font: "var(--type-caption)", color: "var(--text-muted)" }}>
         Last press: {last ?? "—"}
       </p>
@@ -25,8 +25,11 @@ function Demo({ blocked }: { blocked?: boolean }) {
   );
 }
 
-/** Click a quadrant of the pad for a direction, the middle for Select. */
+/** Click an arrow for a direction, the middle for Select. */
 export const Default: Story = { render: () => <Demo /> };
 
 /** Another client holds the device — presses are refused, so it dims. */
 export const Blocked: Story = { render: () => <Demo blocked /> };
+
+/** Android TV: Back and Home instead of Menu and Play/Pause. */
+export const AndroidTV: Story = { render: () => <Demo android /> };
