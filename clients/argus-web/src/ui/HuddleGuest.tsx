@@ -19,6 +19,8 @@ import {
   Input,
   ResizablePanel,
   SettingsScreenField,
+  SidePanel,
+  type SidePanelTab,
   SidebarHeader,
   SidebarHeaderAction,
   Spinner,
@@ -43,12 +45,7 @@ import { ChatInput } from "./ChatInput";
 import { ConnectionBadge } from "./ConnectionBadge";
 import { DeviceScreen } from "./DeviceScreen";
 import { HuddleGate } from "./HuddleGate";
-import {
-  loadChatPanelWidth,
-  loadDevicePanelWidth,
-  saveChatPanelWidth,
-  saveDevicePanelWidth,
-} from "./sidebarWidth";
+import { loadSidePanelWidth, saveSidePanelWidth } from "./sidebarWidth";
 import { useIsWide } from "./useIsWide";
 
 export function HuddleGuest({ token }: { token: string }) {
@@ -101,18 +98,20 @@ function HuddleRoom({ view }: { view: HuddleView }) {
   const refreshDevices = useDevicesStore((s) => s.refreshDevices);
   const sayInHuddle = useHuddleStore((s) => s.sayInHuddle);
   const hasDevice = panes.includes("device");
-  // Wide enough for both at once: the device stops being a pane you switch to
-  // and becomes a panel beside the conversation, the way the desktop shows it.
+  // Wide enough for both at once: the device and the room chat stop being
+  // panes you switch to and become tabs in a side panel, as on the Mac.
   const isWide = useIsWide();
   const splitDevice = isWide && hasDevice;
-  // The room chat gets a column of its own too, open unless the guest hides it.
-  const [chatColumnOpen, setChatColumnOpen] = useState(true);
-  const unread = useUnreadCount(
-    view.chat.length,
-    isWide ? chatColumnOpen : pane === "chat",
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelTab, setPanelTab] = useState<SidePanelId>(
+    hasDevice ? "device" : "chat",
   );
-  const onDeviceResize = useCallback((w: number) => saveDevicePanelWidth(w), []);
-  const onChatResize = useCallback((w: number) => saveChatPanelWidth(w), []);
+  const shownTab: SidePanelId = hasDevice ? panelTab : "chat";
+  const chatInView = isWide
+    ? panelOpen && shownTab === "chat"
+    : pane === "chat";
+  const unread = useUnreadCount(view.chat.length, chatInView);
+  const onPanelResize = useCallback((w: number) => saveSidePanelWidth(w), []);
   const lastMessage = view.chat[view.chat.length - 1];
 
   useEffect(() => {
@@ -144,14 +143,21 @@ function HuddleRoom({ view }: { view: HuddleView }) {
     }
   }, [isWide]);
 
-  // Someone else speaking brings a hidden chat column back.
+  // Someone else speaking brings a hidden panel back on the chat. An open one
+  // keeps its tab — yanking the device away mid-tap is worse than a badge.
   const lastFromOthers =
     lastMessage && lastMessage.member_id !== view.you ? lastMessage.id : null;
+  const handledMessage = useRef(lastFromOthers);
   useEffect(() => {
-    if (lastFromOthers) {
-      setChatColumnOpen(true);
+    if (!lastFromOthers || handledMessage.current === lastFromOthers) {
+      return;
     }
-  }, [lastFromOthers]);
+    handledMessage.current = lastFromOthers;
+    if (!panelOpen) {
+      setPanelOpen(true);
+      setPanelTab("chat");
+    }
+  }, [lastFromOthers, panelOpen]);
 
   // The list is already scoped to the room, so this is the device or nothing.
   const device = devices.find((d) => d.id === view.deviceKey) ?? null;
@@ -200,11 +206,16 @@ function HuddleRoom({ view }: { view: HuddleView }) {
               )}
             </SidebarHeaderAction>
             <SidebarHeaderAction
-              onClick={() =>
-                isWide
-                  ? setChatColumnOpen((open) => !open)
-                  : setPane(pane === "chat" ? "agent" : "chat")
-              }
+              onClick={() => {
+                if (!isWide) {
+                  setPane(pane === "chat" ? "agent" : "chat");
+                } else if (chatInView) {
+                  setPanelOpen(false);
+                } else {
+                  setPanelOpen(true);
+                  setPanelTab("chat");
+                }
+              }}
               title="Chat with the room"
               aria-label="Chat with the room"
             >
@@ -272,33 +283,29 @@ function HuddleRoom({ view }: { view: HuddleView }) {
           )}
         </div>
 
-        {splitDevice && (
+        {isWide && (
           <ResizablePanel
-            defaultWidth={loadDevicePanelWidth()}
+            collapsed={!panelOpen}
+            defaultWidth={loadSidePanelWidth()}
             maxWidth={900}
             minWidth={280}
             side="right"
             unit="pixel"
-            onResize={onDeviceResize}
+            onResize={onPanelResize}
           >
-            <div className="aw-huddle-device">
-              <DevicePane device={device} />
-            </div>
-          </ResizablePanel>
-        )}
-
-        {isWide && (
-          <ResizablePanel
-            collapsed={!chatColumnOpen}
-            defaultWidth={loadChatPanelWidth()}
-            maxWidth={600}
-            minWidth={240}
-            side="right"
-            unit="pixel"
-            onResize={onChatResize}
-          >
-            <div className="aw-huddle-chat">
-              <RoomChat view={view} onSend={sayInHuddle} />
+            <div className="aw-huddle-panel">
+              <SidePanel<SidePanelId>
+              selectedId={shownTab}
+              tabs={sidePanelTabs(hasDevice, shownTab === "chat" ? 0 : unread)}
+              onClose={() => setPanelOpen(false)}
+              onSelect={setPanelTab}
+            >
+              {shownTab === "device" ? (
+                <DevicePane device={device} />
+              ) : (
+                <RoomChat view={view} onSend={sayInHuddle} />
+              )}
+              </SidePanel>
             </div>
           </ResizablePanel>
         )}
@@ -309,6 +316,32 @@ function HuddleRoom({ view }: { view: HuddleView }) {
       )}
     </div>
   );
+}
+
+type SidePanelId = "chat" | "device";
+
+function sidePanelTabs(
+  hasDevice: boolean,
+  unread: number,
+): SidePanelTab<SidePanelId>[] {
+  const chat: SidePanelTab<SidePanelId> = {
+    id: "chat",
+    title: "Chat",
+    icon: <Icons.ChatIcon size={13} />,
+    count: unread,
+  };
+  if (!hasDevice) {
+    return [chat];
+  }
+
+  return [
+    {
+      id: "device",
+      title: "Device",
+      icon: <Icons.SimulatorIcon size={13} />,
+    },
+    chat,
+  ];
 }
 
 /** The side conversation between the people in the room. */

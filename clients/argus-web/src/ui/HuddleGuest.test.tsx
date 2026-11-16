@@ -144,6 +144,33 @@ describe("the huddle guest", () => {
       expect(chatColumn()?.getAttribute("data-collapsed")).toBe("false");
     });
 
+    it("puts the device and the chat in one tabbed side panel", () => {
+      huddle = { ...room([message("m1", null)]), deviceKey: "sim-1" };
+      render(<HuddleGuest token="tok-1" />);
+
+      expect(screen.getByRole("tab", { name: /Device/ })).toBeTruthy();
+      expect(screen.queryByText("said m1")).toBeNull();
+
+      fireEvent.click(screen.getByRole("tab", { name: /Chat/ }));
+      expect(screen.getByText("said m1")).toBeTruthy();
+    });
+
+    it("leaves the device in front when someone speaks, and counts it on Chat", () => {
+      huddle = { ...room([message("m1", null)]), deviceKey: "sim-1" };
+      const { rerender } = render(<HuddleGuest token="tok-1" />);
+
+      huddle = {
+        ...room([message("m1", null), message("m2", "them")]),
+        deviceKey: "sim-1",
+      };
+      rerender(<HuddleGuest token="tok-1" />);
+
+      expect(screen.queryByText("said m2")).toBeNull();
+      expect(screen.getByRole("tab", { name: /Chat/ }).textContent).toContain(
+        "1",
+      );
+    });
+
     it("brings a hidden chat back when someone else speaks", () => {
       huddle = room([message("m1", null)]);
       const { rerender } = render(<HuddleGuest token="tok-1" />);

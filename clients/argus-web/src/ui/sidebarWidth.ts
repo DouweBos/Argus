@@ -5,10 +5,9 @@
 
 const KEY = "argus.web.sidebarWidth";
 const DEFAULT = 272;
-const DEVICE_KEY = "argus.web.huddleDeviceWidth";
-const DEVICE_DEFAULT = 420;
-const CHAT_KEY = "argus.web.huddleChatWidth";
-const CHAT_DEFAULT = 320;
+// The device's width key: it was the wider of the two panels this replaced.
+const PANEL_KEY = "argus.web.huddleDeviceWidth";
+const PANEL_DEFAULT = 420;
 
 export function loadSidebarWidth(): number {
   const raw = Number(localStorage.getItem(KEY));
@@ -24,31 +23,16 @@ export function saveSidebarWidth(width: number): void {
   }
 }
 
-/** Width of the huddle's device panel on a wide screen. */
-export function loadDevicePanelWidth(): number {
-  const raw = Number(localStorage.getItem(DEVICE_KEY));
+/** Width of the huddle's side panel (device and chat tabs) on a wide screen. */
+export function loadSidePanelWidth(): number {
+  const raw = Number(localStorage.getItem(PANEL_KEY));
 
-  return Number.isFinite(raw) && raw > 0 ? raw : DEVICE_DEFAULT;
+  return Number.isFinite(raw) && raw > 0 ? raw : PANEL_DEFAULT;
 }
 
-export function saveDevicePanelWidth(width: number): void {
+export function saveSidePanelWidth(width: number): void {
   try {
-    localStorage.setItem(DEVICE_KEY, String(Math.round(width)));
-  } catch {
-    // storage unavailable — session-only width
-  }
-}
-
-/** Width of the huddle's chat column on a wide screen. */
-export function loadChatPanelWidth(): number {
-  const raw = Number(localStorage.getItem(CHAT_KEY));
-
-  return Number.isFinite(raw) && raw > 0 ? raw : CHAT_DEFAULT;
-}
-
-export function saveChatPanelWidth(width: number): void {
-  try {
-    localStorage.setItem(CHAT_KEY, String(Math.round(width)));
+    localStorage.setItem(PANEL_KEY, String(Math.round(width)));
   } catch {
     // storage unavailable — session-only width
   }
