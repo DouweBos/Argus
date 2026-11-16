@@ -33,7 +33,7 @@ struct ProjectHeader: View {
         .layoutPriority(1)
       if showsHost { HostBadge(hostId: model.host(ofProject: project.repoRoot)) }
       if let drive { VolumeBadge(label: drive.name, connected: drive.connected) }
-      if let git { SyncCounts(status: git).fixedSize() }
+      if let git { SyncCounts(status: git) }
       Spacer(minLength: 4)
       if hovering {
         newSessionButton
@@ -121,28 +121,5 @@ struct VolumeBadge: View {
     .foregroundStyle(theme.textMuted)
     .help(connected ? "Worktrees are stored on \(label)" : "\(label) isn't connected — showing the last known state")
     .accessibilityLabel(connected ? "On \(label)" : "\(label) disconnected")
-  }
-}
-
-/// Commits behind and ahead of the upstream, as the desktop shows them.
-private struct SyncCounts: View {
-  @Environment(\.theme) private var theme
-  let status: RemoteGitStatus
-
-  var body: some View {
-    let ahead = Int(status.ahead)
-    let behind = Int(status.behind)
-    if let upstream = status.upstream, ahead > 0 || behind > 0 {
-      HStack(spacing: 4) {
-        if behind > 0 { Text("↓\(behind)").foregroundStyle(theme.warning) }
-        if ahead > 0 { Text("↑\(ahead)") }
-      }
-      .font(.scaled(size: 10, weight: .medium).monospacedDigit())
-      .foregroundStyle(theme.textMuted)
-      .help(
-        behind > 0
-          ? "Behind \(upstream) by \(behind) commit\(behind == 1 ? "" : "s")"
-          : "Ahead of \(upstream) by \(ahead) commit\(ahead == 1 ? "" : "s")")
-    }
   }
 }

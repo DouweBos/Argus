@@ -16,8 +16,13 @@ struct SidebarSessionRow: View {
 
   var body: some View {
     SessionRow(
-      session: session, agents: agents, caption: caption, title: title, indent: indent, stacked: stacked)
+      session: session, agents: agents, git: git, caption: caption, title: title, indent: indent, stacked: stacked)
       .help(hasCard ? "" : help)
+      // Loaded once for the ↑/↓ counts; the host's git events keep it fresh after.
+      .task(id: session.id) {
+        guard hasCard, session.status == .ready, git == nil else { return }
+        await store.loadGitStatus(sessionId: session.id)
+      }
       // Fetched as the pointer arrives, so the card opens on a fresh status.
       .onHover { inside in
         guard inside, hasCard, session.status == .ready else { return }

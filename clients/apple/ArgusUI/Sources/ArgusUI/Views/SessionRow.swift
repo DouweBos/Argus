@@ -88,6 +88,7 @@ public struct SessionRow: View {
             .foregroundStyle(theme.textMuted)
             .accessibilityLabel("Snoozed")
         }
+        if let git { SyncCounts(status: git, font: Self.detailFont) }
         if let pullRequest = session.pullRequest {
           PullRequestStateIcon(pullRequest, size: Self.prIconSize, watching: session.pullRequestWatched == true)
             #if os(macOS)

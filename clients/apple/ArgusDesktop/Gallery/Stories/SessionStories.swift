@@ -15,8 +15,37 @@
             }
           }
           .padding(8)
-        }
+        },
+        GalleryStory("sessions/sidebar-rows/sync", size: CGSize(width: 280, height: 0)) {
+          VStack(alignment: .leading, spacing: 1) {
+            ForEach(syncRows, id: \.0.id) { session, git in
+              SessionRow(session: session, agents: [], git: git)
+                .padding(.horizontal, 8)
+            }
+          }
+          .padding(8)
+        },
       ]
+    }
+
+    /// Ahead, behind, both, level and unpublished.
+    private static let syncRows: [(RemoteSession, RemoteGitStatus)] = [
+      (session("ahead", "Watch pull request tool", pr: (412, "open")), git("ahead", ahead: 3)),
+      (session("behind", "Fix flaky merge test", pr: nil), git("behind", behind: 2)),
+      (session("both", "Gallery stories for sessions", pr: (415, "draft")), git("both", ahead: 1, behind: 4)),
+      (session("level", "Linear issue picker", pr: (398, "merged")), git("level")),
+      (session("local", "Explore onboarding copy", pr: nil), git("local", ahead: 5, upstream: nil)),
+    ]
+
+    private static func git(
+      _ branch: String, ahead: Int = 0, behind: Int = 0, upstream: String? = "origin/branch"
+    ) -> RemoteGitStatus {
+      var json: [String: Any] = [
+        "branch": branch, "ahead": ahead, "behind": behind, "dirty_count": 0, "stash_count": 0,
+        "conflict_count": 0, "detached": false,
+      ]
+      json["upstream"] = upstream
+      return try! ProtocolCodec.decoder.decode(RemoteGitStatus.self, from: Data(GalleryJSON.encode(json).utf8))
     }
 
     private static let rows: [RemoteSession] = [
