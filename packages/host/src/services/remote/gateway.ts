@@ -16,6 +16,7 @@ import type { H264Config } from "../simulator/h264-parser";
 import type {
   AgentTranscriptDelta,
   PlatformRequest,
+  RemoteAgentStatus,
 } from "@argus/remote-protocol";
 import {
   CONNECTION_TYPED_EVENTS,
@@ -59,6 +60,7 @@ import { onVideo } from "../simulator/videoForward";
 import { TransferHub } from "../transfer/hub";
 import { TAG_XFER } from "../transfer/protocol";
 import {
+  agentAwaiting,
   dispatch,
   GatewayError,
   permissionKey,
@@ -303,6 +305,11 @@ export class DeviceConnection implements DeviceMediaController {
   private sendSeq = 0;
   private recvSeq = -1;
   private readonly subscriptions = new Set<string>();
+  /** The `awaiting` each agent's last pushed status carried. */
+  private readonly awaitingSent = new Map<
+    string,
+    RemoteAgentStatus["awaiting"]
+  >();
   private readonly ctx: GatewayContext;
   /** Forward raw renderer broadcasts instead of typed events (admin devices). */
   private readonly raw: boolean;
@@ -632,6 +639,7 @@ export class DeviceConnection implements DeviceMediaController {
         this.replayPendingPermissions(envelope.agent_id);
       } else {
         this.subscriptions.delete(envelope.agent_id);
+        this.awaitingSent.delete(envelope.agent_id);
       }
 
       return;
@@ -1057,19 +1065,19 @@ export class DeviceConnection implements DeviceMediaController {
           agentId,
           toRemoteTranscriptDelta(delta, meta),
         );
-        // The status carries the title lists show.
-        if (delta.meta && "title" in delta.meta) {
+        // The status carries the title lists show, and what the agent awaits:
+        // a question answered mid-turn changes no runner state.
+        if (
+          (delta.meta && "title" in delta.meta) ||
+          agentAwaiting(agentId) !== this.awaitingSent.get(agentId)
+        ) {
           this.pushAgentStatus(agentId);
         }
         break;
       }
-      case "status": {
-        const agent = appState.agents.get(agentId);
-        if (agent) {
-          this.pushEvent("agent.status", agentId, toRemoteAgentStatus(agent));
-        }
+      case "status":
+        this.pushAgentStatus(agentId);
         break;
-      }
       // The pending continue rides on the status, so late joiners see it too.
       case "account":
       case "limit-resume":
@@ -1155,7 +1163,9 @@ export class DeviceConnection implements DeviceMediaController {
   private pushAgentStatus(agentId: string): void {
     const agent = appState.agents.get(agentId);
     if (agent) {
-      this.pushEvent("agent.status", agentId, toRemoteAgentStatus(agent));
+      const status = toRemoteAgentStatus(agent);
+      this.awaitingSent.set(agentId, status.awaiting);
+      this.pushEvent("agent.status", agentId, status);
     }
   }
 

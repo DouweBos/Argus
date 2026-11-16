@@ -597,7 +597,7 @@ function agentTitle(agentId: string): string | null {
  * host-side; questions and plan approvals never raise one in auto-approving
  * modes, so those come from the unresolved tool call in the transcript.
  */
-function agentAwaiting(agentId: string): RemoteAgentStatus["awaiting"] {
+export function agentAwaiting(agentId: string): RemoteAgentStatus["awaiting"] {
   const pending = appState.agentPendingPermissions.get(agentId);
   const prompt = pending ? [...pending.values()][0] : undefined;
   if (prompt) {
