@@ -52,7 +52,8 @@
         .frame(maxHeight: 220)
         .fixedSize(horizontal: false, vertical: true)
       }
-      .background(theme.bgTertiary)
+      // Opaque: it floats over the chat or the start title, which must not show through.
+      .background(theme.surface)
       .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
       .overlay {
         RoundedRectangle(cornerRadius: theme.radiusSmall).strokeBorder(theme.border, lineWidth: 1)
