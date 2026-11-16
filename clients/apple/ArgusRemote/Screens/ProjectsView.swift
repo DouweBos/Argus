@@ -13,6 +13,7 @@ struct ProjectsView: View {
 
   @State private var openingPad = false
   @State private var padToDelete: RemoteSession?
+  @State private var projectToRemove: RemoteProject?
   @State private var width: CGFloat = 0
 
   /// As wide as the Mac's home column gets; past that the margins grow.
@@ -84,6 +85,19 @@ struct ProjectsView: View {
     } message: {
       Text("Its agents are stopped and every file in its folder is removed.")
     }
+    .confirmationDialog(
+      "Remove \(projectToRemove?.name ?? "project")?",
+      isPresented: Binding(
+        get: { projectToRemove != nil }, set: { if !$0 { projectToRemove = nil } }),
+      titleVisibility: .visible
+    ) {
+      Button("Remove", role: .destructive) {
+        guard let project = projectToRemove else { return }
+        Task { await host.removeProject(repoRoot: project.repoRoot) }
+      }
+    } message: {
+      Text("Its agents and terminals stop. The repository and its worktrees stay on \(hostName).")
+    }
     .refreshable { await refresh() }
     .liveRefresh(enabled: app.identity != nil && host.connection == .ready) { await refresh() }
     .liveRefresh(enabled: app.identity != nil && host.connection == .ready, every: .seconds(60)) {
@@ -151,6 +165,7 @@ struct ProjectsView: View {
     .contextMenu {
       if host.hasControl {
         Button("New session…", systemImage: Icon.plus) { newSession(in: project) }
+        Button("Remove Project…", systemImage: Icon.trash, role: .destructive) { projectToRemove = project }
       }
     }
   }

@@ -157,7 +157,11 @@ export function restoreRepoRoots(): void {
 }
 
 /** Remove a repository root from the set of open projects. */
-export function removeRepoRoot(dirPath: string): void {
+export function removeRepoRoot(
+  dirPath: string,
+  via: "ipc" | "remote" = "ipc",
+): void {
+  const known = appState.repoRoots.has(dirPath);
   appState.repoRoots.delete(dirPath);
   unreachableRepoRoots.delete(dirPath);
   saveRepoRoots();
@@ -216,6 +220,9 @@ export function removeRepoRoot(dirPath: string): void {
   }
 
   info(`Removed repo root and ${wsIds.length} sessions: ${dirPath}`);
+  if (known) {
+    telemetryCapture("project_removed", { via });
+  }
 }
 
 // ---------------------------------------------------------------------------

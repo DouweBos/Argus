@@ -15,6 +15,7 @@ struct ProjectSidebarSection: View {
   @Binding var collapsed: Bool
   /// Which projects show their done and snoozed sessions.
   let folds: SidebarCollapse
+  @State private var confirmingRemove = false
 
   private var sessions: [RemoteSession] { store.sessionsByRepo[project.repoRoot] ?? [] }
   private var root: RemoteSession? { sessions.first { $0.kind == .projectRoot } }
@@ -49,6 +50,12 @@ struct ProjectSidebarSection: View {
       row
     }
     .contextMenu { projectMenu }
+    .alert("Remove \(project.name)?", isPresented: $confirmingRemove) {
+      Button("Remove", role: .destructive, action: remove)
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("Its agents and terminals stop. The repository and its worktrees stay on disk, and you can add it again later.")
+    }
   }
 
   @ViewBuilder private var projectMenu: some View {
@@ -61,6 +68,15 @@ struct ProjectSidebarSection: View {
     if !worktrees.isEmpty {
       Button(collapsed ? "Expand" : "Collapse") { collapsed.toggle() }
     }
+    Divider()
+    Button("Remove Project…", role: .destructive) { confirmingRemove = true }
+  }
+
+  private func remove() {
+    if let id = model.route.sessionId, sessions.contains(where: { $0.id == id }) {
+      model.navigate(.home)
+    }
+    Task { await store.removeProject(repoRoot: project.repoRoot) }
   }
 
   private func openInTab(_ session: RemoteSession) {

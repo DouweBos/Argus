@@ -174,6 +174,7 @@ import {
   createSession,
   deleteSession,
   listSessions,
+  removeRepoRoot,
   renameSession,
   renameSessionBranch,
   retrySessionSetup,
@@ -1979,6 +1980,14 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     ];
 
     return { branches };
+  },
+
+  "projects.remove": async (params) => {
+    const { repo_root } = parse("projects.remove", params);
+    requireKnownRepoRoot(repo_root);
+    await control(() => removeRepoRoot(repo_root, "remote"));
+
+    return { accepted: true };
   },
 
   "projects.base_branches": async (params) => {

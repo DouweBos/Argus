@@ -19,6 +19,22 @@ extension HostStore {
     projectsLoaded = true
   }
 
+  /// Drops the project from the host's list, stopping its agents and terminals;
+  /// the repo and its worktrees stay on disk.
+  public func removeProject(repoRoot: String) async {
+    guard let backend else { return }
+    struct Params: Encodable { let repo_root: String }
+    do {
+      if backend.kind == .local {
+        try await backend.request(ArgusProtocol.Commands.RemoveRepoRoot.self, .init(path: repoRoot))
+      } else {
+        try await backend.request(.projectsRemove, Params(repo_root: repoRoot), as: IgnoredResult.self)
+      }
+      projects.removeAll { $0.repoRoot == repoRoot }
+      await refreshProjects()
+    } catch { report(error) }
+  }
+
   public func loadRecentAgents() async {
     guard let backend, !holdsFresher(recentAgentsLoaded) else { return }
     struct Result: Decodable { let agents: [RemoteAgentStatus] }

@@ -172,6 +172,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.branches": session(),
   // Only useful for creating a session, which a guest can't.
   "projects.base_branches": DENIED,
+  "projects.remove": DENIED,
   "sessions.diff": session(),
   "sessions.viewed_files": session(),
   "sessions.set_file_viewed": session(),

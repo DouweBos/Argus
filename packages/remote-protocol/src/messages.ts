@@ -534,6 +534,8 @@ export const MethodParams = {
   "sessions.branches": z.object({ session_id: z.string() }),
   /** What a new worktree may branch from, and what `.argus.json` prefers. */
   "projects.base_branches": z.object({ repo_root: z.string() }),
+  /** Drop a project from the host's list; its repo and worktrees stay on disk. */
+  "projects.remove": z.object({ repo_root: z.string() }),
   "sessions.checkout": z.object({
     session_id: z.string(),
     branch: z.string().trim().min(1),
@@ -1171,6 +1173,7 @@ export const MethodResult = {
     exit_code: z.number().int().nullable(),
   }),
   "sessions.branches": z.object({ branches: z.array(RemoteGitBranch) }),
+  "projects.remove": z.object({ accepted: z.boolean() }),
   "projects.base_branches": z.object({
     local: z.array(z.string()),
     /** Every `origin/<name>` ref, including names that also exist locally. */

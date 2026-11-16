@@ -221,6 +221,8 @@ export const REMOTE_METHODS = {
   "sessions.branches": "monitor",
   /** A project's branches and `.argus.json` base preference, to preselect a new worktree's base. */
   "projects.base_branches": "monitor",
+  /** Remove a project from the host's list; stops its agents and terminals. */
+  "projects.remove": "control",
   /** Switch the checked-out branch. Host-side these branch ops only work on a
    *  project root — session worktrees are pinned to their own branch. */
   "sessions.checkout": "control",

@@ -513,6 +513,10 @@ export interface EventMap {
     protected_bucket: "0" | "1" | "2-5" | "6+";
     failed: boolean;
   };
+  project_removed: {
+    /** The desktop's IPC, or a gateway client (phone, Mac app, web). */
+    via: "ipc" | "remote";
+  };
   session_deleted: {
     delete_branch: boolean;
     kind: SessionKind;

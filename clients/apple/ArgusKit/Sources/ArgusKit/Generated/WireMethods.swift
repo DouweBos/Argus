@@ -5208,6 +5208,40 @@ extension ArgusProtocol {
       }
     }
 
+    public struct ProjectsRemoveParams: Codable, Sendable {
+      public var repoRoot: String
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoot = "repo_root"
+      }
+
+      public init(repoRoot: String) {
+        self.repoRoot = repoRoot
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repoRoot, forKey: .repoRoot)
+      }
+    }
+
+    public struct ProjectsRemoveResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
     public struct ProposalsAcceptParams: Codable, Sendable {
       public var proposalId: String
       public var note: String?
@@ -8961,6 +8995,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.ProjectsListParams
       public typealias Result = ArgusProtocol.MethodsTypes.ProjectsListResult
       public static let name = "projects.list"
+    }
+
+    public enum ProjectsRemove: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.ProjectsRemoveParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ProjectsRemoveResult
+      public static let name = "projects.remove"
     }
 
     public enum ProposalsAccept: RemoteCommand {
