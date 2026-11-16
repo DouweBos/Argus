@@ -1,5 +1,17 @@
 # argus
 
+## 0.77.0
+
+### Minor Changes
+
+- fd12912: Sign in to, reconnect, enable or disable an agent's MCP servers from its MCP servers list, without opening a terminal.
+
+### Patch Changes
+
+- 3391101: Answering an agent's question or plan no longer leaves its session under Needs you while the agent works on.
+- e9f267a: The git sidebar no longer scrolls up under the window's toolbar.
+- 99abf26: A session whose agent is running again no longer stays under Needs you.
+
 ## 0.76.0
 
 ### Minor Changes
