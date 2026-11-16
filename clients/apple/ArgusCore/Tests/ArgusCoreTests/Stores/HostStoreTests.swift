@@ -231,6 +231,28 @@ struct HostStoreTests {
     #expect(HostStore.refusedAnswerMessage(gone).hasPrefix("That prompt is no longer waiting"))
   }
 
+  @Test("a secret goes to secret.respond and nowhere else")
+  func secretAnswer() async {
+    let backend = FakeBackend()
+    backend.reply(.secretRespond, #"{"accepted":true}"#)
+    let store = HostStore()
+    await store.attach(backend)
+    await store.respondSecret(agentId: "a1", toolUseId: "t1", value: "4829")
+    #expect(backend.params(.secretRespond)?["value"] as? String == "4829")
+    #expect(backend.params(.permissionRespond) == nil)
+    #expect(store.answered.contains(store.promptKey("a1", "t1")))
+  }
+
+  @Test("a refused secret brings its card back")
+  func refusedSecret() async {
+    let backend = FakeBackend()
+    backend.fail(.secretRespond)
+    let store = HostStore()
+    await store.attach(backend)
+    await store.respondSecret(agentId: "a1", toolUseId: "t1", value: nil)
+    #expect(!store.answered.contains(store.promptKey("a1", "t1")))
+  }
+
   @Test("an answer to a prompt the host no longer holds leaves it settled")
   func goneDecision() async {
     let backend = FakeBackend()

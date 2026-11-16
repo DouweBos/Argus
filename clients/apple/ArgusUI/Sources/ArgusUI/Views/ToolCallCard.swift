@@ -131,7 +131,9 @@ public struct ToolCallCard: View {
           truncateHead: ToolCallSummary.isPathTool(call.name))
         Spacer(minLength: 4)
         editStats
-        if isPending { Badge(label: "needs approval", tone: .warning) }
+        if isPending {
+          Badge(label: SecretRequest.isTool(call.name) ? "needs you" : "needs approval", tone: .warning)
+        }
         if call.expired == true { Badge(label: "not answered", tone: .muted) }
         if call.isError == true { Badge(label: "error", tone: .danger) }
         if let background = call.background {

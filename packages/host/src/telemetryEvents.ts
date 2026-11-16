@@ -538,6 +538,10 @@ export interface EventMap {
   conflict_fix_started: { file_bucket: "1" | "2-5" | "6+"; success: boolean };
   session_merged: { phase: MergePhase; strategy: MergeStrategy };
   session_prompt_dispatched: { success: boolean };
+  secret_requested: {
+    delivery: "env" | "file";
+    outcome: "cancelled" | "declined" | "provided";
+  };
   compare_kept: {
     deleted: number;
     land: "merge" | "none" | "pull_request";

@@ -4,6 +4,8 @@
  * all render whatever this returns.
  */
 
+import { isSecretRequestTool } from "../secretRequest/toolName";
+
 export type NotificationActionId = "approve" | "deny";
 
 export interface RemoteNotificationAction {
@@ -14,12 +16,12 @@ export interface RemoteNotificationAction {
 /**
  * Quick actions for a permission prompt. `AskUserQuestion` is deliberately
  * excluded — picking an option is not a yes/no, so it has to be answered in
- * the app rather than from a notification button.
+ * the app rather than from a notification button. A secret needs typing.
  */
 export function permissionActions(
   toolName: string,
 ): RemoteNotificationAction[] {
-  if (toolName === "AskUserQuestion") {
+  if (toolName === "AskUserQuestion" || isSecretRequestTool(toolName)) {
     return [];
   }
 

@@ -246,6 +246,12 @@ export const MethodParams = {
      * The host derives the rule from the prompt; the client can't name one. */
     always_allow: z.boolean().optional(),
   }),
+  /** Answer a `request_secret` card. No `value` declines. */
+  "secret.respond": z.object({
+    agent_id: z.string(),
+    tool_use_id: z.string(),
+    value: z.string().min(1).max(65536).optional(),
+  }),
   "device.rename": z.object({ name: z.string().trim().min(1).max(60) }),
   "device.capabilities": z.object({}),
   "device.push_info": z.object({}),
@@ -1072,6 +1078,7 @@ export const MethodResult = {
     /** The rule an `always_allow` added. Absent from hosts that predate it. */
     allow_rule: z.string().optional(),
   }),
+  "secret.respond": z.object({ accepted: z.boolean() }),
   "device.rename": z.object({ accepted: z.boolean() }),
   "device.capabilities": z.object({ capabilities: z.array(z.string()) }),
   "device.push_info": z.object({

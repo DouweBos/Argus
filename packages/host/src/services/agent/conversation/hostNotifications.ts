@@ -10,6 +10,7 @@ import {
   type AgentNotificationInput,
   showAgentNotification,
 } from "../../notifications/osNotification";
+import { isSecretRequestTool } from "../../secretRequest/toolName";
 
 const MIN_TURN_DURATION_MS = 10_000;
 
@@ -95,7 +96,10 @@ export function notifyPrompt(
   }
   const ctx = context(sessionId, title);
   let what = `requested ${toolName}`;
-  if (!permission) {
+  const secret = isSecretRequestTool(toolName);
+  if (secret) {
+    what = "asked you for a secret";
+  } else if (!permission) {
     what =
       toolName === "ExitPlanMode"
         ? "wants to run its plan by you"
@@ -107,9 +111,10 @@ export function notifyPrompt(
     tool_use_id: toolUseId,
     tool_name: toolName,
     kind: "permission",
-    title: permission
-      ? `${ctx.project} agent needs approval`
-      : `${ctx.project} agent needs you`,
+    title:
+      permission && !secret
+        ? `${ctx.project} agent needs approval`
+        : `${ctx.project} agent needs you`,
     body: `${ctx.sessionName} - ${ctx.name} ${what}`,
   });
 }

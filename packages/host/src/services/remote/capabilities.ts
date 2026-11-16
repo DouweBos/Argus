@@ -155,6 +155,8 @@ import {
   guideTarget,
 } from "../reviewGuide/service";
 import { createScratchPad, listScratchPads } from "../scratchPad/manager";
+import { answerSecretRequest } from "../secretRequest/requests";
+import { isSecretRequestTool } from "../secretRequest/toolName";
 import { draftCommitMessage } from "../session/commitDraft";
 import { startConflictFix } from "../session/conflictFix";
 import { git } from "../session/git";
@@ -626,7 +628,7 @@ function agentAwaiting(agentId: string): RemoteAgentStatus["awaiting"] {
 }
 
 function awaitingForTool(name: string | undefined): "plan" | "question" | null {
-  if (name === "AskUserQuestion") {
+  if (name === "AskUserQuestion" || isSecretRequestTool(name)) {
     return "question";
   }
 
@@ -1164,6 +1166,29 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return allowRule
       ? { accepted: true, allow_rule: allowRule }
       : { accepted: true };
+  },
+
+  // The value goes straight to the request; it is never logged or emitted.
+  "secret.respond": async (params, ctx) => {
+    const { agent_id, tool_use_id, value } = parse("secret.respond", params);
+    if (ctx.scope) {
+      throw new GatewayError(
+        "capability_denied",
+        "only the host's owner can answer a secret request",
+      );
+    }
+    const key = permissionKey(agent_id, tool_use_id);
+    if (!ctx.outstandingPermissions.has(key)) {
+      throw new GatewayError("bad_request", "no such outstanding prompt");
+    }
+    try {
+      answerSecretRequest(agent_id, tool_use_id, value ?? null);
+    } catch (e) {
+      throw new GatewayError("bad_request", String(e));
+    }
+    ctx.outstandingPermissions.delete(key);
+
+    return { accepted: true };
   },
 
   "device.rename": async (params, ctx) => {

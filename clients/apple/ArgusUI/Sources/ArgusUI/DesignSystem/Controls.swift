@@ -116,6 +116,8 @@ public struct ThemedTextField: View {
   var keyboard: Keyboard = .default
   var mono = false
   var input: Input = .prose
+  /// Typed characters are masked and never offered to autofill's history.
+  var secure = false
   var onSubmit: (() -> Void)?
 
   public init(
@@ -126,6 +128,7 @@ public struct ThemedTextField: View {
     keyboard: Keyboard = .default,
     mono: Bool = false,
     input: Input = .prose,
+    secure: Bool = false,
     onSubmit: (() -> Void)? = nil
   ) {
     self.placeholder = placeholder
@@ -135,6 +138,7 @@ public struct ThemedTextField: View {
     self.keyboard = keyboard
     self.mono = mono
     self.input = input
+    self.secure = secure
     self.onSubmit = onSubmit
   }
 
@@ -151,7 +155,9 @@ public struct ThemedTextField: View {
 
   public var body: some View {
     Group {
-      if multiline {
+      if secure {
+        SecureField(placeholder, text: $text, prompt: prompt).textFieldStyle(.plain)
+      } else if multiline {
         #if os(macOS)
           GrowingTextEditor(placeholder: placeholder, text: $text, lines: lines, font: font)
         #else

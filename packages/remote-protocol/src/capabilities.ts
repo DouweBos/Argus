@@ -115,6 +115,8 @@ export const REMOTE_METHODS = {
   /** Approve/deny a permission prompt the gateway forwarded — approving a
    * tool call runs code on the host, so this needs control, not monitor. */
   "permission.respond": "control",
+  /** Hand a running agent a secret it asked for — it acts with it on the host. */
+  "secret.respond": "control",
   /** Set this device's own display label (shown in the desktop's paired list). */
   "device.rename": "monitor",
   /** Read this device's own current capability grants (to reflect live toggles). */

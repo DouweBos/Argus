@@ -5757,6 +5757,48 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SecretRespondParams: Codable, Sendable {
+      public var agentId: String
+      public var toolUseId: String
+      public var value: String?
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case toolUseId = "tool_use_id"
+        case value = "value"
+      }
+
+      public init(agentId: String, toolUseId: String, value: String? = nil) {
+        self.agentId = agentId
+        self.toolUseId = toolUseId
+        self.value = value
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(toolUseId, forKey: .toolUseId)
+        try c.encodeIfPresent(value, forKey: .value)
+      }
+    }
+
+    public struct SecretRespondResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
     public struct SessionsBranchLogParams: Codable, Sendable {
       public var sessionId: String
       public var branch: String
@@ -9147,6 +9189,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.ScratchPadsListParams
       public typealias Result = ArgusProtocol.MethodsTypes.ScratchPadsListResult
       public static let name = "scratch_pads.list"
+    }
+
+    public enum SecretRespond: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SecretRespondParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SecretRespondResult
+      public static let name = "secret.respond"
     }
 
     public enum SessionsBranchLog: RemoteCommand {

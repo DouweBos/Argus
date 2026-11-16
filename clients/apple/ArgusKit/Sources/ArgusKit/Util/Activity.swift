@@ -75,6 +75,9 @@ public enum Activity {
       break
     }
     if hasPendingPermission {
+      if let pendingToolName, SecretRequest.isTool(pendingToolName) {
+        return Description(text: "Waiting for a secret", state: .blocked)
+      }
       return Description(text: "Waiting for permission", state: .blocked)
     }
     if let pendingToolName {

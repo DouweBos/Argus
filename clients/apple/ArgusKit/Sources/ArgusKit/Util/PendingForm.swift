@@ -9,8 +9,12 @@ public enum PendingForm: Sendable {
   case buttons
   case plan(String)
   case question([Questions.Question])
+  case secret(SecretRequest)
 
   public static func of(name: String, input: [String: JSONValue]) -> PendingForm {
+    if let secret = SecretRequest.parse(name: name, input: input) {
+      return .secret(secret)
+    }
     if name == "AskUserQuestion", let questions = Questions.parse(input) {
       return .question(questions)
     }

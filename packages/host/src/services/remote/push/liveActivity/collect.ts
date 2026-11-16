@@ -7,6 +7,7 @@ import type { ActivityAgent, ActivityPhase, ActivityPrompt } from "./state";
 import path from "node:path";
 import { appState } from "../../../../state";
 import { liveConversation } from "../../../agent/conversation/live";
+import { isSecretRequestTool } from "../../../secretRequest/toolName";
 import { OUTCOME_LINGER_MS, stepSummary } from "./state";
 
 const AWAITS_ANSWER = new Set(["AskUserQuestion", "ExitPlanMode"]);
@@ -32,7 +33,10 @@ function projectOf(sessionId: string): string | null {
 function promptOf(agentId: string): ActivityPrompt | null {
   const pending = appState.agentPendingPermissions.get(agentId);
   for (const request of pending?.values() ?? []) {
-    if (!AWAITS_ANSWER.has(request.tool_name)) {
+    if (
+      !AWAITS_ANSWER.has(request.tool_name) &&
+      !isSecretRequestTool(request.tool_name)
+    ) {
       return {
         toolUseId: request.tool_use_id,
         summary: stepSummary(request.tool_name, request.tool_input),

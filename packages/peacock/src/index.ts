@@ -182,6 +182,7 @@ export * from "./components/ProposalCard/ProposalCard";
 export * from "./components/ProposalSummaryCard/ProposalSummaryCard";
 export * from "./components/QrCode/QrCode";
 export * from "./components/QuestionForm/QuestionForm";
+export * from "./components/SecretRequestForm/SecretRequestForm";
 export * from "./components/QuickCard/QuickCard";
 export * from "./components/ReportView/ReportHeading";
 export * from "./components/ReportView/ReportList";

@@ -132,6 +132,9 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "agents.rewind": agent(),
   "agents.ask_side": agent(),
   "permission.respond": agent(),
+  // Scoped to its agent; the handler still refuses any scoped guest — a
+  // secret is the owner's to give.
+  "secret.respond": agent(),
 
   // Keyed by a history id, not an agent id — nothing a scope can name, and a
   // guest has no business reading agents that ran before the huddle.

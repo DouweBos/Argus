@@ -336,6 +336,19 @@ PR shows an eye next to its icon. If no agent is running in the session when
 something changes, you get a notification instead. Watches live in memory,
 so restarting Argus ends them.
 
+### Asking for a secret
+
+An agent that needs a token, password, PIN or pairing code (an `adb pair`
+code, an Expo or GitHub token) calls `request_secret` rather than asking in
+chat. A card with a secure field opens beside the call on the Mac, the phone
+and in the browser. What you type never enters the transcript. The agent
+gets the path of a file only you can read, deleted after 24 hours (or
+sooner, if the agent asks for less). It can also ask for the value to be
+set as an environment variable on one of the session's run commands. That
+variable lives in memory and is gone when Argus restarts. Decline, and the
+agent is told to carry on without it and not to ask in chat. Agents running
+an automation can't ask, and huddle guests see the card but can't answer it.
+
 ---
 
 ## Permissions

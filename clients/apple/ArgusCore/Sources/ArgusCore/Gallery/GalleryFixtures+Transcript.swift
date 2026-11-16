@@ -16,6 +16,8 @@ extension GalleryFixtures {
     case permission
     /// Waiting on an AskUserQuestion answer.
     case question
+    /// Waiting on a `request_secret` card.
+    case secret
     /// Resumed past a question its previous run never got answered.
     case expiredQuestion
     /// Waiting on plan approval.
@@ -103,7 +105,7 @@ extension GalleryFixtures {
       switch state {
       case .idle, .empty, .limit, .handoff, .command, .expiredQuestion, .artifact: "idle"
       case .working, .subagents: "running"
-      case .permission, .question, .plan: "requires_action"
+      case .permission, .question, .secret, .plan: "requires_action"
       case .stopped: "stopped"
       }
     var agent: [String: Any] = [
@@ -115,7 +117,7 @@ extension GalleryFixtures {
     ]
     switch state {
     case .permission: agent["awaiting"] = "permission"
-    case .question: agent["awaiting"] = "question"
+    case .question, .secret: agent["awaiting"] = "question"
     case .plan:
       agent["awaiting"] = "plan"
       agent["permission_mode"] = "plan"
@@ -166,6 +168,7 @@ extension GalleryFixtures {
     case .working: return conversation + working
     case .permission: return conversation + [pending(bashPermission)]
     case .question: return conversation + [pending(question)]
+    case .secret: return conversation + [pending(secretRequest)]
     case .expiredQuestion:
       return conversation + [
         pending(expired(question)), user("u9", 20, "continue"),
@@ -381,6 +384,16 @@ extension GalleryFixtures {
       [
         "command": "rm -rf ~/Library/Developer/Xcode/DerivedData/ArgusRemote-*",
         "description": "Clear stale derived data",
+      ], status: "pending")
+  }
+
+  private static var secretRequest: [String: Any] {
+    call(
+      "p4", "mcp__argus__request_secret",
+      [
+        "label": "adb pairing code",
+        "reason": "Pair the Pixel 9 over Wi-Fi so I can install the debug build.",
+        "delivery": "file",
       ], status: "pending")
   }
 

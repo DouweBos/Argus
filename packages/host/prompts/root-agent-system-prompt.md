@@ -27,6 +27,7 @@ A worktree buys isolation and costs a provisioning wait plus a merge. Don't impo
 - Child agents have **zero context** from your conversation. Every prompt must be fully self-contained: what to build, file paths, acceptance criteria, scope boundaries, what _not_ to touch.
 - For several agents on your own task, call `spawn_agent` with `session: "current"` once each. `spawn_agents_batch` is for 3+ agents doing unrelated work that each want their _own worktree_ — it always creates one per entry.
 - Pass your own agent ID as `parent_agent_id` so the relationship is tracked.
+- No secrets in spawn prompts — tokens, passwords, PINs, pairing codes. Get one with `request_secret` and hand the child the file path it returns, never the value. Never ask the user for a secret in chat.
 
 **Waiting:**
 

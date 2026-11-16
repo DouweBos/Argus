@@ -29,6 +29,26 @@ struct PendingFormTests {
     #expect(PendingForm.of(name: "AskUserQuestion", input: input).ownsInput)
   }
 
+  @Test("a secret request gets the secure form, whatever the MCP prefix")
+  func secret() {
+    let input: [String: JSONValue] = [
+      "label": .string("Expo token"), "reason": .string("Build"),
+      "delivery": .string("env"), "run_command": .string("Dev"), "env_var": .string("EXPO_TOKEN"),
+    ]
+    guard case .secret(let request) = PendingForm.of(name: "mcp__argus__request_secret", input: input)
+    else {
+      Issue.record("expected a secret form")
+      return
+    }
+    #expect(request.label == "Expo token")
+    #expect(request.delivery == .env(runCommand: "Dev", variable: "EXPO_TOKEN"))
+    #expect(PendingForm.of(name: "request_secret", input: ["label": .string("PIN")]).ownsInput)
+    guard case .buttons = PendingForm.of(name: "mcp__argus__request_secret", input: [:]) else {
+      Issue.record("a call with no label has nothing to show")
+      return
+    }
+  }
+
   @Test("a plan owns its input")
   func plan() {
     let form = PendingForm.of(name: "ExitPlanMode", input: ["plan": .string("# Do the thing")])

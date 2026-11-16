@@ -83,6 +83,7 @@ import { findPastAgent, registerPastAgentTools } from "./pastAgentTools";
 import { registerPrWatchTools } from "./prWatchTools";
 import { isGitRepo, collectAllProjects } from "./projectDiscovery";
 import { ensureRepoRegistered } from "./projects";
+import { registerSecretTools } from "./secretTools";
 import { registerSessionListTools } from "./sessionListTools";
 import {
   addMcpSession,
@@ -3088,6 +3089,7 @@ export function createMcpServer(
   registerAutomationTools(server, callerAgentId);
   registerPastAgentTools(server);
   registerTranscriptTools(server);
+  registerSecretTools(server, callerAgentId);
   registerPrWatchTools(server, callerAgentId, resolveSession);
   registerIntegrationTools(server, callerAgentId);
 

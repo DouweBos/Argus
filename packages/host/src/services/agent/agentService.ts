@@ -68,6 +68,11 @@ import { toCanonicalPermissionMode } from "../llm/runners/claudeCode/permissionM
 import { getMcpAuthToken, getMcpPort } from "../mcp/server";
 import { closeMcpSessionsForSpawn, SPAWN_ID_HEADER } from "../mcp/sessions";
 import { buildMergedMcpServers } from "../mcp/userConfig";
+import {
+  answerSecretRequest,
+  isPendingSecretRequest,
+} from "../secretRequest/requests";
+import { isSecretRequestTool } from "../secretRequest/toolName";
 import { loadArgusConfig } from "../session/argusConfig";
 import { incrementCommandMetric } from "../session/commandMetrics";
 import { sessionRunnerId } from "../session/models";
@@ -753,6 +758,22 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     const refused = automationGuard(req);
     if (refused) {
       return refused;
+    }
+    // The secret card is the user's say; an Allow/Deny before it would ask twice.
+    if (isSecretRequestTool(req.toolName)) {
+      const rawReq = req.rawRequest as { request_id?: string } | undefined;
+      req.approveRaw(
+        JSON.stringify({
+          type: "control_response",
+          response: {
+            subtype: "success",
+            request_id: rawReq?.request_id ?? "",
+            response: { behavior: "allow", updatedInput: req.input },
+          },
+        }),
+      );
+
+      return { kind: "handled" };
     }
     if (req.toolName !== "Bash") {
       return null;
@@ -2040,6 +2061,16 @@ export function respondToPermission(
   const session = appState.agents.get(agentId);
   if (!session) {
     throw `No agent found: ${agentId}`;
+  }
+
+  // A secret card answered by a client that only knows Allow/Deny.
+  if (isPendingSecretRequest(agentId, toolUseId)) {
+    if (decision === "allow") {
+      throw "This prompt asks for a secret: update Argus to answer it in its secure field.";
+    }
+    answerSecretRequest(agentId, toolUseId, null);
+
+    return;
   }
 
   // Two attached clients can answer the same prompt; only the first reply may

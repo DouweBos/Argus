@@ -46,7 +46,7 @@ struct PromptTitle: View {
 }
 
 /// The decision a pending call is waiting on: its question form, plan
-/// approval, or Allow / Always Allow / Deny. Shared by top-level calls and
+/// approval, secret field, or Allow / Always Allow / Deny. Shared by top-level calls and
 /// sub-agent calls, which need an answer just the same.
 struct PendingCallForm: View {
   @Environment(HostStore.self) private var host
@@ -90,6 +90,15 @@ struct PendingCallForm: View {
             Task { await host.handOffPlan(repoRoot: repoRoot, plan: plan) }
             respond("deny", CannedReply.planHandoff)
           }
+        })
+    case .secret(let request):
+      SecretRequestForm(
+        request: request,
+        onSubmit: { value in
+          Task { await host.respondSecret(agentId: agentKey, toolUseId: call.id, value: value) }
+        },
+        onDecline: {
+          Task { await host.respondSecret(agentId: agentKey, toolUseId: call.id, value: nil) }
         })
     case .buttons:
       PermissionButtons(

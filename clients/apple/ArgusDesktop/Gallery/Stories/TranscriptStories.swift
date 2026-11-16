@@ -41,7 +41,7 @@
 
     static let states: [(String, GalleryFixtures.TranscriptState)] = [
       ("idle", .idle), ("working", .working), ("permission", .permission), ("question", .question),
-      ("question-expired", .expiredQuestion), ("plan", .plan), ("subagents", .subagents), ("stopped", .stopped), ("limit", .limit), ("empty", .empty),
+      ("secret", .secret), ("question-expired", .expiredQuestion), ("plan", .plan), ("subagents", .subagents), ("stopped", .stopped), ("limit", .limit), ("empty", .empty),
       ("handoff", .handoff), ("command", .command), ("artifact", .artifact),
     ]
   }

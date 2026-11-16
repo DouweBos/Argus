@@ -32,6 +32,12 @@ interface PromptsState {
     decision: "allow" | "deny",
     message?: string,
   ) => Promise<void>;
+  /** Answer a `request_secret` card; no value declines. Never queued or stored. */
+  respondSecret: (
+    agentId: string,
+    toolUseId: string,
+    value?: string,
+  ) => Promise<void>;
   /** Answer a prompt from a notification button, even while offline. */
   decidePrompt: (
     agentId: string,
@@ -65,6 +71,29 @@ export const usePromptsStore = create<PromptsState>()((set) => ({
     });
     // Pull the resolved transcript so the answered prompt clears and any
     // follow-up (the next question) shows without waiting on events.
+    useTranscriptsStore
+      .getState()
+      .loadTranscript(agentId)
+      .catch(() => {});
+  },
+
+  respondSecret: async (agentId, toolUseId, value) => {
+    const t = currentTransport();
+    if (!t) {
+      return;
+    }
+    await request(t, "secret.respond", {
+      agent_id: agentId,
+      tool_use_id: toolUseId,
+      ...(value ? { value } : {}),
+    });
+    set((s) => {
+      const key = promptKey(agentId, toolUseId);
+      const prompts = { ...s.prompts };
+      delete prompts[key];
+
+      return { prompts, answered: { ...s.answered, [key]: true } };
+    });
     useTranscriptsStore
       .getState()
       .loadTranscript(agentId)

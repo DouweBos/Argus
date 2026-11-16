@@ -39,6 +39,7 @@ import {
   envForAccount,
   resolveAccountForSession,
 } from "../claudeAuth/accounts";
+import { runSecretEnv } from "../secretRequest/vault";
 import { loadArgusConfig } from "../session/argusConfig";
 import { forgetPty, recordPty } from "./ptyLedger";
 import { signalName, stopTerminalGracefully } from "./stop";
@@ -404,6 +405,7 @@ export function createTerminal(
   subDir?: string,
   command?: string | [string, string[]],
   title?: string,
+  extraEnv?: Record<string, string>,
 ): string {
   const ws = appState.sessions.get(sessionId);
   if (!ws) {
@@ -441,7 +443,7 @@ export function createTerminal(
   return spawnTerminal({
     owner: sessionId,
     cwd,
-    env: terminalEnv(ws),
+    env: { ...terminalEnv(ws), ...extraEnv },
     spawnWith,
     title,
   });
@@ -991,6 +993,7 @@ async function startRunTerminal(
     runCmd.cwd,
     runCmd.command,
     runCmd.title,
+    runSecretEnv(sessionId, runCmd.title),
   );
   const terminal = appState.terminals.get(terminalId);
   if (terminal) {

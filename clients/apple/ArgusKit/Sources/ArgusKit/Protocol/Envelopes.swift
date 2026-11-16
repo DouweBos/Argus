@@ -136,6 +136,7 @@ public enum RemoteMethod: String, Codable, Sendable {
   case reviewGuidesAsk = "review_guides.ask"
 
   case permissionRespond = "permission.respond"
+  case secretRespond = "secret.respond"
 
   case deviceRename = "device.rename"
   case deviceCapabilities = "device.capabilities"

@@ -15,6 +15,7 @@ public enum PendingPrompts {
     switch PendingForm.of(name: call.name, input: call.input) {
     case .question: "Question from the agent"
     case .plan: "Plan ready for review"
+    case .secret: "The agent needs a secret"
     case .buttons: "Permission needed"
     }
   }

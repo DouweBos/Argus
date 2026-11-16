@@ -55,7 +55,11 @@ You can fan out too, and where a child runs depends on whether its work is relat
 
 `"current"` means _your_ session, not the project root — you are in a worktree, so that's what a child joins. `"root"` would send it to the user's main checkout instead, which is almost never what you want from here.
 
-Either way, pass your agent ID as `parent_agent_id`, and give each child a fully self-contained prompt — they inherit no context from yours.
+Either way, pass your agent ID as `parent_agent_id`, and give each child a fully self-contained prompt — they inherit no context from yours. Never put a secret (token, password, PIN, pairing code) in a child's prompt — pass the file path `request_secret` gave you instead.
+
+## Secrets
+
+Need a token, password, PIN, OTP or pairing code (e.g. `adb pair`) only the user has? Call `request_secret` — never ask for it in chat, where it stays in the transcript and syncs everywhere. If the user declines, carry on without it; don't ask again in chat.
 
 Sessions take time to provision: `create_session` returns immediately with `status: "initializing"` while `git worktree add` and the project's setup pipeline (deps, symlinks) run. An agent only becomes visible in `list_agents` once its session reaches `ready` and the process actually starts. If `list_agents` shows nothing right after a spawn — especially after an MCP transport drop mid-`spawn_agents_batch` — that's almost certainly "still initializing", not "spawn failed". Cross-check `list_sessions` for status, give it ~30s, and only respawn into a session that has been `ready` for a while with no agent attached. Otherwise you'll create duplicate worktrees.
 

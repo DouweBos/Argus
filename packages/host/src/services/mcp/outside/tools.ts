@@ -57,6 +57,8 @@ export const OUTSIDE_TOOL_ACCESS: Record<string, McpAccess | null> = {
 
   // Automations' own tools, and the user's Linear, Figma and GitHub sign-ins.
   emit_proposal: null,
+  // Only an agent Argus runs has a transcript to show the card in.
+  request_secret: null,
   emit_report: null,
   list_open_proposals: null,
   withdraw_proposal: null,

@@ -52,6 +52,9 @@ vi.mock("../agent/conversation/forkAt", () => ({
 vi.mock("../agent/sideQuestion", () => ({
   askSideQuestion: vi.fn(async () => ({ answer: "it's in foo.ts" })),
 }));
+vi.mock("../secretRequest/requests", () => ({
+  answerSecretRequest: vi.fn(),
+}));
 vi.mock("../agent/chatHistory", () => ({
   deleteHistoryEntry: vi.fn(),
   searchChatHistory: vi.fn(() => [
@@ -213,6 +216,9 @@ const { rewindAgent } = vi.mocked(
 const { forkChatAt } = vi.mocked(await import("../agent/conversation/forkAt"));
 const { askSideQuestion } = vi.mocked(await import("../agent/sideQuestion"));
 const { deleteHistoryEntry } = vi.mocked(await import("../agent/chatHistory"));
+const { answerSecretRequest } = vi.mocked(
+  await import("../secretRequest/requests"),
+);
 const { setAgentPinned, setHistoryPinned } = vi.mocked(
   await import("../agent/pins/pins"),
 );
@@ -270,6 +276,7 @@ const CONTROL_METHODS = [
   "agents.ask_side",
   "agents.history_delete",
   "permission.respond",
+  "secret.respond",
 ] as const;
 
 describe("control capability gating", () => {
@@ -998,5 +1005,53 @@ describe("sessions.start_options", () => {
         makeCtx(["monitor"]),
       ),
     ).rejects.toMatchObject({ code: "capability_denied" });
+  });
+
+  describe("secret.respond", () => {
+    it("hands the value to the request this device was shown", async () => {
+      const ctx = makeCtx(["monitor", "control"]);
+      ctx.outstandingPermissions.add("a1::t1");
+      await dispatch(
+        "secret.respond",
+        { agent_id: "a1", tool_use_id: "t1", value: "1234" },
+        ctx,
+      );
+      expect(answerSecretRequest).toHaveBeenCalledWith("a1", "t1", "1234");
+      expect(ctx.outstandingPermissions.has("a1::t1")).toBe(false);
+    });
+
+    it("declines without a value", async () => {
+      const ctx = makeCtx(["monitor", "control"]);
+      ctx.outstandingPermissions.add("a1::t1");
+      await dispatch(
+        "secret.respond",
+        { agent_id: "a1", tool_use_id: "t1" },
+        ctx,
+      );
+      expect(answerSecretRequest).toHaveBeenCalledWith("a1", "t1", null);
+    });
+
+    it("refuses a prompt it never forwarded, and any huddle guest", async () => {
+      answerSecretRequest.mockClear();
+      const ctx = makeCtx(["monitor", "control"]);
+      await expect(
+        dispatch(
+          "secret.respond",
+          { agent_id: "a1", tool_use_id: "t1", value: "x" },
+          ctx,
+        ),
+      ).rejects.toThrow(/no such outstanding prompt/);
+      const guest = makeCtx(["monitor", "control"]);
+      guest.outstandingPermissions.add("a1::t1");
+      guest.scope = { agent_ids: ["a1"], device_keys: [] };
+      await expect(
+        dispatch(
+          "secret.respond",
+          { agent_id: "a1", tool_use_id: "t1", value: "x" },
+          guest,
+        ),
+      ).rejects.toMatchObject({ code: "capability_denied" });
+      expect(answerSecretRequest).not.toHaveBeenCalled();
+    });
   });
 });

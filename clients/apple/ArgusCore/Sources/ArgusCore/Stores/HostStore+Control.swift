@@ -338,6 +338,40 @@ extension HostStore {
     }
   }
 
+  /// Answer a `request_secret` card; nil declines. The value goes to the host
+  /// and nowhere else — no transcript, no telemetry, no retry queue.
+  public func respondSecret(agentId: String, toolUseId: String, value: String?) async {
+    let key = promptKey(agentId, toolUseId)
+    let prompt = prompts.removeValue(forKey: key)
+    answered.insert(key)
+    guard let backend else {
+      answered.remove(key)
+      if let prompt { prompts[key] = prompt }
+      lastError = "Not connected to your computer. Try again once it's back."
+      return
+    }
+    struct Params: Encodable {
+      let agent_id: String
+      let tool_use_id: String
+      let value: String?
+    }
+    struct Result: Decodable { let accepted: Bool }
+    do {
+      _ = try await backend.request(
+        .secretRespond, Params(agent_id: agentId, tool_use_id: toolUseId, value: value),
+        as: Result.self)
+      await refreshTranscript(agentId: agentId)
+    } catch {
+      lastError = Self.refusedAnswerMessage(error)
+      if Self.isPromptGone(error) {
+        await refreshTranscript(agentId: agentId)
+        return
+      }
+      answered.remove(key)
+      if let prompt { prompts[key] = prompt }
+    }
+  }
+
   nonisolated static func isPromptGone(_ error: Error) -> Bool {
     describe(error).contains("no such outstanding prompt")
   }

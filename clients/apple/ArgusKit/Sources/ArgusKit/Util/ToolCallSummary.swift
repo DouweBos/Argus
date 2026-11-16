@@ -12,6 +12,7 @@ public enum ToolCallSummary {
     func clip(_ s: String, _ n: Int) -> String {
       s.count > n ? String(s.prefix(n)) + "…" : s
     }
+    if SecretRequest.isTool(name) { return input["label"]?.stringValue ?? "" }
     switch name {
     case "Read", "Edit", "MultiEdit", "Write":
       return input["file_path"]?.stringValue ?? input["path"]?.stringValue ?? ""
@@ -44,6 +45,7 @@ public enum ToolCallSummary {
 
   /// What a call is called in a row: an Agent call goes by its subagent type.
   public static func label(name: String, input: [String: JSONValue]) -> String {
+    if SecretRequest.isTool(name) { return "Secret request" }
     guard name == "Agent" else { return name }
     let type = input["subagent_type"]?.stringValue ?? ""
     return type.isEmpty ? "Agent" : type

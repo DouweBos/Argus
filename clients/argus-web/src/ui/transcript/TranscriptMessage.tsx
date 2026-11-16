@@ -20,9 +20,11 @@ import {
   parseQuestions,
   PlanApproval,
   QuestionForm,
+  SecretRequestForm,
   ToolCall,
 } from "@argus/peacock";
 import type { RemoteMessage, RemoteToolCall } from "../../lib/protocol";
+import { parseSecretRequest } from "../../lib/secretRequest";
 import { usePromptsStore } from "../../stores/prompts";
 import { Mermaid } from "../Mermaid";
 import { type ImageBlock, mcpLabel, toToolCallData } from "./toolCallData";
@@ -50,12 +52,28 @@ type Respond = (
   message?: string,
 ) => Promise<void>;
 
-/** Allow/Deny and the AskUserQuestion / ExitPlanMode forms, inline on the pending call. */
+/** Allow/Deny and the secret, AskUserQuestion and ExitPlanMode forms, inline on the pending call. */
 function pendingActions(
   agentId: string,
   tc: RemoteToolCall,
   respond: Respond,
 ): { pendingForm?: ReactNode; permissionActions?: ReactNode } {
+  const secret = parseSecretRequest(tc.name, tc.input);
+  if (secret) {
+    const { respondSecret } = usePromptsStore.getState();
+
+    return {
+      pendingForm: (
+        <SecretRequestForm
+          label={secret.label}
+          reason={secret.reason}
+          destination={secret.destination}
+          onSubmit={(value) => void respondSecret(agentId, tc.id, value)}
+          onDecline={() => void respondSecret(agentId, tc.id)}
+        />
+      ),
+    };
+  }
   if (tc.name === "AskUserQuestion") {
     const questions = parseQuestions(tc.input);
     if (questions.length > 0) {
