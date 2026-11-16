@@ -680,18 +680,18 @@ button {
 
 /* --- Huddle ------------------------------------------------------------- */
 
-/* Conversation and (on a wide screen) the device panel, side by side. */
+/* Conversation and (on a wide screen) the device panel, side by side. Spans
+   the shell's gutter so the pane's clipping can't cut the dock's full bleed. */
 .aw-huddle-body {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
+  margin: 0 calc(-1 * var(--aw-gutter-right)) 0
+    calc(-1 * var(--aw-gutter-left));
 }
 
-/* With a device beside it the composer no longer reaches the screen edge, so
-   it must stop bleeding past its own column. */
-.aw-huddle-split .aw-chat-dock {
-  margin-right: 0;
-  padding-right: 12px;
+.aw-huddle-body > .aw-pane {
+  padding: 0 var(--aw-gutter-right) 0 var(--aw-gutter-left);
 }
 
 /* The device panel's own column: claim bar, picture, hardware buttons. */

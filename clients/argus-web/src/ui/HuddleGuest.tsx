@@ -107,7 +107,6 @@ function HuddleRoom({ view }: { view: HuddleView }) {
   const splitDevice = isWide && hasDevice;
   // The room chat gets a column of its own too, open unless the guest hides it.
   const [chatColumnOpen, setChatColumnOpen] = useState(true);
-  const chatColumn = isWide && chatColumnOpen;
   const unread = useUnreadCount(
     view.chat.length,
     isWide ? chatColumnOpen : pane === "chat",
@@ -239,7 +238,7 @@ function HuddleRoom({ view }: { view: HuddleView }) {
       )}
 
       <div
-        className={`aw-huddle-body${splitDevice || chatColumn ? " aw-huddle-split" : ""}`}
+        className="aw-huddle-body"
       >
         <div className="aw-pane">
           <div className="aw-main">
