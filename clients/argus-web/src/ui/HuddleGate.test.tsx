@@ -23,7 +23,7 @@ describe("the huddle gate", () => {
   it("says plainly that a pending guest is waiting, and shows nothing else", () => {
     gate({ state: "pending" });
 
-    expect(screen.getByText(/Waiting for the host to let you in/)).toBeTruthy();
+    expect(screen.getByText("Waiting for the host")).toBeTruthy();
     // Nothing to navigate to: a pending guest holds no grants at all.
     expect(screen.queryAllByRole("button")).toHaveLength(0);
     expect(screen.queryByText("the huddle")).toBeNull();

@@ -135,6 +135,7 @@ export * from "./components/HomeCTA/HomeCTA";
 export * from "./components/HoverActionBar/HoverActionBar";
 export * from "./components/HoverTimestamp/HoverTimestamp";
 export * from "./components/HuddleChat/HuddleChat";
+export * from "./components/HuddleJoin/HuddleJoin";
 export * from "./components/IconBadge/IconBadge";
 export * from "./components/ImageAttachmentStrip/ImageAttachmentStrip";
 export * from "./components/IntegrationStatusList/IntegrationStatusList";

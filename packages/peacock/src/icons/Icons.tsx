@@ -1,4 +1,4 @@
-import type { ReactNode, SVGProps } from "react";
+import { useId, type ReactNode, type SVGProps } from "react";
 
 export type IconProps = Omit<SVGProps<SVGSVGElement>, "ref"> & {
   size?: number;
@@ -2121,6 +2121,41 @@ export function PlayPauseIcon({ size = 16, className, ...rest }: IconProps) {
     >
       <path d="M2 4v8l5-4-5-4Z" />
       <path d="M10.5 4v8M13.5 4v8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** The app icon's drop glyph, in the accent. */
+export function ArgusMark({ size = 32, className, ...rest }: IconProps) {
+  // Two marks on one page must not share a gradient id.
+  const id = `argus-mark-${useId().replace(/[^\w-]/g, "")}`;
+
+  return (
+    <svg
+      className={className}
+      {...rest}
+      height={size}
+      viewBox="236 72 552 784"
+      width={(size * 552) / 784}
+    >
+      <defs>
+        <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" style={{ stopColor: "var(--accent)" }} />
+          <stop
+            offset="1"
+            style={{
+              stopColor: "color-mix(in srgb, var(--accent) 55%, var(--error))",
+            }}
+          />
+        </linearGradient>
+      </defs>
+      <g fill={`url(#${id})`}>
+        <path
+          d="M512 80 L286 436 A268 268 0 1 0 738 436 Z M512 262 L369 490 A169 169 0 1 0 655 490 Z"
+          fillRule="evenodd"
+        />
+        <circle cx="512" cy="582" r="94" />
+      </g>
     </svg>
   );
 }

@@ -6,14 +6,13 @@
  * These screens say that plainly rather than faking a loading state.
  */
 
-import { type ReactNode, useState } from "react";
+import type { ReactNode } from "react";
 import {
   Button,
-  Card,
   EmptyState,
+  HuddleJoin,
+  HuddleJoinShell,
   Icons,
-  Input,
-  Spinner,
 } from "@argus/peacock";
 import type { HuddleState } from "../lib/huddleSession";
 
@@ -34,27 +33,25 @@ export function HuddleGate({
   onJoin,
   children,
 }: HuddleGateProps) {
-  const [label, setLabel] = useState(defaultLabel);
-
   if (state === "approved") {
     return <>{children}</>;
   }
 
   if (state === "denied") {
     return (
-      <Shell>
+      <HuddleJoinShell>
         <EmptyState
           icon={<Icons.LockIcon size={22} />}
           title="Not let in"
           body="The host turned down this request. Ask them for a new link if that wasn't what they meant to do."
         />
-      </Shell>
+      </HuddleJoinShell>
     );
   }
 
   if (state === "left") {
     return (
-      <Shell>
+      <HuddleJoinShell>
         <EmptyState
           icon={<Icons.GuestsIcon size={22} />}
           title="You left the huddle"
@@ -65,89 +62,48 @@ export function HuddleGate({
             </Button>
           }
         />
-      </Shell>
+      </HuddleJoinShell>
     );
   }
 
   if (state === "ended") {
     return (
-      <Shell>
+      <HuddleJoinShell>
         <EmptyState
           icon={<Icons.GuestsIcon size={22} />}
           title="The huddle ended"
           body="The host closed it. Your access is gone with it — ask for a new link to join another."
         />
-      </Shell>
+      </HuddleJoinShell>
     );
   }
 
   if (state === "unavailable") {
     return (
-      <Shell>
+      <HuddleJoinShell>
         <EmptyState
           icon={<Icons.LinkIcon size={22} />}
           title="This link is no longer live"
           body="The huddle it points to has ended or expired. Ask the host to share a new one."
         />
-      </Shell>
+      </HuddleJoinShell>
     );
   }
 
   if (!asked) {
     return (
-      <Shell>
-        <Card size="sm" stack>
-          <p className="aw-muted">
-            You've been invited to a huddle. The host sees your name when they
-            decide whether to let you in.
-          </p>
-          <Input
-            autoFocus
-            placeholder="Your name"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && label.trim()) {
-                onJoin(label.trim());
-              }
-            }}
-          />
-          <div>
-            <Button
-              variant="primary"
-              disabled={!label.trim()}
-              onClick={() => onJoin(label.trim())}
-            >
-              Ask to join
-            </Button>
-          </div>
-        </Card>
-      </Shell>
+      <HuddleJoinShell>
+        <HuddleJoin name={defaultLabel} step="name" onJoin={onJoin} />
+      </HuddleJoinShell>
     );
   }
 
   return (
-    <Shell>
-      <div className="aw-center">
-        <Spinner />
-        <p className="aw-muted">
-          {state === "pending"
-            ? "Waiting for the host to let you in. Nothing is shared until they do — you'll drop straight into the huddle when they approve."
-            : "Connecting to the huddle…"}
-        </p>
-      </div>
-    </Shell>
-  );
-}
-
-function Shell({ children }: { children: ReactNode }) {
-  return (
-    <div className="aw-shell">
-      <header className="aw-hero">
-        <Icons.ArgusLogo size={24} />
-        <h1 className="aw-title">Argus huddle</h1>
-      </header>
-      {children}
-    </div>
+    <HuddleJoinShell>
+      <HuddleJoin
+        name={defaultLabel}
+        step={state === "pending" ? "waiting" : "connecting"}
+      />
+    </HuddleJoinShell>
   );
 }
