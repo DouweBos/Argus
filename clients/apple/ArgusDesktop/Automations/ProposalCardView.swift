@@ -11,6 +11,8 @@ struct ProposalCardView: View {
   var decided: String?
   /// The inbox opens the proposal's page from its title.
   var openable = false
+  /// Off under the run that raised it, which "View Run" would only reopen.
+  var linksRun = true
   /// Where the page goes after a dismissal or a "done".
   var afterDecision: (() -> Void)?
 
@@ -35,9 +37,9 @@ struct ProposalCardView: View {
           Task { if await inbox.dismiss(id: proposal.id, reason: reason) { afterDecision?() } }
         },
         cleanup: { Task { await inbox.cleanup(id: proposal.id) } },
-        openRun: {
-          AutomationActions.openRun(model, automationId: proposal.automationId, runId: proposal.runId)
-        },
+        openRun: linksRun
+          ? { AutomationActions.openRun(model, automationId: proposal.automationId, runId: proposal.runId) }
+          : nil,
         openDetails: openable ? { model.navigate(.proposal(id: proposal.id)) } : nil))
   }
 

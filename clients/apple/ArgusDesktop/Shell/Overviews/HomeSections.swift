@@ -127,13 +127,13 @@ struct HomeNeedsYouSection: View {
       .needsYou(maxProposals: Self.maxProposals, maxFailed: Self.maxFailed)
     if needs.waiting > 0 {
       HomeSection(title: "Needs you", note: "\(needs.waiting) waiting") {
-        Button("Open inbox") { model.navigate(.inbox) }.buttonStyle(.accentLink)
+        Button("Open inbox") { model.navigate(.inbox()) }.buttonStyle(.accentLink)
       } content: {
         VStack(alignment: .leading, spacing: 8) {
           ForEach(needs.proposals, id: \.id) { ProposalSummaryRow(proposal: $0) }
           ForEach(needs.failed, id: \.id) { FailedRow(run: $0) }
           if needs.hidden > 0 {
-            Button("\(needs.hidden) more in the inbox") { model.navigate(.inbox) }.buttonStyle(.accentLink)
+            Button("\(needs.hidden) more in the inbox") { model.navigate(.inbox()) }.buttonStyle(.accentLink)
           }
         }
       }

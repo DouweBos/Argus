@@ -113,7 +113,7 @@ struct RunScreen: View {
   @ViewBuilder
   private func report(_ run: RemoteAutomationRun) -> some View {
     if let blocks = detail?.reportBlocks, !blocks.isEmpty {
-      ReportBlocksView(blocks: blocks) { model.navigate(.inbox) }
+      ReportBlocksView(blocks: blocks) { RunProposals(ids: $0) }
     } else if let markdown = detail?.reportMarkdown, !markdown.isEmpty {
       MarkdownView(text: markdown).textSelection(.enabled)
     } else if run.isActive {

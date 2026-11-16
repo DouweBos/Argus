@@ -11,6 +11,9 @@ public protocol InboxProposal: Sendable {
   var inboxPhase: InboxProposalPhase { get }
   var sessionId: String? { get }
   var clearedAt: Double? { get }
+  var automationId: String { get }
+  /// The repo's folder name, as the gateway names projects.
+  var projectName: String? { get }
 }
 
 /// What the inbox needs of a run.
@@ -20,6 +23,7 @@ public protocol InboxRun: Sendable {
   var isRead: Bool { get }
   var startedAt: Double { get }
   var hasUnreadReport: Bool { get }
+  var automationId: String { get }
 }
 
 /// What the inbox is made of, grouped by what you would do about it rather
@@ -55,6 +59,40 @@ public struct InboxGroups<Proposal: InboxProposal, Run: InboxRun>: Sendable {
         .prefix(Self.maxFailedRuns))
     // A failed run is already listed as a failure; its report would ask twice.
     reports = runs.filter { !$0.isFailed && $0.hasUnreadReport }
+  }
+
+  /// The same groups narrowed to one automation and/or project. A run belongs
+  /// to no project, so a project filter leaves only proposals.
+  public func filtered(_ filter: InboxFilter) -> Self {
+    guard !filter.isEmpty else { return self }
+    var copy = self
+    copy.pending = pending.filter(filter.matches)
+    copy.started = started.filter(filter.matches)
+    copy.cleared = cleared.filter(filter.matches)
+    copy.failed = failed.filter(filter.matches)
+    copy.reports = reports.filter(filter.matches)
+    return copy
+  }
+
+  /// What the filter menu offers: every automation and project with something
+  /// in these (unfiltered) groups and how much, plus the current selection
+  /// even once it has nothing left, so it can be undone.
+  public func filterOptions(selected: InboxFilter, automationName: (String) -> String?) -> InboxFilterOptions {
+    let proposals = pending + started + cleared
+    let runs = failed + reports
+    var automations: [String: Int] = [:]
+    for id in proposals.map(\.automationId) + runs.map(\.automationId) { automations[id, default: 0] += 1 }
+    var projects: [String: Int] = [:]
+    for name in proposals.compactMap(\.projectName) { projects[name, default: 0] += 1 }
+    if let id = selected.automationId, automations[id] == nil { automations[id] = 0 }
+    if let name = selected.project, projects[name] == nil { projects[name] = 0 }
+    return InboxFilterOptions(
+      automations: automations
+        .map { .init(value: $0.key, label: automationName($0.key) ?? "Automation", count: $0.value) }
+        .sorted { $0.label.localizedStandardCompare($1.label) == .orderedAscending },
+      projects: projects
+        .map { .init(value: $0.key, label: $0.key, count: $0.value) }
+        .sorted { $0.label.localizedStandardCompare($1.label) == .orderedAscending })
   }
 
   public var isEmpty: Bool {
@@ -95,6 +133,10 @@ extension InboxProposalPhase {
 }
 
 extension ArgusProtocol.Proposal: InboxProposal {
+  public var projectName: String? {
+    repoRoot.map { URL(fileURLWithPath: $0).lastPathComponent }
+  }
+
   public var inboxPhase: InboxProposalPhase {
     .init(
       pending: status == .pending, started: status == .accepted || status == .autoStarted,
@@ -103,6 +145,8 @@ extension ArgusProtocol.Proposal: InboxProposal {
 }
 
 extension RemoteProposal: InboxProposal {
+  public var projectName: String? { project }
+
   public var inboxPhase: InboxProposalPhase {
     .init(
       pending: status == .pending, started: status == .accepted || status == .autoStarted,

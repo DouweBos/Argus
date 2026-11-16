@@ -13,7 +13,9 @@ extension ArgusRoute {
     case ("runtimes", 1): self = .runtimes
     case ("devices", 1): self = .devices
     case ("devices", 3): self = .device(platform: parts[1], deviceKey: parts[2])
-    case ("inbox", 1): self = .inbox
+    case ("inbox", 1):
+      self = .inbox(
+        InboxFilter(automationId: query["automation"].flatMap(\.nonEmpty), project: query["project"].flatMap(\.nonEmpty)))
     case ("inbox", 3) where parts[1] == "proposals": self = .proposal(id: parts[2])
     case ("notifications", 1): self = .notifications
     case ("usage", 1): self = .usage(.limits)
@@ -91,7 +93,7 @@ extension ArgusRoute {
     case .runtimes: "/runtimes"
     case .devices: "/devices"
     case .device(let platform, let key): "/devices/\(Self.encode(platform))/\(Self.encode(key))"
-    case .inbox: "/inbox"
+    case .inbox(let filter): "/inbox" + Self.query([("automation", filter.automationId), ("project", filter.project)])
     case .proposal(let id): "/inbox/proposals/\(Self.encode(id))"
     case .notifications: "/notifications"
     case .usage(let tab, let range): pattern + Self.query([("range", tab == .limits ? nil : range?.rawValue)])

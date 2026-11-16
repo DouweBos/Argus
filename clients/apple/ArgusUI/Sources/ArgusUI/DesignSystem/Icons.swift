@@ -60,6 +60,7 @@ public enum Icon {
   public static let history = "clock.arrow.circlepath"
   public static let search = "magnifyingglass"
   public static let filter = "line.3.horizontal.decrease"
+  public static let filterActive = "line.3.horizontal.decrease.circle.fill"
   public static let terminal = "terminal"
   public static let pencil = "pencil"
   /// A new session, as the Mac sidebar's button.

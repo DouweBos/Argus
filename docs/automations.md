@@ -337,6 +337,9 @@ correction is a proposal that should have said so itself.
 The Inbox groups by what you would do about it, not by which automation produced
 it: proposals to decide on, reports nobody has read yet, work that was started
 and is waiting for review, runs that failed, and what a run cleared for you.
+**Filter** in its toolbar narrows it to one automation, one project, or both
+(`/inbox?automation=<id>&project=<name>`); a project filter leaves out runs,
+which belong to no project.
 
 A finished run that wrote a report shows up under **New reports** — open it to
 read it, or **Mark read** to clear it. The dot on the Inbox in the sidebar is
@@ -382,7 +385,9 @@ references — which render as a dashboard rather than as prose. When both exist
 the blocks win.
 
 Reports are visible at `/automations/:automationId/runs/:runId`, along with the
-run's status, cost, duration and a link to its host session. The home screen
+run's status, cost, duration and a link to its host session. The proposals a
+run raised sit in its report as the Inbox's own cards, so you can start,
+dismiss or rework them right there; decided ones say what became of them. The home screen
 carries a **Recent runs** list — the newest five, across every automation and
 every quick run — because a run is the one thing in Argus that happens while
 nobody is looking. A report you have not opened is flagged there and listed

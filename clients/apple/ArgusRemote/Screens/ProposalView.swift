@@ -19,28 +19,7 @@ struct ProposalView: View {
         Banner(text: error, tone: .danger)
       }
       if let proposal {
-        ProposalCard(
-          content: ProposalCardContent(proposal, projectKey: host.repoRoot(ofProjectNamed: proposal.project)),
-          decided: AutomationText.decidedNote(proposal),
-          busy: proposals.busy.contains(proposal.id),
-          starting: proposals.isStarting(proposal),
-          requestError: proposals.requestErrors[proposal.id],
-          canDecide: host.hasControl,
-          actions: ProposalCardActions(
-            start: accept,
-            requestRevision: { note in
-              Task { await act { _ = await proposals.requestRevision(id: proposalId, note: note) } }
-            },
-            resolve: { done in
-              Task { await act { await proposals.resolve(id: proposalId, note: done) } }
-            },
-            dismiss: { reason in
-              Task { await act { await proposals.dismiss(id: proposalId, reason: reason) } }
-            },
-            cleanup: { Task { await act { await proposals.performCleanup(id: proposalId) } } },
-            openRun: proposal.runId.map { runId in
-              { router.push(.run(id: runId, label: proposal.automationName)) }
-            }))
+        DecidableProposalCard(proposal: proposal)
         links(proposal)
       } else if looked {
         EmptyState(
@@ -73,19 +52,85 @@ struct ProposalView: View {
       }
     }
   }
+}
+
+/// One proposal's card with every decision wired up, decided ones included;
+/// its own page and the run that raised it both show it.
+struct DecidableProposalCard: View {
+  @Environment(HostStore.self) private var host
+  @Environment(Router.self) private var router
+  @Environment(ProposalsStore.self) private var proposals
+  let proposal: RemoteProposal
+  /// Shown under the run that raised it: no link back to that run, and the title opens the proposal.
+  var inRun = false
+
+  private var id: String { proposal.id }
+
+  var body: some View {
+    ProposalCard(
+      content: ProposalCardContent(proposal, projectKey: host.repoRoot(ofProjectNamed: proposal.project)),
+      decided: AutomationText.decidedNote(proposal),
+      busy: proposals.busy.contains(id),
+      starting: proposals.isStarting(proposal),
+      requestError: proposals.requestErrors[id],
+      canDecide: host.hasControl,
+      actions: ProposalCardActions(
+        start: accept,
+        requestRevision: { note in
+          Task { await act { _ = await proposals.requestRevision(id: id, note: note) } }
+        },
+        resolve: { done in
+          Task { await act { await proposals.resolve(id: id, note: done) } }
+        },
+        dismiss: { reason in
+          Task { await act { await proposals.dismiss(id: id, reason: reason) } }
+        },
+        cleanup: { Task { await act { await proposals.performCleanup(id: id) } } },
+        openRun: inRun
+          ? nil
+          : proposal.runId.map { runId in
+            { router.push(.run(id: runId, label: proposal.automationName)) }
+          },
+        openDetails: inRun ? { router.push(.proposal(id: id)) } : nil))
+  }
 
   private func accept(note: String?) {
     Task {
-      guard let agentId = await proposals.accept(id: proposalId, note: note) else {
-        await proposals.load(id: proposalId)
+      guard let agentId = await proposals.accept(id: id, note: note) else {
+        await proposals.load(id: id)
         return
       }
-      router.push(.agent(id: agentId, label: proposal?.title ?? "Agent"))
+      router.push(.agent(id: agentId, label: proposal.title))
     }
   }
 
   private func act(_ action: () async -> Void) async {
     await action()
-    await proposals.load(id: proposalId)
+    await proposals.load(id: id)
+  }
+}
+
+/// A run report's proposals, decidable where they were raised.
+struct RunProposalCards: View {
+  @Environment(ProposalsStore.self) private var proposals
+  let ids: [String]
+  @State private var looked = false
+
+  var body: some View {
+    let found = ids.compactMap(proposals.cached(id:))
+    VStack(alignment: .leading, spacing: 8) {
+      ForEach(found) { DecidableProposalCard(proposal: $0, inRun: true) }
+      if looked, found.count < ids.count {
+        MutedText(
+          "\(AutomationText.plural(ids.count - found.count, "proposal")) from this run "
+            + "\(ids.count - found.count == 1 ? "is" : "are") no longer on the computer.")
+      } else if !looked, found.count < ids.count {
+        ProgressView().controlSize(.small)
+      }
+    }
+    .task(id: ids) {
+      for id in ids where proposals.cached(id: id) == nil { await proposals.load(id: id) }
+      looked = true
+    }
   }
 }

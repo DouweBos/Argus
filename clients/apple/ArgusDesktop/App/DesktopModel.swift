@@ -360,7 +360,7 @@ final class DesktopModel {
     launchRouteApplied = true
     let settings = try? await backend.request(ArgusProtocol.Commands.GetAppSettings.self, EmptyParams())
     guard settings?.launchRoute == .inbox, route == .home, pendingLocation == nil else { return }
-    route = .inbox
+    route = .inbox()
   }
 
   #if DEBUG

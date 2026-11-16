@@ -42,8 +42,9 @@ public enum ArgusRoute: Hashable, Sendable {
   case describeAutomation
   /// `/automations/:automationId`, or one of its runs.
   case automation(id: String, runId: String?)
-  /// `/inbox`: proposals, work waiting for review, failed runs.
-  case inbox
+  /// `/inbox?automation=&project=`: proposals, work waiting for review, failed
+  /// runs, optionally narrowed to one automation and/or project.
+  case inbox(InboxFilter = .all)
   /// `/inbox/proposals/:proposalId`.
   case proposal(id: String)
   /// `/notifications`: warnings and errors.
@@ -71,6 +72,12 @@ public enum ArgusRoute: Hashable, Sendable {
     case .session(let id, _), .sessionGit(let id, _), .sessionCode(let id, _, _): id
     default: nil
     }
+  }
+
+  /// The inbox, filtered or not.
+  public var isInbox: Bool {
+    if case .inbox = self { return true }
+    return false
   }
 
   public var isDevices: Bool {

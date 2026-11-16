@@ -23,6 +23,12 @@
         GalleryStory("automations/quick-run/empty", fixtures: empty) { QuickRunView() },
         GalleryStory("automations/describe", fixtures: fixtures) { DescribeAutomationView() },
         GalleryStory("inbox", fixtures: fixtures, setup: loadSessions) { InboxView() },
+        GalleryStory("inbox/filtered", fixtures: fixtures, setup: loadSessions) {
+          InboxView(filter: InboxFilter(automationId: GalleryFixtures.triageId, project: "Argus"))
+        },
+        GalleryStory("inbox/filtered-empty", fixtures: fixtures, setup: loadSessions) {
+          InboxView(filter: InboxFilter(project: "Grove"))
+        },
         GalleryStory("inbox/empty", fixtures: empty) { InboxView() },
         GalleryStory("inbox/proposal", fixtures: fixtures, setup: loadSessions) {
           ProposalView(proposalId: "p-crash")

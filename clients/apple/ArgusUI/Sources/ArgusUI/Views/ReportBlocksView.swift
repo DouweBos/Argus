@@ -3,15 +3,15 @@ import SwiftUI
 
 /// A run's structured report. The computer validates these blocks, so anything
 /// that arrives is well-formed and can be rendered without defensive checks.
-public struct ReportBlocksView: View {
+public struct ReportBlocksView<Proposals: View>: View {
   @Environment(\.theme) private var theme
   let blocks: [RemoteReportBlock]
-  /// Where the proposals block leads; the app owns navigation.
-  public var onOpenInbox: () -> Void = {}
+  /// The proposals block's cards, by id; the app owns them and their actions.
+  let proposals: ([String]) -> Proposals
 
-  public init(blocks: [RemoteReportBlock], onOpenInbox: @escaping () -> Void = {}) {
+  public init(blocks: [RemoteReportBlock], @ViewBuilder proposals: @escaping ([String]) -> Proposals) {
     self.blocks = blocks
-    self.onOpenInbox = onOpenInbox
+    self.proposals = proposals
   }
 
   public var body: some View {
@@ -63,15 +63,10 @@ public struct ReportBlocksView: View {
       seriesView(labels: labels, values: values, label: label)
 
     case .proposals(let ids):
-      Card(onTap: onOpenInbox) {
-        HStack {
-          Image(systemName: Icon.envelope).foregroundStyle(theme.accent)
-          BodyText("\(ids.count) proposal\(ids.count == 1 ? "" : "s") in the inbox")
-          Spacer()
-          Image(systemName: Icon.chevronRight)
-            .font(.scaled(size: 12, weight: .semibold))
-            .foregroundStyle(theme.textMuted)
-        }
+      VStack(alignment: .leading, spacing: 8) {
+        Text(ids.count == 1 ? "Proposal" : "\(ids.count) proposals")
+          .font(.scaled(size: 13, weight: .semibold)).foregroundStyle(theme.textSecondary)
+        proposals(ids)
       }
 
     case .sessions(let ids):

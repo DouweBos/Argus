@@ -120,6 +120,38 @@ struct InboxStoreTests {
     #expect(items.actionCount == 4)
   }
 
+  @Test("a filter narrows every group, and a project filter drops runs")
+  func filtering() throws {
+    var proposals = try Self.decode(
+      "[" + [
+        Self.remoteProposal("argus", "pending"), Self.remoteProposal("luma", "pending"),
+        Self.remoteProposal("other", "pending"),
+      ].joined(separator: ",") + "]",
+      as: [RemoteProposal].self)
+    proposals[0].project = "Argus"
+    proposals[1].project = "luma"
+    proposals[2].automationId = "a2"
+    var runs = try Self.decode(
+      "[" + [Self.remoteRun("mine", "failed"), Self.remoteRun("theirs", "failed")].joined(separator: ",") + "]",
+      as: [RemoteAutomationRun].self)
+    runs[1].automationId = "a2"
+    let items = RemoteInboxItems(proposals: proposals, runs: runs, sessionIds: [], now: Self.now)
+
+    let byAutomation = items.filtered(InboxFilter(automationId: "a1"))
+    #expect(byAutomation.pending.map(\.id) == ["argus", "luma"])
+    #expect(byAutomation.failed.map(\.id) == ["mine"])
+    let byProject = items.filtered(InboxFilter(project: "luma"))
+    #expect(byProject.pending.map(\.id) == ["luma"])
+    #expect(byProject.failed.isEmpty)
+    #expect(items.filtered(.all).pending.count == 3)
+
+    let options = items.filterOptions(selected: InboxFilter(project: "Grove")) { $0 == "a1" ? "Triage" : nil }
+    #expect(options.automations.map(\.label) == ["Automation", "Triage"])
+    #expect(options.automations.first { $0.value == "a1" }?.count == 3)
+    #expect(options.projects.map(\.value) == ["Argus", "Grove", "luma"])
+    #expect(options.projects.first { $0.value == "Grove" }?.count == 0)
+  }
+
   @Test("a phone row previews the report, and an older computer's the trigger")
   func remoteSummary() throws {
     let runs = try Self.decode(

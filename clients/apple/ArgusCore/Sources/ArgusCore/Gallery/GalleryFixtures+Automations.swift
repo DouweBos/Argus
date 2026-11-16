@@ -325,6 +325,7 @@ extension GalleryFixtures {
           ["text": "zod 4 is a drop-in for our usage", "tone": "positive"],
         ],
       ],
+      ["type": "proposals", "ids": ["p-crash", "p-cleared"]],
     ]
   }
 

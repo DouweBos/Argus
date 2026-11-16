@@ -12,19 +12,34 @@ struct InboxView: View {
   @Environment(AutomationsStore.self) private var automations
   /// The failure and cleared windows are relative to now.
   @State private var now = Date()
+  @State private var filter: InboxFilter
 
-  private var items: RemoteInboxItems {
+  init(filter: InboxFilter = .all) {
+    _filter = State(initialValue: filter)
+  }
+
+  private var allItems: RemoteInboxItems {
     proposals.items(
       runs: automations.runs, sessionIds: Set(host.sessionsByRepo.values.joined().map(\.id)),
       now: now)
   }
 
   var body: some View {
-    let items = items
+    let all = allItems
+    let items = all.filtered(filter)
     let phase = LoadPhase(
       loaded: proposals.loaded, error: proposals.error,
       isEmpty: items.isEmpty && proposals.started.isEmpty)
     List {
+      if !filter.isEmpty {
+        // A phone's toolbar shows the menu as an icon only; say what's hidden here.
+        HStack {
+          Text("Showing \(options(all).summary(filter))")
+            .font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
+          Spacer()
+          Button("Clear") { setFilter(.all, .clear) }.font(.scaled(.footnote))
+        }
+      }
       if phase.showsContent {
         if let error = proposals.error {
           Banner(text: error, tone: .danger).listRowBackground(Color.clear)
@@ -36,10 +51,23 @@ struct InboxView: View {
       phase, loading: "Reading the inbox…", failedTitle: "Inbox unavailable",
       retry: { await refresh() }
     ) {
-      EmptyState(
-        icon: Icon.inbox,
-        title: "Nothing needs you",
-        body: "Your automations have nothing waiting on you. This is what a quiet inbox looks like.")
+      if filter.isEmpty {
+        EmptyState(
+          icon: Icon.inbox,
+          title: "Nothing needs you",
+          body: "Your automations have nothing waiting on you. This is what a quiet inbox looks like.")
+      } else {
+        EmptyState(icon: Icon.inbox, title: "Nothing here", body: "Nothing in the inbox matches this filter.") {
+          Btn(label: "Clear filters", hugs: true) { setFilter(.all, .clear) }
+        }
+      }
+    }
+    .toolbar {
+      if !all.isEmpty || !filter.isEmpty {
+        ToolbarItem(placement: .topBarTrailing) {
+          InboxFilterMenu(options: options(all), filter: filter, onChange: setFilter)
+        }
+      }
     }
     .navigationTitle("Inbox")
     .refreshable { await refresh() }
@@ -53,6 +81,19 @@ struct InboxView: View {
     }
   }
 
+
+  private func options(_ all: RemoteInboxItems) -> InboxFilterOptions {
+    all.filterOptions(selected: filter) { id in
+      automations.automations.first { $0.id == id }?.name
+        ?? (all.pending + all.started + all.cleared).first { $0.automationId == id }?.automationName
+        ?? (all.failed + all.reports).first { $0.automationId == id }?.automationName
+    }
+  }
+
+  private func setFilter(_ next: InboxFilter, _ field: InboxFilterField) {
+    filter = next
+    Telemetry.capture(.inboxFiltered(by: field))
+  }
 
   private func refresh() async {
     async let listed: Void = proposals.refresh()

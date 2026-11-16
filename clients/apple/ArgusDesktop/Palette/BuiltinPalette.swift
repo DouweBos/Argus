@@ -18,7 +18,7 @@ enum BuiltinPalette {
   private static func navigate(_ model: DesktopModel) -> [PaletteCommand] {
     let screens: [(DesktopRoute, String, String)] = [
       (.home, "Home", Icon.home),
-      (.inbox, "Inbox", Icon.inbox),
+      (.inbox(), "Inbox", Icon.inbox),
       (.automations, "Automations", Icon.automations),
       (.quickRun(runId: nil), "Quick Run", "bolt"),
       (.agents, "Agents", Icon.agents),
@@ -68,7 +68,7 @@ enum BuiltinPalette {
         section: "Session", systemImage: "rectangle.righthalf.inset.filled", shortcut: "⌘J"
       ) { model.toggleSidePanel(via: .palette) }
     ]
-      + PanelTabKind.allCases.filter(model.panelKindAvailable).map { kind in
+      + PanelTabKind.openable.filter(model.panelKindAvailable).map { kind in
         PaletteCommand(
           id: "session.panel.\(kind.rawValue)", title: "Open \(kind.title) Tab", section: "Session",
           systemImage: kind.symbol, shortcut: shortcuts[kind]

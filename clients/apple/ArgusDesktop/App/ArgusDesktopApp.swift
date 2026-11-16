@@ -215,7 +215,7 @@ private struct NavigationCommands: View {
       .disabled(model.tabs.count < 2)
     Divider()
     GoMenuCommands(model: model)
-    Button("Inbox") { model.navigate(.inbox) }
+    Button("Inbox") { model.navigate(.inbox()) }
       .keyboardShortcut("i", modifiers: [.command, .shift])
     Button("Automations") { model.navigate(.automations) }
     Divider()

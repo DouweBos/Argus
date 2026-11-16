@@ -18,7 +18,7 @@ struct ProposalScreen: View {
         ScrollView {
           VStack(alignment: .leading, spacing: 16) {
             ProposalCardView(proposal: proposal, decided: decidedNote(proposal)) {
-              model.navigate(.inbox)
+              model.navigate(.inbox())
             }
             provenance(proposal)
           }
@@ -31,7 +31,7 @@ struct ProposalScreen: View {
           icon: "tray", title: "This proposal is gone",
           body: "It was decided on, or the host that raised it is no longer attached."
         ) {
-          Button("Back to the Inbox") { model.navigate(.inbox) }
+          Button("Back to the Inbox") { model.navigate(.inbox()) }
         }
       } else {
         ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -41,7 +41,7 @@ struct ProposalScreen: View {
     .navigationSubtitle("Inbox")
     .toolbar {
       ToolbarItem(placement: .navigation) {
-        Button { model.navigate(.inbox) } label: { Label("Inbox", systemImage: "chevron.left") }
+        Button { model.navigate(.inbox()) } label: { Label("Inbox", systemImage: "chevron.left") }
           .help("Back to the inbox")
       }
     }

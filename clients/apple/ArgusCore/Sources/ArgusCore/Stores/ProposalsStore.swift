@@ -48,6 +48,11 @@ public final class ProposalsStore {
     detailById = [:]
   }
 
+  /// What this phone already knows of a proposal, freshest first.
+  public func cached(id: String) -> RemoteProposal? {
+    detailById[id] ?? proposals.first { $0.id == id } ?? recent.first { $0.id == id }
+  }
+
   /// One proposal in full, for its own screen. Nil when it is gone; an older
   /// computer without `proposals.get` falls back to the pending list.
   @discardableResult

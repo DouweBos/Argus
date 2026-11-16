@@ -21,7 +21,7 @@ struct RouteScreen: View {
     case .describeAutomation: AutomationsScreen(describing: true)
     case .quickRun(let runId): QuickRunScreen(runId: runId)
     case .automation(let id, let runId): AutomationScreen(automationId: id, runId: runId).id(id)
-    case .inbox: InboxScreen()
+    case .inbox(let filter): InboxScreen(filter: filter)
     case .proposal(let id): ProposalScreen(proposalId: id).id(id)
     case .notifications: NotificationsScreen()
     case .usage(let tab, let range): UsageScreen(tab: tab, range: range)

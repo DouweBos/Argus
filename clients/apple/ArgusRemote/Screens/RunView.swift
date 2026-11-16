@@ -166,7 +166,7 @@ struct RunView: View {
       Card {
         SectionHeader(title: "Report")
         if let blocks = detail?.reportBlocks, !blocks.isEmpty {
-          ReportBlocksView(blocks: blocks, onOpenInbox: { router.push(.inbox) })
+          ReportBlocksView(blocks: blocks) { RunProposalCards(ids: $0) }
         } else if let markdown = detail?.reportMarkdown, !markdown.isEmpty {
           MarkdownView(text: markdown)
         } else if run?.isActive == true {

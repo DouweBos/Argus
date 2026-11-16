@@ -15,9 +15,9 @@ struct SidebarDestination {
   /// The everyday screens, listed under the sidebar's search.
   @MainActor static let primary: [SidebarDestination] = [
     .init(title: "Home", symbol: Icon.home, shortcut: "⇧⌘H", route: .home) { $0 == .home },
-    .init(title: "Inbox", symbol: Icon.inbox, shortcut: "⇧⌘I", route: .inbox) {
+    .init(title: "Inbox", symbol: Icon.inbox, shortcut: "⇧⌘I", route: .inbox()) {
       if case .proposal = $0 { return true }
-      return $0 == .inbox
+      return $0.isInbox
     },
     .init(title: "Agents", symbol: Icon.agents, shortcut: "⌥⌘1", route: .agents) { $0 == .agents },
     .init(title: "Devices", symbol: Icon.devices, shortcut: "⌥⌘2", route: .devices) { $0.isDevices },

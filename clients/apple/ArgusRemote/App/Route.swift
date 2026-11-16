@@ -101,7 +101,7 @@ enum Route: Hashable {
     case .file(let id, let path, let line, _): ArgusRoute.sessionCode(id: id, path: path, line: line).pattern
     case .devices: ArgusRoute.devices.pattern
     case .device(let id, let platform, _, _): ArgusRoute.device(platform: platform.rawValue, deviceKey: id).pattern
-    case .inbox: ArgusRoute.inbox.pattern
+    case .inbox: ArgusRoute.inbox().pattern
     case .proposal(let id): ArgusRoute.proposal(id: id).pattern
     case .pullRequests: ArgusRoute.pullRequests.pattern
     case .pullRequest(let repo, let number, _): ArgusRoute.pullRequest(repo: repo, number: number).pattern

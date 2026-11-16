@@ -52,12 +52,20 @@
           .formStyle(.grouped)
         },
         GalleryStory("inbox", size: CGSize(width: 1000, height: 1500), chrome: true, fixtures: fixtures, setup: attachModel) {
-          InboxScreen()
+          InboxScreen(filter: .all)
         },
+        GalleryStory(
+          "inbox/filtered", size: CGSize(width: 1000, height: 1100), chrome: true, fixtures: fixtures,
+          setup: attachModel
+        ) { InboxScreen(filter: InboxFilter(automationId: GalleryFixtures.triageId, project: "Argus")) },
+        GalleryStory(
+          "inbox/filtered-empty", size: CGSize(width: 1000, height: 560), chrome: true, fixtures: fixtures,
+          setup: attachModel
+        ) { InboxScreen(filter: InboxFilter(project: "Grove")) },
         GalleryStory(
           "inbox/empty", size: CGSize(width: 1000, height: 560), chrome: true,
           fixtures: GalleryFixtures.automations(empty: true), setup: attachModel
-        ) { InboxScreen() },
+        ) { InboxScreen(filter: .all) },
         GalleryStory("inbox/proposal", size: screen, chrome: true, fixtures: fixtures, setup: attachModel) {
           ProposalScreen(proposalId: "p-crash")
         },

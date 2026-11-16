@@ -8,17 +8,20 @@ import SwiftUI
 struct InboxScreen: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var host
+  /// From the route: which automation's and project's items to show.
+  let filter: InboxFilter
   /// The failure and cleared windows are relative to now, so they move while the screen is open.
   @State private var now = Date()
 
   private var inbox: InboxStore { model.inbox }
 
-  private var items: InboxItems {
+  private var allItems: InboxItems {
     inbox.items(sessionIds: Set(host.sessionsByRepo.values.joined().map(\.id)), now: now)
   }
 
   var body: some View {
-    let items = items
+    let all = allItems
+    let items = all.filtered(filter)
     let phase = LoadPhase(loaded: inbox.loaded, error: inbox.error, isEmpty: items.isEmpty)
     Group {
       switch phase {
@@ -36,6 +39,21 @@ struct InboxScreen: View {
         Banner(text: error, tone: .danger).padding([.horizontal, .top])
       }
     }
+    .toolbar {
+      if !all.isEmpty || !filter.isEmpty {
+        ToolbarItem {
+          InboxFilterMenu(
+            options: all.filterOptions(selected: filter) { id in
+              model.automations.automations.first { $0.id == id }?.name
+            },
+            filter: filter
+          ) { next, field in
+            MacTelemetry.capture(.inboxFiltered(by: field))
+            model.navigate(.inbox(next))
+          }
+        }
+      }
+    }
     .navigationTitle("Inbox")
     .navigationSubtitle(
       items.pending.isEmpty
@@ -50,7 +68,18 @@ struct InboxScreen: View {
     }
   }
 
-  private var empty: some View {
+  @ViewBuilder private var empty: some View {
+    if filter.isEmpty { quiet } else {
+      EmptyState(icon: "tray", title: "Nothing here", body: "Nothing in the inbox matches this filter.") {
+        Button("Clear Filters") {
+          MacTelemetry.capture(.inboxFiltered(by: .clear))
+          model.navigate(.inbox())
+        }
+      }
+    }
+  }
+
+  private var quiet: some View {
     let none = model.automations.automations.isEmpty
     return EmptyState(
       icon: "tray", title: "Nothing needs you",

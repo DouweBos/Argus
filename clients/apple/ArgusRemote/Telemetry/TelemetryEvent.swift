@@ -247,6 +247,8 @@ enum TelemetryEvent {
   case offlineReply(action: OfflineReplyAction)
   /// The inbox's shortcut into the run a proposal came out of.
   case proposalOpenedAsRun
+  /// The inbox was narrowed to one automation or project, or cleared.
+  case inboxFiltered(by: InboxFilterField)
   /// A suggested reply filled the message field.
   case followUpUsed
   /// A message-field feature the host can't see; follow-ups have their own event.
@@ -368,6 +370,7 @@ enum TelemetryEvent {
     case .proposalOpenedAsRun: "ios_proposal_opened"
     case .followUpUsed: "ios_follow_up_used"
     case .inputUsed: "ios_input_used"
+    case .inboxFiltered: "ios_inbox_filtered"
     case .settingChanged: "ios_setting_changed"
     case .colorThemeChanged: "ios_color_theme_changed"
     case .appearanceChanged: "ios_appearance_changed"
@@ -425,6 +428,8 @@ enum TelemetryEvent {
     case .accountSignedIn(let provider, let firstDevice):
       ["provider": provider.rawValue, "first_device": firstDevice]
     case .memberRemoved(let role), .memberRenamed(let role):
+    case .inboxFiltered(let field):
+      ["by": field.rawValue]
       ["role": role.rawValue]
     case .joinActed(let action, let role):
       ["action": action.rawValue, "role": role.rawValue]
