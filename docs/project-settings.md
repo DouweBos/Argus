@@ -60,9 +60,9 @@ stored, so the team's later changes to them still come through.
 
 ### Export and import
 
-- **Export…** saves the effective config as a file in `.argus.json` format —
+- **Export** saves the effective config as a file in `.argus.json` format —
   to share it, check it in as a team baseline, or move it to another Mac.
-- **Import…** reads such a file, validates it the same way Argus validates
+- **Import** reads such a file, validates it the same way Argus validates
   `.argus.json`, and — after you confirm — replaces this Mac's config for the
   project with it. Every key in the file is stored on this Mac, including ones
   that match the checked-in `.argus.json`. A checked-in `.argus.json` is left

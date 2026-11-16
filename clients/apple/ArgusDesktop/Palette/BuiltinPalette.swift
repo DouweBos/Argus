@@ -116,7 +116,7 @@ enum BuiltinPalette {
     }
     if model.deletableSession != nil {
       commands.append(
-        PaletteCommand(id: "session.delete", title: "Delete Session…", section: "Session", systemImage: "trash") {
+        PaletteCommand(id: "session.delete", title: "Delete Session", section: "Session", systemImage: "trash") {
           model.requestDeleteSession()
         })
     }
@@ -141,19 +141,19 @@ enum BuiltinPalette {
   private static func app(_ model: DesktopModel) -> [PaletteCommand] {
     [
       PaletteCommand(
-        id: settingsId, title: "Settings…", section: "App", keywords: ["preferences"],
+        id: settingsId, title: "Settings", section: "App", keywords: ["preferences"],
         systemImage: "gearshape", shortcut: "⌘,", opensSettings: true
       ) {},
       PaletteCommand(
-        id: "app.add-project", title: "Add Project…", section: "App", keywords: ["open repo"],
+        id: "app.add-project", title: "Add Project", section: "App", keywords: ["open repo"],
         systemImage: "folder.badge.plus", shortcut: "⌘O"
       ) { model.addingProject = true },
       PaletteCommand(
-        id: "app.import-cli-projects", title: "Import Projects from Claude Code…", section: "App",
+        id: "app.import-cli-projects", title: "Import Projects from Claude Code", section: "App",
         keywords: ["claude code", "cli", "history", "add project"], systemImage: "square.and.arrow.down"
       ) { model.importingCliProjects = true },
       PaletteCommand(
-        id: "app.new-session", title: "New Session…", section: "App", systemImage: "plus",
+        id: "app.new-session", title: "New Session", section: "App", systemImage: "plus",
         shortcut: "⌘N"
       ) { model.requestNewSession() },
       PaletteCommand(
@@ -161,7 +161,7 @@ enum BuiltinPalette {
         keywords: ["bug", "report", "issue", "logs", "diagnose"], systemImage: Icon.triage
       ) { Task { await model.triage(nil) } },
       PaletteCommand(
-        id: "app.open-session", title: "Open Session…", section: "App", keywords: ["quick switcher"],
+        id: "app.open-session", title: "Open Session", section: "App", keywords: ["quick switcher"],
         systemImage: "arrow.triangle.branch", shortcut: "⇧⌘O"
       ) { model.palette.present(switcher: true) },
     ]

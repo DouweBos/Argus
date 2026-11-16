@@ -15,7 +15,7 @@ struct AttachedHostButton: View {
         Text("Quitting this window leaves its agents running.")
         if !model.supervisor.configuration.attachOnly {
           Divider()
-          Button("Quit \(holder.appName) and Take Over…") { model.confirmTakeOver(holder) }
+          Button("Quit \(holder.appName) and Take Over") { model.confirmTakeOver(holder) }
         }
       } label: {
         Image(systemName: "link")

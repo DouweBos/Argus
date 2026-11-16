@@ -55,7 +55,7 @@ struct JoinAccountView: View {
         label: "Nobody left to approve?",
         caption: "Lost every device and computer on your account? Reset it from this phone and link your computers again."
       ) {
-        Btn(label: "Reset account…", tone: .ghost, action: onReset)
+        Btn(label: "Reset account", tone: .ghost, action: onReset)
       }
     }
     Btn(label: "Sign out", tone: .ghost) { Task { await account.signOut() } }

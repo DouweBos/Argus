@@ -35,7 +35,7 @@ public struct SessionTriageMenu: View {
           }
         }
         Divider()
-        Button("Custom…", action: customSnooze)
+        Button("Custom", action: customSnooze)
       }
     }
   }

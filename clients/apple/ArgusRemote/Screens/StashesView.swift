@@ -92,7 +92,7 @@ struct StashesView: View {
     Button("Pop", systemImage: Icon.download) { apply(index, drop: true) }
     Button("Copy Message", systemImage: Icon.copy) { UIPasteboard.general.string = stash.message }
     Divider()
-    Button("Drop…", systemImage: Icon.trash, role: .destructive) { dropping = stash }
+    Button("Drop", systemImage: Icon.trash, role: .destructive) { dropping = stash }
   }
 
   /// Git's ISO date as "3h ago"; the raw string if it doesn't parse.

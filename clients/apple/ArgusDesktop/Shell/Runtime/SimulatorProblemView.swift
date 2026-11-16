@@ -24,9 +24,9 @@ struct SimulatorProblemView: View {
         .multilineTextAlignment(.center)
       HStack(spacing: 8) {
         if problem.kind == .missingData {
-          Button("Erase…") { confirming = .erase }
+          Button("Erase") { confirming = .erase }
         }
-        Button("Delete…", role: .destructive) { confirming = .delete }
+        Button("Delete", role: .destructive) { confirming = .delete }
       }
       .disabled(working)
       if let failure {

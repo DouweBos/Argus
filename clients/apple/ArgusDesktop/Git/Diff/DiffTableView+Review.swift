@@ -101,7 +101,7 @@ extension DiffTableView.Coordinator {
   func commentMenuItem(row: Int) -> NSMenuItem? {
     guard review != nil, rows.indices.contains(row), side(row: row, x: 0) != nil || side(row: row, x: half) != nil
     else { return nil }
-    let item = NSMenuItem(title: "Add Comment…", action: #selector(addCommentFromMenu(_:)), keyEquivalent: "")
+    let item = NSMenuItem(title: "Add Comment", action: #selector(addCommentFromMenu(_:)), keyEquivalent: "")
     item.target = self
     item.tag = row
     return item

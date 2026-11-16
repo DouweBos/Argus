@@ -21,7 +21,7 @@ struct AccountRequestsGroup: View {
             Spacer()
             Button("Deny") { Task { await account.deny(request.requestId) } }
               .buttonStyle(.secondary)
-            Button("Review…") { reviewing = request }
+            Button("Review") { reviewing = request }
               .buttonStyle(.accent)
           }
         }
@@ -105,9 +105,9 @@ struct AccountDevicesGroup: View {
           Text(AccountMemberText.detail(device, code: account.approvalCode(for: device.id)))
             .foregroundStyle(.secondary)
           Spacer()
-          Button("Rename…") { renaming = device }.buttonStyle(.secondary)
+          Button("Rename") { renaming = device }.buttonStyle(.secondary)
           if !isSelf {
-            Button("Remove…", role: .destructive) { removing = device }.buttonStyle(.secondary)
+            Button("Remove", role: .destructive) { removing = device }.buttonStyle(.secondary)
           }
         }
       }

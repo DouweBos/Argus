@@ -63,13 +63,13 @@ struct HostMenuModelTests {
     func labels(_ update: UpdateState, agents: Int = 0) -> [String] {
       F.labels(HostMenuModel.updateItems(update, autoInstall: false, activeAgents: agents))
     }
-    #expect(labels(.idle) == ["Check for Updates…", "Install Automatically When Idle"])
+    #expect(labels(.idle) == ["Check for Updates", "Install Automatically When Idle"])
     #expect(labels(.available(version: "2.0.0")).prefix(2) == ["Update available: 2.0.0", "Download Update"])
     #expect(labels(.downloading(percent: 42)).first == "Downloading update — 42%")
     #expect(labels(.ready(version: "2.0.0")).prefix(2) == ["Update ready: 2.0.0", "Restart and Install"])
     #expect(labels(.ready(version: "2.0.0"), agents: 3)[1] == "3 agents running — cannot restart")
     #expect(labels(.ready(version: "2.0.0"), agents: 1)[1] == "1 agent running — cannot restart")
-    #expect(labels(.failed("offline")).prefix(2) == ["Update failed: offline", "Check for Updates…"])
+    #expect(labels(.failed("offline")).prefix(2) == ["Update failed: offline", "Check for Updates"])
     #expect(labels(.unavailable) == ["Updates aren't set up in this build"])
   }
 
@@ -79,7 +79,7 @@ struct HostMenuModelTests {
   }
 
   @Test func loginItemNeedingApprovalSaysWhere() {
-    #expect(F.labels(HostMenuModel.loginItems(.requiresApproval)) == ["Open at Login", "Allow in Login Items…"])
+    #expect(F.labels(HostMenuModel.loginItems(.requiresApproval)) == ["Open at Login", "Allow in Login Items"])
     #expect(HostMenuModel.loginItems(.unavailable) == [.toggle("Open at Login", isOn: false, .toggleOpenAtLogin)])
   }
 

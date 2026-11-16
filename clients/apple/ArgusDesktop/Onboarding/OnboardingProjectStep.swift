@@ -93,7 +93,7 @@ struct OnboardingProjectStep: View {
           await onboarding.add(path, source: .openPanel, backend)
         }
       } label: {
-        Label("Choose a folder…", systemImage: "folder.badge.plus")
+        Label("Choose a folder", systemImage: "folder.badge.plus")
       }
       .buttonStyle(ChooseFolderStyle(prominent: prominent))
       // A failed scan just hides the suggestions; a failed import shows here.

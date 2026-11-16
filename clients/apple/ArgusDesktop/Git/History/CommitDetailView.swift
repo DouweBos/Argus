@@ -49,7 +49,7 @@ struct CommitDetailView: View {
 
   @ViewBuilder
   private func fileMenu(_ path: String, commit: CommitInfo) -> some View {
-    Button("File History…") { history.request(.fileHistory(path)) }
+    Button("File History") { history.request(.fileHistory(path)) }
     Button("Blame at \(commit.shortSHA)") { actions.navigate(.blame(path: path, ref: commit.id)) }
     Divider()
     Button("Copy Path") { Clipboard.copy(path) }
@@ -191,9 +191,9 @@ private struct CommitSelectionSummary: View {
           .font(.scaled(size: 12)).foregroundStyle(.secondary)
       }
       HStack {
-        Button("Squash \(commits.count) Commits…") { history.request(.squashCommits(commits)) }
+        Button("Squash \(commits.count) Commits") { history.request(.squashCommits(commits)) }
           .disabled(!history.canSquash(commits))
-        Button("Save as Patch…") { Task { await actions.savePatch(commits) } }
+        Button("Save as Patch") { Task { await actions.savePatch(commits) } }
           .disabled(!history.canSavePatch(commits))
       }
       ScrollView {

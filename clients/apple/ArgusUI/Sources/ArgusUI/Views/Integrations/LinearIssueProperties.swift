@@ -197,7 +197,7 @@ struct LinearIssueProperties<Actions: View>: View {
       if canEdit {
         LinearPropertyPill(
           options: LinearIssueProperty.statusOptions(model.stateOptions), current: issue.state.id,
-          placeholder: "Change status…", key: "S", isOpen: isOpen(.status),
+          placeholder: "Change status", key: "S", isOpen: isOpen(.status),
           icon: { id in
             let state = model.stateOptions.first { $0.id == id }
             return AnyView(IssueStatusGlyph(type: state?.type ?? "", color: state?.color))
@@ -225,7 +225,7 @@ struct LinearIssueProperties<Actions: View>: View {
       if canEdit {
         LinearPropertyPill(
           options: LinearIssueProperty.priorityOptions, current: "\(Int(issue.priority))",
-          placeholder: "Change priority…", key: "P", isOpen: isOpen(.priority),
+          placeholder: "Change priority", key: "P", isOpen: isOpen(.priority),
           icon: { id in AnyView(PriorityGlyph(priority: Int(id) ?? 0)) },
           pick: { id in if let priority = Int(id) { Task { await model.setPriority(priority) } } }
         ) {

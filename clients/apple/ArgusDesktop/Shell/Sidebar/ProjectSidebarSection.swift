@@ -59,8 +59,8 @@ struct ProjectSidebarSection: View {
   }
 
   @ViewBuilder private var projectMenu: some View {
-    Button("New Session…") { model.newSessionProject = project }
-    Button("Project Settings…") { model.projectSettingsRepo = project.repoRoot }
+    Button("New Session") { model.newSessionProject = project }
+    Button("Project Settings") { model.projectSettingsRepo = project.repoRoot }
     if let root {
       Button("Open in New Tab") { openInTab(root) }
       PullRequestWatchButton(session: root)
@@ -69,7 +69,7 @@ struct ProjectSidebarSection: View {
       Button(collapsed ? "Expand" : "Collapse") { collapsed.toggle() }
     }
     Divider()
-    Button("Remove Project…", role: .destructive) { confirmingRemove = true }
+    Button("Remove Project", role: .destructive) { confirmingRemove = true }
   }
 
   private func remove() {

@@ -32,7 +32,7 @@ struct WorktreeLocationField: View {
           .labelsHidden()
           .textFieldStyle(.roundedBorder)
           .font(.system(.body, design: .monospaced))
-        Button("Browse…") {
+        Button("Browse") {
           Task { if let path = await model.pickFolder(prompt: "Use this folder", on: repoRoot.map(model.host(ofProject:))) { draft = path } }
         }
         if !trimmed.isEmpty {

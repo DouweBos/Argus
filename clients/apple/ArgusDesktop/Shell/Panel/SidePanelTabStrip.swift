@@ -171,7 +171,7 @@ struct SidePanelTabButton<Glyph: View>: View {
     .accessibilityElement(children: .combine)
     .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
     .contextMenu {
-      if let startRename { Button("Rename…", action: startRename) }
+      if let startRename { Button("Rename", action: startRename) }
       if closable { Button("Close Tab", action: close) }
     }
     .onChange(of: fieldFocused) { _, focused in

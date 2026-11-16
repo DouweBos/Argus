@@ -151,7 +151,7 @@ struct RunScreen: View {
     ToolbarItemGroup {
       // Nothing to resume once the run's session is gone.
       if !run.isActive, run.hostSessionId != nil {
-        Button { givingFeedback = true } label: { Label("Give Feedback…", systemImage: "bubble.left") }
+        Button { givingFeedback = true } label: { Label("Give Feedback", systemImage: "bubble.left") }
           .labelStyle(.titleAndIcon)
       }
       // The playbook and scope come from the run; it lands paused and manual.

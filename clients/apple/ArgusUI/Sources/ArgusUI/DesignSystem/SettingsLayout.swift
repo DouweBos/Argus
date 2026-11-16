@@ -139,7 +139,7 @@ public struct SettingsGroupTitle: View {
   }
 }
 
-/// A small action beside a group's header, like "Add App…".
+/// A small action beside a group's header, like "Add App".
 public struct SettingsHeaderButton: View {
   @Environment(\.theme) private var theme
   let title: String

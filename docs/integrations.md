@@ -235,7 +235,7 @@ are connected and as whom. Connecting and disconnecting stay on the
 computer, so API keys never travel to the phone. Filing bugs from the
 simulator is desktop-only.
 
-The Mac app has the same flow in **New Session**: **Add Linear Issue…**
+The Mac app has the same flow in **New Session**: **Add Linear Issue**
 picks the issues, and **Start N Agents** creates a session per issue. The
 session's context card lists its issue, which opens on the Issues screen,
 and each of its Figma frames, which open in the design viewer; each row's

@@ -13,10 +13,10 @@ struct ServerMenuModelTests {
     let labels = F.labels(ServerMenuModel.items(F.menu()))
     #expect(Array(labels.prefix(4)) == ["Argus Server 1.2.3", "Host: running", "Gateway: ws://127.0.0.1:47617", "State: ~/.argus-server"])
     #expect(labels.contains("No agents running"))
-    #expect(labels.contains("Pair a device…"))
-    #expect(labels.contains("Check for Updates…"))
+    #expect(labels.contains("Pair a device"))
+    #expect(labels.contains("Check for Updates"))
     #expect(labels.contains("Open Web Client"))
-    #expect(labels.suffix(3) == ["Open at Login", "Settings…", "Quit Argus Server"])
+    #expect(labels.suffix(3) == ["Open at Login", "Settings", "Quit Argus Server"])
   }
 
   @Test func aHostThatIsNotUpHidesWhatNeedsIt() {
@@ -25,7 +25,7 @@ struct ServerMenuModelTests {
     let labels = F.labels(items)
     #expect(labels.contains("Host: Argus (Electron) is running on this Argus home"))
     #expect(F.action(F.find(items, "Take Over from the Old Argus Server")) == .takeOver)
-    #expect(!labels.contains("Pair a device…"))
+    #expect(!labels.contains("Pair a device"))
     #expect(labels.last == "Quit Argus Server")
   }
 
@@ -50,7 +50,7 @@ struct ServerMenuModelTests {
   @Test func loginItemNeedingApprovalSaysWhere() {
     let items = ServerMenuModel.appItems(F.menu(loginItem: .requiresApproval, oldLoginAgent: true))
     #expect(F.labels(items) == [
-      "Start at Login with This App…", "Open at Login", "Allow in Login Items…", "Settings…", "Quit Argus Server",
+      "Start at Login with This App", "Open at Login", "Allow in Login Items", "Settings", "Quit Argus Server",
     ])
   }
 

@@ -204,7 +204,7 @@ struct AgentTabBar: View {
   @ViewBuilder private func menu(for agent: RemoteAgentStatus) -> some View {
     let ids = agents.map(\.agentId)
     let index = ids.firstIndex(of: agent.agentId) ?? 0
-    Button("Rename Agent…") { track("rename");
+    Button("Rename Agent") { track("rename");
       newTitle = agent.title ?? ""
       renaming = agent
     }

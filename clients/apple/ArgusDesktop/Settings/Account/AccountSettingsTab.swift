@@ -58,7 +58,7 @@ extension AccountSettingsTab {
       SettingsGroup(title, footer: footer) {
         HStack {
           Spacer()
-          Button("Reset Account…", role: .destructive) { resetting = true }
+          Button("Reset Account", role: .destructive) { resetting = true }
             .buttonStyle(.secondary)
         }
       }
@@ -129,9 +129,9 @@ private struct AccountOverview: View {
           Text(AccountPresenceText.text(online: host.online, lastSeen: host.lastSeen))
             .foregroundStyle(.secondary)
           Spacer()
-          Button("Rename…") { renaming = host.member }
+          Button("Rename") { renaming = host.member }
             .buttonStyle(.secondary)
-          Button("Remove…", role: .destructive) { removing = host }
+          Button("Remove", role: .destructive) { removing = host }
             .buttonStyle(.secondary)
         }
       }
@@ -146,7 +146,7 @@ private struct AccountOverview: View {
     SettingsGroup(footer: "Takes this Mac off the account and deletes its account key. Paired hosts keep working.") {
       HStack {
         Spacer()
-        Button("Sign Out…", role: .destructive) { confirmingSignOut = true }
+        Button("Sign Out", role: .destructive) { confirmingSignOut = true }
           .buttonStyle(.secondary)
       }
       SettingsError(text: account.error)

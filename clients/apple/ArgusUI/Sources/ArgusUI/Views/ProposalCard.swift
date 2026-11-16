@@ -284,7 +284,7 @@ public struct ProposalCard: View {
       case .start(let label):
         Button(startFailure == nil ? label : "Try Again") { actions.start(nil) }
           .buttonStyle(.borderedProminent)
-        Button("Start with Note…") { begin(.startNote) }
+        Button("Start with Note") { begin(.startNote) }
       case .cleanup(let label, _, _, _):
         Button(label) { confirmingCleanup = true }
       case .open(let label, let url):
@@ -292,9 +292,9 @@ public struct ProposalCard: View {
       case nil:
         EmptyView()
       }
-      Button("Request Revision…") { begin(.revise) }
-      Button("Mark as Done…") { begin(.resolve) }
-      Button("Dismiss…") { begin(.dismiss) }
+      Button("Request Revision") { begin(.revise) }
+      Button("Mark as Done") { begin(.resolve) }
+      Button("Dismiss") { begin(.dismiss) }
     }
 
   #else
@@ -331,9 +331,9 @@ public struct ProposalCard: View {
     private var moreDecisions: some View {
       Menu {
         if case .start = content.cta {
-          Button("Start with a note…", systemImage: Icon.play) { begin(.startNote) }
+          Button("Start with a note", systemImage: Icon.play) { begin(.startNote) }
         }
-        Button("Request a revision…", systemImage: Icon.refresh) { begin(.revise) }
+        Button("Request a revision", systemImage: Icon.refresh) { begin(.revise) }
       } label: {
         Image(systemName: Icon.ellipsis)
           .font(.scaled(size: 14, weight: .semibold))

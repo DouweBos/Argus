@@ -35,7 +35,7 @@ struct AccountJoinPrompt: ViewModifier {
         isPresented: Binding(get: { asking != nil }, set: { if !$0 { asking = nil } }),
         presenting: asking
       ) { request in
-        Button("Review…") { reviewing = request }
+        Button("Review") { reviewing = request }
         Button("Not Now", role: .cancel) {}
       } message: { _ in
         Text("You'll compare a 6-digit code on both screens. Didn't just sign in on it? Choose Not Now and deny it in Settings → Account.")

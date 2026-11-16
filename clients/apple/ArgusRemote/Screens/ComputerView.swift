@@ -159,7 +159,7 @@ struct ComputerView: View {
       SettingsGroup(footer: "Every device on your account stops connecting to it. Link it again with a new code.") {
         HStack {
           Spacer()
-          Btn(label: "Remove from Account…", tone: .danger, small: true, hugs: true) {
+          Btn(label: "Remove from Account", tone: .danger, small: true, hugs: true) {
             guard let id = computer.accountHostId else { return }
             Task {
               await app.account.remove(memberId: id)
@@ -175,7 +175,7 @@ struct ComputerView: View {
       ) {
         HStack {
           Spacer()
-          Btn(label: "Unpair…", tone: .danger, small: true, hugs: true) { confirmingUnpair = true }
+          Btn(label: "Unpair", tone: .danger, small: true, hugs: true) { confirmingUnpair = true }
         }
       }
     }

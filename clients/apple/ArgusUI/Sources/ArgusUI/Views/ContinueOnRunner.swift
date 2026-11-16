@@ -2,7 +2,7 @@ import ArgusCore
 import SwiftUI
 
 extension EnvironmentValues {
-  /// Puts an agent a "Continue on…" just started in front; set by each app's screen.
+  /// Puts an agent a "Continue on" just started in front; set by each app's screen.
   @Entry public var openContinuedAgent: ((RemoteAgentStatus) -> Void)?
 }
 

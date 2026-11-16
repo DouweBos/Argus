@@ -11,8 +11,8 @@ struct AccountMenuModelTests {
 
   @Test func offersLinkingWhenNotLinked() {
     let menu = AccountMenuModel.items(F.account())
-    #expect(F.labels(menu) == ["Link to Argus Account…"])
-    #expect(F.action(F.find(menu, "Link to Argus Account…")) == .account(.linkStart))
+    #expect(F.labels(menu) == ["Link to Argus Account"])
+    #expect(F.action(F.find(menu, "Link to Argus Account")) == .account(.linkStart))
   }
 
   @Test func saysTheAccountWasResetAndOffersLinkingAgain() {
@@ -22,7 +22,7 @@ struct AccountMenuModelTests {
     #expect(
       F.labels(menu) == [
         "This account was reset from \"New phone\"", "Link this computer again to keep using it",
-        "Link to Argus Account…", "Dismiss",
+        "Link to Argus Account", "Dismiss",
       ])
     #expect(F.action(F.find(menu, "Dismiss")) == .account(.resetDismiss))
   }
@@ -57,7 +57,7 @@ struct AccountMenuModelTests {
       ])
     let settings = F.children(F.find(menu, "Argus Account"))
     #expect(F.find(settings, "Managed Tunnel") == .toggle("Managed Tunnel", isOn: true, .account(.tunnel(on: false))))
-    #expect(F.action(F.find(settings, "Unlink…")) == .account(.unlink))
+    #expect(F.action(F.find(settings, "Unlink")) == .account(.unlink))
     #expect(!F.labels(settings).contains("Use System Name (Mini)"))
     #expect(F.labels(settings).first == "Account safety code: ABCD-EFGH")
   }
@@ -66,7 +66,7 @@ struct AccountMenuModelTests {
     let menu = AccountMenuModel.items(F.account(F.status(linked: true, name: "Build box")))
     let settings = F.children(F.find(menu, "Argus Account"))
     #expect(F.action(F.find(settings, "Use System Name (Mini)")) == .account(.renameDefault))
-    #expect(F.action(F.find(settings, "This Computer's Name…")) == .account(.rename(current: "Build box")))
+    #expect(F.action(F.find(settings, "This Computer's Name")) == .account(.rename(current: "Build box")))
   }
 
   @Test func listsWhoIsWaitingWithApproveAndDeny() {
@@ -105,7 +105,7 @@ struct AccountMenuModelTests {
     snapshot.inlineSettings = false
     let menu = AccountMenuModel.items(snapshot)
     #expect(F.find(menu, "Argus Account") == nil)
-    #expect(F.action(F.find(menu, "Account Settings…")) == .openAccountSettings)
+    #expect(F.action(F.find(menu, "Account Settings")) == .openAccountSettings)
   }
 
   @Test func tunnelLinesSayWhyItIsOff() {

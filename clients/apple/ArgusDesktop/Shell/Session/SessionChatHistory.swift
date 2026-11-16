@@ -64,7 +64,7 @@ struct RecentChatsSheet: View {
       HStack {
         Text("Recent Chats").font(.scaled(.headline))
         Spacer()
-        Button("Clear All…") { confirmingClear = true }
+        Button("Clear All") { confirmingClear = true }
           .buttonStyle(.argusBorderless)
           .disabled(entries.isEmpty)
         Button("Done") { dismiss() }

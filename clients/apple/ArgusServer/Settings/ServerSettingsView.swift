@@ -35,7 +35,7 @@ private struct GeneralTab: View {
                         set: { model.setOpenAtLogin($0) }))
         if model.loginState == .requiresApproval {
           SettingsRow("Waiting for approval", description: "macOS asks you to allow it in System Settings.") {
-            Button("Open Login Items…") { LoginItem.openSystemSettings() }
+            Button("Open Login Items") { LoginItem.openSystemSettings() }
           }
         }
       }
@@ -81,7 +81,7 @@ private struct AccountRemoteTab: View {
   var body: some View {
     SettingsPage {
       if let account = model.account {
-        SettingsGroup("Argus Account", footer: account.linked ? nil : "Link this computer from the menu: Link to Argus Account…") {
+        SettingsGroup("Argus Account", footer: account.linked ? nil : "Link this computer from the menu: Link to Argus Account") {
           SettingsRow("This computer's name") {
             TextField("Name", text: $name, prompt: Text(account.systemName ?? "Name"))
               .textFieldStyle(.roundedBorder)
@@ -103,7 +103,7 @@ private struct AccountRemoteTab: View {
       } else {
         ProgressView().frame(maxWidth: .infinity)
       }
-      SettingsGroup("Paired devices", footer: "Pair a device from the menu: Pair a device…") {
+      SettingsGroup("Paired devices", footer: "Pair a device from the menu: Pair a device") {
         let devices = model.remote?.devices ?? []
         if devices.isEmpty {
           Text("No devices paired yet.").foregroundStyle(theme.textSecondary)

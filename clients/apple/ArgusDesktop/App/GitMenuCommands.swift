@@ -65,23 +65,23 @@ struct GitMenuCommands: View {
     let noRemotes = refs?.remotes.isEmpty ?? true
     let hasOtherBranch = (refs?.localBranches.count ?? 0) > 1
     item(.fetch, "Fetch", "f", [.command, .shift], owned: owned, disabled: busy)
-    item(.pull, "Pull…", "p", [.command, .shift], owned: owned, disabled: busy || noRemotes)
-    item(.push, "Push…", "u", [.command, .shift], disabled: busy || !hasHead || noRemotes)
+    item(.pull, "Pull", "p", [.command, .shift], owned: owned, disabled: busy || noRemotes)
+    item(.push, "Push", "u", [.command, .shift], disabled: busy || !hasHead || noRemotes)
     Divider()
     // A worktree session's branch is the session's, so the toolbar's Branch renames it.
     item(
-      .branch, workspace?.isProjectRoot == false ? "Rename Session Branch…" : "New Branch…", "b", .command,
+      .branch, workspace?.isProjectRoot == false ? "Rename Session Branch" : "New Branch", "b", .command,
       owned: owned, disabled: busy)
     Divider()
-    item(.merge, "Merge…", "m", [.command, .shift], owned: owned, disabled: busy || !hasHead || !hasOtherBranch)
-    item(.rebase, "Rebase…", "r", [.command, .shift], disabled: busy || !hasHead || !hasOtherBranch)
-    item(.createPullRequest, "Create Pull Request…", nil)
+    item(.merge, "Merge", "m", [.command, .shift], owned: owned, disabled: busy || !hasHead || !hasOtherBranch)
+    item(.rebase, "Rebase", "r", [.command, .shift], disabled: busy || !hasHead || !hasOtherBranch)
+    item(.createPullRequest, "Create Pull Request", nil)
     Divider()
     // A pull request's comment box sends on ⌘↩ too.
     item(
       .commit, "Commit", .return, .command, owned: owned && model.gitView != .pullRequests,
       disabled: workspace?.workingCopy.canCommit != true)
-    item(.stash, "Stash…", "s", [.command, .shift], disabled: busy || (workspace?.workingCopy.changedCount ?? 0) == 0)
+    item(.stash, "Stash", "s", [.command, .shift], disabled: busy || (workspace?.workingCopy.changedCount ?? 0) == 0)
   }
 
   private func item(

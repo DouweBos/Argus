@@ -169,8 +169,8 @@ private struct PullRequestDetailContent: View {
       Button { model.openOnGitHub() } label: { Label(PullRequestLabels.openOn(detail.url), systemImage: "safari") }
         .help(PullRequestLabels.openOn(detail.url))
       if detail.state == "OPEN" {
-        Button("Close…") { confirmingClose = true }.disabled(model.busy != nil)
-        Button("Merge…") { merging = true }
+        Button("Close") { confirmingClose = true }.disabled(model.busy != nil)
+        Button("Merge") { merging = true }
           .disabled(model.busy != nil || detail.isDraft || detail.mergeable == "CONFLICTING")
           .help(detail.isDraft ? "Drafts can't be merged" : detail.mergeable == "CONFLICTING" ? "This branch conflicts with its base" : "Merge on \(PullRequestLabels.host(detail.url))")
       }

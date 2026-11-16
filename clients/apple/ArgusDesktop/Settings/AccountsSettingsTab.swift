@@ -140,8 +140,8 @@ private struct AccountRow: View {
         Button("Sign In Again", action: onReauth)
       }
       Menu {
-        Button("Rename…", action: onRename)
-        Button("Remove…", role: .destructive, action: onRemove)
+        Button("Rename", action: onRename)
+        Button("Remove", role: .destructive, action: onRemove)
       } label: {
         Image(systemName: "ellipsis")
       }

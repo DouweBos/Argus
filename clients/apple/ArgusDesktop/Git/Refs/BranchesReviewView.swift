@@ -63,7 +63,7 @@ struct BranchesReviewView: View {
         Button("Clear") { review.clearSelection() }.disabled(review.selectedIDs.isEmpty)
       }
       .buttonStyle(QuietTabButtonStyle())
-      Button("Delete Selected…", role: .destructive) { review.requestDelete(review.selectedBranches) }
+      Button("Delete Selected", role: .destructive) { review.requestDelete(review.selectedBranches) }
         .disabled(review.selectedIDs.isEmpty || !review.canDelete)
     }
     .controlSize(.small)
@@ -91,7 +91,7 @@ struct BranchesReviewView: View {
           }
         }
         .contextMenu {
-          Button("Delete…", role: .destructive) { review.requestDelete([branch]) }
+          Button("Delete", role: .destructive) { review.requestDelete([branch]) }
             .disabled(!branch.isDeletable || !review.canDelete)
           Button("Copy Name") { Clipboard.copy(branch.name) }
         }

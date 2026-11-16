@@ -30,7 +30,7 @@ import Observation
   }
   /// The in-editor find bar's state.
   public let find: FindModel
-  /// The "Go to Line…" field is up.
+  /// The "Go to Line" field is up.
   public var isGoToLineVisible = false
   /// The text view is its window's first responder: editor keys and menu items apply.
   public internal(set) var hasFocus = false

@@ -67,7 +67,7 @@ struct BranchMenu: View {
     let current = actions.currentName
     Button(branch.isHEAD ? "Already Checked Out" : "Checkout") { Task { await actions.checkout(name) } }
       .disabled(branch.isHEAD)
-    Button("New Branch from \(name)…") { actions.newBranch(from: name) }
+    Button("New Branch from \(name)") { actions.newBranch(from: name) }
     Divider()
     Button("Merge \(name) into \(current)") { Task { await actions.merge(name) } }.disabled(branch.isHEAD)
     Button("Squash-Merge \(name) into \(current)") { Task { await actions.merge(name, squash: true) } }
@@ -76,9 +76,9 @@ struct BranchMenu: View {
       .disabled(branch.isHEAD)
     Button("Compare with \(current)") { actions.compareWithCurrent(name) }.disabled(branch.isHEAD)
     Divider()
-    Button(branch.upstream == nil ? "Publish…" : "Push…") { actions.push(branch) }
-    if branch.isHEAD { Button("Pull…") { Task { await actions.pull() } } }
-    Button("Set Upstream…") { actions.setUpstream(branch) }
+    Button(branch.upstream == nil ? "Publish" : "Push") { actions.push(branch) }
+    if branch.isHEAD { Button("Pull") { Task { await actions.pull() } } }
+    Button("Set Upstream") { actions.setUpstream(branch) }
     Button("Create Pull Request") { actions.createPullRequest() }
     Divider()
     Button(marks.isPinned(name) ? "Unpin" : "Pin") { Task { await actions.setPinned(name, !marks.isPinned(name)) } }
@@ -86,10 +86,10 @@ struct BranchMenu: View {
       Task { await actions.setArchived(name, !marks.isArchived(name)) }
     }
     .disabled(branch.isHEAD)
-    Button("Rename…") { actions.rename(name) }
+    Button("Rename") { actions.rename(name) }
     Button("Copy Name") { Clipboard.copy(name) }
     Divider()
-    Button("Delete…", role: .destructive) { Task { await actions.delete(name) } }.disabled(branch.isHEAD)
+    Button("Delete", role: .destructive) { Task { await actions.delete(name) } }.disabled(branch.isHEAD)
   }
 }
 
@@ -143,12 +143,12 @@ struct RemoteBranchRow: View {
     .gitSidebarRow(.branch(branch.name))
     .contextMenu {
       Button("Checkout as \(local)") { Task { await actions.checkoutRemote(branch) } }
-      Button("New Branch from \(branch.name)…") { actions.newBranch(from: branch.name) }
+      Button("New Branch from \(branch.name)") { actions.newBranch(from: branch.name) }
       Button("Merge into \(actions.currentName)") { Task { await actions.merge(branch.name) } }
       Button("Compare with \(actions.currentName)") { actions.compareWithCurrent(branch.name) }
       Button("Copy Name") { Clipboard.copy(branch.name) }
       Divider()
-      Button("Delete from Remote…", role: .destructive) { Task { await actions.deleteRemoteBranch(branch) } }
+      Button("Delete from Remote", role: .destructive) { Task { await actions.deleteRemoteBranch(branch) } }
     }
   }
 }
@@ -170,13 +170,13 @@ struct TagRow: View {
     .gitSidebarRow(.tag(tag.name))
     .contextMenu {
       Button("Checkout") { Task { await actions.checkout(tag.name) } }
-      Button("New Branch from \(tag.name)…") { actions.newBranch(from: tag.name) }
+      Button("New Branch from \(tag.name)") { actions.newBranch(from: tag.name) }
       Button("Compare with \(actions.currentName)") { actions.compareWithCurrent(tag.name) }
       Button("Push to \(actions.remoteNames.first ?? "Remote")") { Task { await actions.pushTag(tag.name) } }
         .disabled(actions.remoteNames.isEmpty)
       Button("Copy Name") { Clipboard.copy(tag.name) }
       Divider()
-      Button("Delete…", role: .destructive) { Task { await actions.deleteTag(tag.name) } }
+      Button("Delete", role: .destructive) { Task { await actions.deleteTag(tag.name) } }
     }
   }
 }

@@ -43,12 +43,12 @@ private struct GitToolbarButtons: View {
     let noRemotes = workspace.refs.remotes.isEmpty
     return [
       PillAction(id: "refresh", title: "Refresh", symbol: "arrow.clockwise") { Task { await workspace.refreshAll() } },
-      PillAction(id: "pull", title: "Pull", symbol: "arrow.down.to.line", help: "Pull…", disabled: busy || noRemotes) {
+      PillAction(id: "pull", title: "Pull", symbol: "arrow.down.to.line", help: "Pull", disabled: busy || noRemotes) {
         Task { await actions.pull() }
       },
       PillAction(
         id: "push", title: current?.upstream == nil ? "Publish" : "Push", symbol: "arrow.up.to.line",
-        help: current?.upstream == nil ? "Publish the branch…" : "Push…", disabled: busy || current == nil || noRemotes
+        help: current?.upstream == nil ? "Publish the branch" : "Push", disabled: busy || current == nil || noRemotes
       ) { actions.push() },
       PillAction(
         id: "sync", title: "Sync", symbol: "arrow.triangle.2.circlepath", help: "Sync: fetch, pull, then push",
@@ -65,17 +65,17 @@ private struct GitToolbarButtons: View {
         Task { await actions.fetch() }
       },
       workspace.isProjectRoot
-        ? PillAction(id: "branch", title: "New Branch…", symbol: "arrow.triangle.branch") { actions.newBranch() }
-        : PillAction(id: "branch", title: "Rename Branch…", symbol: "arrow.triangle.branch") {
+        ? PillAction(id: "branch", title: "New Branch", symbol: "arrow.triangle.branch") { actions.newBranch() }
+        : PillAction(id: "branch", title: "Rename Branch", symbol: "arrow.triangle.branch") {
           actions.renameSessionBranch()
         },
       PillAction(
-        id: "stash", title: "Stash Changes…", symbol: "tray.and.arrow.down",
+        id: "stash", title: "Stash Changes", symbol: "tray.and.arrow.down",
         disabled: busy || workspace.workingCopy.changedCount == 0
       ) { actions.stash() },
     ]
     if workspace.isProjectRoot {
-      items.append(PillAction(id: "tag", title: "New Tag…", symbol: "tag") { actions.newTag() })
+      items.append(PillAction(id: "tag", title: "New Tag", symbol: "tag") { actions.newTag() })
     }
     items += [
       PillAction(

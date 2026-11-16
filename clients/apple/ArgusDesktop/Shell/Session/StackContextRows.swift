@@ -35,7 +35,7 @@ struct StackContextRows: View {
         MacTelemetry.capture(.contextCardUsed(action: .landStack))
         run { await actions.land(session) }
       } label: {
-        ContextCardRow(icon: Icon.landStack, title: "Land Stack…")
+        ContextCardRow(icon: Icon.landStack, title: "Land Stack")
       }
       .buttonStyle(ContextRowButtonStyle())
       .disabled(busy)
@@ -45,7 +45,7 @@ struct StackContextRows: View {
       MacTelemetry.capture(.contextCardUsed(action: .newStackedSession))
       model.newSessionParent = session
     } label: {
-      ContextCardRow(icon: "plus.square.on.square", title: "New Session on Top…")
+      ContextCardRow(icon: "plus.square.on.square", title: "New Session on Top")
     }
     .buttonStyle(ContextRowButtonStyle())
     .help("Start a session that branches from \(session.branch)")

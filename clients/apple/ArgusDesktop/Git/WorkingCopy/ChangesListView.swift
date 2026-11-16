@@ -86,7 +86,7 @@ struct ChangesListView: View {
       // The patch file is on this Mac; a remote session's git can't read it.
       if !workspace.isRemote {
         Divider()
-        Button("Apply Patch…") { PatchPanels.chooseToApply(workspace: workspace) }
+        Button("Apply Patch") { PatchPanels.chooseToApply(workspace: workspace) }
       }
     } label: {
       Image(systemName: "ellipsis")

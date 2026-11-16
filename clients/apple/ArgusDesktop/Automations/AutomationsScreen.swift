@@ -69,7 +69,7 @@ struct AutomationsScreen: View {
         "An automation is a playbook plus a clock: it wakes an agent up on a schedule, or when "
         + "you press Run. To run something once without saving it, use a quick run."
     ) {
-      Button("Describe It…") { describing = true }
+      Button("Describe It") { describing = true }
       Button("New Automation") { create() }.disabled(creating)
     }
   }

@@ -214,10 +214,10 @@ automatic sleeping when the display is off".
 | status        | the version, whether the host is running, the gateway, the local network and Tailscale addresses with **Copy Address**, and the state folder (click to show it)  |
 | agents        | how many agents run and how many are active, then each project → session → agent; picking an agent opens it in the web client                                    |
 | Argus Account | linking, the account's view of this computer, the managed tunnel, who is waiting to join, and the account settings — see [From the menu bar](#from-the-menu-bar) |
-| pairing       | **Pair a device…** and the pairing in progress                                                                                                                   |
+| pairing       | **Pair a device** and the pairing in progress                                                                                                                    |
 | updates       | where an update stands, and **Install Automatically When Idle**                                                                                                  |
 | open          | **Open Web Client** (`http://127.0.0.1:47617/` in your browser) and **Open Logs**                                                                                |
-| app           | **Open at Login**, **Settings…** (start at login, updates, usage data, the account's settings and paired devices with their grants) and **Quit Argus Server**    |
+| app           | **Open at Login**, **Settings** (start at login, updates, usage data, the account's settings and paired devices with their grants) and **Quit Argus Server**     |
 
 When another app holds `~/.argus-server`, the menu says which and offers to
 take over from it instead; when a pairing or a join request needs someone at
@@ -229,7 +229,7 @@ desktop's own host.
 
 ## Pairing your first device
 
-**Pair a device…** opens a small window with a QR code to scan with Argus on
+**Pair a device** opens a small window with a QR code to scan with Argus on
 your phone and the pairing code to paste into a desktop's _Add host_ field. The
 code is also copied to the clipboard and written to
 `$ARGUS_HOME/pairing-code.txt` (mode 0600) for a machine you only reach over
@@ -300,18 +300,18 @@ the account lists with the grants from `account set ios|desktop`.
 ### From the menu bar
 
 Argus Server's menu carries the same flow, backed by the same host commands as
-the console words. **Link to Argus Account…** also opens a window with the code
-in large type, and **Approve…** one with the code to compare.
+the console words. **Link to Argus Account** also opens a window with the code
+in large type, and **Approve** one with the code to compare.
 
-| menu shows                                | does                                                                                                                                                                                              |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Link to Argus Account…**                | `login`: copies the code to the clipboard and shows it with the `houwert.dev/argus/link` address (**Open** it, or type the code into the Argus app). **Cancel Linking** stops it                  |
-| _Confirm this matches: 482 093_           | the six-digit comparison. **Codes Match — Link** or **Codes Differ — Cancel**; on an empty account, **Make This Computer the First** instead                                                      |
-| _Argus Account: linked as "Mini"_         | `account`: the name it's linked as, whether the account sees it online, and the managed tunnel's state and address                                                                                |
-| **Waiting to join (n)**                   | `approve`: pick who, then **Approve…** shows the code to compare (**Codes Match — Approve** / **Codes Differ — Deny**), or **Deny**. Says _approving here is off_ after `account set approve off` |
-| **Argus Account → Managed Tunnel**        | `account set tunnel on\|off`                                                                                                                                                                      |
-| **Argus Account → This Computer's Name…** | `account set name`, in a small prompt; **Use System Name** goes back to the default                                                                                                               |
-| **Argus Account → Unlink…**               | `logout`, after a confirmation                                                                                                                                                                    |
+| menu shows                               | does                                                                                                                                                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Link to Argus Account**                | `login`: copies the code to the clipboard and shows it with the `houwert.dev/argus/link` address (**Open** it, or type the code into the Argus app). **Cancel Linking** stops it                 |
+| _Confirm this matches: 482 093_          | the six-digit comparison. **Codes Match — Link** or **Codes Differ — Cancel**; on an empty account, **Make This Computer the First** instead                                                     |
+| _Argus Account: linked as "Mini"_        | `account`: the name it's linked as, whether the account sees it online, and the managed tunnel's state and address                                                                               |
+| **Waiting to join (n)**                  | `approve`: pick who, then **Approve** shows the code to compare (**Codes Match — Approve** / **Codes Differ — Deny**), or **Deny**. Says _approving here is off_ after `account set approve off` |
+| **Argus Account → Managed Tunnel**       | `account set tunnel on\|off`                                                                                                                                                                     |
+| **Argus Account → This Computer's Name** | `account set name`, in a small prompt; **Use System Name** goes back to the default                                                                                                              |
+| **Argus Account → Unlink**               | `logout`, after a confirmation                                                                                                                                                                   |
 
 Who is waiting to join and whether the account sees the server online are
 checked once a minute; everything else updates as it happens.
@@ -337,13 +337,13 @@ the bundled host included, so the two never drift apart.
 
 | menu says                  | meaning                                                       |
 | -------------------------- | ------------------------------------------------------------- |
-| **Check for Updates…**     | nothing known yet                                             |
+| **Check for Updates**      | nothing known yet                                             |
 | _Checking for updates…_    | a feed check is in flight                                     |
 | _Up to date_               | the running version is the newest on the channel              |
 | _Update available: 1.2.3_  | pick **Download Update** — downloads never start on their own |
 | _Downloading update — 42%_ | progress; the menu updates live                               |
 | _Update ready: 1.2.3_      | pick **Restart and Install**                                  |
-| _Update failed: …_         | the feed error, shortened; **Check for Updates…** retries     |
+| _Update failed: …_         | the feed error, shortened; **Check for Updates** retries      |
 
 The running version is the first line of the menu, so only the new version is
 named here.
@@ -400,7 +400,7 @@ Access and the like) all carry over.
 - **Starting at login.** The old server started from a hand-installed launch
   agent. The first time the native server sees it,
   it asks once whether to start at login with **Open at Login** instead; until
-  you agree, the menu offers **Start at Login with This App…**. Agreeing moves
+  you agree, the menu offers **Start at Login with This App**. Agreeing moves
   the old agent to `~/.argus-server/migrated/` and turns on Open at Login.
 - **Paired devices in the old format.** The Electron server moves its paired
   devices and MCP sign-ins to the keychain format the native host reads the

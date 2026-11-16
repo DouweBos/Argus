@@ -31,7 +31,7 @@ public enum EditorCommand: String, CaseIterable, Sendable {
     case .addCursorAbove: "Add Cursor Above"
     case .addCursorBelow: "Add Cursor Below"
     case .jumpToBracket: "Go to Bracket"
-    case .goToLine: "Go to Line…"
+    case .goToLine: "Go to Line"
     case .nextProblem: "Next Problem"
     case .previousProblem: "Previous Problem"
     case .goToDefinition: "Go to Definition"

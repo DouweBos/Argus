@@ -48,7 +48,7 @@ struct RunControl: View {
           runItems
           ChromeMenuEntry.divider
         }
-        ChromeMenuItem("Edit Run Commands…", icon: .symbol(Icon.gear)) { model.projectSettingsRepo = session.repoRoot }
+        ChromeMenuItem("Edit Run Commands", icon: .symbol(Icon.gear)) { model.projectSettingsRepo = session.repoRoot }
       }
       .help(running(primary.title) ? "Stop \(primary.title)" : primary.command)
     } else if !session.isOutsideProjects {

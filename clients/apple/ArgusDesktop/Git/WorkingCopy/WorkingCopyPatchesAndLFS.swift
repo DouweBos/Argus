@@ -149,7 +149,7 @@ struct ChangeLFSAndPatchMenu: View {
       let patchEntries = vm.patchEntries(for: entry, side: section.side)
       items.append(
         Item(
-          title: patchEntries.count > 1 ? "Create Patch from \(patchEntries.count) Files…" : "Create Patch…",
+          title: patchEntries.count > 1 ? "Create Patch from \(patchEntries.count) Files" : "Create Patch",
           startsGroup: false
         ) { PatchPanels.create(workspace: workspace, entries: patchEntries, side: section.side) })
     }

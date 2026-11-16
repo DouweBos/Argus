@@ -2,7 +2,7 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// "Set Up a Runner…" beside a runner picker: install a missing runner's CLI,
+/// "Set Up a Runner" beside a runner picker: install a missing runner's CLI,
 /// or sign in to one that's installed. Hidden when there's nothing to set up.
 struct RunnerSetupMenu: View {
   let flows: [RunnerSetupFlow]
@@ -13,7 +13,7 @@ struct RunnerSetupMenu: View {
     let missing = flows.filter { !$0.installed }
     let installed = flows.filter { $0.installed && $0.setup.loginCommand != nil }
     if !missing.isEmpty || !installed.isEmpty {
-      Menu("Set Up a Runner…") {
+      Menu("Set Up a Runner") {
         if !missing.isEmpty {
           Section("Install") { items(missing) }
         }

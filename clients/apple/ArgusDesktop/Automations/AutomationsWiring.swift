@@ -38,11 +38,11 @@ enum AutomationsWiring {
   private static func commands(_ model: DesktopModel) -> [PaletteCommand] {
     var commands = [
       PaletteCommand(
-        id: "automations.new", title: "New automation…", section: "Automations",
+        id: "automations.new", title: "New automation", section: "Automations",
         keywords: ["create", "schedule"], systemImage: "plus"
       ) { Task { await AutomationActions.createNew(model) } },
       PaletteCommand(
-        id: "automations.quick", title: "Quick run…", section: "Automations",
+        id: "automations.quick", title: "Quick run", section: "Automations",
         keywords: ["playbook", "once"], systemImage: "bolt"
       ) { model.navigate(.quickRun(runId: nil)) },
     ]

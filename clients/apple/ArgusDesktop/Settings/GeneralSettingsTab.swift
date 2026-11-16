@@ -29,7 +29,7 @@ struct GeneralSettingsTab: View {
             set: { menuBar.setOpenAtLogin($0) }))
         if menuBar.loginState == .requiresApproval {
           SettingsRow("Allow Argus in Login Items", description: "macOS wants your OK before Argus opens at login.") {
-            Button("Open Login Items…") { LoginItem.openSystemSettings() }
+            Button("Open Login Items") { LoginItem.openSystemSettings() }
           }
         }
         SettingsToggleRow(

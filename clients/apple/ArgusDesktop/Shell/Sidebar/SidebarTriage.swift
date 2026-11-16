@@ -21,20 +21,20 @@ struct SidebarSessionMenu: View {
     SessionTriageMenu(session: session) { model.snoozingSession = session }
     Divider()
     if session.kind == .worktree, session.status == .ready, !session.isUnavailable, session.compareGroup == nil {
-      Button("New Session on Top of This One…") { model.newSessionParent = session }
+      Button("New Session on Top of This One") { model.newSessionParent = session }
       if !stack.members(of: session).isEmpty {
         Button("Restack") { Task { await stack.restack(session) } }
-        Button("Land Stack…") { Task { await stack.land(session) } }
+        Button("Land Stack") { Task { await stack.land(session) } }
       }
       Divider()
     }
     switch session.kind {
     case .worktree:
-      Button("Rename Session…") { model.renamingSession = session }
-      Button("Delete Session…") { model.deletingSession = session }
+      Button("Rename Session") { model.renamingSession = session }
+      Button("Delete Session") { model.deletingSession = session }
     case .scratchPad:
-      Button("Rename Scratch Pad…") { model.renamingSession = session }
-      Button("Delete Scratch Pad…") { model.deletingSession = session }
+      Button("Rename Scratch Pad") { model.renamingSession = session }
+      Button("Delete Scratch Pad") { model.deletingSession = session }
     case .projectRoot, .automationHost:
       EmptyView()
     }

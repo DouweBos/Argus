@@ -74,14 +74,14 @@ struct ChangeRowMenu: View {
   var body: some View {
     let entries = vm.actionEntries(for: entry, side: section.side)
     if section == .conflicted {
-      Button("Resolve…") { model.navigate(.sessionGit(id: workspace.sessionId, view: .conflicts)) }
+      Button("Resolve") { model.navigate(.sessionGit(id: workspace.sessionId, view: .conflicts)) }
     } else {
       let row = FileRow(path: entry.path, side: section.side)
       let rows: Set<FileRow> =
         vm.fileSelection.contains(row) ? vm.fileSelection.rows.filter { $0.side == section.side } : [row]
       let verb = section == .staged ? "Unstage" : "Stage"
       Button(rows.count > 1 ? "\(verb) \(rows.count) Files" : verb) { Task { await actions.toggle(rows) } }
-      Button(entries.count > 1 ? "Discard Changes in \(entries.count) Files…" : "Discard Changes…", role: .destructive) {
+      Button(entries.count > 1 ? "Discard Changes in \(entries.count) Files" : "Discard Changes", role: .destructive) {
         vm.requestDiscard(entries)
       }
     }
@@ -136,10 +136,10 @@ private struct ChangeFileActionsMenu: View {
     }
     let existing = vm.existingEntries(entries)
     if entries.count == 1, let first = existing.first {
-      Button("Rename…") { vm.requestRename(first) }
+      Button("Rename") { vm.requestRename(first) }
     }
     if !existing.isEmpty {
-      Button(existing.count > 1 ? "Move \(existing.count) Files to Trash…" : "Move to Trash…") {
+      Button(existing.count > 1 ? "Move \(existing.count) Files to Trash…" : "Move to Trash") {
         vm.requestDelete(existing)
       }
     }

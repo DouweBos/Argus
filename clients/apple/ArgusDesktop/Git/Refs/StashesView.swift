@@ -65,7 +65,7 @@ struct StashesView: View {
       }
       .buttonStyle(FlatIconButtonStyle(size: 22))
       .disabled(workspace.workingCopy.changedCount == 0)
-      .help("Stash Changes…")
+      .help("Stash Changes")
       .accessibilityLabel("Stash Changes")
     }
   }
@@ -139,11 +139,11 @@ struct StashesView: View {
   private func menu(_ stash: StashEntry) -> some View {
     Button("Apply") { stashes.request(.apply, on: stash) }
     Button("Pop") { stashes.request(.pop, on: stash) }
-    Button("New Branch from Stash…") { branch(from: stash) }
+    Button("New Branch from Stash") { branch(from: stash) }
     Button("Reveal Base in History") { Task { await stashes.revealBaseInHistory(stash) } }
     Button("Copy Message") { Clipboard.copy(stash.message) }
     Divider()
-    Button("Drop…", role: .destructive) { stashes.request(.drop, on: stash) }
+    Button("Drop", role: .destructive) { stashes.request(.drop, on: stash) }
   }
 
   private func perform(_ pending: StashesViewModel.PendingOperation) async {

@@ -144,10 +144,10 @@ private struct NewSessionCommand: View {
   let model: DesktopModel
 
   var body: some View {
-    Button("New Session…") { model.requestNewSession() }
+    Button("New Session") { model.requestNewSession() }
       .keyboardShortcut("n", modifiers: .command)
       .disabled(model.store.projects.isEmpty)
-    Button("Delete Session…") { model.requestDeleteSession() }
+    Button("Delete Session") { model.requestDeleteSession() }
       .keyboardShortcut(.delete, modifiers: .command)
       .disabled(model.deletableSession == nil)
   }
@@ -158,7 +158,7 @@ private struct CheckForUpdatesCommand: View {
 
   var body: some View {
     if model.updater.isConfigured {
-      Button("Check for Updates…") { model.checkForUpdates() }
+      Button("Check for Updates") { model.checkForUpdates() }
         .disabled(!model.updater.canCheck)
     }
   }
@@ -168,16 +168,16 @@ private struct ProjectCommands: View {
   let model: DesktopModel
 
   var body: some View {
-    Button("Add Project…") { model.addingProject = true }
+    Button("Add Project") { model.addingProject = true }
       .keyboardShortcut("o", modifiers: .command)
-    Button("Import Projects from Claude Code…") { model.importingCliProjects = true }
+    Button("Import Projects from Claude Code") { model.importingCliProjects = true }
     Divider()
     // The code view's Open Quickly owns ⇧⌘O while it's on screen, as in Xcode.
-    Button("Open Session…") { MenuCommand.quickSwitcher.run(model) }
+    Button("Open Session") { MenuCommand.quickSwitcher.run(model) }
       .keyboardShortcut("o", modifiers: [.command, .shift])
       .disabled(model.store.projects.isEmpty || model.activeCodeSession != nil)
     // The git panel's Pull owns ⇧⌘P while it's on screen, as on the desktop.
-    Button("Command Palette…") {
+    Button("Command Palette") {
       if model.palette.isPresented { model.palette.isPresented = false } else { model.palette.present() }
     }
     .keyboardShortcut(model.gitInFront != nil ? nil : KeyboardShortcut("p", modifiers: [.command, .shift]))

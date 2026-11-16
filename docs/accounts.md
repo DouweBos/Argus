@@ -15,7 +15,7 @@ way to connect without one.
 | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | iPhone        | Settings → Account. Sign in with Apple, GitHub or an email code. The first device you sign in with sets up the account.    |
 | Mac app       | Settings → Account. Sign in with Apple, GitHub or an email code; this also puts this Mac's own host on the account.        |
-| Argus Server  | **Link to Argus Account…** in its menu bar item. It shows a code.                                                          |
+| Argus Server  | **Link to Argus Account** in its menu bar item. It shows a code.                                                           |
 | Headless host | Type `login` in the `argus-host` terminal (or start it as `argus-host login`). It prints a code.                           |
 | Any browser   | Open `houwert.dev/argus/app` and sign in; a device already on the account approves it (see [In a browser](#in-a-browser)). |
 
@@ -93,7 +93,7 @@ What happens next:
   publishing its address, gives back its tunnel, lets no account device in,
   and shows _This account was reset — link this computer again_ in
   Argus Server's menu, the Mac app and the `argus-host`
-  terminal. Link it the usual way (**Link to Argus Account…** or `login`). The Mac you reset on links its own host again by
+  terminal. Link it the usual way (**Link to Argus Account** or `login`). The Mac you reset on links its own host again by
   itself.
 - **Computers you paired with a QR code keep working.** Pairings don't go
   through the account.
@@ -272,7 +272,7 @@ or the computer links as.
 | ------------- | -------------------------------------------------------------------------------------- |
 | iPhone        | Settings → **This iPhone's name**                                                      |
 | Mac app       | Settings → General → This Mac → **Name** — one name for this Mac and its own host      |
-| Argus Server  | Menu → Argus Account → **This Computer's Name…**, or its Settings → Account & Remote   |
+| Argus Server  | Menu → Argus Account → **This Computer's Name**, or its Settings → Account & Remote    |
 | Headless host | `account set name <name>` in the `argus-host` terminal (`default` for the system name) |
 
 Changing it while you're on the account renames that device (and computer) on
@@ -287,7 +287,7 @@ of your devices shows up in the setting too.
 - **Sign out** on a device removes that device from the account. Computers it
   was QR-paired with are unaffected.
 - **Unlink this computer** (Argus Server's menu →
-  Argus Account → **Unlink…**, or `logout` in `argus-host`) removes the computer: it stops publishing its address, gives
+  Argus Account → **Unlink**, or `logout` in `argus-host`) removes the computer: it stops publishing its address, gives
   back its tunnel, and devices on the account can no longer connect to it
   through the account.
 - Removing a computer from your phone, the Mac app or a browser does the same

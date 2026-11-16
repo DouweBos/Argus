@@ -194,8 +194,8 @@ public struct KeyLegend: View {
   } content: {
     VStack(spacing: 0) {
       CommandPanelHeader("Actions")
-      CommandPanelRow(systemImage: "plus", title: "New Session…", shortcut: "⌘N", selected: true)
-      CommandPanelRow(systemImage: "folder.badge.plus", title: "Add Project…", shortcut: "⌘O", selected: false)
+      CommandPanelRow(systemImage: "plus", title: "New Session", shortcut: "⌘N", selected: true)
+      CommandPanelRow(systemImage: "folder.badge.plus", title: "Add Project", shortcut: "⌘O", selected: false)
       CommandPanelHeader("Sessions")
       CommandPanelRow(
         systemImage: "arrow.triangle.branch", title: "Unify the start composer", subtitle: "Argus", selected: false)

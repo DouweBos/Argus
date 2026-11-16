@@ -86,7 +86,7 @@ extension EditorDocument {
     interaction.hover.present(at: offset)
   }
 
-  /// Puts the caret at a "Go to Line…" target.
+  /// Puts the caret at a "Go to Line" target.
   public func go(to target: GoToLineTarget) {
     reveal(line: target.line, column: target.column, highlight: true)
     focus()

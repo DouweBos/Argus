@@ -68,7 +68,7 @@ developed, and an existing install updates into Argus for Mac by itself (see
   command fails, its banner offers the fix (pull then push, a lease-protected
   force push, publishing the branch, resolving conflicts, …).
   Diffs in the working copy and in Compare take review comments: hover a line
-  and click its **+** (or right-click → **Add Comment…**; with lines selected,
+  and click its **+** (or right-click → **Add Comment**; with lines selected,
   the comment covers them all). The drafts sit under their lines until
   **Send Review to Agent** at the bottom posts them to the session's agent as
   one message, each with its file, lines and hunk. **Review** beside Commit asks
@@ -115,7 +115,7 @@ go through the host.
   shortcuts, and Handoff of the session on screen to your
   phone.
 - Updates: the app checks hourly on the channel picked in Settings →
-  Advanced, and **Check for Updates…** in the Argus menu checks now. It
+  Advanced, and **Check for Updates** in the Argus menu checks now. It
   asks before downloading and before restarting, and quitting to install
   still warns about running agents. Builds without an update key (local
   builds) don't check at all.
@@ -129,13 +129,13 @@ working. It's a companion to the window, not a second one:
 - The host's state, with **Restart Host** if it stopped.
 - Agents that need you (a permission, a question, a plan), then the ones
   running. Picking one opens its session in the window.
-- **Pair a device…**: the pairing window with the QR code, then the device's
+- **Pair a device**: the pairing window with the QR code, then the device's
   6-digit code to compare and the access to grant, right in the menu. With
   remote access off it opens Settings → Remote instead.
 - Your Argus account: whether this Mac is on it and online, the managed
   tunnel, devices waiting to join (approve compares a 6-digit code in a small
-  window), linking with a code, and **Account Settings…** for the rest.
-- **Check for Updates…**, **Open at Login**, **Settings…** and **Quit Argus**.
+  window), linking with a code, and **Account Settings** for the rest.
+- **Check for Updates**, **Open at Login**, **Settings** and **Quit Argus**.
 
 A window attached to another app's host shows only its agents: pairing and the
 account belong to the app running the host.
@@ -275,7 +275,7 @@ headless Argus server, or `argus-host` — as well as its own:
 - Signed in, the tab also lists the account's **Devices** (rename, remove) and
   anything **Waiting to join**. Renaming this Mac or its host there edits the
   same Name setting. While the window is open, a device asking to
-  join is announced in the main window; **Review…** compares the code and adds
+  join is announced in the main window; **Review** compares the code and adds
   it.
 - **Settings → Hosts** lists the hosts on your account beside paired ones and
   attaches them with no pairing code, over the fastest route that works (moving
@@ -292,7 +292,7 @@ headless Argus server, or `argus-host` — as well as its own:
 - Window tabs keep machines apart: **Open in New Tab** from the machines menu
   or a session's menu (⌥⌘T for a new tab, ⌃Tab to cycle). Each tab has its
   own back and forward, and the tabs come back when the app restarts.
-- **Add Project…** and **Browse…** for worktree locations pick a folder on
+- **Add Project** and **Browse** for worktree locations pick a folder on
   the machine you're looking at, browsing that machine's disk.
 - Files dropped on a remote session's chat are sent to its machine first
   (up to 8 MB each).

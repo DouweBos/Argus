@@ -1,7 +1,7 @@
 import ArgusKit
 import Foundation
 
-/// "Continue on…": the chat goes on in a new agent on another runner, in the
+/// "Continue on": the chat goes on in a new agent on another runner, in the
 /// same session, seeded with what happened so far. The host captures telemetry.
 extension HostStore {
   public enum ContinueSource: String, Sendable {

@@ -217,7 +217,7 @@ effort pickers then offer that runner's own.
 
 A runner whose CLI isn't installed on the computer stays in every runner
 picker, greyed out, with a line saying how to install it; agents can't start
-on it until it is. On the Mac, pick it anyway (or use **Set Up a Runner…**
+on it until it is. On the Mac, pick it anyway (or use **Set Up a Runner**
 beside the picker) to install it without leaving Argus: **Install** runs its
 install command from the table below in a terminal you can watch and answer,
 then **Sign In** runs its sign-in command the same way. A CLI that only has
@@ -1065,7 +1065,7 @@ Mac rather than stranding you.
 While reading from a host:
 
 - **Projects** come from the host's registered projects, not this Mac's recent
-  list. **Browse…** walks the _host's_ folders instead of opening a native
+  list. **Browse** walks the _host's_ folders instead of opening a native
   dialog, since the repos are on its disk.
 - **Sign-in links** open in the browser in front of you, not on the host.
 - **Reveal in Finder** and **Open in editor** are unavailable and say so —
@@ -1111,7 +1111,7 @@ Settings → General → Startup in Argus for Mac. These live on this Mac only.
 
 | Setting              | Default | Description                                                                                                                                                                                                                                                                                                                                     |
 | -------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Open at Login**    | off     | Opens Argus when you log in. If macOS wants your OK first, **Open Login Items…** takes you to System Settings → General → Login Items.                                                                                                                                                                                                          |
+| **Open at Login**    | off     | Opens Argus when you log in. If macOS wants your OK first, **Open Login Items** takes you to System Settings → General → Login Items.                                                                                                                                                                                                           |
 | **Show in menu bar** | on      | An Argus item in the menu bar: agents that need you and what's running, pairing a device, approving a join and your Argus account. Off by default when Argus Server is installed on this Mac, since it has its own menu bar item. Dragging the icon off the menu bar with ⌘ held turns it off too. See [the menu bar](mac-app.md#the-menu-bar). |
 
 ---

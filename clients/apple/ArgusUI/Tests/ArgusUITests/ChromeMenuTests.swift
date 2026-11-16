@@ -21,7 +21,7 @@
       if settings {
         ChromeMenuEntry.header("More")
         ChromeMenuEntry.divider
-        ChromeMenuItem("Settings…") {}
+        ChromeMenuItem("Settings") {}
       }
       ChromeMenuEntry.divider
     }
@@ -40,7 +40,7 @@
     @Test("dividers collapse at the ends, in runs and after headers")
     func tidy() {
       let tidied = ChromeMenuEntry.tidy(entries(projects: ["A", "B"], settings: true))
-      #expect(titles(tidied) == ["All", "-", "A", "B", "#More", "Settings…"])
+      #expect(titles(tidied) == ["All", "-", "A", "B", "#More", "Settings"])
       #expect(titles(ChromeMenuEntry.tidy(entries(projects: [], settings: false))) == ["All"])
     }
 

@@ -38,7 +38,7 @@ enum DesktopMenuModel {
   /// Pairing needs remote access; when it's off, Settings is where it's turned on.
   static func pairingItems(_ s: DesktopMenuSnapshot) -> [HostMenuItem] {
     if case .idle = s.pairing, !s.canPair {
-      return [.action("Pair a device…", .openRemoteSettings)]
+      return [.action("Pair a device", .openRemoteSettings)]
     }
     return HostMenuModel.pairingItems(s.pairing)
   }
@@ -46,10 +46,10 @@ enum DesktopMenuModel {
   static func appItems(_ s: DesktopMenuSnapshot) -> [HostMenuItem] {
     var out: [HostMenuItem] = []
     if let canCheck = s.canCheckForUpdates {
-      out.append(.action("Check for Updates…", .checkForUpdates, enabled: canCheck))
+      out.append(.action("Check for Updates", .checkForUpdates, enabled: canCheck))
     }
     out += HostMenuModel.loginItems(s.loginItem)
-    return out + [.action("Settings…", .openSettings), .action("Quit Argus", .quit)]
+    return out + [.action("Settings", .openSettings), .action("Quit Argus", .quit)]
   }
 }
 

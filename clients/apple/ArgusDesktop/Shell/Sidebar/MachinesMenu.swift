@@ -31,7 +31,7 @@ struct MachinesMenu: View {
         ChromeMenuItem(hosts.label(id), icon: .symbol("plus.rectangle.on.rectangle")) { model.openHostTab(id) }
       }
       ChromeMenuEntry.divider
-      ChromeMenuItem("Hosts Settings…", icon: .symbol(Icon.gear)) {
+      ChromeMenuItem("Hosts Settings", icon: .symbol(Icon.gear)) {
         model.settingsTab = .hosts
         openSettings()
       }

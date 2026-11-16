@@ -25,7 +25,7 @@ struct ProjectPullRequestsView: View {
         Button { Task { await refresh() } } label: { Image(systemName: "arrow.clockwise") }
           .help("Refresh")
           .disabled(refreshing)
-        Button("New Pull Request…") { creating = true }
+        Button("New Pull Request") { creating = true }
           .disabled(sessions.isEmpty)
           .help(sessions.isEmpty ? "Create a session to open a pull request from its branch" : "")
       }

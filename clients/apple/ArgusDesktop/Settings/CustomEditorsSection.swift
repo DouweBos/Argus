@@ -32,7 +32,7 @@ struct CustomEditorsSection: View {
         }
       }
     } accessory: {
-      SettingsHeaderButton("Add App…", systemImage: "plus") { adding = true }
+      SettingsHeaderButton("Add App", systemImage: "plus") { adding = true }
     }
     .sheet(isPresented: $adding) {
       CustomEditorSheet(title: "Add App", editor: nil) { name, command in

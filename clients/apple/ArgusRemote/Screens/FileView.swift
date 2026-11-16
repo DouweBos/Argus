@@ -105,7 +105,7 @@ struct FileView: View {
   private var menu: some View {
     Menu {
       if let file, file.readOnlyReason == nil {
-        Button("Go to Line…", systemImage: "arrow.down.to.line") {
+        Button("Go to Line", systemImage: "arrow.down.to.line") {
           jumpText = focusLine.map(String.init) ?? ""
           jumping = true
         }

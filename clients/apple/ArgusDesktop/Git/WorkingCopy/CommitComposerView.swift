@@ -133,7 +133,7 @@ struct CommitComposerView: View {
         }
       }
       if !vm.availableTemplates.isEmpty { Divider() }
-      Button("Manage Templates…") { managingTemplates = true }
+      Button("Manage Templates") { managingTemplates = true }
     } label: {
       Image(systemName: "text.badge.plus")
     }

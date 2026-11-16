@@ -96,10 +96,10 @@ enum ServerMenuModel {
   static func appItems(_ s: ServerMenuSnapshot) -> [HostMenuItem] {
     var out: [HostMenuItem] = []
     if s.oldLoginAgent {
-      out.append(.action("Start at Login with This App…", .migrateLoginItem))
+      out.append(.action("Start at Login with This App", .migrateLoginItem))
     }
     out += HostMenuModel.loginItems(s.loginItem)
-    return out + [.action("Settings…", .openSettings), .action("Quit Argus Server", .quit)]
+    return out + [.action("Settings", .openSettings), .action("Quit Argus Server", .quit)]
   }
 }
 

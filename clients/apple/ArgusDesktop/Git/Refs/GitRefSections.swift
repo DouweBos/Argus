@@ -36,7 +36,7 @@ struct GitRefSections: View {
       ForEach(tree) { BranchFolderRow(node: $0, actions: actions, expanded: $expanded) }
     } header: {
       SectionLabel("Branches", count: local.count)
-        .contextMenu { Button("New Branch…") { actions.newBranch() } }
+        .contextMenu { Button("New Branch") { actions.newBranch() } }
         .task(id: workspace.generation) {
           await marks.load(repoRoot: session.repoRoot, backend: model.store.backend)
         }
@@ -54,7 +54,7 @@ struct GitRefSections: View {
     Section {
       ForEach(refs.remotes) { remote in remoteGroup(remote, actions: actions) }
     } header: {
-      SectionLabel("Remotes", count: refs.remotes.count).contextMenu { Button("Add Remote…") { actions.addRemote() } }
+      SectionLabel("Remotes", count: refs.remotes.count).contextMenu { Button("Add Remote") { actions.addRemote() } }
     }
     if !refs.tags.isEmpty {
       // Collapsed until asked for, as Electron's: thousands of tag rows make opening the panel slow.
@@ -137,12 +137,12 @@ struct GitRefSections: View {
           Button("Fetch \(remote.name)") { Task { await actions.fetch(remote: remote.name) } }
           Button("Prune Stale Branches") { Task { await actions.pruneRemote(remote.name) } }
           Divider()
-          Button("Rename…") { actions.renameRemote(remote.name) }
-          Button("Set URL…") { actions.setRemoteURL(remote) }
+          Button("Rename") { actions.renameRemote(remote.name) }
+          Button("Set URL") { actions.setRemoteURL(remote) }
           Button("Copy URL") { Clipboard.copy(remote.url) }
           Divider()
-          Button("Add Remote…") { actions.addRemote() }
-          Button("Remove…", role: .destructive) { Task { await actions.removeRemote(remote.name) } }
+          Button("Add Remote") { actions.addRemote() }
+          Button("Remove", role: .destructive) { Task { await actions.removeRemote(remote.name) } }
         }
     }
   }

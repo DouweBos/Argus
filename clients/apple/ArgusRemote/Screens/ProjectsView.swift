@@ -164,8 +164,8 @@ struct ProjectsView: View {
     .accessibilityAddTraits(.isButton)
     .contextMenu {
       if host.hasControl {
-        Button("New session…", systemImage: Icon.plus) { newSession(in: project) }
-        Button("Remove Project…", systemImage: Icon.trash, role: .destructive) { projectToRemove = project }
+        Button("New session", systemImage: Icon.plus) { newSession(in: project) }
+        Button("Remove Project", systemImage: Icon.trash, role: .destructive) { projectToRemove = project }
       }
     }
   }

@@ -24,8 +24,8 @@ struct ComputerSwitcher: View {
             }
           }
           Divider()
-          Button("Pair a computer…", systemImage: Icon.plus) { router.push(.pair) }
-          Button("Manage computers…", systemImage: Icon.desktop) { router.push(.computers) }
+          Button("Pair a computer", systemImage: Icon.plus) { router.push(.pair) }
+          Button("Manage computers", systemImage: Icon.desktop) { router.push(.computers) }
         } label: {
           Color.clear.contentShape(.rect)
         }

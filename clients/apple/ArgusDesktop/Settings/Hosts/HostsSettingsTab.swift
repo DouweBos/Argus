@@ -155,7 +155,7 @@ private struct PairedHostRow: View {
         }
         Spacer()
         if !identity.isAccountHost {
-          Button("Forget…", role: .destructive) { confirmingForget = true }
+          Button("Forget", role: .destructive) { confirmingForget = true }
         }
       }
     }

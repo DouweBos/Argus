@@ -1,7 +1,7 @@
 import ArgusUI
 import SwiftUI
 
-/// ⌃G: "Go to Line…", taking `line` or `line:column`.
+/// ⌃G: "Go to Line", taking `line` or `line:column`.
 struct GoToLineView: View {
   let document: EditorDocument
   @State private var input = ""
@@ -10,7 +10,7 @@ struct GoToLineView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {
-      TextField("Go to Line…", text: $input)
+      TextField("Go to Line", text: $input)
         .textFieldStyle(.roundedBorder)
         .font(.system(size: 12, design: .monospaced))
         .focused($focused)

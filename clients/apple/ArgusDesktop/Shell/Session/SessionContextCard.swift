@@ -245,7 +245,7 @@ struct SessionContextCard: View {
         model.navigate(.sessionGit(id: session.id, view: .branches(git?.branch ?? session.branch)))
       }
       if session.kind == .worktree {
-        ChromeMenuItem("Rename Branch…", icon: .symbol(Icon.pencil)) { renamingBranch = true }
+        ChromeMenuItem("Rename Branch", icon: .symbol(Icon.pencil)) { renamingBranch = true }
       }
       ChromeMenuItem("Copy Branch Name", icon: .symbol(Icon.copy)) { Clipboard.copy(git?.branch ?? session.branch) }
       if localBranches.count > 1 {
@@ -321,7 +321,7 @@ struct SessionContextCard: View {
       MacTelemetry.capture(.contextCardUsed(action: .deleteSession))
       model.deletingSession = session
     } label: {
-      ContextCardRow(icon: Icon.trash, title: "Delete Session…")
+      ContextCardRow(icon: Icon.trash, title: "Delete Session")
     }
     .buttonStyle(ContextRowButtonStyle())
     .help("Merged into \(session.baseBranch ?? "base"). Delete the session and its worktree")

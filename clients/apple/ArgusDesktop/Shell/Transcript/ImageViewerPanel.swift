@@ -50,7 +50,7 @@ struct ImageViewerPanel: View {
         Spacer()
         IconBtn(systemName: Icon.copy, label: "Copy Image", size: 12) { act(.copy, image) }
           .disabled(image.data == nil)
-        IconBtn(systemName: Icon.download, label: "Save Image…", size: 12) { act(.save, image) }
+        IconBtn(systemName: Icon.download, label: "Save Image", size: 12) { act(.save, image) }
           .disabled(image.data == nil)
         IconBtn(systemName: Icon.eye, label: "Open in Preview", size: 12) { act(.openPreview, image) }
           .disabled(image.data == nil)
@@ -85,7 +85,7 @@ struct ImageViewerPanel: View {
     .shadow(color: theme.mediaBg.opacity(0.3), radius: 24, y: 8)
     .contextMenu {
       Button("Copy Image") { act(.copy, image) }
-      Button("Save Image…") { act(.save, image) }
+      Button("Save Image") { act(.save, image) }
       Button("Open in Preview") { act(.openPreview, image) }
     }
   }

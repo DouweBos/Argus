@@ -10,7 +10,7 @@ struct CodeCommands: View {
     let document = model.activeCodeDocument
     let focused = document?.hasFocus == true
     let language = document?.languageProvider != nil
-    Button("Rename Symbol…") {
+    Button("Rename Symbol") {
       guard let document, let code = model.activeCodeSession else { return }
       Task { await LspRename.run(in: code, document: document) }
     }

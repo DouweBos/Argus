@@ -138,11 +138,11 @@ private struct RemoteRow: View {
 
   @ViewBuilder
   private var items: some View {
-    Button("Rename…") { act(.rename) }
-    Button("Change URL…") { act(.setURL) }
+    Button("Rename") { act(.rename) }
+    Button("Change URL") { act(.setURL) }
     Button("Copy URL") { act(.copyURL) }
     Divider()
-    Button("Remove…", role: .destructive) { act(.remove) }
+    Button("Remove", role: .destructive) { act(.remove) }
   }
 }
 

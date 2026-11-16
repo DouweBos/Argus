@@ -565,7 +565,7 @@
         return ["ok": true]
       case "state":
         let model = AppDelegate.current?.model
-        let item = menuItem("New Session…", in: NSApp.mainMenu)
+        let item = menuItem("New Session", in: NSApp.mainMenu)
         item?.menu?.update()
         return [
           "projects": model?.store.projects.count ?? -1,

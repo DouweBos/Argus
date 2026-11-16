@@ -63,7 +63,7 @@
         for runner in host.runners {
           let installable = runnerSetup != nil && RunnerSetupAction.offers(runner)
           ChromeMenuItem(
-            runner.displayName, subtitle: installable ? "Not installed · Install…" : runner.pickerHint,
+            runner.displayName, subtitle: installable ? "Not installed · Install" : runner.pickerHint,
             checked: runner.id == composer.runner?.id, disabled: !runner.isAvailable && !installable
           ) {
             if runner.isAvailable { pickRunner(runner) } else { runnerSetup?(runner) }
@@ -71,7 +71,7 @@
         }
         if composer.offersCompare {
           ChromeMenuEntry.divider
-          ChromeMenuItem("Compare runners…", subtitle: "Start the prompt on several at once", icon: .symbol(Icon.compare)) {
+          ChromeMenuItem("Compare runners", subtitle: "Start the prompt on several at once", icon: .symbol(Icon.compare)) {
             composer.beginCompare()
           }
         }

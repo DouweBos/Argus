@@ -28,7 +28,7 @@ struct OperationBanner: View {
       if showsConflictsLink, conflicts > 0 {
         Button("Resolve Conflicts") { model.navigate(.sessionGit(id: workspace.sessionId, view: .conflicts)) }
       }
-      Button("Abort…") { confirmingAbort = true }
+      Button("Abort") { confirmingAbort = true }
         .disabled(vm.isRunningOperation)
       Button("Continue") { Task { await actions.continueOperation() } }
         .buttonStyle(AccentButtonStyle())

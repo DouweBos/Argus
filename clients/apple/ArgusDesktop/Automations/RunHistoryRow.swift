@@ -88,7 +88,7 @@ struct MemoriesSection: View {
       HStack {
         Text("Memories")
         Spacer()
-        Button("Add Memory…") { open = Selection(memory: nil) }.controlSize(.small)
+        Button("Add Memory") { open = Selection(memory: nil) }.controlSize(.small)
       }
     }
     .task { await store.loadMemories(automationId: automationId) }

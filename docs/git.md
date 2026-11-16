@@ -151,7 +151,7 @@ to the local branch behind it.
 ### Stacked sessions
 
 Split work into layers by starting a session **on top of** another one:
-**New Session on Top of This One…** in a session's sidebar menu or its
+**New Session on Top of This One** in a session's sidebar menu or its
 context card on the Mac, or **New session on top** in a session's menu and
 its Stack card on the phone. The new session branches from the other
 session's branch, which becomes its base, so its pull request targets that
@@ -165,7 +165,7 @@ branch. In the sidebar it sits under its parent, indented.
   parent's branch. A conflict stops the restack and leaves the rebase
   paused in that session for the conflict resolver; resolve it, then
   restack again.
-- **Land Stack…** merges the stack bottom-up with the strategy you pick:
+- **Land Stack** merges the stack bottom-up with the strategy you pick:
   each session merges its pull request when it has one, or merges locally
   into its base otherwise. Its children then move onto that base, their
   pull requests are retargeted, and landing carries on with them. It stops
@@ -190,10 +190,10 @@ and updates the agent's tracked branch name.
 
 ## Remote operations
 
-The toolbar and the Git menu expose **Fetch** (**⇧⌘F**), **Pull…**
-(**⇧⌘P**) and **Push…** (**⇧⌘U**).
+The toolbar and the Git menu expose **Fetch** (**⇧⌘F**), **Pull**
+(**⇧⌘P**) and **Push** (**⇧⌘U**).
 
-**Pull…** and **Push…** in the Git menu open dialogs that let you pick:
+**Pull** and **Push** in the Git menu open dialogs that let you pick:
 
 - **Pull** — strategy (merge / rebase / fast-forward only), prune, tags.
 - **Push** — remote, branch, force-with-lease, set upstream, tags, ref.

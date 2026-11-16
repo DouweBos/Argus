@@ -183,7 +183,7 @@ private struct SubmoduleRow: View {
     Button("Update") { act(.update) }
     Button("Update from Remote") { act(.updateRemote) }
     Divider()
-    Button("Deinit…", role: .destructive) { act(.deinitialize) }
+    Button("Deinit", role: .destructive) { act(.deinitialize) }
       .disabled(submodule.status == .uninitialized)
   }
 

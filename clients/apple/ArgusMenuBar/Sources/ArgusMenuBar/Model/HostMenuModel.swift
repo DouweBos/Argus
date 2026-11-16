@@ -108,7 +108,7 @@ public enum HostMenuModel {
   public static func pairingItems(_ phase: PairingFlow.Phase) -> [HostMenuItem] {
     switch phase {
     case .idle:
-      return [.action("Pair a device…", .pair)]
+      return [.action("Pair a device", .pair)]
     case .starting, .waitingForDevice:
       return [
         .info("Pairing code copied to clipboard"),
@@ -140,7 +140,7 @@ public enum HostMenuModel {
   /// The running version is already named elsewhere, so only the new one is;
   /// restarting is refused with a count rather than hidden.
   public static func updateItems(_ update: UpdateState, autoInstall: Bool, activeAgents: Int) -> [HostMenuItem] {
-    let check = HostMenuItem.action("Check for Updates…", .checkForUpdates)
+    let check = HostMenuItem.action("Check for Updates", .checkForUpdates)
     var out: [HostMenuItem]
     switch update {
     case .unavailable:
@@ -180,7 +180,7 @@ public enum HostMenuModel {
     case .requiresApproval:
       [
         .toggle("Open at Login", isOn: true, .toggleOpenAtLogin),
-        .action("Allow in Login Items…", .openLoginItemsSettings),
+        .action("Allow in Login Items", .openLoginItemsSettings),
       ]
     case .enabled:
       [.toggle("Open at Login", isOn: true, .toggleOpenAtLogin)]

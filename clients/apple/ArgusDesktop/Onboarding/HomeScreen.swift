@@ -56,8 +56,8 @@ struct HomeScreen: View {
         HomeNeedsYouSection()
         section("Projects") {
           HStack(spacing: 12) {
-            Button("Import from Claude Code…") { model.importingCliProjects = true }.buttonStyle(.accentLink)
-            Button("Add Project…") { model.addingProject = true }.buttonStyle(.accentLink)
+            Button("Import from Claude Code") { model.importingCliProjects = true }.buttonStyle(.accentLink)
+            Button("Add Project") { model.addingProject = true }.buttonStyle(.accentLink)
           }
         } content: {
           LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 12)], spacing: 12) {
@@ -176,8 +176,8 @@ private struct HomeProjectCard: View {
     .accessibilityAddTraits(.isButton)
     .contextMenu {
       Button("Open") { Task { await model.openProjectRoot(project.repoRoot) } }
-      Button("New Session…") { model.newSessionProject = project }
-      Button("Project Settings…") { model.projectSettingsRepo = project.repoRoot }
+      Button("New Session") { model.newSessionProject = project }
+      Button("Project Settings") { model.projectSettingsRepo = project.repoRoot }
       Button("Remove from Recents") { HomeRecents.shared.hide(project.repoRoot) }
       // Another host's folder isn't on this Mac's disk.
       if HostScopedPath.split(project.repoRoot) == nil {

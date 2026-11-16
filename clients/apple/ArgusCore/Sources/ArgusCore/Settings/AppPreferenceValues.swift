@@ -91,7 +91,7 @@ public enum TelemetryConsent: String, CaseIterable, Sendable {
   }
 }
 
-/// An extra entry in the "Open in…" menu: a CLI on PATH or a `.app` path.
+/// An extra entry in the "Open in" menu: a CLI on PATH or a `.app` path.
 public struct CustomEditor: Codable, Hashable, Identifiable, Sendable {
   public var id: String
   public var name: String

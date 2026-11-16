@@ -147,9 +147,9 @@ extension QuickOpenModel.Entry: CaseIterable {
 
   var title: String {
     switch self {
-    case .files: "Go to File…"
-    case .openQuickly: "Open Quickly…"
-    case .workspaceSymbols: "Go to Symbol in Workspace…"
+    case .files: "Go to File"
+    case .openQuickly: "Open Quickly"
+    case .workspaceSymbols: "Go to Symbol in Workspace"
     }
   }
 

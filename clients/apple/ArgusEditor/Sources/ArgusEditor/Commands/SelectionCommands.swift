@@ -152,7 +152,7 @@ enum SelectionCommands {
   }
 }
 
-/// "Go to Line…" input: `line` or `line:column`, both 1-based.
+/// "Go to Line" input: `line` or `line:column`, both 1-based.
 public struct GoToLineTarget: Equatable, Sendable {
   public var line: Int
   public var column: Int?

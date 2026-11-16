@@ -28,28 +28,28 @@ struct DesktopMenuModelTests {
     let items = DesktopMenuModel.items(Self.menu(agents: [Self.agent("a1", status: "requires_action")]))
     #expect(Self.labels(items) == [
       "Open Argus", "---", "Host: running", "---", "Needs you (1)", "Agent a1 — fix-login", "---",
-      "Pair a device…", "---", "Check for Updates…", "Open at Login", "Settings…", "Quit Argus",
+      "Pair a device", "---", "Check for Updates", "Open at Login", "Settings", "Quit Argus",
     ])
     #expect(items.contains(.action("Agent a1 — fix-login", .openAgent("a1"))))
   }
 
   @Test func pairingWithRemoteAccessOffGoesToSettings() {
     let items = DesktopMenuModel.pairingItems(Self.menu(canPair: false))
-    #expect(items == [.action("Pair a device…", .openRemoteSettings)])
-    #expect(DesktopMenuModel.pairingItems(Self.menu()) == [.action("Pair a device…", .pair)])
+    #expect(items == [.action("Pair a device", .openRemoteSettings)])
+    #expect(DesktopMenuModel.pairingItems(Self.menu()) == [.action("Pair a device", .pair)])
   }
 
   @Test func anAttachedWindowLeavesPairingAndTheAccountToTheHostsApp() {
     let holder = HostLockRecord(pid: 1, ownerPid: 2, owner: .macServer, startedAt: 0)
     let labels = Self.labels(DesktopMenuModel.items(Self.menu(host: .attached(holder), attached: true)))
-    #expect(!labels.contains("Pair a device…"))
+    #expect(!labels.contains("Pair a device"))
     #expect(labels.contains("No agents running"))
   }
 
   @Test func aHostThatIsDownKeepsOnlyTheApp() {
     let labels = Self.labels(DesktopMenuModel.items(Self.menu(host: .failed("boom"), canCheckForUpdates: nil)))
     #expect(labels == [
-      "Open Argus", "---", "Host: failed", "boom", "Restart Host", "---", "Open at Login", "Settings…", "Quit Argus",
+      "Open Argus", "---", "Host: failed", "boom", "Restart Host", "---", "Open at Login", "Settings", "Quit Argus",
     ])
   }
 

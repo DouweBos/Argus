@@ -57,12 +57,12 @@ struct AccountDevicesGroup: View {
           detail: AccountMemberText.detail(device, code: account.approvalCode(for: device.id))
         ) {
           Menu {
-            Button("Rename…", systemImage: "pencil") {
+            Button("Rename", systemImage: "pencil") {
               draft = device.name
               renaming = device
             }
             if !isSelf {
-              Button("Remove…", systemImage: "trash", role: .destructive) { removing = device }
+              Button("Remove", systemImage: "trash", role: .destructive) { removing = device }
             }
           } label: {
             Image(systemName: "ellipsis.circle")

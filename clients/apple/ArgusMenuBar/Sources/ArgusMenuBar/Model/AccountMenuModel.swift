@@ -41,7 +41,7 @@ public enum AccountMenuModel {
       return out + [
         .info("This account was reset\(by)"),
         .info("Link this computer again to keep using it"),
-        .action("Link to Argus Account…", .account(.linkStart)),
+        .action("Link to Argus Account", .account(.linkStart)),
         .action("Dismiss", .account(.resetDismiss)),
       ]
     }
@@ -100,7 +100,7 @@ public enum AccountMenuModel {
 
   private static func linkItems(_ s: AccountMenuSnapshot) -> [HostMenuItem] {
     let cancel = HostMenuItem.action("Cancel Linking", .account(.linkCancel))
-    let start = HostMenuItem.action("Link to Argus Account…", .account(.linkStart))
+    let start = HostMenuItem.action("Link to Argus Account", .account(.linkStart))
     switch s.status.link {
     case .awaitingClaim(let claim):
       let site = withoutScheme(claim.verificationUri)
@@ -167,7 +167,7 @@ public enum AccountMenuModel {
           .submenu(
             "\(request.subjectName) (\(noun(request.subjectRole)))",
             [
-              .action("Approve…", .account(.approve(requestId: request.requestId))),
+              .action("Approve", .account(.approve(requestId: request.requestId))),
               .action("Deny", .account(.deny(requestId: request.requestId))),
             ])
         },
@@ -176,18 +176,18 @@ public enum AccountMenuModel {
   }
 
   private static func settingsItem(_ s: AccountMenuSnapshot) -> HostMenuItem {
-    guard s.inlineSettings else { return .action("Account Settings…", .openAccountSettings) }
+    guard s.inlineSettings else { return .action("Account Settings", .openAccountSettings) }
     let status = s.status
     var submenu: [HostMenuItem] = []
     if let safety = status.safetyCode {
       submenu += [.info("Account safety code: \(safety)"), .separator]
     }
     submenu.append(.toggle("Managed Tunnel", isOn: status.config.tunnel, .account(.tunnel(on: !status.config.tunnel))))
-    submenu.append(.action("This Computer's Name…", .account(.rename(current: status.name ?? status.systemName ?? ""))))
+    submenu.append(.action("This Computer's Name", .account(.rename(current: status.name ?? status.systemName ?? ""))))
     if let system = status.systemName, status.name != system {
       submenu.append(.action("Use System Name (\(system))", .account(.renameDefault)))
     }
-    submenu += [.separator, .action("Unlink…", .account(.unlink))]
+    submenu += [.separator, .action("Unlink", .account(.unlink))]
     return .submenu("Argus Account", submenu)
   }
 }

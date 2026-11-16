@@ -9,7 +9,7 @@ struct LinearPropertyPill<Label: View>: View {
   @Environment(\.theme) private var theme
   let options: [LinearIssueProperty.Option]
   let current: String
-  /// "Change status…"
+  /// "Change status"
   let placeholder: String
   /// The page key that opens it, shown in the search field.
   let key: String

@@ -94,7 +94,7 @@ private struct BranchMenuSections {
   }
 
   var newBranch: some View {
-    BranchMenuButton("New branch from \(name)…", icon: Icon.plus) { _, _ in
+    BranchMenuButton("New branch from \(name)", icon: Icon.plus) { _, _ in
       actions.newBranch(from: branch.ref)
     }
   }
@@ -122,7 +122,7 @@ private struct BranchMenuSections {
         actions.push(branch, host: host)
       }
       if branch.upstream != nil {
-        BranchMenuButton("Force push…", icon: "exclamationmark.arrow.triangle.2.circlepath") { _, _ in
+        BranchMenuButton("Force push", icon: "exclamationmark.arrow.triangle.2.circlepath") { _, _ in
           actions.ask(.forcePush, about: branch)
         }
       }
@@ -148,12 +148,12 @@ private struct BranchMenuSections {
       BranchMenuButton(branch.pinned == true ? "Unpin" : "Pin", icon: Icon.pin) { host, _ in
         actions.setPinned(branch, host: host)
       }
-      BranchMenuButton("Rename…", icon: Icon.pencil) { _, _ in actions.rename(branch) }
+      BranchMenuButton("Rename", icon: Icon.pencil) { _, _ in actions.rename(branch) }
     }
     BranchMenuButton("Copy name", icon: "doc.on.doc") { _, _ in Clipboard.copy(name) }
     if isLocal, !branch.isCurrent {
       Divider()
-      BranchMenuButton("Delete…", icon: Icon.trash, role: .destructive) { _, _ in
+      BranchMenuButton("Delete", icon: Icon.trash, role: .destructive) { _, _ in
         actions.ask(.delete(unmerged: false), about: branch)
       }
     }

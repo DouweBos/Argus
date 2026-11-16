@@ -155,7 +155,7 @@ struct AutomationEditorForm: View {
       PlaybookEditor(text: $draft.playbook)
       HStack {
         Spacer()
-        Button("Rewrite with Claude…") { revising = true }
+        Button("Rewrite with Claude") { revising = true }
           .disabled(draft.playbook.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
       }
     } header: {

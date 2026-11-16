@@ -70,7 +70,7 @@ struct SidebarTopBar: View {
       }
       if let repo = filter.project {
         ChromeMenuEntry.divider
-        ChromeMenuItem("Project Settings…", icon: .symbol(Icon.gear)) { model.projectSettingsRepo = repo }
+        ChromeMenuItem("Project Settings", icon: .symbol(Icon.gear)) { model.projectSettingsRepo = repo }
       }
     }
     .help(filter.project.flatMap { root in store.projects.first { $0.repoRoot == root }?.name }
@@ -79,8 +79,8 @@ struct SidebarTopBar: View {
 
   private var addProject: some View {
     SidebarMenuButton("Add Project", systemImage: "folder.badge.plus") {
-      ChromeMenuItem("Add Project…", icon: .symbol("folder.badge.plus"), shortcut: "⌘O") { model.addingProject = true }
-      ChromeMenuItem("Import Projects from Claude Code…", icon: .symbol(Icon.download)) {
+      ChromeMenuItem("Add Project", icon: .symbol("folder.badge.plus"), shortcut: "⌘O") { model.addingProject = true }
+      ChromeMenuItem("Import Projects from Claude Code", icon: .symbol(Icon.download)) {
         model.importingCliProjects = true
       }
     }
@@ -96,7 +96,7 @@ struct SidebarTopBar: View {
       }
     } entries: {
       for project in store.projects {
-        ChromeMenuItem("New Session in \(project.name)…", icon: .badge(project.name, key: project.repoRoot)) {
+        ChromeMenuItem("New Session in \(project.name)", icon: .badge(project.name, key: project.repoRoot)) {
           model.newSessionProject = project
         }
       }

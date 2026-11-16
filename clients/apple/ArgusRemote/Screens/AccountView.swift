@@ -225,7 +225,7 @@ struct AccountView: View {
     SettingsGroup(footer: "Takes this phone off the account and deletes its account key. Computers you paired with a QR code keep working.") {
       HStack {
         Spacer()
-        Btn(label: "Sign Out…", tone: .danger, small: true, hugs: true) { confirmingSignOut = true }
+        Btn(label: "Sign Out", tone: .danger, small: true, hugs: true) { confirmingSignOut = true }
       }
       if let error = account.error {
         Label(error, systemImage: Icon.warning)
@@ -240,7 +240,7 @@ struct AccountView: View {
     ) {
       HStack {
         Spacer()
-        Btn(label: "Reset Account…", tone: .secondary, small: true, hugs: true) { resetting = true }
+        Btn(label: "Reset Account", tone: .secondary, small: true, hugs: true) { resetting = true }
       }
     }
   }
@@ -261,11 +261,11 @@ struct AccountView: View {
       }
       Spacer(minLength: 6)
       Menu {
-        Button("Rename…", systemImage: "pencil") {
+        Button("Rename", systemImage: "pencil") {
           draft = host.name
           renaming = host
         }
-        Button("Remove…", systemImage: "trash", role: .destructive) { removing = host }
+        Button("Remove", systemImage: "trash", role: .destructive) { removing = host }
       } label: {
         Image(systemName: "ellipsis.circle")
           .font(.scaled(size: 17))

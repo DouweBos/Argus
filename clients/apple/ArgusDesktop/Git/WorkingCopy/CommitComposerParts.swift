@@ -31,7 +31,7 @@ struct IdentityMenu: View {
       }
       if !profiles.isEmpty { Divider() }
       if let identity = vm.identity, !profiles.contains(where: { $0.matches(identity) }) {
-        Button("Save “\(identity.email)” as a Profile…") {
+        Button("Save “\(identity.email)” as a Profile") {
           label = ""
           naming = true
         }

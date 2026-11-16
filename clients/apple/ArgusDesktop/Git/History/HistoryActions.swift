@@ -77,50 +77,50 @@ struct HistoryActions {
     menu.addItem(ActionMenuItem("Copy Message") { Clipboard.copy(commit.message) })
     menu.addItem(.separator())
     menu.addItem(
-      ActionMenuItem("Check Out \(short)…", enabled: workspace.isProjectRoot && commit.id != history.headSHA) {
+      ActionMenuItem("Check Out \(short)", enabled: workspace.isProjectRoot && commit.id != history.headSHA) {
         confirmCheckout(commit)
       })
-    menu.addItem(ActionMenuItem("Create Branch Here…") { history.request(.createBranch(commit)) })
-    menu.addItem(ActionMenuItem("Create Tag Here…") { history.request(.createTag(commit)) })
+    menu.addItem(ActionMenuItem("Create Branch Here") { history.request(.createBranch(commit)) })
+    menu.addItem(ActionMenuItem("Create Tag Here") { history.request(.createTag(commit)) })
     menu.addItem(.separator())
     menu.addItem(
       ActionMenuItem("Cherry-Pick \(short)", enabled: commit.id != history.headSHA) {
         Task { await cherryPick(commit) }
       })
-    menu.addItem(ActionMenuItem("Revert \(short)…") { history.request(.revert(commit)) })
+    menu.addItem(ActionMenuItem("Revert \(short)") { history.request(.revert(commit)) })
     menu.addItem(
       ActionMenuItem("Reset \(history.headBranchName ?? "HEAD") to Here…", enabled: history.filterBranch == nil) {
         history.request(.reset(commit))
       })
     menu.addItem(.separator())
     menu.addItem(
-      ActionMenuItem("Edit Message…", enabled: history.canRewrite(commit)) { history.request(.reword(commit)) })
+      ActionMenuItem("Edit Message", enabled: history.canRewrite(commit)) { history.request(.reword(commit)) })
     if selected.count > 1 {
       menu.addItem(
-        ActionMenuItem("Squash \(selected.count) Commits…", enabled: history.canSquash(selected)) {
+        ActionMenuItem("Squash \(selected.count) Commits", enabled: history.canSquash(selected)) {
           history.request(.squashCommits(selected))
         })
     } else {
       menu.addItem(
-        ActionMenuItem("Squash with Parent…", enabled: history.canSquashWithParent(commit)) {
+        ActionMenuItem("Squash with Parent", enabled: history.canSquashWithParent(commit)) {
           history.request(.squash(commit))
         })
     }
     menu.addItem(
-      ActionMenuItem("Interactive Rebase from Here…", enabled: history.canRebaseInteractively(onto: commit)) {
+      ActionMenuItem("Interactive Rebase from Here", enabled: history.canRebaseInteractively(onto: commit)) {
         navigate(.interactiveRebase(from: commit.id))
       })
-    menu.addItem(ActionMenuItem("Drop \(short)…", enabled: history.canRewrite(commit)) { history.request(.drop(commit)) })
+    menu.addItem(ActionMenuItem("Drop \(short)", enabled: history.canRewrite(commit)) { history.request(.drop(commit)) })
     menu.addItem(.separator())
     menu.addItem(
       ActionMenuItem("Compare with HEAD") {
         navigate(.compare(left: history.headBranchName ?? "HEAD", right: commit.id))
       })
     menu.addItem(.separator())
-    let patchTitle = selected.count > 1 ? "Save \(selected.count) Commits as Patch…" : "Save as Patch…"
+    let patchTitle = selected.count > 1 ? "Save \(selected.count) Commits as Patch" : "Save as Patch"
     menu.addItem(
       ActionMenuItem(patchTitle, enabled: history.canSavePatch(selected)) { Task { await savePatch(selected) } })
-    menu.addItem(ActionMenuItem("Export Archive…") { Task { await exportArchive(commit) } })
+    menu.addItem(ActionMenuItem("Export Archive") { Task { await exportArchive(commit) } })
   }
 
   // MARK: Panels

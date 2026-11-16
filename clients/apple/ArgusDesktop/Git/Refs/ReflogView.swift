@@ -95,11 +95,11 @@ struct ReflogView: View {
 
   @ViewBuilder
   private func menu(_ entry: ReflogEntry) -> some View {
-    Button("Soft Reset to Here…") { reflog.requestReset(to: entry, mode: .soft) }
-    Button("Mixed Reset to Here…") { reflog.requestReset(to: entry, mode: .mixed) }
-    Button("Hard Reset to Here…", role: .destructive) { reflog.requestReset(to: entry, mode: .hard) }
+    Button("Soft Reset to Here") { reflog.requestReset(to: entry, mode: .soft) }
+    Button("Mixed Reset to Here") { reflog.requestReset(to: entry, mode: .mixed) }
+    Button("Hard Reset to Here", role: .destructive) { reflog.requestReset(to: entry, mode: .hard) }
     Divider()
-    Button("New Branch Here…") { createBranch(from: entry) }
+    Button("New Branch Here") { createBranch(from: entry) }
     Button("Copy SHA") { Clipboard.copy(entry.newSHA) }
   }
 

@@ -69,7 +69,7 @@ struct NewSessionSheet: View {
       if store.linearConnected, parent == nil {
         Section {
           if !issues.isEmpty { PickedIssueChips(issues: $issues) }
-          Button("Add Linear Issue…", systemImage: Icon.issue) { pickingIssues = true }
+          Button("Add Linear Issue", systemImage: Icon.issue) { pickingIssues = true }
         } footer: {
           if !issues.isEmpty {
             Text("Each issue gets its own session on Linear's branch name, and an agent that starts from it.")
