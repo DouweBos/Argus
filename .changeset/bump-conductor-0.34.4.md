@@ -1,4 +1,5 @@
 ---
+# platforms: mac
 "argus": minor
 ---
 
