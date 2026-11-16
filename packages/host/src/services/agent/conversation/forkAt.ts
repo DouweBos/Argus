@@ -20,7 +20,7 @@ import {
 } from "./actions";
 
 /** The runner's own fork into `destSessionId`, or null to fall back to a seed. */
-async function nativeFork(
+export async function nativeFork(
   runner: LlmRunner,
   point: AgentForkPoint,
   sourceSessionId: string,

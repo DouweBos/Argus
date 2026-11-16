@@ -376,6 +376,15 @@ export const MethodParams = {
     source: z.enum(["limit_card", "menu"]),
   }),
   /**
+   * Move the chat to another session, or to a new session in `repo_root`;
+   * the old agent stops. Exactly one of the two.
+   */
+  "agents.transfer": z.object({
+    agent_id: z.string(),
+    session_id: z.string().optional(),
+    repo_root: z.string().optional(),
+  }),
+  /**
    * Fork the chat at a message into a new agent: in a new session branched at
    * that point, or in this one. `description` names the new session.
    */
@@ -1137,6 +1146,11 @@ export const MethodResult = {
   "agents.rewind": z.object({ accepted: z.boolean() }),
   "agents.fork": z.object({ session_id: z.string(), agent: RemoteAgentStatus }),
   "agents.continue_on_runner": z.object({ agent: RemoteAgentStatus }),
+  /** `agent` is null for a new session: it starts once setup has finished. */
+  "agents.transfer": z.object({
+    session_id: z.string(),
+    agent: RemoteAgentStatus.nullable(),
+  }),
   "agents.ask_side": z.object({ answer: z.string() }),
   "sessions.create": z.object({ session: RemoteSession }),
   "sessions.create_compare": z.object({

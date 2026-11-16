@@ -241,6 +241,15 @@ export interface EventMap {
     source: "limit_card" | "picker";
     success: boolean;
   };
+  agent_transferred: {
+    runner: TelemetryRunner;
+    target: "existing_session" | "new_session";
+    /** The chat moved to a session of another project. */
+    cross_project: boolean;
+    /** `native`: the runner forked its own transcript; `seeded`: the history went in as text. Absent on failure. */
+    history?: "native" | "seeded";
+    success: boolean;
+  };
   agent_continued_on_runner: {
     from_runner: TelemetryRunner;
     to_runner: TelemetryRunner;

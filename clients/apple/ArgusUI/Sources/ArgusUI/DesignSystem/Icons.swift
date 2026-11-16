@@ -30,6 +30,7 @@ public enum Icon {
   public static let draft = "sparkles"
   /// A chat carried on by another runner.
   public static let continueOn = "arrow.forward.circle"
+  public static let moveChat = "arrow.right.square"
   public static let desktop = "desktopcomputer"
   /// An external drive a project's worktrees can live on.
   public static let drive = "externaldrive"

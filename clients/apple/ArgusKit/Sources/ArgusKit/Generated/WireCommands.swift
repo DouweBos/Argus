@@ -9604,6 +9604,52 @@ extension ArgusProtocol {
       }
     }
 
+    public struct TransferAgentParams: Codable, Sendable {
+      public var agentId: String
+      public var sessionId: String?
+      public var repoRoot: String?
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agentId"
+        case sessionId = "sessionId"
+        case repoRoot = "repoRoot"
+      }
+
+      public init(agentId: String, sessionId: String? = nil, repoRoot: String? = nil) {
+        self.agentId = agentId
+        self.sessionId = sessionId
+        self.repoRoot = repoRoot
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encodeIfPresent(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(repoRoot, forKey: .repoRoot)
+      }
+    }
+
+    public struct TransferAgentResult: Codable, Sendable {
+      public var sessionId: String
+      public var agent: AgentInfo?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "sessionId"
+        case agent = "agent"
+      }
+
+      public init(sessionId: String, agent: AgentInfo? = nil) {
+        self.sessionId = sessionId
+        self.agent = agent
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(agent, forKey: .agent)
+      }
+    }
+
     public struct UiStateGetParams: Codable, Sendable {
       public var key: String
 
@@ -13394,6 +13440,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.TestMcpServerParams
       public typealias Result = ArgusProtocol.McpTestResult
       public static let name = "test_mcp_server"
+      public static let tier = "admin"
+    }
+
+    public enum TransferAgent: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.TransferAgentParams
+      public typealias Result = ArgusProtocol.CommandsTypes.TransferAgentResult
+      public static let name = "transfer_agent"
       public static let tier = "admin"
     }
 

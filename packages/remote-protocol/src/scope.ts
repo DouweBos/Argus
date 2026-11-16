@@ -149,6 +149,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "agents.fork": agent(),
   // Likewise: the new agent it starts is outside the scope.
   "agents.continue_on_runner": agent(),
+  // Likewise: the chat leaves the scope for another session.
+  "agents.transfer": agent(),
 
   // This connection's own device record and push registration.
   "device.rename": OPEN,

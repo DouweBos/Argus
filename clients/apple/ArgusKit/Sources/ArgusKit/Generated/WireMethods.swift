@@ -1554,6 +1554,52 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AgentsTransferParams: Codable, Sendable {
+      public var agentId: String
+      public var sessionId: String?
+      public var repoRoot: String?
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case sessionId = "session_id"
+        case repoRoot = "repo_root"
+      }
+
+      public init(agentId: String, sessionId: String? = nil, repoRoot: String? = nil) {
+        self.agentId = agentId
+        self.sessionId = sessionId
+        self.repoRoot = repoRoot
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encodeIfPresent(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(repoRoot, forKey: .repoRoot)
+      }
+    }
+
+    public struct AgentsTransferResult: Codable, Sendable {
+      public var sessionId: String
+      public var agent: RemoteAgentStatus?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case agent = "agent"
+      }
+
+      public init(sessionId: String, agent: RemoteAgentStatus? = nil) {
+        self.sessionId = sessionId
+        self.agent = agent
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(agent, forKey: .agent)
+      }
+    }
+
     public struct AgentsVitalsParams: Codable, Sendable {
       public var agentId: String
 
@@ -8583,6 +8629,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AgentsTranscriptParams
       public typealias Result = ArgusProtocol.MethodsTypes.AgentsTranscriptResult
       public static let name = "agents.transcript"
+    }
+
+    public enum AgentsTransfer: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsTransferParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsTransferResult
+      public static let name = "agents.transfer"
     }
 
     public enum AgentsVitals: RemoteCommand {

@@ -99,7 +99,14 @@ struct SessionView: View {
         rename: { model.renameAgent($0, to: $1) },
         move: { model.moveAgent($0, to: $1, inSession: sessionId) },
         revealInFinder: { model.revealSessionInFinder(sessionId) },
-        continued: { model.open(spawned: $0.agentId, session: $0.sessionId) })
+        continued: { model.open(spawned: $0.agentId, session: $0.sessionId) },
+        moved: { moved in
+          if let agent = moved.agent {
+            model.open(spawned: agent.agentId, session: moved.sessionId)
+          } else {
+            model.navigate(.session(id: moved.sessionId, agentId: nil))
+          }
+        })
       .padding(.trailing, SessionContextCardOverlay.barReserve)
       Group {
         if let session, session.status != .ready {
@@ -140,8 +147,10 @@ struct AgentTabBar: View {
   var move: (String, String) -> Void = { _, _ in }
   var revealInFinder: () -> Void = {}
   var continued: (RemoteAgentStatus) -> Void = { _ in }
+  var moved: (HostStore.MovedChat) -> Void = { _ in }
   @State private var renaming: RemoteAgentStatus?
   @State private var continueError: String?
+  @State private var moveError: String?
   @State private var newTitle = ""
 
   var body: some View {
@@ -192,6 +201,13 @@ struct AgentTabBar: View {
     } message: {
       Text(continueError ?? "")
     }
+    .alert(
+      "Couldn't Move the Chat", isPresented: Binding(get: { moveError != nil }, set: { if !$0 { moveError = nil } })
+    ) {
+      Button("OK", role: .cancel) { moveError = nil }
+    } message: {
+      Text(moveError ?? "")
+    }
   }
 
   static let height: CGFloat = 34
@@ -221,6 +237,10 @@ struct AgentTabBar: View {
       track("continue_on")
       continued($0)
     } onError: { continueError = $0 }
+    MoveToMenu(agentId: agent.agentId) {
+      track("move_to")
+      moved($0)
+    } onError: { moveError = $0 }
     Button("Reveal Session in Finder") {
       track("reveal")
       revealInFinder()

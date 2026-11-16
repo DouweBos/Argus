@@ -160,6 +160,7 @@ export const REMOTE_METHODS = {
   "agents.spawn": "control",
   /** Continue a chat in a new agent on another runner: it spawns, so control. */
   "agents.continue_on_runner": "control",
+  "agents.transfer": "control",
   /** Messages waiting for a busy agent. The queue is the desktop's, shared by
    *  every client, so reading it is monitor and changing it is control. */
   "agents.queue_list": "monitor",

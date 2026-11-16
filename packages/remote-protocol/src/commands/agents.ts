@@ -198,6 +198,15 @@ export const AGENT_COMMANDS = {
     }),
     result: AgentInfo,
   },
+  /** Move the chat to another session (or a new one in `repoRoot`); the old agent stops. */
+  transfer_agent: {
+    tier: "admin",
+    params: AgentId.extend({
+      sessionId: z.string().optional(),
+      repoRoot: z.string().optional(),
+    }),
+    result: z.object({ sessionId: z.string(), agent: AgentInfo.nullable() }),
+  },
   list_queued_messages: {
     tier: "admin",
     params: AgentId,

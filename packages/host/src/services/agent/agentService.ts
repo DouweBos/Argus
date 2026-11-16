@@ -1799,12 +1799,18 @@ export function sendAgentMessage(
   }
 
   // A slash command has to stay first; the seed rides the next message.
-  const seed = trimmed.startsWith("/") ? undefined : agentEntry.pendingSeed;
-  const outgoing = seed ? withHistorySeed(seed, message) : message;
+  const slash = trimmed.startsWith("/");
+  const seed = slash ? undefined : agentEntry.pendingSeed;
+  const note = slash ? undefined : agentEntry.pendingNote;
+  const seeded = seed ? withHistorySeed(seed, message) : message;
+  const outgoing = note ? `${note}\n\n${seeded}` : seeded;
   try {
     agentEntry.handle.send(outgoing, images ?? [], opts);
     if (seed) {
       agentEntry.pendingSeed = undefined;
+    }
+    if (note) {
+      agentEntry.pendingNote = undefined;
     }
   } catch (e) {
     throw `Failed to write to agent stdin: ${String(e)}`;

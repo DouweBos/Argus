@@ -1553,6 +1553,39 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return { session_id: forked.sessionId, agent: toRemoteAgentStatus(agent) };
   },
 
+  "agents.transfer": async (params, ctx) => {
+    const { agent_id, session_id, repo_root } = parse(
+      "agents.transfer",
+      params,
+    );
+    if (ctx.scope) {
+      throw new GatewayError("capability_denied", "agents.transfer");
+    }
+    requireAgent(agent_id);
+    if (!session_id === !repo_root) {
+      throw new GatewayError(
+        "bad_request",
+        "session_id or repo_root, not both",
+      );
+    }
+    if (session_id) {
+      requireSession(session_id);
+    }
+    const { transferAgent } = await import("../agent/conversation/transfer");
+    const moved = await control(() =>
+      transferAgent(
+        agent_id,
+        session_id ? { sessionId: session_id } : { repoRoot: repo_root! },
+      ),
+    );
+    const agent = moved.agent && appState.agents.get(moved.agent.agent_id);
+
+    return {
+      session_id: moved.sessionId,
+      agent: agent ? toRemoteAgentStatus(agent) : null,
+    };
+  },
+
   "agents.continue_on_runner": async (params, ctx) => {
     const { agent_id, runner_id, source } = parse(
       "agents.continue_on_runner",

@@ -39,6 +39,7 @@ import {
   livePage,
   readConversation,
 } from "../services/agent/conversation/live";
+import { transferAgent } from "../services/agent/conversation/transfer";
 import { limitHandoffAccounts } from "../services/agent/limitHandoff";
 import {
   dismissLimitResume,
@@ -165,6 +166,16 @@ export function registerAgentCommands(): void {
   defineTypedCommand("continue_agent_on_runner", (p) =>
     continueAgentOnRunner(p.agentId, p.runnerId, p.source),
   );
+  defineTypedCommand("transfer_agent", (p) => {
+    if (!p.sessionId === !p.repoRoot) {
+      throw "Move a chat to either a session or a project";
+    }
+
+    return transferAgent(
+      p.agentId,
+      p.sessionId ? { sessionId: p.sessionId } : { repoRoot: p.repoRoot! },
+    );
+  });
   defineTypedCommand("dismiss_agent_limit_resume", (p) =>
     dismissLimitResume(p.agentId),
   );

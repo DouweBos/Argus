@@ -176,6 +176,8 @@ export interface AgentSession {
    * fork natively), sent ahead of its next message.
    */
   pendingSeed?: string;
+  /** Told to the agent ahead of its next message, e.g. that its chat moved worktrees. */
+  pendingNote?: string;
   /**
    * Mode the agent was in immediately before transitioning into `plan` —
    * stashed so that approving `ExitPlanMode` can restore the pre-plan mode

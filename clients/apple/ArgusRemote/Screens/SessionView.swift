@@ -31,6 +31,7 @@ struct SessionView: View {
   @State private var closed: Set<String> = []
   @State private var confirmingStop = false
   @State private var continueError: String?
+  @State private var moveError: String?
 
   private var resolvedSessionId: String? { sessionId ?? agentId.flatMap { host.statusByAgent[$0]?.sessionId } }
   private var session: RemoteSession? { resolvedSessionId.flatMap(host.session(id:)) }
@@ -139,6 +140,13 @@ struct SessionView: View {
     } message: {
       Text(continueError ?? "")
     }
+    .alert(
+      "Couldn't move the chat", isPresented: Binding(get: { moveError != nil }, set: { if !$0 { moveError = nil } })
+    ) {
+      Button("OK", role: .cancel) { moveError = nil }
+    } message: {
+      Text(moveError ?? "")
+    }
     .confirmationDialog("Shut down this agent?", isPresented: $confirmingStop, titleVisibility: .visible) {
       Button("Shut down", role: .destructive) { stopFocused() }
       Button("Cancel", role: .cancel) {}
@@ -221,6 +229,7 @@ struct SessionView: View {
     }
     if !host.isGone(id) {
       ContinueOnMenu(agentId: id) { focus($0) } onError: { continueError = $0 }
+      MoveToMenu(agentId: id) { moved($0) } onError: { moveError = $0 }
     }
   }
 
@@ -385,6 +394,17 @@ struct SessionView: View {
   private func open(_ route: Route) {
     showingDetails = false
     router.push(route)
+  }
+
+  /// Opens the session the chat moved to, on its new agent once there is one.
+  private func moved(_ chat: HostStore.MovedChat) {
+    showingDetails = false
+    let session = host.session(id: chat.sessionId)
+    if let agent = chat.agent { router.focusedAgents[session: chat.sessionId] = agent.agentId }
+    router.push(
+      .session(
+        id: chat.sessionId, label: session.map(SessionActivity.title) ?? "Session",
+        repoRoot: session?.repoRoot ?? resolvedRepoRoot ?? ""))
   }
 
   private func focus(_ agent: RemoteAgentStatus) {
