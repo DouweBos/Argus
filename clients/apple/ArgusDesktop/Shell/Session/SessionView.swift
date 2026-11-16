@@ -216,48 +216,21 @@ struct AgentTabBar: View {
     MacTelemetry.capture(.agentTabMenuUsed(action: action))
   }
 
-  /// The desktop's tab menu: rename, copy, pin, stop, reveal, then the ways to close tabs.
-  @ViewBuilder private func menu(for agent: RemoteAgentStatus) -> some View {
-    let ids = agents.map(\.agentId)
-    let index = ids.firstIndex(of: agent.agentId) ?? 0
-    Button("Rename Agent") { track("rename");
-      newTitle = agent.title ?? ""
-      renaming = agent
-    }
-    Button("Copy Agent ID") { track("copy_id"); Clipboard.copy(agent.agentId) }
-    Button(agent.isPinned ? "Unpin Chat" : "Pin Chat") {
-      track(agent.isPinned ? "unpin" : "pin")
-      Task { await store.setPinned(agentId: agent.agentId, pinned: !agent.isPinned) }
-    }
-    .disabled(!store.canTogglePin(agentId: agent.agentId))
-    Divider()
-    Button("Stop Agent") { track("stop"); Task { await store.interrupt(agentId: agent.agentId) } }
-      .disabled(agent.status != .running)
-    ContinueOnMenu(agentId: agent.agentId) {
-      track("continue_on")
-      continued($0)
-    } onError: { continueError = $0 }
-    MoveToMenu(agentId: agent.agentId) {
-      track("move_to")
-      moved($0)
-    } onError: { moveError = $0 }
-    Button("Reveal Session in Finder") {
-      track("reveal")
-      revealInFinder()
-    }
-    Divider()
-    Button("Close Agent") { track("close"); close(agent.agentId) }
-    Button("Close Other Agents") { track("close_others"); closeMany(ids.filter { $0 != agent.agentId }) }
-      .disabled(ids.count < 2)
-    Divider()
-    Button("Close Agents to the Left") { track("close_left"); closeMany(Array(ids[..<index])) }
-      .disabled(index == 0)
-    Button("Close Agents to the Right") { track("close_right"); closeMany(Array(ids[(index + 1)...])) }
-      .disabled(index >= ids.count - 1)
-    Divider()
-    Button("Close Idle Agents") { track("close_idle"); closeMany(agents.filter { $0.status != .running }.map(\.agentId)) }
-      .disabled(!agents.contains { $0.status != .running })
-    Button("Close All Agents", role: .destructive) { track("close_all"); closeMany(ids) }
+  private func menu(for agent: RemoteAgentStatus) -> some View {
+    AgentTabMenu(
+      agentId: agent.agentId, title: agent.title, isPinned: agent.isPinned,
+      canTogglePin: store.canTogglePin(agentId: agent.agentId), isRunning: agent.status == .running,
+      ids: agents.map(\.agentId), idleIds: agents.filter { $0.status != .running }.map(\.agentId),
+      track: track,
+      rename: {
+        newTitle = agent.title ?? ""
+        renaming = agent
+      },
+      revealInFinder: revealInFinder, continued: continued, moved: moved,
+      continueError: { continueError = $0 }, moveError: { moveError = $0 },
+      close: close, closeMany: closeMany
+    )
+    .equatable()
   }
 
   /// Agents each agent spawned, across every agent the host has described.

@@ -25,14 +25,11 @@ public struct ContinueOnMenu: View {
   public var body: some View {
     let runners = host.continueRunners(agentId: agentId)
     if host.hasControl, !runners.isEmpty {
-      Menu {
-        ForEach(runners, id: \.id) { runner in
-          Button(runner.displayName) { start(runner.id) }
-        }
-      } label: {
-        Label("Continue on", systemImage: Icon.continueOn)
-      }
-      .disabled(!host.canContinueElsewhere(agentId: agentId))
+      ContinueOnItems(
+        runners: runners.map { .init(id: $0.id, name: $0.displayName) },
+        enabled: host.canContinueElsewhere(agentId: agentId), start: start
+      )
+      .equatable()
     }
   }
 
@@ -44,6 +41,30 @@ public struct ContinueOnMenu: View {
         onError(HostStore.describe(error))
       }
     }
+  }
+}
+
+/// The submenu itself, rebuilt only when what it shows changes: rebuilding an
+/// open submenu (on every streamed status) closes and reopens it.
+private struct ContinueOnItems: View, Equatable {
+  struct Runner: Equatable { let id: String, name: String }
+  let runners: [Runner]
+  let enabled: Bool
+  let start: (String) -> Void
+
+  var body: some View {
+    Menu {
+      ForEach(runners, id: \.id) { runner in
+        Button(runner.name) { start(runner.id) }
+      }
+    } label: {
+      Label("Continue on", systemImage: Icon.continueOn)
+    }
+    .disabled(!enabled)
+  }
+
+  nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+    lhs.runners == rhs.runners && lhs.enabled == rhs.enabled
   }
 }
 

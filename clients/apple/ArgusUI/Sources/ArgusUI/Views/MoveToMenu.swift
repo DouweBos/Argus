@@ -20,30 +20,17 @@ public struct MoveToMenu: View {
   public var body: some View {
     let destinations = host.moveDestinations(agentId: agentId)
     if host.hasControl, !destinations.isEmpty {
-      Menu {
-        ForEach(destinations) { destination in
-          Menu(destination.project.name) {
-            Button(Self.newSession, systemImage: Icon.plus) { move(repoRoot: destination.project.repoRoot) }
-            if !destination.sessions.isEmpty {
-              Divider()
-              ForEach(destination.sessions, id: \.id) { session in
-                Button(SessionActivity.title(session)) { move(sessionId: session.id) }
-              }
-            }
-          }
-        }
-      } label: {
-        Label("Move to", systemImage: Icon.moveChat)
-      }
-      .disabled(!host.canContinueElsewhere(agentId: agentId))
+      MoveToItems(
+        destinations: destinations.map { destination in
+          .init(
+            repoRoot: destination.project.repoRoot, name: destination.project.name,
+            sessions: destination.sessions.map { .init(id: $0.id, title: SessionActivity.title($0)) })
+        },
+        enabled: host.canContinueElsewhere(agentId: agentId), move: move
+      )
+      .equatable()
     }
   }
-
-  #if os(macOS)
-    private static let newSession = "New Session"
-  #else
-    private static let newSession = "New session"
-  #endif
 
   private func move(sessionId: String? = nil, repoRoot: String? = nil) {
     Task {
@@ -54,4 +41,46 @@ public struct MoveToMenu: View {
       }
     }
   }
+}
+
+/// The submenu itself, rebuilt only when what it shows changes: rebuilding an
+/// open submenu (on every streamed status) closes and reopens it.
+private struct MoveToItems: View, Equatable {
+  struct Session: Equatable { let id: String, title: String }
+  struct Destination: Equatable {
+    let repoRoot: String, name: String
+    let sessions: [Session]
+  }
+  let destinations: [Destination]
+  let enabled: Bool
+  let move: (_ sessionId: String?, _ repoRoot: String?) -> Void
+
+  var body: some View {
+    Menu {
+      ForEach(destinations, id: \.repoRoot) { destination in
+        Menu(destination.name) {
+          Button(Self.newSession, systemImage: Icon.plus) { move(nil, destination.repoRoot) }
+          if !destination.sessions.isEmpty {
+            Divider()
+            ForEach(destination.sessions, id: \.id) { session in
+              Button(session.title) { move(session.id, nil) }
+            }
+          }
+        }
+      }
+    } label: {
+      Label("Move to", systemImage: Icon.moveChat)
+    }
+    .disabled(!enabled)
+  }
+
+  nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+    lhs.destinations == rhs.destinations && lhs.enabled == rhs.enabled
+  }
+
+  #if os(macOS)
+    private static let newSession = "New Session"
+  #else
+    private static let newSession = "New session"
+  #endif
 }
