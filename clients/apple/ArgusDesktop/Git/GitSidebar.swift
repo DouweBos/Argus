@@ -6,22 +6,29 @@ import SwiftUI
 /// Flat on the canvas like the code navigator, so it stays below the toolbar
 /// rather than drawing a source-list material up under it.
 struct GitSidebar: View {
+  @Environment(\.theme) private var theme
   let workspace: GitWorkspace
   let session: RemoteSession
   let view: GitRoute
 
   var body: some View {
-    List {
+    // The header stays put so the list starts below it: a list touching the
+    // window's top scrolls up under the transparent toolbar.
+    VStack(spacing: 0) {
       GitRepositoryHeader(workspace: workspace, session: session)
-        .listRowSeparator(.hidden)
-        .listRowBackground(Color.clear)
-      if workspace.isProjectRoot {
-        GitRefSections(workspace: workspace, session: session, view: view)
-          .listRowSeparator(.hidden)
-          .listSectionSeparator(.hidden)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+      Rectangle().fill(theme.border).frame(height: 1)
+      List {
+        if workspace.isProjectRoot {
+          GitRefSections(workspace: workspace, session: session, view: view)
+            .listRowSeparator(.hidden)
+            .listSectionSeparator(.hidden)
+        }
       }
+      .navigatorList()
     }
-    .navigatorList()
     .environment(\.gitSidebarContext, GitSidebarContext(sessionId: session.id, view: view))
   }
 }
