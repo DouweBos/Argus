@@ -157,6 +157,16 @@ function HuddleRoom({ view }: { view: HuddleView }) {
   const device = devices.find((d) => d.id === view.deviceKey) ?? null;
   const title = status?.title?.trim() || "Shared agent";
 
+  // The tab reads as the shared agent, not as a generic remote.
+  useEffect(() => {
+    const previous = document.title;
+    document.title = `${title} · Argus`;
+
+    return () => {
+      document.title = previous;
+    };
+  }, [title]);
+
   return (
     <div className="aw-shell aw-shell-fluid">
       <SidebarHeader

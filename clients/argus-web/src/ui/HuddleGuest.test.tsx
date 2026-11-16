@@ -8,6 +8,7 @@ const joinHuddle = vi.fn();
 let huddle: HuddleView | null = null;
 
 let wide = false;
+let statusByAgent: Record<string, { title: string }> = {};
 vi.mock("./useIsWide", () => ({ useIsWide: () => wide }));
 vi.mock("./transcript/AgentTranscript", () => ({ AgentTranscript: () => null }));
 vi.mock("./ChatInput", () => ({ ChatInput: () => null }));
@@ -17,7 +18,7 @@ const fakeStore = () => ({
   huddle,
   joinHuddle,
   connection: "ready",
-  statusByAgent: {},
+  statusByAgent,
   devices: [],
   loadAgentStatus: vi.fn(async () => {}),
   refreshDevices: vi.fn(async () => {}),
@@ -46,6 +47,7 @@ describe("the huddle guest", () => {
     joinHuddle.mockClear();
     huddle = null;
     wide = false;
+    statusByAgent = {};
     localStorage.setItem("argus.huddle.label", "Sam");
   });
 
@@ -85,6 +87,28 @@ describe("the huddle guest", () => {
     rerender(<HuddleGuest token="tok-2" />);
 
     expect(joinHuddle).toHaveBeenLastCalledWith("tok-2", "Sam");
+  });
+
+  it("names the tab after the shared agent, and gives it back on leaving", () => {
+    document.title = "Argus Remote";
+    statusByAgent = { a1: { title: "Fix the login flow" } };
+    huddle = {
+      state: "approved",
+      roomId: "r1",
+      agentId: "a1",
+      deviceKey: null,
+      members: [],
+      you: "me",
+      hostTyping: false,
+      hostLabel: "Host",
+      chat: [],
+    };
+    const { unmount } = render(<HuddleGuest token="tok-1" />);
+
+    expect(document.title).toBe("Fix the login flow · Argus");
+
+    unmount();
+    expect(document.title).toBe("Argus Remote");
   });
 
   describe("on a wide screen", () => {
