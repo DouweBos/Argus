@@ -394,20 +394,37 @@ struct SessionContextCard: View {
   }
 
   /// Squashing rewrites the commits the agent wrote, so it's asked rather than assumed.
+  /// A merge that would conflict offers an agent to rebase and resolve it instead.
   private func merge(into base: String) async {
+    let id = session.id
+    let conflicts = await store.mergeConflicts(sessionId: id)
+    if !conflicts.isEmpty { return await offerConflictFix(conflicts, base: base) }
     guard
       let choice = await GitDialogs.choose(
         "Merge into \(base)?", message: "Uncommitted changes are committed first. A conflict stops the merge.",
         buttons: [HostStore.MergeStrategy.keep.label, HostStore.MergeStrategy.squash.label])
     else { return }
     MacTelemetry.capture(.contextCardUsed(action: .merge))
-    let id = session.id
     mergingIds.insert(id)
     defer { mergingIds.remove(id) }
     _ = await store.mergeIntoBase(sessionId: id, strategy: choice == 0 ? .keep : .squash)
     await store.loadGitStatus(sessionId: id)
     let blockers = await store.mergeBlockers(sessionId: id)
     if id == session.id { mergeBlockers = blockers }
+  }
+
+  private func offerConflictFix(_ files: [String], base: String) async {
+    let id = session.id
+    let shown = files.prefix(6).joined(separator: "\n")
+    let more = files.count > 6 ? "\nand \(files.count - 6) more" : ""
+    guard
+      await GitDialogs.choose(
+        "\(files.count == 1 ? "1 file conflicts" : "\(files.count) files conflict") with \(base)",
+        message: "\(shown)\(more)\n\nAn agent can rebase this session onto \(base) and resolve them. You merge once it's done.",
+        buttons: ["Rebase with an Agent"]) == 0,
+      let agentId = await store.fixConflicts(sessionId: id)
+    else { return }
+    model.navigate(.session(id: id, agentId: agentId))
   }
 
   private func reveal() {

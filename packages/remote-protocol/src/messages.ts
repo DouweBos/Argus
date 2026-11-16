@@ -666,6 +666,10 @@ export const MethodParams = {
   "sessions.tags": z.object({ session_id: z.string() }),
   "sessions.push": z.object({ session_id: z.string() }),
   "sessions.merge_blockers": z.object({ session_id: z.string() }),
+  /** Files a merge into the base branch would conflict on. */
+  "sessions.merge_conflicts": z.object({ session_id: z.string() }),
+  /** Start an agent that rebases onto the base and resolves those conflicts. */
+  "sessions.fix_conflicts": z.object({ session_id: z.string() }),
   "sessions.merge_base": z.object({
     session_id: z.string(),
     /** Squashing rewrites history, so the client always says which it wants. */
@@ -1238,6 +1242,8 @@ export const MethodResult = {
   }),
   /** Empty means the merge would go through. */
   "sessions.merge_blockers": z.object({ blockers: z.array(z.string()) }),
+  "sessions.merge_conflicts": z.object({ files: z.array(z.string()) }),
+  "sessions.fix_conflicts": z.object({ agent_id: z.string() }),
   "sessions.merge_base": z.object({ accepted: z.boolean() }),
   "sessions.restack": RestackResult,
   "sessions.land_stack": LandStackResult,

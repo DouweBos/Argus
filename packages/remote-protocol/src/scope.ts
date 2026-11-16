@@ -179,6 +179,9 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.turns": session(),
   "sessions.diff_range": session(),
   "sessions.merge_blockers": session(),
+  "sessions.merge_conflicts": session(),
+  // Starting an agent is the engineer's call, never a guest's.
+  "sessions.fix_conflicts": DENIED,
 
   // Creating, destroying or re-pointing a session/branch is the engineer's
   // call, never a guest's — even for the session their agent runs in.

@@ -6685,6 +6685,40 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsFixConflictsParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct SessionsFixConflictsResult: Codable, Sendable {
+      public var agentId: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+      }
+
+      public init(agentId: String) {
+        self.agentId = agentId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+      }
+    }
+
     public struct SessionsGitStatusParams: Codable, Sendable {
       public var sessionId: String
 
@@ -7030,6 +7064,40 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct SessionsMergeConflictsParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct SessionsMergeConflictsResult: Codable, Sendable {
+      public var files: [String]
+
+      enum CodingKeys: String, CodingKey {
+        case files = "files"
+      }
+
+      public init(files: [String]) {
+        self.files = files
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(files, forKey: .files)
       }
     }
 
@@ -9195,6 +9263,12 @@ extension ArgusProtocol {
       public static let name = "sessions.files"
     }
 
+    public enum SessionsFixConflicts: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsFixConflictsParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsFixConflictsResult
+      public static let name = "sessions.fix_conflicts"
+    }
+
     public enum SessionsGitStatus: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsGitStatusParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsGitStatusResult
@@ -9241,6 +9315,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsMergeBranchParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsMergeBranchResult
       public static let name = "sessions.merge_branch"
+    }
+
+    public enum SessionsMergeConflicts: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsMergeConflictsParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsMergeConflictsResult
+      public static let name = "sessions.merge_conflicts"
     }
 
     public enum SessionsPinBranch: RemoteCommand {

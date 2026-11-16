@@ -534,6 +534,8 @@ export interface EventMap {
     success: boolean;
   };
   session_merge_conflict: { conflicting_files: number; phase: MergePhase };
+  /** An agent was started to rebase a session whose merge would conflict. */
+  conflict_fix_started: { file_bucket: "1" | "2-5" | "6+"; success: boolean };
   session_merged: { phase: MergePhase; strategy: MergeStrategy };
   session_prompt_dispatched: { success: boolean };
   compare_kept: {

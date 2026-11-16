@@ -195,6 +195,35 @@ extension HostStore {
     return result.blockers
   }
 
+  /// Files a merge into the base would conflict on; empty when it's clean,
+  /// and on computers too old to say (the merge still refuses then).
+  public func mergeConflicts(sessionId: String) async -> [String] {
+    guard let backend else { return [] }
+    struct Params: Encodable { let session_id: String }
+    struct Result: Decodable { let files: [String] }
+    return (try? await backend.request(
+      .sessionsMergeConflicts, Params(session_id: sessionId), as: Result.self))?.files ?? []
+  }
+
+  /// Starts an agent that rebases onto the base and resolves the conflicts.
+  /// Returns its id, to open it.
+  public func fixConflicts(sessionId: String) async -> String? {
+    guard let backend else { return nil }
+    struct Params: Encodable { let session_id: String }
+    struct Result: Decodable { let agent_id: String }
+    do {
+      let result = try await backend.request(
+        .sessionsFixConflicts, Params(session_id: sessionId), as: Result.self)
+      if let repoRoot = sessionsByRepo.first(where: { $0.value.contains { $0.id == sessionId } })?.key {
+        await loadAgents(repoRoot: repoRoot)
+      }
+      return result.agent_id
+    } catch {
+      report(error, scope: "session:merge")
+      return nil
+    }
+  }
+
   /// What a merge does to the session's commits. Squashing rewrites history
   /// the agent wrote, so the phone asks rather than assuming.
   public enum MergeStrategy: String, Sendable {

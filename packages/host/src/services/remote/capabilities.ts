@@ -156,6 +156,7 @@ import {
 } from "../reviewGuide/service";
 import { createScratchPad, listScratchPads } from "../scratchPad/manager";
 import { draftCommitMessage } from "../session/commitDraft";
+import { startConflictFix } from "../session/conflictFix";
 import { git } from "../session/git";
 import {
   gitCheckout,
@@ -183,6 +184,7 @@ import { getSessionProgress } from "../session/progress";
 import {
   getSessionBranchDiff,
   getSessionFullDiff,
+  getSessionConflicts,
   getSessionMergeBlockers,
   getSessionUntrackedDiff,
   canSignCommits,
@@ -2342,6 +2344,19 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const blockers = await control(() => getSessionMergeBlockers(session_id));
 
     return { blockers };
+  },
+  "sessions.merge_conflicts": async (params) => {
+    const { session_id } = parse("sessions.merge_conflicts", params);
+    requireSession(session_id);
+
+    return { files: await getSessionConflicts(session_id) };
+  },
+  "sessions.fix_conflicts": async (params) => {
+    const { session_id } = parse("sessions.fix_conflicts", params);
+    requireSession(session_id);
+    const { agent_id } = await control(() => startConflictFix(session_id));
+
+    return { agent_id };
   },
   "sessions.merge_base": async (params) => {
     const { session_id, strategy } = parse("sessions.merge_base", params);

@@ -64,6 +64,8 @@ public enum RemoteMethod: String, Codable, Sendable {
   case sessionsCommitIdentity = "sessions.commit_identity"
   case sessionsPush = "sessions.push"
   case sessionsMergeBlockers = "sessions.merge_blockers"
+  case sessionsMergeConflicts = "sessions.merge_conflicts"
+  case sessionsFixConflicts = "sessions.fix_conflicts"
   case sessionsMergeBase = "sessions.merge_base"
   case sessionsCreateCompare = "sessions.create_compare"
   case sessionsCompare = "sessions.compare"

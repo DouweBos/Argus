@@ -248,6 +248,9 @@ export const REMOTE_METHODS = {
   "sessions.turns": "monitor",
   "sessions.diff_range": "monitor",
   "sessions.merge_blockers": "monitor",
+  "sessions.merge_conflicts": "monitor",
+  /** Starts an agent, which spends and rewrites the branch. */
+  "sessions.fix_conflicts": "control",
   /** Writing history. Committing and pushing are the point of the session;
    *  merging lands it on the base branch, which the host still refuses for a
    *  protected branch or a conflicting tree. */

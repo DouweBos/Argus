@@ -219,6 +219,12 @@ conflicting file shows ours / theirs / merged side-by-side; resolve in
 the editor, mark as resolved, and continue or abort the operation from
 the toolbar.
 
+Merging a session into its base checks for conflicts first. If any file
+would conflict, Argus lists them and offers **Rebase with an Agent**: an
+agent starts in the session, rebases it onto the base, resolves the
+conflicts and runs the tests. It doesn't merge or push; you merge once
+it's done. The phone offers the same from a session's changes.
+
 ---
 
 ## Compare

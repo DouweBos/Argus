@@ -88,6 +88,8 @@ struct ChangesView: View {
           await refresh()
         } onDeleted: {
           router.popToRoot()
+        } onAgentStarted: { agentId in
+          router.push(.agent(id: agentId, label: "Resolve conflicts"))
         }
         StackCard(sessionId: sessionId) {
           Telemetry.capture(.newSessionOpened(source: .stack))

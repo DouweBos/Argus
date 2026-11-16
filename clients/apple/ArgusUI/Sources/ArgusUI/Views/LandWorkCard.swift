@@ -18,6 +18,8 @@ public struct LandWorkCard: View {
   let onChanged: () async -> Void
   /// Called once the session is deleted; offering that needs somewhere to go after.
   let onDeleted: (() -> Void)?
+  /// Opens the agent started to resolve a conflicting merge.
+  let onAgentStarted: ((String) -> Void)?
 
   @State private var busy: String?
   @State private var blockers: [String] = []
@@ -26,18 +28,21 @@ public struct LandWorkCard: View {
   @State private var changingBase = false
   @State private var note: String?
   @State private var confirmingDelete = false
+  /// What a merge would conflict on, while offering an agent to fix it.
+  @State private var conflicts: [String] = []
 
   private var status: RemoteGitStatus? { host.gitStatusBySession[sessionId] }
   private var hasUncommitted: Bool { (status?.dirtyCount ?? 0) > 0 }
 
   public init(
     sessionId: String, allowsAmend: Bool = false, onChanged: @escaping () async -> Void,
-    onDeleted: (() -> Void)? = nil
+    onDeleted: (() -> Void)? = nil, onAgentStarted: ((String) -> Void)? = nil
   ) {
     self.sessionId = sessionId
     self.allowsAmend = allowsAmend
     self.onChanged = onChanged
     self.onDeleted = onDeleted
+    self.onAgentStarted = onAgentStarted
   }
 
   public var body: some View {
@@ -121,6 +126,15 @@ public struct LandWorkCard: View {
     } message: {
       Text("Uncommitted changes are committed first. A conflict stops the merge.")
     }
+    .confirmationDialog(
+      conflictTitle, isPresented: Binding(get: { !conflicts.isEmpty }, set: { if !$0 { conflicts = [] } }),
+      titleVisibility: .visible
+    ) {
+      Button("Rebase with an agent") { fixConflicts() }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text(conflictMessage)
+    }
     .sheet(isPresented: $changingBase) {
       BaseBranchSheet(sessionId: sessionId, current: session?.baseBranch) { branch in
         Task {
@@ -200,7 +214,7 @@ public struct LandWorkCard: View {
       label: busy == "merge" ? "Merging…" : "Merge into \(session?.baseBranch ?? "base")",
       tone: hasUncommitted || !blockers.isEmpty ? .secondary : .primary, small: true,
       icon: Icon.merge, hugs: hugs
-    ) { confirmingMerge = true }
+    ) { checkThenMerge() }
     .disabled(busy != nil || !blockers.isEmpty)
   }
 
@@ -218,6 +232,37 @@ public struct LandWorkCard: View {
       guard let result else { return }
       note = "Pushed \(result.branch) to \(result.remote)."
       await finish()
+    }
+  }
+
+  /// A merge that would conflict offers an agent to rebase and resolve it, rather than failing.
+  private func checkThenMerge() {
+    busy = "merge"
+    Task {
+      let files = await host.mergeConflicts(sessionId: sessionId)
+      busy = nil
+      if files.isEmpty { confirmingMerge = true } else { conflicts = files }
+    }
+  }
+
+  private var conflictTitle: String {
+    "\(conflicts.count == 1 ? "1 file conflicts" : "\(conflicts.count) files conflict") with \(baseLabel)"
+  }
+
+  private var conflictMessage: String {
+    let shown = conflicts.prefix(5).map { ($0 as NSString).lastPathComponent }.joined(separator: ", ")
+    let more = conflicts.count > 5 ? " and \(conflicts.count - 5) more" : ""
+    return "\(shown)\(more). An agent can rebase onto \(baseLabel) and resolve them; you merge once it's done."
+  }
+
+  private func fixConflicts() {
+    busy = "merge"
+    Task {
+      let agentId = await host.fixConflicts(sessionId: sessionId)
+      busy = nil
+      guard let agentId else { return }
+      note = "An agent is rebasing onto \(baseLabel) to resolve the conflicts."
+      onAgentStarted?(agentId)
     }
   }
 
