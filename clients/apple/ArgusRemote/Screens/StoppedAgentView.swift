@@ -38,6 +38,7 @@ struct StoppedAgentView: View {
       AgentTranscriptView(agentKey: key, isLive: false) { working in
         Telemetry.capture(.transcriptWorkLogOpened(working: working))
       }
+      .artifactSheet { Telemetry.capture(.artifactOpened) }
       // A saved chat only copies; there is no live conversation to edit or fork.
       .environment(
         \.messageMenu,

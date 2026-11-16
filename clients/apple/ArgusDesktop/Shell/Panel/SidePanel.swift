@@ -83,6 +83,10 @@ private struct SidePanelTabContent: View {
       RuntimePanel(sessionId: sessionId, browser: true)
     case .terminal:
       EmptyView()
+    case .artifact:
+      if let link = tab.artifact {
+        ArtifactViewer(link: link).id(link.url)
+      }
     case .huddleChat:
       if let sessionId, let room = model.huddleRoom(session: sessionId) {
         HuddleChatPanel(huddles: model.huddles, room: room)
@@ -112,7 +116,7 @@ private struct SidePanelEmpty: View {
   var body: some View {
     EmptyState(icon: "sidebar.right", title: "Nothing open", body: "Open a tab from + or one of these.") {
       VStack(spacing: 6) {
-        ForEach(PanelTabKind.allCases.filter(model.panelKindAvailable), id: \.self) { kind in
+        ForEach(PanelTabKind.openable.filter(model.panelKindAvailable), id: \.self) { kind in
           Button {
             model.addPanelTab(kind, via: .button)
           } label: {

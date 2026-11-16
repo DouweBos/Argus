@@ -27,6 +27,8 @@ public struct HostStoreHooks: Sendable {
   public var sessionIsRemote: @MainActor @Sendable (_ sessionId: String) -> Bool = { _ in false }
   /// The backend's connection went up or down on its own (not an attach or detach).
   public var connectionChanged: @MainActor @Sendable (Transport.State) -> Void = { _ in }
+  /// An agent just published or opened an Artifact; live deltas only, never a loaded page.
+  public var artifactShown: @MainActor @Sendable (_ agentId: String, _ link: ArtifactLink) -> Void = { _, _ in }
 
   public init(
     track: @escaping @MainActor @Sendable (StoreEvent) -> Void = { _ in },

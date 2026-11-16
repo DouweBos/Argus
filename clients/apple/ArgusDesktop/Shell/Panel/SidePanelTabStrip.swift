@@ -55,7 +55,7 @@ struct SidePanelTabStrip: View {
 
   private var addMenu: some View {
     ChromeMenuButton {
-      for kind in PanelTabKind.allCases {
+      for kind in PanelTabKind.openable {
         ChromeMenuItem(
           kind.title, icon: .symbol(kind.symbol), disabled: !model.panelKindAvailable(kind), key: kind.key
         ) { model.addPanelTab(kind, via: .tabMenu) }
@@ -95,6 +95,7 @@ struct SidePanelTabStrip: View {
 
   private func title(_ tab: PanelTab, terminal: TerminalsStore.Tab?) -> String {
     if let terminal { return terminal.title }
+    if let artifact = tab.artifact { return artifact.title }
     if tab.kind == .pullRequest, let session = sessionId.flatMap(model.session),
       let pr = model.sessionPullRequest(session)
     {

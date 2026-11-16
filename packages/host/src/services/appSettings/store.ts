@@ -72,6 +72,11 @@ export interface AppSettings {
    */
   follow_up_suggestions?: boolean;
   /**
+   * Give Claude Code agents the Artifact tools, which publish pages to
+   * claude.ai. Defaults to true; the CLI leaves them off for `--print` runs.
+   */
+  claude_artifacts?: boolean;
+  /**
    * How drafted commit messages and pull requests are styled: the repository's
    * recent subjects and CLAUDE.md/AGENTS.md, or `commit_message_instructions`.
    * Defaults to `conventions`.

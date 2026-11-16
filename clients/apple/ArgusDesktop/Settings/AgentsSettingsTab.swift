@@ -40,6 +40,19 @@ struct AgentsSettingsTab: View {
         }
       }
 
+      Section("Artifacts") {
+        if let settings = host.settings {
+          VStack(alignment: .leading, spacing: 4) {
+            Toggle("Let Claude Code publish artifacts", isOn: claudeArtifacts(settings))
+            SettingsCaption(
+              "Claude Code agents can publish pages to claude.ai as Artifacts, which open in the side panel. "
+                + "Sign in to claude.ai there once to see them. Applies to agents started from now on.")
+          }
+        } else {
+          SettingsLoading()
+        }
+      }
+
       Section("Warm agents") {
         if let settings = host.settings {
           VStack(alignment: .leading, spacing: 4) {
@@ -137,6 +150,18 @@ struct AgentsSettingsTab: View {
         Task {
           await host.save(.followUpSuggestions, ["follow_up_suggestions": .bool(next)]) {
             $0.followUpSuggestions = next
+          }
+        }
+      })
+  }
+
+  private func claudeArtifacts(_ settings: ArgusProtocol.AppSettings) -> Binding<Bool> {
+    Binding(
+      get: { settings.claudeArtifacts != false },
+      set: { next in
+        Task {
+          await host.save(.claudeArtifacts, ["claude_artifacts": .bool(next)]) {
+            $0.claudeArtifacts = next
           }
         }
       })

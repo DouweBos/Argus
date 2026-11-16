@@ -274,11 +274,22 @@ function onHostEvent(channel: string, payload: unknown): void {
     case "session:updated":
       reconcile();
       break;
-    case PREFS_CHANGED:
-      if ((payload as PrefsChange | null)?.settings?.includes("warm_agents")) {
+    case PREFS_CHANGED: {
+      const changed = (payload as PrefsChange | null)?.settings ?? [];
+      // A spare's CLI was started with the old Artifact env.
+      if (changed.includes("claude_artifacts")) {
+        for (const sessionId of warmSessions()) {
+          discardSpare(sessionId, "config");
+        }
+      }
+      if (
+        changed.includes("warm_agents") ||
+        changed.includes("claude_artifacts")
+      ) {
         reconcile();
       }
       break;
+    }
   }
 }
 

@@ -26,6 +26,10 @@ public enum ToolCallSummary {
         input["description"]?.stringValue ?? input["query"]?.stringValue ?? "", 60)
     case "WebFetch":
       return clip(input["url"]?.stringValue ?? "", 60)
+    case "Artifact":
+      let action = input["action"]?.stringValue ?? "publish"
+      let target = input["file_path"]?.stringValue ?? input["url"]?.stringValue ?? ""
+      return target.isEmpty ? action : "\(action) \(clip(target, 60))"
     case "Agent":
       let type = input["subagent_type"]?.stringValue ?? "agent"
       let description = input["description"]?.stringValue ?? ""

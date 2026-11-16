@@ -19,6 +19,7 @@ import type {
 import { spawn, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { info } from "@argus/host/logger";
+import { loadAppSettings } from "../../../appSettings/store";
 import { ClaudeCodeHandle } from "./handle";
 import { runClaudePrint } from "./oneShot";
 import { toClaudePermissionMode } from "./permissionModes";
@@ -31,6 +32,19 @@ import {
 const execFileAsync = promisify(execFile);
 
 const CLAUDE_BIN = "claude";
+
+/**
+ * The CLI turns its Artifact tools off for `--print` runs unless asked. Argus
+ * shows them in its own panel, so the CLI must not open a browser as well.
+ */
+export function artifactEnv(): Record<string, string> {
+  const enabled = loadAppSettings().claude_artifacts !== false;
+
+  return {
+    CLAUDE_CODE_ARTIFACT: enabled ? "1" : "0",
+    CLAUDE_CODE_ARTIFACT_AUTO_OPEN: "0",
+  };
+}
 
 export class ClaudeCodeRunner implements LlmRunner {
   readonly id = "claude-code";
@@ -124,6 +138,7 @@ export class ClaudeCodeRunner implements LlmRunner {
       env: {
         ...(args.env ?? process.env),
         CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS: "1",
+        ...artifactEnv(),
       },
     });
 

@@ -331,6 +331,8 @@ enum MacTelemetryEvent {
   case panelToggled(shown: Bool, via: PanelSource)
   /// A side panel tab was opened or brought to the front.
   case panelTabOpened(kind: PanelTabKind, via: PanelSource)
+  /// An Artifact an agent published or opened was shown in the side panel.
+  case artifactOpened(via: ArtifactSource)
   case devicePower(action: PowerAction, platform: String)
   /// The cost prompt before booting a stopped EAS Simulator device was answered.
   case easSessionStartPrompted(outcome: EasPromptOutcome)
@@ -474,6 +476,7 @@ enum MacTelemetryEvent {
     case .devicePopoutOpened: "mac_device_popout_opened"
     case .panelToggled: "mac_panel_toggled"
     case .panelTabOpened: "mac_panel_tab_opened"
+    case .artifactOpened: "mac_artifact_opened"
     case .devicePower: "mac_device_power"
     case .easSessionStartPrompted: "mac_eas_session_start_prompted"
     case .browserUsed: "mac_browser_used"
@@ -647,6 +650,8 @@ enum MacTelemetryEvent {
       ["shown": shown, "via": via.rawValue]
     case .panelTabOpened(let kind, let via):
       ["kind": kind.rawValue, "via": via.rawValue]
+    case .artifactOpened(let via):
+      ["via": via.rawValue]
     case .devicePower(let action, let platform):
       ["action": action.rawValue, "platform": platform]
     case .easSessionStartPrompted(let outcome):

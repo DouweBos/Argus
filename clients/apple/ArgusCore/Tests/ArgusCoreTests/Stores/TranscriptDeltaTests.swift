@@ -187,3 +187,23 @@ struct TranscriptDeltaTests {
     #expect(await eventually { texts(store) == ["five", "six"] })
   }
 }
+
+@Suite("Artifacts a delta shows")
+struct NewArtifactsTests {
+  private func message(_ status: RemoteToolStatus) -> RemoteMessage {
+    let result = status == .done ? #"{"type":"text","text":"Published plan.html at https://claude.ai/artifact/abc123"}"# : ""
+    let json = #"""
+      {"id":"m1","role":"assistant","text_blocks":[],"tool_calls":[{"id":"t1","name":"Artifact",
+      "input":{"file_path":"/tmp/plan.html"},"result_blocks":[\#(result)],"status":"\#(status.rawValue)"}]}
+      """#
+    return try! JSONDecoder().decode(RemoteMessage.self, from: Data(json.utf8))
+  }
+
+  @Test("a publish shows once, when it finishes")
+  func once() {
+    #expect(HostStore.newArtifacts(in: [message(.running)], before: []).isEmpty)
+    let shown = HostStore.newArtifacts(in: [message(.done)], before: [message(.running)])
+    #expect(shown.map(\.title) == ["plan"])
+    #expect(HostStore.newArtifacts(in: [message(.done)], before: [message(.done)]).isEmpty)
+  }
+}

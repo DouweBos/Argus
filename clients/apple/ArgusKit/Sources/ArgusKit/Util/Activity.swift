@@ -16,6 +16,7 @@ public enum Activity {
 
   static let toolVerbs: [String: String] = [
     "Agent": "Running agent",
+    "Artifact": "Working on artifact",
     "Bash": "Running command",
     "Edit": "Editing file",
     "Glob": "Finding files",

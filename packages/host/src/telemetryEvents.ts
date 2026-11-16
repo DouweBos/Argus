@@ -348,6 +348,10 @@ export interface EventMap {
   eas_session_start_failed: { reason: EasFailure };
   eas_session_started: { wait_bucket: "<1m" | "<3m" | "<10m" | ">=10m" };
   follow_ups_suggested: { count: number; success: boolean };
+  artifact_tool_used: {
+    action: "open" | "other" | "publish" | "read";
+    success: boolean;
+  };
   host_heap_sampled: {
     agents: number;
     heap_limit_bucket: "<25%" | "<50%" | "<75%" | ">=75%";

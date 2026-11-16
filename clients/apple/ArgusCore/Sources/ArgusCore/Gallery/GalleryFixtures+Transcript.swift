@@ -32,6 +32,8 @@ extension GalleryFixtures {
     case handoff
     /// The runner's own slash commands: a bare `/review`, then `/compact` with text after it.
     case command
+    /// A finished turn that published a claude.ai Artifact.
+    case artifact
   }
 
   /// Every reply the agent screen asks for, in `state`. The agent runs as `account`;
@@ -99,7 +101,7 @@ extension GalleryFixtures {
   private static func agentStatus(_ state: TranscriptState) -> [String: Any] {
     let status: String =
       switch state {
-      case .idle, .empty, .limit, .handoff, .command, .expiredQuestion: "idle"
+      case .idle, .empty, .limit, .handoff, .command, .expiredQuestion, .artifact: "idle"
       case .working, .subagents: "running"
       case .permission, .question, .plan: "requires_action"
       case .stopped: "stopped"
@@ -173,6 +175,7 @@ extension GalleryFixtures {
     case .subagents: return conversation + subagents
     case .handoff: return handedOff
     case .command: return commandChat
+    case .artifact: return conversation + published
     }
   }
 
@@ -261,6 +264,24 @@ extension GalleryFixtures {
             ],
             output: "** BUILD SUCCEEDED **"),
         ]),
+    ]
+  }
+
+  /// The widths as a page to share, then a short reply pointing at it.
+  private static var published: [[String: Any]] {
+    [
+      assistant(
+        "a1", 12, text: ["Both builds pass. I put the widths on a page you can share with design."],
+        calls: [
+          call(
+            "a2", "Artifact",
+            [
+              "file_path": "/Users/dev/Projects/Argus/.claude/artifacts/ipad-reading-column.html", "icon": "ruler",
+              "description": "Transcript and composer widths on every iPhone and iPad, before and after.",
+            ],
+            output: "Published ipad-reading-column.html at https://claude.ai/code/artifact/5b0d7c4e-2f61-4a8e-9c3d-8e1f2a7b6c90 (version 1).")
+        ]),
+      assistant("a3", 13, text: ["The page also shows Split View, where the column gives way to the full width."]),
     ]
   }
 

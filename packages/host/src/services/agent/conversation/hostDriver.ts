@@ -26,6 +26,7 @@ import {
 } from "../messageQueue";
 import { runnerCommandFor } from "../runnerCommand";
 import { isSessionViewed } from "../warmPolicy";
+import { observeArtifactCalls } from "./artifactTelemetry";
 import { withBackgroundSettled } from "./background";
 import { parseCliDiagnostic } from "./cliDiagnostics";
 import {
@@ -213,6 +214,7 @@ function streamLine(agentId: string, entry: Tracked, line: string): void {
     return;
   }
   update(agentId, entry, (c) => reduceEvent(c, event));
+  observeArtifactCalls(event);
   if (event.type === "assistant") {
     for (const block of event.message.content ?? []) {
       if (block.type === "tool_use" && isAwaitingAnswerTool(block.name)) {

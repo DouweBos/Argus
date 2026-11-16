@@ -63,6 +63,8 @@ export const AppSettings = z.object({
   automations_enabled: z.boolean().optional(),
   /** Suggest replies after a turn ends, from the agent's last message. Defaults to true. */
   follow_up_suggestions: z.boolean().optional(),
+  /** Let Claude Code agents publish and open claude.ai Artifacts. Defaults to true. */
+  claude_artifacts: z.boolean().optional(),
   /** Style drafted commit messages and PRs follow. Defaults to `conventions`. */
   commit_message_style: z.enum(["conventions", "custom"]).optional(),
   /** The user's own rules, used when the style is `custom`. */

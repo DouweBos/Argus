@@ -1,3 +1,4 @@
+import ArgusCore
 import ArgusUI
 import Foundation
 import Observation
@@ -11,6 +12,11 @@ enum PanelTabKind: String, Codable, CaseIterable {
   case pullRequest = "pull_request"
   case device
   case huddleChat = "huddle_chat"
+  /// An Artifact an agent published; opened from the chat, never from the "+" menu.
+  case artifact
+
+  /// What the "+" menu, the palette and an empty panel offer.
+  static let openable = allCases.filter { $0 != .artifact }
 
   var title: String {
     switch self {
@@ -21,6 +27,7 @@ enum PanelTabKind: String, Codable, CaseIterable {
     case .pullRequest: "Pull Request"
     case .device: "Device"
     case .huddleChat: "Huddle Chat"
+    case .artifact: "Artifact"
     }
   }
 
@@ -33,6 +40,7 @@ enum PanelTabKind: String, Codable, CaseIterable {
     case .pullRequest: "arrow.triangle.pull"
     case .device: Icon.simulator
     case .huddleChat: "bubble.left.and.bubble.right"
+    case .artifact: Icon.artifact
     }
   }
 
@@ -46,6 +54,7 @@ enum PanelTabKind: String, Codable, CaseIterable {
     case .pullRequest: "p"
     case .device: "m"
     case .huddleChat: "h"
+    case .artifact: "a"
     }
   }
 
@@ -55,12 +64,19 @@ enum PanelTabKind: String, Codable, CaseIterable {
 
 struct PanelTab: Codable, Hashable, Identifiable {
   var kind: PanelTabKind
-  /// The PTY a terminal tab shows; terminals are the one kind that come several at a time.
+  /// The PTY a terminal tab shows; terminals and artifacts come several at a time.
   var terminalId: String?
+  /// The page an artifact tab shows.
+  var artifact: ArtifactLink?
 
-  var id: String { terminalId.map { "terminal:\($0)" } ?? kind.rawValue }
+  var id: String {
+    if let terminalId { return "terminal:\(terminalId)" }
+    if let artifact { return "artifact:\(artifact.url.absoluteString)" }
+    return kind.rawValue
+  }
 
   static func terminal(_ id: String) -> PanelTab { PanelTab(kind: .terminal, terminalId: id) }
+  static func artifact(_ link: ArtifactLink) -> PanelTab { PanelTab(kind: .artifact, artifact: link) }
 }
 
 /// One session's side panel, as it was left.
@@ -138,7 +154,10 @@ final class SidePanelModel {
   func show(_ tab: PanelTab, session: String?, terminals: [String]?) {
     update(session) { state in
       state.tabs = Self.tabs(state.tabs, terminals: terminals)
-      if !state.tabs.contains(tab) {
+      if let at = state.tabs.firstIndex(where: { $0.id == tab.id }) {
+        // A republished artifact may have a new title.
+        state.tabs[at] = tab
+      } else {
         let after = state.tabs.firstIndex { $0.id == state.selected }.map { $0 + 1 } ?? state.tabs.endIndex
         state.tabs.insert(tab, at: after)
       }

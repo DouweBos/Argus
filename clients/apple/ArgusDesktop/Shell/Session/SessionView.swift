@@ -351,6 +351,9 @@ struct AgentPane: View {
         agentKey: agentId, sessionId: sessionId, fixture: TranscriptStress.fixture,
         showsEmptyState: TranscriptStress.fixture != nil
       )
+        .environment(\.openArtifact) { [model, sessionId] link in
+          model.showArtifact(link, session: sessionId, via: .chat)
+        }
         .onDrop(of: ComposerDropInbox.types, isTargeted: $dropTargeted, perform: drops.accept)
         .overlay {
           if dropTargeted {

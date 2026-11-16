@@ -56,6 +56,8 @@ public struct ToolCallCard: View {
   public var body: some View {
     if ToolGroups.isPushNotification(call) {
       PushNotificationCard(call: call)
+    } else if let link = ArtifactLink.from(call) {
+      ArtifactCard(link: link, call: call)
     } else {
       card
     }

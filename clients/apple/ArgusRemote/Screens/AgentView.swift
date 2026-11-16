@@ -46,6 +46,7 @@ struct AgentView: View {
       AgentTranscriptView(agentKey: agentId, isLive: !isGone) { working in
         Telemetry.capture(.transcriptWorkLogOpened(working: working))
       }
+      .artifactSheet { Telemetry.capture(.artifactOpened) }
       .environment(\.messageMenu, messageMenu)
       if isGone {
         stoppedFooter

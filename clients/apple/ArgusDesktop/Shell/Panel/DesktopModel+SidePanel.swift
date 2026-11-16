@@ -103,6 +103,19 @@ extension DesktopModel {
     }
   }
 
+  /// An Artifact in front in its session's panel, in a tab of its own.
+  func showArtifact(_ link: ArtifactLink, session: String, via: MacTelemetryEvent.ArtifactSource) {
+    panels.show(.artifact(link), session: session, terminals: panelTerminalIds(session))
+    MacTelemetry.capture(.artifactOpened(via: via))
+  }
+
+  /// The agent published or opened one: show it as Claude's own app does.
+  func artifactShown(agentId: String, link: ArtifactLink) {
+    guard let session = store.agentsByRepo.values.joined().first(where: { $0.agentId == agentId })?.sessionId
+    else { return }
+    showArtifact(link, session: session, via: .auto)
+  }
+
   /// A run's output, or any one terminal, in front in its session's panel.
   func showTerminal(_ terminalId: String, session: String) {
     terminals.select(terminalId, in: session)

@@ -20,7 +20,7 @@ public enum ToolGroups {
     else { return false }
     return !message.toolCalls.contains {
       substantive.contains($0.name) || isPushNotification($0) || awaitsDecision($0)
-        || (hoistImageReads && isImageRead($0))
+        || ArtifactLink.action(of: $0) != nil || (hoistImageReads && isImageRead($0))
     }
   }
 
@@ -104,11 +104,12 @@ public enum ToolGroups {
   }
 
   /// What a turn's work log never folds away: errors, decisions waiting on
-  /// you, a push to your phone, and messages from another agent or tool.
+  /// you, a push to your phone, an Artifact, and messages from another agent or tool.
   public static func staysOpen(_ message: RemoteMessage, hoistImageReads: Bool = false) -> Bool {
     message.isError == true || message.source != nil || message.author != nil
       || message.toolCalls.contains {
-        isPushNotification($0) || awaitsDecision($0) || (hoistImageReads && isImageRead($0))
+        isPushNotification($0) || awaitsDecision($0) || ArtifactLink.action(of: $0) != nil
+          || (hoistImageReads && isImageRead($0))
       }
   }
 

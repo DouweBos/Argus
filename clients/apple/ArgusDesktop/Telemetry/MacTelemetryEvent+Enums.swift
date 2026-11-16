@@ -164,6 +164,12 @@ extension MacTelemetryEvent {
     case mouse
   }
 
+  /// What put an Artifact in the side panel: the agent publishing or opening it, or its card in the chat.
+  enum ArtifactSource: String {
+    case auto
+    case chat
+  }
+
   /// Where the side panel was shown, hidden or given a tab from.
   enum PanelSource: String {
     /// The toolbar's panel button, or the panel's own close button.

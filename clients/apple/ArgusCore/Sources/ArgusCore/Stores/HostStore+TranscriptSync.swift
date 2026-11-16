@@ -102,6 +102,7 @@ extension HostStore {
     let existing = messagesByAgent[key] ?? []
     let next = Self.applying(delta, to: existing, olderUnloaded: prevBeforeByAgent[key] != nil)
     if next != existing { messagesByAgent[key] = next }
+    for link in Self.newArtifacts(in: delta.messages, before: existing) { hooks.artifactShown(key, link) }
     reconcileOptimistic(for: key, against: next)
 
     if tasksByAgent[key] != delta.tasks { tasksByAgent[key] = delta.tasks }
@@ -110,6 +111,14 @@ extension HostStore {
     if pendingToolByAgent[key] != delta.pendingToolName { pendingToolByAgent[key] = delta.pendingToolName }
     if let title = delta.title { patchStatus(key) { $0.title = title } }
     if let model = delta.model { patchStatus(key) { $0.model = model } }
+  }
+
+  /// Artifacts whose publish or open finished in these messages, not already finished before.
+  public nonisolated static func newArtifacts(in messages: [RemoteMessage], before existing: [RemoteMessage]) -> [ArtifactLink] {
+    let calls = messages.flatMap(\.toolCalls).filter { ArtifactLink.action(of: $0) != nil }
+    guard !calls.isEmpty else { return [] }
+    let shown = Set(existing.flatMap(\.toolCalls).filter { ArtifactLink.from($0) != nil }.map(\.id))
+    return calls.filter { !shown.contains($0.id) }.compactMap(ArtifactLink.from)
   }
 
   /// An empty or missing list clears the agent's suggestions.
