@@ -111,6 +111,10 @@ export interface Session {
   design_refs?: DesignRef[] | null;
   /** Set while the session is one slot of a compare run. */
   compare_group?: SessionCompareGroup | null;
+  /** The project won't push this session's branch: it's the protected default branch. */
+  push_locked?: boolean;
+  /** The session's base is protected, so it lands through a pull request, not a merge. */
+  merge_locked?: boolean;
   /**
    * A worktree made outside Argus and adopted from disk: the project's setup
    * never ran in it. Cleared once setup runs or the user marks it ready.
@@ -363,6 +367,11 @@ export interface ArgusConfig {
    */
   auto_continue_on_limit?: boolean | null;
   /**
+   * When true, the repo's default branch is treated as protected and is
+   * never pushed from Argus: sessions open a pull request instead.
+   */
+  protect_default_branch?: boolean | null;
+  /**
    * Glob-driven release-note patterns surfaced on the session home screen.
    * An alternative to `@changesets/cli` for projects that keep release
    * notes as plain text / structured files (e.g. one `.txt` per ticket).
@@ -488,6 +497,7 @@ export function defaultArgusConfig(): ArgusConfig {
     default_base_branch: null,
     single_runtime: false,
     auto_continue_on_limit: false,
+    protect_default_branch: false,
     release_note_patterns: [],
     simulator_deeplinks: [],
     auto_fetch_minutes: null,

@@ -86,6 +86,7 @@ tool also save to this Mac, never to the repo.
 | `single_runtime`                            | yes (Run commands)      |
 | `auto_continue_on_limit`                    | yes (Agent)             |
 | `protected_branches`, `default_base_branch` | yes (Branch protection) |
+| `protect_default_branch`                    | yes (Branch protection) |
 | `release_note_patterns`                     | yes (Release notes)     |
 | `simulator_deeplinks`                       | yes (Deep links)        |
 | `auto_fetch_minutes`                        | yes (Branch protection) |
@@ -111,6 +112,7 @@ tool also save to this Mac, never to the repo.
   "simulator_deeplinks": [{ "label": "Profile", "url": "myapp://profile/123" }],
   "auto_continue_on_limit": false,
   "protected_branches": ["main", "master"],
+  "protect_default_branch": false,
   "default_base_branch": "staging",
   "single_runtime":     false,
   "auto_fetch_minutes": 15,
@@ -345,6 +347,20 @@ directly — instead they surface a _Push & open PR_ flow.
 ```
 
 The default config Argus generates includes `["main", "master"]`.
+
+---
+
+## `protect_default_branch` — never push or merge into the default branch
+
+When on, the repo's default branch (what `origin/HEAD` points at, else
+`main`, else `master`) counts as a protected branch, and Argus never pushes
+it: sessions hide **Push** while they're on it and **Merge into …** when it's
+their base, so work lands through a pull request. Argus refuses those pushes
+and merges from anywhere else too, with a message saying why. Off by default.
+
+```jsonc
+"protect_default_branch": true
+```
 
 ---
 

@@ -47,6 +47,7 @@ struct ArgusConfigDraftTests {
                                 { "label": "F", "children": [{ "label": "C", "url": "app://c" }] }],
         "auto_continue_on_limit": true,
         "protected_branches": ["main"],
+        "protect_default_branch": true,
         "default_base_branch": "staging",
         "single_runtime": true,
         "auto_fetch_minutes": 15,

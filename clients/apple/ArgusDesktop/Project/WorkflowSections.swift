@@ -10,6 +10,13 @@ struct BranchProtectionSection: View {
       title: "Branch protection",
       text: "Sessions whose base branch matches a protected branch are merged through a pull request instead of a direct merge."
     )
+    Section {
+      Toggle("Protect the default branch", isOn: $draft.protectDefaultBranch)
+    } footer: {
+      Text(
+        "Sessions never push the repo's default branch or merge into it: Push and Merge are hidden, and work lands through a pull request."
+      )
+    }
     StringListEditor(
       label: "Protected branches", items: $draft.protectedBranches, placeholder: "main",
       emptyLabel: "No protected branches")

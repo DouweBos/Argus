@@ -1853,6 +1853,7 @@ extension ArgusProtocol {
     public var defaultBaseBranch: String?
     public var singleRuntime: Bool?
     public var autoContinueOnLimit: Bool?
+    public var protectDefaultBranch: Bool?
     public var releaseNotePatterns: [ReleaseNotePatternConfig]
     public var simulatorDeeplinks: [SimulatorDeeplinkConfig]
     public var autoFetchMinutes: Double?
@@ -1873,6 +1874,7 @@ extension ArgusProtocol {
       case defaultBaseBranch = "default_base_branch"
       case singleRuntime = "single_runtime"
       case autoContinueOnLimit = "auto_continue_on_limit"
+      case protectDefaultBranch = "protect_default_branch"
       case releaseNotePatterns = "release_note_patterns"
       case simulatorDeeplinks = "simulator_deeplinks"
       case autoFetchMinutes = "auto_fetch_minutes"
@@ -1881,7 +1883,7 @@ extension ArgusProtocol {
       case automations = "automations"
     }
 
-    public init(setup: ArgusSetupConfig, teardown: TeardownConfig? = nil, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], protectedBranches: [String], defaultBaseBranch: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
+    public init(setup: ArgusSetupConfig, teardown: TeardownConfig? = nil, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], protectedBranches: [String], defaultBaseBranch: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, protectDefaultBranch: Bool? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
       self.setup = setup
       self.teardown = teardown
       self.terminals = terminals
@@ -1894,6 +1896,7 @@ extension ArgusProtocol {
       self.defaultBaseBranch = defaultBaseBranch
       self.singleRuntime = singleRuntime
       self.autoContinueOnLimit = autoContinueOnLimit
+      self.protectDefaultBranch = protectDefaultBranch
       self.releaseNotePatterns = releaseNotePatterns
       self.simulatorDeeplinks = simulatorDeeplinks
       self.autoFetchMinutes = autoFetchMinutes
@@ -1916,6 +1919,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(defaultBaseBranch, forKey: .defaultBaseBranch)
       try c.encodeIfPresent(singleRuntime, forKey: .singleRuntime)
       try c.encodeIfPresent(autoContinueOnLimit, forKey: .autoContinueOnLimit)
+      try c.encodeIfPresent(protectDefaultBranch, forKey: .protectDefaultBranch)
       try c.encode(releaseNotePatterns, forKey: .releaseNotePatterns)
       try c.encode(simulatorDeeplinks, forKey: .simulatorDeeplinks)
       try c.encodeIfPresent(autoFetchMinutes, forKey: .autoFetchMinutes)
@@ -16354,6 +16358,8 @@ extension ArgusProtocol {
     public var snoozedUntil: Double?
     public var unread: Bool?
     public var compareGroup: SessionCompareGroup?
+    public var pushLocked: Bool?
+    public var mergeLocked: Bool?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -16380,9 +16386,11 @@ extension ArgusProtocol {
       case snoozedUntil = "snoozed_until"
       case unread = "unread"
       case compareGroup = "compare_group"
+      case pushLocked = "push_locked"
+      case mergeLocked = "merge_locked"
     }
 
-    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, deleteFailed: RemoteSessionDeleteFailed? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, settled: Bool? = nil, snoozedUntil: Double? = nil, unread: Bool? = nil, compareGroup: SessionCompareGroup? = nil) {
+    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, deleteFailed: RemoteSessionDeleteFailed? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, settled: Bool? = nil, snoozedUntil: Double? = nil, unread: Bool? = nil, compareGroup: SessionCompareGroup? = nil, pushLocked: Bool? = nil, mergeLocked: Bool? = nil) {
       self.id = id
       self.repoRoot = repoRoot
       self.kind = kind
@@ -16407,6 +16415,8 @@ extension ArgusProtocol {
       self.snoozedUntil = snoozedUntil
       self.unread = unread
       self.compareGroup = compareGroup
+      self.pushLocked = pushLocked
+      self.mergeLocked = mergeLocked
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -16435,6 +16445,8 @@ extension ArgusProtocol {
       try c.encodeIfPresent(snoozedUntil, forKey: .snoozedUntil)
       try c.encodeIfPresent(unread, forKey: .unread)
       try c.encodeIfPresent(compareGroup, forKey: .compareGroup)
+      try c.encodeIfPresent(pushLocked, forKey: .pushLocked)
+      try c.encodeIfPresent(mergeLocked, forKey: .mergeLocked)
     }
   }
 
@@ -18155,6 +18167,8 @@ extension ArgusProtocol {
     public var branch: String
     public var claudeAccountId: String?
     public var compareGroup: SessionCompareGroup?
+    public var pushLocked: Bool?
+    public var mergeLocked: Bool?
     public var description: String
     public var displayName: String?
     public var envIndex: Double?
@@ -18183,6 +18197,8 @@ extension ArgusProtocol {
       case branch = "branch"
       case claudeAccountId = "claude_account_id"
       case compareGroup = "compare_group"
+      case pushLocked = "push_locked"
+      case mergeLocked = "merge_locked"
       case description = "description"
       case displayName = "display_name"
       case envIndex = "env_index"
@@ -18205,13 +18221,15 @@ extension ArgusProtocol {
       case volume = "volume"
     }
 
-    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, branch: String, claudeAccountId: String? = nil, compareGroup: SessionCompareGroup? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, deleteFailed: SessionDeleteFailed? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
+    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, branch: String, claudeAccountId: String? = nil, compareGroup: SessionCompareGroup? = nil, pushLocked: Bool? = nil, mergeLocked: Bool? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, deleteFailed: SessionDeleteFailed? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
       self.availability = availability
       self.baseBranch = baseBranch
       self.parentSessionId = parentSessionId
       self.branch = branch
       self.claudeAccountId = claudeAccountId
       self.compareGroup = compareGroup
+      self.pushLocked = pushLocked
+      self.mergeLocked = mergeLocked
       self.description = description
       self.displayName = displayName
       self.envIndex = envIndex
@@ -18242,6 +18260,8 @@ extension ArgusProtocol {
       try c.encode(branch, forKey: .branch)
       try c.encodeIfPresent(claudeAccountId, forKey: .claudeAccountId)
       try c.encodeIfPresent(compareGroup, forKey: .compareGroup)
+      try c.encodeIfPresent(pushLocked, forKey: .pushLocked)
+      try c.encodeIfPresent(mergeLocked, forKey: .mergeLocked)
       try c.encode(description, forKey: .description)
       try c.encodeIfPresent(displayName, forKey: .displayName)
       try c.encodeIfPresent(envIndex, forKey: .envIndex)

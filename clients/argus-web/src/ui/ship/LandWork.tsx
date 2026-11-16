@@ -170,9 +170,9 @@ export function LandWork({
         clean={dirty === 0}
         blockers={blockers}
         pushLabel={pushLabel(status?.ahead)}
-        onPush={() => void push()}
+        onPush={session?.push_locked ? undefined : () => void push()}
         onOpenPullRequest={session ? () => setAsking("pr") : undefined}
-        onMerge={() => setAsking("merge")}
+        onMerge={session?.merge_locked ? undefined : () => setAsking("merge")}
         busy={busy}
       >
         <CommitForm

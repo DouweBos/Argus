@@ -555,6 +555,8 @@ function toRemoteSession(s: Session): RemoteSession {
     pull_request_watched: isPullRequestWatched(s.id),
     ...sessionTriage(s.id),
     compare_group: s.compare_group ?? null,
+    push_locked: s.push_locked ?? false,
+    merge_locked: s.merge_locked ?? false,
   };
 }
 

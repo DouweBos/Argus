@@ -36,7 +36,7 @@ describe("readDefaultBranch", () => {
     return dir;
   }
 
-  it("follows origin/HEAD", async () => {
+  it("follows origin/HEAD", () => {
     const dir = repo();
     execFileSync("git", [
       "-C",
@@ -46,20 +46,31 @@ describe("readDefaultBranch", () => {
       "refs/remotes/origin/trunk",
     ]);
 
-    await expect(readDefaultBranch(dir, ["a", "main", "trunk"])).resolves.toBe(
-      "trunk",
-    );
+    expect(readDefaultBranch(dir, ["a", "main", "trunk"])).toBe("trunk");
   });
 
-  it("falls back to main, then master, without a remote", async () => {
+  it("falls back to main, then master, without a remote", () => {
     const dir = repo();
 
-    await expect(readDefaultBranch(dir, ["a", "master", "main"])).resolves.toBe(
-      "main",
-    );
-    await expect(readDefaultBranch(dir, ["a", "master"])).resolves.toBe(
-      "master",
-    );
-    await expect(readDefaultBranch(dir, ["a"])).resolves.toBeNull();
+    expect(readDefaultBranch(dir, ["a", "master", "main"])).toBe("main");
+    expect(readDefaultBranch(dir, ["a", "master"])).toBe("master");
+    expect(readDefaultBranch(dir, ["a"])).toBeNull();
+  });
+
+  it("finds main or master among the repo's own branches when not given any", () => {
+    const dir = repo();
+    execFileSync("git", [
+      "-C",
+      dir,
+      "commit",
+      "-q",
+      "--allow-empty",
+      "-m",
+      "x",
+    ]);
+    execFileSync("git", ["-C", dir, "branch", "master"]);
+    execFileSync("git", ["-C", dir, "pack-refs", "--all"]);
+
+    expect(readDefaultBranch(dir)).toBe("master");
   });
 });

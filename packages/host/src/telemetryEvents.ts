@@ -451,6 +451,7 @@ export interface EventMap {
   };
   onboarding_completed: undefined;
   project_config_local_migrated: { success: boolean };
+  default_branch_push_refused: undefined;
   project_config_transferred: {
     action: "export" | "import";
     outcome: "invalid_config" | "invalid_json" | "success";

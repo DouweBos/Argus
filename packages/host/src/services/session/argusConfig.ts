@@ -23,7 +23,8 @@ import {
   mergeConfig,
   parseArgusConfig,
 } from "./argusConfigParse";
-import { type ArgusConfig, defaultArgusConfig } from "./models";
+import { readDefaultBranch } from "./defaultBranch";
+import { type ArgusConfig, defaultArgusConfig, type Session } from "./models";
 
 type RawConfig = Record<string, unknown>;
 
@@ -75,7 +76,8 @@ export function loadArgusConfig(dir: string): ArgusConfig {
 
 /**
  * Return true when `branch` is listed as a protected branch in the project's
- * config. Used to gate the direct merge flow.
+ * config, or is the default branch of a project that protects it. Used to
+ * gate the direct merge flow.
  */
 export function isBranchProtected(
   repoRoot: string,
@@ -85,9 +87,66 @@ export function isBranchProtected(
     return false;
   }
   try {
-    return loadArgusConfig(repoRoot).protected_branches.includes(branch);
+    const config = loadArgusConfig(repoRoot);
+
+    return (
+      config.protected_branches.includes(branch) ||
+      (config.protect_default_branch === true &&
+        readDefaultBranch(repoRoot) === branch)
+    );
   } catch {
     return false;
+  }
+}
+
+/** True when the project protects its default branch and `branch` is it. */
+export function isPushLocked(
+  repoRoot: string,
+  branch: string | null | undefined,
+): boolean {
+  if (!branch) {
+    return false;
+  }
+  try {
+    return (
+      loadArgusConfig(repoRoot).protect_default_branch === true &&
+      readDefaultBranch(repoRoot) === branch
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Refuse a session's push the project's settings rule out. `ref` is what
+ * git is told to push; absent, or `HEAD`, it is the session's own branch.
+ */
+export function assertSessionPushAllowed(id: string, ref?: string): void {
+  const ws = appState.sessions.get(id);
+  if (!ws) {
+    return;
+  }
+  const target = ref
+    ?.split(":")
+    .pop()
+    ?.replace(/^refs\/heads\//, "");
+  assertPushAllowed(
+    ws.repo_root,
+    !target || target === "HEAD" ? ws.branch : target,
+  );
+}
+
+/** Refuse a push the project's settings rule out. */
+export function assertPushAllowed(
+  repoRoot: string,
+  branch: string | null | undefined,
+): void {
+  if (isPushLocked(repoRoot, branch)) {
+    capture("default_branch_push_refused");
+    throw (
+      `This project doesn't push '${branch}' from Argus. ` +
+      `Push a branch of your own and open a pull request instead.`
+    );
   }
 }
 
@@ -312,4 +371,34 @@ function withoutNulls(raw: RawConfig): RawConfig {
   return Object.fromEntries(
     Object.entries(raw).filter(([, v]) => v !== null && v !== undefined),
   );
+}
+
+/**
+ * Marks a repo's sessions with what the project won't let them do with their
+ * branches. The config and default branch are read once for the whole list.
+ */
+export function landingLocks(repoRoot: string): (session: Session) => Session {
+  let config: ArgusConfig | null = null;
+  try {
+    config = loadArgusConfig(repoRoot);
+  } catch {
+    // An unreadable config locks nothing.
+  }
+  const protectedSet = new Set(config?.protected_branches ?? []);
+  const lockedDefault =
+    config?.protect_default_branch === true
+      ? readDefaultBranch(repoRoot)
+      : null;
+  if (lockedDefault) {
+    protectedSet.add(lockedDefault);
+  }
+
+  return (session) => ({
+    ...session,
+    push_locked: lockedDefault !== null && session.branch === lockedDefault,
+    merge_locked:
+      session.kind === "worktree" &&
+      !!session.base_branch &&
+      protectedSet.has(session.base_branch),
+  });
 }

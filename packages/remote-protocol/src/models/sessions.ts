@@ -76,6 +76,10 @@ export const Session = z.object({
   claude_account_id: z.string().nullish(),
   /** Set while the session is one slot of a compare run. */
   compare_group: SessionCompareGroup.nullish(),
+  /** The project won't push this session's branch: it's the protected default branch. */
+  push_locked: z.boolean().optional(),
+  /** The session's base is protected, so it lands through a pull request, not a merge. */
+  merge_locked: z.boolean().optional(),
   /** Optional human-readable description for the UI. */
   description: z.string(),
   /** Original display name as entered by the user. Shown in the UI when present. */

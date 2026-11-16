@@ -80,6 +80,10 @@ export const RemoteSession = z.object({
   unread: z.boolean().optional(),
   /** Set while it is one slot of a compare run. Absent on older hosts. */
   compare_group: SessionCompareGroup.nullable().optional(),
+  /** The project won't push this branch: it's the protected default branch. Absent on older hosts. */
+  push_locked: z.boolean().optional(),
+  /** The base is protected, so this lands through a pull request. Absent on older hosts. */
+  merge_locked: z.boolean().optional(),
 });
 export type RemoteSession = z.infer<typeof RemoteSession>;
 

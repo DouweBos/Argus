@@ -8,7 +8,7 @@ extension ArgusConfigDraft {
   static let ownedKeys: Set<String> = [
     "setup", "teardown", "terminals", "run", "workspace_env", "related_projects",
     "browser_url", "browser_presets", "simulator_deeplinks",
-    "auto_continue_on_limit", "protected_branches", "default_base_branch",
+    "auto_continue_on_limit", "protected_branches", "protect_default_branch", "default_base_branch",
     "single_runtime", "auto_fetch_minutes",
     "release_note_patterns", "llm", "tools", "automations",
   ]
@@ -58,6 +58,7 @@ extension ArgusConfigDraft {
     deeplinks = Self.deeplinks(raw["simulator_deeplinks"])
 
     protectedBranches = Self.strings(raw["protected_branches"]).map { ListItem($0) }
+    protectDefaultBranch = raw["protect_default_branch"]?.boolValue ?? false
     defaultBaseBranch = raw["default_base_branch"]?.stringValue ?? ""
     autoFetchMinutes = max(0, raw["auto_fetch_minutes"]?.intValue ?? 0)
     releaseNotes = (raw["release_note_patterns"]?.arrayValue ?? []).compactMap(Self.releasePattern)
@@ -112,6 +113,7 @@ extension ArgusConfigDraft {
     set("simulator_deeplinks", Self.nonEmpty(Self.deeplinkValues(deeplinks)))
     set("auto_continue_on_limit", autoContinueOnLimit ? .bool(true) : nil)
     set("protected_branches", Self.nonEmpty(protectedBranches.map(\.value).filter { !$0.isEmpty }.map(JSONValue.string)))
+    set("protect_default_branch", protectDefaultBranch ? .bool(true) : nil)
     set("default_base_branch", Self.trimmed(defaultBaseBranch))
     set("single_runtime", singleRuntime ? .bool(true) : nil)
     set("auto_fetch_minutes", autoFetchMinutes > 0 ? .number(Double(autoFetchMinutes)) : nil)

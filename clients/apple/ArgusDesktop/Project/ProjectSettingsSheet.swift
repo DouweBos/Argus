@@ -104,7 +104,12 @@ struct ProjectSettingsSheet: View {
       Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
       Button(settings.saving ? "Saving…" : "Save") {
         guard let backend = model.backend else { return }
-        Task { if await settings.save(backend) { dismiss() } }
+        Task {
+          guard await settings.save(backend) else { return }
+          // Sessions carry what the project lets them push and merge.
+          await model.store.loadSessions(repoRoot: settings.repoRoot)
+          dismiss()
+        }
       }
       .buttonStyle(.borderedProminent)
       .keyboardShortcut(.defaultAction)
@@ -216,7 +221,7 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
     case .terminals: ["terminals"]
     case .browser: ["browser_url", "browser_presets"]
     case .deeplinks: ["simulator_deeplinks"]
-    case .branchProtection: ["protected_branches", "default_base_branch", "auto_fetch_minutes"]
+    case .branchProtection: ["protected_branches", "protect_default_branch", "default_base_branch", "auto_fetch_minutes"]
     case .releaseNotes: ["release_note_patterns"]
     case .agent: ["auto_continue_on_limit"]
     case .llm: ["llm"]

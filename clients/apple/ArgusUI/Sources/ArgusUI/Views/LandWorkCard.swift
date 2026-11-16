@@ -79,23 +79,23 @@ public struct LandWorkCard: View {
 
       ViewThatFits(in: .horizontal) {
         HStack(spacing: 8) {
-          pushButton(hugs: true)
+          if session?.pushLocked != true { pushButton(hugs: true) }
           if let openPullRequest {
             Spacer(minLength: 0)
             viewPullRequestButton(openPullRequest, hugs: true)
           } else {
             pullRequestButton(hugs: true)
             Spacer(minLength: 0)
-            mergeButton(hugs: true)
+            if session?.mergeLocked != true { mergeButton(hugs: true) }
           }
         }
         VStack(spacing: 8) {
-          pushButton(hugs: false)
+          if session?.pushLocked != true { pushButton(hugs: false) }
           if let openPullRequest {
             viewPullRequestButton(openPullRequest, hugs: false)
           } else {
             pullRequestButton(hugs: false)
-            mergeButton(hugs: false)
+            if session?.mergeLocked != true { mergeButton(hugs: false) }
           }
         }
       }

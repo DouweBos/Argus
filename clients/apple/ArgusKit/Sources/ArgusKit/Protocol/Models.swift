@@ -82,6 +82,10 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var unread: Bool?
   /// Set while it is one slot of a compare run. Nil on older computers.
   public var compareGroup: RemoteCompareGroup?
+  /// The project won't push this branch: it's the protected default branch. Nil on older computers.
+  public var pushLocked: Bool?
+  /// The base is protected, so this lands through a pull request, not a merge. Nil on older computers.
+  public var mergeLocked: Bool?
 
   public var isUnavailable: Bool { availability == .unavailable }
   /// A scratch pad or automation run: its own folder, no project, no git.
@@ -109,6 +113,8 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case snoozedUntil = "snoozed_until"
     case unread
     case compareGroup = "compare_group"
+    case pushLocked = "push_locked"
+    case mergeLocked = "merge_locked"
   }
 }
 

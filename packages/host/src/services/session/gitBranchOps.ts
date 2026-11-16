@@ -158,8 +158,8 @@ export async function gitListLocalBranches(
             : null,
       };
     });
-  const main = await readDefaultBranch(
-    ws.path,
+  const main = readDefaultBranch(
+    ws.repo_root,
     branches.map((b) => b.name),
   );
 
@@ -207,8 +207,8 @@ export async function gitListRemoteBranches(
     // Drop refs that don't have a `<remote>/<branch>` shape (e.g. a stray
     // `refs/remotes/origin` symbolic-ref pointer with no branch suffix).
     .filter((b) => b.remote.length > 0 && b.branchName.length > 0);
-  const main = await readDefaultBranch(
-    ws.path,
+  const main = readDefaultBranch(
+    ws.repo_root,
     branches.map((b) => b.branchName),
   );
 

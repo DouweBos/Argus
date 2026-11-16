@@ -19,6 +19,8 @@ import { writeDesignFiles } from "../design/files";
 import { sessionPullRequestMayHaveChanged } from "../github/sessionPullRequests";
 import { updateScratchPadRecord } from "../scratchPad/store";
 import {
+  assertPushAllowed,
+  assertSessionPushAllowed,
   getProjectConfig,
   isBranchProtected,
   loadArgusConfig,
@@ -159,7 +161,7 @@ export async function listAllBranches(repoRoot: string): Promise<BranchList> {
   const remote = remoteShort.filter((l) => !localSet.has(l));
   const originRefs = remoteShort.map((l) => `origin/${l}`);
   // Every branch dropdown leads with the default branch: it's the usual pick.
-  const main = await readDefaultBranch(repoRoot, [...local, ...remoteShort]);
+  const main = readDefaultBranch(repoRoot, [...local, ...remoteShort]);
 
   return {
     local: defaultBranchFirst(local, main),
@@ -687,6 +689,7 @@ export async function gitPull(
 
 /** Push to the remote for a session. */
 export async function gitPush(id: string): Promise<string> {
+  assertSessionPushAllowed(id);
   const wt = sessionPath(id);
   const out = await announcingRepoGitStatus(id, () =>
     withGitLock(wt, () => git(wt, ["push"])),
@@ -1406,6 +1409,7 @@ export async function pushSessionBranch(id: string): Promise<{
   if (!ws.branch || ws.branch === "HEAD") {
     throw "Check out a branch before pushing";
   }
+  assertPushAllowed(ws.repo_root, ws.branch);
 
   // Prefer `origin`; fall back to the first configured remote.
   const remoteList = (await git(ws.repo_root, ["remote"]))

@@ -105,14 +105,14 @@ struct SessionContextCard: View {
       ForEach(session.designRefs ?? [], id: \.url) { designRow($0) }
       branchRow
       if ready, (git?.behind ?? 0) > 0 || pulling { pullRow }
-      if ready { pushRow }
+      if ready, session.pushLocked != true { pushRow }
       // Merged, the session's work is done: offer to clean it up instead.
       if store.mergedSessionIds.contains(session.id) {
         deleteRow
       } else if let pr = session.pullRequest, pr.isOpen {
         // An open PR is where the branch lands, so it replaces merging locally.
         pullRequestRow(pr)
-      } else if ready, session.kind == .worktree, session.baseBranch != nil {
+      } else if ready, session.kind == .worktree, session.baseBranch != nil, session.mergeLocked != true {
         mergeRow
       }
       if ready, session.kind == .worktree, session.compareGroup == nil, !store.mergedSessionIds.contains(session.id) {

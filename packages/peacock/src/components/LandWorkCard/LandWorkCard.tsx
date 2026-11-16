@@ -30,9 +30,11 @@ export interface LandWorkCardProps {
   blockers?: string[];
   /** "Push 2 commits". */
   pushLabel: string;
-  onPush: () => void;
+  /** Omitted when the project won't push this branch. */
+  onPush?: () => void;
   onOpenPullRequest?: () => void;
-  onMerge: () => void;
+  /** Omitted when the base only takes pull requests. */
+  onMerge?: () => void;
   busy?: LandWorkBusy;
 }
 
@@ -101,15 +103,17 @@ export function LandWorkCard({
       <div className={styles.divider} />
 
       <div className={styles.actions}>
-        <Button
-          variant="secondary"
-          size="sm"
-          leading={<PushIcon size={12} />}
-          disabled={working}
-          onClick={onPush}
-        >
-          {busy === "push" ? "Pushing…" : pushLabel}
-        </Button>
+        {onPush && (
+          <Button
+            variant="secondary"
+            size="sm"
+            leading={<PushIcon size={12} />}
+            disabled={working}
+            onClick={onPush}
+          >
+            {busy === "push" ? "Pushing…" : pushLabel}
+          </Button>
+        )}
         {onOpenPullRequest && (
           <Button
             variant="secondary"
@@ -123,15 +127,17 @@ export function LandWorkCard({
         )}
         <span className={styles.spacer} />
         {/* The way out once everything is committed, so it leads then. */}
-        <Button
-          variant={clean && !blocked ? "primary" : "secondary"}
-          size="sm"
-          leading={<MergeIcon size={12} />}
-          disabled={working || blocked}
-          onClick={onMerge}
-        >
-          {busy === "merge" ? "Merging…" : `Merge into ${base}`}
-        </Button>
+        {onMerge && (
+          <Button
+            variant={clean && !blocked ? "primary" : "secondary"}
+            size="sm"
+            leading={<MergeIcon size={12} />}
+            disabled={working || blocked}
+            onClick={onMerge}
+          >
+            {busy === "merge" ? "Merging…" : `Merge into ${base}`}
+          </Button>
+        )}
       </div>
     </Card>
   );

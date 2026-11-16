@@ -37,6 +37,7 @@ export function applyDefaults(config: ArgusConfig): ArgusConfig {
     ...config,
     single_runtime: config.single_runtime ?? false,
     auto_continue_on_limit: config.auto_continue_on_limit ?? false,
+    protect_default_branch: config.protect_default_branch ?? false,
   };
 }
 
@@ -73,6 +74,10 @@ export function parseArgusConfig(
     auto_continue_on_limit:
       parsed.auto_continue_on_limit != null
         ? Boolean(parsed.auto_continue_on_limit)
+        : null,
+    protect_default_branch:
+      parsed.protect_default_branch != null
+        ? Boolean(parsed.protect_default_branch)
         : null,
     release_note_patterns: normalizeReleaseNotePatterns(
       parsed.release_note_patterns,
@@ -154,6 +159,8 @@ export function mergeConfig(
     single_runtime: local.single_runtime ?? base.single_runtime,
     auto_continue_on_limit:
       local.auto_continue_on_limit ?? base.auto_continue_on_limit,
+    protect_default_branch:
+      local.protect_default_branch ?? base.protect_default_branch,
     release_note_patterns: dedupReleaseNotePatterns(
       base.release_note_patterns,
       local.release_note_patterns,

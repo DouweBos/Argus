@@ -49,6 +49,7 @@
         projectSheet("layered", repoFile: true, section: .setup),
         projectSheet("overridden", repoFile: true, section: .run),
         projectSheet("teardown", repoFile: true, section: .teardown),
+        projectSheet("branch-protection", repoFile: true, section: .branchProtection),
       ]
     }
 
@@ -86,6 +87,7 @@
       ]),
       "browser_url": .string("http://localhost:3000"),
       "protected_branches": .array([.string("main"), .string("release")]),
+      "protect_default_branch": .bool(true),
     ]
 
     private static let acpDraft = CustomRunnerDraft(

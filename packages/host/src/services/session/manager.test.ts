@@ -39,6 +39,7 @@ vi.mock("./argusConfig", () => ({
     argusConfig.commands.length
       ? { setup: { copy: [], symlink: [], commands: argusConfig.commands } }
       : null,
+  landingLocks: () => (s: Session) => s,
 }));
 
 function makeSession(partial: Partial<Session>): Session {

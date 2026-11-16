@@ -199,7 +199,7 @@ function CardDetails({
               appNavigate({ name: "branches", sessionId: session.id });
             }}
           />
-          {ready && hasControl && (
+          {ready && hasControl && !session.push_locked && (
             <ContextCardRow
               disabled={pushing}
               icon={<Icons.PushIcon size={12} />}

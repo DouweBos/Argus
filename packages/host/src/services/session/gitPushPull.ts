@@ -7,6 +7,7 @@
 
 import { appState } from "../../state";
 import { sessionPullRequestMayHaveChanged } from "../github/sessionPullRequests";
+import { assertSessionPushAllowed } from "./argusConfig";
 import { git } from "./git";
 import { GitError } from "./gitError";
 import { withGitLock } from "./gitLock";
@@ -32,6 +33,7 @@ export interface PushV2Opts {
 }
 
 export async function gitPushV2(id: string, opts: PushV2Opts): Promise<string> {
+  assertSessionPushAllowed(id, opts.branch ?? opts.ref);
   const wt = sessionPath(id);
   const args = ["push"];
   if (opts.setUpstream) {

@@ -30,6 +30,8 @@ public struct ArgusConfigDraft: Equatable, Sendable {
 
   // Workflow
   public var protectedBranches: [ListItem] = []
+  /// The repo's default branch is protected too, and never pushed from Argus.
+  public var protectDefaultBranch = false
   public var defaultBaseBranch = ""
   public var autoFetchMinutes = 0
   public var releaseNotes: [ReleasePattern] = []

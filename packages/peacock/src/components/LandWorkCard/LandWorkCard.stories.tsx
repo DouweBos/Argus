@@ -77,3 +77,8 @@ export const Merging: Story = {
 export const UnknownBase: Story = {
   args: { clean: true, base: "the base branch", onChangeBase: undefined },
 };
+
+/** The project protects its default branch: no push, and no direct merge. */
+export const PullRequestOnly: Story = {
+  args: { clean: true, onPush: undefined, onMerge: undefined },
+};

@@ -137,7 +137,7 @@ struct SessionDetailsView: View {
         }
         .disabled(pulling)
       }
-      if control {
+      if control, session.pushLocked != true {
         let ahead = git?.ahead ?? 0
         rowButton(pushing ? "Pushing…" : "Push", icon: "icloud.and.arrow.up") { push() } trailing: {
           count("↑", ahead)

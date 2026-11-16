@@ -41,7 +41,7 @@ import {
   applyBranchPrefix,
   loadUserProjectSettings,
 } from "../userProjectSettings/store";
-import { loadArgusConfig } from "./argusConfig";
+import { landingLocks, loadArgusConfig } from "./argusConfig";
 import {
   effectiveAutoFetchMinutes,
   reconfigureAutoFetch,
@@ -447,7 +447,9 @@ export async function listSessions(
     }
   }
 
-  return merged.map(withSessionPullRequest);
+  const locks = landingLocks(repoRoot);
+
+  return merged.map((s) => locks(withSessionPullRequest(s)));
 }
 
 // ---------------------------------------------------------------------------
