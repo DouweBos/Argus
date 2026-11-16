@@ -1,5 +1,15 @@
 # argus
 
+## 0.76.0
+
+### Minor Changes
+
+- c789cb6: Move a chat to another session or project from its agent's menu. The conversation carries on there with its full history, in an existing session or a new one.
+
+### Patch Changes
+
+- 4ce8b1c: The composer's slash command and mention suggestions no longer let the text underneath show through.
+
 ## 0.75.1
 
 ### Patch Changes
