@@ -54,7 +54,7 @@
 
       var body: some View {
         List {
-          if let window = UsageLimitFormat.sessionWindow(host.usageLimits, runner: nil, accountId: nil) {
+          if let window = UsageLimitFormat.sessionWindow(host.usageLimits, runner: nil, accountId: "work") {
             Section { SessionUsageRow(window: window) }
           }
         }

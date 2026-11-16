@@ -100,16 +100,14 @@ extension UsageLimitFormat {
 }
 
 extension UsageLimitFormat {
-  /// The current session window an agent draws on: its own Claude account's
-  /// when known, else the first account or runner with one.
+  /// The current session window of the account an agent runs on; nil when
+  /// that account can't be told apart from others.
   public static func sessionWindow(
     _ limits: ArgusProtocol.ClaudeUsageLimits?, runner: String?, accountId: String?
   ) -> ArgusProtocol.UsageLimitWindow? {
     let groups = groups(limits, runner: runner)
-    let own = accountId.flatMap { id in groups.first { $0.id == "claude:\(id)" } }
-    return ([own].compactMap(\.self) + groups).lazy
-      .compactMap { $0.windows.first { $0.kind == .session } }
-      .first
+    let group = accountId.map { id in groups.first { $0.id == "claude:\(id)" } } ?? (groups.count == 1 ? groups.first : nil)
+    return group?.windows.first { $0.kind == .session }
   }
 
   /// The used share, rounded up so any use shows as at least 1%.

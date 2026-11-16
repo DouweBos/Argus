@@ -26,7 +26,8 @@ extension GalleryFixtures {
 
   public static func agent(
     _ id: String, session: String, label: String, project: String = "Argus", title: String,
-    status: String, awaiting: String? = nil, minutes: Double, model: String = "claude-opus-5-5"
+    status: String, awaiting: String? = nil, minutes: Double, model: String = "claude-opus-5-5",
+    account: String? = nil
   ) -> [String: Any] {
     var json: [String: Any] = [
       "agent_id": id, "session_id": session, "session_label": label, "project_name": project, "title": title,
@@ -34,6 +35,7 @@ extension GalleryFixtures {
       "permission_mode": "default",
     ]
     if let awaiting { json["awaiting"] = awaiting }
+    if let account { json["account_id"] = account }
     return json
   }
 
@@ -94,7 +96,7 @@ extension GalleryFixtures {
         status: "running", minutes: 0.5),
       agent(
         "a-perm", session: "s-long", label: "Rework onboarding", title: "Rework the onboarding flow for new machines",
-        status: "requires_action", awaiting: "permission", minutes: 2),
+        status: "requires_action", awaiting: "permission", minutes: 2, account: "work"),
       agent(
         "a-root", session: "s-root", label: "main", title: "Why does the release workflow skip notarization?",
         status: "idle", minutes: 25),
