@@ -1,5 +1,11 @@
 # argus
 
+## 0.75.1
+
+### Patch Changes
+
+- 82537b1: A session's details show one line with how much of the current usage session the agent has used, instead of every plan meter.
+
 ## 0.75.0
 
 ### Minor Changes
