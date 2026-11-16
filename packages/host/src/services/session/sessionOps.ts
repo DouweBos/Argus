@@ -24,6 +24,7 @@ import {
   loadArgusConfig,
   saveProjectConfig,
 } from "./argusConfig";
+import { readDefaultBranch, defaultBranchFirst } from "./defaultBranch";
 import { git } from "./git";
 import { withGitLock } from "./gitLock";
 import { announcingRepoGitStatus, attachGitWatcher } from "./gitWatcher";
@@ -157,8 +158,14 @@ export async function listAllBranches(repoRoot: string): Promise<BranchList> {
 
   const remote = remoteShort.filter((l) => !localSet.has(l));
   const originRefs = remoteShort.map((l) => `origin/${l}`);
+  // Every branch dropdown leads with the default branch: it's the usual pick.
+  const main = await readDefaultBranch(repoRoot, [...local, ...remoteShort]);
 
-  return { local, remote, originRefs };
+  return {
+    local: defaultBranchFirst(local, main),
+    remote: defaultBranchFirst(remote, main),
+    originRefs: defaultBranchFirst(originRefs, main),
+  };
 }
 
 /** Checkout an existing local branch in the repo root. */

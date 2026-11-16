@@ -11,6 +11,7 @@
  */
 
 import { appState } from "../../state";
+import { defaultBranchFirst, readDefaultBranch } from "./defaultBranch";
 import { git } from "./git";
 import { GitError } from "./gitError";
 import { withGitLock } from "./gitLock";
@@ -121,7 +122,7 @@ export async function gitListLocalBranches(
     "refs/heads/",
   ]);
 
-  return out
+  const branches = out
     .split(RECORD_SEP)
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
@@ -157,6 +158,12 @@ export async function gitListLocalBranches(
             : null,
       };
     });
+  const main = await readDefaultBranch(
+    ws.path,
+    branches.map((b) => b.name),
+  );
+
+  return defaultBranchFirst(branches, main, (b) => b.name);
 }
 
 /** Read-only enriched remote-tracking branch list. */
@@ -170,38 +177,42 @@ export async function gitListRemoteBranches(
     "refs/remotes/",
   ]);
 
-  return (
-    out
-      .split(RECORD_SEP)
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0)
-      .map((line) => {
-        const [, name = "", hash = "", subject = "", author = "", ts = "0"] =
-          line.split(FIELD_SEP);
-        const slash = name.indexOf("/");
-        const remote = slash > 0 ? name.slice(0, slash) : "";
-        const branchName = slash > 0 ? name.slice(slash + 1) : name;
+  const branches = out
+    .split(RECORD_SEP)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map((line) => {
+      const [, name = "", hash = "", subject = "", author = "", ts = "0"] =
+        line.split(FIELD_SEP);
+      const slash = name.indexOf("/");
+      const remote = slash > 0 ? name.slice(0, slash) : "";
+      const branchName = slash > 0 ? name.slice(slash + 1) : name;
 
-        return {
-          name,
-          remote,
-          branchName,
-          lastCommit:
-            hash.length > 0
-              ? {
-                  hash,
-                  subject,
-                  author,
-                  timestamp: parseInt0(ts) * 1000,
-                }
-              : null,
-        };
-      })
-      .filter((b) => b.branchName !== "HEAD")
-      // Drop refs that don't have a `<remote>/<branch>` shape (e.g. a stray
-      // `refs/remotes/origin` symbolic-ref pointer with no branch suffix).
-      .filter((b) => b.remote.length > 0 && b.branchName.length > 0)
+      return {
+        name,
+        remote,
+        branchName,
+        lastCommit:
+          hash.length > 0
+            ? {
+                hash,
+                subject,
+                author,
+                timestamp: parseInt0(ts) * 1000,
+              }
+            : null,
+      };
+    })
+    .filter((b) => b.branchName !== "HEAD")
+    // Drop refs that don't have a `<remote>/<branch>` shape (e.g. a stray
+    // `refs/remotes/origin` symbolic-ref pointer with no branch suffix).
+    .filter((b) => b.remote.length > 0 && b.branchName.length > 0);
+  const main = await readDefaultBranch(
+    ws.path,
+    branches.map((b) => b.branchName),
   );
+
+  return defaultBranchFirst(branches, main, (b) => b.name);
 }
 
 // ---------------------------------------------------------------------------
