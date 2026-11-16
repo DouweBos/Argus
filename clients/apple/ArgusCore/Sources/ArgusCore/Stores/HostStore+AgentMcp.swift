@@ -53,3 +53,76 @@ extension HostStore {
     }
   }
 }
+
+/// One MCP server being reconnected, toggled or signed in to.
+public enum McpServerActivity: Sendable, Equatable {
+  case working
+  /// The sign-in page is open. `callbackExpected`: the agent finishes it itself
+  /// (or from a pasted address); false means reconnect once done.
+  case signingIn(URL, callbackExpected: Bool)
+  case failed(String)
+}
+
+public typealias McpServerAction = ArgusProtocol.MethodsTypes.AgentsMcpServerParamsAction
+
+extension HostStore {
+  static func mcpServerKey(agentId: String, server: String) -> String { "\(agentId)\u{0}\(server)" }
+
+  public func mcpServerActivity(agentId: String, server: String) -> McpServerActivity? {
+    mcpServerActivity[Self.mcpServerKey(agentId: agentId, server: server)]
+  }
+
+  /// Acts on one of the agent's MCP servers, as `/mcp` does in a terminal.
+  /// Returns the page to open when it's a sign-in.
+  @discardableResult
+  public func actOnMcpServer(
+    agentId: String, server: String, action: McpServerAction, callbackUrl: String? = nil
+  ) async -> URL? {
+    guard let backend else { return nil }
+    let key = Self.mcpServerKey(agentId: agentId, server: server)
+    let previous = mcpServerActivity[key]
+    mcpServerActivity[key] = .working
+    do {
+      let result = try await backend.request(
+        .agentsMcpServer,
+        ArgusProtocol.MethodsTypes.AgentsMcpServerParams(
+          agentId: agentId, server: server, action: action, callbackUrl: callbackUrl),
+        as: ArgusProtocol.MethodsTypes.AgentsMcpServerResult.self)
+      if action == .signIn, let url = result.authUrl.flatMap(URL.init(string:)) {
+        mcpServerActivity[key] = .signingIn(url, callbackExpected: result.callbackExpected)
+        Task { await followSignIn(agentId: agentId, server: server) }
+        return url
+      }
+      mcpServerActivity[key] = nil
+      await followMcpServers(agentId: agentId)
+    } catch {
+      // A pasted address that didn't take leaves the sign-in open to try again.
+      if case .signingIn = previous, action == .finishSignIn {
+        mcpServerActivity[key] = previous
+      } else {
+        mcpServerActivity[key] = .failed(Self.describe(error))
+      }
+      hooks.errorReported(error, "mcp_server")
+    }
+    return nil
+  }
+
+  public func dismissMcpServerActivity(agentId: String, server: String) {
+    mcpServerActivity[Self.mcpServerKey(agentId: agentId, server: server)] = nil
+  }
+
+  /// Watches a sign-in until the server connects (the agent reconnects it on
+  /// its own) or ten minutes pass.
+  func followSignIn(agentId: String, server: String, interval: Duration = .seconds(3)) async {
+    let key = Self.mcpServerKey(agentId: agentId, server: server)
+    for _ in 0..<200 {
+      try? await Task.sleep(for: interval)
+      guard case .signingIn = mcpServerActivity[key] else { return }
+      await loadMcpServers(agentId: agentId)
+      if mcpServersByAgent[agentId]?.servers?.first(where: { $0.name == server })?.state == .connected {
+        mcpServerActivity[key] = nil
+        return
+      }
+    }
+  }
+}

@@ -670,6 +670,74 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AgentsMcpServerParamsAction: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let reconnect = AgentsMcpServerParamsAction(rawValue: "reconnect")
+      public static let enable = AgentsMcpServerParamsAction(rawValue: "enable")
+      public static let disable = AgentsMcpServerParamsAction(rawValue: "disable")
+      public static let signIn = AgentsMcpServerParamsAction(rawValue: "sign_in")
+      public static let finishSignIn = AgentsMcpServerParamsAction(rawValue: "finish_sign_in")
+    }
+
+    public struct AgentsMcpServerParams: Codable, Sendable {
+      public var agentId: String
+      public var server: String
+      public var action: AgentsMcpServerParamsAction
+      public var callbackUrl: String?
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case server = "server"
+        case action = "action"
+        case callbackUrl = "callback_url"
+      }
+
+      public init(agentId: String, server: String, action: AgentsMcpServerParamsAction, callbackUrl: String? = nil) {
+        self.agentId = agentId
+        self.server = server
+        self.action = action
+        self.callbackUrl = callbackUrl
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(server, forKey: .server)
+        try c.encode(action, forKey: .action)
+        try c.encodeIfPresent(callbackUrl, forKey: .callbackUrl)
+      }
+    }
+
+    public struct AgentsMcpServerResult: Codable, Sendable {
+      public var authUrl: String?
+      public var callbackExpected: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case authUrl = "auth_url"
+        case callbackExpected = "callback_expected"
+      }
+
+      public init(authUrl: String? = nil, callbackExpected: Bool) {
+        self.authUrl = authUrl
+        self.callbackExpected = callbackExpected
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(authUrl, forKey: .authUrl)
+        try c.encode(callbackExpected, forKey: .callbackExpected)
+      }
+    }
+
     public struct AgentsMcpStatusParams: Codable, Sendable {
       public var agentId: String
 
@@ -8509,6 +8577,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AgentsListParams
       public typealias Result = ArgusProtocol.MethodsTypes.AgentsListResult
       public static let name = "agents.list"
+    }
+
+    public enum AgentsMcpServer: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsMcpServerParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsMcpServerResult
+      public static let name = "agents.mcp_server"
     }
 
     public enum AgentsMcpStatus: RemoteCommand {

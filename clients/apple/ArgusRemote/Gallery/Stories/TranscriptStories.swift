@@ -27,6 +27,18 @@
             .navigationTitle("MCP Servers")
             .inlineNavigationTitle()
         },
+        GalleryStory(
+          "agent/mcp-servers-signing-in", fixtures: GalleryFixtures.transcript(.idle),
+          setup: { stage in
+            await stage.host.actOnMcpServer(
+              agentId: GalleryFixtures.transcriptAgent, server: "plugin:team-tools:linear", action: .signIn)
+          }
+        ) {
+          AgentMcpServersView(agentId: GalleryFixtures.transcriptAgent)
+            .frame(maxHeight: .infinity, alignment: .top)
+            .navigationTitle("MCP Servers")
+            .inlineNavigationTitle()
+        },
         GalleryStory("transcript/unsent-replies", screen: false, chrome: false) {
           VStack(alignment: .leading, spacing: 8) {
             SectionHeader(title: "Waiting for connection", count: waiting.count)

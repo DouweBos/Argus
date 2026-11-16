@@ -69,6 +69,7 @@ import {
   isLimitStalled,
   limitResumeAt,
 } from "../agent/limitResume";
+import { agentMcpControl } from "../agent/mcpControl";
 import { agentMcpStatus } from "../agent/mcpStatus";
 import {
   enqueueMessage,
@@ -1007,6 +1008,36 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     }
 
     return { servers, account_id: a.accountId ?? null };
+  },
+
+  "agents.mcp_server": async (params) => {
+    const { agent_id, server, action, callback_url } = parse(
+      "agents.mcp_server",
+      params,
+    );
+    const a = appState.agents.get(agent_id);
+    if (!a) {
+      throw new GatewayError("not_found", `no agent ${agent_id}`);
+    }
+    if (action === "finish_sign_in" && !callback_url) {
+      throw new GatewayError(
+        "bad_request",
+        "finish_sign_in needs a callback_url",
+      );
+    }
+    const outcome = await control(() =>
+      agentMcpControl(
+        a,
+        action === "finish_sign_in"
+          ? { action, server, callbackUrl: callback_url ?? "" }
+          : { action, server },
+      ),
+    );
+
+    return {
+      auth_url: outcome.authUrl,
+      callback_expected: outcome.callbackExpected,
+    };
   },
 
   "agents.transcript": async (params) => {

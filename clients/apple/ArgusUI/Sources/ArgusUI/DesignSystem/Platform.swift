@@ -99,6 +99,14 @@ public enum Clipboard {
       NSPasteboard.general.setString(string, forType: .string)
     #endif
   }
+
+  public static func string() -> String? {
+    #if canImport(UIKit)
+      UIPasteboard.general.string
+    #else
+      NSPasteboard.general.string(forType: .string)
+    #endif
+  }
 }
 
 /// Drop the keyboard, e.g. before a full-screen image covers the field.

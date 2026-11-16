@@ -12,6 +12,7 @@ import type {
   ControlRequest,
   ControlResponse,
   InitializeResponse,
+  McpControlPayload,
   PermissionDecision,
 } from "./protocol";
 import { info, warn } from "@argus/host/logger";
@@ -469,6 +470,12 @@ export class ControlHandler {
     Promise<Record<string, unknown> | undefined>,
   ] {
     return this.buildOutboundRequest({ subtype: "mcp_status" });
+  }
+
+  buildMcpControlRequest(
+    request: McpControlPayload,
+  ): [string, Promise<Record<string, unknown> | undefined>] {
+    return this.buildOutboundRequest({ ...request });
   }
 
   private buildOutboundRequest(

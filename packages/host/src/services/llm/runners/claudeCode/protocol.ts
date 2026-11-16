@@ -77,6 +77,17 @@ export interface McpStatusPayload {
   subtype: "mcp_status";
 }
 
+/** Acting on one MCP server of a running CLI, as `/mcp` does in a terminal. */
+export type McpControlPayload =
+  | {
+      subtype: "mcp_oauth_callback_url";
+      serverName: string;
+      callbackUrl: string;
+    }
+  | { subtype: "mcp_authenticate"; serverName: string }
+  | { subtype: "mcp_reconnect"; serverName: string }
+  | { subtype: "mcp_toggle"; serverName: string; enabled: boolean };
+
 export interface ElicitationPayload {
   subtype: "elicitation";
   mcp_server_name: string;

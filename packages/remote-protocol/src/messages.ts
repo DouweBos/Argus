@@ -195,6 +195,23 @@ export const MethodParams = {
   "agents.status": z.object({ agent_id: z.string() }),
   "agents.vitals": z.object({ agent_id: z.string() }),
   "agents.mcp_status": z.object({ agent_id: z.string() }),
+  /**
+   * Act on one of the agent's MCP servers, as `/mcp` does in a terminal.
+   * `finish_sign_in` hands back the address a sign-in ended on, for when the
+   * browser that finished it can't reach the agent's own callback.
+   */
+  "agents.mcp_server": z.object({
+    agent_id: z.string(),
+    server: z.string(),
+    action: z.enum([
+      "reconnect",
+      "enable",
+      "disable",
+      "sign_in",
+      "finish_sign_in",
+    ]),
+    callback_url: z.string().optional(),
+  }),
   "agents.transcript": z.object({
     agent_id: z.string(),
     /** Forward cursor — return messages starting at this index. */
@@ -1025,6 +1042,12 @@ export const MethodResult = {
     servers: z.array(RemoteMcpServerStatus).nullable(),
     /** The Claude account the agent's process runs as. */
     account_id: z.string().nullable().optional(),
+  }),
+  "agents.mcp_server": z.object({
+    /** The page to sign in on; null when there's nothing to open. */
+    auth_url: z.string().nullable(),
+    /** The agent finishes the sign-in itself; false means reconnect once done (claude.ai connectors). */
+    callback_expected: z.boolean(),
   }),
   "agents.transcript": z.object({
     messages: z.array(RemoteMessage),

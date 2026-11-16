@@ -91,6 +91,8 @@ public final class HostStore {
   /// Each agent's MCP servers as last fetched, and why the last fetch failed.
   public internal(set) var mcpServersByAgent: [String: AgentMcpServers] = [:]
   public internal(set) var mcpServersErrorByAgent: [String: String] = [:]
+  /// What's under way on one MCP server, keyed by `mcpServerKey`.
+  public internal(set) var mcpServerActivity: [String: McpServerActivity] = [:]
   public internal(set) var statusByAgent: [String: RemoteAgentStatus] = [:]
   /// Agents the computer no longer has — e.g. a finished automation run's,
   /// which is shut down when the run settles. Their transcript can outlive them.
@@ -295,6 +297,7 @@ public final class HostStore {
     viewingRunnerId = nil
     mcpServersByAgent = [:]
     mcpServersErrorByAgent = [:]
+    mcpServerActivity = [:]
     statusByAgent = [:]
     goneAgents = []
     effortByAgent = [:]

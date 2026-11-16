@@ -178,6 +178,18 @@ export interface RunnerMcpServerStatus {
   error: string | null;
 }
 
+/** What a client can do to one of an agent's MCP servers. */
+export type RunnerMcpControl =
+  | { action: "disable" | "enable" | "reconnect" | "sign_in"; server: string }
+  | { action: "finish_sign_in"; server: string; callbackUrl: string };
+
+export interface RunnerMcpControlResult {
+  /** The page to sign in on; null when nothing is left to do there. */
+  authUrl: string | null;
+  /** The CLI waits for the sign-in to land on its own callback; false for claude.ai connectors. */
+  callbackExpected: boolean;
+}
+
 export interface LlmRunnerHandle {
   readonly runnerId: string;
   /** Listen for runner events. */
@@ -216,6 +228,8 @@ export interface LlmRunnerHandle {
   reachesHttpMcp?: () => boolean;
   /** Live status of every MCP server the CLI loaded; absent when it can't report. */
   mcpStatus?: () => Promise<RunnerMcpServerStatus[]>;
+  /** Reconnect, toggle or sign in to one MCP server; absent when the runner can't. */
+  mcpControl?: (request: RunnerMcpControl) => Promise<RunnerMcpControlResult>;
   /** Respond to a previously-emitted permission request. */
   respondToPermission: (decision: PermissionDecisionInput) => void;
   /** Kill the underlying child process; resolves once it exits. */

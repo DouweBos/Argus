@@ -27,8 +27,20 @@
         ) {
           AgentMcpServersView(agentId: GalleryFixtures.transcriptAgent)
             .frame(maxHeight: .infinity, alignment: .top)
-        }
+        },
+        GalleryStory(
+          "agent/mcp-servers-signing-in", size: CGSize(width: 320, height: 480),
+          fixtures: GalleryFixtures.transcript(.idle), setup: signInToLinear
+        ) {
+          AgentMcpServersView(agentId: GalleryFixtures.transcriptAgent)
+            .frame(maxHeight: .infinity, alignment: .top)
+        },
       ]
+    }
+
+    static func signInToLinear(_ stage: GalleryStage) async {
+      await stage.host.actOnMcpServer(
+        agentId: GalleryFixtures.transcriptAgent, server: "plugin:team-tools:linear", action: .signIn)
     }
 
     /// Loaded before the pane appears, so the table lays out the whole chat at once.

@@ -52,6 +52,9 @@ extension GalleryFixtures {
         : []
     ])
     fixtures[RemoteMethod.agentsMcpStatus.rawValue] = GalleryJSON.encode(mcpStatus)
+    fixtures[RemoteMethod.agentsMcpServer.rawValue] = GalleryJSON.encode([
+      "auth_url": "https://mcp.example.com/authorize", "callback_expected": true,
+    ])
     fixtures[RemoteMethod.sessionsViewing.rawValue] = "{}"
     fixtures[RemoteMethod.sessionsList.rawValue] = GalleryJSON.encode(["sessions": [Any]()])
     fixtures[RemoteMethod.sessionsFiles.rawValue] = GalleryJSON.encode(["files": [
@@ -86,8 +89,9 @@ extension GalleryFixtures {
       "servers": [
         ["name": "argus", "status": "connected", "source": "project", "tool_count": 48],
         ["name": "conductor", "status": "connected", "source": "user", "tool_count": 31],
-        ["name": "claude.ai Linear", "status": "connected", "source": "claude.ai", "tool_count": 22],
-        ["name": "claude.ai Slack", "status": "needs-auth", "source": "claude.ai"],
+        ["name": "claude.ai Linear", "status": "connected", "source": "claudeai", "tool_count": 22],
+        ["name": "claude.ai Slack", "status": "needs-auth", "source": "claudeai"],
+        ["name": "plugin:team-tools:linear", "status": "needs-auth", "source": "plugin"],
         ["name": "figma-dev-mode", "status": "pending", "source": "user"],
         [
           "name": "posthog", "status": "failed", "source": "user",

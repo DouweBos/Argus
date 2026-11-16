@@ -137,6 +137,10 @@ export interface EventMap {
     runner: TelemetryRunner;
     servers: number;
   };
+  agent_mcp_server_acted: {
+    action: "disable" | "enable" | "finish_sign_in" | "reconnect" | "sign_in";
+    success: boolean;
+  };
   agent_pinned: {
     action: "pin" | "unpin";
     /** A live agent, or a saved chat whose agent is gone. */

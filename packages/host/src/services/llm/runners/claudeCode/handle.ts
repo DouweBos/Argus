@@ -22,6 +22,8 @@ import type {
   LlmRunnerHandle,
   PermissionDecisionInput,
   PermissionPreHook,
+  RunnerMcpControl,
+  RunnerMcpControlResult,
   RunnerMcpServerStatus,
 } from "../types";
 import type {
@@ -35,7 +37,11 @@ import readline from "node:readline";
 import type { Writable } from "node:stream";
 import { info, warn } from "@argus/host/logger";
 import { ControlHandler } from "./controlHandler";
-import { parseMcpStatus } from "./mcpStatus";
+import {
+  mcpControlPayload,
+  parseMcpControlResult,
+  parseMcpStatus,
+} from "./mcpStatus";
 import { toClaudePermissionMode } from "./permissionModes";
 
 export interface ClaudeCodeHandleInit {
@@ -151,6 +157,15 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
     this.safeWriteLine(json);
 
     return parseMcpStatus(await promise);
+  }
+
+  async mcpControl(request: RunnerMcpControl): Promise<RunnerMcpControlResult> {
+    const [json, promise] = this.controlHandler.buildMcpControlRequest(
+      mcpControlPayload(request),
+    );
+    this.safeWriteLine(json);
+
+    return parseMcpControlResult(await promise);
   }
 
   respondToPermission(decision: PermissionDecisionInput): void {

@@ -108,6 +108,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "agents.status": agent(),
   "agents.vitals": agent(),
   "agents.mcp_status": agent(),
+  "agents.mcp_server": agent(),
   "agents.transcript": agent(),
   "agents.image": agent(),
   "agents.capabilities": agent(),
