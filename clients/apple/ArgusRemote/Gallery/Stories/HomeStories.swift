@@ -42,7 +42,7 @@
             session: GalleryFixtures.argusSession("s-long"), agentId: "a-perm", open: { _ in }, newAgent: {},
             deleted: {})
         },
-        // The details sheet's Usage limits section, below the fold in `sessions/context-card`.
+        // The details sheet's session usage row, below the fold in `sessions/context-card`.
         GalleryStory("sessions/context-card-usage-limits", fixtures: GalleryFixtures.home, setup: load) {
           UsageLimitsSectionStory()
         },
@@ -54,9 +54,8 @@
 
       var body: some View {
         List {
-          Section("Usage limits") {
-            AgentUsageLimits(groups: UsageLimitFormat.groups(host.usageLimits, runner: "claude-code"))
-              .padding(.vertical, 4)
+          if let window = UsageLimitFormat.sessionWindow(host.usageLimits, runner: nil, accountId: nil) {
+            Section { SessionUsageRow(window: window) }
           }
         }
       }

@@ -237,14 +237,13 @@ struct SessionDetailsView: View {
     }
   }
 
-  /// What's left of the plan the front agent's runner draws on, as the Mac's context card shows it.
+  /// How much of the current session window the front agent has used, as the Mac's context card shows it.
   @ViewBuilder private var usageLimits: some View {
-    let runner = agentId.flatMap { host.statusByAgent[$0]?.runnerId }
-    let groups = UsageLimitFormat.groups(host.usageLimits, runner: runner)
-    if agentId != nil, !groups.isEmpty {
-      Section("Usage limits") {
-        AgentUsageLimits(groups: groups).padding(.vertical, 4)
-      }
+    let status = agentId.flatMap { host.statusByAgent[$0] }
+    if agentId != nil,
+      let window = UsageLimitFormat.sessionWindow(host.usageLimits, runner: status?.runnerId, accountId: status?.accountId)
+    {
+      Section { SessionUsageRow(window: window) }
     }
   }
 

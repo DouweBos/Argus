@@ -98,3 +98,22 @@ extension UsageLimitFormat {
     }
   }
 }
+
+extension UsageLimitFormat {
+  /// The current session window an agent draws on: its own Claude account's
+  /// when known, else the first account or runner with one.
+  public static func sessionWindow(
+    _ limits: ArgusProtocol.ClaudeUsageLimits?, runner: String?, accountId: String?
+  ) -> ArgusProtocol.UsageLimitWindow? {
+    let groups = groups(limits, runner: runner)
+    let own = accountId.flatMap { id in groups.first { $0.id == "claude:\(id)" } }
+    return ([own].compactMap(\.self) + groups).lazy
+      .compactMap { $0.windows.first { $0.kind == .session } }
+      .first
+  }
+
+  /// The used share, rounded up so any use shows as at least 1%.
+  public static func percentUsed(usedPercent: Double) -> Int {
+    100 - percentLeft(usedPercent: usedPercent)
+  }
+}
