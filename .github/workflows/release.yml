@@ -130,6 +130,9 @@ jobs:
 
           FASTLANE_SKIP_UPDATE_CHECK: "1"
           FASTLANE_HIDE_CHANGELOG: "1"
+          # Reading build settings resolves Swift packages first; fastlane's 3s default times out on a cold runner.
+          FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: "120"
+          FASTLANE_XCODEBUILD_SETTINGS_RETRIES: "4"
           CI: "true"
           NODE_OPTIONS: "--max-old-space-size=8192"
           SPM_CLONE_DIR: /Users/runner/spm-clones
