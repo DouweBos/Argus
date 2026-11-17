@@ -5,11 +5,13 @@ import Foundation
 /// Sending, queueing and starting, the draft's load and save, and attachments.
 extension ComposerModel {
   public func submit(redirect: ComposerStarter? = nil) {
-    guard isEnabled, !dictation.isActive, hasContent || sendTarget(redirect: redirect)?.needsContent == false else { return }
+    guard isEnabled, !dictation.isActive, !isUploadingFiles,
+      hasContent || sendTarget(redirect: redirect)?.needsContent == false
+    else { return }
     let typed = trimmedText
 
     // Handled here rather than sent to the CLI, as on the desktop.
-    if images.isEmpty, elements.isEmpty, linkedProjects.isEmpty, let local = SlashCommandMenu.local(typed),
+    if images.isEmpty, elements.isEmpty, files.isEmpty, linkedProjects.isEmpty, let local = SlashCommandMenu.local(typed),
       local != .showUsageLimits || !usageLimitGroups.isEmpty
     {
       clearComposer()
@@ -32,7 +34,10 @@ extension ComposerModel {
     }
     showingUsageLimits = false
 
-    var display = typed.isEmpty && !images.isEmpty ? "(see attached images)" : typed
+    var display = typed.isEmpty && !images.isEmpty && files.isEmpty ? "(see attached images)" : typed
+    if let mentions = PendingFile.mentions(files) {
+      display = display.isEmpty ? mentions : "\(display)\n\n\(mentions)"
+    }
     var message = display
     if !elements.isEmpty {
       message = PickedElement.body(typed: display, elements: elements)
@@ -95,6 +100,7 @@ extension ComposerModel {
     caret = 0
     images = []
     elements = []
+    files = []
     preferences.remove(PreferenceKey.draft(agentId: agentId))
     draftImages.remove(agentId: agentId)
     if style == .desktop { editor?.focus() }
@@ -155,6 +161,32 @@ extension ComposerModel {
   /// Images ride the draft as its text does, so a switch away or a relaunch keeps them.
   private func saveImages() {
     draftImages.save(images.map(\.attachment), agentId: agentId)
+  }
+
+  // MARK: Files
+
+  /// Non-image files: a chip each while it reaches the session's machine, dropped if it can't.
+  public func attachFiles(_ picked: [(name: String, size: Int, source: AttachmentSource)]) {
+    guard !picked.isEmpty else { return }
+    onAffordance?(.fileAttach)
+    for item in picked {
+      let pending = PendingFile(name: item.name, size: item.size)
+      files.append(pending)
+      Task {
+        let path = await host.hostPath(
+          forAttachment: item.name, size: item.size, source: item.source, sessionId: sessionId)
+        guard let index = files.firstIndex(where: { $0.id == pending.id }) else { return }
+        if let path {
+          files[index].path = path
+        } else {
+          files.remove(at: index)
+        }
+      }
+    }
+  }
+
+  public func removeFile(_ id: UUID) {
+    files.removeAll { $0.id == id }
   }
 
   // MARK: Elements

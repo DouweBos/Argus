@@ -42,6 +42,7 @@ public protocol ComposerHost: AnyObject {
   func listFiles(sessionId: String) async -> [String]
   func resolveMentionPath(sessionId: String, query: String) async -> RemoteMentionPathResult?
   func hostPaths(forDropped urls: [URL], sessionId: String?) async -> HostStore.DroppedFiles
+  func hostPath(forAttachment name: String, size: Int, source: AttachmentSource, sessionId: String?) async -> String?
 }
 
 extension HostStore: ComposerHost {}

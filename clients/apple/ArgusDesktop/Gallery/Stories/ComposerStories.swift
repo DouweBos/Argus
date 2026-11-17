@@ -14,6 +14,17 @@
           )
           .padding(12)
         },
+        // Two files on the host and one still uploading, beside a picked element.
+        GalleryStory("composer/attachments", size: CGSize(width: 720, height: 0)) {
+          AttachmentStrip(
+            images: [], elements: [browser], files: [
+              PendingFile(name: "Q3 onboarding spec.pdf", size: 2_480_000, path: ".argus/attachments/a/spec.pdf"),
+              PendingFile(name: "crash-log.txt", size: 18_400, path: ".argus/attachments/b/crash-log.txt"),
+              PendingFile(name: "design-assets.zip", size: 6_900_000),
+            ], remove: { _ in }
+          )
+          .padding(12)
+        },
         GalleryStory(
           "composer/start/runner", size: CGSize(width: 760, height: 0),
           fixtures: [RemoteMethod.automationsRunners.rawValue: runners],

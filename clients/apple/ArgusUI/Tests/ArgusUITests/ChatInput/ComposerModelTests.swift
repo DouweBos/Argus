@@ -65,6 +65,43 @@ struct ComposerModelTests {
     #expect(preferences.decode(PreferenceKey.linkedProjects(agentId: "a1"), as: [String].self) == nil)
   }
 
+  @Test("files send as mentions of where the host saved them, and the chips clear")
+  func filesSendAsMentions() async throws {
+    let composer = model()
+    composer.text = "read these"
+    composer.attachFiles([("spec.pdf", 10, .bytes(Data())), ("my notes.txt", 4, .bytes(Data()))])
+    await settle()
+    #expect(composer.files.allSatisfy { !$0.isUploading })
+    composer.submit()
+    await settle()
+    let sent = try #require(host.sent.first)
+    #expect(
+      sent.message
+        == "read these\n\nAttached files: @.argus/attachments/x/spec.pdf @.argus/attachments/x/my\\ notes.txt")
+    #expect(composer.files.isEmpty)
+  }
+
+  @Test("a file that fails to upload drops its chip; a send waits while one uploads")
+  func fileUploads() async {
+    let composer = model()
+    host.failingAttachments = ["broken.bin"]
+    composer.attachFiles([("broken.bin", 1, .bytes(Data()))])
+    await settle()
+    #expect(composer.files.isEmpty)
+
+    host.holdsAttachments = true
+    composer.attachFiles([("slow.zip", 1, .bytes(Data()))])
+    await settle()
+    #expect(composer.hasContent)
+    #expect(!composer.canSend())
+    composer.submit()
+    await settle()
+    #expect(host.sent.isEmpty)
+    host.attachmentGate?.resume()
+    await settle()
+    #expect(composer.canSend())
+  }
+
   @Test("a picked element sends its context and crop; the bubble shows a chip instead")
   func pickedElement() async throws {
     let composer = model()
@@ -529,5 +566,15 @@ final class FakeComposerHost: ComposerHost {
 
   func hostPaths(forDropped urls: [URL], sessionId: String?) async -> HostStore.DroppedFiles {
     HostStore.DroppedFiles(paths: urls.map(\.path), errors: [])
+  }
+
+  /// Names that fail to upload; the rest land under `.argus/attachments/x/`.
+  var failingAttachments: Set<String> = []
+  /// Held until released, to see a send wait on the upload.
+  var attachmentGate: CheckedContinuation<Void, Never>?
+  var holdsAttachments = false
+  func hostPath(forAttachment name: String, size: Int, source: AttachmentSource, sessionId: String?) async -> String? {
+    if holdsAttachments { await withCheckedContinuation { attachmentGate = $0 } }
+    return failingAttachments.contains(name) ? nil : ".argus/attachments/x/\(name)"
   }
 }

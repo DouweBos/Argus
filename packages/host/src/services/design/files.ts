@@ -16,26 +16,10 @@ import {
   figmaDesignContext,
   withFigma,
 } from "../integrations/figma/service";
-import { git } from "../session/git";
+import { excludeFromGit } from "../session/gitExclude";
 
 /** Renders at 3x: the scale of most current phones, so the files read crisp. */
 const REFERENCE_SCALE = 3;
-
-async function excludeFromGit(worktree: string): Promise<void> {
-  const common = (
-    await git(worktree, ["rev-parse", "--git-common-dir"])
-  ).trim();
-  const exclude = path.resolve(worktree, common, "info", "exclude");
-  const line = `/${DESIGN_DIR}/`;
-  const current = await fs.readFile(exclude, "utf8").catch(() => "");
-  if (!current.split("\n").includes(line)) {
-    await fs.mkdir(path.dirname(exclude), { recursive: true });
-    await fs.appendFile(
-      exclude,
-      `${current.endsWith("\n") || !current ? "" : "\n"}${line}\n`,
-    );
-  }
-}
 
 /** Writes `<stem>.png` and `<stem>.json` per reference. Best-effort per frame. */
 export async function writeDesignFiles(
@@ -47,7 +31,7 @@ export async function writeDesignFiles(
   }
   const dir = path.join(worktree, DESIGN_DIR);
   await fs.mkdir(dir, { recursive: true });
-  await excludeFromGit(worktree).catch((err: unknown) =>
+  await excludeFromGit(worktree, `/${DESIGN_DIR}/`).catch((err: unknown) =>
     warn(`[design] couldn't keep ${DESIGN_DIR} out of git: ${String(err)}`),
   );
   await Promise.all(

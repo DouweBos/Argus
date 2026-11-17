@@ -209,6 +209,8 @@ export const REMOTE_METHODS = {
   "files.search_cancel": "control",
   /** Resolve a directory path for the @-mention browse mode. */
   "sessions.resolve_mention_path": "control",
+  /** Writes into the worktree, so control — the tier sending the message takes. */
+  "sessions.upload_attachment": "control",
   /** Read a session's git status (ahead/behind/dirty/conflicts). */
   "sessions.git_status": "monitor",
   /**

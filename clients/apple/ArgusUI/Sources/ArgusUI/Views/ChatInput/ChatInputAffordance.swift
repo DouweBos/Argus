@@ -7,6 +7,8 @@ public enum ChatInputAffordance: String, Sendable {
   case imageDrop = "image_drop"
   case imageAttach = "image_attach"
   case fileMention = "file_mention"
+  /// A non-image file was picked from the attach button.
+  case fileAttach = "file_attach"
   case permissionCycle = "permission_cycle"
   case interruptShortcut = "interrupt_shortcut"
   /// A suggested reply filled the input, by tap, click or Tab.

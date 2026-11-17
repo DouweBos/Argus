@@ -134,6 +134,7 @@ import {
 } from "../deviceHosts/eas/registry";
 import { listDeviceHosts } from "../deviceHosts/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
+import { saveSessionAttachment } from "../file/sessionAttachments";
 import { isPullRequestWatched } from "../github/prWatch/watched";
 import { sessionPullRequest } from "../github/sessionPullRequests";
 import { figmaFrameDetails } from "../integrations/figma/service";
@@ -1859,6 +1860,16 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       entries: entries.map((e) => ({ name: e.name, is_dir: e.is_dir })),
       resolved_path: resolvedPath,
     };
+  },
+
+  "sessions.upload_attachment": async (params) => {
+    const { session_id, name, data } = parse(
+      "sessions.upload_attachment",
+      params,
+    );
+    requireSession(session_id);
+
+    return control(() => saveSessionAttachment(session_id, name, data));
   },
 
   "sessions.delete": async (params) => {

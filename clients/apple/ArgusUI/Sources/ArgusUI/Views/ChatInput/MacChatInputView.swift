@@ -118,9 +118,10 @@
     /// pills and the attach and send buttons.
     private var box: some View {
       VStack(alignment: .leading, spacing: 0) {
-        if !composer.images.isEmpty || !composer.elements.isEmpty {
+        if !composer.images.isEmpty || !composer.elements.isEmpty || !composer.files.isEmpty {
           AttachmentStrip(
-            images: composer.images, elements: composer.elements, removeElement: composer.removeElement
+            images: composer.images, elements: composer.elements, files: composer.files,
+            removeElement: composer.removeElement, removeFile: composer.removeFile
           ) { composer.removeImage($0) }
           .padding(.horizontal, 10)
           .padding(.top, 10)
@@ -172,9 +173,9 @@
           composer.toggleDictation()
         }
         .disabled(!composer.isEnabled)
-        Button(action: pickImages) { Label("Attach images", systemImage: Icon.paperclip) }
+        Button(action: pickFiles) { Label("Attach files", systemImage: Icon.paperclip) }
           .buttonStyle(FlatIconButtonStyle(size: 26))
-          .help("Attach images")
+          .help("Attach images or files")
           .disabled(!composer.isEnabled)
         if composer.isRunning {
           if composer.hasContent {
@@ -192,15 +193,25 @@
       .frame(height: TextScale.shared(26))
     }
 
-    private func pickImages() {
+    /// Images the API reads attach as images; any other file as a file chip.
+    private func pickFiles() {
       let panel = NSOpenPanel()
       panel.allowsMultipleSelection = true
       panel.canChooseDirectories = false
-      panel.allowedContentTypes = ImageAttachments.acceptedTypes
-      panel.message = "Attach images"
+      panel.message = "Attach images or files"
       let finish: (NSApplication.ModalResponse) -> Void = { response in
         guard response == .OK else { return }
-        composer.attach(panel.urls.compactMap(ImageAttachments.pending(fromFile:)), via: .imageAttach)
+        var images: [PendingImage] = []
+        var files: [(name: String, size: Int, source: AttachmentSource)] = []
+        for url in panel.urls {
+          if ImageAttachments.isImage(url), let image = ImageAttachments.pending(fromFile: url) {
+            images.append(image)
+          } else {
+            files.append((url.lastPathComponent, (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0, .file(url)))
+          }
+        }
+        composer.attach(images, via: .imageAttach)
+        composer.attachFiles(files)
         controller.focus()
       }
       if let window = NSApp.keyWindow {

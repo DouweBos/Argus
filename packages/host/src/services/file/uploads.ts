@@ -93,7 +93,7 @@ export async function uploadSessionAttachment(
 }
 
 /** Human-readable size, so the refusal says what to do about it. */
-function tooLargeMessage(name: string, limit: number): string {
+export function tooLargeMessage(name: string, limit: number): string {
   const cap = Math.round(limit / (1024 * 1024));
 
   return `"${name}" is larger than the ${cap} MB attachment limit`;
@@ -127,7 +127,7 @@ function uploadsRoot(): string {
 }
 
 /** Base64 encodes 3 bytes per 4 characters, minus any padding. */
-function approximateDecodedBytes(data: string): number {
+export function approximateDecodedBytes(data: string): number {
   const padding = /=*$/.exec(data)?.[0].length ?? 0;
 
   return Math.floor((data.length * 3) / 4) - padding;
@@ -137,7 +137,7 @@ function approximateDecodedBytes(data: string): number {
  * Strip directories and leading dots so a client-supplied name can only ever
  * become a leaf inside the staging directory.
  */
-function safeName(name: string): string {
+export function safeName(name: string): string {
   const base = path
     .basename(name.replace(/\\/g, "/"))
     .replace(/[/\0]/g, "")

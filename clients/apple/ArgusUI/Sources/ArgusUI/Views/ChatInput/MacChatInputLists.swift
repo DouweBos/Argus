@@ -143,16 +143,21 @@
     @Environment(\.theme) private var theme
     let images: [PendingImage]
     var elements: [PickedElement] = []
+    var files: [PendingFile] = []
     var removeElement: (UUID) -> Void = { _ in }
+    var removeFile: (UUID) -> Void = { _ in }
     let remove: (UUID) -> Void
 
     public init(
-      images: [PendingImage], elements: [PickedElement] = [], removeElement: @escaping (UUID) -> Void = { _ in },
+      images: [PendingImage], elements: [PickedElement] = [], files: [PendingFile] = [],
+      removeElement: @escaping (UUID) -> Void = { _ in }, removeFile: @escaping (UUID) -> Void = { _ in },
       remove: @escaping (UUID) -> Void
     ) {
       self.images = images
       self.elements = elements
+      self.files = files
       self.removeElement = removeElement
+      self.removeFile = removeFile
       self.remove = remove
     }
 
@@ -175,6 +180,11 @@
                   RoundedRectangle(cornerRadius: theme.radiusSmall)
                     .strokeBorder(theme.border, lineWidth: 1)
                 }
+            }
+          }
+          ForEach(files) { file in
+            removable(help: "Remove file", action: { removeFile(file.id) }) {
+              PendingFileChip(file: file).help(file.path ?? file.name)
             }
           }
         }

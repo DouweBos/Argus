@@ -26,6 +26,19 @@
         },
         GalleryStory("composer/dictation") { DictationStory(size: 34) },
         GalleryStory("composer/chat", fixtures: GalleryFixtures.composer) { ChatComposerStory() },
+        // Two files on the computer and one still uploading.
+        GalleryStory("composer/attachments") {
+          PhoneAttachmentStrip(
+            images: [],
+            files: [
+              PendingFile(name: "Q3 onboarding spec.pdf", size: 2_480_000, path: ".argus/attachments/a/spec.pdf"),
+              PendingFile(name: "crash-log.txt", size: 18_400, path: ".argus/attachments/b/crash-log.txt"),
+              PendingFile(name: "design-assets.zip", size: 6_900_000),
+            ],
+            onRemoveImage: { _ in }, onRemoveFile: { _ in }
+          )
+          .padding(16)
+        },
         // An agent running on Work while the computer's default is Personal; then a start composer.
         GalleryStory(
           "composer/account-menu/running", fixtures: GalleryFixtures.transcript(.idle, runningOn: "work"),

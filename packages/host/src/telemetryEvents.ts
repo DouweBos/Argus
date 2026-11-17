@@ -492,6 +492,11 @@ export interface EventMap {
     success: boolean;
   };
   queued_message_sent_now: { mid_turn: boolean };
+  /** A file attached on another device was saved into a session's worktree. */
+  session_attachment_saved: {
+    type_bucket: "archive" | "code" | "document" | "image" | "other" | "text";
+    size_bucket: "<1MB" | "<5MB" | "<100KB" | ">=5MB";
+  };
   remote_connection_opened: {
     trust: "account" | "paired";
     hosted_web: boolean;

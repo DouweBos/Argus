@@ -52,4 +52,37 @@ struct DroppedFilesTests {
     #expect(dropped.paths.isEmpty)
     #expect(dropped.errors.count == 2)
   }
+
+  @Test func anAttachmentOnThisMachineKeepsItsOwnPath() async throws {
+    let store = HostStore()
+    let backend = FakeBackend()
+    await store.attach(backend)
+    let url = try file("hi")
+    defer { try? FileManager.default.removeItem(at: url) }
+    let path = await store.hostPath(forAttachment: "a.txt", size: 2, source: .file(url), sessionId: "s1")
+    #expect(path == url.path)
+    #expect(!backend.requested.contains(RemoteMethod.sessionsUploadAttachment.rawValue))
+  }
+
+  @Test func thePhonesAttachmentIsUploadedIntoTheWorktree() async {
+    let store = HostStore()
+    let backend = FakeBackend(kind: .gateway)
+    backend.reply(
+      .sessionsUploadAttachment,
+      #"{"path":"/w/.argus/attachments/x/a.pdf","relative_path":".argus/attachments/x/a.pdf","name":"a.pdf","size":2}"#)
+    await store.attach(backend)
+    let path = await store.hostPath(forAttachment: "a.pdf", size: 2, source: .bytes(Data("hi".utf8)), sessionId: "s1")
+    #expect(path == ".argus/attachments/x/a.pdf")
+  }
+
+  @Test func anAttachmentPastOneFrameIsRefusedUnread() async {
+    let store = HostStore()
+    let backend = FakeBackend(kind: .gateway)
+    await store.attach(backend)
+    let path = await store.hostPath(
+      forAttachment: "big.mov", size: HostStore.maxAttachmentBytes + 1,
+      source: .file(URL(fileURLWithPath: "/nonexistent")), sessionId: "s1")
+    #expect(path == nil)
+    #expect(!backend.requested.contains(RemoteMethod.sessionsUploadAttachment.rawValue))
+  }
 }

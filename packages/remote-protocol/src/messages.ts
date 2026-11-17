@@ -522,6 +522,17 @@ export const MethodParams = {
     session_id: z.string(),
     query: z.string(),
   }),
+  /**
+   * A file attached to a message on a device that doesn't share the host's
+   * disk, saved into the worktree's git-ignored `.argus/attachments/`. One
+   * frame carries it, so 8 MB at most.
+   */
+  "sessions.upload_attachment": z.object({
+    session_id: z.string(),
+    name: z.string().min(1),
+    /** The file's bytes, base64. */
+    data: z.string(),
+  }),
   "sessions.delete": z.object({
     id: z.string(),
     delete_branch: z.boolean().optional(),
@@ -1201,6 +1212,14 @@ export const MethodResult = {
   "files.search": z.object({ search_id: z.string() }),
   "files.search_cancel": z.object({ accepted: z.boolean() }),
   "sessions.resolve_mention_path": RemoteMentionPathResult,
+  "sessions.upload_attachment": z.object({
+    /** Absolute, on the host. */
+    path: z.string(),
+    /** From the worktree root: what the message mentions. */
+    relative_path: z.string(),
+    name: z.string(),
+    size: z.number().int(),
+  }),
   "sessions.delete": z.object({ accepted: z.boolean() }),
   "sessions.rename": z.object({ accepted: z.boolean() }),
   "sessions.rename_branch": z.object({ accepted: z.boolean() }),

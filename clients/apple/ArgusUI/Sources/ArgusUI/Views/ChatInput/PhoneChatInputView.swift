@@ -97,7 +97,7 @@
 
     private var box: some View {
       VStack(alignment: .leading, spacing: 0) {
-        if !composer.images.isEmpty {
+        if !composer.images.isEmpty || !composer.files.isEmpty {
           attachmentStrip
             .padding(.horizontal, 10)
             .padding(.top, 10)
@@ -141,11 +141,13 @@
         DictationButton(phase: composer.dictation, size: 34) { composer.toggleDictation() }
           .disabled(!composer.isEnabled)
         if composer.offersImagesAndEffort {
-          Button { showingAttachMenu = true } label: { Label("Attach images", systemImage: Icon.paperclip) }
+          Button { showingAttachMenu = true } label: { Label("Attach", systemImage: Icon.paperclip) }
             .buttonStyle(FlatIconButtonStyle(size: 34))
             .disabled(!composer.isEnabled)
             // On the button, so the menu's popover points at it rather than the composer's middle.
-            .phoneImageAttach(isPresented: $showingAttachMenu) { composer.attach($0, via: .imageAttach) }
+            .phoneAttach(
+              isPresented: $showingAttachMenu, onAttach: { composer.attach($0, via: .imageAttach) },
+              onAttachFiles: composer.attachFiles)
         }
         if composer.isRunning {
           if composer.hasContent {
@@ -167,7 +169,9 @@
     }
 
     private var attachmentStrip: some View {
-      PendingImageStrip(images: composer.images) { composer.removeImage($0) }
+      PhoneAttachmentStrip(
+        images: composer.images, files: composer.files, onRemoveImage: composer.removeImage,
+        onRemoveFile: composer.removeFile)
     }
 
     /// "Message" while empty; otherwise a command's argument hint or the rest of a follow-up, as ghost text.

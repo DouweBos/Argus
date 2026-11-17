@@ -8068,6 +8068,60 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsUploadAttachmentParams: Codable, Sendable {
+      public var sessionId: String
+      public var name: String
+      public var data: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case name = "name"
+        case data = "data"
+      }
+
+      public init(sessionId: String, name: String, data: String) {
+        self.sessionId = sessionId
+        self.name = name
+        self.data = data
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(name, forKey: .name)
+        try c.encode(data, forKey: .data)
+      }
+    }
+
+    public struct SessionsUploadAttachmentResult: Codable, Sendable {
+      public var path: String
+      public var relativePath: String
+      public var name: String
+      public var size: Int
+
+      enum CodingKeys: String, CodingKey {
+        case path = "path"
+        case relativePath = "relative_path"
+        case name = "name"
+        case size = "size"
+      }
+
+      public init(path: String, relativePath: String, name: String, size: Int) {
+        self.path = path
+        self.relativePath = relativePath
+        self.name = name
+        self.size = size
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(path, forKey: .path)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(name, forKey: .name)
+        try c.encode(size, forKey: .size)
+      }
+    }
+
     public struct SessionsViewedFilesParamsMode: RawRepresentable, Codable, Hashable, Sendable {
       public var rawValue: String
       public init(rawValue: String) { self.rawValue = rawValue }
@@ -9621,6 +9675,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsTurnsParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsTurnsResult
       public static let name = "sessions.turns"
+    }
+
+    public enum SessionsUploadAttachment: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsUploadAttachmentParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsUploadAttachmentResult
+      public static let name = "sessions.upload_attachment"
     }
 
     public enum SessionsViewedFiles: RemoteCommand {

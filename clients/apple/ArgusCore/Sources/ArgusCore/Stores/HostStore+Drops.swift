@@ -57,3 +57,55 @@ public struct DroppedFileError: LocalizedError, Sendable {
   public let message: String
   public var errorDescription: String? { message }
 }
+
+/// A file attached to a message: one on this machine's disk, or bytes read
+/// from where only this device can reach (the phone's Files picker).
+public enum AttachmentSource: Sendable {
+  case file(URL)
+  case bytes(Data)
+}
+
+extension HostStore {
+  /// One gateway frame carries the upload: `MAX_BASE64_UPLOAD_BYTES` on the host.
+  public static let maxAttachmentBytes = maxDroppedFileBytes
+
+  /// Where the session's agent finds an attached file: its own path when the
+  /// session runs on this machine, else uploaded into the session's worktree.
+  /// Nil after reporting why it couldn't be made available.
+  public func hostPath(
+    forAttachment name: String, size: Int, source: AttachmentSource, sessionId: String?
+  ) async -> String? {
+    if case .file(let url) = source, backend?.kind == .local, !(sessionId.map(hooks.sessionIsRemote) ?? false) {
+      return url.path
+    }
+    guard size <= Self.maxAttachmentBytes else { return tooBig(name) }
+    guard let sessionId, let backend else { return attachmentFailed("\(name) couldn't be sent: not connected.") }
+    let data: Data
+    switch source {
+    case .bytes(let bytes): data = bytes
+    case .file(let url):
+      guard let read = try? Data(contentsOf: url, options: .mappedIfSafe) else {
+        return attachmentFailed("\(name) couldn't be read.")
+      }
+      data = read
+    }
+    guard data.count <= Self.maxAttachmentBytes else { return tooBig(name) }
+    do {
+      let saved = try await backend.request(
+        ArgusProtocol.Methods.SessionsUploadAttachment.self,
+        .init(sessionId: sessionId, name: name, data: data.base64EncodedString()))
+      return saved.relativePath
+    } catch {
+      return attachmentFailed("\(name): \(Self.describe(error))")
+    }
+  }
+
+  private func tooBig(_ name: String) -> String? {
+    attachmentFailed("\(name) is too big to send (\(Self.maxAttachmentBytes / 1024 / 1024) MB at most).")
+  }
+
+  private func attachmentFailed(_ message: String) -> String? {
+    report(DroppedFileError(message: message), scope: "chat")
+    return nil
+  }
+}

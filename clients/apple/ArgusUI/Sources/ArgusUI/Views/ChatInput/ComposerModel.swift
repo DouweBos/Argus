@@ -4,7 +4,7 @@ import Foundation
 import Observation
 
 /// The composer's state and actions, shared by the Mac and phone inputs: the
-/// draft (text, images, linked projects), the `/` and `@` menus, the model,
+/// draft (text, images, files, linked projects), the `/` and `@` menus, the model,
 /// effort, mode and account pickers, and sending, queueing or starting.
 /// The platform views only render it.
 @MainActor
@@ -38,6 +38,8 @@ public final class ComposerModel {
     didSet { if caret != oldValue { mentionMayHaveMoved() } }
   }
   public internal(set) var images: [PendingImage] = []
+  /// Non-image files; like elements they ride the composer, not the saved draft.
+  public internal(set) var files: [PendingFile] = []
   /// Picked in the browser or the device inspector; they live with the composer, not the saved draft.
   public internal(set) var elements: [PickedElement] = []
   public internal(set) var linkedProjects: [String] = []
@@ -111,7 +113,10 @@ public final class ComposerModel {
     return host.capabilitiesByAgent[agentId] ?? .empty
   }
 
-  public var hasContent: Bool { !trimmedText.isEmpty || !images.isEmpty || !elements.isEmpty }
+  public var hasContent: Bool { !trimmedText.isEmpty || !images.isEmpty || !elements.isEmpty || !files.isEmpty }
+
+  /// A send waits for every file to reach the session's machine.
+  public var isUploadingFiles: Bool { files.contains(where: \.isUploading) }
 
   var trimmedText: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
 
@@ -120,7 +125,7 @@ public final class ComposerModel {
 
   public func canSend(redirect: ComposerStarter? = nil) -> Bool {
     // Dictated words land for review; nothing goes out mid-sentence.
-    guard !dictation.isActive else { return false }
+    guard !dictation.isActive, !isUploadingFiles else { return false }
     let target = sendTarget(redirect: redirect)
     guard target?.ready != false, hasContent || target?.needsContent == false else { return false }
     return target?.needsText != true || !trimmedText.isEmpty
