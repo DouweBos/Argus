@@ -27,6 +27,11 @@ enum TranscriptMarkdown {
         parts.append(.code(language: language.flatMap { $0.isEmpty ? nil : $0 }, text: code(body, language: language)))
         continue
       }
+      if case .table(let columns, let rows) = block {
+        flush()
+        parts.append(.code(language: nil, text: table(columns: columns, rows: rows)))
+        continue
+      }
       if prose.length > 0 { prose.append(NSAttributedString(string: "\n")) }
       prose.append(render(block))
     }
@@ -127,8 +132,9 @@ enum TranscriptMarkdown {
         out.append(line)
       }
       return out
-    case .table(let columns, let rows):
-      return table(columns: columns, rows: rows)
+    case .table:
+      // Split out by `render(markdown:)`, like a fence.
+      return NSAttributedString()
     case .rule:
       return NSAttributedString(
         string: "\u{00A0}",
@@ -137,39 +143,58 @@ enum TranscriptMarkdown {
     }
   }
 
-  /// Columns on tab stops sized to their widest cell, so a table reads as one
-  /// while staying plain, selectable text.
+  /// Columns on tab stops in a box that scrolls sideways, like a fence. A long
+  /// cell is broken into lines here, since wrapping would restart it at the margin.
   private static func table(columns: [String], rows: [[String]]) -> NSAttributedString {
-    let header = columns.map { inline($0, font: .systemFont(ofSize: TextScale.shared(TranscriptStyle.bodySize), weight: .semibold)) }
-    let body = rows.map { $0.map { inline($0, font: TranscriptStyle.body) } }
-    let all = [header] + body
+    let headerFont = NSFont.systemFont(ofSize: TextScale.shared(TranscriptStyle.bodySize), weight: .semibold)
+    let all = [columns.map { inline($0, font: headerFont) }] + rows.map { $0.map { inline($0, font: TranscriptStyle.body) } }
     let count = all.map(\.count).max() ?? 0
+    let wrapped = all.map { cells in (0..<count).map { cells.indices.contains($0) ? lines(of: cells[$0], width: 280) : [] } }
     var stops: [CGFloat] = []
-    var x: CGFloat = 10
+    var x: CGFloat = 0
     for column in 0..<count {
       if column > 0 { stops.append(x) }
-      let widest = all.compactMap { $0.indices.contains(column) ? $0[column].size().width : nil }.max() ?? 0
-      x += min(widest, 280) + 18
+      let widest = wrapped.flatMap { $0[column] }.map { ceil($0.size().width) }.max() ?? 0
+      x += widest + 24
     }
-    let style = NSMutableParagraphStyle()
-    style.tabStops = stops.map { NSTextTab(textAlignment: .left, location: $0) }
-    style.headIndent = 10
-    style.firstLineHeadIndent = 10
-    style.paragraphSpacingBefore = 10
-    style.paragraphSpacing = 14
-    style.lineSpacing = 3
 
     let out = NSMutableAttributedString()
-    for (index, cells) in all.enumerated() {
-      if index > 0 { out.append(NSAttributedString(string: lineSeparator)) }
-      for (column, cell) in cells.enumerated() {
-        if column > 0 { out.append(NSAttributedString(string: "\t")) }
-        out.append(cell)
+    for (index, cells) in wrapped.enumerated() {
+      let style = NSMutableParagraphStyle()
+      style.tabStops = stops.map { NSTextTab(textAlignment: .left, location: $0) }
+      style.lineSpacing = 2
+      style.paragraphSpacing = index == 0 ? 8 : 6
+      let row = NSMutableAttributedString()
+      for line in 0..<(cells.map(\.count).max() ?? 0) {
+        if line > 0 { row.append(NSAttributedString(string: lineSeparator)) }
+        for (column, cell) in cells.enumerated() {
+          if column > 0 { row.append(NSAttributedString(string: "\t")) }
+          if cell.indices.contains(line) { row.append(cell[line]) }
+        }
       }
+      row.addAttribute(.paragraphStyle, value: style, range: NSRange(location: 0, length: row.length))
+      if index > 0 { out.append(NSAttributedString(string: "\n")) }
+      out.append(row)
     }
-    out.addAttributes(
-      [.paragraphStyle: style, .transcriptBlock: TranscriptBlock.code.rawValue],
-      range: NSRange(location: 0, length: out.length))
+    linkify(out, mentions: false)
+    return out
+  }
+
+  /// A cell's text broken into lines no wider than `width`.
+  private static func lines(of cell: NSAttributedString, width: CGFloat) -> [NSAttributedString] {
+    let typesetter = CTTypesetterCreateWithAttributedString(cell)
+    var out: [NSAttributedString] = []
+    var start = 0
+    while start < cell.length {
+      let length = CTTypesetterSuggestLineBreak(typesetter, start, Double(width))
+      guard length > 0 else { break }
+      let line = NSMutableAttributedString(attributedString: cell.attributedSubstring(from: NSRange(location: start, length: length)))
+      while let last = line.string.unicodeScalars.last, CharacterSet.whitespacesAndNewlines.contains(last) {
+        line.deleteCharacters(in: NSRange(location: line.length - 1, length: 1))
+      }
+      out.append(line)
+      start += length
+    }
     return out
   }
 
