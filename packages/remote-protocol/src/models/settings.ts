@@ -121,6 +121,8 @@ export const AppSettings = z.object({
   remote_notify_when_focused: z.boolean().optional(),
   /** Serve the web client to direct local-network browsers. Off by default. */
   remote_lan_web_client: z.boolean().optional(),
+  /** Keep the Mac from sleeping on power while remote access is on. On by default. */
+  remote_keep_awake: z.boolean().optional(),
   /** Serve Argus's MCP server to outside clients over OAuth. Off by default. */
   remote_mcp_enabled: z.boolean().optional(),
   // Preferences both desktop apps (Electron and Argus for Mac) read and write.

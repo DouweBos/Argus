@@ -36,6 +36,7 @@ import {
   setConnectionsChangedListener,
 } from "./gateway";
 import { endAllRooms } from "./huddle";
+import { syncKeepAwake } from "./keepAwake";
 import {
   legacyTunnelStates,
   retireLegacyTunnels,
@@ -116,6 +117,8 @@ export interface RemoteStatus {
   notifyWhenFocused: boolean;
   /** Serve the web client to browsers connecting straight over the local network. */
   lanWebClient?: boolean;
+  /** Keep this computer awake on power while remote access is on. */
+  keepAwake?: boolean;
   mcpClients?: boolean;
   mcpGrants?: McpClientGrantView[];
   mcpRequests?: McpAccessRequestView[];
@@ -158,6 +161,7 @@ export async function getRemoteStatus(): Promise<RemoteStatus> {
     legacyTunnels: running ? legacyTunnelStates() : [],
     notifyWhenFocused: Boolean(settings.remote_notify_when_focused),
     lanWebClient: Boolean(settings.remote_lan_web_client),
+    keepAwake: settings.remote_keep_awake !== false,
     mcpClients: Boolean(settings.remote_mcp_enabled),
     mcpGrants: mcpGrantViews(),
     mcpRequests: mcpRequestViews(),
@@ -171,6 +175,7 @@ export async function setRemoteConfig(cfg: {
   enabled?: boolean;
   notifyWhenFocused?: boolean;
   lanWebClient?: boolean;
+  keepAwake?: boolean;
   mcpClients?: boolean;
   retireLegacyTunnels?: boolean;
 }): Promise<RemoteStatus> {
@@ -184,11 +189,18 @@ export async function setRemoteConfig(cfg: {
   if (cfg.lanWebClient !== undefined) {
     patch.remote_lan_web_client = cfg.lanWebClient;
   }
+  if (cfg.keepAwake !== undefined) {
+    patch.remote_keep_awake = cfg.keepAwake;
+  }
   if (cfg.mcpClients !== undefined) {
     patch.remote_mcp_enabled = cfg.mcpClients;
   }
   if (Object.keys(patch).length > 0) {
     saveAppSettings(patch);
+  }
+  if (cfg.keepAwake !== undefined) {
+    // A gateway raised only for a huddle isn't remote access.
+    syncKeepAwake(running && !huddleStartedGateway);
   }
   if (cfg.retireLegacyTunnels) {
     retireLegacyTunnels("user", { spareCloudflare: huddleOwnsCloudflare });
@@ -262,6 +274,7 @@ export async function applyRemoteSettings(): Promise<void> {
   }
   running = true;
   setGatewayOnLan(true);
+  syncKeepAwake(true);
   statusListener?.();
 }
 
@@ -285,6 +298,7 @@ export function stopRemote(): void {
   huddleOwnsCloudflare = false;
   huddleStartedGateway = false;
   setGatewayOnLan(false);
+  syncKeepAwake(false);
   stopTunnel();
   stopLocalGateway();
   clearConnections();

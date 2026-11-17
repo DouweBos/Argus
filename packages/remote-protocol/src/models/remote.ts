@@ -151,6 +151,8 @@ export const RemoteStatus = z.object({
    * network. Absent from an older host.
    */
   lanWebClient: z.boolean().optional(),
+  /** Keep this computer awake on power while remote access is on. Absent from an older host. */
+  keepAwake: z.boolean().optional(),
   /** Serve Argus's MCP server to outside clients over OAuth. Absent from an older host. */
   mcpClients: z.boolean().optional(),
   mcpGrants: z.array(McpClientGrant).optional(),
@@ -168,6 +170,7 @@ export const RemoteConfigPatch = z.object({
   enabled: z.boolean().optional(),
   notifyWhenFocused: z.boolean().optional(),
   lanWebClient: z.boolean().optional(),
+  keepAwake: z.boolean().optional(),
   mcpClients: z.boolean().optional(),
   /** Stop and forget every tunnel an earlier version configured. */
   retireLegacyTunnels: z.boolean().optional(),

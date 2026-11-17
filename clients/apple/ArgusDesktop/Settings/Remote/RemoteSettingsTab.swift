@@ -69,6 +69,16 @@ private struct RemoteSettingsForm: View {
               .task(id: enabled) { if enabled { consented = true } }
           }
         }
+        SettingsToggleRow(
+          "Keep this Mac awake",
+          description: "While it's plugged in, this Mac stays awake with the lid closed so your devices can reach it and agents keep running. On battery it sleeps as usual.",
+          isOn: Binding(
+            get: { status?.keepAwake ?? true },
+            set: { next in
+              Task { _ = await model.apply(.init(keepAwake: next), setting: .keepAwake, on: next) }
+            })
+        )
+        .disabled(model.busy || !enabled)
       }
 
       RemoteTunnelSections(model: model)

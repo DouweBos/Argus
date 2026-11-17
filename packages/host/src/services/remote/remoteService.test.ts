@@ -173,6 +173,20 @@ vi.mock("../telemetry/telemetry", () => ({
   capture: (name: string, props: unknown) => captured.push({ name, props }),
 }));
 const captured = vi.hoisted(() => [] as { name: string; props: unknown }[]);
+const awake = vi.hoisted(() => ({ held: false }));
+vi.mock("../../lib/powerAssertion", () => ({
+  powerAssertion: () => ({
+    hold: () => {
+      awake.held = true;
+    },
+    release: () => {
+      awake.held = false;
+    },
+    get held() {
+      return awake.held;
+    },
+  }),
+}));
 
 const {
   acquirePublicUrl,
@@ -255,6 +269,40 @@ describe("bind/serve matrix", () => {
     await applyRemoteSettings();
 
     expect(gateway.starts.at(-1)?.staticDir).toBeNull();
+  });
+});
+
+describe("keep awake", () => {
+  beforeEach(reset);
+
+  it("holds the Mac awake while remote access runs, by default", async () => {
+    await applyRemoteSettings();
+    expect(awake.held).toBe(true);
+    expect((await getRemoteStatus()).keepAwake).toBe(true);
+
+    stopRemote();
+    expect(awake.held).toBe(false);
+  });
+
+  it("follows the setting without restarting the gateway", async () => {
+    await applyRemoteSettings();
+    const starts = gateway.starts.length;
+
+    const status = await setRemoteConfig({ keepAwake: false });
+    expect(awake.held).toBe(false);
+    expect(status.keepAwake).toBe(false);
+
+    await setRemoteConfig({ keepAwake: true });
+    expect(awake.held).toBe(true);
+    expect(gateway.starts).toHaveLength(starts);
+  });
+
+  it("stays off when remote access is off", async () => {
+    settings.value = { remote_enabled: false };
+    await applyRemoteSettings();
+    await setRemoteConfig({ keepAwake: true });
+
+    expect(awake.held).toBe(false);
   });
 });
 

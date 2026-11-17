@@ -8,54 +8,28 @@
  * Mode is decided by `ARGUS_SERVER=1`, set before any module reads
  * `ARGUS_HOME` or `ARGUS_REMOTE_PORT` at import time (see `bin/hostMode.ts`).
  *
- * Leaf-level on purpose — only node builtins — so `lib/argusHome.ts` can
- * depend on it without pulling the service layer into unit tests.
+ * Leaf-level on purpose — node builtins and `lib/powerAssertion` only — so
+ * `lib/argusHome.ts` can depend on it without pulling the service layer into
+ * unit tests.
  */
 
-import { spawn, type ChildProcess } from "node:child_process";
+import { powerAssertion } from "./lib/powerAssertion";
 
 /** Whether this process is the headless server rather than the desktop app. */
 export function isServerMode(): boolean {
   return process.env.ARGUS_SERVER === "1";
 }
 
-let caffeinate: ChildProcess | null = null;
-
 /**
- * Hold a power assertion for as long as the server runs. A sleeping mini stops
- * agents mid-run and drops every attached client; `-w` ties the child's
- * lifetime to ours so a crash can't leave the machine pinned awake.
+ * Held for as long as the server runs: a sleeping mini stops agents mid-run
+ * and drops every attached client.
  */
+const serverAssertion = powerAssertion(["-i", "-m", "-s"]);
+
 export function startPowerAssertion(): void {
-  if (process.platform !== "darwin" || caffeinate) {
-    return;
-  }
-  try {
-    caffeinate = spawn(
-      "caffeinate",
-      ["-i", "-m", "-s", "-w", String(process.pid)],
-      {
-        detached: true,
-        stdio: "ignore",
-      },
-    );
-    caffeinate.unref();
-    caffeinate.on("exit", () => {
-      caffeinate = null;
-    });
-  } catch {
-    caffeinate = null;
-  }
+  serverAssertion.hold();
 }
 
 export function stopPowerAssertion(): void {
-  if (!caffeinate) {
-    return;
-  }
-  try {
-    caffeinate.kill();
-  } catch {
-    // Best-effort; `caffeinate -w` exits on its own when we do.
-  }
-  caffeinate = null;
+  serverAssertion.release();
 }

@@ -162,6 +162,11 @@ export interface AppSettings {
    */
   remote_lan_web_client?: boolean;
   /**
+   * While remote access is on, keep this Mac from sleeping on power — lid
+   * closed included — so paired devices can still reach it. On by default.
+   */
+  remote_keep_awake?: boolean;
+  /**
    * Serve Argus's MCP server on the gateway to clients that sign in over
    * OAuth. Off by default; each client is still approved on this computer.
    */
