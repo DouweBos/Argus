@@ -12,6 +12,7 @@ import path from "node:path";
 import { warn } from "@argus/host/logger";
 import { loadAppMcpServers } from "../appSettings/store";
 import { getActiveAccessToken } from "./oauth";
+import { listPluginMcpServers } from "./pluginServers";
 
 type McpServerConfig = Record<string, unknown>;
 export type McpServers = Record<string, McpServerConfig>;
@@ -99,35 +100,15 @@ export function listInheritedMcpServers(
 ): InheritedMcpServer[] {
   const out: InheritedMcpServer[] = [];
 
-  // Plugins — preserve per-plugin attribution.
-  const home = os.homedir();
-  const settings = readJson<{ enabledPlugins?: Record<string, boolean> }>(
-    path.join(home, ".claude", "settings.json"),
-  );
-  const enabled = settings?.enabledPlugins ?? {};
-  const installed = readJson<{
-    plugins?: Record<string, { installPath?: string }[]>;
-  }>(path.join(home, ".claude", "plugins", "installed_plugins.json"));
-  const pluginMap = installed?.plugins ?? {};
-  for (const pluginName of Object.keys(enabled).filter((k) => enabled[k])) {
-    const entries = pluginMap[pluginName];
-    const installPath = entries?.[entries.length - 1]?.installPath;
-    if (!installPath) {
-      continue;
-    }
-    const pluginMcp = readJson<{ mcpServers?: McpServers }>(
-      path.join(installPath, ".mcp.json"),
-    );
-    for (const [name, config] of Object.entries(pluginMcp?.mcpServers ?? {})) {
-      out.push({ name, config, source: `plugin:${pluginName}` });
-    }
+  for (const { name, config, plugin } of listPluginMcpServers()) {
+    out.push({ name, config, source: `plugin:${plugin}` });
   }
 
   // ~/.claude.json — top-level entries, then per-project entries.
   const claudeJson = readJson<{
     mcpServers?: McpServers;
     projects?: Record<string, { mcpServers?: McpServers }>;
-  }>(path.join(home, ".claude.json"));
+  }>(path.join(os.homedir(), ".claude.json"));
   for (const [name, config] of Object.entries(claudeJson?.mcpServers ?? {})) {
     out.push({ name, config, source: "~/.claude.json" });
   }
