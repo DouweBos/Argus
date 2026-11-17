@@ -1,5 +1,31 @@
 # argus
 
+## 0.78.0
+
+### Minor Changes
+
+- 73cb6de: Attach any file to a chat message, not just images: Choose File on iPhone sends it to your computer for the agent to read, and the Mac's attach button takes any file too.
+- dee8a7d: Update the bundled conductor CLI to v0.34.4.
+- e6ce99f: Joining a huddle from the web looks like the rest of Argus: the app icon, a step-by-step path in, a preview of the request the host sees, and what you can do once you're let in.
+- 5ba56a5: On a wide screen, a web huddle shows the device and the room chat as tabs in one side panel, like the Mac app, instead of two columns.
+- 04db582: While remote access is on, a plugged-in Mac now stays awake with the lid closed, so your phone stays connected and agents keep running. Turn it off under Settings → Remote.
+- d7f8ed9: Project Settings → Branch protection has a "Protect the default branch" switch. When it's on, sessions hide Push on the default branch and Merge into it, and work lands through a pull request instead.
+
+### Patch Changes
+
+- 8007ce7: The Continue on and Move to submenus in an agent's menu stay open while agents are working instead of flickering.
+- a1c771a: Branch lists and pickers show the repository's default branch first.
+- 5237b55: The message box in a web huddle now spans the full width instead of sitting behind a strip on the left.
+- fe035d9: A huddle's browser tab is named after the shared agent.
+- ba11e15: Tables in chats keep long cells wrapped inside their own column instead of running back to the left edge.
+- f45137d: Agents get MCP servers from Claude Code plugins straight from Claude Code, so organization-synced plugins show up and plugin servers can sign in from the MCP list instead of failing on a stale token.
+- d8bc3c5: The MCP list in Settings now includes servers from plugins your organization syncs to Claude Code.
+- 01c453e: The MCP servers list no longer spills past its edges while a server is signing in; its buttons wrap onto a new line instead.
+- f666bf2: Session Usage stays current while agents run, instead of showing the value from when it was first opened.
+- 468b5cf: Copying text from a chat now copies everything that's highlighted, also after growing a double-clicked word with Shift and the arrow keys.
+- c0e4b40: The web app now shows the Argus icon in the browser tab and on a phone's home screen.
+- f49ba1d: The web app's TV remote now matches the Mac app's: a full-size clickpad under the picture with Menu, Play/Pause and Home (Back and Home on Android TV), and only one "Take control" button while someone else is driving.
+
 ## 0.77.0
 
 ### Minor Changes

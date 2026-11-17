@@ -1,5 +1,16 @@
 # @argus/peacock
 
+## 0.32.0
+
+### Minor Changes
+
+- e6ce99f: Joining a huddle from the web looks like the rest of Argus: the app icon, a step-by-step path in, a preview of the request the host sees, and what you can do once you're let in. <!-- platforms: mac -->
+- d7f8ed9: Project Settings → Branch protection has a "Protect the default branch" switch. When it's on, sessions hide Push on the default branch and Merge into it, and work lands through a pull request instead. <!-- platforms: mac, ios -->
+
+### Patch Changes
+
+- f49ba1d: The web app's TV remote now matches the Mac app's: a full-size clickpad under the picture with Menu, Play/Pause and Home (Back and Home on Android TV), and only one "Take control" button while someone else is driving. <!-- platforms: mac -->
+
 ## 0.31.0
 
 ### Minor Changes
