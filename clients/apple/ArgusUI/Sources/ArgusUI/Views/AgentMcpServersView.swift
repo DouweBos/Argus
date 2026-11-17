@@ -186,7 +186,8 @@ private struct McpServerRow: View {
       .font(.scaled(size: 11))
       .foregroundStyle(theme.textSecondary)
       .fixedSize(horizontal: false, vertical: true)
-      HStack(spacing: 6) {
+      // Wraps rather than widening the popover past its edges at larger text sizes.
+      FlowRow(spacing: 6, rowSpacing: 6, packed: true) {
         if callbackExpected {
           Btn(label: "Paste Address", tone: .secondary, small: true, icon: Icon.link) { pasteAddress() }.fixedSize()
         } else {
