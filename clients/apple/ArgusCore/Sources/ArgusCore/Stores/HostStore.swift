@@ -430,6 +430,11 @@ public final class HostStore {
     case .projectsChanged:
       Task { await refreshProjects() }
 
+    case .usageLimitsChanged:
+      guard let account = try? ProtocolCodec.convert(envelope.payload, to: ArgusProtocol.ClaudeAccountLimits.self)
+      else { return }
+      mergeUsageLimits(account)
+
     case .claudeAccountsChanged:
       struct Payload: Decodable {
         let accounts: [RemoteClaudeAccount]

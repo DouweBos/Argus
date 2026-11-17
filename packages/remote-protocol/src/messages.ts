@@ -89,6 +89,7 @@ import {
   WorktreeCleanupSweep,
 } from "./models/sessions";
 import {
+  ClaudeAccountLimits,
   ClaudeUsageLimits,
   ClaudeUsageSummary,
   LimitHandoffAccount,
@@ -1672,6 +1673,9 @@ export const EventPayloads = {
     accounts: z.array(RemoteClaudeAccount),
     active_id: z.string(),
   }),
+  /** One account's plan limits after a probe or a running agent's rate-limit
+   *  report, so a client showing them never has to poll. */
+  "usage_limits.changed": ClaudeAccountLimits,
   /** Pushed when a sign-in starts needing a code, and again when it ends — the
    *  same shape `login_status` returns, so a client has one thing to render. */
   "claude_accounts.login": RemoteClaudeLoginState,

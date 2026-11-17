@@ -420,5 +420,8 @@ extension ArgusProtocol {
 
     /// `terminal.exit`
     public typealias TerminalExit = ArgusProtocol.EventsTypes.TerminalExitPayload
+
+    /// `usage_limits.changed`
+    public typealias UsageLimitsChanged = ArgusProtocol.ClaudeAccountLimits
   }
 }

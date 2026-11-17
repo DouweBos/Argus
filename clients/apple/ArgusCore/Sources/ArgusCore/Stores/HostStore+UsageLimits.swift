@@ -22,4 +22,15 @@ extension HostStore {
       hooks.errorReported(error, "usage_limits")
     }
   }
+
+  /// One account's fresh numbers, pushed by the host; nothing loaded yet means nothing shown to update.
+  func mergeUsageLimits(_ account: ArgusProtocol.ClaudeAccountLimits) {
+    guard var limits = usageLimits else { return }
+    if let index = limits.accounts.firstIndex(where: { $0.accountId == account.accountId }) {
+      limits.accounts[index] = account
+    } else {
+      limits.accounts.append(account)
+    }
+    usageLimits = limits
+  }
 }

@@ -470,6 +470,8 @@ export const REMOTE_EVENTS = [
   "projects.changed",
   /** The signed-in Claude accounts or the active one changed. */
   "claude_accounts.changed",
+  /** An account's plan limits changed. */
+  "usage_limits.changed",
   /** An in-flight Claude sign-in needs a pasted code, or has finished. */
   "claude_accounts.login",
   /** A user-facing notification (agent finished, needs approval, MCP push). */

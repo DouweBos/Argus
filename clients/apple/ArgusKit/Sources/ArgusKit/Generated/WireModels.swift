@@ -6579,6 +6579,7 @@ extension ArgusProtocol {
     public static let sessionsChanged = EventEnvelopeEvent(rawValue: "sessions.changed")
     public static let projectsChanged = EventEnvelopeEvent(rawValue: "projects.changed")
     public static let claudeAccountsChanged = EventEnvelopeEvent(rawValue: "claude_accounts.changed")
+    public static let usageLimitsChanged = EventEnvelopeEvent(rawValue: "usage_limits.changed")
     public static let claudeAccountsLogin = EventEnvelopeEvent(rawValue: "claude_accounts.login")
     public static let notification = EventEnvelopeEvent(rawValue: "notification")
     public static let hostEndpoints = EventEnvelopeEvent(rawValue: "host.endpoints")

@@ -11,6 +11,7 @@ import type {
 } from "@argus/remote-protocol";
 import { spawn } from "node:child_process";
 import os from "node:os";
+import { emitHostEvent } from "@argus/host/bus";
 import { warn } from "@argus/host/logger";
 import {
   DEFAULT_ACCOUNT_ID,
@@ -177,6 +178,12 @@ async function probe(
   }
 }
 
+/** Clients showing a limit only fetch once; tell them when it moves. */
+function remember(id: string, limits: ClaudeAccountLimits): void {
+  cache.set(id, limits);
+  emitHostEvent("usage:limits-changed", limits);
+}
+
 function limitsFor(
   account: ClaudeAccount | undefined,
   id: string,
@@ -192,7 +199,7 @@ function limitsFor(
   }
   const next = probe(account, id)
     .then((result) => {
-      cache.set(id, result);
+      remember(id, result);
 
       return result;
     })
@@ -229,7 +236,7 @@ export function noteUsageRateLimitLine(accountId: string, line: string): void {
   }
   const windows = applyRateLimitEvent(cached.windows, line, Date.now());
   if (windows) {
-    cache.set(accountId, { ...cached, windows });
+    remember(accountId, { ...cached, windows });
   }
 }
 

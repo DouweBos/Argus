@@ -245,6 +245,7 @@ public enum RemoteEventName: String, Sendable {
   case projectsChanged = "projects.changed"
   case claudeAccountsChanged = "claude_accounts.changed"
   case claudeAccountsLogin = "claude_accounts.login"
+  case usageLimitsChanged = "usage_limits.changed"
   case notification = "notification"
   /// Output of a terminal subscribed to as `terminal:<id>`.
   case terminalData = "terminal.data"

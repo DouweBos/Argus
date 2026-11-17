@@ -983,6 +983,14 @@ export class DeviceConnection implements DeviceMediaController {
       return;
     }
 
+    if (channel === "usage:limits-changed") {
+      if (!this.scope) {
+        this.pushEvent("usage_limits.changed", null, args[0]);
+      }
+
+      return;
+    }
+
     // The browser callback fires on this machine, so a phone can only finish a
     // sign-in by pasting a code — it has to be told one is wanted, and told
     // when the attempt is over rather than left staring at a spinner.
