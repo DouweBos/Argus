@@ -55,6 +55,9 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
   }
 
   private var content: NSAttributedString?
+  /// Set while this view's selection is moved for it (the shared selection, new
+  /// text), which is no selection of the reader's to adopt.
+  private var syncing = false
   private var highlighted: ([NSRange], NSRange?) = ([], nil)
   private let blocks = BlockLayoutDelegate()
   var cursorArea: NSTrackingArea?
@@ -89,7 +92,7 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
     guard content !== text else { return }
     content = text
     highlighted = ([], nil)
-    textStorage?.setAttributedString(text)
+    quietly { textStorage?.setAttributedString(text) }
     layoutWholeDocument()
     showSelection()
   }
@@ -141,7 +144,13 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
 
   /// This view's share of the transcript's selection.
   func showSelection() {
-    guard let unit, let selection, let storage = textStorage else { return }
+    guard let local = sharedRange() else { return }
+    if selectedRange() != local { quietly { setSelectedRange(local) } }
+  }
+
+  /// The part of the shared selection in this text, as a range in it.
+  private func sharedRange() -> NSRange? {
+    guard let unit, let selection, let storage = textStorage else { return nil }
     let length = storage.length
     var local = NSRange(location: min(selectedRange().location, length), length: 0)
     if let range = selection.range(in: unit, length: messageLength) {
@@ -150,10 +159,36 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
       if overlap.length > 0 || (range.length == 0 && NSLocationInRange(range.location, mine)) {
         local = NSRange(location: overlap.location - base, length: overlap.length)
       }
-    } else {
-      local.length = 0
     }
-    if selectedRange() != local { setSelectedRange(local) }
+    return local
+  }
+
+  /// Runs a selection change that is the transcript's, not the reader's.
+  private func quietly(_ change: () -> Void) {
+    let was = syncing
+    syncing = true
+    defer { syncing = was }
+    change()
+  }
+
+  /// AppKit moves the selection itself too: word and paragraph clicks, ⇧-arrow
+  /// keys, Look Up. The shared selection takes each such change over, or ⌘C
+  /// copies something other than what's highlighted.
+  override func setSelectedRanges(_ ranges: [NSValue], affinity: NSSelectionAffinity, stillSelecting: Bool) {
+    super.setSelectedRanges(ranges, affinity: affinity, stillSelecting: stillSelecting)
+    guard !syncing, window?.firstResponder === self, selectedRange() != sharedRange() else { return }
+    adoptLocalSelection()
+  }
+
+  /// This view's own selection as the shared one, keeping the anchor where it was.
+  func adoptLocalSelection() {
+    guard let unit, let selection else { return }
+    let range = selectedRange()
+    let start = base + range.location
+    let end = base + NSMaxRange(range)
+    let anchor = range.length > 0 && selection.anchor == .init(unit: unit, index: end) ? end : start
+    quietly { selection.begin(at: .init(unit: unit, index: anchor)) }
+    if range.length > 0 { quietly { selection.extend(to: .init(unit: unit, index: anchor == start ? end : start)) } }
   }
 
   var startPosition: TranscriptSelection.Position? {

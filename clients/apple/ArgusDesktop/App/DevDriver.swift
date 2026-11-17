@@ -800,6 +800,8 @@
         "return": ("\r", 36), "escape": ("\u{1b}", 53), "tab": ("\t", 48), "delete": ("\u{7f}", 51),
         "down": (String(UnicodeScalar(NSDownArrowFunctionKey)!), 125),
         "up": (String(UnicodeScalar(NSUpArrowFunctionKey)!), 126),
+        "left": (String(UnicodeScalar(NSLeftArrowFunctionKey)!), 123),
+        "right": (String(UnicodeScalar(NSRightArrowFunctionKey)!), 124),
       ]
       let (characters, code) = named[key] ?? (key, UInt16(keyCode ?? 0))
       for type in [NSEvent.EventType.keyDown, .keyUp] {

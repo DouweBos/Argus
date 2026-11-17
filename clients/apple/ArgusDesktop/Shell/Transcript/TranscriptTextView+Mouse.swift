@@ -6,7 +6,8 @@ import AppKit
 extension TranscriptNSTextView {
   override func mouseDown(with event: NSEvent) {
     guard let window else { return super.mouseDown(with: event) }
-    // Word and paragraph selection stay within this text.
+    // Word and paragraph selection stay within this text; the shared
+    // selection follows it as it changes (`setSelectedRanges`).
     if event.clickCount > 1 {
       selection?.clear()
       super.mouseDown(with: event)
@@ -52,16 +53,6 @@ extension TranscriptNSTextView {
     } else if !event.modifierFlags.contains(.shift) {
       shared?.clear()
     }
-  }
-
-  /// A double or triple click picked a word or paragraph here; the shared
-  /// selection takes it over so ⌘C and other rows agree.
-  private func adoptLocalSelection() {
-    guard let unit, let selection else { return }
-    let range = selectedRange()
-    guard range.length > 0 else { return }
-    selection.begin(at: .init(unit: unit, index: base + range.location))
-    selection.extend(to: .init(unit: unit, index: base + range.location + range.length))
   }
 
   var transcriptTable: NSView? {

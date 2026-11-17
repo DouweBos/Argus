@@ -8,10 +8,12 @@
   /// our own window's event path. Coordinates are top-left window points, as
   /// in a `snapshot`.
   ///
-  /// - `agentFixture` (`session`, `count`): the fixture in the main window's agent pane.
+  /// - `agentFixture` (`session`, `count`, `path`): the fixture, or a saved `[RemoteMessage]`
+  ///   JSON at `path`, in the main window's agent pane.
   /// - `tRows`: the rows on screen, with their ids and frames.
   /// - `tText` (`text`, `occurrence`): where a string sits in a transcript text view.
-  /// - `drag` (`x1`, `y1`, `x2`, `y2`, `steps`, `mods`): a press, drag and release.
+  /// - `drag` (`x1`, `y1`, `x2`, `y2`, `steps`, `mods`, `clicks`): a press, drag and release.
+  /// - `tSelection`: what each transcript text highlights, and what ⌘C would copy.
   /// - `hover` (`x`, `y`): a mouse move there, answering with the cursor it left.
   /// - `pasteboard`: what the transcript last copied, from its private pasteboard.
   /// - `tProbe` (`action`: `start` | `stop`, `out`): every frame, where each row on
@@ -31,8 +33,15 @@
           return ["error": "session?"]
         }
         let count = command["count"] as? Int ?? 600
-        let (messages, images) = TranscriptDriver.prepared[count] ?? TranscriptDriver.prepare(count)
+        var (messages, images) = TranscriptDriver.prepared[count] ?? TranscriptDriver.prepare(count)
         TranscriptDriver.prepared[count] = (messages, images)
+        // `path`: a saved chat (`[RemoteMessage]` JSON) instead of the generated one.
+        if let path = command["path"] as? String {
+          guard let data = FileManager.default.contents(atPath: path),
+            let saved = try? JSONDecoder().decode([RemoteMessage].self, from: data)
+          else { return ["error": "path?"] }
+          (messages, images) = (saved, [:])
+        }
         let key = command["agent"] as? String ?? "fixture-agent"
         for (id, data) in images {
           model.store.seedImage(agentId: key, imageId: id, dataURI: "data:image/png;base64,\(data)")
@@ -84,16 +93,17 @@
         else { return ["error": "x1, y1, x2, y2?"] }
         let steps = command["steps"] as? Int ?? 8
         let flags: NSEvent.ModifierFlags = (command["mods"] as? [String] ?? []).contains("shift") ? .shift : []
+        let clicks = command["clicks"] as? Int ?? 1
         let start = point(x1, y1, in: window)
         let end = point(x2, y2, in: window)
         // The tracking loop pulls drags and the release off the queue, so they wait there first.
         for step in 1...steps {
           let t = CGFloat(step) / CGFloat(steps)
           let at = NSPoint(x: start.x + (end.x - start.x) * t, y: start.y + (end.y - start.y) * t)
-          if let event = mouse(.leftMouseDragged, at: at, in: window, flags: flags) { NSApp.postEvent(event, atStart: false) }
+          if let event = mouse(.leftMouseDragged, at: at, in: window, flags: flags, clicks: clicks) { NSApp.postEvent(event, atStart: false) }
         }
-        if let up = mouse(.leftMouseUp, at: end, in: window, flags: flags) { NSApp.postEvent(up, atStart: false) }
-        guard let down = mouse(.leftMouseDown, at: start, in: window, flags: flags) else { return ["error": "event"] }
+        if let up = mouse(.leftMouseUp, at: end, in: window, flags: flags, clicks: clicks) { NSApp.postEvent(up, atStart: false) }
+        guard let down = mouse(.leftMouseDown, at: start, in: window, flags: flags, clicks: clicks) else { return ["error": "event"] }
         window.sendEvent(down)
         return ["ok": true]
       case "hover":
@@ -181,6 +191,16 @@
           "types": board.types?.map(\.rawValue) ?? [],
           "image": (NSImage(pasteboard: board)?.size).map { "\(Int($0.width))x\(Int($0.height))" } ?? NSNull(),
         ]
+      case "tSelection":
+        // What each transcript text highlights, and what ⌘C would copy.
+        let table = transcript(in: window)?.1 as? TranscriptTableView
+        return [
+          "highlighted": (window.contentView.map { textViews(in: $0) } ?? []).compactMap { view -> String? in
+            let range = view.selectedRange()
+            return range.length > 0 ? (view.string as NSString).substring(with: range) : nil
+          },
+          "copies": table?.textSelection?.selectedText ?? NSNull(),
+        ]
       case "clearPasteboard":
         TranscriptSystem.pasteboard.clearContents()
         return ["ok": true]
@@ -257,11 +277,12 @@
     }
 
     private static func mouse(
-      _ type: NSEvent.EventType, at point: NSPoint, in window: NSWindow, flags: NSEvent.ModifierFlags
+      _ type: NSEvent.EventType, at point: NSPoint, in window: NSWindow, flags: NSEvent.ModifierFlags,
+      clicks: Int = 1
     ) -> NSEvent? {
       NSEvent.mouseEvent(
         with: type, location: point, modifierFlags: flags, timestamp: ProcessInfo.processInfo.systemUptime,
-        windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1,
+        windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: clicks,
         pressure: type == .leftMouseUp ? 0 : 1)
     }
 

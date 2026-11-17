@@ -7,8 +7,9 @@
 
   /// Dev-driver ops for measuring the transcript in a running build:
   ///
-  /// - `transcriptSeed` (`repoRoot`, `branch`, `count`, `title`): saves a
-  ///   `TranscriptFixture` chat as the project's chat history, through the host.
+  /// - `transcriptSeed` (`repoRoot`, `branch`, `count`, `title`, `path`): saves a
+  ///   `TranscriptFixture` chat, or the saved messages JSON at `path`, as the
+  ///   project's chat history, through the host.
   /// - `transcriptScroll` (`style`: `trackpad` | `mouse` | `fling`, `gestures`,
   ///   `untilTop`, `out`): wheel events into the transcript's scroll view, the
   ///   way AppKit delivers them, with hangs, frame times and memory written to `out`.
@@ -24,7 +25,12 @@
         else { return ["error": "repoRoot? / no host"] }
         let count = command["count"] as? Int ?? 3000
         let messages = TranscriptFixture.messages(count: count)
-        let saved = TranscriptFixture.saved(messages)
+        var saved = TranscriptFixture.saved(messages)
+        if let path = command["path"] as? String, let raw = FileManager.default.contents(atPath: path),
+          let file = try? JSONSerialization.jsonObject(with: raw) as? [[String: Any]]
+        {
+          saved = file
+        }
         guard let data = try? JSONSerialization.data(withJSONObject: saved),
           let json = try? JSONDecoder().decode([JSONValue].self, from: data)
         else { return ["error": "encode"] }
