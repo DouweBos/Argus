@@ -15,7 +15,10 @@ import { appState } from "../../state";
 
 /** Keyed by `ARGUS_HOME` too, so a dev build's sweep never touches the release's agents. */
 export function agentTmpRoot(): string {
-  const home = createHash("sha256").update(argusHomeDir()).digest("hex").slice(0, 8);
+  const home = createHash("sha256")
+    .update(argusHomeDir())
+    .digest("hex")
+    .slice(0, 8);
   const uid = process.getuid?.() ?? os.userInfo().uid;
 
   return path.join("/tmp", `argus-${uid}-${home}`);
