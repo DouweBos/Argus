@@ -22,6 +22,10 @@ enum Route: Hashable {
   case agent(id: String, label: String)
   case stoppedAgent(historyId: String, repoRoot: String, label: String, branch: String, runnerSessionId: String)
   case changes(sessionId: String, label: String)
+  /// The session's agent turns, newest first, as the desktop's `/git/timeline`.
+  case timeline(sessionId: String, label: String)
+  /// Changes opened on one agent turn, from the timeline.
+  case turnChanges(sessionId: String, label: String, checkpointId: String)
   /// One changed file's diff; `mode` is the Changes screen's `branch` or `working`.
   case fileDiff(sessionId: String, path: String, mode: String)
   /// One session file, read-only. `path` may be absolute; `line` is 1-based.
@@ -92,6 +96,8 @@ enum Route: Hashable {
     case .session, .agent: ArgusRoute.session(id: "", agentId: nil).pattern
     case .compareRun(let id): ArgusRoute.compareRun(groupId: id).pattern
     case .changes(let id, _): ArgusRoute.sessionGit(id: id, view: .working).pattern
+    case .timeline(let id, _): ArgusRoute.sessionGit(id: id, view: .timeline(turn: nil)).pattern
+    case .turnChanges(let id, _, let turn): ArgusRoute.sessionGit(id: id, view: .timeline(turn: turn)).pattern
     case .fileDiff: "/sessions/:sessionId/git/working/diff"
     case .stashes(let id, _): ArgusRoute.sessionGit(id: id, view: .stashes).pattern
     case .branches(let id, _, _): ArgusRoute.sessionGit(id: id, view: .branches(nil)).pattern

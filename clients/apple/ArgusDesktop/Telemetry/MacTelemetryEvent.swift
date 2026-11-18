@@ -401,6 +401,8 @@ enum MacTelemetryEvent {
   /// A diff review comment was added or deleted, the review sent or discarded, or an agent asked to review.
   case diffReviewed(action: StoreEvent.DiffReviewAction, comments: Int)
   case diffScoped(scope: StoreEvent.DiffScopeKind)
+  /// A session's timeline was opened; `turns` is how many it lists.
+  case timelineOpened(turns: Int)
   case reviewGuideUsed(action: StoreEvent.ReviewGuideAction, stops: Int)
   /// The code view read a file into a tab; `language` is a bundled grammar or `other`.
   case editorFileOpened(source: EditorOpenSource, language: String, sizeBucket: String, readOnly: Bool)
@@ -516,6 +518,7 @@ enum MacTelemetryEvent {
     case .memoryEdited: "mac_memory_edited"
     case .diffReviewed: "mac_diff_reviewed"
     case .diffScoped: "mac_diff_scope_changed"
+    case .timelineOpened: "mac_timeline_opened"
     case .reviewGuideUsed: "mac_review_guide_used"
     case .editorFileOpened: "mac_editor_file_opened"
     case .editorFileSaved: "mac_editor_file_saved"
@@ -724,6 +727,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue, "comment_count": comments]
     case .diffScoped(let scope):
       ["scope": scope.rawValue]
+    case .timelineOpened(let turns):
+      ["turn_count": turns]
     case .reviewGuideUsed(let action, let stops):
       ["action": action.rawValue, "stop_count": stops]
     case .editorFileOpened(let source, let language, let sizeBucket, let readOnly):

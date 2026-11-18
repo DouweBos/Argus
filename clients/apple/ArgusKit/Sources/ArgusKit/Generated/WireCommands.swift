@@ -2951,6 +2951,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct GetSessionTimelineParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "sessionId"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
     public struct GetSessionUntrackedDiffParams: Codable, Sendable {
       public var id: String
 
@@ -8350,6 +8367,27 @@ extension ArgusProtocol {
       }
     }
 
+    public struct RestoreTurnEndParams: Codable, Sendable {
+      public var sessionId: String
+      public var checkpointId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "sessionId"
+        case checkpointId = "checkpointId"
+      }
+
+      public init(sessionId: String, checkpointId: String) {
+        self.sessionId = sessionId
+        self.checkpointId = checkpointId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(checkpointId, forKey: .checkpointId)
+      }
+    }
+
     public struct RetrySessionSetupParams: Codable, Sendable {
       public var id: String
 
@@ -9685,6 +9723,27 @@ extension ArgusProtocol {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(key, forKey: .key)
         try c.encode(value, forKey: .value)
+      }
+    }
+
+    public struct UndoTurnRestoreParams: Codable, Sendable {
+      public var sessionId: String
+      public var restoreId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "sessionId"
+        case restoreId = "restoreId"
+      }
+
+      public init(sessionId: String, restoreId: String) {
+        self.sessionId = sessionId
+        self.restoreId = restoreId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(restoreId, forKey: .restoreId)
       }
     }
 
@@ -11103,6 +11162,13 @@ extension ArgusProtocol {
       public typealias Result = String
       public static let name = "get_session_status"
       public static let tier = "admin"
+    }
+
+    public enum GetSessionTimeline: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.GetSessionTimelineParams
+      public typealias Result = ArgusProtocol.SessionTimeline
+      public static let name = "get_session_timeline"
+      public static let tier = "monitor"
     }
 
     public enum GetSessionUntrackedDiff: RemoteCommand {
@@ -13030,6 +13096,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum RestoreTurnEnd: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.RestoreTurnEndParams
+      public typealias Result = ArgusProtocol.TimelineRestore
+      public static let name = "restore_turn_end"
+      public static let tier = "control"
+    }
+
     public enum ResumeAllWatchers: RemoteCommand {
       public typealias Params = EmptyParams
       public typealias Result = IgnoredResult
@@ -13462,6 +13535,13 @@ extension ArgusProtocol {
       public typealias Result = JSONValue
       public static let name = "ui_state_set"
       public static let tier = "admin"
+    }
+
+    public enum UndoTurnRestore: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.UndoTurnRestoreParams
+      public typealias Result = IgnoredResult
+      public static let name = "undo_turn_restore"
+      public static let tier = "control"
     }
 
     public enum UnstageAll: RemoteCommand {

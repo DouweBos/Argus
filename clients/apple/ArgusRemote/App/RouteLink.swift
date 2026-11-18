@@ -103,6 +103,8 @@ extension PhoneDestination {
     case .compare(let left, let right) where !left.isEmpty && !right.isEmpty:
       return .branchCompare(sessionId: session.id, left: left, right: right)
     case .guide: return .reviewGuide(target: .session(id: session.id), label: "Guide")
+    case .timeline(let turn?): return .turnChanges(sessionId: session.id, label: label, checkpointId: turn)
+    case .timeline(nil): return .timeline(sessionId: session.id, label: label)
     default: return .changes(sessionId: session.id, label: label)
     }
   }

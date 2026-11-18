@@ -16865,6 +16865,100 @@ extension ArgusProtocol {
     }
   }
 
+  public struct RemoteTimelineRestore: Codable, Sendable {
+    public var id: String
+    public var checkpointId: String
+    public var turnNumber: Int
+    public var timestamp: Double
+    public var undoneAt: Double?
+    public var canUndo: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case checkpointId = "checkpoint_id"
+      case turnNumber = "turn_number"
+      case timestamp = "timestamp"
+      case undoneAt = "undone_at"
+      case canUndo = "can_undo"
+    }
+
+    public init(id: String, checkpointId: String, turnNumber: Int, timestamp: Double, undoneAt: Double? = nil, canUndo: Bool) {
+      self.id = id
+      self.checkpointId = checkpointId
+      self.turnNumber = turnNumber
+      self.timestamp = timestamp
+      self.undoneAt = undoneAt
+      self.canUndo = canUndo
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(checkpointId, forKey: .checkpointId)
+      try c.encode(turnNumber, forKey: .turnNumber)
+      try c.encode(timestamp, forKey: .timestamp)
+      try c.encode(undoneAt, forKey: .undoneAt)
+      try c.encode(canUndo, forKey: .canUndo)
+    }
+  }
+
+  public struct RemoteTimelineTurn: Codable, Sendable {
+    public var number: Int
+    public var checkpointId: String
+    public var agentId: String
+    public var prompt: String
+    public var timestamp: Double
+    public var agentTitle: String?
+    public var available: Bool
+    public var finished: Bool
+    public var files: Int
+    public var additions: Int
+    public var deletions: Int
+
+    enum CodingKeys: String, CodingKey {
+      case number = "number"
+      case checkpointId = "checkpoint_id"
+      case agentId = "agent_id"
+      case prompt = "prompt"
+      case timestamp = "timestamp"
+      case agentTitle = "agent_title"
+      case available = "available"
+      case finished = "finished"
+      case files = "files"
+      case additions = "additions"
+      case deletions = "deletions"
+    }
+
+    public init(number: Int, checkpointId: String, agentId: String, prompt: String, timestamp: Double, agentTitle: String? = nil, available: Bool, finished: Bool, files: Int, additions: Int, deletions: Int) {
+      self.number = number
+      self.checkpointId = checkpointId
+      self.agentId = agentId
+      self.prompt = prompt
+      self.timestamp = timestamp
+      self.agentTitle = agentTitle
+      self.available = available
+      self.finished = finished
+      self.files = files
+      self.additions = additions
+      self.deletions = deletions
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(number, forKey: .number)
+      try c.encode(checkpointId, forKey: .checkpointId)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(prompt, forKey: .prompt)
+      try c.encode(timestamp, forKey: .timestamp)
+      try c.encode(agentTitle, forKey: .agentTitle)
+      try c.encode(available, forKey: .available)
+      try c.encode(finished, forKey: .finished)
+      try c.encode(files, forKey: .files)
+      try c.encode(additions, forKey: .additions)
+      try c.encode(deletions, forKey: .deletions)
+    }
+  }
+
   public struct RemoteTodoStatus: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -18417,6 +18511,31 @@ extension ArgusProtocol {
 
   public typealias SessionStatus = JSONValue
 
+  public struct SessionTimeline: Codable, Sendable {
+    public var busy: Bool
+    public var restores: [TimelineRestore]
+    public var turns: [TimelineTurn]
+
+    enum CodingKeys: String, CodingKey {
+      case busy = "busy"
+      case restores = "restores"
+      case turns = "turns"
+    }
+
+    public init(busy: Bool, restores: [TimelineRestore], turns: [TimelineTurn]) {
+      self.busy = busy
+      self.restores = restores
+      self.turns = turns
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(busy, forKey: .busy)
+      try c.encode(restores, forKey: .restores)
+      try c.encode(turns, forKey: .turns)
+    }
+  }
+
   public typealias SetupCopyEntry = JSONValue
 
   public struct ShareErrorKind: RawRepresentable, Codable, Hashable, Sendable {
@@ -19003,6 +19122,100 @@ extension ArgusProtocol {
       try c.encode(runTitle, forKey: .runTitle)
       try c.encode(sessionId, forKey: .sessionId)
       try c.encode(title, forKey: .title)
+    }
+  }
+
+  public struct TimelineRestore: Codable, Sendable {
+    public var canUndo: Bool
+    public var checkpointId: String
+    public var id: String
+    public var timestamp: Double
+    public var turnNumber: Int
+    public var undoneAt: Double?
+
+    enum CodingKeys: String, CodingKey {
+      case canUndo = "canUndo"
+      case checkpointId = "checkpointId"
+      case id = "id"
+      case timestamp = "timestamp"
+      case turnNumber = "turnNumber"
+      case undoneAt = "undoneAt"
+    }
+
+    public init(canUndo: Bool, checkpointId: String, id: String, timestamp: Double, turnNumber: Int, undoneAt: Double? = nil) {
+      self.canUndo = canUndo
+      self.checkpointId = checkpointId
+      self.id = id
+      self.timestamp = timestamp
+      self.turnNumber = turnNumber
+      self.undoneAt = undoneAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(canUndo, forKey: .canUndo)
+      try c.encode(checkpointId, forKey: .checkpointId)
+      try c.encode(id, forKey: .id)
+      try c.encode(timestamp, forKey: .timestamp)
+      try c.encode(turnNumber, forKey: .turnNumber)
+      try c.encode(undoneAt, forKey: .undoneAt)
+    }
+  }
+
+  public struct TimelineTurn: Codable, Sendable {
+    public var additions: Int
+    public var agentId: String
+    public var agentTitle: String?
+    public var available: Bool
+    public var checkpointId: String
+    public var deletions: Int
+    public var files: Int
+    public var finished: Bool
+    public var number: Int
+    public var prompt: String
+    public var timestamp: Double
+
+    enum CodingKeys: String, CodingKey {
+      case additions = "additions"
+      case agentId = "agentId"
+      case agentTitle = "agentTitle"
+      case available = "available"
+      case checkpointId = "checkpointId"
+      case deletions = "deletions"
+      case files = "files"
+      case finished = "finished"
+      case number = "number"
+      case prompt = "prompt"
+      case timestamp = "timestamp"
+    }
+
+    public init(additions: Int, agentId: String, agentTitle: String? = nil, available: Bool, checkpointId: String, deletions: Int, files: Int, finished: Bool, number: Int, prompt: String, timestamp: Double) {
+      self.additions = additions
+      self.agentId = agentId
+      self.agentTitle = agentTitle
+      self.available = available
+      self.checkpointId = checkpointId
+      self.deletions = deletions
+      self.files = files
+      self.finished = finished
+      self.number = number
+      self.prompt = prompt
+      self.timestamp = timestamp
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(additions, forKey: .additions)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(agentTitle, forKey: .agentTitle)
+      try c.encode(available, forKey: .available)
+      try c.encode(checkpointId, forKey: .checkpointId)
+      try c.encode(deletions, forKey: .deletions)
+      try c.encode(files, forKey: .files)
+      try c.encode(finished, forKey: .finished)
+      try c.encode(number, forKey: .number)
+      try c.encode(prompt, forKey: .prompt)
+      try c.encode(timestamp, forKey: .timestamp)
     }
   }
 

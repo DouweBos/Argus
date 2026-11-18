@@ -62,6 +62,9 @@ extension GalleryFixtures {
         "name": "Maya Chen", "email": "maya.chen@example.com", "can_sign": false,
       ]),
       RemoteMethod.sessionsTurns.rawValue: GalleryJSON.encode(["turns": turns]),
+      RemoteMethod.sessionsTimeline.rawValue: GalleryJSON.encode([
+        "turns": timelineTurns, "restores": timelineRestores, "busy": false,
+      ]),
       // The branch's last commit stands in for the turn: the gallery repository has no checkpoints.
       RemoteMethod.sessionsDiffRange.rawValue: GalleryJSON.encode(["from": "HEAD~1", "to": "HEAD"]),
       RemoteMethod.sessionsMergeBlockers.rawValue: GalleryJSON.encode(["blockers": [String]()]),
@@ -74,6 +77,45 @@ extension GalleryFixtures {
         "setup": ["copy": [], "symlink": [], "commands": []], "terminals": [], "workspaceEnv": [], "run": [],
         "browserPresets": [], "protectedBranches": ["main"], "releaseNotePatterns": [], "simulatorDeeplinks": [],
       ]),
+    ]
+  }
+
+  /// `(prompt, agent, files, +, −, hours ago)`, oldest first: two agents over a day and a half.
+  private static let timelineScript: [(String, String, Int, Int, Int, Double)] = [
+    ("Add a merge strategy setting per project, defaulting to merge commits", "Merge strategy", 3, 84, 6, 34),
+    ("Read the setting when merging a session back", "Merge strategy", 2, 41, 12, 33),
+    ("Show the strategy in Project Settings with a short explanation", "Merge strategy", 4, 126, 18, 30),
+    ("Rename \"fast-forward only\" to \"rebase and fast-forward\"", "Merge strategy", 3, 9, 9, 27),
+    ("Also cover squash merges in the tests", "Merge strategy", 2, 112, 3, 26),
+    ("Why does the squash test fail on CI but not locally?", "Merge strategy", 1, 4, 2, 24),
+    ("Fix the flaky timeout in merge.integration.test.ts", "Fix flaky tests", 1, 7, 3, 22),
+    ("Document the setting in project-settings.md", "Merge strategy", 1, 23, 0, 8),
+    ("Refuse a squash merge when the branch has merge commits", "Merge strategy", 3, 58, 14, 6),
+    ("Undo the last change, keep the error message though", "Merge strategy", 2, 6, 31, 5),
+    ("Name the default strategy instead of using a string literal", "Merge strategy", 5, 19, 19, 2),
+    ("Run the linter and fix what it finds", "Merge strategy", 3, 12, 15, 0.3),
+  ]
+
+  private static var timelineTurns: [[String: Any]] {
+    timelineScript.enumerated().map { index, turn in
+      [
+        "number": index + 1, "checkpoint_id": "gallery-turn-\(index + 1)",
+        "agent_id": turn.1 == "Merge strategy" ? "gallery-agent" : "gallery-agent-2", "agent_title": turn.1,
+        "prompt": turn.0, "timestamp": ago(hours: turn.5),
+        // A prune took turn 2's checkpoint with it.
+        "available": index != 1, "finished": true,
+        "files": index == 1 ? 0 : turn.2, "additions": index == 1 ? 0 : turn.3, "deletions": index == 1 ? 0 : turn.4,
+      ]
+    }
+  }
+
+  /// Turn 9 put back after turn 10 went the wrong way, still undoable.
+  private static var timelineRestores: [[String: Any]] {
+    [
+      [
+        "id": "gallery-restore-1", "checkpoint_id": "gallery-turn-9", "turn_number": 9,
+        "timestamp": ago(hours: 4), "undone_at": NSNull(), "can_undo": false,
+      ]
     ]
   }
 

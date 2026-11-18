@@ -1,21 +1,24 @@
 import ArgusCore
+import ArgusUI
 import Foundation
 
 /// A git panel view as its tab bar shows it, Grove's `RepositoryTab`. Each
 /// maps onto a `GitRoute`; the bar only navigates.
 enum GitTab: Hashable {
   case changes, branch, history, stashes, pullRequests, branchesReview, conflicts
-  case reflog, blame, bisect, hooks, submodules, settings, guide
+  case reflog, blame, bisect, hooks, submodules, settings, guide, timeline
   /// Opened from a ref's or commit's menu, never from the bar; a tab while open.
   case compare, interactiveRebase
 
   /// Always shown; the rest live in the More menu and get a tab only while open.
   static func primary(isProject: Bool) -> [GitTab] {
-    isProject ? [.changes, .history, .stashes, .pullRequests, .branchesReview] : [.changes, .branch, .guide, .stashes]
+    isProject
+      ? [.changes, .history, .stashes, .pullRequests, .branchesReview]
+      : [.changes, .branch, .timeline, .guide, .stashes]
   }
 
   static func secondary(isProject: Bool) -> [GitTab] {
-    isProject ? [.reflog, .blame, .bisect, .hooks, .submodules, .settings] : [.reflog, .blame]
+    isProject ? [.timeline, .reflog, .blame, .bisect, .hooks, .submodules, .settings] : [.reflog, .blame]
   }
 
   /// Ref routes are filtered history, so they keep History lit, as in Grove.
@@ -37,6 +40,7 @@ enum GitTab: Hashable {
     case .compare: self = .compare
     case .interactiveRebase: self = .interactiveRebase
     case .guide: self = .guide
+    case .timeline: self = .timeline
     }
   }
 
@@ -57,6 +61,7 @@ enum GitTab: Hashable {
     case .submodules: .submodules
     case .settings: .settings
     case .guide: .guide
+    case .timeline: .timeline(turn: nil)
     case .compare, .interactiveRebase: nil
     }
   }
@@ -79,6 +84,7 @@ enum GitTab: Hashable {
     case .compare: "Compare"
     case .interactiveRebase: "Interactive Rebase"
     case .guide: "Guide"
+    case .timeline: "Timeline"
     }
   }
 
@@ -100,6 +106,7 @@ enum GitTab: Hashable {
     case .compare: "arrow.left.arrow.right"
     case .interactiveRebase: "list.number"
     case .guide: "map"
+    case .timeline: Icon.timeline
     }
   }
 }

@@ -152,6 +152,8 @@ struct GitWorkspaceView: View {
       ProjectPullRequestsView(repoRoot: session.repoRoot)
     case .guide:
       ReviewGuideScreen(target: .session(id: session.id))
+    case .timeline(let turn):
+      TimelineScreen(workspace: workspace, turnId: turn)
     case .working, .branch, .history, .branches, .tags, .stashes:
       EmptyView()
     }

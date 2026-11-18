@@ -16,6 +16,9 @@
         panel("git/changes", worktree: true, view: .working),
         panel("git/changes/last-turn", worktree: true, view: .working, scope: .lastTurn),
         panel("git/branch", worktree: true, view: .branch),
+        // Twelve turns over two agents, one whose checkpoint is gone and one restored to.
+        panel("timeline", worktree: true, view: .timeline(turn: nil)),
+        panel("timeline/turn", worktree: true, view: .timeline(turn: "gallery-turn-9")),
         panel("git/branches", worktree: false, view: .branches(nil)),
         panel("git/history", worktree: false, view: .history),
         panel("git/compare", worktree: false, view: .compare(left: "main", right: GalleryGit.branch)),
@@ -70,6 +73,13 @@
       await workspace.refreshAll()
       workspace.scopedDiff.scope = scope
       await workspace.scopedDiff.load()
+      if case .timeline(let turnId) = view {
+        await workspace.timeline.load()
+        if let turn = workspace.timeline.timeline.turn(turnId) {
+          workspace.timelineDiff.scope = .turn(turn.sessionTurn)
+          await workspace.timelineDiff.load()
+        }
+      }
       await (workspace.visibleHistory ?? workspace.history).loadIfNeeded()
     }
 

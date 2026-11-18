@@ -7639,6 +7639,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsRestoreTurnParams: Codable, Sendable {
+      public var sessionId: String
+      public var checkpointId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case checkpointId = "checkpoint_id"
+      }
+
+      public init(sessionId: String, checkpointId: String) {
+        self.sessionId = sessionId
+        self.checkpointId = checkpointId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(checkpointId, forKey: .checkpointId)
+      }
+    }
+
+    public struct SessionsRestoreTurnResult: Codable, Sendable {
+      public var restore: RemoteTimelineRestore
+
+      enum CodingKeys: String, CodingKey {
+        case restore = "restore"
+      }
+
+      public init(restore: RemoteTimelineRestore) {
+        self.restore = restore
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(restore, forKey: .restore)
+      }
+    }
+
     public struct SessionsRetrySetupParams: Codable, Sendable {
       public var id: String
 
@@ -8034,6 +8072,48 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsTimelineParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct SessionsTimelineResult: Codable, Sendable {
+      public var turns: [RemoteTimelineTurn]
+      public var restores: [RemoteTimelineRestore]
+      public var busy: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case turns = "turns"
+        case restores = "restores"
+        case busy = "busy"
+      }
+
+      public init(turns: [RemoteTimelineTurn], restores: [RemoteTimelineRestore], busy: Bool) {
+        self.turns = turns
+        self.restores = restores
+        self.busy = busy
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(turns, forKey: .turns)
+        try c.encode(restores, forKey: .restores)
+        try c.encode(busy, forKey: .busy)
+      }
+    }
+
     public struct SessionsTurnsParams: Codable, Sendable {
       public var sessionId: String
 
@@ -8065,6 +8145,44 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(turns, forKey: .turns)
+      }
+    }
+
+    public struct SessionsUndoRestoreParams: Codable, Sendable {
+      public var sessionId: String
+      public var restoreId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case restoreId = "restore_id"
+      }
+
+      public init(sessionId: String, restoreId: String) {
+        self.sessionId = sessionId
+        self.restoreId = restoreId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(restoreId, forKey: .restoreId)
+      }
+    }
+
+    public struct SessionsUndoRestoreResult: Codable, Sendable {
+      public var ok: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case ok = "ok"
+      }
+
+      public init(ok: Bool) {
+        self.ok = ok
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(ok, forKey: .ok)
       }
     }
 
@@ -9611,6 +9729,12 @@ extension ArgusProtocol {
       public static let name = "sessions.restack"
     }
 
+    public enum SessionsRestoreTurn: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsRestoreTurnParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsRestoreTurnResult
+      public static let name = "sessions.restore_turn"
+    }
+
     public enum SessionsRetrySetup: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsRetrySetupParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsRetrySetupResult
@@ -9671,10 +9795,22 @@ extension ArgusProtocol {
       public static let name = "sessions.tags"
     }
 
+    public enum SessionsTimeline: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsTimelineParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsTimelineResult
+      public static let name = "sessions.timeline"
+    }
+
     public enum SessionsTurns: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsTurnsParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsTurnsResult
       public static let name = "sessions.turns"
+    }
+
+    public enum SessionsUndoRestore: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsUndoRestoreParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsUndoRestoreResult
+      public static let name = "sessions.undo_restore"
     }
 
     public enum SessionsUploadAttachment: RemoteCommand {

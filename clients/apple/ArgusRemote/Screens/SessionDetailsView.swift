@@ -160,7 +160,12 @@ struct SessionDetailsView: View {
         }
       }
       changesRow
+      timelineRow
     }
+  }
+
+  private var timelineRow: some View {
+    row("Timeline", icon: Icon.timeline, to: .timeline(sessionId: session.id, label: label))
   }
 
   private var changesRow: some View {
@@ -183,7 +188,10 @@ struct SessionDetailsView: View {
 
   private var work: some View {
     Section {
-      if session.isOutsideProjects { changesRow }
+      if session.isOutsideProjects {
+        changesRow
+        timelineRow
+      }
       if control {
         row("Open file", icon: Icon.file, to: .quickOpen(sessionId: session.id, label: label))
         row("Search files", icon: Icon.search, to: .fileSearch(sessionId: session.id, label: label))

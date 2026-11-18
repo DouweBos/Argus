@@ -162,6 +162,8 @@ public enum StoreEvent: Sendable, Equatable {
   /// `comments` is how many drafts the session holds once the action is done (sent: how many went).
   case diffReviewed(action: DiffReviewAction, comments: Int)
   case diffScoped(scope: DiffScopeKind)
+  /// A session's timeline was opened; `turns` is how many it lists.
+  case timelineOpened(turns: Int)
   /// `stops` is how many stops the guide has.
   case reviewGuideUsed(action: ReviewGuideAction, stops: Int)
   case offlineReply(action: OfflineReplyAction)

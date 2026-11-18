@@ -41,6 +41,8 @@ import {
   RemoteCommit,
   RemoteGitBranch,
   RemoteSessionTurn,
+  RemoteTimelineRestore,
+  RemoteTimelineTurn,
   RemoteGitStatus,
   RemoteTerminal,
   RemoteTerminalOutput,
@@ -661,6 +663,16 @@ export const MethodParams = {
     checkpoint_id: z.string().optional(),
   }),
   "sessions.turns": z.object({ session_id: z.string() }),
+  "sessions.timeline": z.object({ session_id: z.string() }),
+  /** Files only, back to where the turn ended; the conversation stays. */
+  "sessions.restore_turn": z.object({
+    session_id: z.string(),
+    checkpoint_id: z.string(),
+  }),
+  "sessions.undo_restore": z.object({
+    session_id: z.string(),
+    restore_id: z.string(),
+  }),
   /** Two commits to diff: a turn (the latest without `checkpoint_id`) or the whole branch, uncommitted work included. */
   "sessions.diff_range": z.object({
     session_id: z.string(),
@@ -1279,6 +1291,14 @@ export const MethodResult = {
   "sessions.viewed_files": z.object({ files: z.array(RemoteViewedFile) }),
   "sessions.set_file_viewed": z.object({ files: z.array(RemoteViewedFile) }),
   "sessions.turns": z.object({ turns: z.array(RemoteSessionTurn) }),
+  /** Turns oldest first; `busy` while an agent in the session works. */
+  "sessions.timeline": z.object({
+    turns: z.array(RemoteTimelineTurn),
+    restores: z.array(RemoteTimelineRestore),
+    busy: z.boolean(),
+  }),
+  "sessions.restore_turn": z.object({ restore: RemoteTimelineRestore }),
+  "sessions.undo_restore": z.object({ ok: z.literal(true) }),
   "sessions.diff_range": z.object({ from: z.string(), to: z.string() }),
   /** Git's own output, so a refusal reads the same as it does in a terminal. */
   "sessions.commit": z.object({ output: z.string() }),

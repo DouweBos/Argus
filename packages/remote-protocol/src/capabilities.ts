@@ -252,6 +252,10 @@ export const REMOTE_METHODS = {
   /** Review bookkeeping on the computer, so a watcher doesn't change it. */
   "sessions.set_file_viewed": "control",
   "sessions.turns": "monitor",
+  "sessions.timeline": "monitor",
+  /** Rewrites the worktree's files, though recoverably. */
+  "sessions.restore_turn": "control",
+  "sessions.undo_restore": "control",
   "sessions.diff_range": "monitor",
   "sessions.merge_blockers": "monitor",
   "sessions.merge_conflicts": "monitor",

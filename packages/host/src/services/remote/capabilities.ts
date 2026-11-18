@@ -85,6 +85,12 @@ import {
 } from "../agent/pins/pins";
 import { pinSessionAccount } from "../agent/sessionAccountPin";
 import { getStartOptions } from "../agent/startOptions";
+import {
+  type TimelineRestore,
+  getSessionTimeline,
+  restoreToTurnEnd,
+  undoTurnRestore,
+} from "../agent/timeline";
 import { listSessionTurns, sessionDiffRange } from "../agent/turns";
 import { setViewingSession } from "../agent/warmPolicy";
 import { loadAppSettings, saveAppSettings } from "../appSettings/store";
@@ -868,6 +874,17 @@ export function remoteClaudeAccounts(): {
 }
 
 /** Run a control-service call, mapping its string throws to gateway errors. */
+function remoteRestore(r: TimelineRestore) {
+  return {
+    id: r.id,
+    checkpoint_id: r.checkpointId,
+    turn_number: r.turnNumber,
+    timestamp: r.timestamp,
+    undone_at: r.undoneAt,
+    can_undo: r.canUndo,
+  };
+}
+
 async function control<T>(fn: () => Promise<T> | T): Promise<T> {
   try {
     return await fn();
@@ -2338,6 +2355,48 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         timestamp: t.timestamp,
       })),
     };
+  },
+  "sessions.timeline": async (params) => {
+    const { session_id } = parse("sessions.timeline", params);
+    requireSession(session_id);
+    const timeline = await control(() => getSessionTimeline(session_id));
+
+    return {
+      turns: timeline.turns.map((t) => ({
+        number: t.number,
+        checkpoint_id: t.checkpointId,
+        agent_id: t.agentId,
+        agent_title: t.agentTitle,
+        prompt: t.prompt,
+        timestamp: t.timestamp,
+        available: t.available,
+        finished: t.finished,
+        files: t.files,
+        additions: t.additions,
+        deletions: t.deletions,
+      })),
+      restores: timeline.restores.map(remoteRestore),
+      busy: timeline.busy,
+    };
+  },
+  "sessions.restore_turn": async (params) => {
+    const { session_id, checkpoint_id } = parse(
+      "sessions.restore_turn",
+      params,
+    );
+    requireSession(session_id);
+    const restore = await control(() =>
+      restoreToTurnEnd(session_id, checkpoint_id),
+    );
+
+    return { restore: remoteRestore(restore) };
+  },
+  "sessions.undo_restore": async (params) => {
+    const { session_id, restore_id } = parse("sessions.undo_restore", params);
+    requireSession(session_id);
+    await control(() => undoTurnRestore(session_id, restore_id));
+
+    return { ok: true as const };
   },
   "sessions.diff_range": async (params) => {
     const { session_id, scope, checkpoint_id } = parse(

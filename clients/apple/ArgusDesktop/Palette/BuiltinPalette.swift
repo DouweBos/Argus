@@ -86,6 +86,11 @@ enum BuiltinPalette {
       ) { model.show(panel, via: .palette) }
     }
     commands += panelCommands(model)
+    commands.append(
+      PaletteCommand(
+        id: "session.timeline", title: "Show Timeline", section: "Session",
+        keywords: ["versions", "turns", "checkpoints", "restore", "history"], systemImage: Icon.timeline
+      ) { model.navigate(.sessionGit(id: id, view: .timeline(turn: nil))) })
     if model.sessionReadyForAgent != nil {
       commands.append(
         PaletteCommand(

@@ -16,6 +16,9 @@
         GalleryStory("git/changes/last-turn", fixtures: fixtures(worktree), setup: sessions) {
           ChangesView(sessionId: worktree, label: "Merge strategy", mode: "turn")
         },
+        GalleryStory("timeline", fixtures: fixtures(worktree), setup: sessions) {
+          SessionTimelineView(sessionId: worktree, label: "Merge strategy")
+        },
         GalleryStory("git/file-diff", fixtures: fixtures(worktree), setup: sessions) {
           FileDiffView(sessionId: worktree, path: "src/session/merge.ts", mode: "working")
         },

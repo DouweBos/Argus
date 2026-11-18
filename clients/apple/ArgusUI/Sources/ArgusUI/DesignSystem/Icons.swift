@@ -114,6 +114,8 @@ public enum Icon {
   public static let price = "dollarsign.circle"
   public static let model = "cpu"
   public static let undo = "arrow.uturn.backward"
+  public static let timeline = "timeline.selection"
+  public static let restoreVersion = "clock.arrow.trianglehead.counterclockwise.rotate.90"
   public static let notification = "bell.fill"
   public static let androidBack = "arrow.left"
   public static let androidRecents = "square.on.square"

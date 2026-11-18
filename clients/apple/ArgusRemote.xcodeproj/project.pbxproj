@@ -28,6 +28,7 @@
 		5E7A00000000000000000008 /* ArgusSyntax in Frameworks */ = {isa = PBXBuildFile; productRef = 5E7A00000000000000000006 /* ArgusSyntax */; };
 		613A936BB70479302327501E /* AutomationEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D15E7D98AC7167AE4C6BCF68 /* AutomationEditorView.swift */; };
 		61D0A65B0EF57B4FB152AFF6 /* StashesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EF27D5904269DE56D427462 /* StashesView.swift */; };
+		5E7A11C0A1B2C3D4E5F60701 /* SessionTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E7A11C0A1B2C3D4E5F60702 /* SessionTimelineView.swift */; };
 		62E03119A15A5081356F0C0E /* ArgusKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6625E1D6BCC577429BF7B696 /* ArgusKit */; };
 		6897D3167EEB3794CED55DDA /* ProjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0194276208D56EEC2428E4B /* ProjectView.swift */; };
 		6B0F00000000000000000003 /* GroveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6B0F00000000000000000002 /* GroveKit */; };
@@ -184,6 +185,7 @@
 		000942DD08EA0A5619FDAD77 /* AppStore+Push.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStore+Push.swift"; sourceTree = "<group>"; };
 		0E2171FDF4B199BD1A0795D6 /* NotificationRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationRouter.swift; sourceTree = "<group>"; };
 		0EF27D5904269DE56D427462 /* StashesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StashesView.swift; sourceTree = "<group>"; };
+		5E7A11C0A1B2C3D4E5F60702 /* SessionTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionTimelineView.swift; sourceTree = "<group>"; };
 		117E737A68AD0170E2CC50F7 /* ProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsView.swift; sourceTree = "<group>"; };
 		A1F0C0DE0000000000000F01 /* HomeProjectSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeProjectSection.swift; sourceTree = "<group>"; };
 		13099DE3A6A5F9047693B53C /* StoppedAgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoppedAgentView.swift; sourceTree = "<group>"; };
@@ -490,6 +492,7 @@
 				15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */,
 				0814D7758DD96C699F098851 /* NewSessionView.swift */,
 				0EF27D5904269DE56D427462 /* StashesView.swift */,
+				5E7A11C0A1B2C3D4E5F60702 /* SessionTimelineView.swift */,
 				2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */,
 				B4A0C0DE00000000000000A2 /* MoreView.swift */,
 				B4A0C0DE00000000000000B2 /* HomeSections.swift */,
@@ -1056,6 +1059,7 @@
 				5891A5D53C0F0C7CEF4DE90D /* QuickRunView.swift in Sources */,
 				FA90B6E7D2E7F0414B40A70D /* NewSessionView.swift in Sources */,
 				61D0A65B0EF57B4FB152AFF6 /* StashesView.swift in Sources */,
+				5E7A11C0A1B2C3D4E5F60701 /* SessionTimelineView.swift in Sources */,
 				F70136FC258ED77D2D4D337A /* WarningsView.swift in Sources */,
 				B4A0C0DE00000000000000A1 /* MoreView.swift in Sources */,
 				B4A0C0DE00000000000000B1 /* HomeSections.swift in Sources */,

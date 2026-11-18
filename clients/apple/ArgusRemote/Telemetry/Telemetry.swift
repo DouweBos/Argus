@@ -284,6 +284,8 @@ extension TelemetryEvent {
       self = .diffReviewed(action: action, comments: comments)
     case .diffScoped(let scope):
       self = .diffScoped(scope: scope)
+    case .timelineOpened(let turns):
+      self = .timelineOpened(turns: turns)
     case .reviewGuideUsed(let action, let stops):
       self = .reviewGuideUsed(action: action, stops: stops)
     case .offlineReply(let action):

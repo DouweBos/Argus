@@ -85,6 +85,15 @@ A real git workflow lives inside Argus:
 - **Hunk-level staging** — accept individual hunks, reject others, and
   refine before committing.
 - **Commit & amend** — commit from the UI.
+- **Timeline** — every prompt an agent runs snapshots the session's files,
+  so the Git panel's **Timeline** lists each turn, newest first, with its
+  prompt, agent, time and what it changed; pick one to see its diff.
+  **Restore to This Version** puts the files back to where that turn ended
+  (untracked files included, ignored ones left alone) while the
+  conversation stays as it is, and **Undo Restore** takes it back until the
+  next turn starts. Restoring waits until no agent in the session is
+  working. On the iPhone it's on the session's screen, restoring with
+  control.
 - **Stash** — list, apply, drop.
 - **Merge & rebase** — Argus runs them for you and surfaces conflicts
   with an inline resolver.

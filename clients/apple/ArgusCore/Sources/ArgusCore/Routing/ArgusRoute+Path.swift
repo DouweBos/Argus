@@ -214,6 +214,7 @@ extension GitRoute {
     case "branches-review": self = .branchesReview
     case "interactive-rebase": self = .interactiveRebase(from: query["from"] ?? "")
     case "guide": self = .guide
+    case "timeline": self = .timeline(turn: query["turn"].flatMap(\.nonEmpty))
     default: return nil
     }
   }
@@ -227,6 +228,7 @@ extension GitRoute {
     case .compare(let left, let right): return "compare" + query([("left", left), ("right", right)])
     case .blame(let path, let ref): return "blame" + query([("path", path), ("ref", ref)])
     case .interactiveRebase(let from): return "interactive-rebase" + query([("from", from)])
+    case .timeline(let turn): return "timeline" + query([("turn", turn)])
     default: return segment
     }
   }

@@ -24,6 +24,11 @@ import type {
   AgentStatusValue as HostAgentStatusValue,
 } from "../services/agent/models";
 import type { StartOptions as HostStartOptions } from "../services/agent/startOptions";
+import type {
+  SessionTimeline as HostSessionTimeline,
+  TimelineRestore as HostTimelineRestore,
+  TimelineTurn as HostTimelineTurn,
+} from "../services/agent/timeline";
 import type { InitializeResponse } from "../services/llm/runners/claudeCode/protocol";
 import type { AgentNotificationInput as HostAgentNotificationInput } from "../services/notifications/osNotification";
 import type {
@@ -45,7 +50,10 @@ import type {
   QueuedImage,
   QueuedMessage,
   SavedConversation,
+  SessionTimeline,
   StartOptions,
+  TimelineRestore,
+  TimelineTurn,
 } from "@argus/remote-protocol";
 
 export type AgentModelChecks = [
@@ -57,6 +65,9 @@ export type AgentModelChecks = [
   Expect<Equal<QueuedImage, HostQueuedImage>>,
   Expect<Equal<QueuedMessage, HostQueuedMessage>>,
   Expect<Equal<Checkpoint, HostCheckpoint>>,
+  Expect<Equal<TimelineTurn, HostTimelineTurn>>,
+  Expect<Equal<TimelineRestore, HostTimelineRestore>>,
+  Expect<Equal<SessionTimeline, HostSessionTimeline>>,
   Expect<Equal<ChatHistoryEntry, HostChatHistoryEntry>>,
   Expect<Equal<SavedConversation, HostSavedConversation>>,
   Expect<Equal<ChatHistoryMessageMatch, HostChatHistoryMessageMatch>>,

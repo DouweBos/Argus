@@ -159,6 +159,10 @@ struct RouteScreen: View {
         branch: branch, runnerSessionId: runner)
     case .changes(let sessionId, let label):
       ChangesView(sessionId: sessionId, label: label)
+    case .timeline(let sessionId, let label):
+      SessionTimelineView(sessionId: sessionId, label: label)
+    case .turnChanges(let sessionId, let label, let checkpointId):
+      ChangesView(sessionId: sessionId, label: label, mode: "turn:\(checkpointId)").id(checkpointId)
     case .fileDiff(let sessionId, let path, let mode):
       FileDiffView(sessionId: sessionId, path: path, mode: mode)
     case .file(let sessionId, let path, let line, let source):

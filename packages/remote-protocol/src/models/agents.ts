@@ -134,6 +134,48 @@ export const Checkpoint = z.object({
 });
 export type Checkpoint = z.infer<typeof Checkpoint>;
 
+/** One agent turn on a session's timeline, with what it changed. */
+export const TimelineTurn = z.object({
+  additions: z.number().int(),
+  agentId: z.string(),
+  /** The agent's chat title; null before one is generated. */
+  agentTitle: z.string().nullable(),
+  /** False once the checkpoint is gone: nothing to diff or restore. */
+  available: z.boolean(),
+  checkpointId: z.string(),
+  deletions: z.number().int(),
+  files: z.number().int(),
+  /** False while it runs, or when no end was recorded and no turn followed. */
+  finished: z.boolean(),
+  /** 1-based, oldest first, across every agent in the session. */
+  number: z.number().int().positive(),
+  /** The prompt's first line, cut short. */
+  prompt: z.string(),
+  timestamp: z.number(),
+});
+export type TimelineTurn = z.infer<typeof TimelineTurn>;
+
+/** The files put back to where a turn ended. */
+export const TimelineRestore = z.object({
+  /** Only the latest restore, once, and before another turn starts. */
+  canUndo: z.boolean(),
+  checkpointId: z.string(),
+  id: z.string(),
+  timestamp: z.number(),
+  turnNumber: z.number().int(),
+  undoneAt: z.number().nullable(),
+});
+export type TimelineRestore = z.infer<typeof TimelineRestore>;
+
+export const SessionTimeline = z.object({
+  /** An agent in the session is mid-turn, so restoring is refused. */
+  busy: z.boolean(),
+  restores: z.array(TimelineRestore),
+  /** Oldest first. */
+  turns: z.array(TimelineTurn),
+});
+export type SessionTimeline = z.infer<typeof SessionTimeline>;
+
 /** Lightweight summary stored in the history index — enough for list rendering. */
 export const ChatHistoryEntry = z.object({
   /** Agent that produced this conversation — absent on older records. */

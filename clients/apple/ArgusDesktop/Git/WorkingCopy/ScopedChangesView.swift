@@ -5,6 +5,7 @@ import SwiftUI
 
 /// Picks what the session's diff covers: the working copy, the last turn, an earlier turn or the whole branch.
 struct DiffScopeMenu: View {
+  @Environment(DesktopModel.self) private var model
   let workspace: GitWorkspace
 
   private var scoped: ScopedDiffModel { workspace.scopedDiff }
@@ -28,6 +29,10 @@ struct DiffScopeMenu: View {
           }
         }
       }
+      Divider()
+      Button("Open Timeline") {
+        model.navigate(.sessionGit(id: workspace.sessionId, view: .timeline(turn: scoped.turn?.checkpointId)))
+      }
     } label: {
       Text(scoped.scope.title)
     }
@@ -44,15 +49,17 @@ struct DiffScopeMenu: View {
 struct ScopedChangesList: View {
   @Environment(\.theme) private var theme
   let workspace: GitWorkspace
+  /// The timeline's own turn, rather than the Changes tab's scope; it shows no picker or prompt.
+  var model: ScopedDiffModel?
 
-  private var scoped: ScopedDiffModel { workspace.scopedDiff }
+  private var scoped: ScopedDiffModel { model ?? workspace.scopedDiff }
 
   var body: some View {
     VStack(spacing: 0) {
       PanelHeader(title: "Files", detail: scoped.files.isEmpty ? nil : "\(scoped.files.count) changed") {
-        DiffScopeMenu(workspace: workspace)
+        if model == nil { DiffScopeMenu(workspace: workspace) }
       }
-      if let turn = scoped.turn, !turn.prompt.isEmpty {
+      if model == nil, let turn = scoped.turn, !turn.prompt.isEmpty {
         Text(turn.prompt)
           .font(.scaled(size: 11))
           .foregroundStyle(theme.textSecondary)
@@ -97,8 +104,9 @@ struct ScopedChangesList: View {
 struct ScopedDiffPane: View {
   @Environment(DesktopModel.self) private var model
   let workspace: GitWorkspace
+  var scopedModel: ScopedDiffModel?
 
-  private var scoped: ScopedDiffModel { workspace.scopedDiff }
+  private var scoped: ScopedDiffModel { scopedModel ?? workspace.scopedDiff }
 
   var body: some View {
     let current = scoped.files.first { $0.path == scoped.selected }

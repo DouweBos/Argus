@@ -88,6 +88,8 @@ struct ArgusRouteTests {
     ("/sessions/s1/git/pull-requests", .pullRequests),
     ("/sessions/s1/git/branches-review", .branchesReview),
     ("/sessions/s1/git/interactive-rebase?from=abc123", .interactiveRebase(from: "abc123")),
+    ("/sessions/s1/git/timeline", .timeline(turn: nil)),
+    ("/sessions/s1/git/timeline?turn=cp-1", .timeline(turn: "cp-1")),
   ])
   func parsesGitRoutes(path: String, view: GitRoute) {
     #expect(ArgusRoute(path: path) == .sessionGit(id: "s1", view: view))
@@ -119,6 +121,7 @@ struct ArgusRouteTests {
     .sessionGit(id: "s", view: .blame(path: nil, ref: nil)),
     .sessionGit(id: "s", view: .interactiveRebase(from: "abc")),
     .sessionGit(id: "s", view: .branchesReview),
+    .sessionGit(id: "s", view: .timeline(turn: nil)), .sessionGit(id: "s", view: .timeline(turn: "cp 1")),
   ])
   func pathsRoundTrip(route: ArgusRoute) {
     #expect(ArgusRoute(path: route.path) == route, "\(route.path)")

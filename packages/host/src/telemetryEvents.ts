@@ -324,6 +324,9 @@ export interface EventMap {
   };
   /** A file in a diff was ticked or unticked as viewed. */
   diff_file_viewed: { source: "pull_request" | "session"; viewed: boolean };
+  /** The files were put back to the end of an earlier turn from the timeline. */
+  session_turn_restored: { turns_back: number };
+  session_turn_restore_undone: undefined;
   device_host_added: { has_identity_file: boolean; has_port: boolean };
   device_host_removed: undefined;
   device_name_changed: {

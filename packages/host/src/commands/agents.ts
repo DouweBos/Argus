@@ -60,6 +60,11 @@ import {
 } from "../services/agent/pins/pins";
 import { continueAgentOnRunner } from "../services/agent/runnerHandoff/continueOnRunner";
 import { getStartOptions } from "../services/agent/startOptions";
+import {
+  getSessionTimeline,
+  restoreToTurnEnd,
+  undoTurnRestore,
+} from "../services/agent/timeline";
 import { setViewingSession } from "../services/agent/warmPolicy";
 import { defineTypedCommand } from "../services/command/registry";
 import { importAllCliChats } from "../services/externalChats/importer";
@@ -127,6 +132,15 @@ export function registerAgentCommands(): void {
   );
   defineTypedCommand("delete_checkpoint", (p) =>
     deleteCheckpoint(p.sessionId, p.checkpointId),
+  );
+  defineTypedCommand("get_session_timeline", (p) =>
+    getSessionTimeline(p.sessionId),
+  );
+  defineTypedCommand("restore_turn_end", (p) =>
+    restoreToTurnEnd(p.sessionId, p.checkpointId),
+  );
+  defineTypedCommand("undo_turn_restore", (p) =>
+    undoTurnRestore(p.sessionId, p.restoreId),
   );
 
   defineTypedCommand("save_chat_history", (p) => {

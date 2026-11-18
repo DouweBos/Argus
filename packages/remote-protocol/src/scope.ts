@@ -184,6 +184,10 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.viewed_files": session(),
   "sessions.set_file_viewed": session(),
   "sessions.turns": session(),
+  "sessions.timeline": session(),
+  // Rewriting the files under an agent is the engineer's call, like committing.
+  "sessions.restore_turn": DENIED,
+  "sessions.undo_restore": DENIED,
   "sessions.diff_range": session(),
   "sessions.merge_blockers": session(),
   "sessions.merge_conflicts": session(),

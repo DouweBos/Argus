@@ -671,6 +671,32 @@ export const RemoteSessionTurn = z.object({
 });
 export type RemoteSessionTurn = z.infer<typeof RemoteSessionTurn>;
 
+/** A turn on the session's timeline, with what it changed. */
+export const RemoteTimelineTurn = RemoteSessionTurn.extend({
+  /** The agent's chat title; null before one is generated. */
+  agent_title: z.string().nullable(),
+  /** False once the checkpoint is gone: nothing to diff or restore. */
+  available: z.boolean(),
+  /** False while it runs, or when no end was recorded and no turn followed. */
+  finished: z.boolean(),
+  files: z.number().int(),
+  additions: z.number().int(),
+  deletions: z.number().int(),
+});
+export type RemoteTimelineTurn = z.infer<typeof RemoteTimelineTurn>;
+
+/** The files put back to where a turn ended. */
+export const RemoteTimelineRestore = z.object({
+  id: z.string(),
+  checkpoint_id: z.string(),
+  turn_number: z.number().int(),
+  timestamp: z.number(),
+  undone_at: z.number().nullable(),
+  /** Only the latest restore, once, and before another turn starts. */
+  can_undo: z.boolean(),
+});
+export type RemoteTimelineRestore = z.infer<typeof RemoteTimelineRestore>;
+
 /** One commit in a branch's history. */
 export const RemoteCommit = z.object({
   hash: z.string(),

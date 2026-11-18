@@ -6,6 +6,8 @@ import {
   ChatHistorySearchResult,
   Checkpoint,
   ImageAttachment,
+  SessionTimeline,
+  TimelineRestore,
   QueuedImage,
   QueuedMessage,
   SavedConversation,
@@ -136,6 +138,23 @@ export const AGENT_COMMANDS = {
   create_checkpoint: { tier: "admin", params: SessionId, result: Checkpoint },
   restore_checkpoint: { tier: "admin", params: CheckpointRef, result: Void },
   delete_checkpoint: { tier: "admin", params: CheckpointRef, result: Void },
+  /** Every agent turn with its diff stats, and the restores between them. */
+  get_session_timeline: {
+    tier: "monitor",
+    params: SessionId,
+    result: SessionTimeline,
+  },
+  /** Files only, back to where the turn ended; refused while an agent works. */
+  restore_turn_end: {
+    tier: "control",
+    params: CheckpointRef,
+    result: TimelineRestore,
+  },
+  undo_turn_restore: {
+    tier: "control",
+    params: SessionId.extend({ restoreId: z.string() }),
+    result: Void,
+  },
   save_chat_history: {
     tier: "admin",
     params: RepoRoot.extend({ conversation: SavedConversation }),

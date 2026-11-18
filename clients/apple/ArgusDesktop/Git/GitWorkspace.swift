@@ -28,6 +28,9 @@ final class GitWorkspace {
   let blame: BlameViewModel
   /// The working copy's diff scoped to an agent turn or the whole branch.
   let scopedDiff: ScopedDiffModel
+  /// The timeline's turns, and the turn diff it shows apart from the Changes tab's scope.
+  let timeline: TimelineModel
+  let timelineDiff: ScopedDiffModel
   let undo = GitUndoManager()
 
   /// The sub-view on screen; a refresh reloads it now and the rest on entry.
@@ -87,6 +90,8 @@ final class GitWorkspace {
     branchesReview = BranchesReviewViewModel(repository: repository, refs: refs)
     blame = BlameViewModel(repository: repository)
     scopedDiff = ScopedDiffModel(sessionId: session.id, repository: repository, host: host)
+    timeline = TimelineModel(sessionId: session.id, host: host)
+    timelineDiff = ScopedDiffModel(sessionId: session.id, repository: repository, host: host)
     let refresh: () async -> Void = { [weak self] in await self?.refreshAll() }
     let report: GroveKitActionHandler = { [weak self] in self?.report($0, success: $1) }
     // The working copy's only config change is switching to a saved identity.
