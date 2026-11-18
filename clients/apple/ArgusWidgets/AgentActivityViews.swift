@@ -37,7 +37,11 @@ extension AgentActivityState {
   var agents: [AgentActivityAgent] { snapshot?.agents ?? [] }
   /// The agent whose prompt the card offers to answer.
   var promptAgent: AgentActivityAgent? { agents.first { $0.state == .needsYou && $0.prompt != nil } }
-  var lead: AgentActivityAgent? { agents.first }
+  var lead: AgentActivityAgent? { running.first }
+  /// What the card lists: agents still at it, the ones waiting on you first.
+  var running: [AgentActivityAgent] {
+    agents.filter { $0.state == .needsYou } + agents.filter { $0.state == .working }
+  }
 }
 
 /// Elapsed time: ticking while it works, frozen once it ended.
@@ -56,7 +60,7 @@ struct AgentElapsed: View {
   }
 }
 
-/// One agent: its state, title, and the step it is on or how it ended.
+/// One agent: its state, title and project. No step: the snapshot trails what the agent is doing.
 struct AgentActivityRow: View {
   let agent: AgentActivityAgent
   let hostId: String
@@ -66,10 +70,7 @@ struct AgentActivityRow: View {
       HStack(spacing: 8) {
         Image(systemName: agent.state.symbol).font(.subheadline).foregroundStyle(agent.state.tint)
           .frame(width: 18)
-        VStack(alignment: .leading, spacing: 1) {
-          Text(agent.title).font(.subheadline.weight(.semibold)).lineLimit(1)
-          Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-        }
+        Text(agent.title).font(.subheadline.weight(.semibold)).lineLimit(1)
         Spacer(minLength: 4)
         AgentElapsed(agent: agent).font(.caption).foregroundStyle(.secondary)
           .multilineTextAlignment(.trailing).frame(maxWidth: 56, alignment: .trailing)
@@ -77,10 +78,6 @@ struct AgentActivityRow: View {
     }
   }
 
-  private var detail: String {
-    let what = agent.state == .working ? (agent.step ?? agent.state.label) : agent.state.label
-    return [what, agent.project].compactMap { $0 }.joined(separator: " · ")
-  }
 }
 
 /// The prompt waiting on you, with whatever answers it.
@@ -90,11 +87,11 @@ struct AgentPromptStrip<Buttons: View>: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
-      Text(prompt.summary).font(.caption.monospaced()).lineLimit(2)
+      Text(prompt.summary).font(.caption.monospaced()).lineLimit(1)
         .frame(maxWidth: .infinity, alignment: .leading)
       HStack(spacing: 8) { buttons() }
     }
-    .padding(8)
+    .padding(6)
     .background(.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
   }
 }
@@ -110,7 +107,7 @@ struct AgentActivityCard<Buttons: View>: View {
   @ViewBuilder let buttons: (AgentActivityAgent, AgentActivityAgent.Prompt) -> Buttons
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: 6) {
       HStack(spacing: 6) {
         Image(systemName: "eye.circle.fill").foregroundStyle(.tint)
         Text(hostName).font(.caption.weight(.semibold)).lineLimit(1)
@@ -122,18 +119,28 @@ struct AgentActivityCard<Buttons: View>: View {
           .foregroundStyle(state.phase.tint)
         Text("Open Argus to see your agents.").font(.caption).foregroundStyle(.secondary)
       } else {
-        ForEach(state.agents) { agent in
+        ForEach(shown) { agent in
           AgentActivityRow(agent: agent, hostId: hostId)
-          if canRespond, agent.id == state.promptAgent?.id, let prompt = agent.prompt {
+          if let prompt = answerable(agent) {
             AgentPromptStrip(prompt: prompt) { buttons(agent, prompt) }
           }
         }
-        if let more = state.snapshot?.more, more > 0 {
-          Text("+\(more) more").font(.caption2).foregroundStyle(.tertiary)
-        }
       }
     }
-    .padding(14)
+    .padding(.horizontal, 14)
+    .padding(.vertical, 10)
+  }
+
+  /// The Lock Screen gives a live activity about 160pt; past that iOS cuts the card off.
+  private var shown: [AgentActivityAgent] {
+    let prompting = state.running.contains { answerable($0) != nil }
+    // The header already counts them all, so the rest go unlisted rather than on a "+N more" line.
+    return Array(state.running.prefix(prompting ? 1 : 3))
+  }
+
+  private func answerable(_ agent: AgentActivityAgent) -> AgentActivityAgent.Prompt? {
+    guard canRespond, agent.id == state.promptAgent?.id else { return nil }
+    return agent.prompt
   }
 
   private var headline: String {

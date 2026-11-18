@@ -7,6 +7,7 @@
     static var all: [GalleryStory] {
       [
         story("live-activity/working", AgentActivitySnapshot(agents: [waiting, working, failed], more: 2)),
+        story("live-activity/busy", AgentActivitySnapshot(agents: busy, more: 1), canRespond: false),
         story("live-activity/done", AgentActivitySnapshot(agents: [done, failed])),
         story("live-activity/sealed", nil),
         story("live-activity/watch-only", AgentActivitySnapshot(agents: [waiting, working]), canRespond: false),
@@ -46,6 +47,14 @@
     private static let failed = AgentActivityAgent(
       id: "a3", sessionId: "s3", title: "Bump Vite to 7.2", project: "houwert.dev", state: .failed,
       startedAt: now.addingTimeInterval(-600), endedAt: now.addingTimeInterval(-120))
+    private static let busy: [AgentActivityAgent] = [
+      "Fix tvOS focus stranded by a sponsored spotlight", "iPhone Home styled after the Mac sidebar",
+      "Tables render incorrectly in the Mac transcript", "Push plan limit changes to clients", "Bump Vite to 7.2",
+    ].enumerated().map { index, title in
+      AgentActivityAgent(
+        id: "b\(index)", sessionId: "bs\(index)", title: title, project: "Argus", state: .working,
+        startedAt: now.addingTimeInterval(-Double(300 + index * 900)), step: "Bash pnpm test")
+    }
     private static let done = AgentActivityAgent(
       id: "a4", sessionId: "s4", title: "Gallery stories for sessions", project: "Argus", state: .done,
       startedAt: now.addingTimeInterval(-2_400), endedAt: now.addingTimeInterval(-300))
