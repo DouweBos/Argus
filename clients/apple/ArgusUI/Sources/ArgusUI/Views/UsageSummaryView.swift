@@ -63,7 +63,8 @@ public struct UsageSummaryView: View {
       HStack(spacing: theme.space) {
         SegmentedControl(value: $range, options: ArgusProtocol.UsageRange.all.map { ($0, $0.shortLabel) })
           .frame(maxWidth: 280)
-        if loading { ProgressView().controlSize(.small) }
+        // Only while numbers already show; a first load has its own placeholder below.
+        if loading, summary != nil { ProgressView().controlSize(.small) }
         Spacer(minLength: 0)
       }
       if let summary {
