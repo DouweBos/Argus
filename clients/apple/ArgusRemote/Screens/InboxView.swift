@@ -48,7 +48,7 @@ struct InboxView: View {
       }
     }
     .loadPhase(
-      phase, loading: "Reading the inbox…", failedTitle: "Inbox unavailable",
+      phase, loading: "Reading the inbox", failedTitle: "Inbox unavailable",
       retry: { await refresh() }
     ) {
       if filter.isEmpty {

@@ -64,9 +64,9 @@ public enum AccountMenuModel {
       if tunnel.reason == .remoteOff { return "Managed tunnel: off (remote access is off)" }
       return tunnel.reason == .accountPaused ? "Managed tunnel: paused" : "Managed tunnel: off"
     case .installing:
-      return "Managed tunnel: installing cloudflared…"
+      return "Managed tunnel: installing cloudflared"
     case .provisioning, .starting:
-      return "Managed tunnel: starting…"
+      return "Managed tunnel: starting"
     case .unavailable:
       return "Managed tunnel: unavailable"
     case .error:
@@ -94,7 +94,7 @@ public enum AccountMenuModel {
 
   private static func presenceLine(_ s: AccountMenuSnapshot) -> String {
     guard s.status.config.enabled else { return "Account paused on this computer" }
-    guard let online = s.online else { return "Checking whether it's online…" }
+    guard let online = s.online else { return "Checking whether it's online" }
     return online ? "Online" : "Offline — the account hasn't seen it lately"
   }
 
@@ -125,7 +125,7 @@ public enum AccountMenuModel {
         .action("Codes Differ — Cancel", .account(.linkConfirm(match: false))),
       ]
     case .awaitingApproval:
-      return [.info("Confirmed here. Waiting for the other side…"), cancel]
+      return [.info("Confirmed here. Waiting for the other side"), cancel]
     case .error(let error):
       return [.info("Linking failed: \(error.message)"), start]
     case .idle, .linked, .unknown:

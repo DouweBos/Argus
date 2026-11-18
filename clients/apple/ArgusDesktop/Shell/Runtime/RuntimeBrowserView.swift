@@ -173,7 +173,7 @@ struct RuntimeBrowserView: View {
               .controlSize(.small)
           }
         } else if !receiving {
-          Text("Waiting for frames…")
+          Text("Waiting for frames")
             .font(.scaled(size: 12))
             .foregroundStyle(theme.textMuted)
             .allowsHitTesting(false)

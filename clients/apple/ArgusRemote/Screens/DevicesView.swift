@@ -39,7 +39,7 @@ struct DevicesView: View {
     }
     .loadPhase(
       LoadPhase(loaded: host.devicesLoaded, error: nil, isEmpty: devices.isEmpty),
-      loading: "Looking for devices…"
+      loading: "Looking for devices"
     ) {
       EmptyState(
         icon: Icon.devices,

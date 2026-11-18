@@ -103,7 +103,7 @@ struct McpStatusDot: View {
     case .ok: "Connected"
     case .failed: "Failed"
     case .needsAuth: "Requires authentication"
-    case .testing: "Checking…"
+    case .testing: "Checking"
     case .unknown: "Not yet checked"
     }
   }
@@ -129,7 +129,7 @@ struct McpProbeControls: View {
       HStack {
         if probe.testing {
           ProgressView().controlSize(.small)
-          Text("Testing…").foregroundStyle(.secondary)
+          Text("Testing").foregroundStyle(.secondary)
         } else {
           Button(probe.result == nil ? "Test" : "Retry") {
             guard let config else { return }
@@ -139,7 +139,7 @@ struct McpProbeControls: View {
         }
         if let url, let config, probe.canSignIn {
           if probe.signingIn {
-            Text("Waiting for browser…").foregroundStyle(.secondary)
+            Text("Waiting for browser").foregroundStyle(.secondary)
             Button("Cancel") { Task { await probe.cancelSignIn(url: url, backend: backend) } }
           } else {
             Button(probe.signInError == nil ? "Sign In" : "Try Again") {

@@ -52,7 +52,7 @@ public struct ChatSearchSheet: View {
       }
       .overlay {
         if shown.isEmpty, host.stoppedByRepo[repoRoot] == nil || (!needle.isEmpty && answered != needle) {
-          Loading(label: needle.isEmpty ? "Reading saved chats…" : "Searching…").frame(maxHeight: .infinity)
+          Loading(label: needle.isEmpty ? "Reading saved chats" : "Searching").frame(maxHeight: .infinity)
         } else if shown.isEmpty {
           EmptyState(
             icon: Icon.history, title: needle.isEmpty ? "No saved chats" : "No matches",

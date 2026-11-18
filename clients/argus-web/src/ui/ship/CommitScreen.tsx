@@ -57,7 +57,7 @@ export function CommitScreen({
     return (
       <div className="aw-center">
         <Spinner />
-        <span className="aw-muted">Reading the commit…</span>
+        <span className="aw-muted">Reading the commit</span>
       </div>
     );
   }

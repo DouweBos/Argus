@@ -64,7 +64,7 @@ struct AutomationsView: View {
       }
     }
     .loadPhase(
-      store.phase, loading: "Reading automations…", failedTitle: "Automations unavailable",
+      store.phase, loading: "Reading automations", failedTitle: "Automations unavailable",
       retry: { await store.refresh() }
     ) {
       EmptyState(

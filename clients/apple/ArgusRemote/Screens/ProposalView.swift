@@ -26,7 +26,7 @@ struct ProposalView: View {
           icon: Icon.envelope, title: "This proposal is gone",
           body: "The computer no longer has it.")
       } else {
-        Loading(label: "Reading the proposal…")
+        Loading(label: "Reading the proposal")
       }
     }
     .navigationTitle(proposal?.title ?? "Proposal")

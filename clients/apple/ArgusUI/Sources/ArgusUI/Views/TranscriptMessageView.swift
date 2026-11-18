@@ -153,7 +153,7 @@ struct SendingLabel: View {
   var body: some View {
     HStack(spacing: 4) {
       ProgressView().controlSize(.mini)
-      Text("Sending…")
+      Text("Sending")
     }
     .font(.scaled(.caption2))
     .foregroundStyle(.tertiary)

@@ -27,7 +27,7 @@ public struct WorktreeCleanupSettings: View {
     } else if let error = model.error {
       SettingsGroup("Cleanup") { SettingsRow("Couldn't read the cleanup policy", description: error) }
     } else {
-      SettingsGroup("Cleanup") { Loading(label: "Measuring worktrees…") }
+      SettingsGroup("Cleanup") { Loading(label: "Measuring worktrees") }
     }
   }
 

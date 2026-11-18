@@ -53,13 +53,13 @@ struct ArgusJsonReviewView: View {
       option(
         title: "Quick generate",
         detail: "Inspect package.json, lockfiles, and platform dirs and write a sensible default. Fast, no network, no LLM.",
-        button: generator.phase == .generatingQuick ? "Generating…" : "Quick generate",
+        button: generator.phase == .generatingQuick ? "Generating" : "Quick generate",
         busy: generator.phase == .generatingQuick, prominent: false
       ) { await generator.quick($0) }
       option(
         title: "Generate with Claude",
         detail: "Run the Claude CLI in this project to refine the config — it reads your scripts, native targets, and env files and produces a tailored result. Takes ~30–90s. Requires the claude CLI to be installed and authenticated.",
-        button: generator.phase == .generatingClaude ? "Asking Claude…" : "Generate with Claude",
+        button: generator.phase == .generatingClaude ? "Asking Claude" : "Generate with Claude",
         busy: generator.phase == .generatingClaude, prominent: generator.conductor == nil
       ) { await generator.claude($0) }
     }
@@ -122,7 +122,7 @@ struct ArgusJsonReviewView: View {
           guard let backend else { return }
           Task { await generator.save(backend) }
         } label: {
-          Text(generator.phase == .saving ? "Saving…" : "Save config")
+          Text(generator.phase == .saving ? "Saving" : "Save config")
         }
         .buttonStyle(.borderedProminent)
         .disabled(generator.isBusy)

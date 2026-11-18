@@ -191,7 +191,7 @@ export function Projects({
     return (
       <Loading
         label={
-          connection === "ready" ? "Loading projects…" : "Connecting to Argus…"
+          connection === "ready" ? "Loading projects" : "Connecting to Argus"
         }
       />
     );
@@ -253,7 +253,7 @@ export function Project({
   );
 
   if (agents === undefined) {
-    return <Loading label="Loading agents…" />;
+    return <Loading label="Loading agents" />;
   }
 
   // Group by session id (stable), carrying a label + its agents.

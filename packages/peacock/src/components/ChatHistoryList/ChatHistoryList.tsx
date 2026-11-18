@@ -333,7 +333,7 @@ export function ChatHistoryList({
           ))}
 
         {trimmed && effectiveSearching && !effectiveResults && (
-          <div className={styles.moreHint}>Searching…</div>
+          <div className={styles.moreHint}>Searching</div>
         )}
         {trimmed &&
           !effectiveSearching &&

@@ -111,7 +111,7 @@ struct AccountMenuModelTests {
   @Test func tunnelLinesSayWhyItIsOff() {
     #expect(AccountMenuModel.tunnelLine(.init(phase: .off, reason: .remoteOff)) == "Managed tunnel: off (remote access is off)")
     #expect(AccountMenuModel.tunnelLine(.init(phase: .off, reason: .accountPaused)) == "Managed tunnel: paused")
-    #expect(AccountMenuModel.tunnelLine(.init(phase: .installing)) == "Managed tunnel: installing cloudflared…")
+    #expect(AccountMenuModel.tunnelLine(.init(phase: .installing)) == "Managed tunnel: installing cloudflared")
     #expect(AccountMenuModel.tunnelLine(.init(phase: .error)) == "Managed tunnel: failed")
   }
 }

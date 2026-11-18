@@ -18,7 +18,7 @@ extension WorkLog {
 
   private func workLabel(working: Bool, now: Date) -> String {
     if working {
-      guard let started else { return "Working…" }
+      guard let started else { return "Working" }
       return "Working for \(ChromeText.duration(now.timeIntervalSince1970 - started / 1000))"
     }
     let end = ended ?? messages.last?.timestamp

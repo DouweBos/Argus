@@ -83,7 +83,7 @@ struct PatchApplySheet: View {
         Spacer()
         Button("Cancel", role: .cancel) { vm.cancelApplyPatch() }
           .keyboardShortcut(.cancelAction)
-        Button(current.isApplying ? "Applying…" : "Apply") {
+        Button(current.isApplying ? "Applying" : "Apply") {
           Task { await vm.applyPendingPatch() }
         }
         .keyboardShortcut(.defaultAction)
@@ -99,7 +99,7 @@ struct PatchApplySheet: View {
     case .checking:
       HStack(spacing: 6) {
         ProgressView().controlSize(.small)
-        Text("Checking the patch…").foregroundStyle(theme.textMuted)
+        Text("Checking the patch").foregroundStyle(theme.textMuted)
       }
     case .applies:
       Label("The patch applies cleanly.", systemImage: "checkmark.circle").foregroundStyle(theme.success)

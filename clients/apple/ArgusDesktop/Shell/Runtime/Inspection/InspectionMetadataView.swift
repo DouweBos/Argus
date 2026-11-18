@@ -50,7 +50,7 @@ struct InspectionMetadataView: View {
       Spacer(minLength: 0)
       if model.editSaving {
         ProgressView().controlSize(.small)
-        Text("Applying…").font(.scaled(.caption)).foregroundStyle(theme.textMuted)
+        Text("Applying").font(.scaled(.caption)).foregroundStyle(theme.textMuted)
       }
     }
     .padding(.horizontal, 10)

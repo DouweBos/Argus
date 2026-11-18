@@ -79,7 +79,7 @@ struct ConductorVersionSection: View {
       case .installing:
         HStack {
           ProgressView().controlSize(.small)
-          SettingsCaption("Installing conductor v\(status.overrideVersion ?? "")…")
+          SettingsCaption("Installing conductor v\(status.overrideVersion ?? "")")
         }
       case .error:
         SettingsError(

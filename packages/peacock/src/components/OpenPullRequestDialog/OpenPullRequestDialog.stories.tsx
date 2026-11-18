@@ -90,7 +90,7 @@ export const Submitting: Story = {
     <Interactive
       route="feature/land-work → main"
       submitting
-      submitLabel="Pushing…"
+      submitLabel="Pushing"
     />
   ),
 };

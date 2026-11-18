@@ -13,7 +13,7 @@ struct HomeView: View {
   var body: some View {
     List {
       if !app.loaded {
-        Loading(label: "Unlocking…").listRowBackground(Color.clear)
+        Loading(label: "Unlocking").listRowBackground(Color.clear)
       } else if !app.hosts.isEmpty {
         Section {
           ForEach(app.hosts) { computer in

@@ -85,7 +85,7 @@ export const WithoutSource: Story = {
 export const Busy: Story = { args: { busy: true } };
 
 /** A start in flight: the actions give way to where it has got to. */
-export const Starting: Story = { args: { progress: "Running setup…" } };
+export const Starting: Story = { args: { progress: "Running setup" } };
 
 /** The last start failed; the reason sits above actions that can try again. */
 export const StartFailed: Story = {
@@ -155,7 +155,7 @@ export const MarkdownBody: Story = {
   },
 };
 
-/** "Mostly right, but…" — the note either starts it or goes back for a rework. */
+/** "Mostly right, but" — the note either starts it or goes back for a rework. */
 export const WithNote: Story = {
   args: {
     onRequestRevision: () => undefined,

@@ -32,7 +32,7 @@ export const Inactive: Story = {
 
 export const Minimal: Story = {
   args: {
-    label: "Signing in…",
+    label: "Signing in",
     onRemove: () => {},
   },
 };

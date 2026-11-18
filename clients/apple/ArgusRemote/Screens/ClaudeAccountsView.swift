@@ -47,7 +47,7 @@ struct ClaudeAccountsView: View {
       LoadPhase(
         loaded: host.claudeAccounts != nil, error: nil,
         isEmpty: accounts.isEmpty && !host.hasControl && (host.runnerAccounts ?? []).isEmpty),
-      loading: "Loading accounts…"
+      loading: "Loading accounts"
     ) {
       EmptyState(
         icon: Icon.person,
@@ -119,13 +119,13 @@ private struct ClaudeSignInSection: View {
       if starting {
         HStack(spacing: 8) {
           ProgressView()
-          MutedText("Opening the browser on your computer…")
+          MutedText("Opening the browser on your computer")
         }
       } else if pending {
         MutedText(
           login?.needsCode == true
             ? "Claude is waiting for the code the browser shows."
-            : "Waiting for you to approve in the browser on your computer…")
+            : "Waiting for you to approve in the browser on your computer")
         ThemedTextField(placeholder: "Paste the code", text: $code, input: .code, onSubmit: submit)
           .focused($codeFocused)
         HStack(spacing: 8) {
@@ -134,7 +134,7 @@ private struct ClaudeSignInSection: View {
           }
           .fixedSize()
           Spacer(minLength: 0)
-          Btn(label: submitting ? "Signing in…" : "Sign in", small: true, icon: Icon.check, hugs: true, action: submit)
+          Btn(label: submitting ? "Signing in" : "Sign in", small: true, icon: Icon.check, hugs: true, action: submit)
             .fixedSize()
             .disabled(trimmedCode.isEmpty || submitting)
         }

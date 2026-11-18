@@ -71,11 +71,11 @@ public struct StackCard: View {
 
   @ViewBuilder private func buttons(hugs: Bool) -> some View {
     if !members.isEmpty {
-      Btn(label: busy == "restack" ? "Restacking…" : "Restack", tone: .secondary, small: true, icon: Icon.restack, hugs: hugs) {
+      Btn(label: busy == "restack" ? "Restacking" : "Restack", tone: .secondary, small: true, icon: Icon.restack, hugs: hugs) {
         restack()
       }
       .disabled(busy != nil)
-      Btn(label: busy == "land" ? "Landing…" : "Land stack", tone: .secondary, small: true, icon: Icon.landStack, hugs: hugs) {
+      Btn(label: busy == "land" ? "Landing" : "Land stack", tone: .secondary, small: true, icon: Icon.landStack, hugs: hugs) {
         confirmingLand = true
       }
       .disabled(busy != nil)

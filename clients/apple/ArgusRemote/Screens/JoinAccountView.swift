@@ -15,7 +15,7 @@ struct JoinAccountView: View {
   var body: some View {
     switch account.join {
     case .idle, .requesting:
-      Loading(label: "Asking your account…")
+      Loading(label: "Asking your account")
     case .waiting:
       EmptyState(
         icon: "hourglass",
@@ -31,7 +31,7 @@ struct JoinAccountView: View {
       Btn(label: "Codes match") { Task { await account.confirmJoinCode() } }
       Btn(label: "They don't match", tone: .danger) { Task { await account.rejectJoinCode() } }
     case .confirmed(let approverName):
-      Loading(label: "Confirmed here. Finish on \(approverName)…")
+      Loading(label: "Confirmed here. Finish on \(approverName)")
     case .alreadyApproved(let sas, let approverName):
       TitleText("\(approverName) approved this phone")
       MutedText(

@@ -27,7 +27,7 @@ struct AccountView: View {
       Screen {
         switch account.phase {
         case .loading, .settingUp:
-          Loading(label: account.phase == .loading ? "Checking your account…" : "Setting up your account…")
+          Loading(label: account.phase == .loading ? "Checking your account" : "Setting up your account")
         // Signing in keeps the form, so a web sign-in that comes back shows where it left.
         case .signedOut, .signingIn:
           signIn.disabled(account.phase == .signingIn)
@@ -108,7 +108,7 @@ struct AccountView: View {
     if account.signingInWith == .apple {
       HStack(spacing: 8) {
         ProgressView().controlSize(.small)
-        MutedText("Signing in with Apple…")
+        MutedText("Signing in with Apple")
       }
     }
 

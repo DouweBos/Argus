@@ -45,7 +45,7 @@ const search = (query: string): Promise<ChatHistorySearchResult[]> =>
               messageMatches: [
                 {
                   role: "user",
-                  snippet: `…make sure ${query} works on every field…`,
+                  snippet: `…make sure ${query} works on every field`,
                   matchStart: 12,
                   matchEnd: 12 + query.length,
                   messageIndex: 0,

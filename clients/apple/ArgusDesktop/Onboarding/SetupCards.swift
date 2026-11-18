@@ -32,7 +32,7 @@ struct SetupCards: View {
         text: "Agents can't run without it. \(detail ?? "")"
       ) {
         if fixable {
-          Button(checks.fixing == .claudeCli ? "Installing…" : "Install") { fix(.claudeCli) }
+          Button(checks.fixing == .claudeCli ? "Installing" : "Install") { fix(.claudeCli) }
             .disabled(checks.fixing != nil)
         } else {
           recheck
@@ -40,7 +40,7 @@ struct SetupCards: View {
       }
     case .claudeAuth(let copy):
       SetupCard(tone: .warning, title: copy.headline, text: copy.body) {
-        Button(checks.running ? "Checking…" : "Re-check") { run([.claudeAuth]) }.disabled(checks.running)
+        Button(checks.running ? "Checking" : "Re-check") { run([.claudeAuth]) }.disabled(checks.running)
         Button(copy.action) {
           model.settingsTab = .accounts
           openSettings()
@@ -68,7 +68,7 @@ struct SetupCards: View {
   }
 
   private var recheck: some View {
-    Button(checks.running ? "Checking…" : "Re-check") { run(SetupChecks.core) }.disabled(checks.running)
+    Button(checks.running ? "Checking" : "Re-check") { run(SetupChecks.core) }.disabled(checks.running)
   }
 
   private func run(_ ids: [PrereqId]) {

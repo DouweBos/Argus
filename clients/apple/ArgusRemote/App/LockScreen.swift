@@ -31,7 +31,7 @@ struct LockScreen: View {
           .padding(.horizontal, 32)
         Spacer()
         Btn(
-          label: canAuthenticate ? "Unlock with \(biometryLabel ?? "Face ID")" : "Preparing…",
+          label: canAuthenticate ? "Unlock with \(biometryLabel ?? "Face ID")" : "Preparing",
           action: onUnlock
         )
         .disabled(!canAuthenticate)

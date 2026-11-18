@@ -465,7 +465,7 @@ export function PullRequestCommentBox({
             submit().catch(() => {});
           }}
         >
-          {submitting ? "Posting…" : "Comment"}
+          {submitting ? "Posting" : "Comment"}
         </Button>
       </div>
     </div>
@@ -504,7 +504,7 @@ export function MergeSplitButton<T extends string>({
         onClick={onMerge}
         className={styles.splitMain}
       >
-        {merging ? "Merging…" : label}
+        {merging ? "Merging" : label}
       </Button>
       <Button
         variant="primary"

@@ -62,7 +62,7 @@ public struct RunFeedbackSheet: View {
           Button("Cancel") { dismiss() }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button(sending ? "Sending…" : "Send") { send() }
+          Button(sending ? "Sending" : "Send") { send() }
             .disabled(!canSend)
         }
       }

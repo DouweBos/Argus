@@ -52,7 +52,7 @@ export function JoinScreen() {
     case "confirmed":
       return (
         <Card size="sm" stack>
-          <Pending label={`Confirm the code on ${join.approverName} too…`} />
+          <Pending label={`Confirm the code on ${join.approverName} too`} />
         </Card>
       );
     case "alreadyApproved":
@@ -105,8 +105,8 @@ export function JoinScreen() {
           <Pending
             label={
               join.kind === "requesting"
-                ? "Asking your devices…"
-                : "Waiting for approval…"
+                ? "Asking your devices"
+                : "Waiting for approval"
             }
           />
           <div>{signOutButton}</div>

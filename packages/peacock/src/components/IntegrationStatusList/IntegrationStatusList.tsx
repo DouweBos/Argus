@@ -52,7 +52,7 @@ export function IntegrationStatusList({
     ) : (
       <div className={styles.loading}>
         <Spinner size="sm" />
-        <span>Checking integrations…</span>
+        <span>Checking integrations</span>
       </div>
     );
   }

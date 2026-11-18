@@ -48,7 +48,7 @@ private struct PrereqRow: View {
       icon.frame(width: 18)
       VStack(alignment: .leading, spacing: 4) {
         Text(SetupChecks.meta(id).title).font(.scaled(size: 13, weight: .semibold))
-        if let message = fixing ? "Installing…" : result?.message {
+        if let message = fixing ? "Installing" : result?.message {
           Text(message).foregroundStyle(theme.textSecondary)
         }
         if let detail = result?.detail, !detail.isEmpty {
@@ -65,7 +65,7 @@ private struct PrereqRow: View {
       }
       Spacer(minLength: 0)
       if result?.fixable == true, id != .gitIdentity, id != .claudeAuth, status != .pass {
-        Button(fixing ? "Installing…" : "Install") {
+        Button(fixing ? "Installing" : "Install") {
           guard let backend = model.backend else { return }
           Task { await checks.fix(backend, id) }
         }
@@ -119,7 +119,7 @@ struct GitIdentityForm: View {
     HStack(alignment: .firstTextBaseline, spacing: 8) {
       TextField("Name", text: $name, prompt: Text("Your Name")).frame(maxWidth: 180)
       TextField("Email", text: $email, prompt: Text("you@example.com")).frame(maxWidth: 220)
-      Button(busy ? "Saving…" : "Save") {
+      Button(busy ? "Saving" : "Save") {
         onSubmit(name.trimmingCharacters(in: .whitespaces), email.trimmingCharacters(in: .whitespaces))
       }
       .disabled(busy || !SetupChecks.isValidIdentity(name: name, email: email))

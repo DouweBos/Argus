@@ -38,7 +38,7 @@ struct BranchCompareView: View {
       } else if loaded {
         MutedText("Couldn't compare these branches.")
       } else {
-        Loading(label: "Comparing…")
+        Loading(label: "Comparing")
       }
     }
     .navigationTitle("\(left) ↔ \(right)")

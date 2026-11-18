@@ -117,7 +117,7 @@ export function FeedbackDialog({
           Cancel
         </Button>
         <Button variant="primary" onClick={handleSubmit} disabled={!canSubmit}>
-          {state === "sending" ? "Sending…" : "Send"}
+          {state === "sending" ? "Sending" : "Send"}
         </Button>
       </DialogFooter>
     </Dialog>

@@ -35,7 +35,7 @@ public struct SessionTerminalsList: View {
             body: "Shells and run commands started on the computer show up here.")
         }
       } else {
-        Loading(label: "Reading terminals…")
+        Loading(label: "Reading terminals")
       }
     }
     .liveRefresh(enabled: host.connection == .ready, every: .seconds(5)) {

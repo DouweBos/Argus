@@ -109,7 +109,7 @@ struct AccountsSettingsTab: View {
   }
 
   static func name(_ account: RemoteClaudeAccount) -> String {
-    account.label ?? account.email ?? "Signing in…"
+    account.label ?? account.email ?? "Signing in"
   }
 }
 

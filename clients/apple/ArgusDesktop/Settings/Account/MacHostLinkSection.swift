@@ -61,7 +61,7 @@ struct MacHostLinkSection: View {
       case .awaitingApproval:
         HStack {
           ProgressView().controlSize(.small)
-          Text("Waiting for your phone to finish…").foregroundStyle(.secondary)
+          Text("Waiting for your phone to finish").foregroundStyle(.secondary)
         }
       case .linked:
         Label("This Mac's host is on your account.", systemImage: "checkmark.circle")

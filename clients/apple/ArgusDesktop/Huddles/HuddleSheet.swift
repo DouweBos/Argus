@@ -80,7 +80,7 @@ struct HuddleSheet: View {
         if starting {
           HStack(spacing: 6) {
             ProgressView().controlSize(.small)
-            Text("Getting a link…")
+            Text("Getting a link")
           }
         } else {
           Text("Start Sharing")
@@ -119,7 +119,7 @@ struct HuddleSheet: View {
       } else {
         HStack(spacing: 6) {
           ProgressView().controlSize(.small)
-          Text("Getting a link…").foregroundStyle(theme.textSecondary)
+          Text("Getting a link").foregroundStyle(theme.textSecondary)
         }
       }
       Text("The link alone gets nobody in — you approve each person here.")

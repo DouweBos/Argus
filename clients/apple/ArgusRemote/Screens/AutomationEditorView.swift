@@ -40,14 +40,14 @@ struct AutomationEditorView: View {
           }
         }
       } else {
-        Loading(label: "Reading the automation…")
+        Loading(label: "Reading the automation")
       }
     }
     .navigationTitle(isNew ? "New Automation" : "Edit")
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       ToolbarItem(placement: .confirmationAction) {
-        Button(saving ? "Saving…" : "Save") { save() }
+        Button(saving ? "Saving" : "Save") { save() }
           .disabled(!canSave)
       }
     }

@@ -44,8 +44,8 @@ struct SessionActivityTests {
   func lifecycle() {
     let setting = SessionActivity(session: session("s1", status: "initializing"), agents: [])
     #expect(setting.state == .preparing && setting.showsDot && setting.isBusy)
-    #expect(setting.statusText == "Setting up…")
-    #expect(SessionActivity(session: session("s1", status: "deleting"), agents: []).statusText == "Deleting…")
+    #expect(setting.statusText == "Setting up")
+    #expect(SessionActivity(session: session("s1", status: "deleting"), agents: []).statusText == "Deleting")
     #expect(!SessionActivity(session: session("s1", status: "deleting"), agents: []).showsDot)
     let failed = SessionActivity(session: session("s1", status: "error", setupError: "npm failed"), agents: [])
     #expect(failed.state == .failed && failed.statusText == "npm failed")

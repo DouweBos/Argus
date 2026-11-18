@@ -38,7 +38,7 @@ extension AccountStore {
       link = .failed("Codes look like WDJB-MJHT.")
       return
     }
-    link = .working("Checking the code…")
+    link = .working("Checking the code")
     do {
       let claim = try await client.claim(userCode: normalized)
       guard !claim.accountEmpty else {
@@ -112,7 +112,7 @@ extension AccountStore {
   /// meanwhile the code changes too, so it goes back to comparing.
   public func confirmLink() async {
     guard let pending = pendingLink else { return }
-    link = .working("Adding \(pending.name)…")
+    link = .working("Adding \(pending.name)")
     do {
       if let again = try await writeApproval(pending) {
         pendingLink = again

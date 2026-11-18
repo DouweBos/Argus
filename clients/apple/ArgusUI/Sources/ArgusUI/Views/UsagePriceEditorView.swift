@@ -27,7 +27,7 @@ public struct HostUsagePricesView: View {
           Btn(label: "Retry", tone: .secondary, small: true, icon: Icon.refresh) { Task { await load() } }.fixedSize()
         }
       } else {
-        Loading(label: "Loading model prices…").frame(maxWidth: .infinity, maxHeight: .infinity)
+        Loading(label: "Loading model prices").frame(maxWidth: .infinity, maxHeight: .infinity)
       }
     }
     .background(theme.bg.ignoresSafeArea())

@@ -68,7 +68,7 @@ export function StashesScreen({ sessionId }: { sessionId: string }) {
     return (
       <div className="aw-center">
         <Spinner />
-        <span className="aw-muted">Reading stashes…</span>
+        <span className="aw-muted">Reading stashes</span>
       </div>
     );
   }

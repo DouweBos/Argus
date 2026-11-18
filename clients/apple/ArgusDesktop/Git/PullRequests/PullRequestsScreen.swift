@@ -55,9 +55,9 @@ struct PullRequestsScreen: View {
   }
 
   private var subtitle: String {
-    guard prs.loaded else { return "Loading…" }
+    guard prs.loaded else { return "Loading" }
     let base = "\(prs.pullRequests.count) open · authored, reviewing, or commented"
-    return refreshing ? "\(base) · refreshing…" : base
+    return refreshing ? "\(base) · refreshing" : base
   }
 
   private func refresh() { Task { await load() } }
@@ -92,7 +92,7 @@ struct PullRequestList: View {
   private var states: some View {
     switch LoadPhase(loaded: loaded, error: error, isEmpty: pullRequests.isEmpty) {
     case .loading:
-      ProgressView("Loading pull requests…").controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
+      ProgressView("Loading pull requests").controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
     case .failed(let error):
       QuietEmptyState(
         icon: "exclamationmark.triangle", title: "Couldn't fetch pull requests",

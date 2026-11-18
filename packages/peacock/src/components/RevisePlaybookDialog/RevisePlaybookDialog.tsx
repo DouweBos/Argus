@@ -74,7 +74,7 @@ export function RevisePlaybookDialog({
           {revising && <Spinner size="sm" />}
           <span className={styles.hint}>
             {revising
-              ? "Rewriting the playbook…"
+              ? "Rewriting the playbook"
               : "Nothing is saved until you save the automation."}
           </span>
           <span className={styles.spacer} />

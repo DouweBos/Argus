@@ -6,7 +6,7 @@ import SwiftUI
 extension RefActions {
   /// One remote; the host's fetch takes them all, so this runs through GroveKit.
   func fetch(remote: String) async {
-    await workspace.run(.fetch, label: "Fetching \(remote)…") {
+    await workspace.run(.fetch, label: "Fetching \(remote)") {
       try await workspace.repository.fetch(remote: remote, progress: nil)
     }
   }
@@ -17,20 +17,20 @@ extension RefActions {
     guard let branch = currentBranch else { return }
     guard branch.upstream != nil else { return push(branch) }
     let id = session.id
-    guard await workspace.host(GitCommands.GitFetch.self, .init(id: id), label: "Syncing…") != nil else {
+    guard await workspace.host(GitCommands.GitFetch.self, .init(id: id), label: "Syncing") != nil else {
       return workspace.track(.sync, success: false)
     }
     var head = workspace.refs.localBranches.first(where: \.isHEAD)
     if (head?.behind ?? 0) > 0 {
       let strategy = await workspace.repository.defaultPullStrategy().wire
       guard
-        await workspace.host(GitCommands.GitPullV2.self, .init(id: id, strategy: strategy), label: "Syncing…")
+        await workspace.host(GitCommands.GitPullV2.self, .init(id: id, strategy: strategy), label: "Syncing")
           != nil
       else { return workspace.track(.sync, success: false) }
       head = workspace.refs.localBranches.first(where: \.isHEAD)
     }
     if (head?.ahead ?? 0) > 0 {
-      guard await workspace.host(GitCommands.GitPushV2.self, .init(id: id), label: "Syncing…") != nil else {
+      guard await workspace.host(GitCommands.GitPushV2.self, .init(id: id), label: "Syncing") != nil else {
         return workspace.track(.sync, success: false)
       }
     }
@@ -42,7 +42,7 @@ extension RefActions {
       RemoteSheet(dismiss: dismiss) { name, url in
         Task {
           await workspace.host(
-            GitCommands.GitAddRemote.self, .init(id: session.id, name: name, url: url), label: "Adding \(name)…",
+            GitCommands.GitAddRemote.self, .init(id: session.id, name: name, url: url), label: "Adding \(name)",
             track: .remote)
         }
       }
@@ -58,7 +58,7 @@ extension RefActions {
         Task {
           await workspace.host(
             GitCommands.GitRenameRemote.self, .init(id: session.id, from: remote, to: name),
-            label: "Renaming \(remote)…", track: .remote)
+            label: "Renaming \(remote)", track: .remote)
         }
       }
     }
@@ -72,7 +72,7 @@ extension RefActions {
         Task {
           await workspace.host(
             GitCommands.GitSetRemoteUrl.self, .init(id: session.id, name: remote.name, url: url),
-            label: "Setting URL…", track: .remote)
+            label: "Setting URL", track: .remote)
         }
       }
     }
@@ -85,13 +85,13 @@ extension RefActions {
         destructive: true)
     else { return }
     await workspace.host(
-      GitCommands.GitRemoveRemote.self, .init(id: session.id, name: remote), label: "Removing \(remote)…",
+      GitCommands.GitRemoveRemote.self, .init(id: session.id, name: remote), label: "Removing \(remote)",
       track: .remote)
   }
 
   func pruneRemote(_ remote: String) async {
     await workspace.host(
-      GitCommands.GitPruneRemote.self, .init(id: session.id, name: remote), label: "Pruning \(remote)…",
+      GitCommands.GitPruneRemote.self, .init(id: session.id, name: remote), label: "Pruning \(remote)",
       track: .remote)
   }
 
@@ -108,7 +108,7 @@ extension RefActions {
         "Delete \(name) on \(remote)?", message: "The branch is removed from the remote for everyone.",
         action: "Delete", destructive: true)
     else { return }
-    await workspace.run(.branchDelete, label: "Deleting \(branch.name)…") {
+    await workspace.run(.branchDelete, label: "Deleting \(branch.name)") {
       try await workspace.repository.deleteRemoteBranch(name: name, remote: remote)
     }
   }

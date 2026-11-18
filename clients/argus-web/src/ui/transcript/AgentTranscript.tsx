@@ -137,7 +137,7 @@ export function AgentTranscript({
     return (
       <div className="aw-center">
         <Spinner />
-        <span className="aw-muted">Loading transcript…</span>
+        <span className="aw-muted">Loading transcript</span>
       </div>
     );
   }
@@ -162,7 +162,7 @@ export function AgentTranscript({
       {loadingOlder && (
         <div className="aw-load-older">
           <Spinner size="sm" />
-          <span className="aw-muted">Loading earlier messages…</span>
+          <span className="aw-muted">Loading earlier messages</span>
         </div>
       )}
       {tasks && tasks.length > 0 && <TaskList tasks={tasks} />}

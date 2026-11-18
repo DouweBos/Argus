@@ -86,7 +86,7 @@ function SaveAsAutomationDialog({
             });
           }}
         >
-          {saving ? "Saving…" : "Save"}
+          {saving ? "Saving" : "Save"}
         </Button>
       </DialogFooter>
     </Dialog>

@@ -195,7 +195,7 @@ export function IssueStartDialog({
   let submitLabel =
     issues.length > 1 ? `Start ${issues.length} agents` : "Start agent";
   if (submitting) {
-    submitLabel = "Starting…";
+    submitLabel = "Starting";
   }
 
   return (

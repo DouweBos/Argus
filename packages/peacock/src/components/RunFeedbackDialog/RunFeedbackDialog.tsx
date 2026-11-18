@@ -90,7 +90,7 @@ export function RunFeedbackDialog({ onClose, onSend }: RunFeedbackDialogProps) {
             send().catch(() => undefined);
           }}
         >
-          {sending ? "Sending…" : "Send feedback"}
+          {sending ? "Sending" : "Send feedback"}
         </Button>
       </DialogFooter>
     </Dialog>

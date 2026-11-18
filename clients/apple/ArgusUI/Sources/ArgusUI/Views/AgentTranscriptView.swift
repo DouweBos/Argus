@@ -120,7 +120,7 @@ public struct AgentTranscriptView: View {
           EmptyState(icon: "exclamationmark.triangle", title: "Couldn't load this chat", body: error)
             .allowsHitTesting(false)
         } else if messages.isEmpty, !host.hasLoadedTranscript(for: agentKey) {
-          Loading(label: "Reading chat…").allowsHitTesting(false)
+          Loading(label: "Reading chat").allowsHitTesting(false)
         } else if messages.isEmpty {
           EmptyState(
             icon: Icon.agent,
@@ -188,7 +188,7 @@ public struct AgentTranscriptView: View {
           Spacer()
           if loadingOlder {
             ProgressView().controlSize(.small)
-            MutedText("Loading earlier messages…")
+            MutedText("Loading earlier messages")
           }
           Spacer()
         }

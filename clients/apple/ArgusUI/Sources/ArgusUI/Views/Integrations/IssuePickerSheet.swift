@@ -49,7 +49,7 @@ public struct IssuePickerSheet: View {
       MutedText(error).padding(.horizontal)
     } else if results.isEmpty {
       if searching {
-        Loading(label: "Asking Linear…").frame(maxWidth: .infinity)
+        Loading(label: "Asking Linear").frame(maxWidth: .infinity)
       } else {
         MutedText(query.isEmpty ? "No open issues assigned to you." : "No issues match.")
           .padding(.horizontal)

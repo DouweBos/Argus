@@ -44,8 +44,8 @@ public struct SessionActivity: Sendable {
   /// "Setting up…", "Deleting…" or "Setup failed"; nil once ready.
   public static func statusLabel(_ status: RemoteSessionStatus) -> String? {
     switch status {
-    case .initializing: "Setting up…"
-    case .deleting: "Deleting…"
+    case .initializing: "Setting up"
+    case .deleting: "Deleting"
     case .error: "Setup failed"
     case .ready: nil
     }

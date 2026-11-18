@@ -139,7 +139,7 @@ export const WithCopyStderr: Story = {
 export const BusyTransient: Story = {
   args: {
     kind: "busy",
-    message: "Another git op is running, retrying…",
+    message: "Another git op is running, retrying",
     variant: "transient",
   },
 };

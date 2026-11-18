@@ -105,7 +105,7 @@ public struct MemoryEditorSheet: View {
     if host.hasControl {
       ToolbarItem(placement: .confirmationAction) {
         if editing {
-          Button(saving ? "Saving…" : "Save") { save() }.disabled(!canSave)
+          Button(saving ? "Saving" : "Save") { save() }.disabled(!canSave)
         } else {
           Button("Edit") { editing = true }
         }

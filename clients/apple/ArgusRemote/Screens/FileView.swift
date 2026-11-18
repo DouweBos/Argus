@@ -78,7 +78,7 @@ struct FileView: View {
       CodeView(text: file.content, language: language, focusLine: focusLine)
         .refreshable { await load() }
     } else {
-      Screen { Loading(label: "Opening file…") }
+      Screen { Loading(label: "Opening file") }
     }
   }
 

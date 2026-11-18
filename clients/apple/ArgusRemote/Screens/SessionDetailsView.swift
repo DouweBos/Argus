@@ -132,14 +132,14 @@ struct SessionDetailsView: View {
   private var gitSection: some View {
     Section {
       if control, (git?.behind ?? 0) > 0 || pulling {
-        rowButton(pulling ? "Pulling…" : "Pull", icon: "icloud.and.arrow.down") { pull() } trailing: {
+        rowButton(pulling ? "Pulling" : "Pull", icon: "icloud.and.arrow.down") { pull() } trailing: {
           count("↓", git?.behind ?? 0)
         }
         .disabled(pulling)
       }
       if control, session.pushLocked != true {
         let ahead = git?.ahead ?? 0
-        rowButton(pushing ? "Pushing…" : "Push", icon: "icloud.and.arrow.up") { push() } trailing: {
+        rowButton(pushing ? "Pushing" : "Push", icon: "icloud.and.arrow.up") { push() } trailing: {
           count("↑", ahead)
         }
         .foregroundStyle(ahead == 0 ? theme.textMuted : theme.text)

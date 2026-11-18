@@ -102,7 +102,7 @@ public struct ReviewGuidePlaceholder: View {
     switch state?.status {
     case .generating?:
       VStack(spacing: 10) {
-        Loading(label: "Claude is reading the changes…")
+        Loading(label: "Claude is reading the changes")
         MutedText("A guide takes a minute or two. You can leave and come back.")
       }
       .frame(maxWidth: .infinity)
@@ -116,7 +116,7 @@ public struct ReviewGuidePlaceholder: View {
         EmptyView()
       }
     case nil:
-      Loading(label: "Loading guide…").frame(maxWidth: .infinity).padding(.vertical, 24)
+      Loading(label: "Loading guide").frame(maxWidth: .infinity).padding(.vertical, 24)
     default:
       EmptyState(
         icon: Icon.guide, title: "Review guide",

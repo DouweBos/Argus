@@ -16,7 +16,7 @@ struct ApproveJoinView: View {
       Screen {
         switch account.approval {
         case .idle, .working:
-          Loading(label: "Checking \(name)…")
+          Loading(label: "Checking \(name)")
         case .confirm(let sas, let name, _):
           TitleText("Compare the codes")
           MutedText("\(name) shows a code too. Only add it if they're the same.")

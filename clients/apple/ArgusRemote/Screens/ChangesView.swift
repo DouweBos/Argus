@@ -56,7 +56,7 @@ struct ChangesView: View {
             .fixedSize()
         }
       } else if diff == nil {
-        Loading(label: "Loading changes…")
+        Loading(label: "Loading changes")
       } else if files.isEmpty {
         EmptyState(
           icon: Icon.branch,

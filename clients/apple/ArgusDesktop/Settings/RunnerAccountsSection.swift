@@ -107,7 +107,7 @@ private struct RunnerAccountRow: View {
       }
       Menu {
         ForEach(account.actions.filter { $0 != account.primaryAction }, id: \.self) { action in
-          Button(action.title + (action == .install || action == .signIn ? "…" : "")) { perform(action) }
+          Button(action.title) { perform(action) }
         }
       } label: {
         Image(systemName: "ellipsis")

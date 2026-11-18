@@ -203,7 +203,7 @@ function CardDetails({
             <ContextCardRow
               disabled={pushing}
               icon={<Icons.PushIcon size={12} />}
-              label={pushing ? "Pushing…" : (pushError ?? "Push")}
+              label={pushing ? "Pushing" : (pushError ?? "Push")}
               muted={ahead === 0}
               title={
                 git?.upstream

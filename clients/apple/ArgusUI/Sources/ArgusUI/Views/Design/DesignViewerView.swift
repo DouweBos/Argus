@@ -36,7 +36,7 @@ public struct DesignViewerView: View {
       } else if let error = model.loadError {
         EmptyState(icon: Icon.warning, title: "Couldn't open the design", body: error, selectable: true)
       } else {
-        Loading(label: "Asking Figma…").padding(.top, 48)
+        Loading(label: "Asking Figma").padding(.top, 48)
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -153,7 +153,7 @@ public struct DesignViewerView: View {
 
   @ViewBuilder private var compareControl: some View {
     if let targets = compareTargets {
-      let label = model.comparing ? "Comparing…" : "Compare with Simulator"
+      let label = model.comparing ? "Comparing" : "Compare with Simulator"
       if targets.count > 1 {
         Menu {
           ForEach(targets) { target in Button(target.name) { compare(target) } }

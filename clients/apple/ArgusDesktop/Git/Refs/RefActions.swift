@@ -34,7 +34,7 @@ struct RefActions {
 
   /// Checks out `branch`; a dirty tree that blocks it offers stash or discard.
   func checkout(_ branch: String) async {
-    let label = "Checking out \(branch)…"
+    let label = "Checking out \(branch)"
     if await workspace.host(GitCommands.GitCheckout.self, .init(id: id, branch: branch), label: label, track: .checkout)
       != nil
     {
@@ -70,7 +70,7 @@ struct RefActions {
         Task {
           await workspace.host(
             GitCommands.GitCreateBranch.self, .init(id: id, name: name, startPoint: start, checkout: checkout),
-            label: "Creating \(name)…", track: .branchCreate)
+            label: "Creating \(name)", track: .branchCreate)
         }
       }
     }
@@ -84,7 +84,7 @@ struct RefActions {
       ) { name, _ in
         Task {
           await workspace.host(
-            GitCommands.GitRenameBranch.self, .init(id: id, from: branch, to: name), label: "Renaming \(branch)…",
+            GitCommands.GitRenameBranch.self, .init(id: id, from: branch, to: name), label: "Renaming \(branch)",
             track: .branchRename)
         }
       }
@@ -101,7 +101,7 @@ struct RefActions {
       ) { name, _ in
         Task {
           await workspace.host(
-            GitCommands.RenameSessionBranch.self, .init(id: id, branch: name), label: "Renaming \(branch)…",
+            GitCommands.RenameSessionBranch.self, .init(id: id, branch: name), label: "Renaming \(branch)",
             track: .branchRename)
         }
       }
@@ -120,19 +120,19 @@ struct RefActions {
         action: unmerged ? "Delete Anyway" : "Delete", destructive: true)
     else { return }
     await workspace.host(
-      GitCommands.GitDeleteBranch.self, .init(id: id, name: branch, force: unmerged), label: "Deleting \(branch)…",
+      GitCommands.GitDeleteBranch.self, .init(id: id, name: branch, force: unmerged), label: "Deleting \(branch)",
       track: .branchDelete)
   }
 
   func merge(_ branch: String, squash: Bool = false) async {
     await workspace.host(
       GitCommands.GitMergeBranch.self, .init(id: id, from: branch, into: currentBranch?.name, squash: squash),
-      label: "Merging \(branch)…", track: .merge)
+      label: "Merging \(branch)", track: .merge)
   }
 
   func rebaseCurrent(onto branch: String) async {
     await workspace.host(
-      GitCommands.GitRebaseOnto.self, .init(id: id, upstream: branch), label: "Rebasing onto \(branch)…",
+      GitCommands.GitRebaseOnto.self, .init(id: id, upstream: branch), label: "Rebasing onto \(branch)",
       track: .rebase)
   }
 
@@ -171,7 +171,7 @@ struct RefActions {
         Task {
           await workspace.host(
             GitCommands.GitSetUpstream.self, .init(id: id, branch: branch.name, upstream: upstream),
-            label: "Setting upstream…", track: .setUpstream)
+            label: "Setting upstream", track: .setUpstream)
         }
       }
     }
@@ -181,9 +181,9 @@ struct RefActions {
     let list =
       pinned
       ? await workspace.host(
-        GitCommands.GitPinBranch.self, .init(repoRoot: session.repoRoot, branch: branch), label: "Pinning…", track: .pin)
+        GitCommands.GitPinBranch.self, .init(repoRoot: session.repoRoot, branch: branch), label: "Pinning", track: .pin)
       : await workspace.host(
-        GitCommands.GitUnpinBranch.self, .init(repoRoot: session.repoRoot, branch: branch), label: "Unpinning…", track: .pin)
+        GitCommands.GitUnpinBranch.self, .init(repoRoot: session.repoRoot, branch: branch), label: "Unpinning", track: .pin)
     if let list { marks.pinned = list }
   }
 
@@ -191,10 +191,10 @@ struct RefActions {
     let list =
       archived
       ? await workspace.host(
-        GitCommands.GitArchiveBranch.self, .init(repoRoot: session.repoRoot, branch: branch), label: "Archiving…", track: .archive)
+        GitCommands.GitArchiveBranch.self, .init(repoRoot: session.repoRoot, branch: branch), label: "Archiving", track: .archive)
       : await workspace.host(
         GitCommands.GitUnarchiveBranch.self, .init(repoRoot: session.repoRoot, branch: branch),
-        label: "Unarchiving…", track: .archive)
+        label: "Unarchiving", track: .archive)
     if let list { marks.archived = list }
   }
 
@@ -216,7 +216,7 @@ struct RefActions {
         remotes: remoteNames, branch: branch.name, hasUpstream: branch.upstream != nil, dismiss: dismiss,
         submit: { params in
           workspace.lastPush = params
-          Task { await workspace.host(GitCommands.GitPushV2.self, params, label: "Pushing…", track: .push) }
+          Task { await workspace.host(GitCommands.GitPushV2.self, params, label: "Pushing", track: .push) }
         }, sessionId: id)
     }
   }
@@ -229,14 +229,14 @@ struct RefActions {
         Task {
           await workspace.host(
             GitCommands.GitPullV2.self, .init(id: id, strategy: strategy, remote: remote, branch: branch),
-            label: "Pulling…", track: .pull)
+            label: "Pulling", track: .pull)
         }
       }
     }
   }
 
   func fetch() async {
-    await workspace.host(GitCommands.GitFetch.self, .init(id: id), label: "Fetching…", track: .fetch)
+    await workspace.host(GitCommands.GitFetch.self, .init(id: id), label: "Fetching", track: .fetch)
   }
 
   // MARK: Stash and tags
@@ -248,7 +248,7 @@ struct RefActions {
           await workspace.host(
             GitCommands.GitStashSave.self,
             .init(id: id, includeUntracked: untracked, keepIndex: keepIndex, message: message),
-            label: "Stashing…", track: .stashCreate)
+            label: "Stashing", track: .stashCreate)
         }
       }
     }
@@ -260,7 +260,7 @@ struct RefActions {
         Task {
           await workspace.host(
             GitCommands.GitCreateTag.self, .init(id: id, name: name, ref: target, message: message),
-            label: "Tagging…", track: .tagCreate)
+            label: "Tagging", track: .tagCreate)
         }
       }
     }
@@ -268,7 +268,7 @@ struct RefActions {
 
   func pushTag(_ tag: String) async {
     await workspace.host(
-      GitCommands.GitPushTag.self, .init(id: id, name: tag, remote: remoteNames.first), label: "Pushing \(tag)…",
+      GitCommands.GitPushTag.self, .init(id: id, name: tag, remote: remoteNames.first), label: "Pushing \(tag)",
       track: .push)
   }
 
@@ -279,6 +279,6 @@ struct RefActions {
         destructive: true)
     else { return }
     await workspace.host(
-      GitCommands.GitDeleteTag.self, .init(id: id, name: tag), label: "Deleting \(tag)…", track: .tagDelete)
+      GitCommands.GitDeleteTag.self, .init(id: id, name: tag), label: "Deleting \(tag)", track: .tagDelete)
   }
 }

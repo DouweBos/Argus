@@ -26,7 +26,7 @@ public struct HostUsageModelFilterView: View {
           Btn(label: "Retry", tone: .secondary, small: true, icon: Icon.refresh) { Task { await load() } }.fixedSize()
         }
       } else {
-        Loading(label: "Loading counted models…").frame(maxWidth: .infinity, maxHeight: .infinity)
+        Loading(label: "Loading counted models").frame(maxWidth: .infinity, maxHeight: .infinity)
       }
     }
     .background(theme.bg.ignoresSafeArea())

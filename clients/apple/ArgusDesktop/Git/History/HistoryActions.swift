@@ -89,7 +89,7 @@ struct HistoryActions {
       })
     menu.addItem(ActionMenuItem("Revert \(short)") { history.request(.revert(commit)) })
     menu.addItem(
-      ActionMenuItem("Reset \(history.headBranchName ?? "HEAD") to Here…", enabled: history.filterBranch == nil) {
+      ActionMenuItem("Reset \(history.headBranchName ?? "HEAD") to Here", enabled: history.filterBranch == nil) {
         history.request(.reset(commit))
       })
     menu.addItem(.separator())

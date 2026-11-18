@@ -68,7 +68,7 @@ export function McpServerList({
     ) : (
       <div className={styles.loading}>
         <Spinner size="sm" />
-        <span>Checking MCP servers…</span>
+        <span>Checking MCP servers</span>
       </div>
     );
   }

@@ -39,7 +39,7 @@ struct PullRequestsView: View {
       LoadPhase(
         loaded: store.loaded, error: store.error.map(PullRequestLabels.explain),
         isEmpty: store.pullRequests.isEmpty),
-      loading: "Loading pull requests…", failedTitle: "Couldn't fetch pull requests",
+      loading: "Loading pull requests", failedTitle: "Couldn't fetch pull requests",
       retry: { await store.refresh() }
     ) {
       EmptyState(

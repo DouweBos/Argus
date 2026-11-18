@@ -12,7 +12,7 @@ const LABELS: Record<StatusPillTone, string> = {
   warn: "Warning",
   fail: "Missing",
   skipped: "Skipped",
-  running: "Checking…",
+  running: "Checking",
 };
 
 export function StatusPill({

@@ -62,7 +62,7 @@ struct FileDiffView: View {
       } else if loaded {
         EmptyState(icon: Icon.branch, title: "No changes", body: "This file no longer differs.")
       } else {
-        Loading(label: "Loading changes…")
+        Loading(label: "Loading changes")
       }
     }
     .navigationTitle(SessionFilePaths.fileName(path))

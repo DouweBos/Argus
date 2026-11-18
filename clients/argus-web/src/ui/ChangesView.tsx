@@ -141,7 +141,7 @@ export function ChangesView({
       {loading && diff === null ? (
         <div className="aw-center">
           <Spinner />
-          <span className="aw-muted">Loading changes…</span>
+          <span className="aw-muted">Loading changes</span>
         </div>
       ) : files.length === 0 ? (
         <EmptyState

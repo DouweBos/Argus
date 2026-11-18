@@ -108,7 +108,7 @@ export function DescribeAutomationView({
         {working === "draft" && <Spinner size="sm" />}
         <span className={styles.hint}>
           {working === "draft"
-            ? "Drafting the playbook and the schedule…"
+            ? "Drafting the playbook and the schedule"
             : "Claude drafts it; you review it and create it."}
         </span>
         <span className={styles.spacer} />
@@ -200,7 +200,7 @@ export function DescribeAutomationView({
                 create().catch(() => undefined);
               }}
             >
-              {working === "create" ? "Creating…" : "Create"}
+              {working === "create" ? "Creating" : "Create"}
             </Button>
           </div>
         </section>

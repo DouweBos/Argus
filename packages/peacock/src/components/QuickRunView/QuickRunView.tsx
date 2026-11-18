@@ -110,7 +110,7 @@ export function QuickRunView({
                 run().catch(() => undefined);
               }}
             >
-              {starting ? "Starting…" : "Run once"}
+              {starting ? "Starting" : "Run once"}
             </Button>
           )
         }

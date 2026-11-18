@@ -48,7 +48,7 @@ struct CliProjectImportSheet: View {
         CliProjectList(picker: picker)
       }
     } else {
-      ProgressView("Looking through your Claude Code chats…").frame(maxWidth: .infinity, maxHeight: .infinity)
+      ProgressView("Looking through your Claude Code chats").frame(maxWidth: .infinity, maxHeight: .infinity)
     }
   }
 

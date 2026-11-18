@@ -139,7 +139,7 @@ private struct ChangeFileActionsMenu: View {
       Button("Rename") { vm.requestRename(first) }
     }
     if !existing.isEmpty {
-      Button(existing.count > 1 ? "Move \(existing.count) Files to Trash…" : "Move to Trash") {
+      Button(existing.count > 1 ? "Move \(existing.count) Files to Trash" : "Move to Trash") {
         vm.requestDelete(existing)
       }
     }

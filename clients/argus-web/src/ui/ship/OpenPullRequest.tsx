@@ -95,9 +95,9 @@ export function OpenPullRequest({
 
   let submitLabel = draft ? "Push and open draft" : "Push and open";
   if (busy === "pushing") {
-    submitLabel = "Pushing…";
+    submitLabel = "Pushing";
   } else if (busy === "opening") {
-    submitLabel = "Opening…";
+    submitLabel = "Opening";
   }
 
   return (

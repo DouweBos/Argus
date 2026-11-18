@@ -119,7 +119,7 @@ export function BranchesScreen({ sessionId }: { sessionId: string }) {
       {phase.kind === "loading" && (
         <div className="aw-center">
           <Spinner />
-          <span className="aw-muted">Reading branches…</span>
+          <span className="aw-muted">Reading branches</span>
         </div>
       )}
       {phase.kind === "failed" && (

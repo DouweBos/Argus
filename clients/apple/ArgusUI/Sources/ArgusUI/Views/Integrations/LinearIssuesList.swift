@@ -79,7 +79,7 @@ public struct LinearIssuesPlaceholder: View {
         icon: Icon.warning, title: model.query == nil ? "Couldn't fetch your issues" : "Couldn't search Linear",
         body: error, selectable: true)
     } else if model.issues == nil {
-      Loading(label: model.query == nil ? "Asking Linear…" : "Searching Linear…")
+      Loading(label: model.query == nil ? "Asking Linear" : "Searching Linear")
     } else if let query = model.query, model.issues?.isEmpty == true {
       EmptyState(
         icon: Icon.search, title: "No issues match \u{201C}\(query)\u{201D}",

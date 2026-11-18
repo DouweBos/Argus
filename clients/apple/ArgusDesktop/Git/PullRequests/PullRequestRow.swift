@@ -47,7 +47,7 @@ struct PullRequestRow: View {
         if let sessionId {
           Button("Open Session") { act(.openSession(sessionId)) }
         } else {
-          Button(starting ? "Starting…" : "New Session") { act(.startSession) }.disabled(starting)
+          Button(starting ? "Starting" : "New Session") { act(.startSession) }.disabled(starting)
         }
       }
       .controlSize(.small)

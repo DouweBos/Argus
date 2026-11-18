@@ -373,7 +373,7 @@ function DevicePane({ device }: { device: RemoteDevice | null }) {
     return (
       <div className="aw-center">
         <Spinner />
-        <span className="aw-muted">Waiting for the device…</span>
+        <span className="aw-muted">Waiting for the device</span>
       </div>
     );
   }

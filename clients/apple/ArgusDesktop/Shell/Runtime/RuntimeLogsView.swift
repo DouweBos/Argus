@@ -98,7 +98,7 @@ struct RuntimeLogsView: View {
       }
       .overlay {
         if visible.isEmpty {
-          Text(log.entries.isEmpty ? (running ? "Waiting for logs…" : "Not streaming.") : "No lines match the filter.")
+          Text(log.entries.isEmpty ? (running ? "Waiting for logs" : "Not streaming.") : "No lines match the filter.")
             .font(.scaled(size: 12))
             .foregroundStyle(theme.textMuted)
         }

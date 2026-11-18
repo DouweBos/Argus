@@ -26,7 +26,7 @@ struct ClaudeLoginSection: View {
       if starting {
         HStack {
           ProgressView().controlSize(.small)
-          Text("Opening browser…").foregroundStyle(.secondary)
+          Text("Opening browser").foregroundStyle(.secondary)
         }
       } else if let login, login.pending {
         VStack(alignment: .leading, spacing: 8) {
@@ -36,14 +36,14 @@ struct ClaudeLoginSection: View {
               .textFieldStyle(.roundedBorder)
               .onSubmit(submit)
           } else {
-            Text("Waiting for you to approve in your browser…").foregroundStyle(.secondary)
+            Text("Waiting for you to approve in your browser").foregroundStyle(.secondary)
           }
           HStack {
             if store.claudeLoginURL != nil { Button("Reopen Sign-in Page", action: reopen) }
             Spacer()
             Button("Cancel") { Task { await store.cancelClaudeLogin() } }
             if login.needsCode {
-              Button(submitting ? "Signing in…" : "Sign In", action: submit)
+              Button(submitting ? "Signing in" : "Sign In", action: submit)
                 .buttonStyle(.borderedProminent)
                 .disabled(code.trimmingCharacters(in: .whitespaces).isEmpty || submitting)
             }

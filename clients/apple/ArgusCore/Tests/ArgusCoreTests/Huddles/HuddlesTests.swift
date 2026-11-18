@@ -33,7 +33,7 @@ struct HuddlesTests {
     #expect(Huddles.guestStatus(guest("Ana", .approved, typing: true), drivers: drivers) == "driving the device")
     #expect(Huddles.guestStatus(guest("Ben", .approved), drivers: drivers) == "waiting for the device")
     #expect(Huddles.guestStatus(guest("Ana", .pending), drivers: drivers) == "wants to join")
-    #expect(Huddles.guestStatus(guest("Cy", .approved, typing: true), drivers: .nobody) == "typing…")
+    #expect(Huddles.guestStatus(guest("Cy", .approved, typing: true), drivers: .nobody) == "typing")
   }
 
   @Test func typingLineMatchesPeacock() {

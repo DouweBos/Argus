@@ -51,7 +51,7 @@ public struct AgentsOverviewList: View {
         if host.recentAgentsLoaded {
           EmptyState(icon: Icon.agent, title: "No agents", body: "Start one from a session to see it here.")
         } else {
-          Loading(label: "Reading agents…").frame(maxHeight: .infinity)
+          Loading(label: "Reading agents").frame(maxHeight: .infinity)
         }
       }
     }

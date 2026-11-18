@@ -126,7 +126,7 @@ private struct AutomationDetail: View {
         .disabled(duplicating)
         .help("Make a paused copy to adapt, e.g. for another project")
       Button("Delete") { confirmingDelete = true }
-      Button(saving ? "Saving…" : saved == draft ? "Saved" : "Save Changes") { save() }
+      Button(saving ? "Saving" : saved == draft ? "Saved" : "Save Changes") { save() }
         .keyboardShortcut("s", modifiers: .command)
         .disabled(saving || saved == nil || saved == draft || !canSave)
     }

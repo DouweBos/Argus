@@ -20,7 +20,7 @@ struct CommitView: View {
         MonoText(text: hash, size: 11, lineLimit: 1)
       }
       if diff == nil {
-        Loading(label: "Reading the commit…")
+        Loading(label: "Reading the commit")
       } else if files.isEmpty {
         MutedText("No file changes.")
       } else {

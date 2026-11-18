@@ -86,7 +86,7 @@ struct HomeEnvironmentCards: View {
           MacTelemetry.capture(.homeCardActed(card: .notifications, action: .open))
         }
       } else {
-        Button(asking ? "Asking…" : "Enable") { Task { await enable() } }
+        Button(asking ? "Asking" : "Enable") { Task { await enable() } }
           .disabled(asking)
       }
       Button {

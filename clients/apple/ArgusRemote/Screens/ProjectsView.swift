@@ -35,7 +35,7 @@ struct ProjectsView: View {
       } else {
         Section { ComputerSwitcher() }
         if !app.loaded || ((host.connection != .ready || !host.projectsLoaded) && host.projects.isEmpty) {
-          Loading(label: "Connecting to \(hostName)…")
+          Loading(label: "Connecting to \(hostName)")
             .listRowBackground(Color.clear)
         } else {
           planLimits

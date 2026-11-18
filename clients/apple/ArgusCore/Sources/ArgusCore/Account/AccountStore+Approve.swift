@@ -35,7 +35,7 @@ extension AccountStore {
       approval = .failed("That request can't be approved from here.")
       return
     }
-    approval = .working("Checking \(member.name)…")
+    approval = .working("Checking \(member.name)")
     do {
       let pending = try await beginApproval(requestId: request.requestId, subject: subject, viaPairing: false)
       pendingApproval = pending
@@ -48,7 +48,7 @@ extension AccountStore {
   /// "Codes match": put it on the account. A moved head shows a new code.
   public func confirmApproval() async {
     guard let pending = pendingApproval, let member = pending.subject.member else { return }
-    approval = .working("Adding \(member.name)…")
+    approval = .working("Adding \(member.name)")
     do {
       if let again = try await writeApproval(pending) {
         pendingApproval = again

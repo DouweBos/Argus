@@ -102,7 +102,7 @@ struct ProjectSettingsSheet: View {
         Text(error).font(.scaled(.caption)).foregroundStyle(theme.error).lineLimit(2)
       }
       Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
-      Button(settings.saving ? "Saving…" : "Save") {
+      Button(settings.saving ? "Saving" : "Save") {
         guard let backend = model.backend else { return }
         Task {
           guard await settings.save(backend) else { return }

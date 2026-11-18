@@ -86,7 +86,7 @@ export function ForkChatDialog({
 
   let submitLabel = "Fork into new session";
   if (forking) {
-    submitLabel = "Forking…";
+    submitLabel = "Forking";
   } else if (into === "agent") {
     submitLabel = "Fork into new agent";
   }

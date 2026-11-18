@@ -17,7 +17,7 @@ export interface OptionMenuProps {
   items: OptionMenuItem[];
   onClose: () => void;
   onSelect: (value: string) => void;
-  /** "Change status…" */
+  /** "Change status" */
   placeholder: string;
   /** Shown beside the search field, e.g. the key that opened the menu. */
   hint?: string;

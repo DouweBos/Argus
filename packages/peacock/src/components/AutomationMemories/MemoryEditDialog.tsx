@@ -129,7 +129,7 @@ export function MemoryEditDialog({
             save().catch(() => undefined);
           }}
         >
-          {saving ? "Saving…" : "Save"}
+          {saving ? "Saving" : "Save"}
         </Button>
       </DialogFooter>
     </Dialog>

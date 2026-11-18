@@ -39,9 +39,9 @@ struct GitFailureBanner: View {
       guard
         await workspace.host(
           GitCommands.GitPullV2.self, .init(id: id, strategy: strategy.wire, remote: push.remote, branch: push.branch),
-          label: "Pulling…", track: .pull) != nil
+          label: "Pulling", track: .pull) != nil
       else { return }
-      await workspace.host(GitCommands.GitPushV2.self, push, label: "Pushing…", track: .push)
+      await workspace.host(GitCommands.GitPushV2.self, push, label: "Pushing", track: .push)
     case .forceWithLease:
       guard var push = workspace.lastPush,
         await GitDialogs.confirm(
@@ -52,14 +52,14 @@ struct GitFailureBanner: View {
       push.forceWithLease = true
       push.force = nil
       workspace.lastPush = push
-      await workspace.host(GitCommands.GitPushV2.self, push, label: "Force pushing…", track: .push)
+      await workspace.host(GitCommands.GitPushV2.self, push, label: "Force pushing", track: .push)
     case .retry:
       await workspace.retry?()
     case .stashAndRetry:
       guard
         await workspace.host(
           GitCommands.GitStashSave.self, .init(id: id, includeUntracked: true, keepIndex: false, message: nil),
-          label: "Stashing…", track: .stashCreate) != nil
+          label: "Stashing", track: .stashCreate) != nil
       else { return }
       await workspace.retry?()
     case .openConflicts:

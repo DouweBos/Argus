@@ -80,7 +80,7 @@ private struct PullRequestDetailContent: View {
           Button("Back to Pull Requests") { desktop.navigate(.pullRequests) }
         }
       } else {
-        ProgressView("Loading pull request…").controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
+        ProgressView("Loading pull request").controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
       }
     }
     .sheet(isPresented: $merging) {

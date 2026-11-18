@@ -81,7 +81,7 @@ public struct UsageSummaryView: View {
             .disabled(loading)
         }
       } else {
-        Loading(label: "Reading usage…")
+        Loading(label: "Reading usage")
           .frame(maxWidth: .infinity, minHeight: 240)
       }
     }

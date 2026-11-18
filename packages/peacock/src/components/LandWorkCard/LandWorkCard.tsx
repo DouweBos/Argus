@@ -111,7 +111,7 @@ export function LandWorkCard({
             disabled={working}
             onClick={onPush}
           >
-            {busy === "push" ? "Pushing…" : pushLabel}
+            {busy === "push" ? "Pushing" : pushLabel}
           </Button>
         )}
         {onOpenPullRequest && (
@@ -135,7 +135,7 @@ export function LandWorkCard({
             disabled={working || blocked}
             onClick={onMerge}
           >
-            {busy === "merge" ? "Merging…" : `Merge into ${base}`}
+            {busy === "merge" ? "Merging" : `Merge into ${base}`}
           </Button>
         )}
       </div>

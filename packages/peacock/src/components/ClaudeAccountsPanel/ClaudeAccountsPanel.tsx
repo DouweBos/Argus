@@ -76,8 +76,8 @@ function waitingText(step: ClaudeSignInStep, remote: boolean): string {
   }
 
   return remote
-    ? "Waiting for you to approve in the browser on your computer…"
-    : "Waiting for you to approve in your browser…";
+    ? "Waiting for you to approve in the browser on your computer"
+    : "Waiting for you to approve in your browser";
 }
 
 function pendingCaption(step: ClaudeSignInStep, remote: boolean): string {
@@ -171,7 +171,7 @@ function SignInFlow({
     return (
       <p className={styles.muted}>
         <Spinner size="sm" />
-        {remote ? "Opening the browser on your computer…" : "Opening browser…"}
+        {remote ? "Opening the browser on your computer" : "Opening browser"}
       </p>
     );
   }
@@ -222,7 +222,7 @@ function SignInFlow({
             disabled={!code.trim() || step === "submitting"}
             onClick={submit}
           >
-            {step === "submitting" ? "Signing in…" : "Sign in"}
+            {step === "submitting" ? "Signing in" : "Sign in"}
           </Button>
         )}
       </div>

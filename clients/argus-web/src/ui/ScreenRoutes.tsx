@@ -56,7 +56,7 @@ export function ProjectRoute({
   }, [loaded, project]);
 
   if (!project) {
-    return <Waiting label="Finding the project…" />;
+    return <Waiting label="Finding the project" />;
   }
 
   return (
@@ -97,7 +97,7 @@ export function SessionRedirect({ sessionId }: { sessionId: string }) {
     }
   }, [checked, newest, sessionId]);
 
-  return <Waiting label="Finding the session…" />;
+  return <Waiting label="Finding the session" />;
 }
 
 /** `/devices/:platform/:deviceKey`: an unknown device opens the list instead. */
@@ -133,7 +133,7 @@ export function DeviceRoute({
   }, [checked, device]);
 
   if (!device) {
-    return <Waiting label="Finding the device…" />;
+    return <Waiting label="Finding the device" />;
   }
 
   return (

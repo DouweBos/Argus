@@ -92,7 +92,7 @@ export function BaseBranchDialog({
         {!loaded && (
           <div className="aw-center">
             <Spinner />
-            <span className="aw-muted">Reading branches…</span>
+            <span className="aw-muted">Reading branches</span>
           </div>
         )}
         {loaded && local.length === 0 && (

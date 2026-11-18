@@ -89,7 +89,7 @@ struct AutomationsSettingsPage: View {
             .disabled(!host.hasControl)
           }
         } else {
-          Loading(label: "Reading the computer's settings…")
+          Loading(label: "Reading the computer's settings")
         }
       }
     }
@@ -244,7 +244,7 @@ private struct EasHostRow: View {
     VStack(alignment: .leading, spacing: 6) {
       DeviceHostRow(entry: entry, detail: "EAS · \(running) of \(limit) running") {
         if host.hasControl {
-          Btn(label: busy ? "Starting…" : "Start", tone: .secondary, small: true, hugs: true) { confirming = true }
+          Btn(label: busy ? "Starting" : "Start", tone: .secondary, small: true, hugs: true) { confirming = true }
             .disabled(busy || running >= limit)
         }
       }

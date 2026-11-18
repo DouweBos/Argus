@@ -14,7 +14,7 @@ public enum AccountProfileText {
   public static func subtitle(phase: AccountStore.Phase, profile: AccountProfile?, compact: Bool = false) -> String? {
     switch phase {
     case .signedOut: compact ? "Not signed in" : "Reach your computers without a QR code"
-    case .loading, .signingIn, .settingUp: profile?.subtitle ?? "Checking your account…"
+    case .loading, .signingIn, .settingUp: profile?.subtitle ?? "Checking your account"
     case .awaitingApproval: "Waiting for device approval"
     case .ready: profile?.subtitle ?? (profile?.displayName == nil ? "Signed in" : nil)
     }

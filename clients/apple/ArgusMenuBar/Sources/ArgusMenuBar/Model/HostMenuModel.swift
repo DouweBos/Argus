@@ -12,7 +12,7 @@ public enum HostMenuModel {
   public static func hostItems(_ state: HostSupervisor.State) -> [HostMenuItem] {
     switch state {
     case .idle, .starting, .holderExited, .waitingForHost:
-      [.info("Host: starting…")]
+      [.info("Host: starting")]
     case .running:
       [.info("Host: running")]
     case .restarting(let attempt):
@@ -24,7 +24,7 @@ public enum HostMenuModel {
     case .attached(let holder):
       [.info("Host: attached to \(holder.appName)")]
     case .handingOver(let holder):
-      [.info("Host: waiting for \(holder.appName) to quit…")]
+      [.info("Host: waiting for \(holder.appName) to quit")]
     case .stopped:
       [.info("Host: stopped"), .action("Restart Host", .restartHost)]
     }
@@ -112,7 +112,7 @@ public enum HostMenuModel {
     case .starting, .waitingForDevice:
       return [
         .info("Pairing code copied to clipboard"),
-        .info("Waiting for a device to connect…"),
+        .info("Waiting for a device to connect"),
         .action("Show Pairing Window", .showPairing),
         .action("Cancel pairing", .cancelPairing),
       ]
@@ -127,7 +127,7 @@ public enum HostMenuModel {
       }
       return out + [.action("Reject", .cancelPairing)]
     case .confirmingSent:
-      return [.info("Pairing…")]
+      return [.info("Pairing")]
     case .paired(let label):
       return [.info("Paired with \(label)"), .action("Dismiss", .dismissPairing)]
     case .failed(let message):
@@ -148,7 +148,7 @@ public enum HostMenuModel {
     case .idle:
       out = [check]
     case .checking:
-      out = [.info("Checking for updates…")]
+      out = [.info("Checking for updates")]
     case .upToDate:
       out = [.info("Up to date"), check]
     case .available(let version):
@@ -158,7 +158,7 @@ public enum HostMenuModel {
     case .ready(let version):
       out = [.info("Update ready: \(version)"), installItem(update, activeAgents: activeAgents)]
     case .installing:
-      out = [.info("Installing update…")]
+      out = [.info("Installing update")]
     case .failed(let message):
       out = [.info("Update failed: \(message)"), check]
     }

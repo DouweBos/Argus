@@ -42,7 +42,7 @@ export interface OpenPullRequestDialogProps {
   filling?: boolean;
   fillLabel?: string;
   error?: string | null;
-  /** Worded by the caller: "Pushing branch…", "Push and open draft", … */
+  /** Worded by the caller: "Pushing branch", "Push and open draft", … */
   submitLabel: string;
   submitting?: boolean;
   onSubmit: () => void;
@@ -182,7 +182,7 @@ export function OpenPullRequestDialog({
                 disabled={busy}
                 onClick={onFill}
               >
-                {filling ? "Filling in…" : fillLabel}
+                {filling ? "Filling in" : fillLabel}
               </Button>
             )}
           </div>

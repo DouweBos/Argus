@@ -152,7 +152,7 @@ export const Starting: Story = {
     prompt: "Make the login form validate on blur",
     canSubmit: false,
     disabled: true,
-    submitLabel: "Starting…",
+    submitLabel: "Starting",
     chips: (
       <StartWorkspaceChip
         currentLabel="Current checkout"

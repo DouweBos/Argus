@@ -65,7 +65,7 @@ public struct OpenPullRequestSheet: View {
 
   private func fill() {
     guard let session else { return }
-    busy = "Filling in…"
+    busy = "Filling in"
     error = nil
     Task {
       defer { busy = nil }
@@ -92,13 +92,13 @@ public struct OpenPullRequestSheet: View {
     error = nil
     Task {
       defer { busy = nil }
-      busy = "Pushing…"
+      busy = "Pushing"
       host.clearError()
       guard await host.push(sessionId: session.id) != nil else {
         error = "Couldn't push \(session.branch)" + (host.lastError.map { " — \($0)" } ?? "")
         return
       }
-      busy = "Opening…"
+      busy = "Opening"
       if let url = await store.create(sessionId: session.id, title: trimmedTitle, body: summary, draft: draft) {
         createdURL = url
         onOpened(url)
@@ -220,7 +220,7 @@ public struct OpenPullRequestSheet: View {
       Field(label: "Description") {
         ThemedTextField(placeholder: "What changed and why", text: $summary, multiline: true, lines: 4...14)
         Btn(
-          label: busy == "Filling in…" ? "Filling in…" : "Fill in with Claude", tone: .secondary, small: true,
+          label: busy == "Filling in" ? "Filling in" : "Fill in with Claude", tone: .secondary, small: true,
           icon: Icon.agent, hugs: true
         ) { fill() }
         .disabled(busy != nil || session == nil)

@@ -47,7 +47,7 @@ struct NewBranchSheet: View {
           Button("Cancel") { dismiss() }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button(saving ? "Creating…" : "Create") {
+          Button(saving ? "Creating" : "Create") {
             saving = true
             Task {
               await onSubmit(trimmed, start.isEmpty ? nil : start, checkout)
@@ -90,7 +90,7 @@ struct BranchNameSheet: View {
           Button("Cancel") { dismiss() }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button(saving ? "Saving…" : "Save") {
+          Button(saving ? "Saving" : "Save") {
             saving = true
             Task {
               await onSubmit(trimmed)

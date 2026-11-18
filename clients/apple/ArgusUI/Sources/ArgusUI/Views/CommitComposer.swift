@@ -33,7 +33,7 @@ struct CommitComposer: View {
         Banner(text: draftError, tone: .danger)
       }
       ChipFlowLayout(spacing: 6, lineSpacing: 6) {
-        Chip(label: busy == "draft" ? "Drafting…" : "Draft", icon: Icon.draft) { draft() }
+        Chip(label: busy == "draft" ? "Drafting" : "Draft", icon: Icon.draft) { draft() }
           .disabled(busy != nil)
           .accessibilityHint("Claude writes a message for these changes")
         if allowsAmend {
@@ -103,7 +103,7 @@ struct CommitComposer: View {
 
   private func commitButton(hugs: Bool) -> some View {
     Btn(
-      label: busy == "commit" ? "Committing…" : amend ? "Amend" : "Commit all",
+      label: busy == "commit" ? "Committing" : amend ? "Amend" : "Commit all",
       small: true, icon: Icon.check, hugs: hugs
     ) { commit() }
     .fixedSize(horizontal: hugs, vertical: false)

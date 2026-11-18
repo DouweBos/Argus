@@ -18,7 +18,7 @@ struct SessionSetupView: View {
       case .initializing:
         SetupProgressCard(session: session).frame(maxWidth: 520)
       default:
-        progress("Setting up the worktree…")
+        progress("Setting up the worktree")
       }
     }
     .padding(24)

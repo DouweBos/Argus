@@ -156,7 +156,7 @@ struct RunScreen: View {
       }
       // The playbook and scope come from the run; it lands paused and manual.
       if run.isQuick, !run.isActive {
-        Button(saving ? "Saving…" : "Save as Automation") { saveAsAutomation(run) }
+        Button(saving ? "Saving" : "Save as Automation") { saveAsAutomation(run) }
           .disabled(saving)
           .help("Create an automation from this run's playbook and scope")
       }

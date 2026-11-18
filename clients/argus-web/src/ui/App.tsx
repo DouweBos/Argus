@@ -161,7 +161,7 @@ function Pair() {
           <div className="aw-sas">{sas}</div>
           <div className="aw-inline">
             <Spinner size="sm" />
-            <span className="aw-muted">Waiting for confirmation…</span>
+            <span className="aw-muted">Waiting for confirmation</span>
           </div>
         </Card>
       ) : (

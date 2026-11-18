@@ -26,7 +26,7 @@ public enum Huddles {
     if guest.state == .pending { return "wants to join" }
     if guest.state == .approved, guest.label == drivers.holder { return "driving the device" }
     if guest.state == .approved, drivers.waiting.contains(guest.label) { return "waiting for the device" }
-    if guest.typing { return "typing…" }
+    if guest.typing { return "typing" }
     return guest.connected ? "here" : "away"
   }
 

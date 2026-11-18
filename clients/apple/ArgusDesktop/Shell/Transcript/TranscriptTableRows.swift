@@ -108,7 +108,7 @@ private struct TranscriptTopRow: View {
       Spacer()
       if state.loading {
         ProgressView().controlSize(.small)
-        MutedText("Loading earlier messages…")
+        MutedText("Loading earlier messages")
       }
       Spacer()
     }

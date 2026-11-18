@@ -97,12 +97,12 @@ public struct RevisePlaybookSheet: View {
       HStack(spacing: 8) {
         if revising {
           ProgressView().controlSize(.small)
-          MutedText("Rewriting the playbook…")
+          MutedText("Rewriting the playbook")
         }
         Spacer()
         Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
         if revised == nil {
-          Button(revising ? "Rewriting…" : "Rewrite") { revise() }
+          Button(revising ? "Rewriting" : "Rewrite") { revise() }
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.return, modifiers: .command)
             .disabled(!canRevise)
@@ -126,7 +126,7 @@ public struct RevisePlaybookSheet: View {
             ThemedTextField(placeholder: Self.placeholder, text: $instruction, multiline: true, lines: 3...8)
               .focused($focused)
             Btn(
-              label: revising ? "Rewriting…" : (revised == nil ? "Rewrite" : "Rewrite again"),
+              label: revising ? "Rewriting" : (revised == nil ? "Rewrite" : "Rewrite again"),
               tone: .secondary, small: true
             ) { revise() }
               .disabled(!canRevise)

@@ -606,7 +606,7 @@ export function ChatInput({
               onClose={() => setOpenPicker(null)}
             >
               {models.length === 0 && (
-                <PickerPopover.Empty>Loading models…</PickerPopover.Empty>
+                <PickerPopover.Empty>Loading models</PickerPopover.Empty>
               )}
               {models.map((m) => (
                 <PickerPopover.Option

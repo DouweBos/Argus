@@ -48,7 +48,7 @@ function Textarea({
 export const Default: Story = {
   render: () => {
     const [value, setValue] = useState(
-      "Refactor the session card to use the new…",
+      "Refactor the session card to use the new",
     );
 
     return (

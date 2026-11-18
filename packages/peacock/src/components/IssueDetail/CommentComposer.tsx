@@ -63,7 +63,7 @@ export function CommentComposer({
               post().catch(() => {});
             }}
           >
-            {posting ? "Posting…" : sendLabel}
+            {posting ? "Posting" : sendLabel}
           </Button>
         </div>
       )}

@@ -87,7 +87,7 @@ struct QuickRunView: View {
   private var history: some View {
     SectionHeader(title: "Quick runs", count: runs.count)
     if store.quickRuns == nil {
-      Loading(label: "Reading quick runs…")
+      Loading(label: "Reading quick runs")
     } else if runs.isEmpty {
       MutedText("Nothing yet. A quick run is kept and swept like any other run.")
     }
@@ -99,7 +99,7 @@ struct QuickRunView: View {
   }
 
   private var buttonLabel: String {
-    if starting { return runLater ? "Scheduling…" : "Starting…" }
+    if starting { return runLater ? "Scheduling" : "Starting" }
     return runLater ? "Run later" : "Run once"
   }
 

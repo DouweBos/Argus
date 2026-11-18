@@ -32,7 +32,7 @@ public final class StartWorkspace {
   /// What the base menu reads while it has no branch to name.
   public var baseTitle: String {
     if let base { return "from \(base)" }
-    return bases.loading ? "Loading branches…" : "Project default"
+    return bases.loading ? "Loading branches" : "Project default"
   }
 
   /// Read once, the first time a new worktree is asked for.

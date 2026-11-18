@@ -49,7 +49,7 @@ struct ProjectView: View {
     // only an answered list means "none".
     .loadPhase(
       LoadPhase(loaded: host.sessionsByRepo[repoRoot] != nil, error: nil, isEmpty: groups.isEmpty),
-      loading: "Reading sessions…"
+      loading: "Reading sessions"
     ) {
       if host.hasControl {
         startPane

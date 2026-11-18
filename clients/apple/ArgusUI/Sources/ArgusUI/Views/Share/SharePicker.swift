@@ -81,7 +81,7 @@ public struct ShareProjectList: View {
           Button("Try Again", action: onRetry)
         }
       } else {
-        Section { Loading(label: "Connecting to \(label ?? "your computer")…") }
+        Section { Loading(label: "Connecting to \(label ?? "your computer")") }
           .listRowBackground(Color.clear)
       }
     }
@@ -172,7 +172,7 @@ public struct ShareSessionList: View {
       }
       Section("Sessions") {
         if host.sessionsByRepo[repoRoot] == nil {
-          Loading(label: "Loading sessions…").listRowBackground(Color.clear)
+          Loading(label: "Loading sessions").listRowBackground(Color.clear)
         } else {
           ForEach(sessions) { session in
             Button {

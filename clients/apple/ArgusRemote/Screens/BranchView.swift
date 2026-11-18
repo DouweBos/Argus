@@ -94,7 +94,7 @@ struct BranchView: View {
         }
       }
     } else {
-      Loading(label: "Reading history…")
+      Loading(label: "Reading history")
     }
   }
 

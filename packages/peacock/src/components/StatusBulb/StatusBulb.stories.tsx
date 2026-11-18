@@ -36,7 +36,7 @@ export const Pulsing: Story = {
   render: () => (
     <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
       <StatusBulb tone="pending" pulse />
-      <span style={{ fontFamily: "system-ui", fontSize: 13 }}>Checking…</span>
+      <span style={{ fontFamily: "system-ui", fontSize: 13 }}>Checking</span>
     </div>
   ),
 };

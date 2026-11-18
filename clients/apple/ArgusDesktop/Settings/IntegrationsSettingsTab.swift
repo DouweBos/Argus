@@ -71,7 +71,7 @@ private struct IntegrationGroup: View {
                   Task { await host.run(ArgusProtocol.Commands.IntegrationCancelOauth.self, .init()) }
                 }
               }
-              Button(signingIn ? "Waiting for the browser…" : "Sign in with \(name)") {
+              Button(signingIn ? "Waiting for the browser" : "Sign in with \(name)") {
                 Task { await signIn() }
               }
               .buttonStyle(.borderedProminent)
@@ -85,7 +85,7 @@ private struct IntegrationGroup: View {
               SecureField("API key", text: $key)
                 .frame(width: 240)
                 .onSubmit { Task { await connect() } }
-              Button(busy ? "Connecting…" : "Connect") { Task { await connect() } }
+              Button(busy ? "Connecting" : "Connect") { Task { await connect() } }
                 .buttonStyle(.borderedProminent)
                 .disabled(busy || key.trimmingCharacters(in: .whitespaces).isEmpty)
               if reconnecting || useKey {

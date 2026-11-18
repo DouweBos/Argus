@@ -38,7 +38,7 @@ struct CompareRunScreen: View {
           ForEach(scores) { card($0) }
         }
       } else {
-        Loading(label: "Scoring the runs…")
+        Loading(label: "Scoring the runs")
       }
     }
     .navigationTitle(title)

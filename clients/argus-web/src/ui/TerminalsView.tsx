@@ -120,7 +120,7 @@ export function TerminalsView({
     ) : (
       <div className="aw-center">
         <Spinner />
-        <span className="aw-muted">Finding terminals…</span>
+        <span className="aw-muted">Finding terminals</span>
       </div>
     );
   }

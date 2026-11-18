@@ -66,13 +66,13 @@ private struct PrereqRow: View {
       HStack(spacing: 8) {
         icon
         Text(meta.title)
-        if let message = fixing ? "Installing…" : result?.message {
+        if let message = fixing ? "Installing" : result?.message {
           Text(message).font(.scaled(.caption)).foregroundStyle(.secondary).lineLimit(2)
         }
         Spacer()
         // Git identity needs a name and email; Settings → Git owns that form.
         if result?.fixable == true, id != .gitIdentity {
-          Button(fixing ? "Installing…" : "Install", action: fix).disabled(fixing)
+          Button(fixing ? "Installing" : "Install", action: fix).disabled(fixing)
         }
       }
       if failing, !fixing {

@@ -23,7 +23,7 @@ import { useDevicesStore } from "../stores/devices";
 import { EasEndSession } from "./EasEndSession";
 
 const PLACEHOLDER: Record<string, string> = {
-  connecting: "Connecting to device…",
+  connecting: "Connecting to device",
   error: "Couldn't start the stream. Is the device still booted?",
   novideo: "No video from this device — it's booted but not producing a stream.",
 };

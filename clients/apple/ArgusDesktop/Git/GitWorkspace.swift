@@ -297,7 +297,7 @@ final class GitWorkspace {
   /// Fills the composer with Claude's message for the staged changes; a
   /// failure lands in the banner with Retry.
   func draftCommitMessage() async {
-    hostBusy = "Drafting…"
+    hostBusy = "Drafting"
     defer { hostBusy = nil }
     do {
       guard let draft = try await host.draftCommitMessage(sessionId: sessionId) else { return }

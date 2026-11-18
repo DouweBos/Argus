@@ -106,7 +106,7 @@ export function PullRequestScreen({
     ) : (
       <div className="aw-center">
         <Spinner />
-        <span className="aw-muted">Reading the pull request…</span>
+        <span className="aw-muted">Reading the pull request</span>
       </div>
     );
   }

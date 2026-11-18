@@ -43,7 +43,7 @@ struct PullRequestView: View {
         filesSection
         if host.hasControl && !detail.merged { actions(detail) }
       } else {
-        Loading(label: "Reading the pull request…")
+        Loading(label: "Reading the pull request")
       }
     }
     .navigationTitle(detail?.title ?? label)
@@ -153,12 +153,12 @@ struct PullRequestView: View {
   private func actions(_ detail: RemotePullRequestDetail) -> some View {
     Card {
       ThemedTextField(placeholder: "Leave a comment", text: $comment, multiline: true)
-      Btn(label: busy ? "Working…" : "Comment", tone: .secondary, small: true) { postComment() }
+      Btn(label: busy ? "Working" : "Comment", tone: .secondary, small: true) { postComment() }
         .disabled(busy || comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
       // A split button, as GitHub's: the remembered strategy, the others behind the chevron.
       HStack(spacing: 8) {
-        Btn(label: busy ? "Merging…" : strategy.label, small: true, icon: Icon.merge) { confirmingMerge = true }
+        Btn(label: busy ? "Merging" : strategy.label, small: true, icon: Icon.merge) { confirmingMerge = true }
         strategyMenu
       }
       .disabled(busy || detail.mergeable == "CONFLICTING")

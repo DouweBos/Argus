@@ -162,7 +162,7 @@ struct StashesView: View {
           await workspace.host(
             GitCommands.GitStashBranch.self,
             .init(id: workspace.sessionId, stashRef: Self.ref(stash), branchName: name),
-            label: "Creating \(name)…", track: .branchCreate)
+            label: "Creating \(name)", track: .branchCreate)
         }
       }
     }

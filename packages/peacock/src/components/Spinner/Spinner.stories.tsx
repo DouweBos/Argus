@@ -30,7 +30,7 @@ export const InButtonContext: Story = {
       }}
     >
       <Spinner size="sm" tone="muted" />
-      <span>Inspecting…</span>
+      <span>Inspecting</span>
     </div>
   ),
 };

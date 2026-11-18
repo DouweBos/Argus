@@ -40,7 +40,7 @@ struct InspectionLauncherView: View {
     return VStack(spacing: 10) {
       title("\(name) is running without inspection")
       hint("Restart it with the inspection library injected to read its native view tree — real classes, colors and fonts.")
-      Button(model.launching ? "Restarting…" : "Restart with inspection") {
+      Button(model.launching ? "Restarting" : "Restart with inspection") {
         Task { await model.relaunch(bundleId: bundleId) }
       }
       .buttonStyle(.borderedProminent)
@@ -73,14 +73,14 @@ struct InspectionLauncherView: View {
         if model.launching {
           HStack(spacing: 6) {
             ProgressView().controlSize(.small)
-            hint("Launching with inspection…")
+            hint("Launching with inspection")
           }
         }
       }
     } else {
       HStack(spacing: 6) {
         ProgressView().controlSize(.small)
-        hint("Loading installed apps…")
+        hint("Loading installed apps")
       }
     }
   }

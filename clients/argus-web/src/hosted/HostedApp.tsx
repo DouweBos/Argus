@@ -80,7 +80,7 @@ function HostGate({ hostId }: { hostId: string }) {
   if (reachable || !refreshed) {
     return (
       <HostedFrame title="Argus">
-        <Waiting label={computer ? `Opening ${computer.name}…` : "Finding the computer…"} />
+        <Waiting label={computer ? `Opening ${computer.name}` : "Finding the computer"} />
       </HostedFrame>
     );
   }
@@ -143,7 +143,7 @@ export function HostedApp() {
     case "settingUp":
       return (
         <HostedAuthFrame title="Argus">
-          <Waiting label="Checking your account…" />
+          <Waiting label="Checking your account" />
         </HostedAuthFrame>
       );
     case "unsupported":

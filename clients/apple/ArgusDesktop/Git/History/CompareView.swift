@@ -110,7 +110,7 @@ struct CompareView: View {
       if !selection.isEmpty && !(locals + remotes + tags).contains(selection) {
         Text(selection.count == 40 ? String(selection.prefix(7)) : selection).tag(selection)
       }
-      if selection.isEmpty { Text("Choose…").tag("") }
+      if selection.isEmpty { Text("Choose").tag("") }
       Section("Branches") { ForEach(locals, id: \.self) { Text($0).tag($0) } }
       if !remotes.isEmpty { Section("Remote") { ForEach(remotes, id: \.self) { Text($0).tag($0) } } }
       if !tags.isEmpty { Section("Tags") { ForEach(tags, id: \.self) { Text($0).tag($0) } } }

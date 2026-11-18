@@ -42,7 +42,7 @@ const SHORTCUTS: ShortcutCheatsheetEntry[] = [
   {
     id: "jump-to-ref",
     combo: "Cmd+L",
-    label: "Jump to ref…",
+    label: "Jump to ref",
     scopes: ALL,
     contexts: ["global"],
   },

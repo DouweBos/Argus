@@ -62,7 +62,7 @@ public struct AgentMcpServersView: View {
         Btn(label: "Retry", tone: .secondary, small: true, icon: Icon.refresh, action: reload).fixedSize()
       }
     } else {
-      Loading(label: "Checking MCP servers…").frame(maxWidth: .infinity).padding(16)
+      Loading(label: "Checking MCP servers").frame(maxWidth: .infinity).padding(16)
     }
   }
 

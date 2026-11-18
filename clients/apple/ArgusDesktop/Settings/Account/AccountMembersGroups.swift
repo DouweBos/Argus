@@ -47,7 +47,7 @@ struct AccountApprovalPanel: View {
       case .idle, .working:
         HStack {
           ProgressView().controlSize(.small)
-          Text("Checking…").foregroundStyle(.secondary)
+          Text("Checking").foregroundStyle(.secondary)
         }
       case .confirm(let sas, let name, _):
         Text("\(name) shows a code too. Only add it if they're the same:").foregroundStyle(.secondary)

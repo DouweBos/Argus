@@ -46,7 +46,7 @@ struct ShareRootView: View {
   private var content: some View {
     switch model.phase {
     case .loading:
-      Loading(label: "Opening…")
+      Loading(label: "Opening")
     case .locked:
       EmptyState(icon: Icon.lock, title: "Argus is locked", body: "Unlock it to send this to a computer.") {
         Btn(label: "Unlock", hugs: true) { Task { await model.unlock() } }

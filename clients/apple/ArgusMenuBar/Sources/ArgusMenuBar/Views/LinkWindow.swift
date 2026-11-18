@@ -59,7 +59,7 @@ public struct LinkWindow: View {
           .keyboardShortcut(.defaultAction)
       }
     case .awaitingApproval?:
-      ProgressView("Confirmed here. Waiting for the other side…")
+      ProgressView("Confirmed here. Waiting for the other side")
     case .linked?:
       Label("This computer is on your account.", systemImage: "checkmark.circle.fill")
         .foregroundStyle(theme.success)

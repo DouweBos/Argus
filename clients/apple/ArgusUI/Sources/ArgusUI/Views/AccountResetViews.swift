@@ -38,9 +38,9 @@ public struct AccountResetSheet: View {
         }
         Btn(label: "Cancel", tone: .ghost, action: close)
       case .sendingCode:
-        Loading(label: "Sending a code…")
+        Loading(label: "Sending a code")
       case .resetting:
-        Loading(label: "Resetting your account…")
+        Loading(label: "Resetting your account")
       case .awaitingCode(let email):
         TitleText("Confirm it's you")
         MutedText("We sent a code to \(email). Enter it to reset your account.")

@@ -102,7 +102,7 @@ export function PushDialog({
   if (confirmingForce) {
     confirmLabel = "Force push";
   } else if (forceWithLease) {
-    confirmLabel = "Continue…";
+    confirmLabel = "Continue";
   } else {
     confirmLabel = "Push";
   }

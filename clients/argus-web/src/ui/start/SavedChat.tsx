@@ -114,7 +114,7 @@ export function SavedChat({
     ) : (
       <div className="aw-center">
         <Spinner />
-        <span className="aw-muted">Loading the chat…</span>
+        <span className="aw-muted">Loading the chat</span>
       </div>
     );
   }
@@ -136,7 +136,7 @@ export function SavedChat({
                 .finally(() => setResuming(false));
             }}
           >
-            {resuming ? "Resuming…" : "Resume"}
+            {resuming ? "Resuming" : "Resume"}
           </Button>
           {!chat.imported_from && repoRoot && (
             <Button

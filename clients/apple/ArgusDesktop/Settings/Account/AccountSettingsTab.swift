@@ -15,7 +15,7 @@ struct AccountSettingsTab: View {
         SettingsGroup {
           HStack {
             ProgressView().controlSize(.small)
-            Text("Setting up your account…").foregroundStyle(.secondary)
+            Text("Setting up your account").foregroundStyle(.secondary)
           }
         }
       // Signing in keeps the form, so a web sign-in that comes back shows where it left.

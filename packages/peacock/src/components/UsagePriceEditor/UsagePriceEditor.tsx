@@ -261,7 +261,7 @@ export function UsagePriceEditor({
           Cancel
         </Button>
         <Button disabled={locked || !dirty} onClick={onSave}>
-          {saving ? "Saving…" : "Save changes"}
+          {saving ? "Saving" : "Save changes"}
         </Button>
       </footer>
     </div>

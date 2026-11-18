@@ -44,9 +44,9 @@ public struct DictationButton: View {
 extension DictationPhase {
   var placeholder: String? {
     switch self {
-    case .starting: "Getting ready…"
-    case .listening: "Listening…"
-    case .finishing: "Finishing…"
+    case .starting: "Getting ready"
+    case .listening: "Listening"
+    case .finishing: "Finishing"
     case .idle, .failed: nil
     }
   }

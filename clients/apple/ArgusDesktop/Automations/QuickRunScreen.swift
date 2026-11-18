@@ -102,7 +102,7 @@ private struct QuickRunComposer: View {
   }
 
   private var runButtonTitle: String {
-    if starting { return runLater ? "Scheduling…" : "Starting…" }
+    if starting { return runLater ? "Scheduling" : "Starting" }
     return runLater ? "Run Later" : "Run Once"
   }
 

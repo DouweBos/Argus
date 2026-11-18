@@ -73,7 +73,7 @@ private struct PairingStatus: View {
     case .connecting:
       HStack {
         ProgressView().controlSize(.small)
-        Text("Connecting to the host…").foregroundStyle(.secondary)
+        Text("Connecting to the host").foregroundStyle(.secondary)
         Spacer()
         Button("Cancel") { hosts.cancelPairing() }
       }

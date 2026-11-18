@@ -35,7 +35,7 @@ struct SettingsLoading: View {
   var body: some View {
     HStack {
       ProgressView().controlSize(.small)
-      Text("Loading…").foregroundStyle(.secondary)
+      Text("Loading").foregroundStyle(.secondary)
     }
   }
 }

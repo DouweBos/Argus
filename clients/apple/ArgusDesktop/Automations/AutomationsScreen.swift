@@ -154,7 +154,7 @@ struct AutomationRunButton: View {
       Button("Cancel") { Task { await store.cancelRun(id: active.id) } }
     } else {
       let starting = store.triggering.contains(automationId)
-      Button(starting ? "Starting…" : "Run Now") {
+      Button(starting ? "Starting" : "Run Now") {
         Task { await store.runNow(automationId: automationId) }
       }
       .disabled(starting)

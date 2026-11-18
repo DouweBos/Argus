@@ -35,7 +35,7 @@ export interface ActivityThread {
 export type ActivityItem = ActivityEvent | ActivityThread;
 
 export interface IssueActivityProps {
-  /** After the timeline: the "Leave a comment…" box. */
+  /** After the timeline: the "Leave a comment" box. */
   footer?: ReactNode;
   /** Beside the title, e.g. subscriber avatars. */
   headerAside?: ReactNode;

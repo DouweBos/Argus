@@ -50,7 +50,7 @@ struct ReviewGuideView: View {
           write(force: true)
         }
       }
-      if state?.status == .generating { MutedText("Rewriting the guide…") }
+      if state?.status == .generating { MutedText("Rewriting the guide") }
       Card {
         ForEach(Array(guide.stops.enumerated()), id: \.element.id) { index, stop in
           Button { selected = stop.id } label: {

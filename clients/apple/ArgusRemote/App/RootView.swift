@@ -167,7 +167,7 @@ struct RootView: View {
     TimelineView(.periodic(from: .now, by: 30)) { context in
       HStack(spacing: 7) {
         StatusDot(tone: .warning, pulse: true)
-        Text(app.host.savedAsOf.map { Self.savedLabel($0, now: context.date) } ?? "Reconnecting…")
+        Text(app.host.savedAsOf.map { Self.savedLabel($0, now: context.date) } ?? "Reconnecting")
           .font(.footnote.weight(.medium))
           .foregroundStyle(.secondary)
       }

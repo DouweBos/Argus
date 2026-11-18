@@ -97,7 +97,7 @@ export function StartWorkspaceChip({
           {options.includes("existing") && (
             <PickerPopover.Option
               description="Check out a branch that already exists"
-              name="Existing branch…"
+              name="Existing branch"
               selected={value === "existing"}
               onSelect={() => pick("existing")}
             />
@@ -139,7 +139,7 @@ export function BranchChip({
   const anchorRef = useRef<HTMLDivElement>(null);
   let label = value ? format(value) : placeholder;
   if (!value && loading) {
-    label = "Loading branches…";
+    label = "Loading branches";
   }
 
   return (
@@ -163,7 +163,7 @@ export function BranchChip({
           <PickerPopover.Header>{header}</PickerPopover.Header>
           {options.length === 0 ? (
             <PickerPopover.Empty>
-              {loading ? "Loading branches…" : "No branches"}
+              {loading ? "Loading branches" : "No branches"}
             </PickerPopover.Empty>
           ) : (
             options.map((branch) => (

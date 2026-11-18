@@ -65,7 +65,7 @@ export function HuddleJoin({ step, name = "", onJoin }: HuddleJoinProps) {
             <Spinner />
           )}
           <h1 className={styles.title}>
-            {waiting ? "Waiting for the host" : "Connecting to the huddle…"}
+            {waiting ? "Waiting for the host" : "Connecting to the huddle"}
           </h1>
           {waiting && (
             <p className={styles.body}>

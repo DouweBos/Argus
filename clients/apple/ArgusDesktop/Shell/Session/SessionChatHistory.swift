@@ -290,7 +290,7 @@ struct RenameBranchSheet: View {
         Button("Cancel") { dismiss() }
       }
       ToolbarItem(placement: .confirmationAction) {
-        Button(saving ? "Renaming…" : "Rename", action: rename)
+        Button(saving ? "Renaming" : "Rename", action: rename)
           .disabled(saving || name.trimmingCharacters(in: .whitespaces).isEmpty)
       }
     }

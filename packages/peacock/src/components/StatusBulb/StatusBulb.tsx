@@ -11,7 +11,7 @@ export type StatusBulbTone =
 export type StatusBulbSize = "lg" | "md" | "sm";
 
 export interface StatusBulbProps extends HTMLAttributes<HTMLSpanElement> {
-  /** Slow pulse animation, useful for "checking…" states. */
+  /** Slow pulse animation, useful for "checking" states. */
   pulse?: boolean;
   size?: StatusBulbSize;
   tone: StatusBulbTone;

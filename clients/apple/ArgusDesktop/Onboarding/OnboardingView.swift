@@ -172,8 +172,8 @@ struct OnboardingPrivacyStep: View {
       }
     } footer: {
       Spacer()
-      Button(busy ? "Saving…" : "Just count me") { choose("presence") }.disabled(busy)
-      Button(busy ? "Saving…" : "Share anonymous data") { choose("full") }
+      Button(busy ? "Saving" : "Just count me") { choose("presence") }.disabled(busy)
+      Button(busy ? "Saving" : "Share anonymous data") { choose("full") }
         .buttonStyle(.borderedProminent)
         .disabled(busy)
     }

@@ -40,7 +40,7 @@ struct AutomationView: View {
         memories
         runs(automation)
       } else {
-        Loading(label: "Reading the automation…")
+        Loading(label: "Reading the automation")
       }
     }
     .navigationTitle(automation?.name ?? label)
@@ -169,7 +169,7 @@ struct AutomationView: View {
         } else {
           let triggering = store.triggering.contains(automationId)
           Btn(
-            label: triggering ? "Starting…" : "Run now", small: true, icon: Icon.play
+            label: triggering ? "Starting" : "Run now", small: true, icon: Icon.play
           ) {
             Task { await store.runNow(automationId: automationId) }
           }

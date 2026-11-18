@@ -121,7 +121,7 @@ export function FileScreen({
     return (
       <div className="aw-center">
         <Spinner />
-        <span className="aw-muted">Opening file…</span>
+        <span className="aw-muted">Opening file</span>
       </div>
     );
   }

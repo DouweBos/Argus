@@ -144,7 +144,7 @@ struct InspectionView: View {
   }
 
   private var inspectLabel: String {
-    if model.capturing { return model.active == nil ? "Inspecting…" : "Refreshing…" }
+    if model.capturing { return model.active == nil ? "Inspecting" : "Refreshing" }
     return model.active == nil ? "Inspect" : "Refresh"
   }
 

@@ -38,7 +38,7 @@ struct WorktreeLocationField: View {
         if !trimmed.isEmpty {
           Button("Use Default") { draft = "" }
         }
-        Button(saving ? "Saving…" : "Save", action: save)
+        Button(saving ? "Saving" : "Save", action: save)
           .disabled(!dirty || probe?.reason != nil || saving)
       }
       SettingsCaption(

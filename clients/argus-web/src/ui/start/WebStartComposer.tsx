@@ -55,7 +55,7 @@ export function WebStartComposer({
 
   let submitLabel = "Start agent";
   if (c.submitting) {
-    submitLabel = "Starting…";
+    submitLabel = "Starting";
   }
 
   return (
@@ -156,7 +156,7 @@ export function WebStartComposer({
               <PickerChip
                 mono
                 muted
-                empty="Loading models…"
+                empty="Loading models"
                 header="Model"
                 label={modelName ?? "Default model"}
                 options={[

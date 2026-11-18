@@ -56,7 +56,7 @@ struct StashesView: View {
       }
     }
     .disabled(busy != nil)
-    .loadPhase(LoadPhase(loaded: loaded, error: nil, isEmpty: false), loading: "Reading stashes…") {
+    .loadPhase(LoadPhase(loaded: loaded, error: nil, isEmpty: false), loading: "Reading stashes") {
       EmptyView()
     }
     .navigationTitle("Stashes & Tags · \(label)")

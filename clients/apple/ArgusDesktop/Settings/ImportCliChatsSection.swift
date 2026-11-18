@@ -16,7 +16,7 @@ struct ImportCliChatsSection: View {
           description: "Show chats you ran with the Claude Code CLI in each project's history, so you can resume them here.",
           isOn: enabled(settings))
         SettingsRow("Import now", description: result ?? "Pull in chats you've had since the last import.") {
-          Button(importing ? "Importing…" : "Import Now", action: runImport)
+          Button(importing ? "Importing" : "Import Now", action: runImport)
             .disabled(importing)
         }
       } else {

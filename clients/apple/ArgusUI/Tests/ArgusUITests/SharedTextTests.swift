@@ -54,7 +54,7 @@ struct SharedTextTests {
     #expect(RemoteAutomationRunStatus.failed.tone == .danger)
     #expect(ArgusProtocol.AutomationRunStatus(rawValue: "skipped").tone == .warning)
     #expect(RemoteAutomationRunStatus.queued.tone == .accent)
-    #expect(AutomationText.stage("setting_up") == "Running setup…")
-    #expect(AutomationText.stage(nil) == "Starting…")
+    #expect(AutomationText.stage("setting_up") == "Running setup")
+    #expect(AutomationText.stage(nil) == "Starting")
   }
 }

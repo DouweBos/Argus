@@ -97,7 +97,7 @@ struct RuntimeNativeView: View {
           bootError = nil
         }
       } else {
-        Button(booting ? "Booting…" : "Boot") { Task { await boot(target) } }
+        Button(booting ? "Booting" : "Boot") { Task { await boot(target) } }
           .disabled(booting)
       }
       if let bootError, target.problem == nil {

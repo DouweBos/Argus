@@ -72,7 +72,7 @@ function statusLine(status: FileSearchStatus, files: number): string | null {
     case "idle":
       return null;
     case "running":
-      return "Searching…";
+      return "Searching";
     case "failed":
       return status.message;
     case "done": {

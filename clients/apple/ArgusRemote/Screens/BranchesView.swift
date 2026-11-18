@@ -41,7 +41,7 @@ struct BranchesView: View {
       section("Remote only", filtered.filter { $0.scope == .remote })
     }
     .loadPhase(
-      LoadPhase(loaded: loaded, error: nil, isEmpty: filtered.isEmpty), loading: "Reading branches…"
+      LoadPhase(loaded: loaded, error: nil, isEmpty: filtered.isEmpty), loading: "Reading branches"
     ) {
       EmptyState(
         icon: Icon.branch, title: "No branches",

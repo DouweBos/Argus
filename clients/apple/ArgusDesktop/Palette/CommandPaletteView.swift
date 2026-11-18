@@ -39,7 +39,7 @@ struct CommandPaletteView: View {
   }
 
   private var placeholder: String {
-    model.palette.switcher ? "Open a session…" : "Search commands, projects and sessions…"
+    model.palette.switcher ? "Open a session" : "Search commands, projects and sessions"
   }
 
   private func list(_ groups: [(section: String, items: [PaletteCommand])]) -> some View {

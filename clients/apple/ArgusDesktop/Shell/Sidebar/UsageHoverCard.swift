@@ -35,7 +35,7 @@ struct UsageHoverCard: View {
     } else if let error {
       note(error, tone: theme.error)
     } else {
-      note("Checking plan limits…")
+      note("Checking plan limits")
     }
   }
 

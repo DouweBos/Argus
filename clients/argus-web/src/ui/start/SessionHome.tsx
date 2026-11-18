@@ -184,7 +184,7 @@ export function SessionHome({ sessionId }: { sessionId: string }) {
     return (
       <div className="aw-center">
         <Spinner />
-        <span className="aw-muted">Finding the session…</span>
+        <span className="aw-muted">Finding the session</span>
       </div>
     );
   }
@@ -204,7 +204,7 @@ export function SessionHome({ sessionId }: { sessionId: string }) {
   return (
     <div className="aw-session-home">
       {session.status === "initializing" && (
-        <Banner tone="info">Setting up the worktree…</Banner>
+        <Banner tone="info">Setting up the worktree</Banner>
       )}
       {session.status === "error" && session.setup_error && (
         <Banner tone="error">{session.setup_error}</Banner>

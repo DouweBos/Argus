@@ -99,7 +99,7 @@ private struct SideQuestionRow: View {
       } else {
         HStack(spacing: 6) {
           ProgressView().controlSize(.small)
-          MutedText("Thinking…")
+          MutedText("Thinking")
         }
       }
     }

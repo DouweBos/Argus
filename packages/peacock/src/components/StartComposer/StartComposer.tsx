@@ -19,7 +19,7 @@ export interface StartComposerProps {
   ) => void;
   onSubmit: () => void;
   canSubmit: boolean;
-  /** "Start agent", "Starting…", "Start 3 agents". */
+  /** "Start agent", "Starting", "Start 3 agents". */
   submitLabel: string;
   /** Workspace, base branch, model, mode and project chips. */
   chips: ReactNode;

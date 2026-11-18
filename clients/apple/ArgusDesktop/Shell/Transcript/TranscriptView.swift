@@ -55,7 +55,7 @@ struct TranscriptView: View {
         EmptyState(icon: "exclamationmark.triangle", title: "Couldn't load this chat", body: error)
           .allowsHitTesting(false)
       } else if messages.isEmpty && !landed && fixture == nil {
-        Loading(label: "Reading chat…").allowsHitTesting(false)
+        Loading(label: "Reading chat").allowsHitTesting(false)
       } else if showsEmptyState && messages.isEmpty && (landed || fixture != nil) && !hasQueue {
         EmptyState(icon: Icon.agent, title: "Nothing yet", body: "Send this agent a message to get it going.")
           .allowsHitTesting(false)

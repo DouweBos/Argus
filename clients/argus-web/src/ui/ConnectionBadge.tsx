@@ -20,7 +20,7 @@ export function ConnectionBadge({ state }: { state: ConnectionState }) {
   if (state === "offline") {
     return (
       <span className="aw-connection-badge">
-        <Badge tone="warning">Reconnecting…</Badge>
+        <Badge tone="warning">Reconnecting</Badge>
       </span>
     );
   }

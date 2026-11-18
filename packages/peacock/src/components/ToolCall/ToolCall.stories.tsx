@@ -67,7 +67,7 @@ export const TaskWithChildren: Story = {
       name: "Task",
       input: { description: "investigate the bug" },
       children: [
-        { kind: "text", text: "Looking into it…" },
+        { kind: "text", text: "Looking into it" },
         {
           kind: "tool_use",
           toolCall: {

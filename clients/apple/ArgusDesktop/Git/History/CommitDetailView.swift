@@ -134,7 +134,7 @@ private struct CommitDetailHeader: View {
     case .verified: Label("Verified", systemImage: "checkmark.seal.fill").foregroundStyle(theme.success)
     case .unverified: Label("Unverified", systemImage: "exclamationmark.triangle").foregroundStyle(theme.warning)
     case .unsigned: Text("Not signed").foregroundStyle(.secondary)
-    case nil: Text(commit.isSigned ? "Signed, checking…" : "Checking…").foregroundStyle(.secondary)
+    case nil: Text(commit.isSigned ? "Signed, checking" : "Checking").foregroundStyle(.secondary)
     }
   }
 

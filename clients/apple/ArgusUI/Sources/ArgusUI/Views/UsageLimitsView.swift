@@ -56,7 +56,7 @@ public struct UsageLimitsView: View {
           .disabled(loading)
       }
     } else {
-      Loading(label: "Checking plan limits…")
+      Loading(label: "Checking plan limits")
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
   }

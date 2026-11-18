@@ -33,7 +33,7 @@ struct RunView: View {
         report
         feedbackLog
       } else {
-        Loading(label: "Reading the run…")
+        Loading(label: "Reading the run")
       }
     }
     .navigationTitle(label)
@@ -123,7 +123,7 @@ struct RunView: View {
 
       FlowRow(spacing: 8) {
         if let agentId = run.hostAgentId {
-          Btn(label: opening ? "Opening…" : "Open agent", tone: .secondary, small: true, icon: Icon.agent) {
+          Btn(label: opening ? "Opening" : "Open agent", tone: .secondary, small: true, icon: Icon.agent) {
             openAgent(agentId, run: run)
           }
           .disabled(opening)

@@ -81,7 +81,7 @@ struct PairView: View {
     }
     HStack(spacing: 8) {
       ProgressView().controlSize(.small)
-      MutedText("Waiting for confirmation…")
+      MutedText("Waiting for confirmation")
     }
     Btn(label: "Cancel", tone: .ghost) {
       cancel()

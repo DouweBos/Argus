@@ -29,7 +29,7 @@ export interface HostConnectionEntry {
 export interface HostConnectionListProps {
   /** Host with an attach/detach in flight — its buttons go quiet. */
   busyId?: string | null;
-  /** Rendered under the list (e.g. "Pair a host…"). */
+  /** Rendered under the list (e.g. "Pair a host"). */
   footer?: ReactNode;
   hosts: HostConnectionEntry[];
   onAttach: (id: string) => void;
@@ -47,8 +47,8 @@ const STATE_TONE: Record<HostLinkState, StatusBulbTone> = {
 
 const STATE_LABEL: Record<HostLinkState, string> = {
   connected: "Connected",
-  connecting: "Connecting…",
-  reconnecting: "Reconnecting…",
+  connecting: "Connecting",
+  reconnecting: "Reconnecting",
   failed: "Unreachable",
   detached: "Not attached",
 };

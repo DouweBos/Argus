@@ -92,7 +92,7 @@ struct LanguageStatusItem: View {
     default:
       HStack(spacing: 4) {
         ProgressView().controlSize(.mini)
-        Text("\(name) starting…")
+        Text("\(name) starting")
       }
     }
   }

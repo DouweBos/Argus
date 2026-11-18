@@ -53,7 +53,7 @@ export function RunControl({
       variant="secondary"
       onClick={() => void runNow(automation.id)}
     >
-      {triggering || automation.running ? "Running…" : "Run now"}
+      {triggering || automation.running ? "Running" : "Run now"}
     </Button>
   );
 }

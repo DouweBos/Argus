@@ -32,7 +32,7 @@ struct DescribeAutomationView: View {
           placeholder: "Every weekday at 8am, look at my open PRs and tell me which ones have gone stale.",
           text: $text, multiline: true, lines: 2...6)
         if working {
-          Loading(label: "Drafting it…")
+          Loading(label: "Drafting it")
         } else {
           Btn(
             label: draft == nil ? "Draft it" : "Regenerate", tone: draft == nil ? .primary : .secondary,

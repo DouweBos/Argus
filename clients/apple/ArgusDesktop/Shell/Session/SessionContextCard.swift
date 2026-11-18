@@ -267,7 +267,7 @@ struct SessionContextCard: View {
     return Button {
       pull()
     } label: {
-      ContextCardRow(icon: "icloud.and.arrow.down", title: pulling ? "Pulling…" : "Pull") {
+      ContextCardRow(icon: "icloud.and.arrow.down", title: pulling ? "Pulling" : "Pull") {
         if behind > 0 {
           Text("↓\(behind)").font(.scaled(size: 11).monospacedDigit()).foregroundStyle(theme.textSecondary)
         }
@@ -283,7 +283,7 @@ struct SessionContextCard: View {
     Button {
       push()
     } label: {
-      ContextCardRow(icon: "icloud.and.arrow.up", title: pushing ? "Pushing…" : "Push", muted: ahead == 0) {
+      ContextCardRow(icon: "icloud.and.arrow.up", title: pushing ? "Pushing" : "Push", muted: ahead == 0) {
         if ahead > 0 {
           Text("↑\(ahead)").font(.scaled(size: 11).monospacedDigit()).foregroundStyle(theme.textSecondary)
         }
@@ -309,7 +309,7 @@ struct SessionContextCard: View {
     return Button {
       Task { await merge(into: base) }
     } label: {
-      ContextCardRow(icon: Icon.merge, title: merging ? "Merging…" : "Merge into \(base)", muted: !mergeBlockers.isEmpty)
+      ContextCardRow(icon: Icon.merge, title: merging ? "Merging" : "Merge into \(base)", muted: !mergeBlockers.isEmpty)
     }
     .buttonStyle(ContextRowButtonStyle())
     .disabled(merging || !mergeBlockers.isEmpty)

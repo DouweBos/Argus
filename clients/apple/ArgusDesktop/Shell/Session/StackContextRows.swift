@@ -26,7 +26,7 @@ struct StackContextRows: View {
         MacTelemetry.capture(.contextCardUsed(action: .restack))
         run { await actions.restack(session) }
       } label: {
-        ContextCardRow(icon: Icon.restack, title: busy ? "Working…" : "Restack")
+        ContextCardRow(icon: Icon.restack, title: busy ? "Working" : "Restack")
       }
       .buttonStyle(ContextRowButtonStyle())
       .disabled(busy)

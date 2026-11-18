@@ -107,7 +107,7 @@ export function CommitForm({
   const canCommit = summary.trim().length > 0 && !locked;
   let label = options.amend ? "Amend" : "Commit all";
   if (committing) {
-    label = "Committing…";
+    label = "Committing";
   }
 
   return (

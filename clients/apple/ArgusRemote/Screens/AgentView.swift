@@ -90,7 +90,7 @@ struct AgentView: View {
     if host.hasControl, host.canResume(agentId: agentId) {
       TranscriptFooterNote {
         MutedText("This agent has stopped.")
-        Btn(label: resuming ? "Resuming…" : "Resume in a new agent", icon: Icon.plus, action: resume)
+        Btn(label: resuming ? "Resuming" : "Resume in a new agent", icon: Icon.plus, action: resume)
           .disabled(resuming)
       }
     } else {

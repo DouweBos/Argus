@@ -65,5 +65,5 @@ export const Warned: Story = {
 };
 
 export const Disabled: Story = {
-  render: () => <Interactive showBody disabled subject="Committing…" />,
+  render: () => <Interactive showBody disabled subject="Committing" />,
 };

@@ -81,7 +81,7 @@ private struct AddProjectSheet: View {
       } else if let generator {
         ScrollView { ArgusJsonReviewView(generator: generator).frame(maxWidth: .infinity, alignment: .leading) }
       } else {
-        ProgressView("Adding…").frame(maxWidth: .infinity)
+        ProgressView("Adding").frame(maxWidth: .infinity)
       }
       HStack {
         Spacer()

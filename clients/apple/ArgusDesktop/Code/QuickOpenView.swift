@@ -58,8 +58,8 @@ struct QuickOpenView: View {
 
   private var placeholder: String {
     switch model.base {
-    case .files: "Open a file by name…"
-    case .mixed: "Open Quickly: files and symbols…"
+    case .files: "Open a file by name"
+    case .mixed: "Open Quickly: files and symbols"
     }
   }
 
@@ -77,7 +77,7 @@ struct QuickOpenView: View {
       return "Open a file to list its symbols"
     default:
       guard results.isEmpty else { return nil }
-      if code.fileListLoading || model.searching { return "Searching…" }
+      if code.fileListLoading || model.searching { return "Searching" }
       return "No matches"
     }
   }

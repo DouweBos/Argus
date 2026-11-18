@@ -19,7 +19,7 @@ struct StackActions {
 
   func restack(_ session: RemoteSession) async {
     let root = rootId(of: session)
-    model.stackNotes[root] = "Restacking…"
+    model.stackNotes[root] = "Restacking"
     guard let result = await store.restack(sessionId: session.id) else {
       model.stackNotes[root] = nil
       return
@@ -41,7 +41,7 @@ struct StackActions {
         buttons: [HostStore.MergeStrategy.keep.label, HostStore.MergeStrategy.squash.label])
     else { return }
     let root = rootId(of: session)
-    model.stackNotes[root] = "Landing…"
+    model.stackNotes[root] = "Landing"
     guard let result = await store.landStack(sessionId: session.id, strategy: choice == 0 ? .keep : .squash) else {
       model.stackNotes[root] = nil
       return

@@ -32,7 +32,7 @@
     private var content: some View {
       switch model.flow.phase {
       case .idle, .starting:
-        ProgressView("Starting…").frame(maxHeight: .infinity)
+        ProgressView("Starting").frame(maxHeight: .infinity)
         footer { Button("Cancel", role: .cancel, action: model.close).keyboardShortcut(.cancelAction) }
       case .waitingForDevice(let qrPayload, let pairingCode):
         Text("Scan this with Argus on your phone, then confirm the 6-digit code matches on both screens.")
@@ -42,7 +42,7 @@
         codeRow(pairingCode)
         HStack(spacing: 6) {
           ProgressView().controlSize(.small)
-          Text("Waiting for the device…").foregroundStyle(theme.textSecondary)
+          Text("Waiting for the device").foregroundStyle(theme.textSecondary)
         }
         footer { Button("Cancel", role: .cancel, action: model.close).keyboardShortcut(.cancelAction) }
       case .confirming(let sas, let client), .confirmingSent(let sas, let client):
@@ -88,7 +88,7 @@
       .disabled(sent)
       footer {
         Button("Cancel", role: .cancel, action: model.close).keyboardShortcut(.cancelAction)
-        Button(sent ? "Pairing…" : "Codes Match — Pair") {
+        Button(sent ? "Pairing" : "Codes Match — Pair") {
           Task { await model.confirm() }
         }
         .keyboardShortcut(.defaultAction)

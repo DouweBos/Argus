@@ -40,10 +40,10 @@ public enum AutomationText {
   /// How far a proposal's start has got. Both wire shapes share the raw values.
   public static func stage(_ rawValue: String?) -> String {
     switch rawValue {
-    case "creating_worktree": "Creating worktree…"
-    case "setting_up": "Running setup…"
-    case "starting_agent": "Starting agent…"
-    default: "Starting…"
+    case "creating_worktree": "Creating worktree"
+    case "setting_up": "Running setup"
+    case "starting_agent": "Starting agent"
+    default: "Starting"
     }
   }
 

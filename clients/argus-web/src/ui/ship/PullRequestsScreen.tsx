@@ -70,7 +70,7 @@ export function PullRequestsScreen() {
     return (
       <div className="aw-center">
         <Spinner />
-        <span className="aw-muted">Asking GitHub…</span>
+        <span className="aw-muted">Asking GitHub</span>
       </div>
     );
   }

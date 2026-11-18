@@ -44,7 +44,7 @@ struct ProjectPullRequestsView: View {
 
   private var caption: String? {
     guard prs.loaded else { return nil }
-    return "\(mine.count) open · authored, reviewing, or commented\(refreshing ? " · refreshing…" : "")"
+    return "\(mine.count) open · authored, reviewing, or commented\(refreshing ? " · refreshing" : "")"
   }
 
   private func refresh() async {

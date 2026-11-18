@@ -196,7 +196,7 @@ function IssuesList({ screen }: { screen: IssuesScreenState }) {
             results.refresh().catch(() => {});
           }}
         >
-          {results.loading ? "Refreshing…" : "Refresh"}
+          {results.loading ? "Refreshing" : "Refresh"}
         </Button>
       </div>
       {results.data && results.error && (

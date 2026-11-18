@@ -152,7 +152,7 @@ export function AutomationScreen({ automationId }: { automationId: string }) {
 
   let saveLabel = "Saved";
   if (saving) {
-    saveLabel = "Saving…";
+    saveLabel = "Saving";
   } else if (dirty) {
     saveLabel = "Save changes";
   }

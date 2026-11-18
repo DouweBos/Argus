@@ -40,11 +40,11 @@ struct DescribeAutomationSheet: View {
         Button("Cancel", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
         Spacer()
         if draft == nil {
-          Button(working ? "Drafting…" : "Draft It") { generate() }
+          Button(working ? "Drafting" : "Draft It") { generate() }
             .keyboardShortcut(.defaultAction)
             .disabled(working || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         } else {
-          Button(working ? "Working…" : "Regenerate") { generate() }
+          Button(working ? "Working" : "Regenerate") { generate() }
             .disabled(working || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         if draft != nil {

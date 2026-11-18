@@ -52,7 +52,7 @@ struct StoppedAgentView: View {
       TranscriptFooterNote {
         if host.hasControl, let session {
           Btn(
-            label: resuming ? "Resuming…" : "Resume in a new agent",
+            label: resuming ? "Resuming" : "Resume in a new agent",
             icon: Icon.plus
           ) {
             resume(session)

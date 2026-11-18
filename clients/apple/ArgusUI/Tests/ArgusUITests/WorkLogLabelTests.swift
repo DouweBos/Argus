@@ -25,7 +25,7 @@ struct WorkLogLabelTests {
   func working() {
     let log = WorkLog(id: "l", messages: [tool("a", at: 900_000)], started: 988_000)
     #expect(log.label(working: true, now: now) == "Working for 12s")
-    #expect(WorkLog(id: "l", messages: []).label(working: true, now: now) == "Working…")
+    #expect(WorkLog(id: "l", messages: []).label(working: true, now: now) == "Working")
   }
 
   @Test("no span falls back to its own messages, then the call count")

@@ -15,9 +15,9 @@ struct AccountJoinSection: View {
     ) {
       switch account.join {
       case .idle, .requesting:
-        progress("Asking your account…")
+        progress("Asking your account")
       case .waiting:
-        progress("Waiting for one of your devices to pick this up…")
+        progress("Waiting for one of your devices to pick this up")
       case .compare(let sas, let approverName):
         VStack(alignment: .leading, spacing: 8) {
           Text("\(approverName) shows a code too. Only confirm if they're the same:")
@@ -32,7 +32,7 @@ struct AccountJoinSection: View {
           }
         }
       case .confirmed(let approverName):
-        progress("Confirmed here. Finish on \(approverName)…")
+        progress("Confirmed here. Finish on \(approverName)")
       case .alreadyApproved(let sas, let approverName):
         VStack(alignment: .leading, spacing: 8) {
           Text(

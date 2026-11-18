@@ -35,7 +35,7 @@ public struct SessionDeletingView: View {
   private var teardown: Bool { progress?.isTeardown == true }
 
   private var stepLine: String {
-    guard teardown, let progress, progress.total > 0 else { return "Removing files…" }
+    guard teardown, let progress, progress.total > 0 else { return "Removing files" }
     return "Command \(Int(progress.current) + 1) of \(Int(progress.total))"
   }
 }

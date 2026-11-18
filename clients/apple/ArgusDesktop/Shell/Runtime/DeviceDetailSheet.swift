@@ -109,11 +109,11 @@ struct DeviceDetailSheet: View {
         SimulatorProblemView(
           udid: device.deviceKey, name: device.name, problem: problem, onRepaired: onRepaired)
       } else if device.platform == .ios, !device.online {
-        Button(busy ? "Booting…" : "Boot", systemImage: "power.circle", action: onBoot)
+        Button(busy ? "Booting" : "Boot", systemImage: "power.circle", action: onBoot)
           .disabled(busy)
       }
       if device.platform == .ios, device.online {
-        Button(busy ? "Shutting down…" : "Shut Down", systemImage: "stop.circle", role: .destructive, action: onShutdown)
+        Button(busy ? "Shutting down" : "Shut Down", systemImage: "stop.circle", role: .destructive, action: onShutdown)
           .disabled(busy)
       }
       // The browser lives in the main window and can't be detached.

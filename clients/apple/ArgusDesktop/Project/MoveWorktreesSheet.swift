@@ -33,10 +33,10 @@ struct MoveWorktreesSheet: View {
 
     var stepLabel: String {
       switch step {
-      case "counting": "Counting files…"
-      case "copying": total_entries > 0 ? "Copying \(done_entries) of \(total_entries) files" : "Copying…"
-      case "removing": "Removing the old copy…"
-      default: "Moving…"
+      case "counting": "Counting files"
+      case "copying": total_entries > 0 ? "Copying \(done_entries) of \(total_entries) files" : "Copying"
+      case "removing": "Removing the old copy"
+      default: "Moving"
       }
     }
   }
@@ -73,7 +73,7 @@ struct MoveWorktreesSheet: View {
           .foregroundStyle(theme.warning)
         }
       case .moving:
-        Text(progress.map { "Moving \($0.index + 1) of \($0.total): \($0.branch)" } ?? "Moving \(count) \(noun)…")
+        Text(progress.map { "Moving \($0.index + 1) of \($0.total): \($0.branch)" } ?? "Moving \(count) \(noun)")
         if let progress {
           ProgressView(value: progress.fraction)
           Text(progress.stepLabel).font(.scaled(.caption)).foregroundStyle(theme.textMuted)
@@ -98,7 +98,7 @@ struct MoveWorktreesSheet: View {
             .buttonStyle(.borderedProminent)
             .disabled(count == 0)
         case .moving:
-          Button("Moving…") {}.disabled(true)
+          Button("Moving") {}.disabled(true)
         case .done:
           Button("Done") { close() }.buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
         case .loading:

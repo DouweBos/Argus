@@ -7,7 +7,7 @@ extension View {
   /// `empty` only once a load came back with nothing. Rows on screen are never
   /// covered, so a refresh behind them doesn't flash anything.
   public func loadPhase<Empty: View>(
-    _ phase: LoadPhase, loading label: String = "Loading…", failedTitle: String = "Couldn't load this",
+    _ phase: LoadPhase, loading label: String = "Loading", failedTitle: String = "Couldn't load this",
     grouped: Bool = true, retry: (() async -> Void)? = nil, @ViewBuilder empty: () -> Empty
   ) -> some View {
     let empty = empty()

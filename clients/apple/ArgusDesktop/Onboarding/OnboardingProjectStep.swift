@@ -36,7 +36,7 @@ struct OnboardingProjectStep: View {
       if generator == nil {
         Button("Skip for now") { skip() }
         if hasSuggestions {
-          Button(picker.importing ? "Importing…" : CliProjectImport.importLabel(picker.picked.count)) {
+          Button(picker.importing ? "Importing" : CliProjectImport.importLabel(picker.picked.count)) {
             importPicked()
           }
           .buttonStyle(.borderedProminent)
@@ -75,7 +75,7 @@ struct OnboardingProjectStep: View {
       if scanning {
         HStack(spacing: 8) {
           ProgressView().controlSize(.small)
-          Text("Looking through your Claude Code chats…").foregroundStyle(theme.textMuted)
+          Text("Looking through your Claude Code chats").foregroundStyle(theme.textMuted)
         }
         .padding(.vertical, 6)
       } else {
@@ -197,7 +197,7 @@ private struct ExamplesList: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
-            Button(onboarding.cloning == example.slug ? "Cloning…" : "Clone") {
+            Button(onboarding.cloning == example.slug ? "Cloning" : "Clone") {
               guard let backend = model.backend else { return }
               Task { await onboarding.clone(example, backend) }
             }

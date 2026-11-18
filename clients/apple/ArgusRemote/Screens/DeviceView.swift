@@ -114,7 +114,7 @@ struct DeviceView: View {
 
   private var placeholder: String {
     switch session.status {
-    case .connecting: "Connecting to device…"
+    case .connecting: "Connecting to device"
     case .error: "Couldn't start the stream. Is the device still booted?"
     case .noVideo: "No video from this device — it's booted but not producing a stream."
     case .streaming: ""

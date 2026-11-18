@@ -56,7 +56,7 @@ struct ReviewGuideScreen: View {
         .modifier(NavigatorRowHighlight(selected: selected == stop.id))
       }
       if state?.status == .generating {
-        Label("Rewriting…", systemImage: "hourglass").font(.scaled(size: 11)).foregroundStyle(.secondary)
+        Label("Rewriting", systemImage: "hourglass").font(.scaled(size: 11)).foregroundStyle(.secondary)
       }
     }
     .navigatorList()

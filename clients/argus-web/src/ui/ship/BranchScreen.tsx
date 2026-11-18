@@ -93,7 +93,7 @@ export function BranchScreen({
     ) : (
       <div className="aw-center">
         <Spinner />
-        <span className="aw-muted">Reading the branch…</span>
+        <span className="aw-muted">Reading the branch</span>
       </div>
     );
   }
@@ -199,7 +199,7 @@ export function BranchScreen({
       {commits === null && !historyError ? (
         <div className="aw-center">
           <Spinner />
-          <span className="aw-muted">Reading history…</span>
+          <span className="aw-muted">Reading history</span>
         </div>
       ) : (
         <div className="aw-ship-list">

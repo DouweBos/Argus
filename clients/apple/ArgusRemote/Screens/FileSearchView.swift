@@ -94,7 +94,7 @@ struct FileSearchView: View {
         .listRowBackground(Color.clear)
         .listRowSeparator(.hidden)
     case .running where store.groups.isEmpty:
-      Loading(label: "Searching…")
+      Loading(label: "Searching")
         .listRowSeparator(.hidden)
     default:
       MutedText(summary(store), lineLimit: 2)
@@ -119,7 +119,7 @@ struct FileSearchView: View {
   private func summary(_ store: FileSearchStore) -> String {
     let count = "\(store.matchCount) result\(store.matchCount == 1 ? "" : "s") in \(store.groups.count) file\(store.groups.count == 1 ? "" : "s")"
     switch store.phase {
-    case .running: return "\(count) so far…"
+    case .running: return "\(count) so far"
     case .done(_, true): return "\(count) — stopped at the limit, refine the search to see the rest"
     default: return count
     }

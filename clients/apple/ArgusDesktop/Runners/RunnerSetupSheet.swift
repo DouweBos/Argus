@@ -127,7 +127,7 @@ struct RunnerSetupSheet: View {
   private func status(_ flow: RunnerSetupFlow) -> String {
     switch (flow.phase, flow.next) {
     case (.running, _) where flow.step == .logout: "Signing out… answer any prompts in the terminal."
-    case (.running, _): flow.step == .install ? "Installing…" : "Signing in… answer any prompts in the terminal."
+    case (.running, _): flow.step == .install ? "Installing" : "Signing in… answer any prompts in the terminal."
     case (.finished(_, 0), .done) where flow.step == .logout: "Signed out of \(flow.displayName)."
     case (.finished, _) where flow.step == .logout: "That didn't finish cleanly. Read the output above."
     case (_, .signIn): "\(flow.displayName) is installed. Sign in to start agents on it."

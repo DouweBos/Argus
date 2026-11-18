@@ -24,7 +24,7 @@ struct QuickOpenView: View {
           .listRowBackground(Color.clear)
           .listRowSeparator(.hidden)
       } else if matcher == nil {
-        Loading(label: "Listing files…").listRowSeparator(.hidden)
+        Loading(label: "Listing files").listRowSeparator(.hidden)
       } else {
         ForEach(results, id: \.path) { match in
           StackLink(

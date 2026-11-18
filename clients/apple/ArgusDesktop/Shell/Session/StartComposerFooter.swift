@@ -103,7 +103,7 @@ struct StartComposerFooter: View {
     ChromeMenuButton(edge: .above) {
       ChromeMenuEntry.header("Base branch")
       if workspace.bases.options.isEmpty {
-        ChromeMenuEntry.note(workspace.bases.loading ? "Loading branches…" : "No branches")
+        ChromeMenuEntry.note(workspace.bases.loading ? "Loading branches" : "No branches")
       }
       for branch in workspace.bases.options {
         ChromeMenuItem(branch, checked: branch == workspace.base) { workspace.bases.picked = branch }
@@ -126,7 +126,7 @@ struct StartComposerFooter: View {
           ChromeMenuItem(branch, checked: branch == session.branch) { switchBranch(to: branch) }
         }
       } else {
-        ChromeMenuEntry.note("Loading branches…")
+        ChromeMenuEntry.note("Loading branches")
       }
     } label: { open in
       ComposerPillLabel(icon: Icon.branch, title: session.branch, chevronOnHover: true, open: open)

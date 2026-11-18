@@ -80,7 +80,7 @@ export function FileDiffView({
     ) : (
       <div className="aw-center">
         <Spinner />
-        <span className="aw-muted">Loading the diff…</span>
+        <span className="aw-muted">Loading the diff</span>
       </div>
     );
   }

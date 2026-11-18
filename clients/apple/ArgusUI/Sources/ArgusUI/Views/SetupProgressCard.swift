@@ -70,7 +70,7 @@ public struct SetupProgressCard: View {
   }
 
   private var stepLine: String {
-    guard let step, step.total > 0 else { return "Preparing the worktree…" }
+    guard let step, step.total > 0 else { return "Preparing the worktree" }
     return "Step \(Int(step.current)) of \(Int(step.total)) · \(max(Int(step.total - step.current), 0)) remaining"
   }
 }

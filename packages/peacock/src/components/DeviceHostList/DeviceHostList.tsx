@@ -33,7 +33,7 @@ export interface DeviceHostListProps {
   onStart?: (hostId: string) => void;
   /** The host with a start in flight. */
   busyId?: string | null;
-  /** A line under a host's row: "Starting…", or why it failed. */
+  /** A line under a host's row: "Starting", or why it failed. */
   notes?: Record<string, DeviceHostNote | undefined>;
   /** Rendered under the rows, e.g. where hosts are managed. */
   footer?: ReactNode;
@@ -75,7 +75,7 @@ export function DeviceHostList({
     ) : (
       <div className={styles.loading}>
         <Spinner size="sm" />
-        <span>Loading device hosts…</span>
+        <span>Loading device hosts</span>
       </div>
     );
   }
@@ -117,7 +117,7 @@ export function DeviceHostList({
                       variant="secondary"
                       onClick={() => onStart(h.id)}
                     >
-                      {busy ? "Starting…" : "Start a session"}
+                      {busy ? "Starting" : "Start a session"}
                     </Button>
                   )}
                 </div>

@@ -17,13 +17,13 @@ struct RootView: View {
     case .waitingForHost:
       HostWaitingView()
     case .handingOver(let holder):
-      HostStatusView(title: "Waiting for \(holder.holderName) to quit…", busy: true)
+      HostStatusView(title: "Waiting for \(holder.holderName) to quit", busy: true)
     case .failed(let message):
       HostFailedView(message: message)
     case .restarting:
-      HostStatusView(title: "Restarting the Argus host…", busy: true)
+      HostStatusView(title: "Restarting the Argus host", busy: true)
     case .idle, .starting:
-      HostStatusView(title: "Starting Argus…", busy: true)
+      HostStatusView(title: "Starting Argus", busy: true)
     case .stopped:
       HostStatusView(title: "Argus has stopped.", busy: false)
     }

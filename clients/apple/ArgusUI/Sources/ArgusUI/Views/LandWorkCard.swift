@@ -179,7 +179,7 @@ public struct LandWorkCard: View {
 
   private func pushButton(hugs: Bool) -> some View {
     Btn(
-      label: busy == "push" ? "Pushing…" : pushLabel, tone: .secondary, small: true,
+      label: busy == "push" ? "Pushing" : pushLabel, tone: .secondary, small: true,
       icon: Icon.push, hugs: hugs
     ) { push() }
     .disabled(busy != nil)
@@ -211,7 +211,7 @@ public struct LandWorkCard: View {
   /// The way out once everything is committed, so it leads then.
   private func mergeButton(hugs: Bool) -> some View {
     Btn(
-      label: busy == "merge" ? "Merging…" : "Merge into \(session?.baseBranch ?? "base")",
+      label: busy == "merge" ? "Merging" : "Merge into \(session?.baseBranch ?? "base")",
       tone: hasUncommitted || !blockers.isEmpty ? .secondary : .primary, small: true,
       icon: Icon.merge, hugs: hugs
     ) { checkThenMerge() }
@@ -322,7 +322,7 @@ private struct BaseBranchSheet: View {
       // Unscrolled until there's a list, so the placeholders can centre.
       Screen(scroll: loaded && !branches.isEmpty) {
         if !loaded {
-          Loading(label: "Reading branches…").frame(maxHeight: .infinity)
+          Loading(label: "Reading branches").frame(maxHeight: .infinity)
         } else if branches.isEmpty {
           EmptyState(
             icon: Icon.branch, title: "No local branches",

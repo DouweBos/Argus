@@ -179,7 +179,7 @@ export function AutomationsPage() {
     ) : (
       <div className="aw-center">
         <Spinner />
-        <span className="aw-muted">Reading the computer's settings…</span>
+        <span className="aw-muted">Reading the computer's settings</span>
       </div>
     );
   }

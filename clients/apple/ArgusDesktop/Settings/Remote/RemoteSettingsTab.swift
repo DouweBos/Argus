@@ -90,7 +90,7 @@ private struct RemoteSettingsForm: View {
         let endpoints = status.map(RemoteAccessLabels.orderedEndpoints) ?? []
         if endpoints.isEmpty {
           SettingsRow("Addresses") {
-            Text(enabled ? "resolving…" : "—").foregroundStyle(theme.textSecondary)
+            Text(enabled ? "resolving" : "—").foregroundStyle(theme.textSecondary)
           }
         } else {
           ForEach(Array(endpoints.enumerated()), id: \.offset) { index, endpoint in
@@ -145,7 +145,7 @@ private struct RemoteSettingsForm: View {
         "Devices", footer: "Scan the QR on your phone, then confirm the 6-digit code matches on both screens."
       ) {
         SettingsRow("Pair a device") {
-          Button(model.canPair ? "Start Pairing…" : "Waiting for an address…") {
+          Button(model.canPair ? "Start Pairing" : "Waiting for an address") {
             Task { await model.startPairing() }
           }
           .disabled(!model.canPair)

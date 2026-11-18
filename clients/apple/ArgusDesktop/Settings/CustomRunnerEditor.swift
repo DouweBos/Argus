@@ -96,7 +96,7 @@ struct CustomRunnerEditor: View {
       SettingsError(text: error)
       HStack {
         Spacer()
-        Button(saving ? "Saving…" : "Save", action: onSave)
+        Button(saving ? "Saving" : "Save", action: onSave)
           .buttonStyle(.borderedProminent)
           .disabled(saving || !draft.canSave)
       }

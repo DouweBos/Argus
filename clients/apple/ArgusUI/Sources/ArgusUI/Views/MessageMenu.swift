@@ -96,7 +96,7 @@ public struct MessageEditSheet: View {
           Button("Cancel") { dismiss() }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button(working ? "Restoring…" : "Edit & Restore", action: submit)
+          Button(working ? "Restoring" : "Edit & Restore", action: submit)
             .disabled(trimmed.isEmpty || unchanged || working)
         }
       }
@@ -185,7 +185,7 @@ public struct MessageForkSheet: View {
           Button("Cancel") { dismiss() }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button(working ? "Forking…" : "Fork", action: submit).disabled(!canSubmit)
+          Button(working ? "Forking" : "Fork", action: submit).disabled(!canSubmit)
         }
       }
     }

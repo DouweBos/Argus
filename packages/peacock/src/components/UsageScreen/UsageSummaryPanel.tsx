@@ -107,7 +107,7 @@ export function UsageSummaryPanel({
       return (
         <div className={styles.loading}>
           <Spinner />
-          <span>Reading agent sessions…</span>
+          <span>Reading agent sessions</span>
         </div>
       );
     }
