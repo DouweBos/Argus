@@ -286,6 +286,14 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "worktrees.set_cleanup_policy": DENIED,
   "automations.mark_run_read": DENIED,
   "automations.run_feedback": DENIED,
+  // Blueprints create repos on the host owner's GitHub account.
+  "blueprints.list": DENIED,
+  "blueprints.runs": DENIED,
+  "blueprints.create": DENIED,
+  "blueprints.update": DENIED,
+  "blueprints.delete": DENIED,
+  "blueprints.create_project": DENIED,
+  "blueprints.draft": DENIED,
   // The host owner's Linear account; a guest has no claim on it.
   "integrations.list": DENIED,
   "linear.issues": DENIED,

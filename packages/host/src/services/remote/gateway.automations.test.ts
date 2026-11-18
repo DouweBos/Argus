@@ -115,6 +115,9 @@ const AUTOMATION_COMMANDS = [
   "proposals_list",
   "proposal_accept",
   "signal_sources_list",
+  "blueprints_list",
+  "blueprint_create_project",
+  "blueprint_draft",
 ];
 
 /** Every channel the automation path emits on. */
@@ -122,6 +125,8 @@ const AUTOMATION_CHANNELS = [
   "automations:changed",
   "automation_run:changed",
   "proposals:changed",
+  "blueprints:changed",
+  "blueprint_run:changed",
 ];
 
 describe("automation events on the wire", () => {
@@ -141,6 +146,8 @@ describe("automation events on the wire", () => {
     emitHostEvent("automations:changed", [{ id: "a1" }]);
     emitHostEvent("automation_run:changed", { id: "r1", status: "running" });
     emitHostEvent("proposals:changed", [{ id: "p1" }]);
+    emitHostEvent("blueprints:changed", [{ id: "b1" }]);
+    emitHostEvent("blueprint_run:changed", { id: "br1", status: "running" });
 
     expect(channels(fromGateway)).toEqual(AUTOMATION_CHANNELS);
   });

@@ -2986,6 +2986,440 @@ extension ArgusProtocol {
     }
   }
 
+  public struct Blueprint: Codable, Sendable {
+    public var id: String
+    public var name: String
+    public var summary: String
+    public var parentDir: String
+    public var references: [BlueprintReference]
+    public var scaffold: BlueprintScaffold
+    public var github: BlueprintGithub
+    public var copyProjectSettingsFrom: String?
+    public var instructions: String
+    public var agent: BlueprintAgent
+    public var createdAt: Double
+    public var updatedAt: Double
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+      case summary = "summary"
+      case parentDir = "parent_dir"
+      case references = "references"
+      case scaffold = "scaffold"
+      case github = "github"
+      case copyProjectSettingsFrom = "copy_project_settings_from"
+      case instructions = "instructions"
+      case agent = "agent"
+      case createdAt = "created_at"
+      case updatedAt = "updated_at"
+    }
+
+    public init(id: String, name: String, summary: String, parentDir: String, references: [BlueprintReference], scaffold: BlueprintScaffold, github: BlueprintGithub, copyProjectSettingsFrom: String? = nil, instructions: String, agent: BlueprintAgent, createdAt: Double, updatedAt: Double) {
+      self.id = id
+      self.name = name
+      self.summary = summary
+      self.parentDir = parentDir
+      self.references = references
+      self.scaffold = scaffold
+      self.github = github
+      self.copyProjectSettingsFrom = copyProjectSettingsFrom
+      self.instructions = instructions
+      self.agent = agent
+      self.createdAt = createdAt
+      self.updatedAt = updatedAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+      try c.encode(summary, forKey: .summary)
+      try c.encode(parentDir, forKey: .parentDir)
+      try c.encode(references, forKey: .references)
+      try c.encode(scaffold, forKey: .scaffold)
+      try c.encode(github, forKey: .github)
+      try c.encode(copyProjectSettingsFrom, forKey: .copyProjectSettingsFrom)
+      try c.encode(instructions, forKey: .instructions)
+      try c.encode(agent, forKey: .agent)
+      try c.encode(createdAt, forKey: .createdAt)
+      try c.encode(updatedAt, forKey: .updatedAt)
+    }
+  }
+
+  public struct BlueprintAgent: Codable, Sendable {
+    public var runner: String?
+    public var model: String?
+    public var permissionMode: BlueprintPermissionMode?
+
+    enum CodingKeys: String, CodingKey {
+      case runner = "runner"
+      case model = "model"
+      case permissionMode = "permission_mode"
+    }
+
+    public init(runner: String? = nil, model: String? = nil, permissionMode: BlueprintPermissionMode? = nil) {
+      self.runner = runner
+      self.model = model
+      self.permissionMode = permissionMode
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(runner, forKey: .runner)
+      try c.encode(model, forKey: .model)
+      try c.encode(permissionMode, forKey: .permissionMode)
+    }
+  }
+
+  public struct BlueprintDraft: Codable, Sendable {
+    public var name: String
+    public var summary: String
+    public var parentDir: String
+    public var instructions: String
+    public var scaffold: BlueprintScaffold
+    public var github: BlueprintGithub
+    public var references: [BlueprintReference]
+    public var copyProjectSettingsFrom: String?
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case summary = "summary"
+      case parentDir = "parent_dir"
+      case instructions = "instructions"
+      case scaffold = "scaffold"
+      case github = "github"
+      case references = "references"
+      case copyProjectSettingsFrom = "copy_project_settings_from"
+    }
+
+    public init(name: String, summary: String, parentDir: String, instructions: String, scaffold: BlueprintScaffold, github: BlueprintGithub, references: [BlueprintReference], copyProjectSettingsFrom: String? = nil) {
+      self.name = name
+      self.summary = summary
+      self.parentDir = parentDir
+      self.instructions = instructions
+      self.scaffold = scaffold
+      self.github = github
+      self.references = references
+      self.copyProjectSettingsFrom = copyProjectSettingsFrom
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encode(summary, forKey: .summary)
+      try c.encode(parentDir, forKey: .parentDir)
+      try c.encode(instructions, forKey: .instructions)
+      try c.encode(scaffold, forKey: .scaffold)
+      try c.encode(github, forKey: .github)
+      try c.encode(references, forKey: .references)
+      try c.encode(copyProjectSettingsFrom, forKey: .copyProjectSettingsFrom)
+    }
+  }
+
+  public struct BlueprintGithub: Codable, Sendable {
+    public var enabled: Bool
+    public var owner: String
+    public var visibility: BlueprintVisibility
+
+    enum CodingKeys: String, CodingKey {
+      case enabled = "enabled"
+      case owner = "owner"
+      case visibility = "visibility"
+    }
+
+    public init(enabled: Bool, owner: String, visibility: BlueprintVisibility) {
+      self.enabled = enabled
+      self.owner = owner
+      self.visibility = visibility
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(enabled, forKey: .enabled)
+      try c.encode(owner, forKey: .owner)
+      try c.encode(visibility, forKey: .visibility)
+    }
+  }
+
+  public struct BlueprintOverrides: Codable, Sendable {
+    public var parentDir: String?
+    public var owner: String?
+    public var visibility: BlueprintVisibility?
+    public var githubEnabled: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case parentDir = "parent_dir"
+      case owner = "owner"
+      case visibility = "visibility"
+      case githubEnabled = "github_enabled"
+    }
+
+    public init(parentDir: String? = nil, owner: String? = nil, visibility: BlueprintVisibility? = nil, githubEnabled: Bool? = nil) {
+      self.parentDir = parentDir
+      self.owner = owner
+      self.visibility = visibility
+      self.githubEnabled = githubEnabled
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(parentDir, forKey: .parentDir)
+      try c.encodeIfPresent(owner, forKey: .owner)
+      try c.encodeIfPresent(visibility, forKey: .visibility)
+      try c.encodeIfPresent(githubEnabled, forKey: .githubEnabled)
+    }
+  }
+
+  public struct BlueprintPermissionMode: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let ask = BlueprintPermissionMode(rawValue: "ask")
+    public static let auto = BlueprintPermissionMode(rawValue: "auto")
+    public static let plan = BlueprintPermissionMode(rawValue: "plan")
+    public static let review = BlueprintPermissionMode(rawValue: "review")
+    public static let trusted = BlueprintPermissionMode(rawValue: "trusted")
+  }
+
+  public struct BlueprintReference: Codable, Sendable {
+    public var path: String
+    public var note: String
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+      case note = "note"
+    }
+
+    public init(path: String, note: String) {
+      self.path = path
+      self.note = note
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+      try c.encode(note, forKey: .note)
+    }
+  }
+
+  public struct BlueprintRun: Codable, Sendable {
+    public var id: String
+    public var blueprintId: String
+    public var projectName: String
+    public var repoRoot: String
+    public var repoUrl: String?
+    public var status: BlueprintRunStatus
+    public var steps: [BlueprintStep]
+    public var sessionId: String?
+    public var agentId: String?
+    public var startedAt: Double
+    public var finishedAt: Double?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case blueprintId = "blueprint_id"
+      case projectName = "project_name"
+      case repoRoot = "repo_root"
+      case repoUrl = "repo_url"
+      case status = "status"
+      case steps = "steps"
+      case sessionId = "session_id"
+      case agentId = "agent_id"
+      case startedAt = "started_at"
+      case finishedAt = "finished_at"
+    }
+
+    public init(id: String, blueprintId: String, projectName: String, repoRoot: String, repoUrl: String? = nil, status: BlueprintRunStatus, steps: [BlueprintStep], sessionId: String? = nil, agentId: String? = nil, startedAt: Double, finishedAt: Double? = nil) {
+      self.id = id
+      self.blueprintId = blueprintId
+      self.projectName = projectName
+      self.repoRoot = repoRoot
+      self.repoUrl = repoUrl
+      self.status = status
+      self.steps = steps
+      self.sessionId = sessionId
+      self.agentId = agentId
+      self.startedAt = startedAt
+      self.finishedAt = finishedAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(blueprintId, forKey: .blueprintId)
+      try c.encode(projectName, forKey: .projectName)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(repoUrl, forKey: .repoUrl)
+      try c.encode(status, forKey: .status)
+      try c.encode(steps, forKey: .steps)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(startedAt, forKey: .startedAt)
+      try c.encode(finishedAt, forKey: .finishedAt)
+    }
+  }
+
+  public struct BlueprintRunStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let done = BlueprintRunStatus(rawValue: "done")
+    public static let failed = BlueprintRunStatus(rawValue: "failed")
+    public static let running = BlueprintRunStatus(rawValue: "running")
+  }
+
+  public struct BlueprintScaffoldEmpty: Codable, Sendable {
+    public var kind: String
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+    }
+
+    public init(kind: String) {
+      self.kind = kind
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+    }
+  }
+
+  public struct BlueprintScaffoldGithubTemplate: Codable, Sendable {
+    public var kind: String
+    public var repo: String
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case repo = "repo"
+    }
+
+    public init(kind: String, repo: String) {
+      self.kind = kind
+      self.repo = repo
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(repo, forKey: .repo)
+    }
+  }
+
+  public enum BlueprintScaffold: Codable, Sendable {
+    case empty(BlueprintScaffoldEmpty)
+    case githubTemplate(BlueprintScaffoldGithubTemplate)
+    case unknown(JSONValue)
+
+    private enum Tag: String, CodingKey { case tag = "kind" }
+
+    public init(from decoder: Decoder) throws {
+      let tag = try decoder.container(keyedBy: Tag.self).decodeIfPresent(String.self, forKey: .tag)
+      switch tag {
+      case "empty": self = .empty(try BlueprintScaffoldEmpty(from: decoder))
+      case "github_template": self = .githubTemplate(try BlueprintScaffoldGithubTemplate(from: decoder))
+      default: self = .unknown(try JSONValue(from: decoder))
+      }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      switch self {
+      case .empty(let value): try value.encode(to: encoder)
+      case .githubTemplate(let value): try value.encode(to: encoder)
+      case .unknown(let value): try value.encode(to: encoder)
+      }
+    }
+  }
+
+  public struct BlueprintStep: Codable, Sendable {
+    public var key: BlueprintStepKey
+    public var status: BlueprintStepStatus
+    public var error: String?
+
+    enum CodingKeys: String, CodingKey {
+      case key = "key"
+      case status = "status"
+      case error = "error"
+    }
+
+    public init(key: BlueprintStepKey, status: BlueprintStepStatus, error: String? = nil) {
+      self.key = key
+      self.status = status
+      self.error = error
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(key, forKey: .key)
+      try c.encode(status, forKey: .status)
+      try c.encode(error, forKey: .error)
+    }
+  }
+
+  public struct BlueprintStepKey: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let createRepo = BlueprintStepKey(rawValue: "create_repo")
+    public static let register = BlueprintStepKey(rawValue: "register")
+    public static let startAgent = BlueprintStepKey(rawValue: "start_agent")
+    public static let validate = BlueprintStepKey(rawValue: "validate")
+  }
+
+  public struct BlueprintStepStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let done = BlueprintStepStatus(rawValue: "done")
+    public static let failed = BlueprintStepStatus(rawValue: "failed")
+    public static let pending = BlueprintStepStatus(rawValue: "pending")
+    public static let running = BlueprintStepStatus(rawValue: "running")
+  }
+
+  public struct BlueprintVisibility: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let `private` = BlueprintVisibility(rawValue: "private")
+    public static let `public` = BlueprintVisibility(rawValue: "public")
+  }
+
   public struct BranchCommitSummary: Codable, Sendable {
     public var hash: String
     public var subject: String
@@ -5319,6 +5753,59 @@ extension ArgusProtocol {
     }
   }
 
+  public struct CreateBlueprintInput: Codable, Sendable {
+    public var name: String
+    public var summary: String
+    public var parentDir: String
+    public var references: [BlueprintReference]
+    public var scaffold: BlueprintScaffold
+    public var github: BlueprintGithub
+    public var copyProjectSettingsFrom: String?
+    public var instructions: String
+    public var agent: BlueprintAgent
+    public var fromDraft: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case summary = "summary"
+      case parentDir = "parent_dir"
+      case references = "references"
+      case scaffold = "scaffold"
+      case github = "github"
+      case copyProjectSettingsFrom = "copy_project_settings_from"
+      case instructions = "instructions"
+      case agent = "agent"
+      case fromDraft = "from_draft"
+    }
+
+    public init(name: String, summary: String, parentDir: String, references: [BlueprintReference], scaffold: BlueprintScaffold, github: BlueprintGithub, copyProjectSettingsFrom: String? = nil, instructions: String, agent: BlueprintAgent, fromDraft: Bool? = nil) {
+      self.name = name
+      self.summary = summary
+      self.parentDir = parentDir
+      self.references = references
+      self.scaffold = scaffold
+      self.github = github
+      self.copyProjectSettingsFrom = copyProjectSettingsFrom
+      self.instructions = instructions
+      self.agent = agent
+      self.fromDraft = fromDraft
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encode(summary, forKey: .summary)
+      try c.encode(parentDir, forKey: .parentDir)
+      try c.encode(references, forKey: .references)
+      try c.encode(scaffold, forKey: .scaffold)
+      try c.encode(github, forKey: .github)
+      try c.encode(copyProjectSettingsFrom, forKey: .copyProjectSettingsFrom)
+      try c.encode(instructions, forKey: .instructions)
+      try c.encode(agent, forKey: .agent)
+      try c.encodeIfPresent(fromDraft, forKey: .fromDraft)
+    }
+  }
+
   public struct CreatedPullRequest: Codable, Sendable {
     public var number: Double
     public var url: String
@@ -5337,6 +5824,35 @@ extension ArgusProtocol {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(number, forKey: .number)
       try c.encode(url, forKey: .url)
+    }
+  }
+
+  public struct CreateProjectFromBlueprintInput: Codable, Sendable {
+    public var blueprintId: String
+    public var name: String
+    public var description: String
+    public var overrides: BlueprintOverrides?
+
+    enum CodingKeys: String, CodingKey {
+      case blueprintId = "blueprintId"
+      case name = "name"
+      case description = "description"
+      case overrides = "overrides"
+    }
+
+    public init(blueprintId: String, name: String, description: String, overrides: BlueprintOverrides? = nil) {
+      self.blueprintId = blueprintId
+      self.name = name
+      self.description = description
+      self.overrides = overrides
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(blueprintId, forKey: .blueprintId)
+      try c.encode(name, forKey: .name)
+      try c.encode(description, forKey: .description)
+      try c.encodeIfPresent(overrides, forKey: .overrides)
     }
   }
 
@@ -19318,6 +19834,55 @@ extension ArgusProtocol {
       try c.encodeIfPresent(templateId, forKey: .templateId)
       try c.encodeIfPresent(lastRunAt, forKey: .lastRunAt)
       try c.encodeIfPresent(nextRunAt, forKey: .nextRunAt)
+    }
+  }
+
+  public struct UpdateBlueprintInput: Codable, Sendable {
+    public var name: String?
+    public var summary: String?
+    public var parentDir: String?
+    public var references: [BlueprintReference]?
+    public var scaffold: BlueprintScaffold?
+    public var github: BlueprintGithub?
+    public var copyProjectSettingsFrom: String?
+    public var instructions: String?
+    public var agent: BlueprintAgent?
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case summary = "summary"
+      case parentDir = "parent_dir"
+      case references = "references"
+      case scaffold = "scaffold"
+      case github = "github"
+      case copyProjectSettingsFrom = "copy_project_settings_from"
+      case instructions = "instructions"
+      case agent = "agent"
+    }
+
+    public init(name: String? = nil, summary: String? = nil, parentDir: String? = nil, references: [BlueprintReference]? = nil, scaffold: BlueprintScaffold? = nil, github: BlueprintGithub? = nil, copyProjectSettingsFrom: String? = nil, instructions: String? = nil, agent: BlueprintAgent? = nil) {
+      self.name = name
+      self.summary = summary
+      self.parentDir = parentDir
+      self.references = references
+      self.scaffold = scaffold
+      self.github = github
+      self.copyProjectSettingsFrom = copyProjectSettingsFrom
+      self.instructions = instructions
+      self.agent = agent
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(name, forKey: .name)
+      try c.encodeIfPresent(summary, forKey: .summary)
+      try c.encodeIfPresent(parentDir, forKey: .parentDir)
+      try c.encodeIfPresent(references, forKey: .references)
+      try c.encodeIfPresent(scaffold, forKey: .scaffold)
+      try c.encodeIfPresent(github, forKey: .github)
+      try c.encodeIfPresent(copyProjectSettingsFrom, forKey: .copyProjectSettingsFrom)
+      try c.encodeIfPresent(instructions, forKey: .instructions)
+      try c.encodeIfPresent(agent, forKey: .agent)
     }
   }
 

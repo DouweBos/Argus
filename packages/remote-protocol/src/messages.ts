@@ -70,6 +70,14 @@ import {
   RemoteTodo,
 } from "./models";
 import { AutomationCalibration } from "./models/automations";
+import {
+  Blueprint,
+  BlueprintDraft,
+  BlueprintRun,
+  CreateBlueprintInput,
+  CreateProjectFromBlueprintInput,
+  UpdateBlueprintInput,
+} from "./models/blueprints";
 import { CodeFile, CodeSearchEvent } from "./models/code";
 import { GitStashEntry } from "./models/git/history";
 import { GitTag } from "./models/git/remotes";
@@ -881,6 +889,20 @@ export const MethodParams = {
     /** Let the turn withdraw or supersede proposals. Off adds only. */
     allow_clearing: z.boolean().optional(),
   }),
+  "blueprints.list": z.object({}),
+  "blueprints.create": z.object({ input: CreateBlueprintInput }),
+  "blueprints.update": z.object({
+    blueprint_id: z.string(),
+    patch: UpdateBlueprintInput,
+  }),
+  "blueprints.delete": z.object({ blueprint_id: z.string() }),
+  /** Returns once the run record exists; poll `blueprints.runs` for its steps. */
+  "blueprints.create_project": z.object({
+    input: CreateProjectFromBlueprintInput,
+  }),
+  "blueprints.runs": z.object({ blueprint_id: z.string().optional() }),
+  /** A draft read from existing projects, for the editor. Nothing is saved. */
+  "blueprints.draft": z.object({ paths: z.array(z.string()).min(1) }),
   "integrations.list": z.object({}),
   /** No query: the connected user's open issues in `scope`, newest first. */
   "linear.issues": z.object({
@@ -1414,6 +1436,13 @@ export const MethodResult = {
   /** The run as it now stands — read. */
   "automations.mark_run_read": z.object({ run: RemoteAutomationRun }),
   "automations.run_feedback": z.object({ run: RemoteAutomationRun }),
+  "blueprints.list": z.object({ blueprints: z.array(Blueprint) }),
+  "blueprints.create": z.object({ blueprint: Blueprint }),
+  "blueprints.update": z.object({ blueprint: Blueprint }),
+  "blueprints.delete": z.object({ accepted: z.boolean() }),
+  "blueprints.create_project": z.object({ run: BlueprintRun }),
+  "blueprints.runs": z.object({ runs: z.array(BlueprintRun) }),
+  "blueprints.draft": z.object({ draft: BlueprintDraft }),
   "integrations.list": z.object({ integrations: z.array(IntegrationStatus) }),
   "linear.issues": z.object({ issues: z.array(LinearIssue) }),
   /** Null when Linear has no such issue; `states` is its team's workflow, for

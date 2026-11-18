@@ -241,6 +241,17 @@ See [Automations](/argus/docs/automations) for the full story.
 
 ---
 
+## Blueprints
+
+Your own recipes for new projects. Pick a blueprint, type a name and a
+description, and Argus creates the GitHub repository, clones it, adds the
+project, links your reference apps and starts an agent that sets it up the
+same way. Blueprints can be generated from existing projects.
+
+See [Blueprints](/argus/docs/blueprints).
+
+---
+
 ## Scratch pads
 
 An agent for one-off work that belongs to no project — a quick script, a

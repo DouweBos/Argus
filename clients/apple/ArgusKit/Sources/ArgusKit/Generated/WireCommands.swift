@@ -798,6 +798,112 @@ extension ArgusProtocol {
       }
     }
 
+    public struct BlueprintCreateParams: Codable, Sendable {
+      public var input: CreateBlueprintInput
+
+      enum CodingKeys: String, CodingKey {
+        case input = "input"
+      }
+
+      public init(input: CreateBlueprintInput) {
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
+    public struct BlueprintCreateProjectParams: Codable, Sendable {
+      public var input: CreateProjectFromBlueprintInput
+
+      enum CodingKeys: String, CodingKey {
+        case input = "input"
+      }
+
+      public init(input: CreateProjectFromBlueprintInput) {
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
+    public struct BlueprintDeleteParams: Codable, Sendable {
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: String) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
+    public struct BlueprintDraftParams: Codable, Sendable {
+      public var paths: [String]
+
+      enum CodingKeys: String, CodingKey {
+        case paths = "paths"
+      }
+
+      public init(paths: [String]) {
+        self.paths = paths
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(paths, forKey: .paths)
+      }
+    }
+
+    public struct BlueprintRunsListParams: Codable, Sendable {
+      public var blueprintId: String?
+
+      enum CodingKeys: String, CodingKey {
+        case blueprintId = "blueprintId"
+      }
+
+      public init(blueprintId: String? = nil) {
+        self.blueprintId = blueprintId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(blueprintId, forKey: .blueprintId)
+      }
+    }
+
+    public struct BlueprintUpdateParams: Codable, Sendable {
+      public var id: String
+      public var patch: UpdateBlueprintInput
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case patch = "patch"
+      }
+
+      public init(id: String, patch: UpdateBlueprintInput) {
+        self.id = id
+        self.patch = patch
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(patch, forKey: .patch)
+      }
+    }
+
     public struct BootAndroidEmulatorParams: Codable, Sendable {
       public var avdName: String
 
@@ -10420,6 +10526,55 @@ extension ArgusProtocol {
       public typealias Params = EmptyParams
       public typealias Result = [ArgusProtocol.Automation]
       public static let name = "automations_list"
+      public static let tier = "admin"
+    }
+
+    public enum BlueprintCreate: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.BlueprintCreateParams
+      public typealias Result = ArgusProtocol.Blueprint
+      public static let name = "blueprint_create"
+      public static let tier = "admin"
+    }
+
+    public enum BlueprintCreateProject: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.BlueprintCreateProjectParams
+      public typealias Result = ArgusProtocol.BlueprintRun
+      public static let name = "blueprint_create_project"
+      public static let tier = "admin"
+    }
+
+    public enum BlueprintDelete: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.BlueprintDeleteParams
+      public typealias Result = IgnoredResult
+      public static let name = "blueprint_delete"
+      public static let tier = "admin"
+    }
+
+    public enum BlueprintDraft: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.BlueprintDraftParams
+      public typealias Result = ArgusProtocol.BlueprintDraft
+      public static let name = "blueprint_draft"
+      public static let tier = "admin"
+    }
+
+    public enum BlueprintRunsList: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.BlueprintRunsListParams
+      public typealias Result = [ArgusProtocol.BlueprintRun]
+      public static let name = "blueprint_runs_list"
+      public static let tier = "admin"
+    }
+
+    public enum BlueprintUpdate: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.BlueprintUpdateParams
+      public typealias Result = ArgusProtocol.Blueprint
+      public static let name = "blueprint_update"
+      public static let tier = "admin"
+    }
+
+    public enum BlueprintsList: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.Blueprint]
+      public static let name = "blueprints_list"
       public static let tier = "admin"
     }
 

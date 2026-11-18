@@ -46,6 +46,8 @@ export interface RunClaudePrintOptions {
   quiet?: boolean;
   /** Built-in tools it may use, e.g. `["Read", "Grep", "Glob"]`. Defaults to none. */
   tools?: string[];
+  /** Extra directories the tools may read outside `cwd`. */
+  addDirs?: string[];
 }
 
 let lastBroadcastAt = 0;
@@ -133,6 +135,7 @@ export async function runClaudePrint(
         "--setting-sources",
         "",
         "--disable-slash-commands",
+        ...(opts.addDirs ?? []).flatMap((dir) => ["--add-dir", dir]),
         "--system-prompt",
         opts.systemPrompt ??
           "You generate short titles and slugs. Reply with only what the user asks for, no tools, no explanation.",

@@ -289,6 +289,21 @@ export interface EventMap {
     success: boolean;
     tool: "artifact_search" | "get";
   };
+  blueprint_drafted: {
+    project_count_bucket: "1" | "2-3" | "4+";
+    /** Set when a blueprint is saved from a draft, not when the draft is made. */
+    saved: boolean;
+    success: boolean;
+  };
+  blueprint_edited: { action: "create" | "delete" | "update" };
+  blueprint_project_created: {
+    failed_step?: "create_repo" | "register" | "start_agent" | "validate";
+    github: boolean;
+    reference_count_bucket: "0" | "1" | "2-3" | "4+";
+    scaffold: "empty" | "github_template";
+    success: boolean;
+    visibility: "private" | "public";
+  };
   browser_devtools_requested: { available: boolean };
   claude_account_rechecked: {
     badge_cleared: boolean;

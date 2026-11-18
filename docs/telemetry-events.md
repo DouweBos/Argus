@@ -230,6 +230,14 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `automation_run_started`                | host   | An automation run's session came up, before its agent starts | `account_pin` — `none` (follows the active account or a custom runner), `ok`, or why the pinned account couldn't run it (`missing`, `reauth`)   |
 | `proposal_start_failed`                 | host   | Starting a proposal failed before its agent ran              | `stage` (`creating_worktree`, `setting_up`, `starting_agent`)                                                                                   |
 
+## Blueprints
+
+| Event                       | Source | When                                                                             | Extra props                                                                                                                                                                                                                             |
+| --------------------------- | ------ | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `blueprint_project_created` | host   | Creating a project from a blueprint finished or failed                           | `scaffold` (`empty`, `github_template`), `github`, `visibility` (`private`, `public`), `reference_count_bucket` (`0`, `1`, `2-3`, `4+`), `success`, `failed_step` (`validate`, `create_repo`, `register`, `start_agent`) when it failed |
+| `blueprint_edited`          | host   | A blueprint was created, saved or deleted                                        | `action` (`create`, `update`, `delete`)                                                                                                                                                                                                 |
+| `blueprint_drafted`         | host   | A blueprint was generated from existing projects, or a generated draft was saved | `project_count_bucket` (`1`, `2-3`, `4+`), `success`, `saved` — `true` when a draft was saved as a blueprint                                                                                                                            |
+
 ## Simulators
 
 | Event                           | Source | When                                                                               | Extra props                                                                                                                                                                                                                                                                                                                       |

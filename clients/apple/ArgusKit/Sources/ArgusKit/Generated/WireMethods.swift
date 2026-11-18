@@ -2852,6 +2852,241 @@ extension ArgusProtocol {
       }
     }
 
+    public struct BlueprintsCreateParams: Codable, Sendable {
+      public var input: CreateBlueprintInput
+
+      enum CodingKeys: String, CodingKey {
+        case input = "input"
+      }
+
+      public init(input: CreateBlueprintInput) {
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
+    public struct BlueprintsCreateResult: Codable, Sendable {
+      public var blueprint: Blueprint
+
+      enum CodingKeys: String, CodingKey {
+        case blueprint = "blueprint"
+      }
+
+      public init(blueprint: Blueprint) {
+        self.blueprint = blueprint
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(blueprint, forKey: .blueprint)
+      }
+    }
+
+    public struct BlueprintsCreateProjectParams: Codable, Sendable {
+      public var input: CreateProjectFromBlueprintInput
+
+      enum CodingKeys: String, CodingKey {
+        case input = "input"
+      }
+
+      public init(input: CreateProjectFromBlueprintInput) {
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
+    public struct BlueprintsCreateProjectResult: Codable, Sendable {
+      public var run: BlueprintRun
+
+      enum CodingKeys: String, CodingKey {
+        case run = "run"
+      }
+
+      public init(run: BlueprintRun) {
+        self.run = run
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(run, forKey: .run)
+      }
+    }
+
+    public struct BlueprintsDeleteParams: Codable, Sendable {
+      public var blueprintId: String
+
+      enum CodingKeys: String, CodingKey {
+        case blueprintId = "blueprint_id"
+      }
+
+      public init(blueprintId: String) {
+        self.blueprintId = blueprintId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(blueprintId, forKey: .blueprintId)
+      }
+    }
+
+    public struct BlueprintsDeleteResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct BlueprintsDraftParams: Codable, Sendable {
+      public var paths: [String]
+
+      enum CodingKeys: String, CodingKey {
+        case paths = "paths"
+      }
+
+      public init(paths: [String]) {
+        self.paths = paths
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(paths, forKey: .paths)
+      }
+    }
+
+    public struct BlueprintsDraftResult: Codable, Sendable {
+      public var draft: BlueprintDraft
+
+      enum CodingKeys: String, CodingKey {
+        case draft = "draft"
+      }
+
+      public init(draft: BlueprintDraft) {
+        self.draft = draft
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(draft, forKey: .draft)
+      }
+    }
+
+    public struct BlueprintsListParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct BlueprintsListResult: Codable, Sendable {
+      public var blueprints: [Blueprint]
+
+      enum CodingKeys: String, CodingKey {
+        case blueprints = "blueprints"
+      }
+
+      public init(blueprints: [Blueprint]) {
+        self.blueprints = blueprints
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(blueprints, forKey: .blueprints)
+      }
+    }
+
+    public struct BlueprintsRunsParams: Codable, Sendable {
+      public var blueprintId: String?
+
+      enum CodingKeys: String, CodingKey {
+        case blueprintId = "blueprint_id"
+      }
+
+      public init(blueprintId: String? = nil) {
+        self.blueprintId = blueprintId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(blueprintId, forKey: .blueprintId)
+      }
+    }
+
+    public struct BlueprintsRunsResult: Codable, Sendable {
+      public var runs: [BlueprintRun]
+
+      enum CodingKeys: String, CodingKey {
+        case runs = "runs"
+      }
+
+      public init(runs: [BlueprintRun]) {
+        self.runs = runs
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(runs, forKey: .runs)
+      }
+    }
+
+    public struct BlueprintsUpdateParams: Codable, Sendable {
+      public var blueprintId: String
+      public var patch: UpdateBlueprintInput
+
+      enum CodingKeys: String, CodingKey {
+        case blueprintId = "blueprint_id"
+        case patch = "patch"
+      }
+
+      public init(blueprintId: String, patch: UpdateBlueprintInput) {
+        self.blueprintId = blueprintId
+        self.patch = patch
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(blueprintId, forKey: .blueprintId)
+        try c.encode(patch, forKey: .patch)
+      }
+    }
+
+    public struct BlueprintsUpdateResult: Codable, Sendable {
+      public var blueprint: Blueprint
+
+      enum CodingKeys: String, CodingKey {
+        case blueprint = "blueprint"
+      }
+
+      public init(blueprint: Blueprint) {
+        self.blueprint = blueprint
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(blueprint, forKey: .blueprint)
+      }
+    }
+
     public struct BrowserUnwatchParams: Codable, Sendable {
       public var sessionId: String
 
@@ -9043,6 +9278,48 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AutomationsUpdateParams
       public typealias Result = ArgusProtocol.MethodsTypes.AutomationsUpdateResult
       public static let name = "automations.update"
+    }
+
+    public enum BlueprintsCreate: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.BlueprintsCreateParams
+      public typealias Result = ArgusProtocol.MethodsTypes.BlueprintsCreateResult
+      public static let name = "blueprints.create"
+    }
+
+    public enum BlueprintsCreateProject: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.BlueprintsCreateProjectParams
+      public typealias Result = ArgusProtocol.MethodsTypes.BlueprintsCreateProjectResult
+      public static let name = "blueprints.create_project"
+    }
+
+    public enum BlueprintsDelete: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.BlueprintsDeleteParams
+      public typealias Result = ArgusProtocol.MethodsTypes.BlueprintsDeleteResult
+      public static let name = "blueprints.delete"
+    }
+
+    public enum BlueprintsDraft: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.BlueprintsDraftParams
+      public typealias Result = ArgusProtocol.MethodsTypes.BlueprintsDraftResult
+      public static let name = "blueprints.draft"
+    }
+
+    public enum BlueprintsList: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.BlueprintsListParams
+      public typealias Result = ArgusProtocol.MethodsTypes.BlueprintsListResult
+      public static let name = "blueprints.list"
+    }
+
+    public enum BlueprintsRuns: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.BlueprintsRunsParams
+      public typealias Result = ArgusProtocol.MethodsTypes.BlueprintsRunsResult
+      public static let name = "blueprints.runs"
+    }
+
+    public enum BlueprintsUpdate: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.BlueprintsUpdateParams
+      public typealias Result = ArgusProtocol.MethodsTypes.BlueprintsUpdateResult
+      public static let name = "blueprints.update"
     }
 
     public enum BrowserUnwatch: RemoteCommand {

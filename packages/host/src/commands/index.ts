@@ -7,6 +7,7 @@
 import { registerAccountCommands } from "./account";
 import { registerAgentCommands } from "./agents";
 import { registerAutomationCommands } from "./automations";
+import { registerBlueprintCommands } from "./blueprints";
 import { registerBrowserCommands } from "./browser";
 import { registerCodeCommands } from "./code";
 import { registerDeviceCommands } from "./devices";
@@ -34,6 +35,7 @@ export function registerHostCommands(): void {
   registerAgentCommands();
   registerTerminalCommands();
   registerAutomationCommands();
+  registerBlueprintCommands();
   registerOnboardingCommands();
   registerSettingsCommands();
   registerLlmCommands();

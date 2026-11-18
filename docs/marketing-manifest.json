@@ -43,6 +43,12 @@
           "summary": "Work Argus starts on its own: triggers, signal sources, the autonomy ladder, guardrails, the inbox, and the built-in templates."
         },
         {
+          "slug": "blueprints",
+          "file": "blueprints.md",
+          "title": "Blueprints",
+          "summary": "Start a new project from your own recipe: Argus creates the repo, adds the project and starts an agent that mirrors your reference apps."
+        },
+        {
           "slug": "cli",
           "file": "cli.md",
           "title": "Command line and MCP",

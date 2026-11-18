@@ -355,6 +355,15 @@ export const REMOTE_METHODS = {
    *  Monitor, not control: it records that you looked, and can do nothing else. */
   "automations.mark_run_read": "monitor",
   "automations.run_feedback": "control",
+  /** Blueprints: this machine's recipes for new projects. Creating a project
+   *  makes a repo and starts an agent; drafting spends the host's LLM. */
+  "blueprints.list": "monitor",
+  "blueprints.runs": "monitor",
+  "blueprints.create": "control",
+  "blueprints.update": "control",
+  "blueprints.delete": "control",
+  "blueprints.create_project": "control",
+  "blueprints.draft": "control",
   /** Which integrations the computer has connected, and as whom. Connecting
    *  one takes a secret, which stays on the computer: no method sets it. */
   "integrations.list": "monitor",

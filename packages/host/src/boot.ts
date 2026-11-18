@@ -26,6 +26,7 @@ import {
   startAutomationScheduler,
   stopAutomationScheduler,
 } from "./services/automation/scheduler";
+import { initBlueprints } from "./services/blueprint/manager";
 import { stopAllScreencasts } from "./services/browser/cdpScreencast";
 import {
   startMjpegServer,
@@ -194,6 +195,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   startSessionTriage();
 
   initAutomations();
+  initBlueprints();
   initAutomationOutcomes();
   initIssueReports();
   startAutomationScheduler();

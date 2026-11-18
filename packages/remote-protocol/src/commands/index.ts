@@ -7,6 +7,7 @@ import type { z } from "zod";
 import { ACCOUNT_COMMANDS } from "./account";
 import { AGENT_COMMANDS } from "./agents";
 import { AUTOMATION_COMMANDS } from "./automations";
+import { BLUEPRINT_COMMANDS } from "./blueprints";
 import { BROWSER_COMMANDS } from "./browser";
 import { CODE_COMMANDS } from "./code";
 import { DEVICE_COMMANDS } from "./devices";
@@ -33,6 +34,7 @@ export * from "../models/agents";
 export * from "../models/conversation";
 export * from "../models/terminals";
 export * from "../models/automations";
+export * from "../models/blueprints";
 export * from "../models/onboarding";
 export * from "../models/settings";
 export * from "../models/llm";
@@ -58,6 +60,7 @@ export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
   agents: AGENT_COMMANDS,
   terminals: TERMINAL_COMMANDS,
   automations: AUTOMATION_COMMANDS,
+  blueprints: BLUEPRINT_COMMANDS,
   onboarding: ONBOARDING_COMMANDS,
   settings: SETTINGS_COMMANDS,
   llm: LLM_COMMANDS,
@@ -81,6 +84,7 @@ export const COMMANDS = {
   ...AGENT_COMMANDS,
   ...TERMINAL_COMMANDS,
   ...AUTOMATION_COMMANDS,
+  ...BLUEPRINT_COMMANDS,
   ...ONBOARDING_COMMANDS,
   ...SETTINGS_COMMANDS,
   ...LLM_COMMANDS,

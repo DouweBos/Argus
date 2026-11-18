@@ -109,6 +109,14 @@ import {
 import { calibrationFor } from "../automation/outcomes";
 import { cancelAutomationRun } from "../automation/runner";
 import { startAutomationRun } from "../automation/runner";
+import { draftBlueprintFromProjects } from "../blueprint/draft";
+import {
+  createBlueprint,
+  deleteBlueprint,
+  listBlueprintRuns,
+  listBlueprints,
+  updateBlueprint,
+} from "../blueprint/manager";
 import {
   getActiveAccountId,
   refreshAllAccountIdentities,
@@ -2964,6 +2972,50 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return await control(() =>
       submitRemoteRunFeedback({ run_id, note, allow_clearing }),
     );
+  },
+  "blueprints.list": async () => ({ blueprints: listBlueprints() }),
+  "blueprints.runs": async (params) => {
+    const { blueprint_id } = parse("blueprints.runs", params);
+
+    return { runs: listBlueprintRuns(blueprint_id) };
+  },
+  "blueprints.create": async (params) => {
+    const { input } = parse("blueprints.create", params);
+
+    return await control(() => ({ blueprint: createBlueprint(input) }));
+  },
+  "blueprints.update": async (params) => {
+    const { blueprint_id, patch } = parse("blueprints.update", params);
+
+    return await control(() => ({
+      blueprint: updateBlueprint(blueprint_id, patch),
+    }));
+  },
+  "blueprints.delete": async (params) => {
+    const { blueprint_id } = parse("blueprints.delete", params);
+
+    return await control(() => {
+      deleteBlueprint(blueprint_id);
+
+      return { accepted: true };
+    });
+  },
+  "blueprints.create_project": async (params) => {
+    const { input } = parse("blueprints.create_project", params);
+    // Lazy: creating a project reaches the agent service, which imports the gateway.
+    const { createProjectFromBlueprint } = await import("../blueprint/create");
+
+    return await control(async () => ({
+      run: await createProjectFromBlueprint(input),
+    }));
+  },
+  "blueprints.draft": async (params) => {
+    const { paths } = parse("blueprints.draft", params);
+
+    // Spends the host's LLM; nothing is saved.
+    return await control(async () => ({
+      draft: await draftBlueprintFromProjects(paths),
+    }));
   },
   "devices.list": async () => {
     // A missing toolchain (no Xcode / no Android SDK) contributes an empty
