@@ -332,7 +332,7 @@ struct AgentPane: View {
 
   /// Nothing said yet, nothing queued, and the agent isn't at work.
   private var fresh: Bool {
-    loaded && store.visibleMessages(for: agentId).isEmpty
+    loaded && store.hasLoadedTranscript(for: agentId) && store.visibleMessages(for: agentId).isEmpty
       && (store.queuedByAgent[agentId] ?? []).isEmpty && (store.failedByAgent[agentId] ?? []).isEmpty
       && store.statusByAgent[agentId]?.status != .running
   }

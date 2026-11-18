@@ -289,11 +289,20 @@ extension HostStore {
       // meanwhile wait for it.
       let isTail = before == nil
       if isTail { tailFetchStarted(key) }
-      transcript =
-        (try? await backend.request(
+      do {
+        transcript = try await backend.request(
           .agentsTranscript,
           LiveParams(agent_id: key, limit: Self.transcriptPage, before: before),
-          as: RemoteTranscript.self)) ?? Self.emptyTranscript
+          as: RemoteTranscript.self)
+        transcriptErrorByAgent[key] = nil
+      } catch let error as Transport.TransportError where error.isTransient && messagesByAgent[key] == nil {
+        // A timeout says nothing about the chat being empty; a long one would show "Nothing yet".
+        transcriptErrorByAgent[key] = Self.describe(error)
+        if isTail { tailFetchLanded(key, page: Self.emptyTranscript) }
+        return
+      } catch {
+        transcript = Self.emptyTranscript
+      }
       if isTail {
         if !isStale(transcript, for: key) {
           replaceIfNewEpoch(transcript, for: key)
@@ -398,6 +407,11 @@ extension HostStore {
   /// Messages to render: the server's, then anything still in flight.
   public func visibleMessages(for key: String) -> [RemoteMessage] {
     (messagesByAgent[key] ?? []) + (optimisticByAgent[key] ?? [])
+  }
+
+  /// Whether a first page has come back, so an empty chat can be told from one still loading.
+  public func hasLoadedTranscript(for key: String) -> Bool {
+    messagesByAgent[key] != nil
   }
 
   public func hasOlderMessages(for key: String) -> Bool {

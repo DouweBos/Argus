@@ -119,6 +119,8 @@ public struct AgentTranscriptView: View {
         if messages.isEmpty, let error = host.transcriptErrorByAgent[agentKey] {
           EmptyState(icon: "exclamationmark.triangle", title: "Couldn't load this chat", body: error)
             .allowsHitTesting(false)
+        } else if messages.isEmpty, !host.hasLoadedTranscript(for: agentKey) {
+          Loading(label: "Reading chat…").allowsHitTesting(false)
         } else if messages.isEmpty {
           EmptyState(
             icon: Icon.agent,
