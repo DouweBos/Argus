@@ -62,6 +62,7 @@
             }
           }
         }
+        .listStyle(.plain)
         .navigationTitle("Home")
       }
     }

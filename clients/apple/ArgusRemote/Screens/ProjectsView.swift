@@ -57,6 +57,7 @@ struct ProjectsView: View {
         Btn(label: "Pair a computer", icon: Icon.plus, hugs: true) { router.push(.pair) }
       }
     }
+    .listStyle(.plain)
     .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
     .contentMargins(.horizontal, width > Self.maxWidth + 80 ? (width - Self.maxWidth) / 2 : nil, for: .scrollContent)
     .navigationTitle("Home")

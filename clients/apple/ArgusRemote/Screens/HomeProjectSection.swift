@@ -32,6 +32,10 @@ struct HomeProjectSection<Header: View>: View {
         if !triage.needsYou.isEmpty {
           SidebarSectionHeader(title: "Needs you").listRowSeparator(.hidden)
           rows(triage.needsYou)
+          // Without a rule of their own the rest read as more of what needs you.
+          if !triage.active.isEmpty {
+            SidebarSectionHeader(title: "Sessions").listRowSeparator(.hidden)
+          }
         }
         rows(triage.active)
         if !triage.folded.isEmpty {
