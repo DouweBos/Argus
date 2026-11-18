@@ -78,6 +78,8 @@ export const RemoteSession = z.object({
   snoozed_until: z.number().nullable().optional(),
   /** A turn finished while no client had it open. Absent on older hosts. */
   unread: z.boolean().optional(),
+  /** Epoch ms of its latest user or agent message; null when it has none. Absent on older hosts. */
+  last_message_at: z.number().nullable().optional(),
   /** Set while it is one slot of a compare run. Absent on older hosts. */
   compare_group: SessionCompareGroup.nullable().optional(),
   /** The project won't push this branch: it's the protected default branch. Absent on older hosts. */

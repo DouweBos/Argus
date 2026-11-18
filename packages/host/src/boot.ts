@@ -86,6 +86,7 @@ import { killTunnelsNow } from "./services/remote/tunnelManager";
 import { restoreScratchPads } from "./services/scratchPad/manager";
 import { migrateLegacySecretStores } from "./services/secrets/legacyStores";
 import { stopAllBranchTracking } from "./services/session/branchTracker";
+import { stopLastMessageStamps } from "./services/session/lastMessage";
 import { restoreRepoRoots } from "./services/session/manager";
 import {
   startSessionTriage,
@@ -310,6 +311,7 @@ export function stopHostServices(): void {
   stopSessionPullRequests();
   stopPrWatches();
   stopWorktreeCleanup();
+  stopLastMessageStamps();
   stopSessionTriage();
   stopHostConversations();
   stopLiveActivities();

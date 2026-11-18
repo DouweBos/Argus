@@ -15,6 +15,7 @@ import {
   sessionActivity,
   sessionTitle,
   shortAge,
+  sortSessionsByRecency,
 } from "@argus/client-core";
 import {
   AppSidebar,
@@ -148,8 +149,10 @@ function ProjectSection({
   const current = sessionOfScreen(screen);
   const agentsIn = (session: RemoteSession) =>
     (agents ?? []).filter((a) => a.session_id === session.id);
-  const worktrees = (sessions ?? []).filter(
-    (s) => s.kind === "worktree" || s.kind === "automation_host",
+  const worktrees = sortSessionsByRecency(
+    (sessions ?? []).filter(
+      (s) => s.kind === "worktree" || s.kind === "automation_host",
+    ),
   );
   const searching = query.length > 0;
   const projectHit = matches(project.name, query);

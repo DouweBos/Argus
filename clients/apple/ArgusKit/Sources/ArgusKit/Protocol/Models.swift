@@ -80,6 +80,8 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var snoozedUntil: Double?
   /// A turn finished while nobody had it open. Nil on older computers.
   public var unread: Bool?
+  /// Its latest user or agent message, in epoch milliseconds. Nil without one, and on older computers.
+  public var lastMessageAt: Double?
   /// Set while it is one slot of a compare run. Nil on older computers.
   public var compareGroup: RemoteCompareGroup?
   /// The project won't push this branch: it's the protected default branch. Nil on older computers.
@@ -112,6 +114,7 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case settled
     case snoozedUntil = "snoozed_until"
     case unread
+    case lastMessageAt = "last_message_at"
     case compareGroup = "compare_group"
     case pushLocked = "push_locked"
     case mergeLocked = "merge_locked"

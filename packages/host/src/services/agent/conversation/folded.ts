@@ -8,6 +8,7 @@ import { IMAGES_ONLY_PROMPT } from "@argus/remote-protocol";
 import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
 import { generateChatTitle } from "../../llm/titleGenerator";
+import { stampUserMessage } from "../../session/lastMessage";
 import { saveConversation } from "../chatHistory";
 import { runnerCommandFor } from "../runnerCommand";
 import {
@@ -155,6 +156,7 @@ export function userMessage(
   const { sent, ...rest } = options;
   const command = runnerCommandFor(agentId, sent ?? text);
   update(agentId, entry, (c) => withUserMessage(c, text, { ...rest, command }));
+  stampUserMessage(entry.sessionId);
   maybeGenerateTitle(agentId, entry, text);
 }
 

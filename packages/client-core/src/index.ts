@@ -31,6 +31,7 @@ export * from "./quickOpen/ranker";
 export * from "./routes/design";
 export * from "./routes/route";
 export * from "./sessions/sessionActivity";
+export * from "./sessions/sessionRecency";
 export * from "./startAgent";
 export * from "./terminals/terminalFeed";
 export * from "./transcript/backgroundTasks";

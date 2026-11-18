@@ -52,7 +52,7 @@ extension SessionActivity {
   }
 }
 
-/// A list of sessions split by attention, each keeping the order it came in.
+/// A list of sessions split by attention, each newest message first (`SessionRecency`).
 public struct SessionTriage: Sendable {
   public var needsYou: [RemoteSession] = []
   /// Working first, then idle.
@@ -76,7 +76,8 @@ public struct SessionTriage: Sendable {
       case .snoozed: snoozed.append(session)
       }
     }
-    active = working + idle
+    (needsYou, done, snoozed) = (SessionRecency.sorted(needsYou), SessionRecency.sorted(done), SessionRecency.sorted(snoozed))
+    active = SessionRecency.sorted(working) + SessionRecency.sorted(idle)
   }
 
   /// Everything folded away.
@@ -163,7 +164,9 @@ public struct SessionGroupTriage: Sendable {
     }
     // The root keeps its place at the top.
     let roots = (working + idle).filter(\.isRoot)
-    active = roots + working.filter { !$0.isRoot } + idle.filter { !$0.isRoot }
+    func recent(_ groups: [SessionGroup]) -> [SessionGroup] { SessionRecency.sorted(groups, session: \.session) }
+    (needsYou, done, snoozed) = (recent(needsYou), recent(done), recent(snoozed))
+    active = roots + recent(working.filter { !$0.isRoot }) + recent(idle.filter { !$0.isRoot })
   }
 
   public var folded: [SessionGroup] { done + snoozed }

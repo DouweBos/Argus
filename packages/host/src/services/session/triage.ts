@@ -3,6 +3,7 @@
  * snoozed until a time, and whether a turn finished while nobody was looking.
  * `$ARGUS_HOME/session-triage.json`, keyed by session id. A snooze that runs
  * out clears itself and notifies, so the session comes back on its own.
+ * Also when its last message went either way, so the lists sort by recency.
  */
 
 import path from "node:path";
@@ -10,6 +11,7 @@ import { addHostEventSink, emitHostEvent } from "@argus/host/bus";
 import { warn } from "@argus/host/logger";
 import { argusHomeDir } from "../../lib/argusHome";
 import { appState } from "../../state";
+import { loadHistoryIndex } from "../agent/chatHistory";
 import { readEnvelope, writeJson } from "../automation/jsonFile";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 
@@ -26,6 +28,8 @@ interface TriageRecord {
   /** Epoch ms the session comes back. */
   snoozed_until?: number;
   unread?: boolean;
+  /** Epoch ms of the latest user or agent message in it. */
+  last_message_at?: number;
 }
 
 /** What a session listing carries. */
@@ -33,9 +37,14 @@ export interface SessionTriage {
   settled: boolean | null;
   snoozed_until: number | null;
   unread: boolean;
+  last_message_at: number | null;
 }
 
 let records: Map<string, TriageRecord> | null = null;
+/** A stamp held back by the throttle, written at the next save. */
+let dirty = false;
+/** Per repo root: each session's newest saved chat, for sessions older than the stamp. */
+const historyBackfill = new Map<string, Map<string, number>>();
 const timers = new Map<string, ReturnType<typeof setTimeout>>();
 let removeSink: (() => void) | null = null;
 
@@ -58,8 +67,13 @@ function load(): Map<string, TriageRecord> {
 
 function save(): void {
   const all = [...load().values()].filter(
-    (r) => r.settled !== undefined || r.snoozed_until !== undefined || r.unread,
+    (r) =>
+      r.settled !== undefined ||
+      r.snoozed_until !== undefined ||
+      r.unread ||
+      r.last_message_at !== undefined,
   );
+  dirty = false;
   writeJson(filePath(), { version: SCHEMA_VERSION, sessions: all });
 }
 
@@ -82,7 +96,51 @@ export function sessionTriage(id: string): SessionTriage {
     settled: r?.settled ?? null,
     snoozed_until: r?.snoozed_until ?? null,
     unread: r?.unread === true,
+    last_message_at: r?.last_message_at ?? backfilledLastMessage(id),
   };
+}
+
+/** Its newest saved chat's end; one index read per project per host run. */
+function backfilledLastMessage(id: string): number | null {
+  const repoRoot = appState.sessions.get(id)?.repo_root;
+  if (!repoRoot) {
+    return null;
+  }
+  let byId = historyBackfill.get(repoRoot);
+  if (!byId) {
+    byId = new Map();
+    for (const entry of loadHistoryIndex(repoRoot)) {
+      const sid = entry.argusSessionId;
+      if (sid && entry.endedAt > (byId.get(sid) ?? 0)) {
+        byId.set(sid, entry.endedAt);
+      }
+    }
+    historyBackfill.set(repoRoot, byId);
+  }
+
+  return byId.get(id) ?? null;
+}
+
+/** Stamp its latest message in memory; it's written by `publishLastMessage` or the next save. */
+export function setLastMessageAt(id: string, at: number): void {
+  const all = load();
+  const record = all.get(id);
+  if (!appState.sessions.has(id) || (record?.last_message_at ?? 0) >= at) {
+    return;
+  }
+  all.set(id, { ...(record ?? { id }), last_message_at: at });
+  dirty = true;
+}
+
+/** Write any held stamp and tell the clients. */
+export function publishLastMessage(id: string): void {
+  if (!appState.sessions.has(id)) {
+    return;
+  }
+  if (dirty) {
+    save();
+  }
+  emitHostEvent("session:updated", { id });
 }
 
 function requireSession(id: string): void {
@@ -226,6 +284,10 @@ export function startSessionTriage(): void {
 }
 
 export function stopSessionTriage(): void {
+  if (dirty) {
+    save();
+  }
+  historyBackfill.clear();
   for (const timer of timers.values()) {
     clearTimeout(timer);
   }

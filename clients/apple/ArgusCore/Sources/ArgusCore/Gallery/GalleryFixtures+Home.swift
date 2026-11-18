@@ -57,14 +57,14 @@ extension GalleryFixtures {
       session("s-stack-1", branch: "stack-protocol", name: "Stack: wire protocol", pr: (420, "open")),
       session(
         "s-stack-2", branch: "stack-host", name: "Stack: host restack", pr: (421, "open"),
-        extra: ["base_branch": "stack-protocol", "parent_session_id": "s-stack-1"]),
+        extra: ["base_branch": "stack-protocol", "parent_session_id": "s-stack-1", "last_message_at": ago(10)]),
       session(
         "s-stack-3", branch: "stack-ui", name: "Stack: sidebar and menus",
         // Unread: it sits in Needs you, away from its parent, and says what it's on.
         extra: ["base_branch": "stack-host", "parent_session_id": "s-stack-2", "unread": true]),
       session(
         "s-setup", branch: "gallery-stories", name: "Gallery stories for sessions", status: "initializing",
-        extra: ["progress": ["current": 3, "total": 5]]),
+        extra: ["progress": ["current": 3, "total": 5], "last_message_at": ago(40)]),
       session(
         "s-failed", branch: "pnpm-upgrade", name: "Upgrade pnpm", status: "error",
         extra: ["setup_error": "pnpm install exited with code 1: ERR_PNPM_OUTDATED_LOCKFILE Cannot install with \"frozen-lockfile\""]),
@@ -74,7 +74,8 @@ extension GalleryFixtures {
           "progress": [
             "current": 0, "total": 2, "phase": "teardown",
             "detail": "Container storefront-db-14  Stopping",
-          ]
+          ],
+          "last_message_at": ago(3),
         ]),
       session(
         "s-teardown-failed", branch: "search-index", name: "Search index rebuild", status: "error",
@@ -222,14 +223,17 @@ extension GalleryFixtures {
       ],
       "conductor": [
         session("c-root", repo: "conductor", branch: "main", kind: "project_root"),
-        session("c-1", repo: "conductor", branch: "long-press", name: "Long press gesture"),
+        session(
+          "c-1", repo: "conductor", branch: "long-press", name: "Long press gesture",
+          extra: ["last_message_at": ago(180)]),
         // Conductor lives on GitLab: its session shows a merge request.
         session(
           "c-mr", repo: "conductor", branch: "pinch-zoom", name: "Pinch to zoom",
           extra: [
             "pull_request": [
               "number": 57, "state": "open", "url": "https://gitlab.com/acme/devices/conductor/-/merge_requests/57",
-            ]
+            ],
+            "last_message_at": ago(5),
           ]),
       ],
       "luma": [

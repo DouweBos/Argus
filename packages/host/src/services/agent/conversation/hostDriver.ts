@@ -15,6 +15,11 @@ import type {
 import { addHostEventSink } from "@argus/host/bus";
 import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
+import {
+  flushLastMessage,
+  stampAgentMessage,
+  stampUserMessage,
+} from "../../session/lastMessage";
 import { markSessionUnread } from "../../session/triage";
 import { capture as telemetryCapture } from "../../telemetry/telemetry";
 import { sendAgentMessage } from "../agentService";
@@ -216,6 +221,7 @@ function streamLine(agentId: string, entry: Tracked, line: string): void {
   update(agentId, entry, (c) => reduceEvent(c, event));
   observeArtifactCalls(event);
   if (event.type === "assistant") {
+    stampAgentMessage(entry.sessionId);
     for (const block of event.message.content ?? []) {
       if (block.type === "tool_use" && isAwaitingAnswerTool(block.name)) {
         notifyIfStillUnanswered(agentId, block.id, block.name);
@@ -249,6 +255,7 @@ function statusChanged(agentId: string, entry: Tracked, status: string): void {
     return;
   }
   if (status === "stopped" || status === "error") {
+    flushLastMessage(entry.sessionId);
     pinTurnEnd(agentId, entry);
     entry.inflight = false;
     update(agentId, entry, (c) =>
@@ -264,6 +271,7 @@ function statusChanged(agentId: string, entry: Tracked, status: string): void {
   }
   entry.inflight = false;
   save(agentId);
+  flushLastMessage(entry.sessionId);
   const finished = entry.finished;
   entry.finished = undefined;
   // A queued message's checkpoint marks this turn's end itself.
@@ -371,6 +379,7 @@ function notifyIfStillUnanswered(
 }
 
 function injected(agentId: string, entry: Tracked, payload: McpMessage): void {
+  stampUserMessage(entry.sessionId);
   const command = runnerCommandFor(agentId, payload.message);
   update(agentId, entry, (c) =>
     withInjectedPrompt(c, {
