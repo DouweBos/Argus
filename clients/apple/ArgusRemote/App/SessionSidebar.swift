@@ -10,7 +10,6 @@ struct SessionSidebar: View {
   @Environment(Router.self) private var router
   @Environment(ProposalsStore.self) private var proposals
   @Environment(AutomationsStore.self) private var automations
-  @State private var unfolded: Set<String> = []
   @State private var snoozing: RemoteSession?
 
   var body: some View {
@@ -46,7 +45,7 @@ struct SessionSidebar: View {
           items(triage.active, in: project)
           if !triage.folded.isEmpty {
             foldToggle(project, triage: triage)
-            if unfolded.contains(project.repoRoot) {
+            if router.unfoldedProjects.contains(project.repoRoot) {
               items(triage.folded, in: project)
             }
           }
@@ -83,29 +82,21 @@ struct SessionSidebar: View {
 
   private var allSessions: [RemoteSession] { host.sessionsByRepo.values.flatMap { $0 } }
 
-  /// Session rows, a compare run's slots under its header; they share a section since a run sorts as one.
-  /// A stacked session sits under its parent when both are here; apart, its caption names the parent.
-  @ViewBuilder
+  /// Session rows, a compare run's slots under its header, a stacked session under its parent.
   private func items(_ groups: [SessionGroup], in project: RemoteProject, caption: String? = nil) -> some View {
-    let arranged = SessionStack.arrange(groups, session: \.session, all: allSessions)
-    ForEach(CompareSessionRow.make(arranged.items)) { item in
-      switch item {
-      case .session(let group):
-        let nesting = arranged.nesting[group.id] ?? .none
-        sessionItem(
-          group, in: project,
-          caption: [caption, nesting.caption].compactMap { $0 }.joined(separator: " · ").nilIfEmpty,
-          indent: nesting.depth, stacked: nesting.depth > 0)
-      case .compare(let run, let slots):
-        // Not a selection: the sidebar selects sessions, so the run opens in the detail column.
-        Button {
-          router.open(.compareRun(groupId: run.id), in: .home)
-        } label: {
-          CompareRunHeaderRow(run: run, selected: router.detailStack.last == .compareRun(groupId: run.id))
-        }
-        .buttonStyle(.argusPlain)
-        ForEach(slots) { sessionItem($0, in: project, caption: caption, slot: true, indent: 1) }
+    SessionGroupRows(groups, all: allSessions) { group, placement in
+      sessionItem(
+        group, in: project,
+        caption: placement.slot ? caption : [caption, placement.caption].compactMap { $0 }.joined(separator: " · ").nilIfEmpty,
+        slot: placement.slot, indent: placement.indent, stacked: placement.stacked)
+    } header: { run in
+      // Not a selection: the sidebar selects sessions, so the run opens in the detail column.
+      Button {
+        router.open(.compareRun(groupId: run.id), in: .home)
+      } label: {
+        CompareRunHeaderRow(run: run, selected: router.detailStack.last == .compareRun(groupId: run.id))
       }
+      .buttonStyle(.argusPlain)
     }
   }
 
@@ -127,9 +118,13 @@ struct SessionSidebar: View {
 
   /// "2 done · 1 snoozed", opening the project's folded sessions underneath.
   private func foldToggle(_ project: RemoteProject, triage: SessionGroupTriage) -> some View {
-    let open = unfolded.contains(project.repoRoot)
+    let open = router.unfoldedProjects.contains(project.repoRoot)
     return Button {
-      if open { unfolded.remove(project.repoRoot) } else { unfolded.insert(project.repoRoot) }
+      if open {
+        router.unfoldedProjects.remove(project.repoRoot)
+      } else {
+        router.unfoldedProjects.insert(project.repoRoot)
+      }
       Telemetry.capture(.sessionsFoldToggled(expanded: !open, done: triage.done.count, snoozed: triage.snoozed.count))
     } label: {
       Label(triage.foldedLabel, systemImage: open ? Icon.chevronDown : Icon.chevronRight)
@@ -189,6 +184,7 @@ struct SessionSidebar: View {
         } else {
           router.collapsedProjects.insert(project.repoRoot)
         }
+        Telemetry.capture(.projectCollapseToggled(collapsed: !open, source: .sidebar))
       })
   }
 }

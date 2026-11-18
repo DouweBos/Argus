@@ -14,12 +14,13 @@ struct ProjectView: View {
 
   @State private var showingStopped = false
   @State private var searchingChats = false
-  @State private var showingFolded = false
   @State private var snoozing: RemoteSession?
   /// The session the stacked-session sheet is open for.
   @State private var stackingOn: RemoteSession?
 
   private var sessions: [RemoteSession] { host.sessionsByRepo[repoRoot] ?? [] }
+  /// Shared with Home's card and the iPad sidebar, so a project's fold is the same everywhere.
+  private var showingFolded: Bool { router.unfoldedProjects.contains(repoRoot) }
 
   /// Sessions with their agents, project root first — the order the Mac sidebar uses.
   private var groups: [SessionGroup] { host.sessionGroups(repoRoot: repoRoot) }
@@ -119,19 +120,13 @@ struct ProjectView: View {
     .onResume(connected: host.connection == .ready) { await refreshGitStatus() }
   }
 
-  /// Session links, a compare run's slots under its header; they share a section since a run sorts as one.
-  /// A stacked session sits under its parent when both are here; apart, its caption names the parent.
+  /// Session links, a compare run's slots under its header, a stacked session under its parent.
   private func links(_ groups: [SessionGroup]) -> some View {
-    let arranged = SessionStack.arrange(groups, session: \.session, all: sessions)
-    return ForEach(CompareSessionRow.make(arranged.items)) { row in
-      switch row {
-      case .session(let group):
-        let nesting = arranged.nesting[group.id] ?? .none
-        sessionLink(group, indent: nesting.depth, stacked: nesting.depth > 0, caption: nesting.caption)
-      case .compare(let run, let slots):
-        NavigationLink(value: Route.compareRun(groupId: run.id)) { CompareRunHeaderRow(run: run) }
-        ForEach(slots) { sessionLink($0, slot: true, indent: 1) }
-      }
+    SessionGroupRows(groups, all: sessions) { group, placement in
+      sessionLink(
+        group, slot: placement.slot, indent: placement.indent, stacked: placement.stacked, caption: placement.caption)
+    } header: { run in
+      NavigationLink(value: Route.compareRun(groupId: run.id)) { CompareRunHeaderRow(run: run) }
     }
   }
 
@@ -157,9 +152,10 @@ struct ProjectView: View {
   }
 
   private func toggleFolded(_ triage: SessionGroupTriage) {
-    showingFolded.toggle()
+    let expand = !showingFolded
+    if expand { router.unfoldedProjects.insert(repoRoot) } else { router.unfoldedProjects.remove(repoRoot) }
     Telemetry.capture(
-      .sessionsFoldToggled(expanded: showingFolded, done: triage.done.count, snoozed: triage.snoozed.count))
+      .sessionsFoldToggled(expanded: expand, done: triage.done.count, snoozed: triage.snoozed.count))
   }
 
   @ViewBuilder

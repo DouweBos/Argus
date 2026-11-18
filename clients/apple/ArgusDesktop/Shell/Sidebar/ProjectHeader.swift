@@ -84,17 +84,10 @@ struct ProjectHeader: View {
   /// The root checkout's branch, with a dot while its agents work.
   private func rootState(_ root: RemoteSession) -> some View {
     let activity = SessionActivity(session: root, agents: rootAgents)
-    return HStack(spacing: 4) {
-      if activity.showsDot { StatusDot(tone: activity.tone, pulse: activity.isBusy) }
-      Text(git?.branch ?? root.branch)
-        .lineLimit(1)
-        .truncationMode(.middle)
-    }
-    // Framed as a pair so a short branch keeps the dot beside it.
-    .frame(maxWidth: 100, alignment: .trailing)
-    .font(.scaled(size: 11))
-    .foregroundStyle(root.status == .error ? theme.error : theme.textMuted)
-    .help(activity.statusText.map { "\(git?.branch ?? root.branch) · \($0)" } ?? (git?.branch ?? root.branch))
+    let branch = git?.branch ?? root.branch
+    return ProjectRootState(activity: activity, branch: branch)
+      .font(.scaled(size: 11))
+      .help(activity.statusText.map { "\(branch) · \($0)" } ?? branch)
   }
 
   /// The drive the worktrees live on; one that has gone missing wins.

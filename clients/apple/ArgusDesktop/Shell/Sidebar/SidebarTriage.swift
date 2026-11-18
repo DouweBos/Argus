@@ -81,31 +81,6 @@ struct SidebarSessionRows: View {
   }
 }
 
-/// A section's quiet header: its title, a rule, and an optional trailing control.
-struct SidebarSectionHeader<Trailing: View>: View {
-  @Environment(\.theme) private var theme
-  let title: String
-  @ViewBuilder var trailing: Trailing
-
-  var body: some View {
-    HStack {
-      Text(title)
-        .font(.scaled(size: 11, weight: .medium))
-        .foregroundStyle(theme.textMuted)
-      Rectangle().fill(theme.border).frame(height: 1)
-      trailing
-    }
-    .padding(.leading, 8)
-    .frame(minHeight: 20)
-  }
-}
-
-extension SidebarSectionHeader where Trailing == EmptyView {
-  init(title: String) {
-    self.init(title: title) { EmptyView() }
-  }
-}
-
 /// Every session that's waiting on you, from every project, above the projects.
 struct NeedsYouSidebarSection: View {
   @Environment(HostStore.self) private var store
@@ -123,39 +98,22 @@ struct NeedsYouSidebarSection: View {
 
 /// Done and snoozed sessions, folded under one quiet row until asked for.
 struct FoldedSessions: View {
-  @Environment(\.theme) private var theme
   let triage: SessionTriage
   @Binding var expanded: Bool
 
   var body: some View {
     if !triage.folded.isEmpty {
       SidebarRow(selected: false) { expanded.toggle() } content: {
-        HStack(spacing: 6) {
-          Image(systemName: expanded ? Icon.chevronDown : Icon.chevronRight)
-            .font(.scaled(size: 9, weight: .semibold))
-            .frame(width: 8)
-          Text(label).font(.scaled(size: 11))
-          Spacer(minLength: 0)
-        }
-        .foregroundStyle(theme.textMuted)
-        .padding(.vertical, 3)
+        FoldedSessionsLabel(triage.foldedLabel, expanded: expanded)
+          .padding(.vertical, 3)
       }
       .help(expanded ? "Hide done and snoozed sessions" : "Show done and snoozed sessions")
-      .accessibilityLabel(label)
-      .accessibilityValue(expanded ? "Expanded" : "Collapsed")
       if expanded {
         SidebarSessionRows(sessions: triage.done)
           .opacity(0.7)
         SidebarSessionRows(sessions: triage.snoozed)
       }
     }
-  }
-
-  private var label: String {
-    var parts: [String] = []
-    if !triage.done.isEmpty { parts.append("\(triage.done.count) done") }
-    if !triage.snoozed.isEmpty { parts.append("\(triage.snoozed.count) snoozed") }
-    return parts.joined(separator: " · ")
   }
 }
 

@@ -82,6 +82,14 @@ public struct SessionTriage: Sendable {
   /// Everything folded away.
   public var folded: [RemoteSession] { done + snoozed }
 
+  /// "2 done · 1 snoozed".
+  public var foldedLabel: String { Self.foldedLabel(done: done.count, snoozed: snoozed.count) }
+
+  public static func foldedLabel(done: Int, snoozed: Int) -> String {
+    [done == 0 ? nil : "\(done) done", snoozed == 0 ? nil : "\(snoozed) snoozed"]
+      .compactMap { $0 }.joined(separator: " · ")
+  }
+
   /// A compare run sorts as its most urgent slot, so its slots stay together under one header.
   static func runAttention(
     _ pairs: some Sequence<(String?, SessionAttention)>
@@ -161,8 +169,5 @@ public struct SessionGroupTriage: Sendable {
   public var folded: [SessionGroup] { done + snoozed }
 
   /// "2 done · 1 snoozed".
-  public var foldedLabel: String {
-    [done.isEmpty ? nil : "\(done.count) done", snoozed.isEmpty ? nil : "\(snoozed.count) snoozed"]
-      .compactMap { $0 }.joined(separator: " · ")
-  }
+  public var foldedLabel: String { SessionTriage.foldedLabel(done: done.count, snoozed: snoozed.count) }
 }

@@ -14,6 +14,7 @@ struct ProjectsView: View {
   @State private var openingPad = false
   @State private var padToDelete: RemoteSession?
   @State private var projectToRemove: RemoteProject?
+  @State private var snoozing: RemoteSession?
   @State private var width: CGFloat = 0
 
   /// As wide as the Mac's home column gets; past that the margins grow.
@@ -98,12 +99,15 @@ struct ProjectsView: View {
     } message: {
       Text("Its agents and terminals stop. The repository and its worktrees stay on \(hostName).")
     }
+    .sheet(item: $snoozing) { session in
+      NavigationStack { SnoozeUntilForm(session: session) }
+    }
     .refreshable { await refresh() }
     .liveRefresh(enabled: app.identity != nil && host.connection == .ready) { await refresh() }
     .liveRefresh(enabled: app.identity != nil && host.connection == .ready, every: .seconds(60)) {
       await host.loadUsageLimits()
     }
-    // A project's session count needs its sessions; agents come from the cross-project list.
+    // Each card lists its project's sessions; agents come from the cross-project list.
     .task(id: host.projects.map(\.repoRoot)) {
       for project in host.projects where host.sessionsByRepo[project.repoRoot] == nil {
         await host.loadSessions(repoRoot: project.repoRoot)
@@ -132,40 +136,13 @@ struct ProjectsView: View {
         }
       }
     } else {
-      Section("Projects") {
-        // The Mac's card grid: one column on a phone, more as the width allows.
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: 12)], spacing: 12) {
-          ForEach(host.projects) { projectCard($0) }
+      ForEach(host.projects) { project in
+        HomeProjectSection(
+          project: project, newSession: { newSession(in: project) }, snooze: { snoozing = $0 },
+          remove: { projectToRemove = project }
+        ) {
+          if project.id == host.projects.first?.id { Text("Projects") }
         }
-        .listRowInsets(EdgeInsets())
-        .listRowBackground(Color.clear)
-      }
-    }
-  }
-
-  private func projectCard(_ project: RemoteProject) -> some View {
-    ProjectCard(
-      project: project, agents: host.agents(inProject: project.repoRoot),
-      sessions: (host.sessionsByRepo[project.repoRoot] ?? []).count { $0.kind == .worktree }
-    ) {
-      if host.hasControl {
-        Button { newSession(in: project) } label: {
-          Image(systemName: Icon.plus).frame(width: 32, height: 32).contentShape(Rectangle())
-        }
-        .buttonStyle(.argusPlain)
-        .foregroundStyle(theme.accent)
-        .padding(-8)
-        .accessibilityLabel("New session in \(project.name)")
-      }
-    }
-    .onTapGesture { (stackPush ?? router.push)(.project(repoRoot: project.repoRoot, name: project.name)) }
-    .accessibilityElement(children: .contain)
-    .accessibilityLabel("Project \(project.name)")
-    .accessibilityAddTraits(.isButton)
-    .contextMenu {
-      if host.hasControl {
-        Button("New session", systemImage: Icon.plus) { newSession(in: project) }
-        Button("Remove Project", systemImage: Icon.trash, role: .destructive) { projectToRemove = project }
       }
     }
   }

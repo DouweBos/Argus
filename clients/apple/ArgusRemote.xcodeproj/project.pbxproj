@@ -49,6 +49,7 @@
 		91BEB5E2000254899FF02DBF /* DescribeAutomationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 894443D21C1F9129A450074B /* DescribeAutomationView.swift */; };
 		97AF0DF41C25983BAD9692C1 /* PullRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74103E5844EC73EB127B8F8A /* PullRequestView.swift */; };
 		9EC0F026CA4FC53AA74669D9 /* ProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117E737A68AD0170E2CC50F7 /* ProjectsView.swift */; };
+		A1F0C0DE0000000000000B01 /* HomeProjectSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0C0DE0000000000000F01 /* HomeProjectSection.swift */; };
 		A02801135DF7D4CE5879D439 /* LockScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E4CF7C9E04D0A1D6F57EDA5 /* LockScreen.swift */; };
 		A1C0FFEE000000000000AA02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1C0FFEE000000000000AA01 /* Assets.xcassets */; };
 		A1E0F1000000000000000001 /* FileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E0F1000000000000000002 /* FileView.swift */; };
@@ -184,6 +185,7 @@
 		0E2171FDF4B199BD1A0795D6 /* NotificationRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationRouter.swift; sourceTree = "<group>"; };
 		0EF27D5904269DE56D427462 /* StashesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StashesView.swift; sourceTree = "<group>"; };
 		117E737A68AD0170E2CC50F7 /* ProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsView.swift; sourceTree = "<group>"; };
+		A1F0C0DE0000000000000F01 /* HomeProjectSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeProjectSection.swift; sourceTree = "<group>"; };
 		13099DE3A6A5F9047693B53C /* StoppedAgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoppedAgentView.swift; sourceTree = "<group>"; };
 		15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickRunView.swift; sourceTree = "<group>"; };
 		0814D7758DD96C699F098851 /* NewSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSessionView.swift; sourceTree = "<group>"; };
@@ -522,6 +524,7 @@
 				2AA1C76CC7A23652BD96252A /* InboxView.swift */,
 				D2978877FCC50AC76553762A /* PairView.swift */,
 				117E737A68AD0170E2CC50F7 /* ProjectsView.swift */,
+				A1F0C0DE0000000000000F01 /* HomeProjectSection.swift */,
 				A0194276208D56EEC2428E4B /* ProjectView.swift */,
 				6502F79F862A2272184C48C6 /* RunView.swift */,
 				C0A9E5000000000000000002 /* CompareRunScreen.swift */,
@@ -1103,6 +1106,7 @@
 				C230860282D4938F66D435CF /* PairView.swift in Sources */,
 				6897D3167EEB3794CED55DDA /* ProjectView.swift in Sources */,
 				9EC0F026CA4FC53AA74669D9 /* ProjectsView.swift in Sources */,
+				A1F0C0DE0000000000000B01 /* HomeProjectSection.swift in Sources */,
 				B77BE7692399E9374B9372E5 /* PushTokens.swift in Sources */,
 				A5D4478D135C8571D9B0C25E /* RootView.swift in Sources */,
 				AE5043C2BADDF974895EAC5C /* Route.swift in Sources */,

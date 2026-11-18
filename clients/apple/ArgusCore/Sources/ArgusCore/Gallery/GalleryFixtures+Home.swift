@@ -215,6 +215,10 @@ extension GalleryFixtures {
       "react-native-client": [
         session("rn-root", repo: "react-native-client", branch: "main", kind: "project_root"),
         session("rn-1", repo: "react-native-client", branch: "android-ci", name: "Fix the Android build", pr: (88, "open")),
+        session(
+          "rn-2", repo: "react-native-client", branch: "player-scrubber", name: "Scrubber thumbnails",
+          extra: ["unread": true]),
+        session("rn-3", repo: "react-native-client", branch: "tv-focus", name: "TV focus ring", pr: (84, "merged")),
       ],
       "conductor": [
         session("c-root", repo: "conductor", branch: "main", kind: "project_root"),
@@ -231,6 +235,7 @@ extension GalleryFixtures {
       "luma": [
         session("l-root", repo: "luma", branch: "main", kind: "project_root"),
         session("l-1", repo: "luma", branch: "dark-tokens", name: "Dark mode tokens"),
+        session("l-2", repo: "luma", branch: "icon-sweep", name: "Icon stroke sweep", extra: ["settled": true]),
       ],
     ]
     for (project, list) in sessions {

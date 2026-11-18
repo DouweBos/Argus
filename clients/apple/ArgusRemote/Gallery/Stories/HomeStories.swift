@@ -9,6 +9,8 @@
     static var all: [GalleryStory] {
       [
         GalleryStory("home/loaded", fixtures: GalleryFixtures.home, setup: load) { ProjectsView() },
+        // The project cards alone, below the fold in `home/loaded`.
+        GalleryStory("home/projects", fixtures: GalleryFixtures.home, setup: load) { ProjectsStory() },
         GalleryStory("home/empty", fixtures: GalleryFixtures.homeEmpty, setup: load) { ProjectsView() },
         accountRemoved,
         GalleryStory("agents/overview", fixtures: GalleryFixtures.home, setup: load) { AllAgentsView() },
@@ -47,6 +49,21 @@
           UsageLimitsSectionStory()
         },
       ]
+    }
+
+    private struct ProjectsStory: View {
+      @Environment(HostStore.self) private var host
+
+      var body: some View {
+        List {
+          ForEach(host.projects) { project in
+            HomeProjectSection(project: project, newSession: {}, snooze: { _ in }, remove: {}) {
+              if project.id == host.projects.first?.id { Text("Projects") }
+            }
+          }
+        }
+        .navigationTitle("Home")
+      }
     }
 
     private struct UsageLimitsSectionStory: View {

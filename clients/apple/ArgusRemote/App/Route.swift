@@ -266,8 +266,18 @@ final class Router {
 
   /// True wherever there is room for a sidebar beside the content.
   var isSplit = false
-  /// Projects folded shut in the sidebar.
-  var collapsedProjects: Set<String> = []
+  /// Projects folded shut on Home and in the iPad sidebar, kept across launches as the Mac keeps its own.
+  var collapsedProjects = Router.stored("sidebar.collapsedProjects") {
+    didSet { UserDefaults.standard.set(collapsedProjects.sorted(), forKey: "sidebar.collapsedProjects") }
+  }
+  /// Projects showing their done and snoozed sessions.
+  var unfoldedProjects = Router.stored("sidebar.expandedFolds") {
+    didSet { UserDefaults.standard.set(unfoldedProjects.sorted(), forKey: "sidebar.expandedFolds") }
+  }
+
+  private static func stored(_ key: String) -> Set<String> {
+    Set(UserDefaults.standard.stringArray(forKey: key) ?? [])
+  }
   /// The session an agent belongs to, once the host has reported it; how an
   /// agent route finds its sidebar row.
   @ObservationIgnored var sessionOfAgent: @MainActor (String) -> String? = { _ in nil }

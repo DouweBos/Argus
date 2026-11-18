@@ -202,6 +202,15 @@ enum TelemetryEvent {
   /// Which of Home's links into another screen was followed.
   enum HomeAction: String {
     case usage, inbox, agents, automations
+    /// A session row in a project card.
+    case session
+    /// A project card's menu, to its sessions and saved chats.
+    case project
+  }
+
+  /// Which list of projects a project was folded in.
+  enum ProjectListSource: String {
+    case home, sidebar
   }
 
   /// Where adding a computer to the account started.
@@ -237,6 +246,8 @@ enum TelemetryEvent {
   case sessionRenamed(target: String)
   /// A project's (or the iPad sidebar's) folded Done and Snoozed sessions were shown or hidden.
   case sessionsFoldToggled(expanded: Bool, done: Int, snoozed: Int)
+  /// A project was folded shut or opened on Home or in the iPad sidebar.
+  case projectCollapseToggled(collapsed: Bool, source: ProjectListSource)
   case memoryEdited(action: MemoryAction)
   /// A diff review comment was added or deleted, the review sent or discarded, or an agent asked to review.
   case diffReviewed(action: DiffReviewAction, comments: Int)
@@ -363,6 +374,7 @@ enum TelemetryEvent {
     case .branchActed: "ios_branch_acted"
     case .sessionRenamed: "ios_session_renamed"
     case .sessionsFoldToggled: "ios_sessions_fold_toggled"
+    case .projectCollapseToggled: "ios_project_collapse_toggled"
     case .memoryEdited: "ios_memory_edited"
     case .diffReviewed: "ios_diff_reviewed"
     case .diffScoped: "ios_diff_scope_changed"
@@ -487,6 +499,8 @@ enum TelemetryEvent {
       ["target": target]
     case .sessionsFoldToggled(let expanded, let done, let snoozed):
       ["expanded": expanded, "done": done, "snoozed": snoozed]
+    case .projectCollapseToggled(let collapsed, let source):
+      ["collapsed": collapsed, "source": source.rawValue]
     case .memoryEdited(let action):
       ["action": action.rawValue]
     case .diffReviewed(let action, let comments):
