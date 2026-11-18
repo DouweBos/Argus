@@ -52,9 +52,9 @@ struct NewSessionSheet: View {
   private var canCreate: Bool {
     !creating
       && (!issues.isEmpty
-        || useExisting
-        ? !existingBranch.isEmpty
-        : !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        || (useExisting
+          ? !existingBranch.isEmpty
+          : !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
   }
 
   var body: some View {
