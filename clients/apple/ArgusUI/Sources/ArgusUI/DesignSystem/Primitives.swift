@@ -29,6 +29,8 @@ public struct BodyText: View {
   }
   public var body: some View {
     Text(text).font(.scaled(size: 15)).foregroundStyle(theme.text).lineLimit(lineLimit)
+      // Its lines in full, even where a list cell offers less height.
+      .fixedSize(horizontal: false, vertical: true)
   }
 }
 
@@ -42,6 +44,8 @@ public struct MutedText: View {
   }
   public var body: some View {
     Text(text).font(.scaled(size: 13)).foregroundStyle(theme.textMuted).lineLimit(lineLimit)
+      // Its lines in full, even where a list cell offers less height.
+      .fixedSize(horizontal: false, vertical: true)
   }
 }
 

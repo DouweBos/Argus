@@ -25,7 +25,8 @@ public struct MarkdownView: View {
   public var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       ForEach(Array(MarkdownBlock.parse(text).enumerated()), id: \.offset) { _, block in
-        view(for: block)
+        // Every block at its full height: a lazy stack or a list cell can offer less, and the text gets cut.
+        view(for: block).fixedSize(horizontal: false, vertical: true)
       }
     }
     .modifier(FileLinkHandling())
