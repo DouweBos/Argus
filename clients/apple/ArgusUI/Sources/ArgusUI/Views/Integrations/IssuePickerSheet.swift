@@ -27,7 +27,10 @@ public struct IssuePickerSheet: View {
       }
       .padding(.top, 10)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-      .background(theme.bg)
+      // The Mac's theme.bg is the main window's near-black; a sheet keeps its own material.
+      #if os(iOS)
+        .background(theme.bg)
+      #endif
       .navigationTitle("Linear Issues")
       .inlineNavigationTitle()
       .toolbar {
@@ -92,7 +95,11 @@ public struct IssuePickerSheet: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.argusPlain)
-    .listRowBackground(theme.bgSecondary)
+    #if os(iOS)
+      .listRowBackground(theme.bgSecondary)
+    #else
+      .listRowBackground(Color.clear)
+    #endif
   }
 
   private func search() async {
