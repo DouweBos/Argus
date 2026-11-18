@@ -29,7 +29,8 @@ struct SessionView: View {
   /// Tabs this screen has shown; one that stops stays until closed or the screen is left, as on the Mac.
   @State private var shown: [String] = []
   @State private var closed: Set<String> = []
-  @State private var confirmingStop = false
+  /// The agent whose shut-down is being confirmed.
+  @State private var stopping: String?
   @State private var continueError: String?
   @State private var moveError: String?
 
@@ -147,12 +148,15 @@ struct SessionView: View {
     } message: {
       Text(moveError ?? "")
     }
-    .confirmationDialog("Shut down this agent?", isPresented: $confirmingStop, titleVisibility: .visible) {
-      Button("Shut down", role: .destructive) { stopFocused() }
+    .confirmationDialog(
+      "Shut down this agent?", isPresented: Binding(get: { stopping != nil }, set: { if !$0 { stopping = nil } }),
+      titleVisibility: .visible
+    ) {
+      Button("Shut down", role: .destructive) { if let stopping { stop(stopping) } }
       Button("Cancel", role: .cancel) {}
     } message: {
       Text(
-        focusedAgent?.status == .running
+        agents.first { $0.agentId == stopping }?.status == .running
           ? "It stops mid-turn and anything still queued for it is discarded."
           : "Its process ends and anything still queued for it is discarded.")
     }
@@ -221,6 +225,16 @@ struct SessionView: View {
 
   /// Pinned, the computer resumes the chat whenever Argus restarts.
   @ViewBuilder private func tabMenu(_ id: String) -> some View {
+    if id == Self.draftTab {
+      if !agents.isEmpty {
+        Button("Close", systemImage: Icon.close) { setDrafting(false) }
+      }
+    } else {
+      agentTabMenu(id)
+    }
+  }
+
+  @ViewBuilder private func agentTabMenu(_ id: String) -> some View {
     if host.hasControl, host.canTogglePin(agentId: id) {
       let pinned = host.isPinned(agentId: id)
       Button(pinned ? "Unpin chat" : "Pin chat", systemImage: pinned ? Icon.pinSlash : Icon.pin) {
@@ -230,6 +244,14 @@ struct SessionView: View {
     if !host.isGone(id) {
       ContinueOnMenu(agentId: id) { focus($0) } onError: { continueError = $0 }
       MoveToMenu(agentId: id) { moved($0) } onError: { moveError = $0 }
+    }
+    if host.isGone(id) {
+      if id != agentId || agents.count > 1 {
+        Button("Close tab", systemImage: Icon.close) { closeTab(id) }
+      }
+    } else if host.hasControl {
+      Divider()
+      Button("Shut down", systemImage: Icon.stop, role: .destructive) { stopping = id }
     }
   }
 
@@ -315,13 +337,6 @@ struct SessionView: View {
       .accessibilityElement(children: .combine)
     }
     ToolbarItemGroup(placement: .topBarTrailing) {
-      if drafting, !agents.isEmpty {
-        IconBtn(systemName: Icon.close, label: "Close new agent tab") { setDrafting(false) }
-      } else if let id = focusedAgentId, host.isGone(id), id != agentId || agents.count > 1 {
-        IconBtn(systemName: Icon.close, label: "Close agent tab") { closeTab(id) }
-      } else if host.hasControl, let id = focusedAgentId, !host.isGone(id) {
-        IconBtn(systemName: Icon.stop, label: "Shut down agent") { confirmingStop = true }
-      }
       if session != nil, router.isSplit {
         IconBtn(
           systemName: Icon.sidePanel, label: router.panelOpen ? "Hide side panel" : "Show side panel"
@@ -413,9 +428,8 @@ struct SessionView: View {
     if let root = resolvedRepoRoot { Task { await host.loadAgents(repoRoot: root) } }
   }
 
-  /// Stops the agent in front; its tab stays, with Resume, until it's closed.
-  private func stopFocused() {
-    guard let id = focusedAgentId else { return }
+  /// Stops an agent and brings it to the front; its tab stays, with Resume, until it's closed.
+  private func stop(_ id: String) {
     focused = id
     Task { await host.stopAgent(agentId: id) }
   }
