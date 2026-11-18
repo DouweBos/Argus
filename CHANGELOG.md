@@ -1,5 +1,27 @@
 # argus
 
+## 0.79.0
+
+### Minor Changes
+
+- 90806be: Select an element straight on a live simulator or emulator and attach it to the chat, the way the Browser tab does: hover to see what you'd pick, click to attach it.
+- b9a8e3b: Home lists each project as a collapsible card with its sessions, like the Mac sidebar: what needs you first, then active work, with done and snoozed sessions folded away. Folded cards and sections stay that way between launches.
+- a104bbb: Each session now has a Timeline of its agent turns with what each one changed, and you can put the files back to where any turn ended, then undo it, without touching the conversation.
+- 813f18a: Session lists sort by their most recent message from you or an agent, so the conversations you're in sit at the top of each group.
+
+### Patch Changes
+
+- 4a4c80c: Each agent keeps its temporary files in a folder of its own, removed when the agent or its session closes, so they no longer pile up.
+- 94ba99f: A chat that's still loading shows a loading indicator instead of "Nothing yet", and one that times out says it couldn't load instead of looking empty.
+- 11c3d25: An agent attaching conductor to an external browser over CDP no longer takes over its own Argus browser; it's asked to name the browser it means instead.
+- c166170: Starting a proposal from the inbox no longer leaves its card cut off.
+- abec2b1: Chat messages and inbox cards on the iPhone show all their text instead of sometimes cutting off the end.
+- 7056106: Fix the window losing its toolbar and chat input when a chat hits its usage limit.
+- 5e90f24: The agents' Live Activity lists only running agents, without the trailing step line, and fits on the Lock Screen instead of getting cut off.
+- 6401dc4: Buttons, loading text and status labels no longer end in an ellipsis.
+- 28401ee: The side question popover grows with its questions and answers instead of squeezing them into a sliver.
+- b83d343: Usage shows one loading indicator while it reads usage for the first time, instead of a second spinner next to the range picker.
+
 ## 0.78.0
 
 ### Minor Changes
