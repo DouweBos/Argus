@@ -13,7 +13,7 @@
  * unit tests.
  */
 
-import { powerAssertion } from "./lib/powerAssertion";
+import { type PowerAssertion, powerAssertion } from "./lib/powerAssertion";
 
 /** Whether this process is the headless server rather than the desktop app. */
 export function isServerMode(): boolean {
@@ -22,14 +22,16 @@ export function isServerMode(): boolean {
 
 /**
  * Held for as long as the server runs: a sleeping mini stops agents mid-run
- * and drops every attached client.
+ * and drops every attached client. Created on first use so importing this
+ * module never touches `node:child_process`.
  */
-const serverAssertion = powerAssertion(["-i", "-m", "-s"]);
+let serverAssertion: PowerAssertion | null = null;
 
 export function startPowerAssertion(): void {
+  serverAssertion ??= powerAssertion(["-i", "-m", "-s"]);
   serverAssertion.hold();
 }
 
 export function stopPowerAssertion(): void {
-  serverAssertion.release();
+  serverAssertion?.release();
 }
