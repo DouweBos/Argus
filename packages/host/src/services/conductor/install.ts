@@ -47,12 +47,23 @@ const CONDUCTOR_ENTRY = path.join(
 );
 
 function findDeviceFlag(argv) {
-  for (let i = 0; i < argv.length - 1; i++) {
-    if (argv[i] === '--device') {
-      return { index: i + 1, value: argv[i + 1] };
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--device' && i + 1 < argv.length) {
+      return { index: i + 1, value: argv[i + 1], prefix: '' };
+    }
+    if (argv[i].startsWith('--device=')) {
+      return { index: i, value: argv[i].slice('--device='.length), prefix: '--device=' };
     }
   }
   return null;
+}
+
+function hasCdpFlag(argv) {
+  return argv.some(
+    (a) =>
+      a === '--cdp-url' || a === '--cdp-target' ||
+      a.startsWith('--cdp-url=') || a.startsWith('--cdp-target=')
+  );
 }
 
 function classifyDevice(value) {
@@ -117,12 +128,23 @@ function resolveDevice(platform) {
   const flag = findDeviceFlag(forwardedArgs);
   const platform = flag ? classifyDevice(flag.value) : null;
 
+  // The pooled browser would be re-pointed at the external CDP endpoint, hijacking it.
+  if (platform === 'web' && hasCdpFlag(forwardedArgs)) {
+    process.stderr.write(
+      'argus: --device ' + flag.value + ' resolves to your pooled Argus browser, which cannot be ' +
+        'attached to an external CDP endpoint. Pass a fully-qualified device instead, e.g. ' +
+        '--device web:chromium:<label>, or the web:cdp:<port>:<targetId> id from ' +
+        '"conductor web-targets" / "conductor list-devices".\\n'
+    );
+    process.exit(1);
+  }
+
   let finalArgs = forwardedArgs;
   if (flag && platform) {
     try {
       const deviceId = await resolveDevice(platform);
       finalArgs = forwardedArgs.slice();
-      finalArgs[flag.index] = deviceId;
+      finalArgs[flag.index] = flag.prefix + deviceId;
     } catch (e) {
       process.stderr.write(
         'argus: failed to resolve --device ' + platform + ': ' + e.message + '\\n'
