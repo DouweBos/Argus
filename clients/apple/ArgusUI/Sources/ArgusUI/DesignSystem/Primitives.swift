@@ -648,7 +648,8 @@ public struct Loading: View {
 
   public var body: some View {
     VStack(spacing: 10) {
-      ThinkingDots(size: 8, tint: theme.accent)
+      ProgressView()
+        .tint(theme.textMuted)
       Text(label)
         .font(.scaled(.subheadline))
         .foregroundStyle(.secondary)
