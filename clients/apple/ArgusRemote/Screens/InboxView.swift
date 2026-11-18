@@ -109,7 +109,8 @@ struct InboxView: View {
     let local = Set(proposals.started.map(\.id))
     if !items.pending.isEmpty || !proposals.started.isEmpty {
       Section(items.pending.isEmpty ? "Decide" : "Decide · \(items.pending.count) waiting") {
-        ForEach(proposals.started) { proposal in
+        // Its own row id: under the proposal's, the list reused the taller pending card's cell and clipped.
+        ForEach(proposals.started, id: \.startedRowId) { proposal in
           StartedProposalCard(
             proposal: proposal,
             onOpen: { openStarted(proposal) },
@@ -263,4 +264,9 @@ extension View {
       .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
       .listRowSeparator(.hidden)
   }
+}
+
+extension RemoteProposal {
+  /// Differs from `id` so a started card never shares a list row with the pending card it replaced.
+  fileprivate var startedRowId: String { "started:\(id)" }
 }
