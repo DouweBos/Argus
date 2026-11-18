@@ -58,13 +58,24 @@ struct HomeProjectSection<Header: View>: View {
   // MARK: - Header
 
   private func projectHeader(root: SessionGroup?, triage: SessionGroupTriage) -> some View {
-    HStack(spacing: 8) {
+    let rootSession = sessions.first { $0.kind == .projectRoot && !$0.isUnavailable }
+    return HStack(spacing: 8) {
       Button(action: toggleCollapsed) {
+        Image(systemName: collapsed ? Icon.chevronRight : Icon.chevronDown)
+          .font(.scaled(.caption).weight(.semibold))
+          .foregroundStyle(theme.textMuted)
+          .frame(width: 24, height: 32)
+          .contentShape(.rect)
+      }
+      .buttonStyle(.argusPlain)
+      .padding(.leading, -6)
+      .padding(.trailing, -6)
+      .accessibilityLabel(collapsed ? "Expand \(project.name)" : "Collapse \(project.name)")
+      // As on the Mac, the header is the project's root checkout.
+      Button {
+        if let rootSession { open(rootSession) } else { toggleCollapsed() }
+      } label: {
         HStack(spacing: 8) {
-          Image(systemName: collapsed ? Icon.chevronRight : Icon.chevronDown)
-            .font(.scaled(.caption).weight(.semibold))
-            .foregroundStyle(theme.textMuted)
-            .frame(width: 12)
           ProjectBadge(project.name, key: project.repoRoot, size: 20)
           VStack(alignment: .leading, spacing: 2) {
             Text(project.name)
@@ -92,8 +103,7 @@ struct HomeProjectSection<Header: View>: View {
       }
       .buttonStyle(.argusPlain)
       .accessibilityLabel(project.name)
-      .accessibilityValue(collapsed ? "Collapsed" : "Expanded")
-      .accessibilityHint(collapsed ? "Shows its sessions" : "Hides its sessions")
+      .accessibilityHint(rootSession.map { "Opens \($0.branch)" } ?? (collapsed ? "Shows its sessions" : "Hides its sessions"))
       if host.hasControl {
         Button(action: newSession) {
           Image(systemName: Icon.plus)
