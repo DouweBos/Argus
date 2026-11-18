@@ -2,19 +2,12 @@ import ArgusCore
 import SwiftUI
 
 /// A provider with several accounts: a card per window with what's left of the
-/// pool, then one row per account. Tapping either shows that account.
+/// pool, then one row per account that expands into its own meters.
 struct UsagePoolSection: View {
   @Environment(\.theme) private var theme
   let pool: UsagePool
   let now: Date
-  @State private var shown: Shown?
-
-  /// Which account is shown, and from where, so a popover anchors to what was tapped.
-  struct Shown: Identifiable, Hashable {
-    let account: String
-    let anchor: String
-    var id: String { "\(anchor)/\(account)" }
-  }
+  @State private var expanded: Set<String> = []
 
   var body: some View {
     HStack(spacing: 6) {
@@ -23,7 +16,7 @@ struct UsagePoolSection: View {
     }
     LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: theme.space, alignment: .top)], spacing: theme.space) {
       ForEach(pool.cards) { card in
-        Card { UsagePoolCardBody(card: card, now: now, shown: $shown) }
+        Card { UsagePoolCardBody(card: card, now: now) { expanded.insert($0) } }
       }
     }
     Card {
@@ -31,28 +24,18 @@ struct UsagePoolSection: View {
         ForEach(Array(pool.accounts.enumerated()), id: \.element.id) { index, account in
           if index > 0 { Divider().overlay(theme.borderSubtle) }
           accountRow(account)
+          if expanded.contains(account.id) { UsagePoolAccountDetail(account: account, now: now) }
         }
       }
     }
-    #if os(iOS)
-      .sheet(item: $shown) { shown in
-        if let account = pool.accounts.first(where: { $0.id == shown.account }) {
-          NavigationStack {
-            ScrollView { UsagePoolAccountDetail(account: account, now: now).padding(theme.space) }
-              .background(theme.bg)
-              .navigationTitle(account.label)
-              .navigationBarTitleDisplayMode(.inline)
-          }
-          .presentationDetents([.medium])
-        }
-      }
-    #endif
   }
 
   private func accountRow(_ account: UsagePoolAccount) -> some View {
-    let tag = Shown(account: account.id, anchor: "row")
+    let isExpanded = expanded.contains(account.id)
     return Button {
-      shown = tag
+      withAnimation(.snappy(duration: 0.2)) {
+        if isExpanded { expanded.remove(account.id) } else { expanded.insert(account.id) }
+      }
     } label: {
       HStack(spacing: 10) {
         Image(systemName: Icon.person)
@@ -64,7 +47,7 @@ struct UsagePoolSection: View {
           .lineLimit(1)
         if let plan = account.plan, !plan.isEmpty { Badge(label: plan.capitalized) }
         Spacer(minLength: 8)
-        if let caption = UsageLimitFormat.resetCaption(resetsAtMs: account.sessionResetsAt, now: now) {
+        if !isExpanded, let caption = UsageLimitFormat.resetCaption(resetsAtMs: account.sessionResetsAt, now: now) {
           Text("Session · \(caption.prefix(1).lowercased() + caption.dropFirst())")
             .font(.scaled(size: 12))
             .foregroundStyle(theme.textMuted)
@@ -73,11 +56,12 @@ struct UsagePoolSection: View {
         Image(systemName: Icon.chevronRight)
           .font(.scaled(size: 11, weight: .semibold))
           .foregroundStyle(theme.textMuted)
+          .rotationEffect(.degrees(isExpanded ? 90 : 0))
       }
       .contentShape(Rectangle())
     }
     .buttonStyle(.argusPlain)
-    .accountPopover(tag, shown: $shown) { UsagePoolAccountDetail(account: account, now: now) }
+    .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
   }
 }
 
@@ -86,7 +70,7 @@ private struct UsagePoolCardBody: View {
   @Environment(\.theme) private var theme
   let card: UsagePoolCard
   let now: Date
-  @Binding var shown: UsagePoolSection.Shown?
+  let onSelect: (String) -> Void
 
   private var tone: Tone { UsageTone.of(card.level) }
 
@@ -101,16 +85,14 @@ private struct UsagePoolCardBody: View {
         .foregroundStyle(tone == .accent ? theme.text : tone.color(theme))
       HStack(spacing: 3) {
         ForEach(card.segments) { segment in
-          let tag = UsagePoolSection.Shown(account: segment.account.id, anchor: card.id)
           Button {
-            shown = tag
+            withAnimation(.snappy(duration: 0.2)) { onSelect(segment.account.id) }
           } label: {
             UsagePoolSegmentBar(segment: segment)
           }
           .buttonStyle(.argusPlain)
           .help(segment.account.label)
           .accessibilityLabel(segmentLabel(segment))
-          .accountPopover(tag, shown: $shown) { UsagePoolAccountDetail(account: segment.account, now: now) }
         }
       }
       Text(caption)
@@ -167,29 +149,27 @@ struct UsagePoolSegmentBar: View {
   }
 }
 
-/// An account's plan, label and each window's reset, from a pooled card or row.
+/// An expanded account: each window's full meter, pace included.
 struct UsagePoolAccountDetail: View {
   @Environment(\.theme) private var theme
   let account: UsagePoolAccount
   let now: Date
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 10) {
-      HStack(spacing: 6) {
-        Text(account.label)
-          .font(.scaled(size: 15, weight: .semibold))
-          .foregroundStyle(theme.text)
-        if let plan = account.plan, !plan.isEmpty { Badge(label: plan.capitalized) }
-      }
+    VStack(alignment: .leading, spacing: theme.space) {
       if account.weeklySpent {
         Text("No weekly quota left, so its session has nothing to give until the week resets.")
           .font(.scaled(size: 12))
           .foregroundStyle(theme.warning)
           .fixedSize(horizontal: false, vertical: true)
       }
-      ForEach(account.windows, id: \.id) { UsageMeterLine(window: $0, now: now) }
+      ForEach(Array(account.windows.enumerated()), id: \.element.id) { index, window in
+        if index > 0 { Divider().overlay(theme.borderSubtle) }
+        UsageMeterRow(window: window, now: now)
+      }
     }
-    .frame(minWidth: 260, alignment: .leading)
+    .padding(theme.space)
+    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(theme.borderSubtle))
   }
 }
 
@@ -200,24 +180,5 @@ enum UsageTone {
     case .warning: .warning
     case .critical: .danger
     }
-  }
-}
-
-extension View {
-  /// A popover on the Mac for the tapped account; the phone uses one sheet for the section.
-  @ViewBuilder
-  fileprivate func accountPopover<Detail: View>(
-    _ tag: UsagePoolSection.Shown, shown: Binding<UsagePoolSection.Shown?>, @ViewBuilder detail: @escaping () -> Detail
-  ) -> some View {
-    #if os(macOS)
-      popover(
-        isPresented: Binding(get: { shown.wrappedValue == tag }, set: { if !$0 { shown.wrappedValue = nil } }),
-        arrowEdge: .bottom
-      ) {
-        detail().padding(14)
-      }
-    #else
-      self
-    #endif
   }
 }
