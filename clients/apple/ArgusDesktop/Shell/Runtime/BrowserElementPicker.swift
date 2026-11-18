@@ -65,7 +65,6 @@ final class BrowserElementPicker {
 
 /// The hovered element's outline and name over the screencast.
 struct BrowserPickHighlight: View {
-  @Environment(\.theme) private var theme
   let hit: ArgusProtocol.BrowserElementHit
   /// Where the page's picture sits in the stage.
   let picture: CGRect
@@ -73,33 +72,15 @@ struct BrowserPickHighlight: View {
   private var rect: CGRect {
     let sx = picture.width / max(hit.viewport.width, 1)
     let sy = picture.height / max(hit.viewport.height, 1)
-    let raw = CGRect(
+    return CGRect(
       x: picture.minX + hit.bounds.x * sx, y: picture.minY + hit.bounds.y * sy,
       width: hit.bounds.width * sx, height: hit.bounds.height * sy)
-    return raw.intersection(picture)
   }
 
   var body: some View {
-    let rect = rect
-    if !rect.isNull {
-      ZStack(alignment: .topLeading) {
-        Rectangle()
-          .fill(theme.accent.opacity(0.15))
-          .overlay(Rectangle().strokeBorder(theme.accent, lineWidth: 1.5))
-          .frame(width: rect.width, height: rect.height)
-          .offset(x: rect.minX, y: rect.minY)
-        Text("\(hit.label)  \(Int(hit.bounds.width.rounded()))×\(Int(hit.bounds.height.rounded()))")
-          .font(.scaled(size: 11, design: .monospaced))
-          .foregroundStyle(theme.onAccent)
-          .lineLimit(1)
-          .padding(.horizontal, 6)
-          .padding(.vertical, 2)
-          .background(theme.accent, in: .rect(cornerRadius: 4))
-          .fixedSize()
-          .offset(x: rect.minX, y: rect.minY >= picture.minY + 20 ? rect.minY - 20 : rect.maxY + 2)
-      }
-      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-      .allowsHitTesting(false)
-    }
+    ElementPickHighlight(
+      rect: rect,
+      label: "\(hit.label)  \(Int(hit.bounds.width.rounded()))×\(Int(hit.bounds.height.rounded()))",
+      bounds: picture)
   }
 }

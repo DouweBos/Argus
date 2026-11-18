@@ -47,6 +47,18 @@ struct PickedElementTests {
     #expect(image.height == 92)
   }
 
+  @Test("an Android node says emulator and measures in pixels")
+  func android() {
+    let view = Inspection.Node(
+      id: "0", className: "android.widget.TextView", frame: .init(x: 0, y: 0, w: 1080, h: 2400), depth: 0)
+    let capture = Inspection.Capture(
+      capturedAt: "", device: .init(deviceId: "e", platform: "android", width: 1080, height: 2400),
+      hierarchy: view, nodeCount: 1, screenshot: nil)
+    let picked = PickedElement.device(view, path: [view], capture: capture)
+    #expect(picked.context.hasPrefix("[Picked element — Android emulator]"))
+    #expect(picked.context.contains("1080×2400 px on a 1080×2400 px screen"))
+  }
+
   private func png(width: Int, height: Int) throws -> Data {
     let context = try #require(
       CGContext(

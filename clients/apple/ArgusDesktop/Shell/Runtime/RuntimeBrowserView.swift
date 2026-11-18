@@ -118,16 +118,8 @@ struct RuntimeBrowserView: View {
   private var chatSessionId: String? { sessionKey == RuntimeModel.globalKey ? nil : sessionKey }
 
   private var selectElementButton: some View {
-    Button(action: picker.toggle) {
-      Image(systemName: Icon.elementPick)
-        .frame(width: 20, height: 20)
-        .foregroundStyle(picker.active ? theme.accent : theme.textSecondary)
-    }
-    .buttonStyle(.argusBorderless)
-    .disabled(!started || chatSessionId == nil || otherHolder != nil)
-    .help(picker.active ? "Cancel selecting (Esc)" : "Select an element to attach to the chat")
-    .accessibilityLabel("Select element")
-    .accessibilityAddTraits(picker.active ? .isSelected : [])
+    ElementPickButton(active: picker.active, toggle: picker.toggle)
+      .disabled(!started || chatSessionId == nil || otherHolder != nil)
   }
 
   private func navButton(
@@ -254,7 +246,7 @@ struct RuntimeBrowserView: View {
       guard let at = geometry.normalize(point), let chat = chatSessionId, !picker.picking else { return }
       Task {
         if let element = await picker.pick(at: at, backend: backend, sessionId: sessionKey) {
-          model.attachToChat(element, sessionId: chat)
+          model.attachToChat(element, sessionId: chat, via: .browser)
         } else {
           NSSound.beep()
           MacTelemetry.capture(.elementPicked(source: .browser, success: false))

@@ -8,6 +8,8 @@ struct DevicePopoutView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(RuntimeModel.self) private var runtime
   let target: DevicePopoutTarget
+  /// Disabled here: a popout has no session chat to attach to.
+  @State private var picker = DeviceElementPicker()
 
   private var remote: RemotePlatform { target.platform == "android" ? .android : .ios }
   private var key: String { "\(target.platform):\(target.deviceKey)" }
@@ -28,9 +30,9 @@ struct DevicePopoutView: View {
     VStack(spacing: 0) {
       RuntimeDeviceActions(
         platform: remote, deviceId: target.deviceKey, sessionId: nil, isTv: isTv,
-        clearsSelection: false)
+        picker: picker, clearsSelection: false)
       Divider()
-      RuntimeDeviceView(deviceId: target.deviceKey, platform: remote, isTv: isTv)
+      RuntimeDeviceView(deviceId: target.deviceKey, platform: remote, isTv: isTv, picker: picker)
     }
     .background(theme.bg)
     .navigationTitle(name)

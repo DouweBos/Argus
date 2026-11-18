@@ -156,7 +156,7 @@ struct InspectionView: View {
 
   private func attachSelection() {
     guard let sessionId, let element = model.pickedElement() else { return }
-    desktop.attachToChat(element, sessionId: sessionId)
+    desktop.attachToChat(element, sessionId: sessionId, via: .device)
   }
 
   private func inspect() {

@@ -58,6 +58,23 @@ public struct DeviceGeometry: Equatable, Sendable {
     return unrotate(CGPoint(x: x, y: y))
   }
 
+  /// A stage point to 0–1 across the upright picture, as its UI sees itself;
+  /// nil outside it or before the stream's size is known.
+  public func uprightNormalize(_ point: CGPoint) -> CGPoint? {
+    guard known else { return nil }
+    let rect = pictureRect
+    guard rect.contains(point) else { return nil }
+    return CGPoint(x: (point.x - rect.minX) / rect.width, y: (point.y - rect.minY) / rect.height)
+  }
+
+  /// A 0–1 rect of the upright picture back to stage points.
+  public func uprightRect(_ unit: CGRect) -> CGRect {
+    let rect = pictureRect
+    return CGRect(
+      x: rect.minX + unit.minX * rect.width, y: rect.minY + unit.minY * rect.height,
+      width: unit.width * rect.width, height: unit.height * rect.height)
+  }
+
   /// Undo the presentation rotation: the device wants the point in its own
   /// panel's coordinates, not in the ones we drew.
   public func unrotate(_ point: CGPoint) -> CGPoint {

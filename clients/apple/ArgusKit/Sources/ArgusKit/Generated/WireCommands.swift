@@ -2115,6 +2115,42 @@ extension ArgusProtocol {
       }
     }
 
+    public struct DeviceElementCaptureParamsPlatform: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let ios = DeviceElementCaptureParamsPlatform(rawValue: "ios")
+      public static let android = DeviceElementCaptureParamsPlatform(rawValue: "android")
+    }
+
+    public struct DeviceElementCaptureParams: Codable, Sendable {
+      public var deviceKey: String
+      public var platform: DeviceElementCaptureParamsPlatform
+
+      enum CodingKeys: String, CodingKey {
+        case deviceKey = "deviceKey"
+        case platform = "platform"
+      }
+
+      public init(deviceKey: String, platform: DeviceElementCaptureParamsPlatform) {
+        self.deviceKey = deviceKey
+        self.platform = platform
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(deviceKey, forKey: .deviceKey)
+        try c.encode(platform, forKey: .platform)
+      }
+    }
+
     public struct DeviceInputEndpointParams: Codable, Sendable {
       public var deviceKey: String
 
@@ -10832,6 +10868,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.DeviceClaimStatusParams
       public typealias Result = ArgusProtocol.RemoteDeviceClaimState
       public static let name = "device_claim_status"
+      public static let tier = "admin"
+    }
+
+    public enum DeviceElementCapture: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.DeviceElementCaptureParams
+      public typealias Result = JSONValue
+      public static let name = "device_element_capture"
       public static let tier = "admin"
     }
 

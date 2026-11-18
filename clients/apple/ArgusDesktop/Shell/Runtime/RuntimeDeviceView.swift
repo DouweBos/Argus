@@ -1,3 +1,4 @@
+import AppKit
 import ArgusUI
 import SwiftUI
 
@@ -8,10 +9,15 @@ struct RuntimeDeviceView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var store
   @Environment(RuntimeModel.self) private var runtime
+  @Environment(DesktopModel.self) private var model
 
   let deviceId: String
   let platform: RemotePlatform
   let isTv: Bool
+  /// Select Element's state, shared with the toolbar; surfaces without one never enter it.
+  var picker = DeviceElementPicker()
+  /// Where picked elements go; nil outside a session.
+  var chatSessionId: String?
 
   @State private var handle = DeviceVideoView.Handle()
   @State private var session = DeviceSession { watch in
@@ -55,7 +61,12 @@ struct RuntimeDeviceView: View {
       guard store.connection == .ready else { return }
       await subscribe()
     }
-    .onDisappear { session.stop() }
+    .onDisappear {
+      session.stop()
+      picker.cancel()
+    }
+    // The capture was read upright; a turned screen no longer matches it.
+    .onChange(of: rotation) { picker.cancel() }
   }
 
   private var stage: some View {
@@ -66,7 +77,8 @@ struct RuntimeDeviceView: View {
         DeviceVideoView(handle: handle) { session.markStreaming() }
           .frame(width: geometry.renderedSize.width, height: geometry.renderedSize.height)
           .rotationEffect(.degrees(rotation))
-        RuntimeInputView(onInput: receive)
+        DevicePickOverlay(picker: picker, geometry: geometry)
+        RuntimeInputView(tracksHover: picker.phase == .active, onInput: receive)
         if session.status != .streaming {
           Text(placeholder)
             .font(.scaled(size: 12))
@@ -101,6 +113,7 @@ struct RuntimeDeviceView: View {
 
   private func receive(_ input: RuntimeInput) {
     guard otherHolder == nil else { return }
+    if picker.engaged { return pickInput(input) }
     switch input {
     case .pointer(let phase, let point, let secondary, _):
       // A TV is driven by its remote, not by clicking its picture.
@@ -113,6 +126,26 @@ struct RuntimeDeviceView: View {
       break
     case .key(let down, let keyCode, let modifiers, _):
       sendKey(down: down, keyCode: keyCode, modifiers: modifiers)
+    }
+  }
+
+  /// While selecting, nothing reaches the device: hover highlights, a click attaches, Esc leaves.
+  private func pickInput(_ input: RuntimeInput) {
+    switch input {
+    case .hover(let point):
+      picker.hover(point.flatMap(geometry.uprightNormalize))
+    case .pointer(.down, let point, false, _):
+      guard picker.phase == .active, let chat = chatSessionId else { return }
+      if let unit = geometry.uprightNormalize(point), let element = picker.pick(at: unit) {
+        model.attachToChat(element, sessionId: chat, via: .devicePreview)
+      } else {
+        picker.cancel()
+        NSSound.beep()
+      }
+    case .key(true, 53, _, _):
+      picker.cancel()
+    case .pointer, .wheel, .key:
+      break
     }
   }
 

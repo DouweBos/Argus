@@ -15,6 +15,7 @@ struct RuntimeNativeView: View {
   @State private var bootError: String?
   /// A boot of a stopped EAS Simulator device waiting on its cost prompt.
   @State private var pendingEas: PendingEasStart?
+  @State private var picker = DeviceElementPicker()
 
   private var selected: String? { runtime.selectedDevice(platform: platform, session: sessionId) }
 
@@ -29,9 +30,11 @@ struct RuntimeNativeView: View {
           VStack(spacing: 0) {
             RuntimeDeviceActions(
               platform: target.remote, deviceId: target.id, sessionId: sessionId,
-              isTv: target.isTv)
+              isTv: target.isTv, picker: picker)
             Divider()
-            RuntimeDeviceView(deviceId: target.id, platform: target.remote, isTv: target.isTv)
+            RuntimeDeviceView(
+              deviceId: target.id, platform: target.remote, isTv: target.isTv, picker: picker,
+              chatSessionId: sessionId)
               // A fresh view per host: the same simulator can be listed by two.
               .id("\(runtime.hostId)|\(target.id)")
           }
@@ -168,12 +171,17 @@ struct RuntimeDeviceActions: View {
   let sessionId: String?
   /// A TV has its remote for Home, and nothing to rotate.
   var isTv = false
+  let picker: DeviceElementPicker
   /// A popout has no runtime target to clear when the device goes.
   var clearsSelection = true
 
   @State private var busy = false
 
   private var state: RemoteDeviceState? { store.deviceStates[deviceId] }
+
+  private var otherHolder: RemoteDeviceClaim? {
+    DeviceSession.otherHolder(store.deviceClaims[deviceId], connectionId: store.connectionId)
+  }
 
   var body: some View {
     HStack(spacing: 2) {
@@ -192,6 +200,13 @@ struct RuntimeDeviceActions: View {
           .disabled(busy)
       }
       RuntimeLinkMenu(deviceId: deviceId)
+      // A TV is driven by its remote; there's no pointer to pick with.
+      if !isTv {
+        ElementPickButton(active: picker.engaged, loading: picker.phase == .capturing, size: 22) {
+          picker.toggle(backend: store.backend, deviceId: deviceId, platform: platform)
+        }
+        .disabled(sessionId == nil || otherHolder != nil)
+      }
       Spacer()
       action("Disconnect device", "xmark.circle") { disconnect() }
     }

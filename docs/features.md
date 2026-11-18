@@ -12,6 +12,11 @@ area, what's included, and which configuration controls it.
 - Agents (and you) can tap, swipe, scroll, type, press hardware
   buttons, rotate, and trigger system gestures.
 - Per-session isolation — parallel sessions never interfere.
+- **Select element** on the device's toolbar: Argus reads the screen once,
+  hovering outlines the element under the pointer, and a click attaches it to
+  the chat with its class, view path, identifiers, frame and a cropped
+  screenshot. Esc cancels. Apps launched with inspection give the full native
+  view tree; any other app gives the accessibility tree.
 
 Argus detects iOS projects (Xcode, Expo, React Native, Flutter) on its own.
 
@@ -23,6 +28,7 @@ Argus detects iOS projects (Xcode, Expo, React Native, Flutter) on its own.
 - Mirrored live in the Runtime.
 - Tap, swipe, type, hardware keys.
 - Per-session isolation, like iOS.
+- **Select element**, as on iOS, from the emulator's accessibility tree.
 
 Argus detects Android projects (Gradle, Expo, React Native, Flutter) on its own.
 
@@ -36,8 +42,9 @@ Argus detects Android projects (Gradle, Expo, React Native, Flutter) on its own.
 - DevTools available on demand, per-session.
 - **Select element**: hover the page, click an element, and it lands in the
   chat as a chip — its selector, React component, text, styles, bounds and a
-  cropped screenshot — so you can type "make this red". The device inspector's
-  **Attach to Chat** does the same for a view selected on a simulator.
+  cropped screenshot — so you can type "make this red". Simulators and emulators
+  have the same button on their toolbar, and the device inspector's
+  **Attach to Chat** does it for a view selected there.
 
 Point it at your dev server with `browser_url` in `.argus.json` (e.g.
 `"http://localhost:{PORT}"`).

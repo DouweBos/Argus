@@ -25,6 +25,18 @@ struct DeviceGeometryTests {
     #expect(point == CGPoint(x: 0, y: 1))
   }
 
+  @Test("upright mapping ignores rotation and round-trips a rect")
+  func upright() {
+    let geometry = DeviceGeometry(
+      coded: CGSize(width: 100, height: 200), stage: CGSize(width: 400, height: 400), rotation: 90)
+    // The 400×200 landscape picture sits at y 100.
+    #expect(geometry.uprightNormalize(CGPoint(x: 100, y: 150)) == CGPoint(x: 0.25, y: 0.25))
+    #expect(geometry.uprightNormalize(CGPoint(x: 100, y: 50)) == nil)
+    #expect(
+      geometry.uprightRect(CGRect(x: 0.5, y: 0.5, width: 0.5, height: 0.5))
+        == CGRect(x: 200, y: 200, width: 200, height: 100))
+  }
+
   @Test("nothing maps before the stream's size is known")
   func unknown() {
     let geometry = DeviceGeometry(coded: .zero, stage: CGSize(width: 10, height: 10))

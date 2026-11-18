@@ -3,10 +3,12 @@ import SwiftUI
 
 extension DesktopModel {
   /// Hands an element picked in the runtime panel to the session's composer.
-  func attachToChat(_ element: PickedElement, sessionId: String) {
+  func attachToChat(
+    _ element: PickedElement, sessionId: String, via source: MacTelemetryEvent.ElementPickSource
+  ) {
     pickedElements[sessionId, default: []].append(element)
     composerFocusRequest += 1
-    MacTelemetry.capture(.elementPicked(source: element.source, success: true))
+    MacTelemetry.capture(.elementPicked(source: source, success: true))
   }
 
   func takePickedElements(sessionId: String) -> [PickedElement] {

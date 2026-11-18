@@ -155,6 +155,18 @@ struct InspectionTreeTests {
     #expect(root.nodes(containingX: 500, y: 5).isEmpty)
   }
 
+  @Test("a pick takes the smallest node under the point and the screen falls back to the root")
+  func pickTarget() throws {
+    let capture = try capture()
+    let root = capture.hierarchy
+    #expect(root.pickTarget(x: 40, y: 315)?.id == "0x3")
+    #expect(root.pickTarget(x: 300, y: 320)?.id == "0x2")
+    #expect(root.pickTarget(x: 5, y: 5)?.id == "0x1")
+    #expect(root.pickTarget(x: 500, y: 5) == nil)
+    #expect(root.find("0x2")?.pickLabel == "UIButton  \"Sign In\"  342×50")
+    #expect(capture.screenSize == CGSize(width: 390, height: 844))
+  }
+
   @Test("visible rows follow the expansion set")
   func rows() throws {
     let root = try capture().hierarchy

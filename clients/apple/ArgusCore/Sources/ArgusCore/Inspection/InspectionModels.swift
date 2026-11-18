@@ -140,6 +140,13 @@ extension Inspection {
     /// Decoded PNG bytes; the overlay draws bare boxes without it.
     public var screenshot: Data?
 
+    /// The screen the node rects are measured in; the root's rect when the device didn't say.
+    public var screenSize: CGSize {
+      if device.width > 0, device.height > 0 { return CGSize(width: device.width, height: device.height) }
+      let rect = hierarchy.rect
+      return CGSize(width: max(rect.w, 1), height: max(rect.h, 1))
+    }
+
     public init(capturedAt: String, device: Device, hierarchy: Node, nodeCount: Int, screenshot: Data?) {
       self.capturedAt = capturedAt
       self.device = device

@@ -94,6 +94,27 @@ extension Inspection.Node {
     return hits
   }
 
+  /// What a click at the point picks: the smallest node under it, so a
+  /// full-screen overlay drawn last can't hide what's beneath. Ties go to the
+  /// innermost.
+  public func pickTarget(x: Double, y: Double) -> Inspection.Node? {
+    var best: Inspection.Node?
+    var bestArea = Double.infinity
+    walk { node in
+      let r = node.rect
+      guard r.contains(x: x, y: y), r.w * r.h <= bestArea else { return }
+      best = node
+      bestArea = r.w * r.h
+    }
+    return best
+  }
+
+  /// Class, hint and size: how a picked or hovered node is named on screen.
+  public var pickLabel: String {
+    let size = "\(Inspection.format(rect.w))×\(Inspection.format(rect.h))"
+    return [className, hint(), size].compactMap { $0 }.joined(separator: "  ")
+  }
+
   /// The rows a tree shows for an expansion set, with indent relative to `self`.
   public func visibleRows(expanded: Set<String>) -> [(node: Inspection.Node, level: Int)] {
     var out: [(node: Inspection.Node, level: Int)] = []

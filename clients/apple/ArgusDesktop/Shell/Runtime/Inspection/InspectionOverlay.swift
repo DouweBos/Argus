@@ -11,16 +11,11 @@ struct InspectionOverlay: View {
   let snapshot: InspectionModel.Snapshot
   let root: Inspection.Node
 
-  /// Nodes under the pointer, outermost first; only replaced when it changes
-  /// so plain pointer motion doesn't redraw.
-  @State private var hoverStack: [Inspection.Node] = []
+  /// What a click would pick; only replaced when it changes so plain pointer
+  /// motion doesn't redraw.
+  @State private var hovered: Inspection.Node?
 
-  private var deviceSize: CGSize {
-    let device = snapshot.capture.device
-    if device.width > 0, device.height > 0 { return CGSize(width: device.width, height: device.height) }
-    let rect = snapshot.capture.hierarchy.rect
-    return CGSize(width: max(rect.w, 1), height: max(rect.h, 1))
-  }
+  private var deviceSize: CGSize { snapshot.capture.screenSize }
 
   var body: some View {
     GeometryReader { proxy in
@@ -33,13 +28,13 @@ struct InspectionOverlay: View {
         }
         NodeBoxes(
           nodes: root.flattened(), scale: scale, tint: snapshot.image == nil,
-          selectedId: model.selectedId, hoveredId: hoverStack.last?.id)
+          selectedId: model.selectedId, hoveredId: hovered?.id)
       }
       .frame(width: stage.width, height: stage.height)
       // AppKit takes the clicks: SwiftUI's tap gestures drop the first click
       // into a window that isn't key.
       .overlay {
-        RuntimeInputView(tracksHover: true, toolTip: hoverStack.last.map(tooltip)) { input in
+        RuntimeInputView(tracksHover: true, toolTip: hovered.map(tooltip)) { input in
           receive(input, scale)
         }
       }
@@ -52,12 +47,12 @@ struct InspectionOverlay: View {
   private func receive(_ input: RuntimeInput, _ scale: CGFloat) {
     switch input {
     case .hover(let point):
-      updateHover(point.map { hits($0, scale) } ?? [])
+      let next = point.flatMap { target($0, scale) }
+      if next?.id != hovered?.id { hovered = next }
     case .pointer(.down, let point, let secondary, let clickCount):
-      let stack = hits(point, scale)
       if secondary {
-        showStackMenu(stack)
-      } else if let node = stack.last {
+        showStackMenu(hits(point, scale))
+      } else if let node = target(point, scale) {
         if clickCount == 2 { model.focus(node.id) } else { model.select(node.id) }
       }
     default:
@@ -74,7 +69,7 @@ struct InspectionOverlay: View {
     menu.addItem(withTitle: "\(stack.count) elements under cursor", action: nil, keyEquivalent: "")
       .isEnabled = false
     for node in stack.reversed() {
-      let item = ClosureMenuItem(title: menuLabel(node)) { [model] in model.select(node.id) }
+      let item = ClosureMenuItem(title: node.pickLabel) { [model] in model.select(node.id) }
       item.state = model.selectedId == node.id ? .on : .off
       menu.addItem(item)
     }
@@ -86,14 +81,10 @@ struct InspectionOverlay: View {
     return root.nodes(containingX: point.x / scale, y: point.y / scale)
   }
 
-  private func updateHover(_ stack: [Inspection.Node]) {
-    if stack.map(\.id) != hoverStack.map(\.id) { hoverStack = stack }
-  }
-
-  private func menuLabel(_ node: Inspection.Node) -> String {
-    let rect = node.rect
-    let size = "\(Inspection.format(rect.w))×\(Inspection.format(rect.h))"
-    return [node.className, node.hint(), size].compactMap { $0 }.joined(separator: "  ")
+  /// The same pick the device preview's Select Element makes.
+  private func target(_ point: CGPoint, _ scale: CGFloat) -> Inspection.Node? {
+    guard scale > 0 else { return nil }
+    return root.pickTarget(x: point.x / scale, y: point.y / scale)
   }
 
   private func tooltip(_ node: Inspection.Node) -> String {

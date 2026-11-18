@@ -205,6 +205,13 @@ const CONDUCTOR_COMMANDS = {
     params: DeviceKey,
     result: z.unknown(),
   },
+  /** One capture to pick an element from on the live preview: the inspector's shape, any app. */
+  device_element_capture: {
+    tier: "admin",
+    tool: "device-control",
+    params: DeviceKey.extend({ platform: z.enum(["ios", "android"]) }),
+    result: z.unknown(),
+  },
   inspection_probe: {
     tier: "admin",
     tool: "device-inspector",

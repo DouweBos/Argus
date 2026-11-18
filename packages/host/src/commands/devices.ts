@@ -31,6 +31,7 @@ import {
   listInstalledApps,
   probeInjection,
 } from "../services/inspection/launcher";
+import { capturePickable } from "../services/inspection/pickCapture";
 import { getNodeProps } from "../services/inspection/props";
 import {
   androidButton,
@@ -146,6 +147,7 @@ function registerConductorCommands(): void {
   defineTypedCommand("inspection_capture", (p) =>
     captureUi({ deviceKey: p.deviceKey }),
   );
+  defineTypedCommand("device_element_capture", (p) => capturePickable(p));
   defineTypedCommand("inspection_probe", (p) => probeInjection(p.deviceKey));
   defineTypedCommand("inspection_list_apps", (p) =>
     listInstalledApps(p.deviceKey),

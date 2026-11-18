@@ -81,6 +81,14 @@ enum MacTelemetryEvent {
     case disconnect
   }
 
+  enum ElementPickSource: String {
+    case browser
+    /// The device inspector's Attach to Chat.
+    case device
+    /// Select Element on the live device preview.
+    case devicePreview = "device_preview"
+  }
+
   enum BrowserAction: String {
     /// Started from the panel's Open Browser button.
     case open
@@ -338,8 +346,8 @@ enum MacTelemetryEvent {
   case easSessionStartPrompted(outcome: EasPromptOutcome)
   case browserUsed(action: BrowserAction)
   case inspectionUsed(action: InspectionAction, success: Bool)
-  /// An element picked in the browser or the device inspector and attached to the chat.
-  case elementPicked(source: PickedElement.Source, success: Bool)
+  /// An element picked in the browser, the device inspector or the device preview and attached to the chat.
+  case elementPicked(source: ElementPickSource, success: Bool)
   /// A git action from the git panel; `scope` is `session` or `project`,
   /// `remote` when the session is on a paired host.
   case gitUsed(action: GitAction, scope: String, remote: Bool, success: Bool)

@@ -76,8 +76,11 @@ extension PickedElement {
   public static func device(
     _ node: Inspection.Node, path: [Inspection.Node], capture: Inspection.Capture
   ) -> PickedElement {
-    let platform = capture.device.platform.lowercased() == "tvos" ? "tvOS" : "iOS"
-    var lines = ["[Picked element — \(platform) simulator]", "Class: \(node.className)"]
+    let android = capture.device.platform.lowercased() == "android"
+    let platform =
+      android ? "Android emulator" : capture.device.platform.lowercased() == "tvos" ? "tvOS simulator" : "iOS simulator"
+    let unit = android ? "px" : "pt"
+    var lines = ["[Picked element — \(platform)]", "Class: \(node.className)"]
     lines.append("View path: " + path.map(\.className).joined(separator: " > "))
     if let id = node.accessibilityIdentifier { lines.append("Accessibility identifier: \(id)") }
     if let label = node.accessibilityLabel { lines.append("Accessibility label: \(label)") }
@@ -88,8 +91,8 @@ extension PickedElement {
     if let text = node.text ?? node.title ?? node.placeholder, !text.isEmpty { lines.append("Text: \"\(text)\"") }
     let r = node.rect
     lines.append(
-      "Frame: x \(format(r.x)), y \(format(r.y)), \(format(r.w))×\(format(r.h)) pt "
-        + "on a \(format(capture.device.width))×\(format(capture.device.height)) pt screen")
+      "Frame: x \(format(r.x)), y \(format(r.y)), \(format(r.w))×\(format(r.h)) \(unit) "
+        + "on a \(format(capture.device.width))×\(format(capture.device.height)) \(unit) screen")
     let colors = [
       ("background", node.backgroundColor), ("text", node.textColor), ("tint", node.tintColor),
       ("title", node.titleColor),
