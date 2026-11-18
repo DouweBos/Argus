@@ -294,6 +294,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "blueprints.delete": DENIED,
   "blueprints.create_project": DENIED,
   "blueprints.draft": DENIED,
+  "blueprints.revise": DENIED,
   // The host owner's Linear account; a guest has no claim on it.
   "integrations.list": DENIED,
   "linear.issues": DENIED,

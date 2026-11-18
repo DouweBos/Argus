@@ -364,6 +364,7 @@ export const REMOTE_METHODS = {
   "blueprints.delete": "control",
   "blueprints.create_project": "control",
   "blueprints.draft": "control",
+  "blueprints.revise": "control",
   /** Which integrations the computer has connected, and as whom. Connecting
    *  one takes a secret, which stays on the computer: no method sets it. */
   "integrations.list": "monitor",

@@ -161,3 +161,13 @@ export const BlueprintDraft = z.object({
   copy_project_settings_from: z.string().nullable(),
 });
 export type BlueprintDraft = z.infer<typeof BlueprintDraft>;
+
+export const ReviseBlueprintInput = z.object({
+  instructions: z.string(),
+  /** What the user wants changed, in their own words. */
+  note: z.string(),
+  name: z.string().optional(),
+  /** Reference project paths Claude may read to check the facts. */
+  references: z.array(z.string()),
+});
+export type ReviseBlueprintInput = z.infer<typeof ReviseBlueprintInput>;

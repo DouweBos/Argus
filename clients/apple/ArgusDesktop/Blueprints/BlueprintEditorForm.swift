@@ -6,6 +6,7 @@ import SwiftUI
 struct BlueprintEditorForm: View {
   @Environment(HostStore.self) private var host
   @Binding var form: BlueprintForm
+  @State private var revising = false
 
   var body: some View {
     Section("Blueprint") {
@@ -56,11 +57,19 @@ struct BlueprintEditorForm: View {
       PlaybookEditor(
         text: $form.instructions,
         placeholder: "What the first agent does in the new project, in Markdown.", minHeight: 200)
+      HStack {
+        Spacer()
+        Button("Revise with Claude") { revising = true }
+          .disabled(form.instructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+      }
     } header: {
       Text("Instructions")
     } footer: {
       Text("Handed to the agent that starts in the new project. "
         + BlueprintText.placeholders.joined(separator: ", ") + " are filled in for each project.")
+    }
+    .sheet(isPresented: $revising) {
+      ReviseBlueprintSheet(form: form) { form.instructions = $0 }
     }
   }
 

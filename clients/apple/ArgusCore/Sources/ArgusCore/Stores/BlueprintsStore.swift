@@ -184,6 +184,23 @@ public final class BlueprintsStore {
     }
   }
 
+  /// Claude rewrites `form`'s instructions to `note`, reading its references
+  /// for the facts. Nothing is saved; nil when it failed.
+  public func revise(_ form: BlueprintForm, note: String) async -> String? {
+    guard let backend = host.backend else { return nil }
+    let input = ArgusProtocol.ReviseBlueprintInput(
+      instructions: form.instructions, note: note, name: form.name.isEmpty ? nil : form.name,
+      references: form.references.map(\.path))
+    do {
+      let result = try await backend.request(Methods.BlueprintsRevise.self, .init(input: input))
+      error = nil
+      return result.instructions
+    } catch {
+      fail("Couldn't revise the instructions", error)
+      return nil
+    }
+  }
+
   private func upsert(_ blueprint: Blueprint) {
     if let index = blueprints.firstIndex(where: { $0.id == blueprint.id }) {
       blueprints[index] = blueprint

@@ -47,6 +47,9 @@
           "blueprints/generate/drafting", size: CGSize(width: 1000, height: 560), chrome: true,
           fixtures: GalleryFixtures.blueprints, setup: load
         ) { GenerateBlueprintScreen(drafting: true) },
+        GalleryStory(
+          "blueprints/revise", size: sheet, fixtures: GalleryFixtures.blueprints, setup: load
+        ) { ReviseBlueprintStory() },
       ]
     }
 
@@ -54,6 +57,17 @@
     private static func load(_ stage: GalleryStage) async {
       await stage.blueprints.refresh()
       await stage.host.loadRunners()
+    }
+  }
+
+  /// The revise sheet over the fixture Mac-app blueprint.
+  private struct ReviseBlueprintStory: View {
+    @Environment(BlueprintsStore.self) private var store
+
+    var body: some View {
+      ReviseBlueprintSheet(
+        form: store.blueprint(id: GalleryFixtures.macAppBlueprintId).map(BlueprintForm.init) ?? BlueprintForm()
+      ) { _ in }
     }
   }
 #endif

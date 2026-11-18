@@ -9,6 +9,7 @@ struct BlueprintFormSections: View {
 
   @Binding var form: BlueprintForm
   let runners: [RemoteRunner]
+  @State private var revising = false
 
   var body: some View {
     basics
@@ -161,10 +162,17 @@ struct BlueprintFormSections: View {
       )
       .font(.scaled(size: 14, design: .monospaced))
       .lineLimit(6...24)
+      if host.hasControl {
+        Button("Revise with Claude") { revising = true }
+          .disabled(form.instructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+      }
     } header: {
       Text("Instructions")
     } footer: {
       Text("Markdown. {{name}}, {{description}}, {{repo}} and {{path}} are filled in for each project.")
+    }
+    .sheet(isPresented: $revising) {
+      ReviseBlueprintSheet(form: form) { form.instructions = $0 }
     }
   }
 

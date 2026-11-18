@@ -866,6 +866,40 @@ extension ArgusProtocol {
       }
     }
 
+    public struct BlueprintReviseParams: Codable, Sendable {
+      public var input: ReviseBlueprintInput
+
+      enum CodingKeys: String, CodingKey {
+        case input = "input"
+      }
+
+      public init(input: ReviseBlueprintInput) {
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
+    public struct BlueprintReviseResult: Codable, Sendable {
+      public var instructions: String
+
+      enum CodingKeys: String, CodingKey {
+        case instructions = "instructions"
+      }
+
+      public init(instructions: String) {
+        self.instructions = instructions
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(instructions, forKey: .instructions)
+      }
+    }
+
     public struct BlueprintRunsListParams: Codable, Sendable {
       public var blueprintId: String?
 
@@ -10554,6 +10588,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.BlueprintDraftParams
       public typealias Result = ArgusProtocol.BlueprintDraft
       public static let name = "blueprint_draft"
+      public static let tier = "admin"
+    }
+
+    public enum BlueprintRevise: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.BlueprintReviseParams
+      public typealias Result = ArgusProtocol.CommandsTypes.BlueprintReviseResult
+      public static let name = "blueprint_revise"
       public static let tier = "admin"
     }
 

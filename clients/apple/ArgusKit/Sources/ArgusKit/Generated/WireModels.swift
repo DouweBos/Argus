@@ -18274,6 +18274,35 @@ extension ArgusProtocol {
     }
   }
 
+  public struct ReviseBlueprintInput: Codable, Sendable {
+    public var instructions: String
+    public var note: String
+    public var name: String?
+    public var references: [String]
+
+    enum CodingKeys: String, CodingKey {
+      case instructions = "instructions"
+      case note = "note"
+      case name = "name"
+      case references = "references"
+    }
+
+    public init(instructions: String, note: String, name: String? = nil, references: [String]) {
+      self.instructions = instructions
+      self.note = note
+      self.name = name
+      self.references = references
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(instructions, forKey: .instructions)
+      try c.encode(note, forKey: .note)
+      try c.encodeIfPresent(name, forKey: .name)
+      try c.encode(references, forKey: .references)
+    }
+  }
+
   public struct RevokeReason: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }

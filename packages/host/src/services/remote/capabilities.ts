@@ -117,6 +117,7 @@ import {
   listBlueprints,
   updateBlueprint,
 } from "../blueprint/manager";
+import { reviseBlueprintInstructions } from "../blueprint/revise";
 import {
   getActiveAccountId,
   refreshAllAccountIdentities,
@@ -3016,6 +3017,12 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return await control(async () => ({
       draft: await draftBlueprintFromProjects(paths),
     }));
+  },
+  "blueprints.revise": async (params) => {
+    const { input } = parse("blueprints.revise", params);
+
+    // Spends the host's LLM; nothing is saved.
+    return await control(async () => reviseBlueprintInstructions(input));
   },
   "devices.list": async () => {
     // A missing toolchain (no Xcode / no Android SDK) contributes an empty

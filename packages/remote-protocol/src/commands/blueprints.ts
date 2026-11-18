@@ -5,6 +5,7 @@ import {
   BlueprintRun,
   CreateBlueprintInput,
   CreateProjectFromBlueprintInput,
+  ReviseBlueprintInput,
   UpdateBlueprintInput,
 } from "../models/blueprints";
 import { type CommandSpec, NoParams, Void } from "./spec";
@@ -45,5 +46,11 @@ export const BLUEPRINT_COMMANDS = {
     tier: "admin",
     params: z.object({ paths: z.array(z.string()).min(1) }),
     result: BlueprintDraft,
+  },
+  /** Instructions rewritten to a note, for the editor. Nothing is saved. */
+  blueprint_revise: {
+    tier: "admin",
+    params: z.object({ input: ReviseBlueprintInput }),
+    result: z.object({ instructions: z.string() }),
   },
 } as const satisfies Record<string, CommandSpec>;

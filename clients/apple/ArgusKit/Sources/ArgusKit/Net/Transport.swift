@@ -48,8 +48,9 @@ public actor Transport {
     ArgusProtocol.Commands.GetClaudeUsageLimits.name: .seconds(30),
     // Claude reads the code before it answers a guide question.
     RemoteMethod.reviewGuidesAsk.rawValue: .seconds(4 * 60),
-    // The host gives Claude 10 minutes to read the projects and draft a blueprint.
+    // The host gives Claude 10 minutes to read the projects and draft or revise a blueprint.
     ArgusProtocol.Methods.BlueprintsDraft.name: .seconds(11 * 60),
+    ArgusProtocol.Methods.BlueprintsRevise.name: .seconds(11 * 60),
   ]
   /// The longest any request waits, so a connection being retired outlives its calls.
   public static let longestRequestTimeout: Duration = longRequests.values.max() ?? requestTimeout

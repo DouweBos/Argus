@@ -21,6 +21,7 @@ public actor LocalTransport {
     "boot_simulator": .seconds(16 * 60),
     RemoteMethod.reviewGuidesAsk.rawValue: .seconds(4 * 60),
     ArgusProtocol.Methods.BlueprintsDraft.name: .seconds(11 * 60),
+    ArgusProtocol.Methods.BlueprintsRevise.name: .seconds(11 * 60),
   ]
   private static let maxBackoff: Duration = .seconds(5)
 

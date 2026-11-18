@@ -7,6 +7,7 @@ import {
   listBlueprints,
   updateBlueprint,
 } from "../services/blueprint/manager";
+import { reviseBlueprintInstructions } from "../services/blueprint/revise";
 import { defineTypedCommand } from "../services/command/registry";
 
 export function registerBlueprintCommands(): void {
@@ -22,5 +23,8 @@ export function registerBlueprintCommands(): void {
   );
   defineTypedCommand("blueprint_draft", (p) =>
     draftBlueprintFromProjects(p.paths),
+  );
+  defineTypedCommand("blueprint_revise", (p) =>
+    reviseBlueprintInstructions(p.input),
   );
 }

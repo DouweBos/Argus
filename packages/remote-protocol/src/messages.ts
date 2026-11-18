@@ -76,6 +76,7 @@ import {
   BlueprintRun,
   CreateBlueprintInput,
   CreateProjectFromBlueprintInput,
+  ReviseBlueprintInput,
   UpdateBlueprintInput,
 } from "./models/blueprints";
 import { CodeFile, CodeSearchEvent } from "./models/code";
@@ -903,6 +904,8 @@ export const MethodParams = {
   "blueprints.runs": z.object({ blueprint_id: z.string().optional() }),
   /** A draft read from existing projects, for the editor. Nothing is saved. */
   "blueprints.draft": z.object({ paths: z.array(z.string()).min(1) }),
+  /** Instructions rewritten to a note, for the editor. Nothing is saved. */
+  "blueprints.revise": z.object({ input: ReviseBlueprintInput }),
   "integrations.list": z.object({}),
   /** No query: the connected user's open issues in `scope`, newest first. */
   "linear.issues": z.object({
@@ -1443,6 +1446,7 @@ export const MethodResult = {
   "blueprints.create_project": z.object({ run: BlueprintRun }),
   "blueprints.runs": z.object({ runs: z.array(BlueprintRun) }),
   "blueprints.draft": z.object({ draft: BlueprintDraft }),
+  "blueprints.revise": z.object({ instructions: z.string() }),
   "integrations.list": z.object({ integrations: z.array(IntegrationStatus) }),
   "linear.issues": z.object({ issues: z.array(LinearIssue) }),
   /** Null when Linear has no such issue; `states` is its team's workflow, for

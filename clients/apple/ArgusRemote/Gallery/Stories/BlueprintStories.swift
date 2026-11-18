@@ -37,6 +37,9 @@
         GalleryStory("blueprints/generate/drafting", fixtures: GalleryFixtures.blueprints, setup: refresh) {
           GenerateBlueprintView(picked: picked, drafting: true)
         },
+        GalleryStory("blueprints/revise", fixtures: GalleryFixtures.blueprints, setup: refresh) {
+          ReviseBlueprintStory()
+        },
       ]
     }
 
@@ -45,6 +48,17 @@
     @MainActor
     private static func refresh(_ stage: GalleryStage) async {
       await stage.blueprints.refresh()
+    }
+  }
+
+  /// The revise sheet over the fixture Mac-app blueprint.
+  private struct ReviseBlueprintStory: View {
+    @Environment(BlueprintsStore.self) private var store
+
+    var body: some View {
+      ReviseBlueprintSheet(
+        form: store.blueprint(id: GalleryFixtures.macAppBlueprintId).map(BlueprintForm.init) ?? BlueprintForm()
+      ) { _ in }
     }
   }
 #endif

@@ -296,6 +296,7 @@ export interface EventMap {
     success: boolean;
   };
   blueprint_edited: { action: "create" | "delete" | "update" };
+  blueprint_revised: { success: boolean };
   blueprint_project_created: {
     failed_step?: "create_repo" | "register" | "start_agent" | "validate";
     github: boolean;
