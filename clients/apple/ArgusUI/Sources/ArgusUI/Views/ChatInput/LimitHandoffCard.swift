@@ -14,6 +14,7 @@ public struct LimitHandoffCard: View {
   let onHandedOff: () -> Void
   @State private var pendingId: String?
   @State private var error: String?
+  @State private var rowsHeight: CGFloat = 0
 
   public init(
     agentId: String, accounts: [ArgusProtocol.LimitHandoffAccount], onHandedOff: @escaping () -> Void
@@ -67,9 +68,11 @@ public struct LimitHandoffCard: View {
           ForEach(accounts, id: \.accountId) { row($0) }
           ForEach(runners, id: \.id) { runnerRow($0) }
         }
+        .onGeometryChange(for: CGFloat.self, of: \.size.height) { rowsHeight = $0 }
       }
-      .frame(maxHeight: Self.maxRowsHeight)
-      .fixedSize(horizontal: false, vertical: true)
+      // A measured height: fixedSize over a scroll view hands the composer its ideal height,
+      // which pushes the window's toolbar and the composer off screen.
+      .frame(height: min(rowsHeight, Self.maxRowsHeight))
       .scrollBounceBehavior(.basedOnSize)
       if let error {
         Text(error).font(.scaled(size: 12)).foregroundStyle(theme.error)
