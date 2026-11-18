@@ -1,5 +1,6 @@
 import { emitHostEvent } from "@argus/host/bus";
 import { appState } from "../../state";
+import { removeAgentTmpDir } from "./agentTmp";
 import { takeStagedConversation } from "./conversation/live";
 import { forgetLimitResume } from "./limitResume";
 import { clearQueue } from "./messageQueue";
@@ -15,5 +16,6 @@ export function forgetAgent(agentId: string): void {
   takeStagedConversation(agentId);
   clearQueue(agentId);
   forgetLimitResume(agentId);
+  removeAgentTmpDir(agentId).catch(() => undefined);
   emitHostEvent(`agent:status:${agentId}`, "stopped");
 }

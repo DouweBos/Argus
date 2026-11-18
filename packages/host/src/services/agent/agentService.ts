@@ -80,6 +80,7 @@ import { simulatorPool } from "../simulator/pool";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { noteUsageRateLimitLine } from "../usage/limits";
 import { recordTurnUsage } from "../usage/turns";
+import { ensureAgentTmpDir } from "./agentTmp";
 import { loadConversationByRunnerSession } from "./chatHistory";
 import {
   CONDUCTOR_DISALLOWED,
@@ -684,6 +685,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   const env = envForAccount(accountId);
   env.PATH = `${getConductorBinDir()}:${env.PATH ?? ""}`;
   env.ARGUS_AGENT_ID = agentId;
+  env.CLAUDE_CODE_TMPDIR = ensureAgentTmpDir(agentId);
   if (supportsMcp && mcpPort && mcpToken) {
     env.ARGUS_RESOLVER_URL = `http://127.0.0.1:${mcpPort}/argus/acquire-device`;
     env.ARGUS_RESOLVER_TOKEN = mcpToken;

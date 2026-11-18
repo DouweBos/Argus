@@ -11,6 +11,7 @@ import { hostPlatform } from "./platform";
 import { stopPowerAssertion } from "./serverMode";
 import { startAccount, stopAccount } from "./services/account/service";
 import { destroyAllAgents, spawnSpare } from "./services/agent/agentService";
+import { sweepAgentTmpDirs } from "./services/agent/agentTmp";
 import {
   startHostConversations,
   stopHostConversations,
@@ -219,6 +220,9 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   });
   reapOrphanedAgentProcesses().catch((err) => {
     log.error("reapOrphanedAgentProcesses failed:", err);
+  });
+  sweepAgentTmpDirs().catch((err) => {
+    log.error("sweepAgentTmpDirs failed:", err);
   });
 
   // A GUI-launched process gets launchd's bare PATH, not the login shell's.
