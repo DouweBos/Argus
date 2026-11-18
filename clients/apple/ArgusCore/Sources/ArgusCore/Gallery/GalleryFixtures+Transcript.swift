@@ -56,6 +56,12 @@ extension GalleryFixtures {
       "auth_url": "https://mcp.example.com/authorize", "callback_expected": true,
     ])
     fixtures[RemoteMethod.sessionsViewing.rawValue] = "{}"
+    fixtures[RemoteMethod.agentsAskSide.rawValue] = GalleryJSON.encode([
+      "answer": """
+        Mostly female today. **Aubrey** started as a boy's name (from Alberich, "elf ruler") and stayed one \
+        in Britain into the 20th century, but in the US it has been given far more often to girls since the 1970s.
+        """,
+    ])
     fixtures[RemoteMethod.sessionsList.rawValue] = GalleryJSON.encode(["sessions": [Any]()])
     fixtures[RemoteMethod.sessionsFiles.rawValue] = GalleryJSON.encode(["files": [
       "clients/apple/ArgusUI/Sources/ArgusUI/Views/AgentTranscriptView.swift",

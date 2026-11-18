@@ -13,6 +13,8 @@ public struct SideQuestionPanel: View {
   var onSent: (() -> Void)?
 
   @State private var draft = ""
+  /// The exchanges' own height: a popover gives a scroll view none, so it collapsed to a sliver.
+  @State private var contentHeight: CGFloat = 0
 
   public init(agentId: String, onSent: (() -> Void)? = nil) {
     self.agentId = agentId
@@ -38,7 +40,9 @@ public struct SideQuestionPanel: View {
                 .id(exchange.id)
               }
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
           }
+          .modifier(HugsContent(height: contentHeight))
           .onChange(of: exchanges.last?.id) { _, id in
             guard let id else { return }
             withAnimation { proxy.scrollTo(id, anchor: .bottom) }
@@ -69,6 +73,19 @@ public struct SideQuestionPanel: View {
     guard !question.isEmpty else { return }
     draft = ""
     Task { await host.askSide(agentId: agentId, question: question) }
+  }
+}
+
+/// The Mac's popover grows with the exchanges up to a cap, then scrolls; the phone's sheet sizes it already.
+private struct HugsContent: ViewModifier {
+  let height: CGFloat
+
+  func body(content: Content) -> some View {
+    #if os(macOS)
+      content.frame(height: min(max(height, 1), 380))
+    #else
+      content
+    #endif
   }
 }
 
