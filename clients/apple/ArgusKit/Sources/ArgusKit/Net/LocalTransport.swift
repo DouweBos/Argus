@@ -16,10 +16,11 @@ public actor LocalTransport {
   private static let requestTimeout: Duration = .seconds(30)
   /// Commands that legitimately wait longer: a simulator boot waits for the
   /// device to come up, and an EAS Simulator session takes minutes to start.
-  /// A guide question has Claude read the code before it answers.
+  /// A guide question or a blueprint draft has Claude read the code first.
   private static let longRequests: [String: Duration] = [
     "boot_simulator": .seconds(16 * 60),
     RemoteMethod.reviewGuidesAsk.rawValue: .seconds(4 * 60),
+    ArgusProtocol.Methods.BlueprintsDraft.name: .seconds(11 * 60),
   ]
   private static let maxBackoff: Duration = .seconds(5)
 
