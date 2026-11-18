@@ -42,6 +42,15 @@ public enum ArgusRoute: Hashable, Sendable {
   case describeAutomation
   /// `/automations/:automationId`, or one of its runs.
   case automation(id: String, runId: String?)
+  /// `/blueprints`: this computer's recipes for new projects.
+  case blueprints
+  /// `/blueprints/:blueprintId`, or `/blueprints/new` for a new one (prefilled
+  /// from a generated draft when there is one).
+  case blueprint(id: String?)
+  /// `/blueprints/generate`: pick projects to draft a blueprint from.
+  case generateBlueprint
+  /// `/blueprints/new-project?blueprint=`: a new project from a blueprint.
+  case newProject(blueprintId: String?)
   /// `/inbox?automation=&project=`: proposals, work waiting for review, failed
   /// runs, optionally narrowed to one automation and/or project.
   case inbox(InboxFilter = .all)
@@ -101,6 +110,14 @@ public enum ArgusRoute: Hashable, Sendable {
     }
   }
 
+  /// Any of the blueprint screens.
+  public var isBlueprints: Bool {
+    switch self {
+    case .blueprints, .blueprint, .generateBlueprint, .newProject: true
+    default: false
+    }
+  }
+
   public var gitView: GitRoute? {
     if case .sessionGit(_, let view) = self { return view }
     return nil
@@ -129,6 +146,10 @@ public enum ArgusRoute: Hashable, Sendable {
     case .describeAutomation: "/automations/describe"
     case .automation(_, let runId):
       runId == nil ? "/automations/:automationId" : "/automations/:automationId/runs/:runId"
+    case .blueprints: "/blueprints"
+    case .blueprint(let id): id == nil ? "/blueprints/new" : "/blueprints/:blueprintId"
+    case .generateBlueprint: "/blueprints/generate"
+    case .newProject: "/blueprints/new-project"
     case .inbox: "/inbox"
     case .proposal: "/inbox/proposals/:proposalId"
     case .notifications: "/notifications"

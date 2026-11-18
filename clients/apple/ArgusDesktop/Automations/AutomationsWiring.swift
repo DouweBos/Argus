@@ -60,7 +60,7 @@ enum AutomationsWiring {
 
 /// Runs the latest scheduled action once things go quiet for a beat.
 @MainActor
-private final class Coalescer {
+final class Coalescer {
   private var pending: Task<Void, Never>?
 
   func schedule(_ action: @escaping @MainActor () async -> Void) {

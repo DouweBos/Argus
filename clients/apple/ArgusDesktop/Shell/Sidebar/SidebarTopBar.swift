@@ -80,6 +80,9 @@ struct SidebarTopBar: View {
   private var addProject: some View {
     SidebarMenuButton("Add Project", systemImage: "folder.badge.plus") {
       ChromeMenuItem("Add Project", icon: .symbol("folder.badge.plus"), shortcut: "⌘O") { model.addingProject = true }
+      ChromeMenuItem("New Project from Blueprint", icon: .symbol(BlueprintText.icon)) {
+        model.navigate(.newProject(blueprintId: nil))
+      }
       ChromeMenuItem("Import Projects from Claude Code", icon: .symbol(Icon.download)) {
         model.importingCliProjects = true
       }

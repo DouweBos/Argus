@@ -39,6 +39,7 @@
     /// The model's own store, so views reading `model.store` (inbox, automations, hosts) see the fixtures too.
     var host: HostStore { model.store }
     let automations: AutomationsStore
+    let blueprints: BlueprintsStore
     let backend: GalleryBackend
 
     init(story: GalleryStory, model: DesktopModel) async {
@@ -46,6 +47,7 @@
       backend = GalleryBackend(story.fixtures)
       model.store.reset()
       automations = AutomationsStore(host: model.store)
+      blueprints = BlueprintsStore(host: model.store)
       host.capabilities = ["monitor", "control", "admin"]
       await host.attach(backend)
       if story.fixtures[RemoteMethod.projectsList.rawValue] != nil { await host.refreshProjects() }
@@ -63,6 +65,7 @@
       .environment(model)
       .environment(host)
       .environment(automations)
+      .environment(blueprints)
       .environment(model.terminals)
       .environment(model.pullRequests)
       .environment(model.runtime)
@@ -77,7 +80,7 @@
     static var all: [GalleryStory] {
       AutomationStories.all + ComposerStories.all + SessionStories.all + DiffReviewStories.all + ReviewGuideStories.all
         + SettingsStories.all + DeviceStories.all + FileStories.all + HomeStories.all + GitStories.all
-        + TranscriptStories.all + CompareStories.all
+        + TranscriptStories.all + CompareStories.all + BlueprintStories.all
     }
   }
 #endif

@@ -14,6 +14,7 @@ struct RootView: View {
   @State private var app = AppRuntime.app
   @State private var router = Router()
   @State private var automations: AutomationsStore?
+  @State private var blueprints: BlueprintsStore?
   @State private var proposals: ProposalsStore?
   @State private var pullRequests: PullRequestsStore?
   @State private var imageViewer = ImageViewerState()
@@ -34,7 +35,7 @@ struct RootView: View {
 
   var body: some View {
     Group {
-      if unlocked, let automations, let proposals, let pullRequests {
+      if unlocked, let automations, let blueprints, let proposals, let pullRequests {
         navigation
         // One presenter for the whole app, so any transcript image can open
         // without threading modal state through every view between.
@@ -47,6 +48,7 @@ struct RootView: View {
         .environment(\.autoExpandImageReads, app.autoExpandImageReads)
         .environment(router)
         .environment(automations)
+        .environment(blueprints)
         .environment(proposals)
         .environment(pullRequests)
         .environment(imageViewer)
@@ -134,6 +136,8 @@ struct RootView: View {
       await proposals?.refresh()
       await automations?.refresh()
     }
+    // Blueprints live on the computer; another one has its own.
+    .onChange(of: app.identity?.deviceId) { blueprints?.clear() }
     .modifier(WidgetSync(app: app, proposals: proposals))
     .modifier(LiveActivitySync(app: app))
     // Whether Linear is connected decides if Issues is listed at all.
@@ -298,6 +302,7 @@ struct RootView: View {
       if devDriver != nil { askingConsent = false }
     #endif
     if automations == nil { automations = AutomationsStore(host: app.host) }
+    if blueprints == nil { blueprints = BlueprintsStore(host: app.host) }
     if proposals == nil { proposals = ProposalsStore(host: app.host) }
     if pullRequests == nil { pullRequests = PullRequestsStore(host: app.host) }
     router.sessionOfAgent = { [host = app.host] in host.statusByAgent[$0]?.sessionId }

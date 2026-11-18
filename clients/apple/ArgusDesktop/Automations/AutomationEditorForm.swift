@@ -18,8 +18,10 @@ struct AutomationEditorForm: View {
     trigger
     scope
     Section {
-      runner
-      model
+      RunnerModelRows(runner: $draft.runner, model: $draft.model, runners: store.runners) {
+        // A custom runner's own credentials drop the account.
+        if !AutomationAccountPin.applies(toRunner: draft.runner) { draft.claudeAccountId = nil }
+      }
       account
     } header: {
       Text("Runner and model")
@@ -92,20 +94,6 @@ struct AutomationEditorForm: View {
   }
 
   @ViewBuilder
-  private var runner: some View {
-    if !store.runners.isEmpty {
-      Picker("Runner", selection: runnerBinding) {
-        Text("Default").tag("")
-        ForEach(store.runners) { runner in
-          Text(runner.displayName).tag(runner.id)
-            .disabled(!runner.isAvailable).help(runner.unavailableReason ?? "")
-        }
-      }
-      RunnerSetupMenu(flows: store.runners.compactMap(RunnerSetupFlow.init), window: .main)
-    }
-  }
-
-  @ViewBuilder
   private var account: some View {
     if offersAccount {
       Picker("Claude account", selection: accountBinding) {
@@ -128,26 +116,6 @@ struct AutomationEditorForm: View {
     Binding(
       get: { draft.claudeAccountId ?? "" },
       set: { draft.claudeAccountId = $0.isEmpty ? nil : $0 })
-  }
-
-  /// A runner that declares its models gets a picker; Claude Code only learns
-  /// its list from a live handshake, so there it stays free text.
-  @ViewBuilder
-  private var model: some View {
-    let declared = draft.runner.flatMap { id in store.runners.first { $0.id == id } }?.models ?? []
-    if declared.isEmpty {
-      TextField(
-        "Model",
-        text: Binding(get: { draft.model ?? "" }, set: { draft.model = $0.isEmpty ? nil : $0 }),
-        prompt: Text("Blank uses the default")
-      )
-      .font(.system(.body, design: .monospaced))
-    } else {
-      Picker("Model", selection: Binding(get: { draft.model ?? "" }, set: { draft.model = $0.isEmpty ? nil : $0 })) {
-        Text("Default").tag("")
-        ForEach(declared, id: \.value) { Text($0.displayName).tag($0.value) }
-      }
-    }
   }
 
   private var playbook: some View {
@@ -178,18 +146,6 @@ struct AutomationEditorForm: View {
     } footer: {
       Text("Added after the playbook on every run; they win where the two disagree.")
     }
-  }
-
-  /// Model ids don't carry across runners, so a switch drops the model, and a
-  /// custom runner's own credentials drop the account.
-  private var runnerBinding: Binding<String> {
-    Binding(
-      get: { draft.runner ?? "" },
-      set: { id in
-        draft.runner = id.isEmpty ? nil : id
-        draft.model = nil
-        if !AutomationAccountPin.applies(toRunner: draft.runner) { draft.claudeAccountId = nil }
-      })
   }
 
   private func optional(_ path: WritableKeyPath<RemoteAutomationDetail, String?>) -> Binding<String> {

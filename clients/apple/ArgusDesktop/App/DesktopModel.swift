@@ -21,6 +21,7 @@ final class DesktopModel {
   /// Each session's repository, opened when its git panel first shows.
   let git: GitWorkspaces
   let automations: AutomationsStore
+  let blueprints: BlueprintsStore
   let proposals: ProposalsStore
   /// The inbox in full, from the host's catalog — the Mac's inbox and proposal screens.
   let inbox: InboxStore
@@ -183,6 +184,7 @@ final class DesktopModel {
     code = CodeStore(host: store)
     languages = LanguageSupport.install(on: code)
     automations = AutomationsStore(host: store)
+    blueprints = BlueprintsStore(host: store)
     proposals = ProposalsStore(host: store)
     inbox = InboxStore(host: store)
     terminals.replayed = { bytes, truncated in
@@ -208,6 +210,7 @@ final class DesktopModel {
     SettingsPalette.register(in: palette)
     platform.closeDevicePopout = { [runtime] key in runtime.closePopout(key) }
     AutomationsWiring.install(in: self)
+    BlueprintsWiring.install(in: self)
     hosts.onReady = { [weak self] hostId in Task { await self?.hostCameUp(hostId) } }
     hosts.onHostsChanged = { [weak self] in Task { await self?.reloadLists() } }
     hosts.onAction = { action, success in
@@ -342,6 +345,7 @@ final class DesktopModel {
     await store.loadRecentAgents()
     await huddles.load()
     await AutomationsWiring.reload(self)
+    await blueprints.refresh()
     for project in store.projects {
       await openProject(project.repoRoot)
     }

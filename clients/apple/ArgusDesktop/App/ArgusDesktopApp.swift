@@ -24,6 +24,7 @@ struct ArgusDesktopApp: App {
         .environment(delegate.model.pullRequests)
         .environment(delegate.model.runtime)
         .environment(delegate.model.automations)
+        .environment(delegate.model.blueprints)
         .environment(delegate.model.proposals)
         .environment(delegate.model.hosts)
         .environment(delegate.model.account)
@@ -170,6 +171,7 @@ private struct ProjectCommands: View {
   var body: some View {
     Button("Add Project") { model.addingProject = true }
       .keyboardShortcut("o", modifiers: .command)
+    Button("New Project from Blueprint") { model.navigate(.newProject(blueprintId: nil)) }
     Button("Import Projects from Claude Code") { model.importingCliProjects = true }
     Divider()
     // The code view's Open Quickly owns ⇧⌘O while it's on screen, as in Xcode.
@@ -218,6 +220,7 @@ private struct NavigationCommands: View {
     Button("Inbox") { model.navigate(.inbox()) }
       .keyboardShortcut("i", modifiers: [.command, .shift])
     Button("Automations") { model.navigate(.automations) }
+    Button("Blueprints") { model.navigate(.blueprints) }
     Divider()
     Button(model.sidePanelVisible ? "Hide Side Panel" : "Show Side Panel") {
       model.toggleSidePanel(via: NSApp.currentEvent?.type == .keyDown ? .shortcut : .menu)

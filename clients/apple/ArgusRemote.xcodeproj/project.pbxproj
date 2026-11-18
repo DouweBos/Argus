@@ -48,6 +48,12 @@
 		1246C2A1D64856EDBCF299A5 /* SettingsPages.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD946F22E6B6B5258324CDCB /* SettingsPages.swift */; };
 		8B82B5637BDFB9252A8D9AD0 /* BranchesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01FFCA8035ABC8A01D2C6CF /* BranchesView.swift */; };
 		91BEB5E2000254899FF02DBF /* DescribeAutomationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 894443D21C1F9129A450074B /* DescribeAutomationView.swift */; };
+		E62C230DC0DCB935D161FB8A /* BlueprintRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65D99A54A8C92465DAAB04E7 /* BlueprintRows.swift */; };
+		F5D58AFD5F0242BD0FFE0BEA /* BlueprintsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B08F9B91A5D24D0FD5C3B5 /* BlueprintsView.swift */; };
+		7391678BDC0A8396CFDADC91 /* BlueprintFormSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8097F21DFC9A0E54C9D4B416 /* BlueprintFormSections.swift */; };
+		F9E631C1DACB66413FDD7C26 /* BlueprintEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5D8AABF46B4A4C83FD11DA /* BlueprintEditorView.swift */; };
+		8CEA41D1E71AE08F31A83D58 /* NewProjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1714A2D8EF889BAA5E52AFD7 /* NewProjectView.swift */; };
+		12472B2216FB98512214C5BE /* GenerateBlueprintView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2B8CCD2D8B1407D7C76D86 /* GenerateBlueprintView.swift */; };
 		97AF0DF41C25983BAD9692C1 /* PullRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74103E5844EC73EB127B8F8A /* PullRequestView.swift */; };
 		9EC0F026CA4FC53AA74669D9 /* ProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117E737A68AD0170E2CC50F7 /* ProjectsView.swift */; };
 		A1F0C0DE0000000000000B01 /* HomeProjectSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0C0DE0000000000000F01 /* HomeProjectSection.swift */; };
@@ -223,6 +229,12 @@
 		B35E55100000000000000006 /* SessionSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionSidebar.swift; sourceTree = "<group>"; };
 		D1A5DE0000000000000000A4 /* RouteScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteScreen.swift; sourceTree = "<group>"; };
 		894443D21C1F9129A450074B /* DescribeAutomationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescribeAutomationView.swift; sourceTree = "<group>"; };
+		65D99A54A8C92465DAAB04E7 /* BlueprintRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlueprintRows.swift; sourceTree = "<group>"; };
+		F8B08F9B91A5D24D0FD5C3B5 /* BlueprintsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlueprintsView.swift; sourceTree = "<group>"; };
+		8097F21DFC9A0E54C9D4B416 /* BlueprintFormSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlueprintFormSections.swift; sourceTree = "<group>"; };
+		BD5D8AABF46B4A4C83FD11DA /* BlueprintEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlueprintEditorView.swift; sourceTree = "<group>"; };
+		1714A2D8EF889BAA5E52AFD7 /* NewProjectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewProjectView.swift; sourceTree = "<group>"; };
+		AF2B8CCD2D8B1407D7C76D86 /* GenerateBlueprintView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateBlueprintView.swift; sourceTree = "<group>"; };
 		95ACC76BC6E417BE6A706B18 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9798D9FC585435B89959E156 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		9C7B226438808577288DF012 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
@@ -500,6 +512,12 @@
 				A1E0F1000000000000000004 /* QuickOpenView.swift */,
 				A1E0F1000000000000000002 /* FileView.swift */,
 				894443D21C1F9129A450074B /* DescribeAutomationView.swift */,
+				65D99A54A8C92465DAAB04E7 /* BlueprintRows.swift */,
+				F8B08F9B91A5D24D0FD5C3B5 /* BlueprintsView.swift */,
+				8097F21DFC9A0E54C9D4B416 /* BlueprintFormSections.swift */,
+				BD5D8AABF46B4A4C83FD11DA /* BlueprintEditorView.swift */,
+				1714A2D8EF889BAA5E52AFD7 /* NewProjectView.swift */,
+				AF2B8CCD2D8B1407D7C76D86 /* GenerateBlueprintView.swift */,
 				265F66754A83F20EA323B6C6 /* ProposalView.swift */,
 				74103E5844EC73EB127B8F8A /* PullRequestView.swift */,
 				DC876CC2111BA8BDFB115904 /* PullRequestsView.swift */,
@@ -1067,6 +1085,12 @@
 				A1E0F1000000000000000003 /* QuickOpenView.swift in Sources */,
 				A1E0F1000000000000000001 /* FileView.swift in Sources */,
 				91BEB5E2000254899FF02DBF /* DescribeAutomationView.swift in Sources */,
+				E62C230DC0DCB935D161FB8A /* BlueprintRows.swift in Sources */,
+				F5D58AFD5F0242BD0FFE0BEA /* BlueprintsView.swift in Sources */,
+				7391678BDC0A8396CFDADC91 /* BlueprintFormSections.swift in Sources */,
+				F9E631C1DACB66413FDD7C26 /* BlueprintEditorView.swift in Sources */,
+				8CEA41D1E71AE08F31A83D58 /* NewProjectView.swift in Sources */,
+				12472B2216FB98512214C5BE /* GenerateBlueprintView.swift in Sources */,
 				13A4F4FA7A12EE9750CF8397 /* ProposalView.swift in Sources */,
 				97AF0DF41C25983BAD9692C1 /* PullRequestView.swift in Sources */,
 				EB002C96DC172A3D1C7BDEFF /* PullRequestsView.swift in Sources */,

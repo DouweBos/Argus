@@ -52,6 +52,12 @@ extension ArgusRoute {
       // A GitLab project can sit in nested groups: `/pull-requests/group/sub/project/12`.
       guard let last = parts.last, let number = Int(last) else { return nil }
       self = .pullRequest(repo: parts.dropFirst().dropLast().joined(separator: "/"), number: number)
+    case ("blueprints", 1): self = .blueprints
+    case ("blueprints", 2) where parts[1] == "new": self = .blueprint(id: nil)
+    case ("blueprints", 2) where parts[1] == "generate": self = .generateBlueprint
+    case ("blueprints", 2) where parts[1] == "new-project":
+      self = .newProject(blueprintId: query["blueprint"].flatMap(\.nonEmpty))
+    case ("blueprints", 2): self = .blueprint(id: parts[1])
     case ("automations", 1): self = .automations
     case ("automations", 2) where parts[1] == "quick": self = .quickRun(runId: nil)
     case ("automations", 2) where parts[1] == "describe": self = .describeAutomation
@@ -110,6 +116,10 @@ extension ArgusRoute {
       Self.issuesBase(scope: scope, query: query) + (issue.map { "/\(Self.encode($0))" } ?? "")
         + Self.query([("q", query)])
     case .design(let url, let sessionId): "/design" + Self.query([("url", url), ("session", sessionId)])
+    case .blueprints: "/blueprints"
+    case .blueprint(let id): "/blueprints/" + (id.map(Self.encode) ?? "new")
+    case .generateBlueprint: "/blueprints/generate"
+    case .newProject(let blueprintId): "/blueprints/new-project" + Self.query([("blueprint", blueprintId)])
     case .automations: "/automations"
     case .quickRun(let runId): runId.map { "/automations/quick/runs/\(Self.encode($0))" } ?? "/automations/quick"
     case .describeAutomation: "/automations/describe"

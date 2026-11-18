@@ -57,6 +57,7 @@ struct HomeScreen: View {
         section("Projects") {
           HStack(spacing: 12) {
             Button("Import from Claude Code") { model.importingCliProjects = true }.buttonStyle(.accentLink)
+            Button("New from Blueprint") { model.navigate(.newProject(blueprintId: nil)) }.buttonStyle(.accentLink)
             Button("Add Project") { model.addingProject = true }.buttonStyle(.accentLink)
           }
         } content: {

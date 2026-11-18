@@ -61,6 +61,7 @@ struct ProjectSidebarSection: View {
   @ViewBuilder private var projectMenu: some View {
     Button("New Session") { model.newSessionProject = project }
     Button("Project Settings") { model.projectSettingsRepo = project.repoRoot }
+    Button("Create Blueprint from Project") { BlueprintActions.generate(model, paths: [project.repoRoot]) }
     if let root {
       Button("Open in New Tab") { openInTab(root) }
       PullRequestWatchButton(session: root)

@@ -209,6 +209,11 @@ enum TelemetryEvent {
   }
 
   /// Which list of projects a project was folded in.
+  enum BlueprintScreen: String {
+    case list, editor, generate
+    case newProject = "new_project"
+  }
+
   enum ProjectListSource: String {
     case home, sidebar
   }
@@ -294,6 +299,8 @@ enum TelemetryEvent {
   case homeUsed(action: HomeAction)
   /// The New Session composer was opened, to measure which way in people use.
   case newSessionOpened(source: NewSessionSource)
+  /// A blueprint screen opened; the computer counts what is saved, drafted and created.
+  case blueprintOpened(screen: BlueprintScreen)
   /// A turn's folded work was opened in a chat; `working` says the agent was still on it.
   case transcriptWorkLogOpened(working: Bool)
   /// An Artifact an agent published or opened was opened from its card in the chat.
@@ -401,6 +408,7 @@ enum TelemetryEvent {
     case .sessionPanelUsed: "ios_session_panel_used"
     case .homeUsed: "ios_home_used"
     case .newSessionOpened: "ios_new_session_opened"
+    case .blueprintOpened: "ios_blueprint_opened"
     case .transcriptWorkLogOpened: "ios_transcript_work_log_opened"
     case .artifactOpened: "ios_artifact_opened"
     case .messageAction: "ios_message_action"
@@ -554,6 +562,8 @@ enum TelemetryEvent {
       ["action": action.rawValue, "tab": tab.rawValue]
     case .newSessionOpened(let source):
       ["source": source.rawValue]
+    case .blueprintOpened(let screen):
+      ["screen": screen.rawValue]
     case .homeUsed(let action):
       ["action": action.rawValue]
     case .fileViewed(let source, let language):

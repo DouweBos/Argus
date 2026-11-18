@@ -62,6 +62,15 @@ struct ProjectsView: View {
     .contentMargins(.horizontal, width > Self.maxWidth + 80 ? (width - Self.maxWidth) / 2 : nil, for: .scrollContent)
     .navigationTitle("Home")
     .toolbar {
+      if host.hasControl, app.identity != nil {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button {
+            router.push(.newProject(blueprintId: nil))
+          } label: {
+            Label("New project", systemImage: BlueprintSymbol.newProject)
+          }
+        }
+      }
       // The Mac sidebar's New Session, on the project last worked in.
       if host.hasControl, !host.projects.isEmpty {
         ToolbarItem(placement: .topBarTrailing) {
@@ -132,8 +141,10 @@ struct ProjectsView: View {
   private var projects: some View {
     if host.projects.isEmpty {
       if noProjects {
-        Section("Projects") {
-          MutedText("Open a repository in Argus on \(hostName) and it'll show up here.")
+        Section {
+          MutedText("Open a repository in Argus on \(hostName) and it'll show up here, or start a new one from a blueprint.")
+        } header: {
+          projectsHeader
         }
       }
     } else {
@@ -142,10 +153,15 @@ struct ProjectsView: View {
           project: project, newSession: { newSession(in: project) }, snooze: { snoozing = $0 },
           remove: { projectToRemove = project }
         ) {
-          if project.id == host.projects.first?.id { Text("Projects") }
+          if project.id == host.projects.first?.id { projectsHeader }
         }
       }
     }
+  }
+
+  /// Blueprints make new projects, so they're reached from here.
+  private var projectsHeader: some View {
+    HomeSectionHeader(title: "Projects", action: ("Blueprints", { router.push(.blueprints) }))
   }
 
   /// Agents across every project: the ones still working, or waiting on you,

@@ -21,6 +21,7 @@ enum BuiltinPalette {
       (.inbox(), "Inbox", Icon.inbox),
       (.automations, "Automations", Icon.automations),
       (.quickRun(runId: nil), "Quick Run", "bolt"),
+      (.blueprints, "Blueprints", BlueprintText.icon),
       (.agents, "Agents", Icon.agents),
       (.runtimes, "Runtimes", Icon.runtimes),
       (.devices, "Devices", Icon.devices),
@@ -153,6 +154,10 @@ enum BuiltinPalette {
         id: "app.add-project", title: "Add Project", section: "App", keywords: ["open repo"],
         systemImage: "folder.badge.plus", shortcut: "⌘O"
       ) { model.addingProject = true },
+      PaletteCommand(
+        id: "app.new-project-from-blueprint", title: "New Project from Blueprint", section: "App",
+        keywords: ["create", "template", "scaffold", "repo"], systemImage: BlueprintText.icon
+      ) { model.navigate(.newProject(blueprintId: nil)) },
       PaletteCommand(
         id: "app.import-cli-projects", title: "Import Projects from Claude Code", section: "App",
         keywords: ["claude code", "cli", "history", "add project"], systemImage: "square.and.arrow.down"

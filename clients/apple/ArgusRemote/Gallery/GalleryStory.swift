@@ -48,6 +48,7 @@
     let app = AppStore()
     let router = Router()
     let automations: AutomationsStore
+    let blueprints: BlueprintsStore
     let proposals: ProposalsStore
     let pullRequests: PullRequestsStore
     let imageViewer = ImageViewerState()
@@ -57,6 +58,7 @@
     init(story: GalleryStory) async {
       backend = GalleryBackend(story.fixtures)
       automations = AutomationsStore(host: app.host)
+      blueprints = BlueprintsStore(host: app.host)
       proposals = ProposalsStore(host: app.host)
       pullRequests = PullRequestsStore(host: app.host)
       app.host.capabilities = ["monitor", "control", "admin"]
@@ -77,6 +79,7 @@
       .environment(app.host)
       .environment(router)
       .environment(automations)
+      .environment(blueprints)
       .environment(proposals)
       .environment(pullRequests)
       .environment(imageViewer)
@@ -88,7 +91,7 @@
   enum GalleryStories {
     static var all: [GalleryStory] {
       ComposerStories.all + SettingsStories.all + DeviceStories.all + FileStories.all + HomeStories.all + AutomationStories.all
-        + GitStories.all + TranscriptStories.all + ShareStories.all + LiveActivityStories.all + CompareStories.all
+        + BlueprintStories.all + GitStories.all + TranscriptStories.all + ShareStories.all + LiveActivityStories.all + CompareStories.all
     }
   }
 #endif

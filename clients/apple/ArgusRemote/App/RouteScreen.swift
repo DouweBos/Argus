@@ -226,6 +226,14 @@ struct RouteScreen: View {
       DescribeAutomationView()
     case .run(let id, let label):
       RunView(runId: id, label: label)
+    case .blueprints:
+      BlueprintsView()
+    case .blueprint(let id):
+      BlueprintEditorView(blueprintId: id).id(id)
+    case .generateBlueprint:
+      GenerateBlueprintView()
+    case .newProject(let id):
+      NewProjectView(blueprintId: id)
     case .settings:
       SettingsView()
     case .settingsPage(let page):

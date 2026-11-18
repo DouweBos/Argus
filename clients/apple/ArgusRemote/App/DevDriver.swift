@@ -501,6 +501,10 @@
       case "automations": self = .automations
       case "automation": self = .automation(id: arg(1), label: arg(2))
       case "run": self = .run(id: arg(1), label: arg(2))
+      case "blueprints": self = .blueprints
+      case "blueprint": self = .blueprint(id: arg(1).isEmpty ? nil : arg(1))
+      case "generateBlueprint": self = .generateBlueprint
+      case "newProject": self = .newProject(blueprintId: arg(1).isEmpty ? nil : arg(1))
       case "settings": self = .settings
       case "settingsPage":
         guard let page = SettingsPane(rawValue: arg(1)) else { return nil }

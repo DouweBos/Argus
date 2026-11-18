@@ -68,6 +68,14 @@ enum Route: Hashable {
   /// "Describe it": a sentence in, a draft to review and create.
   case describeAutomation
   case run(id: String, label: String)
+  /// The computer's recipes for new projects.
+  case blueprints
+  /// Nil id is a new blueprint, prefilled from a generated draft when there is one.
+  case blueprint(id: String?)
+  /// Pick projects for Claude to draft a blueprint from.
+  case generateBlueprint
+  /// A new project from a blueprint; nil picks the first.
+  case newProject(blueprintId: String?)
   case settings
   /// One page of Settings.
   case settingsPage(SettingsPane)
@@ -121,6 +129,10 @@ enum Route: Hashable {
     case .automation(let id, _): ArgusRoute.automation(id: id, runId: nil).pattern
     case .quickRun: ArgusRoute.quickRun(runId: nil).pattern
     case .run(let id, _): ArgusRoute.automation(id: "", runId: id).pattern
+    case .blueprints: ArgusRoute.blueprints.pattern
+    case .blueprint(let id): ArgusRoute.blueprint(id: id).pattern
+    case .generateBlueprint: ArgusRoute.generateBlueprint.pattern
+    case .newProject(let id): ArgusRoute.newProject(blueprintId: id).pattern
     case .notifications: ArgusRoute.notifications.pattern
     case .usage: ArgusRoute.usage(.limits).pattern
     case .usageModel(let tab, let runner, let model, _): ArgusRoute.usageModel(tab, runner: runner, model: model).pattern
