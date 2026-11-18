@@ -2,6 +2,12 @@ import { EventEmitter } from "node:events";
 import { describe, expect, it, vi } from "vitest";
 
 const events = vi.hoisted(() => [] as [string, unknown][]);
+const usage = vi.hoisted(() => ({
+  response: {
+    rate_limits_available: true,
+    rate_limits: { five_hour: { utilization: 10, resets_at: null } },
+  } as unknown,
+}));
 vi.mock("@argus/host/bus", () => ({
   emitHostEvent: (channel: string, payload: unknown) =>
     events.push([channel, payload]),
@@ -24,10 +30,7 @@ vi.mock("node:child_process", () => ({
           if (!line.includes("get_usage")) {
             return;
           }
-          const response = {
-            rate_limits_available: true,
-            rate_limits: { five_hour: { utilization: 10, resets_at: null } },
-          };
+          const response = usage.response;
           setImmediate(() =>
             child.stdout.emit(
               "data",
@@ -75,5 +78,18 @@ describe("usage limit change events", () => {
     );
     expect(events.at(-1)?.[0]).toBe("usage:limits-changed");
     expect(sessionUsed(events.at(-1)?.[1])).toBeCloseTo(43);
+  });
+});
+
+describe("a signed-out account", () => {
+  it("says so instead of reporting no plan limits", async () => {
+    usage.response = {
+      subscription_type: null,
+      rate_limits_available: false,
+      rate_limits: null,
+    };
+    const [account] = (await getClaudeUsageLimits(true)).accounts;
+    expect(account?.status).toBe("unsupported");
+    expect(account?.message).toMatch(/Signed out/);
   });
 });

@@ -107,7 +107,7 @@ export function usageAccountViews(
       plan: account.subscription_type,
       state,
       stale: state === "ok" && account.status === "failed",
-      message: null,
+      message: account.message ?? null,
       windows: state === "ok" ? usageWindowViews(account, now) : [],
     };
   });

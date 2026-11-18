@@ -32,6 +32,9 @@ const GATEWAY_ENV = [
   "ANTHROPIC_API_KEY",
 ];
 
+const SIGNED_OUT =
+  "Signed out. Sign in to this account again to see its limits.";
+
 const cache = new Map<string, ClaudeAccountLimits>();
 const inflight = new Map<string, Promise<ClaudeAccountLimits>>();
 
@@ -153,10 +156,13 @@ async function probe(
   try {
     const now = Date.now();
     const parsed = windowsFromUsageResponse(await requestUsage(id), now);
+    // A claude.ai account the CLI answers without a plan has lost its sign-in.
+    const signedOut = !parsed.available && parsed.subscriptionType === null;
     const result: ClaudeAccountLimits = {
       ...base,
       subscription_type: parsed.subscriptionType ?? base.subscription_type,
       status: parsed.available ? "ok" : "unsupported",
+      message: signedOut ? SIGNED_OUT : null,
       windows: parsed.windows,
       checked_at: now,
     };

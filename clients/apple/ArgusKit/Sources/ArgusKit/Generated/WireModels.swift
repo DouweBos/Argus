@@ -3647,6 +3647,7 @@ extension ArgusProtocol {
     public var label: String
     public var status: ClaudeAccountLimitsStatus
     public var subscriptionType: String?
+    public var message: String?
     public var windows: [UsageLimitWindow]
     public var checkedAt: Double
 
@@ -3655,15 +3656,17 @@ extension ArgusProtocol {
       case label = "label"
       case status = "status"
       case subscriptionType = "subscription_type"
+      case message = "message"
       case windows = "windows"
       case checkedAt = "checked_at"
     }
 
-    public init(accountId: String, label: String, status: ClaudeAccountLimitsStatus, subscriptionType: String? = nil, windows: [UsageLimitWindow], checkedAt: Double) {
+    public init(accountId: String, label: String, status: ClaudeAccountLimitsStatus, subscriptionType: String? = nil, message: String? = nil, windows: [UsageLimitWindow], checkedAt: Double) {
       self.accountId = accountId
       self.label = label
       self.status = status
       self.subscriptionType = subscriptionType
+      self.message = message
       self.windows = windows
       self.checkedAt = checkedAt
     }
@@ -3674,6 +3677,7 @@ extension ArgusProtocol {
       try c.encode(label, forKey: .label)
       try c.encode(status, forKey: .status)
       try c.encode(subscriptionType, forKey: .subscriptionType)
+      try c.encodeIfPresent(message, forKey: .message)
       try c.encode(windows, forKey: .windows)
       try c.encode(checkedAt, forKey: .checkedAt)
     }

@@ -105,7 +105,7 @@ public struct UsageLimitsView: View {
       Card {
         LimitsBody(
           state: .init(account.status), windows: account.windows, now: now,
-          failure: "Couldn't read this account's limits.", empty: "No plan limits for this account",
+          failure: "Couldn't read this account's limits.", empty: account.message ?? "No plan limits for this account",
           onRetry: onRetry)
       }
     }

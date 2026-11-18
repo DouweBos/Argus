@@ -26,6 +26,8 @@ export const ClaudeAccountLimits = z.object({
   /** `unsupported`: API-key or console accounts have no plan limits. */
   status: z.enum(["failed", "ok", "unsupported"]),
   subscription_type: z.string().nullable(),
+  /** Why the windows are missing (signed out); absent from older hosts. */
+  message: z.string().nullable().optional(),
   windows: z.array(UsageLimitWindow),
   /** Unix ms of the last probe. */
   checked_at: z.number(),
