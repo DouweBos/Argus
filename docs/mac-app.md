@@ -54,6 +54,11 @@ developed, and an existing install updates into Argus for Mac by itself (see
   emulator or browser, live, to tap, type, scroll and rotate; Simulate,
   Inspect (the iOS UI inspector) and Logs modes; devices in their own floating
   windows. DevTools for the session's browser open in a window of their own.
+  The device picker's Video Inputs section shows capture cards and cameras
+  connected to this Mac, view-only. It is only offered for sessions on this
+  Mac, never for another computer's, and the video never leaves the app: no
+  host command or paired device can reach it. macOS asks for camera access the
+  first time.
 - The Devices screen: every simulator and emulator, with boot, shut down, a
   live grid, and each device's details with a live picture.
 - **Git** for each session (the Git tab): the working copy with file, hunk

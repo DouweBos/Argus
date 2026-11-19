@@ -26,7 +26,7 @@ struct RuntimePanel: View {
   }
 
   private var logsAvailable: Bool {
-    platform != .web && selectedDevice != nil && runtime.toolEnabled("device-debug")
+    (platform == .ios || platform == .android) && selectedDevice != nil && runtime.toolEnabled("device-debug")
   }
 
   /// The session's machine, or the shown one off a session. Reads the
@@ -93,6 +93,8 @@ struct RuntimePanel: View {
       RuntimeLogsView(deviceKey: selectedDevice ?? "")
     case .ios, .android:
       RuntimeNativeView(platform: platform, sessionId: sessionId)
+    case .video:
+      VideoInputView(input: runtime.videoInputs.input(selectedDevice), local: panelHost == Hosts.local)
     }
   }
 
@@ -118,8 +120,8 @@ struct RuntimePanel: View {
         modePicker.fixedSize()
       }
       Spacer(minLength: 0)
-      // The browser belongs to its session's panel; everything else detaches.
-      if platform != .web, let device = selectedDevice {
+      // Simulators and emulators detach; the browser and video inputs stay in their panel.
+      if platform == .ios || platform == .android, let device = selectedDevice {
         Button {
           openWindow(value: DevicePopoutTarget(platform: platform.rawValue, deviceKey: device))
           MacTelemetry.capture(.devicePopoutOpened(platform: platform.rawValue))
@@ -166,8 +168,19 @@ struct RuntimeTargetPicker: View {
           ) { runtime.select(platform: .android, device: device.serial, session: sessionId) }
         }
       }
+      // Never offered for another computer's session: the video can't leave this Mac.
+      if runtime.videoInputsAvailable {
+        Section("Video Inputs") {
+          if runtime.videoInputs.inputs.isEmpty { Text("None") }
+          ForEach(runtime.videoInputs.inputs) { input in
+            toggle(input.name, on: isSelected(.video, input.id)) {
+              runtime.select(platform: .video, device: input.id, session: sessionId)
+            }
+          }
+        }
+      }
     } label: {
-      Label(label, systemImage: Icon.simulator)
+      Label(label, systemImage: runtime.devicePlatform == .video ? "video" : Icon.simulator)
     }
     .menuStyle(.borderlessButton)
     .clickable()
@@ -193,6 +206,10 @@ struct RuntimeTargetPicker: View {
     case .android:
       return runtime.androidDevice(runtime.selectedDevice(platform: .android, session: sessionId))?
         .name ?? "Pick device"
+    case .video:
+      guard runtime.videoInputsAvailable else { return "Pick device" }
+      return runtime.videoInputs.input(runtime.selectedDevice(platform: .video, session: sessionId))?.name
+        ?? "Pick device"
     }
   }
 }

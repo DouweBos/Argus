@@ -81,7 +81,7 @@ struct RuntimeNativeView: View {
           id: $0.serial, name: $0.name, online: $0.online, isTv: $0.isTv, remote: .android,
           avdName: $0.avdName)
       }
-    case .web:
+    case .web, .video:
       return nil
     }
   }

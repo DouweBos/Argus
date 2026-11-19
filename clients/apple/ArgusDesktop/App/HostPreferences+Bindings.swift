@@ -81,7 +81,7 @@ extension HostPreferences {
         slot: .uiState("runtime.platform"),
         read: { home.string(forKey: RuntimeModel.Keys.platform).map(JSONValue.string) },
         write: { value in
-          // Electron's video input has no counterpart here.
+          // Platforms this Mac knows; the video input pick itself never leaves this Mac.
           if case .string(let raw) = value, RuntimeModel.Platform(rawValue: raw) != nil {
             home.set(raw, forKey: RuntimeModel.Keys.platform)
           }

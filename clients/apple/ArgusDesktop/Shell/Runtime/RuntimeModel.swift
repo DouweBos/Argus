@@ -12,6 +12,8 @@ final class RuntimeModel {
   enum Platform: String, CaseIterable {
     case ios
     case android
+    /// A capture card or camera on this Mac.
+    case video
     case web
   }
 
@@ -56,6 +58,9 @@ final class RuntimeModel {
 
   private var iosBySession: [String: String]
   private var androidBySession: [String: String]
+  private var videoBySession: [String: String]
+  /// Capture cards and cameras on this Mac, listed in-process.
+  let videoInputs = VideoInputs()
   /// The page each session's browser was last on, so returning to it doesn't reload.
   var browserUrls: [String: String] = [:]
   /// Sessions whose browser has loaded its start URL this launch.
@@ -75,6 +80,7 @@ final class RuntimeModel {
     static let platform = "runtime.platform"
     static let ios = "runtime.iosBySession"
     static let android = "runtime.androidBySession"
+    static let video = "runtime.videoBySession"
     static let browserPreset = "runtime.browserPreset"
     static let devicePlatform = "runtime.devicePlatform"
   }
@@ -89,6 +95,7 @@ final class RuntimeModel {
       defaults.string(forKey: Keys.devicePlatform).flatMap(Platform.init) ?? (platform == .web ? .ios : platform)
     iosBySession = defaults.dictionary(forKey: Keys.ios) as? [String: String] ?? [:]
     androidBySession = defaults.dictionary(forKey: Keys.android) as? [String: String] ?? [:]
+    videoBySession = defaults.dictionary(forKey: Keys.video) as? [String: String] ?? [:]
     browserPreset = defaults.string(forKey: Keys.browserPreset) ?? "desktop"
   }
 
@@ -113,6 +120,9 @@ final class RuntimeModel {
     }
   }
 
+  /// Capture cards are this Mac's own, so only its own sessions get them.
+  var videoInputsAvailable: Bool { hostId == Hosts.local }
+
   // MARK: Selection
 
   func selectedDevice(platform: Platform, session: String?) -> String? {
@@ -120,6 +130,7 @@ final class RuntimeModel {
     switch platform {
     case .ios: return iosBySession[key]
     case .android: return androidBySession[key]
+    case .video: return videoBySession[key]
     case .web: return nil
     }
   }
@@ -135,6 +146,9 @@ final class RuntimeModel {
     case .android:
       androidBySession[key] = device
       defaults.set(androidBySession, forKey: Keys.android)
+    case .video:
+      videoBySession[key] = device
+      defaults.set(videoBySession, forKey: Keys.video)
     case .web:
       startBrowser(session: session)
     }
@@ -289,7 +303,7 @@ final class RuntimeModel {
     case .android:
       _ = try? await backend.request(
         ArgusProtocol.Commands.DisconnectAndroidDevice.self, .init(serial: device))
-    case .web:
+    case .web, .video:
       return
     }
     await refresh()

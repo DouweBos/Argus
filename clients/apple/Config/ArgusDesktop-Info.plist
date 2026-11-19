@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Show the picture from capture cards and cameras connected to this Mac. Video stays on this Mac.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Dictate messages to your agents. Speech is transcribed on this Mac.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

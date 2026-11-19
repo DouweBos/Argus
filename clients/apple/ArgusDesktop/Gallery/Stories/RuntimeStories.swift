@@ -12,7 +12,14 @@
             await HomeStories.load(stage)
             stage.model.terminals.galleryFill(tabs)
           }
-        ) { RuntimesOverview() }
+        ) { RuntimesOverview() },
+        // The Device tab on a capture card: nothing picked yet, and another computer's session.
+        GalleryStory("runtimes/video-input/none", size: CGSize(width: 520, height: 420)) {
+          VideoInputView(input: nil, local: true)
+        },
+        GalleryStory("runtimes/video-input/remote", size: CGSize(width: 520, height: 420)) {
+          VideoInputView(input: VideoInputs.Input(id: "card", name: "Elgato HD60 X"), local: false)
+        },
       ]
     }
 

@@ -330,11 +330,13 @@ enum MacTelemetryEvent {
   case terminalReplayed(bytes: String, truncated: Bool)
   /// Find in a terminal was closed after a search.
   case terminalFindUsed(matches: String, navigated: Bool)
-  /// A runtime target was picked; `platform` is `ios`, `android` or `web`.
+  /// A runtime target was picked; `platform` is `ios`, `android`, `video` or `web`.
   case runtimeTargetPicked(platform: String)
   /// A device picture was closed after being shown.
   case deviceWatched(platform: String, durationMs: Int, interacted: Bool)
   case devicePopoutOpened(platform: String)
+  /// A capture card or camera picture was asked for: it started, or why not.
+  case videoInputShown(outcome: VideoInputOutcome)
   /// The side panel was shown or hidden for the session on screen.
   case panelToggled(shown: Bool, via: PanelSource)
   /// A side panel tab was opened or brought to the front.
@@ -484,6 +486,7 @@ enum MacTelemetryEvent {
     case .runtimeTargetPicked: "mac_runtime_target_picked"
     case .deviceWatched: "mac_device_watched"
     case .devicePopoutOpened: "mac_device_popout_opened"
+    case .videoInputShown: "mac_video_input_shown"
     case .panelToggled: "mac_panel_toggled"
     case .panelTabOpened: "mac_panel_tab_opened"
     case .artifactOpened: "mac_artifact_opened"
@@ -655,6 +658,8 @@ enum MacTelemetryEvent {
       ["platform": platform]
     case .deviceWatched(let platform, let durationMs, let interacted):
       ["platform": platform, "duration_ms": durationMs, "interacted": interacted]
+    case .videoInputShown(let outcome):
+      ["outcome": outcome.rawValue]
     case .devicePopoutOpened(let platform):
       ["platform": platform]
     case .panelToggled(let shown, let via):

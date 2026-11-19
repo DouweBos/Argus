@@ -3,6 +3,12 @@ import Foundation
 
 /// The props' enums, kept apart from the catalog so it stays readable.
 extension MacTelemetryEvent {
+  enum VideoInputOutcome: String {
+    case started
+    case denied
+    case failed
+  }
+
   enum PullRequestAction: String {
     case open
     case merge
