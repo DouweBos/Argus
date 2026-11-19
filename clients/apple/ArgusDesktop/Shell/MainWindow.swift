@@ -50,6 +50,7 @@ struct MainWindow: View {
     }
     // One flat canvas: the toolbar draws no bar of its own over it.
     .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+    .flatFullScreenTitlebar()
     .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
       windowWidth = width
       fitColumns()
