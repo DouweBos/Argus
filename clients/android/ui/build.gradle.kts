@@ -25,5 +25,7 @@ dependencies {
   api(libs.compose.material3)
   api(libs.compose.material.icons)
   api(libs.compose.ui.tooling.preview)
+  api(libs.lifecycle.runtime.compose)
   debugImplementation(libs.compose.ui.tooling)
+  testImplementation(libs.junit)
 }
