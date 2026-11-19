@@ -17,14 +17,16 @@ struct HomeProjectSection<Header: View>: View {
   @ViewBuilder let header: Header
 
   private var sessions: [RemoteSession] { host.sessionsByRepo[project.repoRoot] ?? [] }
-  private var collapsed: Bool { router.collapsedProjects.contains(project.repoRoot) }
+  private var collapsed: Bool { hasWorktrees && router.collapsedProjects.contains(project.repoRoot) }
+  /// With nothing but its root checkout there is nothing to fold: the header is that checkout.
+  private var hasWorktrees: Bool { sessions.contains { $0.kind != .projectRoot } }
   private var unfolded: Bool { router.unfoldedProjects.contains(project.repoRoot) }
 
   var body: some View {
     let groups = host.sessionGroups(repoRoot: project.repoRoot)
     let root = groups.first(where: \.isRoot)
-    // The root lives in the header, as on the Mac, until something there wants a row of its own.
-    let rootRow = root.map { !$0.agents.isEmpty } ?? false
+    // The root lives in the header, as on the Mac, until sessions beside it and an agent in it want a row of its own.
+    let rootRow = hasWorktrees && (root.map { !$0.agents.isEmpty } ?? false)
     let triage = SessionGroupTriage(groups.filter { !$0.isRoot || rootRow })
     Section {
       projectHeader(root: rootRow ? nil : root, triage: triage)
@@ -60,20 +62,10 @@ struct HomeProjectSection<Header: View>: View {
   private func projectHeader(root: SessionGroup?, triage: SessionGroupTriage) -> some View {
     let rootSession = sessions.first { $0.kind == .projectRoot && !$0.isUnavailable }
     return HStack(spacing: 8) {
-      Button(action: toggleCollapsed) {
-        Image(systemName: collapsed ? Icon.chevronRight : Icon.chevronDown)
-          .font(.scaled(.caption).weight(.semibold))
-          .foregroundStyle(theme.textMuted)
-          .frame(width: 24, height: 32)
-          .contentShape(.rect)
-      }
-      .buttonStyle(.argusPlain)
-      .padding(.leading, -6)
-      .padding(.trailing, -6)
-      .accessibilityLabel(collapsed ? "Expand \(project.name)" : "Collapse \(project.name)")
+      if hasWorktrees { chevron } else { Color.clear.frame(width: 12, height: 32) }
       // As on the Mac, the header is the project's root checkout.
       Button {
-        if let rootSession { open(rootSession) } else { toggleCollapsed() }
+        if let rootSession { open(rootSession) } else if hasWorktrees { toggleCollapsed() }
       } label: {
         HStack(spacing: 8) {
           ProjectBadge(project.name, key: project.repoRoot, size: 20)
@@ -103,7 +95,7 @@ struct HomeProjectSection<Header: View>: View {
       }
       .buttonStyle(.argusPlain)
       .accessibilityLabel(project.name)
-      .accessibilityHint(rootSession.map { "Opens \($0.branch)" } ?? (collapsed ? "Shows its sessions" : "Hides its sessions"))
+      .accessibilityHint(rootSession.map { "Opens \($0.branch)" } ?? (!hasWorktrees ? "" : collapsed ? "Shows its sessions" : "Hides its sessions"))
       if host.hasControl {
         Button(action: newSession) {
           Image(systemName: Icon.plus)
@@ -120,6 +112,20 @@ struct HomeProjectSection<Header: View>: View {
     .contextMenu { projectMenu(root: sessions.first { $0.kind == .projectRoot }) }
   }
 
+  private var chevron: some View {
+    Button(action: toggleCollapsed) {
+      Image(systemName: collapsed ? Icon.chevronRight : Icon.chevronDown)
+        .font(.scaled(.caption).weight(.semibold))
+        .foregroundStyle(theme.textMuted)
+        .frame(width: 24, height: 32)
+        .contentShape(.rect)
+    }
+    .buttonStyle(.argusPlain)
+    .padding(.leading, -6)
+    .padding(.trailing, -6)
+    .accessibilityLabel(collapsed ? "Expand \(project.name)" : "Collapse \(project.name)")
+  }
+
   @ViewBuilder
   private func projectMenu(root: RemoteSession?) -> some View {
     if host.hasControl {
@@ -133,8 +139,10 @@ struct HomeProjectSection<Header: View>: View {
         (stackPush ?? router.push)(.project(repoRoot: project.repoRoot, name: project.name))
       }
     }
-    Button(collapsed ? "Expand" : "Collapse", systemImage: collapsed ? Icon.chevronDown : Icon.chevronRight) {
-      toggleCollapsed()
+    if hasWorktrees {
+      Button(collapsed ? "Expand" : "Collapse", systemImage: collapsed ? Icon.chevronDown : Icon.chevronRight) {
+        toggleCollapsed()
+      }
     }
     if host.hasControl {
       Divider()
