@@ -1,5 +1,22 @@
 # argus
 
+## 0.80.0
+
+### Minor Changes
+
+- 8016e49: Start new projects from your own blueprints: pick one, enter a name and a description, and Argus creates the GitHub repository, adds the project and starts an agent that sets it up like your reference apps. Blueprints can be generated from existing projects, and Claude can revise their instructions when you say what it got wrong.
+
+### Patch Changes
+
+- a8e316d: Shutting down or closing an agent now lives in its tab's long-press menu instead of the toolbar.
+- d629068: Home lists projects flat instead of in rounded cards, and separates the sessions that need you from the rest.
+- ce16f82: Tapping a project on Home opens its main checkout, as on the Mac; the chevron folds it.
+- 95d4408: Fixes the black band behind the search field when picking Linear issues.
+- 234c5e1: Loading screens, like opening a chat, show a spinner instead of three dots.
+- 8899a73: Fixes Start Agent staying disabled in the New Session sheet after picking a Linear issue.
+- 2c4b7ea: Tapping a Claude account under the pooled plan limits now expands its own session and weekly meters, pace included, instead of opening a small popup.
+- 0766c93: A signed-out Claude account now says it needs signing in again on the usage screen, instead of claiming it has no plan limits.
+
 ## 0.79.0
 
 ### Minor Changes
