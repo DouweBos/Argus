@@ -28,6 +28,7 @@ import dev.houwert.argus.kit.protocol.generated.RemoteSessionKind
 import dev.houwert.argus.kit.protocol.generated.RemoteStoppedAgent
 import dev.houwert.argus.kit.protocol.generated.RemoteTask
 import dev.houwert.argus.kit.protocol.generated.RemoteTodo
+import dev.houwert.argus.kit.protocol.generated.RunnerAccount
 import dev.houwert.argus.kit.protocol.isOutsideProjects
 import dev.houwert.argus.kit.storage.RemoteEndpoint
 import java.io.IOException
@@ -173,6 +174,9 @@ class HostStore(
   val claudeAccounts: StateFlow<List<RemoteClaudeAccount>?> = _claudeAccounts.asStateFlow()
   internal val _activeClaudeAccountId = MutableStateFlow<String?>(null)
   val activeClaudeAccountId: StateFlow<String?> = _activeClaudeAccountId.asStateFlow()
+  /** Runners besides Claude Code and their sign-in; null until the first load. */
+  internal val _runnerAccounts = MutableStateFlow<List<RunnerAccount>?>(null)
+  val runnerAccounts: StateFlow<List<RunnerAccount>?> = _runnerAccounts.asStateFlow()
   /** The computer's in-flight Claude sign-in, if any. */
   internal val _claudeLogin = MutableStateFlow<RemoteClaudeLoginState?>(null)
   val claudeLogin: StateFlow<RemoteClaudeLoginState?> = _claudeLogin.asStateFlow()
@@ -322,6 +326,7 @@ class HostStore(
     _claudeAccounts.value = null
     _activeClaudeAccountId.value = null
     _claudeLogin.value = null
+    _runnerAccounts.value = null
     _deviceStates.value = emptyMap()
     _deviceClaims.value = emptyMap()
     _connectionId.value = null
