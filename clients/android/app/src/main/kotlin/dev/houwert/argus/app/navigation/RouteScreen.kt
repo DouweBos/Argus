@@ -6,6 +6,7 @@ import dev.houwert.argus.app.screens.PendingScreen
 import dev.houwert.argus.app.screens.home.AgentsScreen
 import dev.houwert.argus.app.screens.home.ComputersScreen
 import dev.houwert.argus.app.screens.home.HomeScreen
+import dev.houwert.argus.app.screens.project.ProjectScreen
 import dev.houwert.argus.app.screens.start.NewSessionScreen
 import dev.houwert.argus.app.screens.pair.PairScreen
 
@@ -22,7 +23,8 @@ fun RouteScreen(route: Route) {
     Route.Computers -> ComputersScreen()
     Route.Agents -> AgentsScreen()
     is Route.NewSession -> NewSessionScreen(route.repoRoot)
-    is Route.Computer, is Route.Project, is Route.Session, is Route.CompareRun, is Route.File,
+    is Route.Project -> ProjectScreen(route.repoRoot, route.name)
+    is Route.Computer, is Route.Session, is Route.CompareRun, is Route.File,
     is Route.Agent, is Route.StoppedAgent, is Route.Changes, is Route.Timeline, is Route.TurnChanges, is Route.FileDiff,
     is Route.QuickOpen, is Route.FileSearch, is Route.Terminals, is Route.Terminal, is Route.McpServers, is Route.Stashes,
     is Route.Branches, is Route.Branch, is Route.Commit, is Route.BranchCompare, Route.Devices, Route.Inbox, is Route.Proposal,
