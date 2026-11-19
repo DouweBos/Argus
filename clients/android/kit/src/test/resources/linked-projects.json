@@ -1,0 +1,10 @@
+{
+  "built": "[Linked project directories \u2014 the user has explicitly attached the following project roots to this chat. You are allowed to read from and make changes in these directories in addition to your own worktree, but you MUST NOT switch branches, check out other refs, or otherwise alter the git state of these roots \u2014 they are shared with the user's other work. If you need to silo changes on a separate branch in one of these projects, use the Argus MCP `create_session` (or `spawn_agent`) tool to open a new session in that project instead of switching branches here:\n- ~/Work/Argus\n- ~/Work/Peacock]\n\nplease fix the build",
+  "parsed": {
+    "paths": [
+      "~/Work/Argus",
+      "~/Work/Peacock"
+    ],
+    "rest": "please fix the build"
+  }
+}
