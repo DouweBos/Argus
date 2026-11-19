@@ -5,9 +5,12 @@ import dev.houwert.argus.core.backend.toStored
 import dev.houwert.argus.core.hosts.RouteSupervisor
 import dev.houwert.argus.core.offline.Outbox
 import dev.houwert.argus.core.offline.SavedAnswers
+import dev.houwert.argus.core.stores.AutomationsStore
 import dev.houwert.argus.core.stores.BackgroundRefresh
+import dev.houwert.argus.core.stores.BlueprintsStore
 import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.HostStoreHooks
+import dev.houwert.argus.core.stores.ProposalsStore
 import dev.houwert.argus.core.stores.hasConnectionBoundWork
 import dev.houwert.argus.core.stores.liveBackend
 import dev.houwert.argus.core.stores.openOffline
@@ -29,6 +32,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 /**
@@ -48,6 +52,10 @@ class AppStore(
   private val defaultDeviceName: String,
 ) {
   val host = HostStore(scope)
+  // Per-computer stores beside [host]; cleared when the active computer changes (see the init block at the end).
+  val automations = AutomationsStore(host)
+  val blueprints = BlueprintsStore(host)
+  val proposals = ProposalsStore(host)
 
   private val _pairedHosts = MutableStateFlow(emptyList<DeviceIdentity>())
   val pairedHosts: StateFlow<List<DeviceIdentity>> = _pairedHosts.asStateFlow()
@@ -235,5 +243,15 @@ class AppStore(
 
   private fun updateHost(deviceId: String, patch: (DeviceIdentity) -> DeviceIdentity) {
     _pairedHosts.value = keystore.update(deviceId, patch).hosts
+  }
+
+  init {
+    scope.launch {
+      activeHostId.drop(1).collect {
+        automations.clear()
+        blueprints.clear()
+        proposals.clear()
+      }
+    }
   }
 }
