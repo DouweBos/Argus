@@ -4,6 +4,7 @@ import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.kit.media.MediaMessage
 import dev.houwert.argus.kit.protocol.generated.RemotePlatform
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
@@ -28,6 +29,8 @@ class RuntimeStreamHub(private val store: HostStore) {
   }
 
   private val entries = mutableMapOf<Subject, Entry>()
+  /** Release and unwatch still in flight; a reopen waits so the unwatch can't land after its watch. */
+  private val closing = mutableMapOf<Subject, Job>()
   private var nextId = 0
 
   /** Start receiving [subject]'s frames; null when the host couldn't start the stream. Call the result to stop. */
@@ -39,7 +42,10 @@ class RuntimeStreamHub(private val store: HostStore) {
     entry.sinceKeyFrame.toList().forEach(sink)
 
     if (entry.unregister == null) {
-      val opening = entry.opening ?: store.scope.async { open(subject) }.also { entry.opening = it }
+      val opening = entry.opening ?: store.scope.async {
+        closing[subject]?.join()
+        open(subject)
+      }.also { entry.opening = it }
       val streamId = opening.await()
       if (streamId == null) {
         entry.opening = null
@@ -88,7 +94,7 @@ class RuntimeStreamHub(private val store: HostStore) {
     if (entry.sinks.isNotEmpty()) return
     entries.remove(subject)
     entry.unregister?.invoke()
-    store.scope.launch {
+    val job = store.scope.launch {
       // Let go before leaving, so another client isn't locked out by a picture nobody watches.
       when (subject) {
         is Subject.Device -> {
@@ -98,6 +104,8 @@ class RuntimeStreamHub(private val store: HostStore) {
         is Subject.Browser -> store.unwatchBrowser(subject.sessionId)
       }
     }
+    closing[subject] = job
+    job.invokeOnCompletion { if (closing[subject] === job) closing.remove(subject) }
   }
 
   private companion object {
