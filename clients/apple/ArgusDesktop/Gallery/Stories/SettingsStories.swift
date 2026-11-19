@@ -50,6 +50,7 @@
         projectSheet("overridden", repoFile: true, section: .run),
         projectSheet("teardown", repoFile: true, section: .teardown),
         projectSheet("branch-protection", repoFile: true, section: .branchProtection),
+        projectSheet("agent", repoFile: true, section: .agent),
       ]
     }
 

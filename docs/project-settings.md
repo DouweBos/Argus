@@ -85,6 +85,7 @@ tool also save to this Mac, never to the repo.
 | `browser_url`, `browser_presets`            | yes (Browser)           |
 | `single_runtime`                            | yes (Run commands)      |
 | `auto_continue_on_limit`                    | yes (Agent)             |
+| `auto_switch_account_on_limit`              | yes (Agent)             |
 | `protected_branches`, `default_base_branch` | yes (Branch protection) |
 | `protect_default_branch`                    | yes (Branch protection) |
 | `release_note_patterns`                     | yes (Release notes)     |
@@ -111,6 +112,7 @@ tool also save to this Mac, never to the repo.
   "browser_presets":    [{ "id": "...", "label": "...", "width": 390, "height": 844, "user_agent": "..." }],
   "simulator_deeplinks": [{ "label": "Profile", "url": "myapp://profile/123" }],
   "auto_continue_on_limit": false,
+  "auto_switch_account_on_limit": false,
   "protected_branches": ["main", "master"],
   "protect_default_branch": false,
   "default_base_branch": "staging",
@@ -410,8 +412,23 @@ after five continues in a row that hit the limit again.
 Separately from this setting, when you have more than one Claude account
 signed in, a chat stopped by the limit lists your other accounts that still
 have usage left, with **Continue here** next to each. Picking one moves the
-chat onto that account and continues it. Argus never switches accounts on its
-own, so a personal project never lands on a work plan by accident.
+chat onto that account and continues it. Argus only switches accounts on its
+own when the project turns on `auto_switch_account_on_limit`, so a personal
+project never lands on a work plan by accident.
+
+## `auto_switch_account_on_limit` — move to another Claude account at a usage limit
+
+When `true`, an agent whose turn stops because its Claude account's usage
+limit is spent moves to another signed-in Claude account and continues
+there. Argus picks the account with the lowest current usage, so the agent
+runs as long as possible, and skips accounts that are spent, signed out or
+whose usage it can't read. It only ever switches between Claude accounts,
+never to another runner. With no account to move to, the agent waits, and
+`auto_continue_on_limit` still continues it once the limit resets.
+
+```jsonc
+"auto_switch_account_on_limit": true
+```
 
 ---
 

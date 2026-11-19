@@ -156,6 +156,8 @@ export const ArgusConfig = z.object({
   single_runtime: z.boolean().nullish(),
   /** Send "continue" to an agent stalled on a plan limit once it resets. */
   auto_continue_on_limit: z.boolean().nullish(),
+  /** Move an agent stalled on a plan limit to the Claude account with the most usage left. */
+  auto_switch_account_on_limit: z.boolean().nullish(),
   /** Treat the default branch as protected, and never push it. */
   protect_default_branch: z.boolean().nullish(),
   /** Glob-driven release-note patterns surfaced on the session home screen. */

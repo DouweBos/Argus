@@ -367,6 +367,11 @@ export interface ArgusConfig {
    */
   auto_continue_on_limit?: boolean | null;
   /**
+   * When true, an agent whose turn ends on a spent plan usage limit moves to
+   * the signed-in Claude account with the most usage left and continues there.
+   */
+  auto_switch_account_on_limit?: boolean | null;
+  /**
    * When true, the repo's default branch is treated as protected and is
    * never pushed from Argus: sessions open a pull request instead.
    */
@@ -497,6 +502,7 @@ export function defaultArgusConfig(): ArgusConfig {
     default_base_branch: null,
     single_runtime: false,
     auto_continue_on_limit: false,
+    auto_switch_account_on_limit: false,
     protect_default_branch: false,
     release_note_patterns: [],
     simulator_deeplinks: [],

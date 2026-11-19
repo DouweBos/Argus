@@ -8,7 +8,7 @@ extension ArgusConfigDraft {
   static let ownedKeys: Set<String> = [
     "setup", "teardown", "terminals", "run", "workspace_env", "related_projects",
     "browser_url", "browser_presets", "simulator_deeplinks",
-    "auto_continue_on_limit", "protected_branches", "protect_default_branch", "default_base_branch",
+    "auto_continue_on_limit", "auto_switch_account_on_limit", "protected_branches", "protect_default_branch", "default_base_branch",
     "single_runtime", "auto_fetch_minutes",
     "release_note_patterns", "llm", "tools", "automations",
   ]
@@ -63,6 +63,7 @@ extension ArgusConfigDraft {
     autoFetchMinutes = max(0, raw["auto_fetch_minutes"]?.intValue ?? 0)
     releaseNotes = (raw["release_note_patterns"]?.arrayValue ?? []).compactMap(Self.releasePattern)
     autoContinueOnLimit = raw["auto_continue_on_limit"]?.boolValue ?? false
+    autoSwitchAccountOnLimit = raw["auto_switch_account_on_limit"]?.boolValue ?? false
     let llm = raw["llm"]?.objectValue ?? [:]
     llmRunner = llm["runner"]?.stringValue ?? ""
     llmModel = llm["model"]?.stringValue ?? ""
@@ -112,6 +113,7 @@ extension ArgusConfigDraft {
     set("browser_presets", Self.nonEmpty(browserPresets.compactMap(Self.presetValue)))
     set("simulator_deeplinks", Self.nonEmpty(Self.deeplinkValues(deeplinks)))
     set("auto_continue_on_limit", autoContinueOnLimit ? .bool(true) : nil)
+    set("auto_switch_account_on_limit", autoSwitchAccountOnLimit ? .bool(true) : nil)
     set("protected_branches", Self.nonEmpty(protectedBranches.map(\.value).filter { !$0.isEmpty }.map(JSONValue.string)))
     set("protect_default_branch", protectDefaultBranch ? .bool(true) : nil)
     set("default_base_branch", Self.trimmed(defaultBaseBranch))

@@ -16,6 +16,10 @@ import {
   startHostConversations,
   stopHostConversations,
 } from "./services/agent/conversation/hostDriver";
+import {
+  startLimitAutoSwitch,
+  stopLimitAutoSwitch,
+} from "./services/agent/limitAutoSwitch";
 import { startPinnedChats } from "./services/agent/pins/resume";
 import { reapOrphanedAgentProcesses } from "./services/agent/reapOrphans";
 import { startWarmPolicy, stopWarmPolicy } from "./services/agent/warmPolicy";
@@ -263,6 +267,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   startHostConversations();
   startLiveActivities();
   startWarmPolicy({ spawn: spawnSpare });
+  startLimitAutoSwitch();
   // Pinned chats come back idle once the MCP server is listening.
   startPinnedChats();
 
@@ -318,6 +323,7 @@ export function stopHostServices(): void {
   stopHostConversations();
   stopLiveActivities();
   stopWarmPolicy();
+  stopLimitAutoSwitch();
   stopMcpServer();
   stopRemote();
   stopAccount();

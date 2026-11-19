@@ -242,7 +242,7 @@ export interface EventMap {
     had_history: boolean;
     queued: boolean;
     after_limit: boolean;
-    source: "limit_card" | "picker";
+    source: "auto_limit" | "limit_card" | "picker";
     success: boolean;
   };
   agent_transferred: {
@@ -268,6 +268,7 @@ export interface EventMap {
     action: "cancelled" | "dismissed" | "gave_up" | "scheduled" | "sent";
     has_reset_time: boolean;
   };
+  agent_limit_auto_switch: { outcome: "failed" | "no_account" | "switched" };
   agent_nudged: { critical: boolean; tagged: boolean };
   agent_stopped: undefined;
   agent_transcript_read: {

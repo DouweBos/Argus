@@ -62,7 +62,7 @@ public enum ConfigJSON {
     "": [
       "setup", "teardown", "terminals", "run", "workspace_env",
       "related_projects", "browser_url", "browser_presets", "simulator_deeplinks",
-      "auto_continue_on_limit", "protected_branches", "protect_default_branch",
+      "auto_continue_on_limit", "auto_switch_account_on_limit", "protected_branches", "protect_default_branch",
       "default_base_branch", "single_runtime",
       "auto_fetch_minutes", "release_note_patterns", "llm", "tools", "automations",
     ],

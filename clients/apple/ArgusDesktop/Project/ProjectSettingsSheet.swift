@@ -223,7 +223,7 @@ enum ProjectSettingsSection: String, Identifiable, Hashable, CaseIterable {
     case .deeplinks: ["simulator_deeplinks"]
     case .branchProtection: ["protected_branches", "protect_default_branch", "default_base_branch", "auto_fetch_minutes"]
     case .releaseNotes: ["release_note_patterns"]
-    case .agent: ["auto_continue_on_limit"]
+    case .agent: ["auto_continue_on_limit", "auto_switch_account_on_limit"]
     case .llm: ["llm"]
     case .relatedProjects: ["related_projects"]
     case .automations: ["automations"]

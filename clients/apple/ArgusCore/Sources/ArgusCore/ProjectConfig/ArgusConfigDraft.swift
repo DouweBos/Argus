@@ -36,6 +36,7 @@ public struct ArgusConfigDraft: Equatable, Sendable {
   public var autoFetchMinutes = 0
   public var releaseNotes: [ReleasePattern] = []
   public var autoContinueOnLimit = false
+  public var autoSwitchAccountOnLimit = false
   public var llmRunner = ""
   public var llmModel = ""
   public var relatedProjects: [RelatedProject] = []

@@ -1,7 +1,7 @@
 /**
  * Which other signed-in Claude accounts an agent stalled on a spent plan limit
- * could move to. Only ever offered: people keep personal and work plans apart,
- * so the move itself (`handoffAgentToAccount`) is always the user's pick.
+ * could move to. Offered on the limit card; moved automatically only when the
+ * project opts in (`limitAutoSwitch`), since people keep personal and work plans apart.
  */
 
 import type {

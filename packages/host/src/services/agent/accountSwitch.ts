@@ -27,7 +27,7 @@ import {
 import { pinSessionAccount } from "./sessionAccountPin";
 
 /** Which control asked for the move. */
-export type AccountSwitchSource = "limit_card" | "picker";
+export type AccountSwitchSource = "auto_limit" | "limit_card" | "picker";
 
 interface QueuedSwitch {
   /** The pin to restore if the switch fails: the one before the first queued pick. */
@@ -201,6 +201,7 @@ export async function pinSessionClaudeAccount(
 export async function handoffAgentToAccount(
   agentId: string,
   accountId: string,
+  source: AccountSwitchSource = "limit_card",
 ): Promise<void> {
   const agent = appState.agents.get(agentId);
   if (!agent) {
@@ -215,12 +216,7 @@ export async function handoffAgentToAccount(
   if (isAgentBusy(agent)) {
     throw "The agent is still working. Try again when its turn ends.";
   }
-  await switchSessionClaudeAccount(
-    agent.sessionId,
-    accountId,
-    agentId,
-    "limit_card",
-  );
+  await switchSessionClaudeAccount(agent.sessionId, accountId, agentId, source);
   if (appState.agents.get(agentId)?.accountId !== accountId) {
     throw "The agent couldn't move to that account.";
   }

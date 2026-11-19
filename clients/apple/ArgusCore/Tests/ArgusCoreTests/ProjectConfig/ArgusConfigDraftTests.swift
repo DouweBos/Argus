@@ -46,6 +46,7 @@ struct ArgusConfigDraftTests {
         "simulator_deeplinks": [{ "label": "P", "url": "app://p" },
                                 { "label": "F", "children": [{ "label": "C", "url": "app://c" }] }],
         "auto_continue_on_limit": true,
+        "auto_switch_account_on_limit": true,
         "protected_branches": ["main"],
         "protect_default_branch": true,
         "default_base_branch": "staging",

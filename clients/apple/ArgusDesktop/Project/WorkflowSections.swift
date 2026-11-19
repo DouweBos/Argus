@@ -55,6 +55,10 @@ struct AgentSection: View {
     )
     Section {
       Toggle("Continue agents automatically when a usage limit resets", isOn: $draft.autoContinueOnLimit)
+      Toggle(isOn: $draft.autoSwitchAccountOnLimit) {
+        Text("Switch Claude accounts when one reaches its usage limit")
+        Text("Moves the agent to your signed-in Claude account with the most usage left and continues there.")
+      }
     }
   }
 }
