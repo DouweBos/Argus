@@ -32,33 +32,3 @@ data class AgentStartDefaults(
   val model: String? = null,
   val effort: String? = null,
 )
-
-/** Which branch a new worktree starts from, as the desktop picks it (`app/lib/baseBranch.ts`). */
-object BaseBranchChoice {
-  val common = listOf("staging", "develop", "dev", "main", "master")
-
-  /**
-   * `.argus.json`'s `default_base_branch`, then its protected branches, then the usual names;
-   * `origin/<name>` over a local copy the project root has checked out, since that one may have
-   * drifted. Else the first local branch.
-   */
-  fun preselected(local: List<String>, originRefs: List<String>, configured: String?, protected: List<String>, projectRootBranch: String?): String? {
-    val origins = originRefs.toSet()
-    val seen = HashSet<String>()
-    for (name in listOfNotNull(configured) + protected + common) {
-      if (!seen.add(name)) continue
-      val origin = "origin/$name"
-      val hasOrigin = origin in origins
-      if (hasOrigin && projectRootBranch == name) return origin
-      if (name in local) return name
-      if (hasOrigin) return origin
-    }
-    return local.firstOrNull()
-  }
-
-  /** The local branches, plus the origin refs of base-like ones only. */
-  fun options(local: List<String>, originRefs: List<String>, protected: List<String>): List<String> {
-    val hints = (protected + common).toSet()
-    return local + originRefs.filter { it.startsWith("origin/") && it.removePrefix("origin/") in hints }
-  }
-}

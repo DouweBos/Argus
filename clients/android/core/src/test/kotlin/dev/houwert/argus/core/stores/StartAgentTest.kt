@@ -1,7 +1,8 @@
 package dev.houwert.argus.core.stores
 
 import dev.houwert.argus.core.sessions.AgentStartDefaults
-import dev.houwert.argus.core.sessions.BaseBranchChoice
+import dev.houwert.argus.core.git.BaseBranchChoice
+import dev.houwert.argus.core.git.BaseBranchPicker
 import dev.houwert.argus.core.sessions.ComposerStart
 import dev.houwert.argus.core.support.FakeBackend
 import dev.houwert.argus.core.support.attach
