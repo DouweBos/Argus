@@ -3,6 +3,9 @@ package dev.houwert.argus.app.navigation
 import androidx.compose.runtime.Composable
 import dev.houwert.argus.app.screens.MoreScreen
 import dev.houwert.argus.app.screens.PendingScreen
+import dev.houwert.argus.app.screens.files.FileScreen
+import dev.houwert.argus.app.screens.files.FileSearchScreen
+import dev.houwert.argus.app.screens.files.QuickOpenScreen
 import dev.houwert.argus.app.screens.home.AgentsScreen
 import dev.houwert.argus.app.screens.home.ComputersScreen
 import dev.houwert.argus.app.screens.home.HomeScreen
@@ -24,9 +27,12 @@ fun RouteScreen(route: Route) {
     Route.Agents -> AgentsScreen()
     is Route.NewSession -> NewSessionScreen(route.repoRoot)
     is Route.Project -> ProjectScreen(route.repoRoot, route.name)
-    is Route.Computer, is Route.Session, is Route.CompareRun, is Route.File,
+    is Route.File -> FileScreen(route.sessionId, route.path, route.line)
+    is Route.QuickOpen -> QuickOpenScreen(route.sessionId, route.label)
+    is Route.FileSearch -> FileSearchScreen(route.sessionId, route.label)
+    is Route.Computer, is Route.Session, is Route.CompareRun,
     is Route.Agent, is Route.StoppedAgent, is Route.Changes, is Route.Timeline, is Route.TurnChanges, is Route.FileDiff,
-    is Route.QuickOpen, is Route.FileSearch, is Route.Terminals, is Route.Terminal, is Route.McpServers, is Route.Stashes,
+    is Route.Terminals, is Route.Terminal, is Route.McpServers, is Route.Stashes,
     is Route.Branches, is Route.Branch, is Route.Commit, is Route.BranchCompare, Route.Devices, Route.Inbox, is Route.Proposal,
     Route.PullRequests, Route.Issues, is Route.Issue, is Route.Design, is Route.PullRequest, Route.Automations,
     is Route.Automation, Route.QuickRun, is Route.AutomationEditor, Route.DescribeAutomation, is Route.Run, Route.Blueprints,
