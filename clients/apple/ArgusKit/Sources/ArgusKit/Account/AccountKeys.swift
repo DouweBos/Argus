@@ -119,12 +119,15 @@ public struct AccountVault: Codable, Hashable, Sendable {
   public var pendingJoin: AccountPendingJoin?
   /// A name set here that isn't on the account yet (offline, or mid-join).
   public var pendingName: String?
+  /// The signed-in person as last seen, so a member device whose sign-in
+  /// session lapsed still shows whose account it is.
+  public var profile: AccountProfile?
 
   public init(
     keys: AccountDeviceKeys? = nil, root: AccountRoot? = nil, entries: [AccountEntry] = [],
     presence: [String: AccountCachedPresence] = [:], localHostId: String? = nil,
     joinRequestId: String? = nil, joinCommit: String? = nil, pendingJoin: AccountPendingJoin? = nil,
-    pendingName: String? = nil
+    pendingName: String? = nil, profile: AccountProfile? = nil
   ) {
     self.keys = keys
     self.root = root
@@ -135,6 +138,7 @@ public struct AccountVault: Codable, Hashable, Sendable {
     self.joinCommit = joinCommit
     self.pendingJoin = pendingJoin
     self.pendingName = pendingName
+    self.profile = profile
   }
 
   public static let empty = AccountVault()

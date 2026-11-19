@@ -196,6 +196,7 @@ public final class AccountStore {
   /// `restoringSession: false` leaves the auth provider (and its keychain) alone until a sign-in.
   public func start(restoringSession: Bool = true) async {
     vault = await vaultStore.load()
+    profile = vault.profile
     if let root = vault.root,
       case .ok(let verified) = AccountLog.verify(vault.entries, root: root), ownMemberLive(in: verified)
     {
@@ -213,7 +214,7 @@ public final class AccountStore {
       if phase == .loading { phase = .signedOut }
       return
     }
-    refreshProfile()
+    await refreshProfile()
     if phase == .ready {
       await refresh()
       await linkLocalHostIfNeeded()
@@ -231,16 +232,24 @@ public final class AccountStore {
     // Still no `/config` (offline since launch): nothing below can reach the service.
     if !configured { try? await ensureConfigured() }
     guard configured else { return }
-    refreshProfile()
+    await refreshProfile()
     guard await refreshLog(), !(await checkForResetOverClerk()) else { return }
     await flushName()
     await refreshDirectory()
     await refreshRequests()
   }
 
-  /// Re-read the signed-in person from the sign-in provider.
-  public func refreshProfile() {
-    profile = configured && auth.isSignedIn ? auth.profile : nil
+  /// Re-read the signed-in person from the sign-in provider. The session
+  /// lapses long before the device leaves the account, so the last one seen stays.
+  public func refreshProfile() async {
+    guard configured, auth.isSignedIn, let current = auth.profile else {
+      profile = vault.profile
+      return
+    }
+    profile = current
+    guard vault.profile != current else { return }
+    vault.profile = current
+    await vaultStore.save(vault)
   }
 
   /// While a connection to an account host keeps failing, poll the directory
@@ -316,7 +325,7 @@ public final class AccountStore {
       try await ensureConfigured()
       // A sign-in whose account setup failed is still signed in: retrying sets it up.
       if !auth.isSignedIn { try await flow() }
-      refreshProfile()
+      await refreshProfile()
     } catch {
       self.error = Self.describe(error)
       phase = .signedOut
@@ -365,6 +374,7 @@ public final class AccountStore {
       removed = false
       signInNeeded = nil
       phase = .ready
+      await refreshProfile()
       publishHosts()
       if let provider { onEvent(.signedIn(provider: provider, firstDevice: firstDevice)) }
       await linkLocalHostIfNeeded()
@@ -393,7 +403,7 @@ public final class AccountStore {
       return false
     }
     guard case .ok(let verified) = AccountLog.verify([genesis]) else { throw AccountStoreError.keys }
-    vault = AccountVault(keys: keys, root: verified.root, entries: [genesis])
+    vault = AccountVault(keys: keys, root: verified.root, entries: [genesis], profile: vault.profile)
     state = verified
     await vaultStore.save(vault)
     return true
