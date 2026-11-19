@@ -88,6 +88,8 @@ data class AccountVault(
   val pendingJoin: AccountPendingJoin? = null,
   /** A name set here that isn't on the account yet (offline, or mid-join). */
   val pendingName: String? = null,
+  /** The signed-in person as last seen, so a member whose sign-in session lapsed still shows whose account it is. */
+  val profile: dev.houwert.argus.kit.account.AccountProfile? = null,
 ) {
   companion object {
     val EMPTY = AccountVault()

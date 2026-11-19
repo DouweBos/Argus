@@ -34,6 +34,7 @@ sealed class AccountReverifyError(message: String) : Exception(message) {
 }
 
 /** The signed-in person as the sign-in provider knows them. Never leaves the device. */
+@kotlinx.serialization.Serializable
 data class AccountProfile(
   val firstName: String? = null,
   val lastName: String? = null,

@@ -115,7 +115,7 @@ private suspend fun AccountStore.performReset() {
     _requests.value = emptyList()
     _approval.value = ApprovalFlow.Idle
     pushFingerprint = null
-    vault = AccountVault(keys = keys, root = verified.root, entries = listOf(genesis))
+    vault = AccountVault(keys = keys, root = verified.root, entries = listOf(genesis), profile = vault.profile)
     vaultStore.save(vault)
     _state.value = verified
     _logError.value = null

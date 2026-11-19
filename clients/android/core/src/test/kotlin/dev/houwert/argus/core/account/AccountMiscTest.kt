@@ -340,6 +340,21 @@ class AccountProfileTest {
     assertNull(store.profile.value)
   }
 
+  @Test fun profileOutlivesALapsedSession() = runTest {
+    val service = FakeAccountService()
+    val auth = FakeAccountAuth().apply { user = AccountProfile(firstName = "Ada", lastName = "Lovelace", email = "ada@example.com") }
+    val (store, vault) = makeStore(backgroundScope, service, auth)
+    store.start()
+    store.signIn(AccountSignInProvider.Apple)
+    auth.signedIn = false
+    store.refresh()
+    assertEquals("Ada Lovelace", store.profile.value?.displayName)
+    val relaunched = AccountStore(backgroundScope, auth, vault, "ios", { "Phone" }, null, BASE_URL, service.http)
+    relaunched.start()
+    assertEquals(AccountStore.Phase.Ready, relaunched.phase.value)
+    assertEquals("Ada Lovelace", relaunched.profile.value?.displayName)
+  }
+
   @Test fun profileFallbacks() {
     val full = AccountProfile("Ada", "Lovelace", "ada", "ada@example.com")
     assertEquals("Ada Lovelace", full.displayName)

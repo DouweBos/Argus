@@ -200,6 +200,7 @@ class AccountStore(
    */
   suspend fun start(restoringSession: Boolean = true) {
     vault = vaultStore.load()
+    _profile.value = vault.profile
     val root = vault.root
     if (root != null) {
       val verified = (AccountLog.verify(vault.entries, root) as? AccountVerifyResult.Ok)?.state
@@ -246,9 +247,17 @@ class AccountStore(
     refreshRequests()
   }
 
-  /** Re-read the signed-in person from the sign-in provider. */
-  fun refreshProfile() {
-    _profile.value = if (configured && auth.isSignedIn) auth.profile else null
+  /** Re-read the signed-in person. The session lapses long before the device leaves the account, so the last one seen stays. */
+  suspend fun refreshProfile() {
+    val current = if (configured && auth.isSignedIn) auth.profile else null
+    if (current == null) {
+      _profile.value = vault.profile
+      return
+    }
+    _profile.value = current
+    if (vault.profile == current) return
+    vault = vault.copy(profile = current)
+    vaultStore.save(vault)
   }
 
   /** While a connection to an account host keeps failing, poll the directory so a moved tunnel is found. */
@@ -363,6 +372,7 @@ class AccountStore(
       _removed.value = false
       _signInNeeded.value = null
       _phase.value = Phase.Ready
+      refreshProfile()
       publishHosts()
       provider?.let { onEvent(Event.SignedIn(it, firstDevice)) }
       linkLocalHostIfNeeded()
@@ -390,7 +400,7 @@ class AccountStore(
       return false
     }
     val verified = (AccountLog.verify(listOf(genesis)) as? AccountVerifyResult.Ok)?.state ?: throw AccountStoreError.Keys
-    vault = AccountVault(keys = keys, root = verified.root, entries = listOf(genesis))
+    vault = AccountVault(keys = keys, root = verified.root, entries = listOf(genesis), profile = vault.profile)
     _state.value = verified
     vaultStore.save(vault)
     return true
