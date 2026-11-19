@@ -63,6 +63,8 @@ sealed interface Route {
   @Serializable data object GenerateBlueprint : Route
   @Serializable data class NewProject(val blueprintId: String? = null) : Route
   @Serializable data object Settings : Route
+  /** One Settings sub-page, by its `SettingsPane` raw value. */
+  @Serializable data class SettingsPage(val pane: String) : Route
   @Serializable data object Notifications : Route
   @Serializable data object Computers : Route
   @Serializable data object Account : Route

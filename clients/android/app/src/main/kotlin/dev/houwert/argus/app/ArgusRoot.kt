@@ -1,6 +1,5 @@
 package dev.houwert.argus.app
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -38,8 +37,9 @@ val LocalRouter = staticCompositionLocalOf<Router> { error("No Router") }
 @Composable
 fun ArgusRoot(app: AppStore) {
   val router = remember { Router() }
-  val dark = isSystemInDarkTheme()
-  ArgusTheme(dark = dark) {
+  val themePreference by app.prefs.theme.collectAsState()
+  val colorTheme by app.prefs.colorTheme.collectAsState()
+  ArgusTheme(preference = themePreference, colorTheme = colorTheme) {
     CompositionLocalProvider(LocalAppStore provides app, LocalRouter provides router) {
       val section by router.section.collectAsState()
       val tabs = rememberSaveableStateHolder()

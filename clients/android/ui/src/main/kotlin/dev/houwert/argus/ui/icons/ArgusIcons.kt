@@ -1,6 +1,11 @@
 package dev.houwert.argus.ui.icons
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.PanTool
+import androidx.compose.material.icons.outlined.SettingsInputAntenna
+import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.automirrored.outlined.CallMerge
@@ -261,6 +266,12 @@ object Icon {
   val issues = issue
   val settings = gear
   val notifications = Icons.Outlined.Notifications
+  // Settings pages.
+  val textCursor = Icons.Outlined.TextFields
+  val palette = Icons.Outlined.Palette
+  val alerts = Icons.Outlined.NotificationsActive
+  val privacy = Icons.Outlined.PanTool
+  val connection = Icons.Outlined.SettingsInputAntenna
   /** The phone's tab for every destination without one of its own. */
   val more = Icons.Outlined.MoreHoriz
   /** A session's uncommitted changes. */
