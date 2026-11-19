@@ -8,6 +8,10 @@ export const TerminalSummary = z.object({
   runTitle: z.string().nullable(),
   sessionId: z.string(),
   title: z.string().nullable(),
+  /** The `workspace_env` values (ports and the like) Argus injected at spawn. */
+  workspaceEnv: z
+    .array(z.object({ name: z.string(), value: z.string() }))
+    .optional(),
 });
 export type TerminalSummary = z.infer<typeof TerminalSummary>;
 

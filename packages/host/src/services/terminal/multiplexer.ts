@@ -79,6 +79,8 @@ export interface TerminalSession {
    * Used by {@link createRunTerminal} to match restart-on-rerun semantics.
    */
   runTitle?: string;
+  /** The `workspace_env` values injected at spawn, so the Runtimes view can show its ports. */
+  workspaceEnv?: Record<string, string>;
   /**
    * When true, {@link terminalWrite} silently drops renderer-originated input.
    * Used by the setup pipeline so user keystrokes don't race with commands
@@ -139,6 +141,7 @@ export interface TerminalSummary {
   sessionId: string;
   title: string | null;
   runTitle: string | null;
+  workspaceEnv?: { name: string; value: string }[];
   exited: boolean;
   exitCode: number | null;
 }
@@ -365,20 +368,30 @@ function ptyEnv(env: NodeJS.ProcessEnv): Record<string, string> {
   return clean;
 }
 
+/** The `workspace_env` values a session's terminals get. */
+function sessionWorkspaceEnv(ws: Session): Record<string, string> {
+  return buildWorkspaceEnv(
+    ws.id,
+    ws.kind,
+    ws.env_index ?? undefined,
+    ws.repo_root,
+  );
+}
+
 /**
  * A session terminal's environment: the host's, with the session's Claude
  * account and workspace env on top.
  */
-export function terminalEnv(ws: Session): Record<string, string> {
+export function terminalEnv(
+  ws: Session,
+  workspaceEnv = sessionWorkspaceEnv(ws),
+): Record<string, string> {
   // node-pty requires all env values to be defined strings — filter out any
   // undefined entries from process.env to avoid posix_spawnp failures. The
   // account overlay makes `claude` in this terminal use the same account as
   // the session's agents.
   const cleanEnv = ptyEnv(envForAccount(resolveAccountForSession(ws)));
-  Object.assign(
-    cleanEnv,
-    buildWorkspaceEnv(ws.id, ws.kind, ws.env_index ?? undefined, ws.repo_root),
-  );
+  Object.assign(cleanEnv, workspaceEnv);
 
   return cleanEnv;
 }
@@ -440,12 +453,19 @@ export function createTerminal(
     spawnWith = commandShell(command);
   }
 
+  const workspaceEnv = sessionWorkspaceEnv(ws);
+  const env = { ...terminalEnv(ws, workspaceEnv), ...extraEnv };
+
   return spawnTerminal({
     owner: sessionId,
     cwd,
-    env: { ...terminalEnv(ws), ...extraEnv },
+    env,
     spawnWith,
     title,
+    // What the process actually got: a caller's env may override a workspace value.
+    workspaceEnv: Object.fromEntries(
+      Object.keys(workspaceEnv).map((name) => [name, env[name]]),
+    ),
   });
 }
 
@@ -478,6 +498,7 @@ function spawnTerminal(opts: {
   spawnWith: [string, string[]];
   title?: string;
   runTitle?: string;
+  workspaceEnv?: Record<string, string>;
 }): string {
   const { owner: sessionId, cwd, title } = opts;
   const [program, args] = opts.spawnWith;
@@ -522,6 +543,7 @@ function spawnTerminal(opts: {
     sessionId,
     title,
     runTitle: opts.runTitle,
+    workspaceEnv: opts.workspaceEnv,
     outputLog: "",
     outputTotalBytes: 0,
     outputDroppedBytes: 0,
@@ -1048,6 +1070,9 @@ export function listTerminals(sessionId: string): TerminalSummary[] {
       sessionId: t.sessionId,
       title: t.title ?? null,
       runTitle: t.runTitle ?? null,
+      workspaceEnv: Object.entries(t.workspaceEnv ?? {}).map(
+        ([name, value]) => ({ name, value }),
+      ),
       exited: false,
       exitCode: null,
     });

@@ -15,9 +15,33 @@ public final class TerminalsStore {
     /// The `.argus.json` run command this terminal runs, if it is one.
     public var runTitle: String?
     public var exitCode: Int?
+    /// The `workspace_env` values (ports and the like) Argus injected at spawn, in config order.
+    public var workspaceEnv: [EnvVar] = []
 
     public var exited: Bool { exitCode != nil }
     public var isRun: Bool { runTitle != nil }
+
+    public init(
+      id: String, sessionId: String, title: String, runTitle: String? = nil, exitCode: Int? = nil,
+      workspaceEnv: [EnvVar] = []
+    ) {
+      self.id = id
+      self.sessionId = sessionId
+      self.title = title
+      self.runTitle = runTitle
+      self.exitCode = exitCode
+      self.workspaceEnv = workspaceEnv
+    }
+  }
+
+  public struct EnvVar: Equatable, Sendable {
+    public let name: String
+    public let value: String
+
+    public init(name: String, value: String) {
+      self.name = name
+      self.value = value
+    }
   }
 
   /// Run commands and auto-opened terminals, from a project's `.argus.json`.
@@ -118,6 +142,13 @@ public final class TerminalsStore {
     if configByRepo[repoRoot] != next { configByRepo[repoRoot] = next }
   }
 
+  #if DEBUG
+    /// Stand-in terminals for gallery stories, which have no host to list them.
+    public func galleryFill(_ tabs: [Tab]) {
+      tabsBySession = Dictionary(grouping: tabs, by: \.sessionId)
+    }
+  #endif
+
   /// The host's live terminals for a session — they outlive any window.
   public func refresh(sessionId: String) async {
     guard let backend = backend(),
@@ -129,11 +160,17 @@ public final class TerminalsStore {
     // Gone from the host while we weren't looking (a restart, a reaper);
     // exited run tabs stay so their output can still be read.
     tabs.removeAll { !liveIds.contains($0.id) && !($0.isRun && $0.exited) }
-    for terminal in live where !tabs.contains(where: { $0.id == terminal.id }) {
-      tabs.append(
-        Tab(
-          id: terminal.id, sessionId: sessionId,
-          title: terminal.title ?? terminal.runTitle ?? "Shell", runTitle: terminal.runTitle))
+    for terminal in live {
+      let env = (terminal.workspaceEnv ?? []).map { EnvVar(name: $0.name, value: $0.value) }
+      if let i = tabs.firstIndex(where: { $0.id == terminal.id }) {
+        tabs[i].workspaceEnv = env
+      } else {
+        tabs.append(
+          Tab(
+            id: terminal.id, sessionId: sessionId,
+            title: terminal.title ?? terminal.runTitle ?? "Shell", runTitle: terminal.runTitle,
+            workspaceEnv: env))
+      }
     }
     set(tabs, for: sessionId)
     for tab in tabs where !tab.exited { await subscribe(tab.id) }

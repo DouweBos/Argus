@@ -53,6 +53,10 @@ struct RuntimesOverview: View {
             Text(row.tab.exited ? "stopped" : "running").foregroundStyle(.secondary)
           }
           .width(min: 70, ideal: 90)
+          TableColumn("Environment") { row in
+            envLabel(row.tab)
+          }
+          .width(min: 90, ideal: 160)
           TableColumn("Session") { row in
             Button { model.open(session: row.session.id) } label: {
               Text(sessionLabel(row.session)).lineLimit(1)
@@ -91,10 +95,27 @@ struct RuntimesOverview: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .navigationTitle("Runtimes")
     // A run started before this window opened lives only on the host.
-    .task(id: sessions.map(\.id)) {
+    // A run started here is registered before the host reports its env.
+    .task(id: sessions.map(\.id) + rows.map(\.id)) {
       for session in sessions where session.status == .ready {
         await terminals.refresh(sessionId: session.id)
       }
+    }
+  }
+
+  /// The ports and the like Argus gave the process, e.g. `PORT=8085`.
+  @ViewBuilder
+  private func envLabel(_ tab: TerminalsStore.Tab) -> some View {
+    if tab.workspaceEnv.isEmpty {
+      Text("None").foregroundStyle(.tertiary)
+    } else {
+      let text = tab.workspaceEnv.map { "\($0.name)=\($0.value)" }.joined(separator: "  ")
+      Text(text)
+        .font(.scaled(.body).monospaced())
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .textSelection(.enabled)
+        .help(tab.workspaceEnv.map { "\($0.name)=\($0.value)" }.joined(separator: "\n"))
     }
   }
 

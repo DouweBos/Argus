@@ -19645,6 +19645,27 @@ extension ArgusProtocol {
     }
   }
 
+  public struct TerminalSummaryWorkspaceEnvItem: Codable, Sendable {
+    public var name: String
+    public var value: String
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case value = "value"
+    }
+
+    public init(name: String, value: String) {
+      self.name = name
+      self.value = value
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encode(value, forKey: .value)
+    }
+  }
+
   public struct TerminalSummary: Codable, Sendable {
     public var exitCode: Double?
     public var exited: Bool
@@ -19652,6 +19673,7 @@ extension ArgusProtocol {
     public var runTitle: String?
     public var sessionId: String
     public var title: String?
+    public var workspaceEnv: [TerminalSummaryWorkspaceEnvItem]?
 
     enum CodingKeys: String, CodingKey {
       case exitCode = "exitCode"
@@ -19660,15 +19682,17 @@ extension ArgusProtocol {
       case runTitle = "runTitle"
       case sessionId = "sessionId"
       case title = "title"
+      case workspaceEnv = "workspaceEnv"
     }
 
-    public init(exitCode: Double? = nil, exited: Bool, id: String, runTitle: String? = nil, sessionId: String, title: String? = nil) {
+    public init(exitCode: Double? = nil, exited: Bool, id: String, runTitle: String? = nil, sessionId: String, title: String? = nil, workspaceEnv: [TerminalSummaryWorkspaceEnvItem]? = nil) {
       self.exitCode = exitCode
       self.exited = exited
       self.id = id
       self.runTitle = runTitle
       self.sessionId = sessionId
       self.title = title
+      self.workspaceEnv = workspaceEnv
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -19679,6 +19703,7 @@ extension ArgusProtocol {
       try c.encode(runTitle, forKey: .runTitle)
       try c.encode(sessionId, forKey: .sessionId)
       try c.encode(title, forKey: .title)
+      try c.encodeIfPresent(workspaceEnv, forKey: .workspaceEnv)
     }
   }
 

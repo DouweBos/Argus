@@ -1,0 +1,41 @@
+#if DEBUG
+  import ArgusCore
+  import SwiftUI
+
+  /// The Runtimes overview: run commands across sessions, with the ports Argus gave them.
+  enum RuntimeStories {
+    static var all: [GalleryStory] {
+      [
+        GalleryStory(
+          "runtimes/overview", size: CGSize(width: 1300, height: 360), chrome: true, fixtures: GalleryFixtures.home.merging(["list_terminals": "[]"]) { _, new in new },
+          setup: { stage in
+            await HomeStories.load(stage)
+            stage.model.terminals.galleryFill(tabs)
+          }
+        ) { RuntimesOverview() }
+      ]
+    }
+
+    private static func env(_ pairs: (String, String)...) -> [TerminalsStore.EnvVar] {
+      pairs.map { TerminalsStore.EnvVar(name: $0.0, value: $0.1) }
+    }
+
+    private static var tabs: [TerminalsStore.Tab] {
+      [
+        .init(
+          id: "t1", sessionId: "rn-1", title: "Metro (Native)", runTitle: "Metro (Native)",
+          workspaceEnv: env(("RCT_METRO_PORT", "8085"))),
+        .init(
+          id: "t2", sessionId: "rn-2", title: "Metro (Native)", runTitle: "Metro (Native)",
+          workspaceEnv: env(("RCT_METRO_PORT", "8086"))),
+        .init(
+          id: "t3", sessionId: "rn-2", title: "Luma API", runTitle: "Luma API",
+          workspaceEnv: env(("PORT", "3012"), ("API_PORT", "4012"))),
+        .init(id: "t4", sessionId: "rn-root", title: "Storybook", runTitle: "Storybook"),
+        .init(
+          id: "t5", sessionId: "rn-1", title: "Plex pod install", runTitle: "Plex pod install", exitCode: 0,
+          workspaceEnv: env(("RCT_METRO_PORT", "8085"))),
+      ]
+    }
+  }
+#endif

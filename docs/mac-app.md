@@ -36,7 +36,8 @@ developed, and an existing install updates into Argus for Mac by itself (see
   switches and interrupts agents (see [Keyboard shortcuts](#keyboard-shortcuts)).
 - **Home** in the sidebar (⇧⌘H): the app's home screen.
 - **Agents** and **Runtimes** in the sidebar: every agent, and every run
-  command's process, across all your sessions.
+  command's process, across all your sessions. Runtimes also shows the
+  `workspace_env` values (ports and the like) Argus gave each process.
 - A side panel beside each session (⌘J), closed until you open it: tabs for
   terminals, the device, the browser, the session's files, its diff and its
   pull request. Its **+** menu opens a tab (press B, T, F, D, P or M while it's
