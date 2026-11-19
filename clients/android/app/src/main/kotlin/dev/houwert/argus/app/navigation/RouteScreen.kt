@@ -5,6 +5,10 @@ import dev.houwert.argus.app.screens.MoreScreen
 import dev.houwert.argus.app.screens.PendingScreen
 import dev.houwert.argus.app.screens.home.HomeScreen
 import dev.houwert.argus.app.screens.pair.PairScreen
+import dev.houwert.argus.app.screens.usage.UsageModelScreen
+import dev.houwert.argus.app.screens.usage.UsageModelsScreen
+import dev.houwert.argus.app.screens.usage.UsagePricesScreen
+import dev.houwert.argus.app.screens.usage.UsageScreen
 
 /**
  * Route to screen, in one place. Wave-2 screens replace their [PendingScreen]
@@ -16,6 +20,10 @@ fun RouteScreen(route: Route) {
     Route.Pair -> PairScreen()
     Route.Projects -> HomeScreen()
     Route.More -> MoreScreen()
+    Route.Usage -> UsageScreen()
+    is Route.UsageModel -> UsageModelScreen(route)
+    Route.UsagePrices -> UsagePricesScreen()
+    Route.UsageModels -> UsageModelsScreen()
     is Route.Computer, Route.Agents, is Route.Project, is Route.Session, is Route.NewSession, is Route.CompareRun,
     is Route.Agent, is Route.StoppedAgent, is Route.Changes, is Route.Timeline, is Route.TurnChanges, is Route.FileDiff,
     is Route.QuickOpen, is Route.FileSearch, is Route.Terminals, is Route.Terminal, is Route.McpServers, is Route.Stashes,
@@ -23,7 +31,7 @@ fun RouteScreen(route: Route) {
     Route.PullRequests, Route.Issues, is Route.Issue, is Route.Design, is Route.PullRequest, Route.Automations,
     is Route.Automation, Route.QuickRun, is Route.AutomationEditor, Route.DescribeAutomation, is Route.Run, Route.Blueprints,
     is Route.Blueprint, Route.GenerateBlueprint, is Route.NewProject, Route.Settings, Route.Notifications, Route.Computers,
-    Route.Account, Route.AddComputer, Route.ClaudeAccounts, Route.Usage, Route.UsagePrices, Route.UsageModels,
+    Route.Account, Route.AddComputer, Route.ClaudeAccounts,
     -> PendingScreen(route)
   }
 }

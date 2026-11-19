@@ -1,6 +1,8 @@
 package dev.houwert.argus.app.navigation
 
+import dev.houwert.argus.core.usage.UsageTab
 import dev.houwert.argus.kit.protocol.generated.RemoteGitBranch
+import dev.houwert.argus.kit.protocol.generated.UsageRange
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -69,6 +71,8 @@ sealed interface Route {
   @Serializable data object AddComputer : Route
   @Serializable data object ClaudeAccounts : Route
   @Serializable data object Usage : Route
+  /** One model's detail under Cost or Tokens, as the desktop's `/usage/:tab/models/:runner/:model`. */
+  @Serializable data class UsageModel(val tab: UsageTab, val runner: String, val model: String, val range: UsageRange) : Route
   @Serializable data object UsagePrices : Route
   @Serializable data object UsageModels : Route
   /** The phone's fifth tab: every destination without a tab of its own. */
