@@ -5,9 +5,11 @@ import dev.houwert.argus.core.backend.toStored
 import dev.houwert.argus.core.hosts.RouteSupervisor
 import dev.houwert.argus.core.offline.Outbox
 import dev.houwert.argus.core.offline.SavedAnswers
+import dev.houwert.argus.core.pullrequests.PullRequestsStore
 import dev.houwert.argus.core.stores.BackgroundRefresh
 import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.HostStoreHooks
+import dev.houwert.argus.core.stores.NotificationsLog
 import dev.houwert.argus.core.stores.hasConnectionBoundWork
 import dev.houwert.argus.core.stores.liveBackend
 import dev.houwert.argus.core.stores.openOffline
@@ -48,6 +50,10 @@ class AppStore(
   private val defaultDeviceName: String,
 ) {
   val host = HostStore(scope)
+  /** Warnings and errors shown this launch, behind Notifications. */
+  val notifications = NotificationsLog()
+  /** Cleared on every computer switch: another machine answers for another set of repos. */
+  val pullRequests = PullRequestsStore(host)
 
   private val _pairedHosts = MutableStateFlow(emptyList<DeviceIdentity>())
   val pairedHosts: StateFlow<List<DeviceIdentity>> = _pairedHosts.asStateFlow()
@@ -68,6 +74,10 @@ class AppStore(
 
   init {
     host.hooks = HostStoreHooks(
+      errorReported = { error, source ->
+        val level = if (HostStore.unsupportedMethod(error) == null) NotificationsLog.Level.Error else NotificationsLog.Level.Warning
+        notifications.push(level, HostStore.describe(error), source)
+      },
       endpointsChanged = { endpoints -> scope.launch { endpointsChanged(endpoints) } },
       connectionChanged = { state ->
         if (state == Transport.State.Ready || state == Transport.State.Offline) routes.connectionChanged(state == Transport.State.Ready)
@@ -115,6 +125,7 @@ class AppStore(
     host.setCapabilities(identity.capabilities)
     disconnect()
     host.reset()
+    pullRequests.clear()
     keystore.setActive(deviceId)
     connect(identity)
   }
@@ -122,6 +133,7 @@ class AppStore(
   suspend fun pairCompleted(identity: DeviceIdentity) {
     disconnect()
     host.reset()
+    pullRequests.clear()
     val state = keystore.add(identity)
     _pairedHosts.value = state.hosts
     _activeHostId.value = state.activeId
@@ -141,6 +153,7 @@ class AppStore(
       runCatching { host.liveBackend?.request(Methods.DeviceUnregisterPush, MethodsTypes.DeviceUnregisterPushParams()) }
       disconnect()
       host.reset()
+    pullRequests.clear()
     }
     SavedAnswers.remove(sealedFiles, deviceId)
     Outbox.remove(sealedFiles, deviceId)

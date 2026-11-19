@@ -1,5 +1,6 @@
 package dev.houwert.argus.app.navigation
 
+import dev.houwert.argus.core.git.ReviewGuideTarget
 import dev.houwert.argus.kit.protocol.generated.RemoteGitBranch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -31,7 +32,7 @@ sealed interface Route {
   @Serializable data class Changes(val sessionId: String, val label: String) : Route
   @Serializable data class Timeline(val sessionId: String, val label: String) : Route
   @Serializable data class TurnChanges(val sessionId: String, val label: String, val checkpointId: String) : Route
-  /** One changed file's diff; [mode] is the Changes screen's `branch` or `working`. */
+  /** One changed file's diff; [mode] is the Changes screen's `branch`, `working`, `turn` or `turn:<checkpoint>`. */
   @Serializable data class FileDiff(val sessionId: String, val path: String, val mode: String) : Route
   @Serializable data class QuickOpen(val sessionId: String, val label: String) : Route
   @Serializable data class FileSearch(val sessionId: String, val label: String) : Route
@@ -51,6 +52,8 @@ sealed interface Route {
   @Serializable data class Issue(val ref: String) : Route
   @Serializable data class Design(val url: String, val sessionId: String? = null) : Route
   @Serializable data class PullRequest(val repo: String, val number: Int, val label: String) : Route
+  /** A session's or pull request's review guide. */
+  @Serializable data class ReviewGuide(val target: ReviewGuideTarget, val label: String) : Route
   @Serializable data object Automations : Route
   @Serializable data class Automation(val id: String, val label: String) : Route
   @Serializable data object QuickRun : Route
