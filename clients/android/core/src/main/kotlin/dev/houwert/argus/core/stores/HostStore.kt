@@ -200,6 +200,10 @@ class HostStore(
   private val _media = MutableSharedFlow<ByteArray>(extraBufferCapacity = 120)
   val media: SharedFlow<ByteArray> = _media
 
+  /** Draft diff comments per session or pull request; see `HostStoreReview.kt`. */
+  val reviews = dev.houwert.argus.core.git.DiffReviewDrafts()
+  val reviewGuides = dev.houwert.argus.core.git.ReviewGuides()
+
   // Collaborators
 
   var backend: HostBackend? = null
