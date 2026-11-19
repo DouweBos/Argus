@@ -3,6 +3,8 @@ package dev.houwert.argus.core.stores
 import dev.houwert.argus.core.backend.HostBackend
 import dev.houwert.argus.core.backend.HostEvent
 import dev.houwert.argus.core.backend.toStored
+import dev.houwert.argus.core.devices.DeviceInputQueue
+import dev.houwert.argus.core.devices.MediaRouter
 import dev.houwert.argus.core.offline.Outbox
 import dev.houwert.argus.core.offline.SavedAnswers
 import dev.houwert.argus.kit.net.Transport
@@ -199,6 +201,10 @@ class HostStore(
   /** Binary device-screen frames, for the devices screens to parse. */
   private val _media = MutableSharedFlow<ByteArray>(extraBufferCapacity = 120)
   val media: SharedFlow<ByteArray> = _media
+  /** Parsed frames by stream, for `registerMediaSink`; see `devices/HostStoreDevices.kt`. */
+  internal val mediaRouter = MediaRouter()
+  /** Touches, buttons and keys, sent one at a time in order. */
+  internal val deviceInput by lazy { DeviceInputQueue(scope) }
 
   // Collaborators
 
@@ -325,6 +331,7 @@ class HostStore(
     _deviceStates.value = emptyMap()
     _deviceClaims.value = emptyMap()
     _connectionId.value = null
+    mediaRouter.clear()
     _lastError.value = null
     forgetTranscriptSync()
     heldEpochs.clear()
@@ -361,7 +368,10 @@ class HostStore(
           for (agentId in watchedAgents) scope.launch { backend?.subscribe(agentId, true) }
         }
       }
-      is HostEvent.Media -> _media.tryEmit(event.data)
+      is HostEvent.Media -> {
+        mediaRouter.deliver(event.data)
+        _media.tryEmit(event.data)
+      }
       is HostEvent.Event -> handle(event.envelope)
     }
   }
