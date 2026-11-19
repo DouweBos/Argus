@@ -19,7 +19,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
  * A live member signs its requests with its own key; Clerk only proves who you are, for identity routes.
  */
 class AccountClient(
-  val baseUrl: HttpUrl = DEFAULT_BASE_URL.toHttpUrl(),
+  baseUrl: String = DEFAULT_BASE_URL,
   internal val token: suspend () -> String?,
   /** This device's member key while it is a live member, else null (Clerk then). */
   internal val signer: suspend () -> AccountSigner? = { null },
@@ -28,6 +28,7 @@ class AccountClient(
   /** The service refused this device's signature and took Clerk: it predates device-key auth. Once per launch. */
   onClerkFallback: () -> Unit = {},
 ) {
+  internal val baseUrl: HttpUrl = baseUrl.toHttpUrl()
   internal val http: AccountHttp = http ?: AccountOkHttp.http
   internal val fallback = ClerkFallback(onClerkFallback)
 

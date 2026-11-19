@@ -13,7 +13,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.json.Json
 import okhttp3.Call
 import okhttp3.Callback
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -21,7 +21,12 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 
 /** One HTTP exchange, small enough for tests to fake. Header names are lower case. */
-data class AccountHttpRequest(val method: String, val url: HttpUrl, val headers: Map<String, String>, val body: ByteArray?) {
+data class AccountHttpRequest(val method: String, val url: String, val headers: Map<String, String>, val body: ByteArray?) {
+  private val parsed get() = url.toHttpUrl()
+  /** What a signature covers: the percent-encoded path and query. */
+  val pathAndQuery: String get() = parsed.encodedPath + (parsed.encodedQuery?.let { "?$it" } ?: "")
+  val path: String get() = parsed.encodedPath
+  fun query(name: String): String? = parsed.queryParameter(name)
   fun header(name: String) = headers[name.lowercase()]
 }
 
@@ -61,7 +66,7 @@ internal suspend fun <R> AccountClient.send(
   val url = baseUrl.newBuilder().addPathSegments(path).apply { query.forEach { addQueryParameter(it.first, it.second) } }.build()
   val headers = mutableMapOf("accept" to "application/json")
   if (body != null) headers["content-type"] = "application/json"
-  val request = AccountHttpRequest(method, url, headers, body?.encodeToByteArray())
+  val request = AccountHttpRequest(method, url.toString(), headers, body?.encodeToByteArray())
   if (auth == AccountRequestAuth.None) return decode(perform(request), parse)
   if (auth == AccountRequestAuth.Member && !fallback.active) {
     signer()?.let { return sendSigned(request, it, parse) }
@@ -86,8 +91,7 @@ private suspend fun <R> AccountClient.sendSigned(request: AccountHttpRequest, si
 /** `x-argus-member` / `-ts` / `-sig` over `requestSigningBytes`, as hosts sign. */
 internal fun AccountClient.sign(request: AccountHttpRequest, signer: AccountSigner): AccountHttpRequest {
   val ts = now()
-  val pathAndQuery = request.url.encodedPath + (request.url.encodedQuery?.let { "?$it" } ?: "")
-  val message = AccountCodec.requestSigningBytes(request.method, pathAndQuery, ts, request.body ?: ByteArray(0))
+  val message = AccountCodec.requestSigningBytes(request.method, request.pathAndQuery, ts, request.body ?: ByteArray(0))
   return request.copy(
     headers = request.headers + mapOf(
       "x-argus-member" to signer.id,

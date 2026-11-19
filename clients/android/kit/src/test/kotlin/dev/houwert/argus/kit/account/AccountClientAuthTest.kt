@@ -11,7 +11,6 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
-import okhttp3.HttpUrl.Companion.toHttpUrl
 
 /** Member-signed requests against the TS vector (`request_signing.json`), and which routes go out on which key. */
 class AccountClientAuthTest {
@@ -42,7 +41,7 @@ class AccountClientAuthTest {
   }
 
   private fun client(recorder: Recorder, token: String? = "clerk", signer: AccountSigner?, fallback: () -> Unit = {}) = AccountClient(
-    "https://example.test/argus/account/v1".toHttpUrl(), token = { token }, signer = { signer }, http = recorder.http, onClerkFallback = fallback,
+    "https://example.test/argus/account/v1", token = { token }, signer = { signer }, http = recorder.http, onClerkFallback = fallback,
   )
 
   @Test fun liveMemberSignsWithItsKey() = runTest {
@@ -70,7 +69,7 @@ class AccountClientAuthTest {
 
   @Test fun identityRoutesAlwaysGoOnClerk() = runTest {
     val recorder = Recorder().apply {
-      respond = { r -> if (r.url.encodedPath.endsWith("/join")) 200 to """{"request_id":"r","expires_at":1}""" else 200 to """{"account_id":"a","epoch":0,"head_seq":0}""" }
+      respond = { r -> if (r.path.endsWith("/join")) 200 to """{"request_id":"r","expires_at":1}""" else 200 to """{"account_id":"a","epoch":0,"head_seq":0}""" }
     }
     val api = client(recorder, signer = phone)
     api.account()
@@ -114,7 +113,7 @@ class AccountClientAuthTest {
 
   @Test fun refusedWhileClockIsOffIsTheClock() = runTest {
     val api = AccountClient(
-      "https://example.test/argus/account/v1".toHttpUrl(), token = { null }, signer = { phone },
+      "https://example.test/argus/account/v1", token = { null }, signer = { phone },
       http = { AccountHttpResponse(401, """{"error":"unauthorized"}""", mapOf("Date" to "Sun, 06 Nov 1994 08:49:37 GMT")) },
     )
     assertFailsWith<AccountServiceError.ClockSkew> { api.directory() }
