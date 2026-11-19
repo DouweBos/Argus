@@ -15,3 +15,6 @@ dependencies {
   testImplementation(libs.kotlinx.coroutines.test)
   testImplementation(libs.okhttp.mockwebserver)
 }
+
+// The account log's golden fixtures, shared with the TS and Swift verifiers.
+sourceSets["test"].resources.srcDir("../../../packages/remote-protocol/src/account/fixtures")
