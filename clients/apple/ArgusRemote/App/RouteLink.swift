@@ -59,10 +59,10 @@ extension PhoneDestination {
       return PhoneDestination(section: .automations, route: .run(id: runId, label: "Run"))
     case .automation(let id, nil):
       return PhoneDestination(section: .automations, route: .automation(id: id, label: "Automation"))
-    case .blueprints: return PhoneDestination(section: .home, route: .blueprints)
-    case .blueprint(let id): return PhoneDestination(section: .home, route: .blueprint(id: id))
-    case .generateBlueprint: return PhoneDestination(section: .home, route: .generateBlueprint)
-    case .newProject(let id): return PhoneDestination(section: .home, route: .newProject(blueprintId: id))
+    case .blueprints: return PhoneDestination(section: .blueprints)
+    case .blueprint(let id): return PhoneDestination(section: .blueprints, route: .blueprint(id: id))
+    case .generateBlueprint: return PhoneDestination(section: .blueprints, route: .generateBlueprint)
+    case .newProject(let id): return PhoneDestination(section: .blueprints, route: .newProject(blueprintId: id))
     case .notifications: return PhoneDestination(section: .notifications)
     case .usage: return PhoneDestination(section: .usage)
     case .usageModel(let tab, let runner, let model, let range):

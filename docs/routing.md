@@ -149,10 +149,9 @@ it can:
   The phone's tabs are the Mac's top-level destinations that fit five:
   Home (`/`), Inbox (`/inbox`), Agents (`/agents`), Automations
   (`/automations`) and More (`/more`, phone-only). More lists Pull Requests,
-  Issues (with Linear connected), Devices, Usage, Notifications and Settings;
-  a link to one of those opens it inside More. The blueprint screens
-  (`/blueprints`, `/blueprints/:id`, `/blueprints/new`, `/blueprints/generate`,
-  `/blueprints/new-project`) open inside Home. The iPad sidebar lists every
+  Blueprints, Issues (with Linear connected), Devices, Usage, Notifications and
+  Settings; a link to one of those, or to any blueprint screen, opens it inside
+  More. The iPad sidebar lists every
   destination instead, the Mac's primary rows then its footer ones, and
   highlights the session a link opened. On iPad the session screen's details
   are a side panel beside the chat (Details, Changes, Files, Terminals,

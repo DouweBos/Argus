@@ -159,9 +159,8 @@ struct ProjectsView: View {
     }
   }
 
-  /// Blueprints make new projects, so they're reached from here.
   private var projectsHeader: some View {
-    HomeSectionHeader(title: "Projects", action: ("Blueprints", { router.push(.blueprints) }))
+    HomeSectionHeader(title: "Projects")
   }
 
   /// Agents across every project: the ones still working, or waiting on you,

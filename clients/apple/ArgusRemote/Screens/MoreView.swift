@@ -12,6 +12,7 @@ struct MoreView: View {
     List {
       Section {
         row(.pullRequests, badge: pullRequests.pullRequests.count, tone: .accent)
+        row(.blueprints)
         // Only once the computer has Linear connected; the key never leaves it.
         if host.linearConnected { row(.issues) }
         row(.devices)

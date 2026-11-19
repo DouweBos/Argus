@@ -286,6 +286,7 @@ struct RootView: View {
     case .automations: AutomationsView()
     case .issues: IssuesView()
     case .pullRequests: PullRequestsView()
+    case .blueprints: BlueprintsView()
     case .usage: PhoneUsageRoot()
     case .notifications: WarningsView()
     case .settings: SettingsView()
