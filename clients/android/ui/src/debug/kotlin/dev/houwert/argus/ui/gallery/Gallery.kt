@@ -42,6 +42,7 @@ enum class GalleryPage(val title: String) {
   Lists("Lists"),
   Settings("Settings"),
   Chrome("Chrome"),
+  Devices("Devices"),
   Icons("Icons"),
 }
 
@@ -89,6 +90,7 @@ fun ArgusGallery(initialDark: Boolean = false, initialPage: GalleryPage = Galler
                 GalleryPage.Lists -> ListsPage()
                 GalleryPage.Settings -> SettingsGalleryPage()
                 GalleryPage.Chrome -> ChromePage()
+                GalleryPage.Devices -> DevicesPage()
                 GalleryPage.Icons -> Unit
               }
             }
@@ -106,6 +108,7 @@ private fun pageIcon(page: GalleryPage) =
     GalleryPage.Lists -> Icon.menu
     GalleryPage.Settings -> Icon.gear
     GalleryPage.Chrome -> Icon.sidePanel
+    GalleryPage.Devices -> Icon.devices
     GalleryPage.Icons -> Icon.image
   }
 
