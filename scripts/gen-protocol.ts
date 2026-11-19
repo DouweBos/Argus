@@ -1,90 +1,43 @@
 /**
- * Generates ArgusKit's Swift wire types from the zod catalog in
- * `@argus/remote-protocol`: every raw command (`COMMANDS`), every typed remote
- * method (`MethodParams` / `MethodResult`) and every event payload.
+ * Generates the wire types of ArgusKit (Swift) and the Android kit (Kotlin,
+ * `protocol-kotlin.ts`) from the zod catalog in `@argus/remote-protocol`: every
+ * raw command (`COMMANDS`), every typed remote method (`MethodParams` /
+ * `MethodResult`) and every event payload.
  *
- *   pnpm gen:protocol          write the Swift files
+ *   pnpm gen:protocol          write the Swift and Kotlin files
  *   pnpm gen:protocol --check  fail if they are out of date (run by lint)
  *
  * Each zod schema goes through `z.toJSONSchema`, then a small emitter turns the
- * JSON Schema into Codable Swift. Exported schemas keep their export name;
- * anonymous nested objects are named after where they sit.
+ * JSON Schema into Codable Swift.
  */
 
 import fs from "node:fs";
 import path from "node:path";
-import { z } from "zod";
+import type { z } from "zod";
 import { error, info } from "@argus/host/logger";
-import * as protocol from "@argus/remote-protocol";
+import {
+  defsOf,
+  findDiscriminator,
+  isVoid,
+  type JsonSchema,
+  MODEL_NAMES,
+  nameOf,
+  pascal,
+  protocol,
+  stripNull,
+  toJson,
+} from "./protocol-catalog";
+import { kotlinFiles } from "./protocol-kotlin";
 
 const OUT_DIR = path.resolve(
   import.meta.dirname,
   "../clients/apple/ArgusKit/Sources/ArgusKit/Generated",
 );
+const KOTLIN_OUT_DIR = path.resolve(
+  import.meta.dirname,
+  "../clients/android/kit/src/main/kotlin/dev/houwert/argus/kit/protocol/generated",
+);
 const NAMESPACE = "ArgusProtocol";
-
-interface JsonSchema {
-  $ref?: string;
-  additionalProperties?: JsonSchema | boolean;
-  anyOf?: JsonSchema[];
-  const?: unknown;
-  default?: unknown;
-  description?: string;
-  enum?: unknown[];
-  items?: JsonSchema;
-  oneOf?: JsonSchema[];
-  prefixItems?: JsonSchema[];
-  properties?: Record<string, JsonSchema>;
-  required?: string[];
-  type?: string[] | string;
-}
-
-// --- Named schemas ---------------------------------------------------------
-
-const registry = z.registry<{ id: string }>();
-const nameOf = new Map<z.ZodType, string>();
-
-function isSchema(value: unknown): value is z.ZodType {
-  return value instanceof z.ZodType;
-}
-
-function isStructural(schema: z.ZodType): boolean {
-  const type = (schema as unknown as { def: { type: string } }).def.type;
-
-  return (
-    type === "object" ||
-    type === "enum" ||
-    type === "union" ||
-    type === "record" ||
-    type === "lazy"
-  );
-}
-
-for (const [name, value] of Object.entries(protocol).sort(([a], [b]) =>
-  a.localeCompare(b),
-)) {
-  if (!isSchema(value) || !isStructural(value) || nameOf.has(value)) {
-    continue;
-  }
-  if (name === "NoParams") {
-    continue;
-  }
-  nameOf.set(value, name);
-  registry.add(value, { id: name });
-}
-
-function toJson(schema: z.ZodType): JsonSchema {
-  return z.toJSONSchema(schema, {
-    metadata: registry,
-    unrepresentable: "any",
-    io: "output",
-    target: "draft-2020-12",
-  }) as JsonSchema;
-}
-
-function isVoid(schema: z.ZodType): boolean {
-  return (schema as unknown as { def: { type: string } }).def.type === "void";
-}
 
 // --- Swift emission --------------------------------------------------------
 
@@ -143,21 +96,6 @@ const SWIFT_KEYWORDS = new Set([
   "while",
 ]);
 
-function words(raw: string): string[] {
-  return raw
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .split(/[^A-Za-z0-9]+/)
-    .filter(Boolean);
-}
-
-function pascal(raw: string): string {
-  const out = words(raw)
-    .map((w) => w[0].toUpperCase() + w.slice(1))
-    .join("");
-
-  return /^[0-9]/.test(out) ? `_${out}` : out || "Value";
-}
-
 function camel(raw: string): string {
   const p = pascal(raw);
   const out = p[0].toLowerCase() + p.slice(1);
@@ -214,7 +152,7 @@ class Emitter {
     if (schema.$ref) {
       return this.refName(schema.$ref);
     }
-    const nullable = this.stripNull(schema);
+    const nullable = stripNull(schema);
     if (nullable) {
       return `${this.typeFor(nullable, context)}?`;
     }
@@ -285,25 +223,6 @@ class Emitter {
     }
 
     return name;
-  }
-
-  private stripNull(schema: JsonSchema): JsonSchema | null {
-    // zod writes a nullable scalar as `type: ["string", "null"]`.
-    if (Array.isArray(schema.type) && schema.type.includes("null")) {
-      const rest = schema.type.filter((t) => t !== "null");
-
-      return rest.length === 1 ? { ...schema, type: rest[0] } : null;
-    }
-    const union = schema.anyOf ?? schema.oneOf;
-    if (!union || !union.some((s) => s.type === "null")) {
-      return null;
-    }
-    const rest = union.filter((s) => s.type !== "null");
-    if (rest.length === 1) {
-      return rest[0];
-    }
-
-    return { ...schema, anyOf: rest, oneOf: undefined };
   }
 
   private declareStruct(name: string, schema: JsonSchema): string {
@@ -516,33 +435,7 @@ function swiftScalar(kind: string): string {
   }
 }
 
-function findDiscriminator(members: JsonSchema[]): string | null {
-  const first = members[0]?.properties;
-  if (!first || members.length < 2) {
-    return null;
-  }
-  for (const key of Object.keys(first)) {
-    if (
-      members.every(
-        (m) =>
-          m.type === "object" &&
-          m.properties?.[key]?.const !== undefined &&
-          (m.required ?? []).includes(key),
-      ) &&
-      // A key every member pins to the same value (a version) tells nothing apart.
-      new Set(members.map((m) => String(m.properties?.[key]?.const))).size ===
-        members.length
-    ) {
-      return key;
-    }
-  }
-
-  return null;
-}
-
 // --- Files -----------------------------------------------------------------
-
-const MODEL_NAMES = new Set(nameOf.values());
 
 const HEADER = `// Generated by scripts/gen-protocol.ts from @argus/remote-protocol.
 // Do not edit — run \`pnpm gen:protocol\`.
@@ -572,10 +465,6 @@ function rootType(
   emitter.append(scoped);
 
   return type;
-}
-
-function defsOf(json: JsonSchema): Record<string, JsonSchema> {
-  return (json as { $defs?: Record<string, JsonSchema> }).$defs ?? {};
 }
 
 function modelsFile(): string {
@@ -762,13 +651,27 @@ const files: Record<string, string> = {
   "WireEvents.swift": eventsFile(),
 };
 
+const outputs: [string, string, string][] = [
+  ...Object.entries(files).map(([f, c]): [string, string, string] => [
+    OUT_DIR,
+    f,
+    c,
+  ]),
+  ...Object.entries(kotlinFiles()).map(([f, c]): [string, string, string] => [
+    KOTLIN_OUT_DIR,
+    f,
+    c,
+  ]),
+];
+
 const check = process.argv.includes("--check");
 const stale: string[] = [];
 if (!check) {
   fs.mkdirSync(OUT_DIR, { recursive: true });
+  fs.mkdirSync(KOTLIN_OUT_DIR, { recursive: true });
 }
-for (const [file, content] of Object.entries(files)) {
-  const target = path.join(OUT_DIR, file);
+for (const [dir, file, content] of outputs) {
+  const target = path.join(dir, file);
   const current = fs.existsSync(target)
     ? fs.readFileSync(target, "utf-8")
     : null;
