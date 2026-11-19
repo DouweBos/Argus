@@ -42,6 +42,7 @@ enum class GalleryPage(val title: String) {
   Lists("Lists"),
   Settings("Settings"),
   Chrome("Chrome"),
+  Usage("Usage"),
   Icons("Icons"),
 }
 
@@ -50,7 +51,7 @@ enum class GalleryPage(val title: String) {
  * the Android twin of the iOS gallery stories. Debug only; `GalleryActivity` hosts it.
  */
 @Composable
-fun ArgusGallery(initialDark: Boolean = false, initialPage: GalleryPage = GalleryPage.Tokens) {
+fun ArgusGallery(initialDark: Boolean = false, initialPage: GalleryPage = GalleryPage.Tokens, initialStory: String? = null) {
   var dark by rememberSaveable { mutableStateOf(initialDark) }
   var colorTheme by rememberSaveable { mutableStateOf(ColorTheme.Default) }
   var page by rememberSaveable { mutableStateOf(initialPage) }
@@ -77,6 +78,7 @@ fun ArgusGallery(initialDark: Boolean = false, initialPage: GalleryPage = Galler
       Box(Modifier.weight(1f)) {
         when (page) {
           GalleryPage.Icons -> IconsPage()
+          GalleryPage.Usage -> UsagePage(UsageStory.entries.firstOrNull { it.name == initialStory } ?: UsageStory.Limits)
           else ->
             Column(
               Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -89,7 +91,7 @@ fun ArgusGallery(initialDark: Boolean = false, initialPage: GalleryPage = Galler
                 GalleryPage.Lists -> ListsPage()
                 GalleryPage.Settings -> SettingsGalleryPage()
                 GalleryPage.Chrome -> ChromePage()
-                GalleryPage.Icons -> Unit
+                GalleryPage.Icons, GalleryPage.Usage -> Unit
               }
             }
         }
@@ -106,6 +108,7 @@ private fun pageIcon(page: GalleryPage) =
     GalleryPage.Lists -> Icon.menu
     GalleryPage.Settings -> Icon.gear
     GalleryPage.Chrome -> Icon.sidePanel
+    GalleryPage.Usage -> Icon.usage
     GalleryPage.Icons -> Icon.image
   }
 
