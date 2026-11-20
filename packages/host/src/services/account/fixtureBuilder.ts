@@ -31,6 +31,7 @@ import {
   TS,
 } from "./fixtureChain";
 import { joinFixtures, laptop, tablet } from "./fixtureJoins";
+import { deviceKindVector, future, kindFixtures, pixel } from "./fixtureKinds";
 import { pushKeyVector } from "./fixturePush";
 import { requestSigningVector } from "./fixtureRequests";
 import { browser, webFixtures } from "./fixtureWeb";
@@ -367,6 +368,7 @@ function fixtures(): Fixture[] {
     },
     ...joinFixtures(),
     ...webFixtures(),
+    ...kindFixtures(),
   ];
 
   // Self-check: the TS verifier must agree before anything is written.
@@ -417,8 +419,11 @@ export function buildFixtures(): Record<string, unknown> {
       tablet,
       laptop,
       browser,
+      pixel,
+      future,
     },
     "sas.json": sasVectors(),
+    "device_kinds.json": deviceKindVector(),
     "push_key.json": pushKeyVector(),
     "request_signing.json": requestSigningVector(),
   };

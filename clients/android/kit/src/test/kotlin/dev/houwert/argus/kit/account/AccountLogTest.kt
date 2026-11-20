@@ -36,7 +36,7 @@ class AccountLogTest {
 
   companion object {
     val json = Json { ignoreUnknownKeys = true }
-    private val vectors = setOf("keys.json", "sas.json", "push_key.json", "request_signing.json")
+    private val vectors = setOf("keys.json", "sas.json", "push_key.json", "request_signing.json", "device_kinds.json")
 
     fun text(name: String): String = AccountLogTest::class.java.getResource("/$name")!!.readText()
     fun <T> load(name: String, serializer: KSerializer<T>): T = json.decodeFromString(serializer, text(name))
@@ -72,6 +72,13 @@ class AccountLogTest {
         }
       }
     }
+  }
+
+  @Test fun deviceKindsMatchTs() {
+    val vector = load("device_kinds.json", MapSerializer(String.serializer(), ListSerializer(String.serializer())))
+    for (kind in vector.getValue("valid")) assertTrue(AccountBody.validKind(kind), kind)
+    for (kind in vector.getValue("invalid")) assertTrue(!AccountBody.validKind(kind), kind)
+    assertTrue("android" in vector.getValue("valid"))
   }
 
   @Test fun emptyLogIsMalformed() {

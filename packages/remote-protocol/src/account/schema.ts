@@ -43,8 +43,16 @@ const MemberBase = {
   created_at: z.number(),
 };
 
-export const DeviceKind = z.enum(["ios", "mac", "electron", "web"]);
+/** The device kinds clients join as today. */
+export const DeviceKind = z.enum(["ios", "android", "mac", "electron", "web"]);
 export type DeviceKind = z.infer<typeof DeviceKind>;
+
+/**
+ * What a log member's `kind` may be: any short lowercase token, so a kind
+ * added later shows as a plain device on older clients instead of failing the
+ * whole log. Only `web` carries rules (see `log.ts`). Mirrored in Swift and Kotlin.
+ */
+export const MemberDeviceKind = z.string().regex(/^[a-z][a-z0-9_]{0,31}$/);
 
 export const HostPlatformKind = z.enum(["darwin", "linux"]);
 export type HostPlatformKind = z.infer<typeof HostPlatformKind>;
@@ -52,7 +60,7 @@ export type HostPlatformKind = z.infer<typeof HostPlatformKind>;
 export const DeviceMember = z.object({
   ...MemberBase,
   role: z.literal("device"),
-  kind: DeviceKind,
+  kind: MemberDeviceKind,
 });
 export type DeviceMember = z.infer<typeof DeviceMember>;
 

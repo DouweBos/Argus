@@ -9,6 +9,7 @@ import {
   admitsMember,
   fromB64,
   liveMembers,
+  MemberDeviceKind,
   requestSigningBytes,
   toB64,
   verifyB64,
@@ -51,6 +52,7 @@ const VECTORS = new Set([
   "sas.json",
   "push_key.json",
   "request_signing.json",
+  "device_kinds.json",
 ]);
 
 const fixtures = readdirSync(DIR)
@@ -121,6 +123,18 @@ describe("account log fixtures", () => {
       ).toBe(admission.admitted);
     },
   );
+
+  it("takes any lowercase kind token as a device, and nothing else", () => {
+    const vector = read<{ valid: string[]; invalid: string[] }>(
+      "device_kinds.json",
+    );
+    expect(
+      vector.valid.filter((k) => !MemberDeviceKind.safeParse(k).success),
+    ).toEqual([]);
+    expect(
+      vector.invalid.filter((k) => MemberDeviceKind.safeParse(k).success),
+    ).toEqual([]);
+  });
 
   it("verifies presence only from the live host's own key", () => {
     const fixture = fixtures.find((f) => f.name === "valid_chain")!;

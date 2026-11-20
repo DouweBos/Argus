@@ -6623,6 +6623,7 @@ extension ArgusProtocol {
     }
 
     public static let ios = DeviceKind(rawValue: "ios")
+    public static let android = DeviceKind(rawValue: "android")
     public static let mac = DeviceKind(rawValue: "mac")
     public static let electron = DeviceKind(rawValue: "electron")
     public static let web = DeviceKind(rawValue: "web")
@@ -6635,7 +6636,7 @@ extension ArgusProtocol {
     public var name: String
     public var createdAt: Double
     public var role: String
-    public var kind: DeviceKind
+    public var kind: String
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -6647,7 +6648,7 @@ extension ArgusProtocol {
       case kind = "kind"
     }
 
-    public init(id: String, signPub: String, noisePub: String, name: String, createdAt: Double, role: String, kind: DeviceKind) {
+    public init(id: String, signPub: String, noisePub: String, name: String, createdAt: Double, role: String, kind: String) {
       self.id = id
       self.signPub = signPub
       self.noisePub = noisePub

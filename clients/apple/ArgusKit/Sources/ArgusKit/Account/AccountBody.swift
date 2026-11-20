@@ -95,9 +95,7 @@ struct AccountBody {
     else { return nil }
     switch role {
     case "device":
-      guard let kind = JSONField.string(o["kind"]), ["ios", "mac", "electron", "web"].contains(kind) else {
-        return nil
-      }
+      guard let kind = JSONField.string(o["kind"]), validKind(kind) else { return nil }
       return AccountMember(
         id: id, role: .device, kind: kind, signPub: signPub, noisePub: noisePub, name: name,
         createdAt: createdAt)
@@ -109,6 +107,19 @@ struct AccountBody {
         createdAt: createdAt)
     default:
       return nil
+    }
+  }
+
+  /// Any short lowercase token, as `MemberDeviceKind` in schema.ts: a kind this
+  /// build doesn't know is a plain device, not a broken log.
+  static func validKind(_ kind: String) -> Bool {
+    let bytes = Array(kind.utf8)
+    guard (1...32).contains(bytes.count), (UInt8(ascii: "a")...UInt8(ascii: "z")).contains(bytes[0]) else {
+      return false
+    }
+    return bytes.allSatisfy {
+      (UInt8(ascii: "a")...UInt8(ascii: "z")).contains($0) || (UInt8(ascii: "0")...UInt8(ascii: "9")).contains($0)
+        || $0 == UInt8(ascii: "_")
     }
   }
 

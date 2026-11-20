@@ -8,12 +8,17 @@ export function memberKindLabel(member: AccountMember): string {
   switch (member.kind) {
     case "ios":
       return "iPhone";
+    case "android":
+      return "Android phone";
     case "mac":
       return "Mac app";
     case "electron":
       return "Desktop app";
-    default:
+    case "web":
       return "Browser";
+    // A kind added after this build: still a trusted device, just unnamed.
+    default:
+      return "Device";
   }
 }
 

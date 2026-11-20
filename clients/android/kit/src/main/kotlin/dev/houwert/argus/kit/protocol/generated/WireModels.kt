@@ -2452,10 +2452,11 @@ value class DeviceKind(val rawValue: String) {
 
   companion object {
     val ios = DeviceKind("ios")
+    val android = DeviceKind("android")
     val mac = DeviceKind("mac")
     val electron = DeviceKind("electron")
     val web = DeviceKind("web")
-    val entries: List<DeviceKind> = listOf(ios, mac, electron, web)
+    val entries: List<DeviceKind> = listOf(ios, android, mac, electron, web)
   }
 }
 
@@ -2467,7 +2468,7 @@ data class DeviceMember(
   @SerialName("name") val name: String,
   @SerialName("created_at") val createdAt: Double,
   @SerialName("role") val role: String,
-  @SerialName("kind") val kind: DeviceKind,
+  @SerialName("kind") val kind: String,
 )
 
 @Serializable

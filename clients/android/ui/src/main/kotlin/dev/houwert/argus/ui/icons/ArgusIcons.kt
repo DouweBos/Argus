@@ -106,6 +106,7 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.SmartDisplay
+import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.material.icons.outlined.Snooze
 import androidx.compose.material.icons.outlined.Speed
@@ -318,6 +319,7 @@ object SfSymbol {
       "pencil" to Icon.pencil,
       "iphone" to Icon.simulator,
       "iphone.gen3" to Icon.devices,
+      "smartphone" to Icons.Outlined.PhoneAndroid,
       "laptopcomputer" to Icons.Outlined.LaptopMac,
       "desktopcomputer" to Icon.desktop,
       "globe" to Icon.web,

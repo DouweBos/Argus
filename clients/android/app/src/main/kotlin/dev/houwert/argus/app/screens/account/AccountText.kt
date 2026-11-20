@@ -17,6 +17,7 @@ import java.util.Date
 object AccountMemberText {
   fun icon(member: AccountMember?): ImageVector = when (member?.kind) {
     "ios" -> SfSymbol["iphone"]
+    "android" -> SfSymbol["smartphone"]
     "mac" -> SfSymbol["laptopcomputer"]
     "web" -> SfSymbol["globe"]
     else -> Icon.desktop
@@ -26,11 +27,13 @@ object AccountMemberText {
     member ?: return ""
     if (member.role == AccountMember.Role.Host) return if (member.platform == "linux") "Linux computer" else "Mac computer"
     return when (member.kind) {
-      // The wire kind phones share; see ACCOUNT_DEVICE_KIND.
-      "ios" -> "Phone"
+      "ios" -> "iPhone"
+      "android" -> "Android phone"
       "mac" -> "Mac app"
+      "electron" -> "Desktop app"
       "web" -> "Browser"
-      else -> "Desktop app"
+      // A kind added after this build: still a trusted device, just unnamed.
+      else -> "Device"
     }
   }
 

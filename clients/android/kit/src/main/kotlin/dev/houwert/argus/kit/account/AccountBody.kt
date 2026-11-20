@@ -96,7 +96,7 @@ internal data class AccountBody(
       val createdAt = JsonField.number(o["created_at"]) ?: return null
       return when (JsonField.string(o["role"])) {
         "device" -> {
-          val kind = JsonField.string(o["kind"])?.takeIf { it in DEVICE_KINDS } ?: return null
+          val kind = JsonField.string(o["kind"])?.takeIf { validKind(it) } ?: return null
           AccountMember(id, AccountMember.Role.Device, kind = kind, signPub = signPub, noisePub = noisePub, name = name, createdAt = createdAt)
         }
         "host" -> {
@@ -107,8 +107,13 @@ internal data class AccountBody(
       }
     }
 
-    /** Device kinds the protocol schema (`DeviceKind` in schema.ts) accepts; nothing else verifies anywhere. */
-    val DEVICE_KINDS = listOf("ios", "mac", "electron", "web")
+    /**
+     * Any short lowercase token, as `MemberDeviceKind` in schema.ts: a kind this build doesn't know is
+     * a plain device, not a broken log.
+     */
+    fun validKind(kind: String): Boolean = KIND.matches(kind)
+
+    private val KIND = Regex("[a-z][a-z0-9_]{0,31}")
 
     /** 1–64 UTF-16 units (zod counts them that way), no control characters. */
     fun validName(name: String): Boolean = name.length in 1..64 && name.none { it.code < 0x20 || it.code == 0x7f }

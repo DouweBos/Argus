@@ -1,0 +1,17 @@
+{
+  "name": "android_genesis",
+  "description": "an Android phone starts the account",
+  "entries": [
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":0,\"prev\":\"\",\"ts\":1800000000000,\"signer\":\"00000000-0000-4000-8000-000000000010\",\"type\":\"genesis\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000010\",\"role\":\"device\",\"kind\":\"android\",\"sign_pub\":\"Q6cucUQBdi32a2jCbfvfJoKq7J8kdOykYT5CSg+6/Tw=\",\"noise_pub\":\"y6ZKgx2VW4vwPC47Xq4yZhdwy+PsVvRcDLuE2yBytlQ=\",\"name\":\"Pixel\",\"created_at\":1800000000000}}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000010": "i5xGdEu9NPG3zhnvUZOQgmiY0WlRDV3bj2cWlXlv46jQ+l1o44dmEdt8k5pfbAYGMI7oj2pt8gwbuznc/JWfDA=="
+      }
+    }
+  ],
+  "expect": {
+    "ok": true,
+    "head_seq": 0,
+    "live_members": ["00000000-0000-4000-8000-000000000010"]
+  }
+}

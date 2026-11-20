@@ -1,0 +1,24 @@
+{
+  "valid": [
+    "ios",
+    "android",
+    "mac",
+    "electron",
+    "web",
+    "visionos",
+    "a",
+    "k_______________________________"
+  ],
+  "invalid": [
+    "",
+    "Android",
+    "vision os",
+    "1phone",
+    "_x",
+    "x-y",
+    "ios\n",
+    "k________________________________",
+    "é",
+    "i\u0000"
+  ]
+}

@@ -52,5 +52,17 @@
     "sign_priv": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQk=",
     "sign_pub": "/RckOFqgx1tk+3jNYC+h2ZH96/drE8WO1wLqyDXp9hg=",
     "noise_pub": "Y13l6wOfwSagF7nnieHbchzdUfftP1UV0Y4vTi3XhRo="
+  },
+  "pixel": {
+    "id": "00000000-0000-4000-8000-000000000010",
+    "sign_priv": "CgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgo=",
+    "sign_pub": "Q6cucUQBdi32a2jCbfvfJoKq7J8kdOykYT5CSg+6/Tw=",
+    "noise_pub": "y6ZKgx2VW4vwPC47Xq4yZhdwy+PsVvRcDLuE2yBytlQ="
+  },
+  "future": {
+    "id": "00000000-0000-4000-8000-000000000011",
+    "sign_priv": "CwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCws=",
+    "sign_pub": "Zr5+Myx6RTMyvZ0Kf32wVfXF7xoGraZtmLOftoEMRzo=",
+    "noise_pub": "dCVioSCcGjaUz2MkScZY9UsIU2PFCanYNKaRT3gwFxk="
   }
 }

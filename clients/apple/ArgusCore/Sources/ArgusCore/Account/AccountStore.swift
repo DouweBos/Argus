@@ -144,7 +144,7 @@ public final class AccountStore {
   @ObservationIgnored var reportedMemberAuth: Set<MemberAuthOutcome> = []
 
   /// - Parameters:
-  ///   - deviceKind: `ios` or `mac`, as the log names this device.
+  ///   - deviceKind: `ios` or `mac` here (Android joins as `android`), as the log names this device.
   ///   - deviceName: the name setting's current value; joins and links use it.
   ///   - localHost: the Mac app's bundled host, linked without a code.
   ///   - http: the transport to the service; tests pass a fake.

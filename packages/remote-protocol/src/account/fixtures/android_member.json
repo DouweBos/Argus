@@ -1,0 +1,39 @@
+{
+  "name": "android_member",
+  "description": "an Android phone joins, approves a computer and renames itself",
+  "entries": [
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":0,\"prev\":\"\",\"ts\":1800000000000,\"signer\":\"00000000-0000-4000-8000-000000000001\",\"type\":\"genesis\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000001\",\"role\":\"device\",\"kind\":\"ios\",\"sign_pub\":\"iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w=\",\"noise_pub\":\"+0Gx/PdcEif6CIdgVqXtB6xE/gwRbsLegLjlI5WdeCQ=\",\"name\":\"Phone\",\"created_at\":1800000000000}}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000001": "yWQSqld3PsIDFoyuT2scZ1vjC2wg7N55aYxbodxAJ32WPyBYy2LEyKNzJ09phgqy35AvhCKKFgjGRj0uIiIiBQ=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":1,\"prev\":\"f1a848257c3b8304e696575a6572338395c5033b5a79da32a96e1d5e4b262d06\",\"ts\":1800000000001,\"signer\":\"00000000-0000-4000-8000-000000000001\",\"type\":\"add_device\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000010\",\"role\":\"device\",\"kind\":\"android\",\"sign_pub\":\"Q6cucUQBdi32a2jCbfvfJoKq7J8kdOykYT5CSg+6/Tw=\",\"noise_pub\":\"y6ZKgx2VW4vwPC47Xq4yZhdwy+PsVvRcDLuE2yBytlQ=\",\"name\":\"Pixel\",\"created_at\":1800000000000},\"request_id\":\"\",\"sas_commit\":\"\",\"proof\":\"5Xoazv5/EhIUszghbJKOyi6FwfGkQSa8DcPO/CbueYZLpIDscAgHUXBf/e+3QZuSYezdZSFY0IXiNt06lf0kBQ==\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000001": "5wdMqJQCFQbDcttWYBLz2plttdEJ+hJo7z/NtfxIpBDf5OEQLJHr0I4JjTnLnDvGeJMqrL/TnUMrsHQr7vxoAA=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":2,\"prev\":\"fa488eb331e6096c201fd249065c1b2c4753043037c990f07ad95b6b4d069bcf\",\"ts\":1800000000002,\"signer\":\"00000000-0000-4000-8000-000000000010\",\"type\":\"add_host\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000002\",\"role\":\"host\",\"platform\":\"darwin\",\"sign_pub\":\"gTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5Q=\",\"noise_pub\":\"IZ5NgA2paNKl/LAJx4T0dGxxOO257khEtznoMLBc9CQ=\",\"name\":\"Mini\",\"created_at\":1800000000000},\"request_id\":\"\",\"sas_commit\":\"\",\"proof\":\"9njA5qOeGvGC+5pPRkdI5+iufdYoEmfDtnJKV8u6M/HdBuBDxzbUPBxHYC82l+xWuenpHpnfMa3aONzK5h60Aw==\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000010": "XLIMSQOreU9g7sakXgVnyFmtdsRGG42+kiNuaIU9FBN/rzqX6KP5MOLwnA5PENZZMZCeW6ZcqPGt7weoDye+Bg=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":3,\"prev\":\"643cc52dd8b1958aedb0983bb0a62233ed84294162bc4a6545cb2fc55b846aa6\",\"ts\":1800000000003,\"signer\":\"00000000-0000-4000-8000-000000000010\",\"type\":\"rename\",\"member_id\":\"00000000-0000-4000-8000-000000000010\",\"name\":\"Pixel 9\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000010": "jz15YiRobxeI6MBxYYl7A8j/07qo8XrEX2tykb5EnMOeWEAZDTczgvu58oEMmF9B7+P9KSIqHlxZ56H5eLTWCw=="
+      }
+    }
+  ],
+  "expect": {
+    "ok": true,
+    "head_seq": 3,
+    "live_members": [
+      "00000000-0000-4000-8000-000000000001",
+      "00000000-0000-4000-8000-000000000002",
+      "00000000-0000-4000-8000-000000000010"
+    ]
+  }
+}

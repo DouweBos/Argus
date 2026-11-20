@@ -52,7 +52,7 @@ struct AccountLogTests {
 
   static let logFixtures: [String] = {
     let names = (try? FileManager.default.contentsOfDirectory(atPath: fixtures.path)) ?? []
-    let vectors = ["keys.json", "sas.json", "push_key.json", "request_signing.json"]
+    let vectors = ["keys.json", "sas.json", "push_key.json", "request_signing.json", "device_kinds.json"]
     return names.filter { $0.hasSuffix(".json") && !vectors.contains($0) }.sorted()
   }()
 
@@ -84,6 +84,14 @@ struct AccountLogTests {
       #expect(reason.rawValue == fixture.expect.reason)
       #expect(index == fixture.expect.index)
     }
+  }
+
+  @Test("device kinds match the TS schema: unknown tokens are devices, junk is malformed")
+  func deviceKinds() throws {
+    let vector = try Self.load("device_kinds.json", as: [String: [String]].self)
+    for kind in vector["valid"] ?? [] { #expect(AccountBody.validKind(kind), "\(kind)") }
+    for kind in vector["invalid"] ?? [] { #expect(!AccountBody.validKind(kind), "\(kind)") }
+    #expect((vector["valid"] ?? []).contains("android"))
   }
 
   @Test("an empty log with nothing prior is malformed")

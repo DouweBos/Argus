@@ -17,7 +17,7 @@ data class AccountDeviceKeys(
   val signPub: String,
   val noisePriv: String,
   val noisePub: String,
-  /** The wire device kind, see [AccountBody.DEVICE_KINDS]. */
+  /** The wire device kind (`ios`, `android`, `mac`, …), see [AccountBody.validKind]. */
   val kind: String,
   val name: String,
   val createdAt: Double,

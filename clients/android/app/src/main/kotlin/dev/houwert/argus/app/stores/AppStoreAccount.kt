@@ -18,11 +18,8 @@ import kotlinx.coroutines.launch
 // The account's half of the host list: computers on the signed-in account show up beside the QR
 // pairings, and connect with no QR.
 
-/**
- * The device kind this phone joins the account as. The protocol's schema has no Android kind yet, and
- * every verifier rejects a log with an unknown one, so the phone joins as the other phone kind.
- */
-internal const val ACCOUNT_DEVICE_KIND = "ios"
+/** The device kind this phone joins the account as. */
+internal const val ACCOUNT_DEVICE_KIND = "android"
 
 /** The account service: a preference (debug builds set it from a launch extra), else the built-in one. */
 const val ACCOUNT_URL_KEY = "argus.account.url"
