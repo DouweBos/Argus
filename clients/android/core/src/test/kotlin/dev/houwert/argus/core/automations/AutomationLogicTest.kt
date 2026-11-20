@@ -1,7 +1,10 @@
 package dev.houwert.argus.core.automations
 
 import dev.houwert.argus.core.support.decode
+import dev.houwert.argus.core.backend.withNull
 import dev.houwert.argus.kit.protocol.ProtocolJson
+import dev.houwert.argus.kit.protocol.generated.MethodsTypes
+import dev.houwert.argus.kit.protocol.generated.AutomationInput as GeneratedAutomationInput
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomation
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetail
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetailTriggerKind
@@ -91,17 +94,31 @@ class RunnerSetupFlowTest {
 }
 
 class AutomationInputTest {
-  private fun encode(detail: RemoteAutomationDetail): JsonObject = AutomationInput.encode(detail).jsonObject
+  private fun encode(detail: RemoteAutomationDetail): JsonObject =
+    ProtocolJson.encode(GeneratedAutomationInput.serializer(), AutomationInput.create(detail)).jsonObject
+
+  /** The patch as `automations.update` sends it, nulls included. */
+  private fun patch(detail: RemoteAutomationDetail): JsonObject {
+    val params = ProtocolJson.encode(MethodsTypes.AutomationsUpdateParams.serializer(), MethodsTypes.AutomationsUpdateParams("a", AutomationInput.patch(detail)))
+    return AutomationInput.clearablePatchPaths.fold(params) { body, path -> withNull(body, path.split('.')) }.jsonObject["patch"]!!.jsonObject
+  }
 
   @Test
   fun inheritAndTheDefaultModelGoOutAsNull() {
     val json = encode(newAutomationDetail(name = "A", playbook = "p"))
+    // The host requires these two on create; runner and account are optional there.
     assertEquals(JsonNull, json["autonomy"])
     assertEquals(JsonNull, json["model"])
-    assertEquals(JsonNull, json["runner"])
-    assertEquals(JsonNull, json["claude_account_id"])
     assertEquals(JsonPrimitive("schedule"), json["trigger_kind"])
     assertNull(json["run_at"])
+  }
+
+  @Test
+  fun aPatchClearsEveryInheritedPin() {
+    val json = patch(newAutomationDetail(name = "A", playbook = "p"))
+    for (key in listOf("autonomy", "model", "runner", "claude_account_id")) assertEquals(JsonNull, json[key], key)
+    assertEquals(JsonPrimitive("A"), json["name"])
+    assertEquals(JsonPrimitive("work"), patch(newAutomationDetail(name = "A", claudeAccountId = "work"))["claude_account_id"])
   }
 
   @Test

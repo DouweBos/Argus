@@ -22,4 +22,6 @@ object NotificationExtra {
 object PushData {
   /** The sealed notification, as the APNs payload's `e`. */
   const val SEALED = "e"
+  /** A content-free account wake-up: `join` or `changed`. */
+  const val ACCOUNT = "account"
 }

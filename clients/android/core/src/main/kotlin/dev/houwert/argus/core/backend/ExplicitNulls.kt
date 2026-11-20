@@ -7,13 +7,14 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 
 /**
- * A generated request whose params must carry `null` at [paths] (dot-separated, e.g. `input.agent.model`):
- * the wire drops nulls, but the host requires keys it declares `.nullable()` rather than `.optional()`.
+ * A generated request whose params must carry `null` at [paths] (dot-separated, e.g. `patch.model`).
+ * Required nullable fields already go out as null; this is for a patch, where null clears a field
+ * its all-optional type would leave out.
  */
 suspend fun <P, R> HostBackend.requestWithNulls(command: RemoteCommand<P, R>, params: P, vararg paths: String): R {
   var body = ProtocolJson.encode(command.params, params)
   for (path in paths) body = withNull(body, path.split('.'))
-  return request(RawCommand(command.name, command.result, command.tier), body)
+  return request(object : RemoteCommand<JsonElement, R>(command.name, command.tier, JsonElement.serializer(), command.result) {}, body)
 }
 
 /** [element] with `null` at [path] wherever the key is missing; an existing value is left alone. */

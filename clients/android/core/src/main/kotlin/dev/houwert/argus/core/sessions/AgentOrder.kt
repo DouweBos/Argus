@@ -1,7 +1,7 @@
 package dev.houwert.argus.core.sessions
 
+import dev.houwert.argus.kit.util.Labels
 import dev.houwert.argus.kit.protocol.generated.RemoteAgentStatus
-import dev.houwert.argus.kit.protocol.generated.RemoteAgentStatusStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteSession
 import dev.houwert.argus.kit.protocol.generated.RemoteSessionKind
 
@@ -16,7 +16,7 @@ object AgentOrder {
 
   /** What wants you first, then the most recently active. */
   fun byActivity(agents: List<RemoteAgentStatus>): List<RemoteAgentStatus> =
-    agents.sortedWith(compareBy<RemoteAgentStatus> { activityRank(it) }.thenByDescending { lastActivity(it) })
+    agents.sortedWith(compareBy<RemoteAgentStatus> { Labels.activityRank(it) }.thenByDescending { Labels.lastActivity(it) })
 
   /** Oldest first: a session's agents in the order its tabs opened. */
   fun byCreation(agents: List<RemoteAgentStatus>): List<RemoteAgentStatus> = agents.sortedBy { it.createdAt ?: 0.0 }
@@ -70,21 +70,6 @@ object AgentOrder {
     if (index < 0) return null
     return ids[((index + offset) % ids.size + ids.size) % ids.size]
   }
-
-  /** Sort weight: anything that wants you outranks anything merely recent (ArgusKit's `Labels`). */
-  internal fun activityRank(agent: RemoteAgentStatus): Int {
-    if (agent.awaiting != null || agent.status == RemoteAgentStatusStatus.requiresAction) return 0
-    return when (agent.status) {
-      RemoteAgentStatusStatus.running -> 1
-      RemoteAgentStatusStatus.error -> 2
-      RemoteAgentStatusStatus.idle -> 3
-      RemoteAgentStatusStatus.stopped -> 4
-      else -> 5
-    }
-  }
-
-  /** When the agent last showed a sign of life; creation time until it speaks. */
-  internal fun lastActivity(agent: RemoteAgentStatus): Double = agent.lastActivityAt ?: agent.createdAt ?: 0.0
 }
 
 /** A session and the agents in it, as a project's screen lists them. */

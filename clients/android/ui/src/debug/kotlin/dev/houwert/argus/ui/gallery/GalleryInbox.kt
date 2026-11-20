@@ -12,7 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import dev.houwert.argus.core.compare.CompareGroup
 import dev.houwert.argus.core.compare.CompareLanding
-import dev.houwert.argus.core.routing.InboxFilter
+import dev.houwert.argus.core.stores.InboxFilter
 import dev.houwert.argus.core.stores.InboxItems
 import dev.houwert.argus.kit.protocol.generated.Blueprint
 import dev.houwert.argus.kit.protocol.generated.BlueprintAgent

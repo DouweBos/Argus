@@ -1,6 +1,5 @@
 package dev.houwert.argus.core.stores
 
-import dev.houwert.argus.core.routing.InboxFilter
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationRun
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationRunStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteProposal
@@ -24,27 +23,6 @@ val RemoteAutomationRun.isFailed: Boolean get() = status == RemoteAutomationRunS
 val RemoteAutomationRun.isRead: Boolean get() = reportRead ?: false
 
 val RemoteAutomationRun.hasUnreadReport: Boolean get() = unreadReport && !isActive
-
-fun InboxFilter.matches(proposal: RemoteProposal): Boolean =
-  (automationId == null || proposal.automationId == automationId) && (project == null || proposal.project == project)
-
-/** A run belongs to no project, so a project filter excludes every run. */
-fun InboxFilter.matches(run: RemoteAutomationRun): Boolean =
-  project == null && (automationId == null || run.automationId == automationId)
-
-/** One entry of an inbox filter menu. */
-data class InboxFilterOption(val value: String, val label: String, val count: Int)
-
-data class InboxFilterOptions(val automations: List<InboxFilterOption>, val projects: List<InboxFilterOption>) {
-  /** "Weekly analysis · Argus": what a filter narrows the inbox to. */
-  fun summary(filter: InboxFilter): String = listOfNotNull(
-    filter.automationId?.let { id -> automations.firstOrNull { it.value == id }?.label ?: "One automation" },
-    filter.project,
-  ).joinToString(" · ")
-}
-
-/** Which inbox filter a user changed, for telemetry. */
-enum class InboxFilterField(val wire: String) { Automation("automation"), Project("project"), Clear("clear") }
 
 /**
  * What the inbox is made of, grouped by what you would do about it rather than

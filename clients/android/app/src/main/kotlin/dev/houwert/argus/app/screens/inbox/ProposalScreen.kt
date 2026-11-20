@@ -54,7 +54,7 @@ fun ProposalScreen(id: String) {
     looked = true
   }
 
-  TopBarScaffold(Route.Proposal(id), proposal?.title ?: "Proposal", onRefresh = { proposals.load(id) }) {
+  TopBarScaffold(proposal?.title ?: "Proposal", onRefresh = { proposals.load(id) }) {
     Screen {
       error?.let { Banner(it, tone = Tone.Danger, onDismiss = proposals::clearError) }
       when {

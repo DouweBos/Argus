@@ -1,8 +1,14 @@
 package dev.houwert.argus.ui.composer
 
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import kotlinx.coroutines.CompletableDeferred
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.RepeatMode
@@ -43,41 +49,64 @@ fun DictationButton(phase: DictationPhase, modifier: Modifier = Modifier, size: 
 }
 
 /**
- * Dictation through the system's speech recognizer, which brings its own microphone UI and
- * permission, so the app needs no RECORD_AUDIO. Offline where the device has the model.
+ * Dictation into the draft, streaming words as they're heard. Falls back to the system's
+ * recognizer dialog, which brings its own microphone UI, where in-app recognition isn't available.
  */
 @Composable
 fun rememberRecognizerDictation(): () -> DictationEngine {
+  val context = LocalContext.current
   val pending = remember { PendingResult() }
   val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
     val heard = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
     pending.done?.invoke(heard)
     pending.done = null
   }
+  val microphone = remember { PendingPermission() }
+  val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+    microphone.answer?.complete(granted)
+    microphone.answer = null
+  }
   val current by rememberUpdatedState(launcher)
+  val currentPermission by rememberUpdatedState(permission)
   return remember {
     {
-      RecognizerDictationEngine { done ->
-        pending.done = done
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-          .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-          .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-        try {
-          current.launch(intent)
-        } catch (_: ActivityNotFoundException) {
-          pending.done = null
-          throw DictationException("This device has no speech recognizer.")
+      if (SpeechRecognizer.isRecognitionAvailable(context)) {
+        SpeechDictationEngine(context) {
+          if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            true
+          } else {
+            val answer = CompletableDeferred<Boolean>().also { microphone.answer = it }
+            currentPermission.launch(Manifest.permission.RECORD_AUDIO)
+            answer.await()
+          }
+        }
+      } else {
+        RecognizerDictationEngine { done ->
+          pending.done = done
+          val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+          try {
+            current.launch(intent)
+          } catch (_: ActivityNotFoundException) {
+            pending.done = null
+            throw DictationException("This device has no speech recognizer.")
+          }
         }
       }
     }
   }
 }
 
+private class PendingPermission {
+  var answer: CompletableDeferred<Boolean>? = null
+}
+
 private class PendingResult {
   var done: ((String?) -> Unit)? = null
 }
 
-/** One recognizer run: the system UI listens, its result is the whole transcript. */
+/** The fallback: the system's recognizer dialog listens, its result is the whole transcript. */
 internal class RecognizerDictationEngine(private val launch: ((String?) -> Unit) -> Unit) : DictationEngine {
   private var transcript = ""
 

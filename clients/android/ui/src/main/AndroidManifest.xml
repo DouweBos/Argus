@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Android 11+ hides the speech service from isRecognitionAvailable without this. -->
+  <queries>
+    <intent>
+      <action android:name="android.speech.RecognitionService" />
+    </intent>
+  </queries>
   <application>
     <!-- Serves a transcript image to the share sheet. -->
     <provider
@@ -7,5 +13,13 @@
       android:authorities="${applicationId}.argus.images"
       android:exported="false"
       android:grantUriPermissions="true" />
+    <!-- Where the camera writes a full-size composer photo. -->
+    <provider
+      android:name="androidx.core.content.FileProvider"
+      android:authorities="${applicationId}.argus.camera"
+      android:exported="false"
+      android:grantUriPermissions="true">
+      <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/camera_paths" />
+    </provider>
   </application>
 </manifest>

@@ -1,9 +1,11 @@
 package dev.houwert.argus.ui.composer
 
+import android.Manifest
 import android.content.ContentResolver
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.OpenableColumns
+import java.io.File
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,7 +26,11 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -123,9 +129,28 @@ fun PhoneAttachMenu(
   val photos = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
     if (uris.isNotEmpty()) scope.launch { onAttach(readImages(resolver, uris)) }
   }
-  // A preview bitmap needs no FileProvider; a full-size photo would.
-  val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
-    bitmap?.let(ImageAttachments::pending)?.let { onAttach(listOf(it)) }
+  val context = LocalContext.current
+  // Full size, like the iPhone: the camera writes into our cache through a FileProvider.
+  var shot by rememberSaveable { mutableStateOf<String?>(null) }
+  val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
+    val file = shot?.let(::File) ?: return@rememberLauncherForActivityResult
+    shot = null
+    scope.launch {
+      val image = if (saved) withContext(Dispatchers.IO) { CameraPhoto.read(file) } else null
+      file.delete()
+      image?.let { onAttach(listOf(it)) }
+    }
+  }
+  fun takePhoto() {
+    runCatching {
+      val file = CameraPhoto.newFile(context)
+      shot = file.path
+      camera.launch(CameraPhoto.uri(context, file))
+    }
+  }
+  // The app declares CAMERA for the QR scanner, so the capture intent needs it granted too.
+  val cameraPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+    if (granted) takePhoto()
   }
   val documents = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
     if (uris.isEmpty()) return@rememberLauncherForActivityResult
@@ -142,7 +167,7 @@ fun PhoneAttachMenu(
     }
     AttachItem("Take photo", Icon.camera) {
       onDismiss()
-      runCatching { camera.launch(null) }
+      if (CameraPhoto.allowed(context)) takePhoto() else cameraPermission.launch(Manifest.permission.CAMERA)
     }
     AttachItem("Choose file", Icon.file) {
       onDismiss()

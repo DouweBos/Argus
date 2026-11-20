@@ -77,7 +77,7 @@ fun BlueprintEditorScreen(id: String?) {
     else -> form.name
   }
   TopBarScaffold(
-    Route.Blueprint(id), title,
+    title,
     actions = {
       if (hasControl) {
         AccentLink(if (saving) "Saving" else "Save", Modifier.padding(end = 12.dp), enabled = canSave) {

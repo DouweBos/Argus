@@ -1,7 +1,6 @@
 package dev.houwert.argus.core.stores
 
 import dev.houwert.argus.core.automations.Autonomy
-import dev.houwert.argus.core.backend.requestWithNulls
 import dev.houwert.argus.kit.protocol.generated.Methods
 import dev.houwert.argus.kit.protocol.generated.MethodsTypes
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetail
@@ -75,11 +74,10 @@ suspend fun AutomationsStore.loadDefaultAutonomy(): Result<Autonomy?>? {
 suspend fun AutomationsStore.setDefaultAutonomy(autonomy: Autonomy?): Boolean {
   val backend = host.backend ?: return false
   return try {
-    // Null clears the cap, so it has to be sent rather than omitted.
-    backend.requestWithNulls(
+    // Null clears the cap; generated params send it as `null`.
+    backend.request(
       Methods.AutomationsSetDefaultAutonomy,
       MethodsTypes.AutomationsSetDefaultAutonomyParams(autonomy?.let { MethodsTypes.AutomationsSetDefaultAutonomyParamsAutonomy(it.rawValue) }),
-      "autonomy",
     )
     true
   } catch (e: Exception) {

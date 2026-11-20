@@ -51,7 +51,13 @@ data class PairingClientInfo(
   val version: String? = null,
 )
 
-enum class PairingError { InvalidCode, HandshakeFailed, UnreadableGrant, Cancelled }
+enum class PairingError {
+  InvalidCode, HandshakeFailed, UnreadableGrant, Cancelled,
+  /** The computer never answered in time. */
+  TimedOut,
+  /** The connection dropped mid-pairing; a reconnect can't resume the handshake. */
+  Disconnected,
+}
 
 class PairingException(val error: PairingError) : Exception(error.name)
 
@@ -139,7 +145,7 @@ class PairingClient(
             )
             close()
           }
-          GatewaySocket.Event.Closed -> Unit
+          GatewaySocket.Event.Closed -> if (handshake != null) fail(PairingError.Disconnected)
         }
       }
     }

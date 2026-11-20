@@ -33,6 +33,8 @@ import dev.houwert.argus.ui.components.PickerSheet
 import dev.houwert.argus.ui.integrations.LinearIssueDetailView
 import dev.houwert.argus.ui.theme.ArgusTheme
 import kotlinx.coroutines.launch
+import dev.houwert.argus.ui.components.TitleBar
+import dev.houwert.argus.app.screens.backAction
 
 /**
  * One Linear issue as Linear shows it: properties, description, sub-issues, relations, resources
@@ -72,7 +74,7 @@ fun IssueScreen(ref: String) {
   }
 
   Column(Modifier.fillMaxSize().background(ArgusTheme.colors.bg)) {
-    IntegrationTopBar(issue?.identifier ?: ref)
+    TitleBar(issue?.identifier ?: ref, onBack = backAction())
     PullToRefreshBox(
       refreshing,
       {

@@ -55,7 +55,7 @@ fun BlueprintsScreen() {
   LiveRefresh(enabled = connection == Transport.State.Ready) { store.refresh() }
 
   TopBarScaffold(
-    Route.Blueprints, "Blueprints", onRefresh = { store.refresh() },
+    "Blueprints", onRefresh = { store.refresh() },
     actions = { if (hasControl) NewBlueprintMenu(onNew = { router.push(Route.Blueprint(null)) }, onGenerate = { router.push(Route.GenerateBlueprint) }) },
   ) {
     LoadPhaseBox(

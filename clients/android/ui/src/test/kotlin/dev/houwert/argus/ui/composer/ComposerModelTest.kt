@@ -419,3 +419,26 @@ class ComposerDictationTest {
     assertEquals(DictationPhase.Idle, composer.dictation.value)
   }
 }
+
+class SpeechTranscriptTest {
+  @Test fun `partials stream, finals replace them, and utterances join with a space`() {
+    val t = SpeechTranscript()
+    t.partial("run")
+    assertEquals("run", t.text)
+    t.partial("run the")
+    assertEquals("run the", t.text)
+    t.finish("run the tests")
+    assertEquals("run the tests", t.text)
+    t.partial("then")
+    assertEquals("run the tests then", t.text)
+    t.finish(null)
+    t.partial(" ")
+    assertEquals("run the tests then", t.text)
+  }
+
+  @Test fun `an utterance with no words adds nothing`() {
+    val t = SpeechTranscript()
+    t.finish("")
+    assertTrue(t.isEmpty)
+  }
+}

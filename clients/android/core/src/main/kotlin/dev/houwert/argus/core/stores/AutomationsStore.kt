@@ -2,7 +2,6 @@ package dev.houwert.argus.core.stores
 
 import dev.houwert.argus.core.automations.AutomationInput
 import dev.houwert.argus.core.automations.newAutomationDetail
-import dev.houwert.argus.core.backend.RawCommand
 import dev.houwert.argus.core.backend.requestWithNulls
 import dev.houwert.argus.kit.protocol.generated.AutomationCalibration
 import dev.houwert.argus.kit.protocol.generated.Methods
@@ -24,8 +23,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
 /**
  * The connected computer's automations, their runs and each run's report.
@@ -140,11 +137,12 @@ class AutomationsStore(val host: HostStore) {
   private suspend fun persist(id: String?, input: RemoteAutomationDetail, action: StoreEvent.AutomationAction): String? {
     val backend = host.backend ?: return null
     return try {
-      val body = AutomationInput.encode(input)
       val detail = if (id != null) {
-        backend.request(UPDATE, buildJsonObject { put("automation_id", id); put("patch", body) }).detail
+        backend.requestWithNulls(
+          Methods.AutomationsUpdate, MethodsTypes.AutomationsUpdateParams(id, AutomationInput.patch(input)), *AutomationInput.clearablePatchPaths,
+        ).detail
       } else {
-        backend.request(CREATE, buildJsonObject { put("input", body) }).detail
+        backend.request(Methods.AutomationsCreate, MethodsTypes.AutomationsCreateParams(AutomationInput.create(input))).detail
       }
       host.hooks.track(StoreEvent.AutomationEdited(action))
       _detailById.update { it + (detail.id to detail) }
@@ -291,11 +289,9 @@ class AutomationsStore(val host: HostStore) {
   ): String? {
     val backend = host.backend ?: return null
     return try {
-      // The host wants `model` present, null for the default.
-      val run = backend.requestWithNulls(
+      val run = backend.request(
         Methods.AutomationsRunScratch,
         MethodsTypes.AutomationsRunScratchParams(name, playbook, repoRoots, sourceIds, model, guardrails),
-        "model",
       ).run
       host.hooks.track(StoreEvent.RunActed(StoreEvent.RunAction.StartScratch))
       _runs.update { listOf(run) + it }
@@ -323,7 +319,7 @@ class AutomationsStore(val host: HostStore) {
       timezone = timezone, catchUp = true, repoRoots = repoRoots, sourceIds = sourceIds, playbook = playbook,
     )
     return try {
-      val result = backend.request(CREATE, buildJsonObject { put("input", AutomationInput.encode(detail)) })
+      val result = backend.request(Methods.AutomationsCreate, MethodsTypes.AutomationsCreateParams(AutomationInput.create(detail)))
       host.hooks.track(StoreEvent.RunActed(StoreEvent.RunAction.ScheduleScratch))
       _detailById.update { it + (result.detail.id to result.detail) }
       refresh()
@@ -385,7 +381,5 @@ class AutomationsStore(val host: HostStore) {
 
   companion object {
     private const val RUN_LIMIT = 40L
-    private val CREATE = RawCommand("automations.create", MethodsTypes.AutomationsCreateResult.serializer())
-    private val UPDATE = RawCommand("automations.update", MethodsTypes.AutomationsUpdateResult.serializer())
   }
 }

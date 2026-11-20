@@ -11,8 +11,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,13 +18,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.ui.components.IconBtn
 import dev.houwert.argus.ui.icons.Icon as Icons
 import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.ui.theme.argusFont
+import dev.houwert.argus.ui.components.TitleBar
 
 /** A toolbar action: an icon button, or a row in the overflow menu once there are more than [GitScaffold] shows. */
 class BarAction(val label: String, val icon: ImageVector, val enabled: Boolean = true, val run: () -> Unit)
@@ -47,17 +44,7 @@ fun GitScaffold(
   val router = LocalRouter.current
   Scaffold(
     containerColor = theme.bg,
-    topBar = {
-      TopAppBar(
-        title = { Text(title, style = argusFont(17, FontWeight.SemiBold), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        navigationIcon = { IconBtn(Icons.arrowBack, "Back", tint = theme.text) { router.pop() } },
-        actions = { BarActions(actions) },
-        colors = TopAppBarDefaults.topAppBarColors(
-          containerColor = theme.bg, titleContentColor = theme.text, actionIconContentColor = theme.text,
-        ),
-        windowInsets = androidx.compose.foundation.layout.WindowInsets(0),
-      )
-    },
+    topBar = { TitleBar(title, onBack = router::pop, actions = { BarActions(actions) }) },
     bottomBar = bottomBar,
     contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0),
   ) { padding ->

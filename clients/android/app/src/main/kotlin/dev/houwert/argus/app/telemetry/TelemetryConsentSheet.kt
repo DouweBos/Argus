@@ -9,15 +9,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import dev.houwert.argus.ui.components.BodyText
 import dev.houwert.argus.ui.components.Btn
 import dev.houwert.argus.ui.components.ButtonTone
-import dev.houwert.argus.ui.components.Card
 import dev.houwert.argus.ui.components.MutedText
 import dev.houwert.argus.ui.components.Screen
+import dev.houwert.argus.ui.components.BodyText
 import dev.houwert.argus.ui.components.TitleText
 
 /** Shows [TelemetryConsentSheet] once per install, until it is answered. */
@@ -45,29 +46,36 @@ fun TelemetryConsentSheet(onAnswered: () -> Unit) {
       TitleText("Help improve Argus")
       MutedText("Pick how much you want to share. You can change this any time under Settings, Privacy.")
 
-      Card {
-        BodyText("Just count me")
-        MutedText("One event per launch: a random install id and the app version, nothing else.")
-        MutedText("This is the minimum; Argus always sends this heartbeat.")
-      }
-
-      Card {
-        BodyText("Share anonymous data")
-        MutedText("App version, Android version and device model.")
-        MutedText("Which screens you open and which actions you take.")
-        MutedText("Crashes and errors, with file paths stripped out.")
-      }
-
-      Card {
-        BodyText("What we never collect")
-        MutedText("Prompts, agent output, project names, branch names or repo paths.")
-        MutedText("Your device name, or anything that identifies you or your computers.")
-      }
+      // Plain sections, not cards: the buttons below are the only controls.
+      ConsentSection(
+        "Just count me",
+        "One event per launch: a random install id and the app version, nothing else.",
+        "This is the minimum; Argus always sends this heartbeat.",
+      )
+      ConsentSection(
+        "Share anonymous data",
+        "App version, Android version and device model.",
+        "Which screens you open and which actions you take.",
+        "Crashes and errors, with file paths stripped out.",
+      )
+      ConsentSection(
+        "What we never collect",
+        "Prompts, agent output, project names, branch names or repo paths.",
+        "Your device name, or anything that identifies you or your computers.",
+      )
 
       Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Btn(label = "Share anonymous data", fills = true) { choose(TelemetryMode.Full) }
         Btn(label = "Just count me", tone = ButtonTone.Secondary, fills = true) { choose(TelemetryMode.Presence) }
       }
     }
+  }
+}
+
+@Composable
+private fun ConsentSection(title: String, vararg lines: String) {
+  Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    BodyText(title, Modifier.semantics { heading() })
+    lines.forEach { MutedText(it) }
   }
 }

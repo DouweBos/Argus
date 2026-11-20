@@ -16,7 +16,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import dev.houwert.argus.app.LocalAppStore
-import dev.houwert.argus.app.screens.issues.IntegrationTopBar
 import dev.houwert.argus.core.stores.DesignCompareTarget
 import dev.houwert.argus.core.stores.DesignViewerModel
 import dev.houwert.argus.core.stores.loadedSession
@@ -26,6 +25,8 @@ import dev.houwert.argus.kit.protocol.generated.RemotePlatform
 import dev.houwert.argus.ui.design.DesignViewerView
 import dev.houwert.argus.ui.theme.ArgusTheme
 import kotlinx.coroutines.launch
+import dev.houwert.argus.ui.components.TitleBar
+import dev.houwert.argus.app.screens.backAction
 
 /**
  * A Figma frame in the shared design viewer, as the Mac's `/design`. Opened for a session, it
@@ -55,7 +56,7 @@ fun DesignScreen(url: String, sessionId: String?) {
     .map { DesignCompareTarget(RemotePlatform(it.platform.rawValue), it.id, it.name) }
 
   Column(Modifier.fillMaxSize().background(ArgusTheme.colors.bg)) {
-    IntegrationTopBar(details?.frame?.name ?: "Design")
+    TitleBar(details?.frame?.name ?: "Design", onBack = backAction())
     PullToRefreshBox(
       refreshing,
       {

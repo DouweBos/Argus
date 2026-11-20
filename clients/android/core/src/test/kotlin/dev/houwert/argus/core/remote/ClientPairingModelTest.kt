@@ -11,7 +11,9 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.onCompletion
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -79,9 +81,9 @@ class ClientPairingModelTest {
     assertEquals("handshakeFailed", PairingError.HandshakeFailed.telemetryReason)
 
     h.model.begin(code)
+    assertNull(h.model.state.value.error)
     runCurrent()
     assertEquals(2, h.connects)
-    assertNull(h.model.state.value.error)
   }
 
   @Test fun aSecondCodeWhilePairingIsIgnored() = runTest {
@@ -102,5 +104,53 @@ class ClientPairingModelTest {
     runCurrent()
     assertTrue(h.closed)
     assertEquals(Phase.Scan, h.model.state.value.phase)
+  }
+
+  @Test fun aSilentComputerTimesOutAndAllowsAnotherTry() = runTest {
+    val h = Harness(this, info)
+    h.model.begin(code)
+    runCurrent()
+    assertEquals(Phase.Connecting, h.model.state.value.phase)
+    advanceTimeBy(21.seconds)
+    runCurrent()
+    assertEquals(Phase.Scan, h.model.state.value.phase)
+    assertEquals(listOf(PairingError.TimedOut), h.failures)
+    assertTrue(h.closed)
+
+    h.model.begin(code)
+    runCurrent()
+    assertEquals(2, h.connects)
+  }
+
+  @Test fun waitingForConfirmationOutlivesTheConnectDeadline() = runTest {
+    val h = Harness(this, info)
+    h.model.begin(code)
+    runCurrent()
+    h.events.send(PairingClient.Event.Sas("123456"))
+    advanceTimeBy(60.seconds)
+    runCurrent()
+    assertEquals(Phase.AwaitingConfirmation("123456"), h.model.state.value.phase)
+  }
+
+  @Test fun aConnectionThatEndsMidPairingFails() = runTest {
+    val h = Harness(this, info)
+    h.model.begin(code)
+    runCurrent()
+    h.events.send(PairingClient.Event.Sas("123456"))
+    h.events.close()
+    runCurrent()
+    assertEquals(Phase.Scan, h.model.state.value.phase)
+    assertEquals(listOf(PairingError.Disconnected), h.failures)
+  }
+
+  @Test fun cancellingWhileConnectingGoesBackToScanning() = runTest {
+    val h = Harness(this, info)
+    h.model.begin(code)
+    runCurrent()
+    h.model.cancel()
+    runCurrent()
+    assertTrue(h.closed)
+    assertEquals(Phase.Scan, h.model.state.value.phase)
+    assertTrue(h.failures.isEmpty())
   }
 }

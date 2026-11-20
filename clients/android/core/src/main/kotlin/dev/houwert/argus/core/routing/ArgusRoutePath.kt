@@ -1,5 +1,6 @@
 package dev.houwert.argus.core.routing
 
+import dev.houwert.argus.core.stores.InboxFilter
 import dev.houwert.argus.core.usage.UsageTab
 import dev.houwert.argus.core.usage.default
 import dev.houwert.argus.core.routing.ArgusRoute.Companion.ISSUE_SEARCH_SEGMENT

@@ -1,7 +1,9 @@
 package dev.houwert.argus.app
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -67,7 +69,9 @@ fun ArgusRoot(app: AppStore) {
           }
         },
       ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
+        // Every screen sits above the keyboard (edge to edge, adjustResize does nothing); the
+        // consumed bars keep it from counting the tab bar twice.
+        Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding()) {
           // Each tab keeps its stack while another is showing.
           tabs.SaveableStateProvider(section.name) { TabHost(section, router) }
           ConnectionPill(app, Modifier.align(Alignment.TopCenter))

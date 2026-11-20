@@ -71,9 +71,8 @@ object Notifier {
   fun tag(notification: SealedNotification): String =
     ArgusSeal.collapseSubject(notification.kind, notification.agentId, notification.toolUseId) ?: UUID.randomUUID().toString()
 
-  fun post(context: Context, notification: SealedNotification) {
+  fun post(context: Context, notification: SealedNotification, tag: String = tag(notification)) {
     if (!allowed(context)) return
-    val tag = tag(notification)
     val permission = notification.actions.isNotEmpty() && notification.toolUseId != null
     val builder = NotificationCompat.Builder(context, if (permission) CHANNEL_APPROVALS else CHANNEL_AGENTS)
       .setSmallIcon(R.drawable.ic_notification)

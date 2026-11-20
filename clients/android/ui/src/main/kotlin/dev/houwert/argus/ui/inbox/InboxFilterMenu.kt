@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import dev.houwert.argus.core.routing.InboxFilter
+import dev.houwert.argus.core.stores.InboxFilter
 import dev.houwert.argus.core.stores.InboxFilterField
 import dev.houwert.argus.core.stores.InboxFilterOption
 import dev.houwert.argus.core.stores.InboxFilterOptions

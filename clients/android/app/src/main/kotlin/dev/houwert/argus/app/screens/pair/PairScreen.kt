@@ -34,7 +34,10 @@ import dev.houwert.argus.app.BuildConfig
 import dev.houwert.argus.app.DevPairing
 import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.LocalRouter
+import dev.houwert.argus.app.telemetry.Telemetry
+import dev.houwert.argus.app.telemetry.TelemetryEvent
 import dev.houwert.argus.core.remote.ClientPairingModel
+import dev.houwert.argus.core.remote.telemetryReason
 import dev.houwert.argus.kit.net.PairingClientInfo
 
 /** Pair with a computer: scan its QR or paste its code, then confirm the matching digits on the computer. */
@@ -48,10 +51,13 @@ fun PairScreen() {
       scope = scope,
       client = PairingClientInfo(product = "Argus", kind = "mobile", device = app.deviceName, version = BuildConfig.VERSION_NAME),
       onPaired = { app.pairCompleted(it) },
+      onFailed = { Telemetry.capture(TelemetryEvent.PairFailed(it.telemetryReason)) },
     )
   }
   DisposableEffect(model) { onDispose { model.cancel() } }
   val state by model.state.collectAsState()
+  // Out here so a failed attempt keeps the pasted code for a retry.
+  var code by rememberSaveable { mutableStateOf("") }
   // Debug builds on an emulator reach a host on this Mac through 10.0.2.2.
   val begin = { raw: String -> model.begin(DevPairing.rewrite(raw)) }
 
@@ -63,15 +69,15 @@ fun PairScreen() {
   ) {
     when (val phase = state.phase) {
       is ClientPairingModel.Phase.AwaitingConfirmation -> Confirm(phase.sas) { model.cancel() }
+      ClientPairingModel.Phase.Connecting -> Connecting { model.cancel() }
       ClientPairingModel.Phase.Paired -> CircularProgressIndicator()
-      ClientPairingModel.Phase.Scan -> Scan(state.error, begin)
+      ClientPairingModel.Phase.Scan -> Scan(code, { code = it }, state.error, begin)
     }
   }
 }
 
 @Composable
-private fun Scan(error: String?, begin: (String) -> Unit) {
-  var code by rememberSaveable { mutableStateOf("") }
+private fun Scan(code: String, onCode: (String) -> Unit, error: String?, begin: (String) -> Unit) {
   Text("Pair a computer", style = MaterialTheme.typography.headlineSmall)
   Text(
     "In Argus on your computer, open Settings, Remote, Start Pairing. A scanned pairing works on the same Wi-Fi, " +
@@ -83,7 +89,7 @@ private fun Scan(error: String?, begin: (String) -> Unit) {
   Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
     OutlinedTextField(
       value = code,
-      onValueChange = { code = it },
+      onValueChange = onCode,
       placeholder = { Text("Pairing code") },
       singleLine = true,
       modifier = Modifier.weight(1f).semantics { contentDescription = "Pairing code" },
@@ -91,6 +97,16 @@ private fun Scan(error: String?, begin: (String) -> Unit) {
     Button(onClick = { begin(code) }, enabled = ClientPairingModel.canSubmit(code)) { Text("Pair") }
   }
   error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+}
+
+@Composable
+private fun Connecting(onCancel: () -> Unit) {
+  Text("Connecting", style = MaterialTheme.typography.headlineSmall)
+  Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    CircularProgressIndicator(Modifier.padding(4.dp))
+    Text("Reaching your computer", style = MaterialTheme.typography.bodyMedium)
+  }
+  TextButton(onClick = onCancel) { Text("Cancel") }
 }
 
 @Composable

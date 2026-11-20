@@ -1,7 +1,7 @@
 package dev.houwert.argus.core.stores
 
 import dev.houwert.argus.core.automations.summary
-import dev.houwert.argus.core.routing.InboxFilter
+import dev.houwert.argus.core.stores.InboxFilter
 import dev.houwert.argus.core.support.FakeBackend
 import dev.houwert.argus.core.support.attach
 import dev.houwert.argus.core.support.decode

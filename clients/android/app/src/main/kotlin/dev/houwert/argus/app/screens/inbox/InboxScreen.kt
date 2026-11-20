@@ -35,7 +35,7 @@ import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.app.navigation.Route
 import dev.houwert.argus.core.automations.summary
-import dev.houwert.argus.core.routing.InboxFilter
+import dev.houwert.argus.core.stores.InboxFilter
 import dev.houwert.argus.core.stores.InboxFilterField
 import dev.houwert.argus.kit.net.Transport
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationRun
@@ -130,7 +130,7 @@ fun InboxScreen() {
   LiveRefresh(enabled = connection == Transport.State.Ready) { refresh() }
 
   TopBarScaffold(
-    Route.Inbox, "Inbox", onRefresh = { refresh() },
+    "Inbox", onRefresh = { refresh() },
     actions = { if (!all.isEmpty || !filter.isEmpty) InboxFilterMenu(options, filter, setFilter) },
   ) {
     LoadPhaseBox(

@@ -45,6 +45,8 @@ import dev.houwert.argus.ui.theme.ArgusTheme
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import dev.houwert.argus.ui.components.TitleBar
+import dev.houwert.argus.app.screens.backAction
 
 /**
  * The computer's open Linear issues, as the desktop's `/issues`: assigned to, created by or
@@ -88,7 +90,7 @@ fun IssuesScreen() {
   LiveRefresh(enabled = ready && connected, interval = 5.minutes) { model.refresh() }
 
   Column(Modifier.fillMaxSize().background(theme.bg)) {
-    IntegrationTopBar("Issues")
+    TitleBar("Issues", onBack = backAction())
     if (connected) {
       Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         ThemedTextField(searchText, { searchText = it }, "Search all issues", input = TextInput.Code)

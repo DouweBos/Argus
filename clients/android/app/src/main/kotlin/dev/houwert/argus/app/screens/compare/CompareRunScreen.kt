@@ -126,7 +126,7 @@ fun CompareRunScreen(groupId: String) {
 
   val sessions = host.compareSessions(groupId)
   val title = if (sessions.isEmpty()) "Compare" else CompareGroup(groupId, sessions).title
-  TopBarScaffold(Route.CompareRun(groupId), title, onRefresh = { load(screens = true) }) {
+  TopBarScaffold(title, onRefresh = { load(screens = true) }) {
     val current = scores
     when {
       current == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Loading("Scoring the runs") }

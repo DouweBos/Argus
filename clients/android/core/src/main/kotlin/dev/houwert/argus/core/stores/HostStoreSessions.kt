@@ -1,8 +1,6 @@
 package dev.houwert.argus.core.stores
 
-import dev.houwert.argus.core.backend.RawCommand
 import dev.houwert.argus.core.git.CommitMessage
-import dev.houwert.argus.kit.protocol.IgnoredResult
 import dev.houwert.argus.kit.protocol.generated.Methods
 import dev.houwert.argus.kit.protocol.generated.MethodsTypes
 import dev.houwert.argus.kit.protocol.generated.RemoteAgentStatus
@@ -13,9 +11,6 @@ import dev.houwert.argus.kit.protocol.generated.RemotePermissionMode
 import dev.houwert.argus.kit.protocol.generated.RemoteSession
 import dev.houwert.argus.kit.protocol.generated.RemoteSessionKind
 import kotlinx.coroutines.flow.update
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 
 // Control-scoped session actions: create, rename, delete, land work.
 
@@ -305,16 +300,11 @@ suspend fun HostStore.setPullRequestWatched(sessionId: String, repoRoot: String,
   }
 }
 
-// Triage: these send an explicit null (follow the PR again, unsnooze), which generated params would drop.
-
-private val settleCommand = RawCommand(Methods.SessionsSettle.name, IgnoredResult.serializer())
-private val snoozeCommand = RawCommand(Methods.SessionsSnooze.name, IgnoredResult.serializer())
-
 /** Mark done (true), keep active (false), or follow its pull request again (null). */
 suspend fun HostStore.setSessionSettled(session: RemoteSession, settled: Boolean?) {
   val backend = backend ?: return
   try {
-    backend.request(settleCommand, JsonObject(mapOf("session_id" to JsonPrimitive(session.id), "settled" to (settled?.let { JsonPrimitive(it) } ?: JsonNull))))
+    backend.request(Methods.SessionsSettle, MethodsTypes.SessionsSettleParams(session.id, settled))
     reloadTriaged(session)
   } catch (e: Exception) {
     report(e, "session:settle")
@@ -325,7 +315,7 @@ suspend fun HostStore.setSessionSettled(session: RemoteSession, settled: Boolean
 suspend fun HostStore.snoozeSession(session: RemoteSession, untilMillis: Long?) {
   val backend = backend ?: return
   try {
-    backend.request(snoozeCommand, JsonObject(mapOf("session_id" to JsonPrimitive(session.id), "until" to (untilMillis?.let { JsonPrimitive(it) } ?: JsonNull))))
+    backend.request(Methods.SessionsSnooze, MethodsTypes.SessionsSnoozeParams(session.id, untilMillis?.toDouble()))
     reloadTriaged(session)
   } catch (e: Exception) {
     report(e, "session:snooze")

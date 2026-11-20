@@ -66,7 +66,7 @@ fun GenerateBlueprintScreen() {
   val canDraft = !drafting && picked.isNotEmpty() && "control" in capabilities
 
   TopBarScaffold(
-    Route.GenerateBlueprint, "Generate blueprint",
+    "Generate blueprint",
     actions = {
       AccentLink(if (drafting) "Drafting" else "Draft", Modifier.padding(end = 12.dp), enabled = canDraft) {
         working = true

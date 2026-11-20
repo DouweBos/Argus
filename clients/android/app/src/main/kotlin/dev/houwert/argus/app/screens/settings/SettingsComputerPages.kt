@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.app.navigation.Route
-import dev.houwert.argus.core.backend.RawCommand
 import dev.houwert.argus.core.settings.WorktreeCleanupModel
 import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.refreshDeviceHosts
@@ -60,10 +59,6 @@ import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.ui.theme.Tone
 import dev.houwert.argus.ui.theme.argusFont
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 
 /* The connected computer's settings that a phone can see or change. */
 
@@ -115,7 +110,6 @@ fun AgentsSettingsPage() {
 
 /** The automation autonomy rungs, lowest first, as the computer names them. */
 private val autonomyRungs = listOf("propose" to "Propose", "draft" to "Draft", "pr" to "Pull request", "auto_merge" to "Auto-merge")
-private val setDefaultAutonomy = RawCommand("automations.set_default_autonomy", JsonElement.serializer())
 
 @Composable
 fun AutomationsSettingsPage() {
@@ -149,8 +143,8 @@ fun AutomationsSettingsPage() {
           if (host.hasControl) {
             MenuChip("Autonomy cap", autonomy, options, { next ->
               scope.launch {
-                val params = buildJsonObject { put("autonomy", next?.let(::JsonPrimitive) ?: JsonNull) }
-                runCatching { host.backend?.request(setDefaultAutonomy, params) }
+                val params = MethodsTypes.AutomationsSetDefaultAutonomyParams(next?.let(MethodsTypes::AutomationsSetDefaultAutonomyParamsAutonomy))
+                runCatching { host.backend?.request(Methods.AutomationsSetDefaultAutonomy, params) }
                   .onSuccess {
                     autonomy = next
                     Telemetry.capture(TelemetryEvent.DefaultChanged(TelemetryEvent.DefaultSetting.Autonomy, next ?: "none"))

@@ -1,15 +1,10 @@
 package dev.houwert.argus.core.stores
 
 import dev.houwert.argus.core.backend.HostBackendKind
-import dev.houwert.argus.core.backend.RawCommand
 import dev.houwert.argus.kit.protocol.generated.Methods
 import dev.houwert.argus.kit.protocol.generated.MethodsTypes
 import dev.houwert.argus.kit.protocol.generated.RemoteClaudeLoginState
 import kotlinx.coroutines.flow.update
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 
 /*
  * The computer's Claude accounts: which plans are signed in, which one new agents run as, and how to
@@ -37,19 +32,13 @@ suspend fun HostStore.setActiveClaudeAccount(id: String) {
   }
 }
 
-private val setClaudeAccount = RawCommand("agents.set_claude_account", JsonElement.serializer())
-
 /** Pin the agent's session to an account, or null to follow the computer's active one. */
 suspend fun HostStore.setSessionClaudeAccount(sessionId: String, accountId: String?, agentId: String) {
   hooks.track(StoreEvent.ClaudeAccountChanged(StoreEvent.AccountAction.Pin))
   val backend = backend ?: return
-  // An explicit null means "follow the active account".
-  val params = buildJsonObject {
-    put("agent_id", JsonPrimitive(agentId))
-    put("account_id", accountId?.let(::JsonPrimitive) ?: JsonNull)
-  }
   try {
-    backend.request(setClaudeAccount, params)
+    // A null account goes out as `null`: "follow the active account".
+    backend.request(Methods.AgentsSetClaudeAccount, MethodsTypes.AgentsSetClaudeAccountParams(agentId, accountId))
     // Nothing re-broadcasts the session list on this write.
     _sessionsByRepo.update { all ->
       all.mapValues { (_, sessions) -> sessions.map { if (it.id == sessionId) it.copy(claudeAccountId = accountId) else it } }

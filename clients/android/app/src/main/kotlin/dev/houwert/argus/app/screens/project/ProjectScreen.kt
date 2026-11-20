@@ -1,5 +1,6 @@
 package dev.houwert.argus.app.screens.project
 
+import dev.houwert.argus.app.screens.git.StackedSessionSheet
 import dev.houwert.argus.core.sessions.AgentStartDefaults
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -181,7 +182,7 @@ fun ProjectScreen(repoRoot: String, name: String) {
 
   snoozing?.let { SnoozeUntilDialog(host, it) { snoozing = null } }
   stackingOn?.let { parent ->
-    StackedSessionSheet(host, parent, { router.push(Route.Session(it.id, it.displayName ?: it.branch, repoRoot)) }) { stackingOn = null }
+    StackedSessionSheet(parent, onDismiss = { stackingOn = null }) { router.push(Route.Session(it.id, it.displayName ?: it.branch, repoRoot)) }
   }
   if (searchingChats) {
     ChatSearchSheet(host, repoRoot, { router.push(stoppedRoute(repoRoot, it)) }, {}) { searchingChats = false }
