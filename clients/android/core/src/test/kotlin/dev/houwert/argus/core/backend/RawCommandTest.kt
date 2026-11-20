@@ -13,7 +13,6 @@ import dev.houwert.argus.kit.protocol.generated.Methods
 import dev.houwert.argus.kit.protocol.generated.MethodsTypes
 import dev.houwert.argus.kit.protocol.generated.RemoteSession
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonNull
@@ -22,7 +21,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import org.junit.Test
 
-/** Generated params drop nulls on the wire; "follow the PR again" needs `settled: null` to arrive. */
+/** "Follow the PR again" needs `settled: null` to arrive, not a missing key. */
 class RawCommandTest {
   /** The request frame as the transport writes it (`Transport.exchange`). */
   private fun <P> wire(command: RemoteCommand<P, *>, params: P): String =
@@ -40,9 +39,9 @@ class RawCommandTest {
     assertTrue("\"settled\":null" in frame)
   }
 
-  @Test fun generatedParamsWouldDropIt() {
+  @Test fun generatedParamsCarryARequiredNull() {
     val frame = wire(Methods.SessionsSettle, MethodsTypes.SessionsSettleParams("s1", settled = null))
-    assertFalse("settled" in frame)
+    assertTrue("\"settled\":null" in frame)
   }
 
   @Test fun followingThePullRequestAgainSendsSettledNull() = runTest {

@@ -29,7 +29,13 @@ object ProtocolJson {
     isLenient = true
   }
 
-  fun <T> encode(serializer: KSerializer<T>, value: T): JsonElement = json.encodeToJsonElement(serializer, value)
+  /**
+   * Optional fields (default null) stay off the wire, but a field the host declares
+   * `.nullable()` (generated with `@EncodeDefault`) must still go out as `null`.
+   */
+  private val encoder = Json(json) { explicitNulls = true }
+
+  fun <T> encode(serializer: KSerializer<T>, value: T): JsonElement = encoder.encodeToJsonElement(serializer, value)
 
   fun <T> decode(serializer: KSerializer<T>, value: JsonElement?): T = json.decodeFromJsonElement(serializer, value ?: JsonNull)
 

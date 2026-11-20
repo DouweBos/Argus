@@ -47,3 +47,17 @@ class RequestEnvelopeTest {
     assertEquals("""{"type":"sub","seq":1,"action":"subscribe","agent_id":"a"}""", sub)
   }
 }
+
+class ExplicitNullsTest {
+  @Test fun requiredNullableFieldsGoOutAsNullAndOptionalOnesStayOff() {
+    val info = dev.houwert.argus.kit.protocol.generated.AgentInfo(
+      agentId = "a", createdAt = 1.0, runnerId = "r", sessionId = "s",
+      status = dev.houwert.argus.kit.protocol.generated.AgentStatusValue("idle"),
+    )
+    val json = ProtocolJson.encode(dev.houwert.argus.kit.protocol.generated.AgentInfo.serializer(), info).toString()
+    kotlin.test.assertTrue("\"model\":null" in json, json)
+    kotlin.test.assertTrue("\"parent_agent_id\":null" in json, json)
+    kotlin.test.assertTrue("pinned" !in json, json)
+    kotlin.test.assertTrue("capabilities" !in json, json)
+  }
+}
