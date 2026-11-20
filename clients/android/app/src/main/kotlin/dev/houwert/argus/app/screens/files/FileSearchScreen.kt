@@ -75,9 +75,9 @@ fun FileSearchScreen(sessionId: String, label: String) {
         return@Column
       }
       PillGroup(Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
-        PillItem(null, "Regex", selected = regex) { regex = !regex }
-        PillItem(null, "Match case", selected = caseSensitive) { caseSensitive = !caseSensitive }
-        PillItem(null, "Whole word", selected = wholeWord) { wholeWord = !wholeWord }
+        PillItem(null, "Regex", title = "Regex", selected = regex) { regex = !regex }
+        PillItem(null, "Match case", title = "Match case", selected = caseSensitive) { caseSensitive = !caseSensitive }
+        PillItem(null, "Whole word", title = "Whole word", selected = wholeWord) { wholeWord = !wholeWord }
       }
       when (val p = phase) {
         FileSearchStore.Phase.Idle -> EmptyState(Icon.search, "Search files", body = "Find text across every file in this session.")

@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -164,7 +165,8 @@ fun AgentStartPane(
         }
         val canSend = flow.ready(text) && !sending
         Box(
-          Modifier.size(40.dp).argusClickable(rememberInteraction(), enabled = canSend, shape = RoundedCornerShape(50), label = "Start agent") { send() },
+          Modifier.size(40.dp).argusClickable(rememberInteraction(), enabled = canSend, shape = RoundedCornerShape(50), label = "Start agent") { send() }
+            .semantics { contentDescription = "Start agent" },
           contentAlignment = Alignment.Center,
         ) {
           Box(Modifier.size(32.dp).background(if (canSend) theme.accent else theme.border, RoundedCornerShape(50)), contentAlignment = Alignment.Center) {
@@ -228,6 +230,7 @@ private fun FooterPill(icon: ImageVector, title: String?, label: String, accent:
   val theme = ArgusTheme.colors
   Row(
     Modifier.then(if (onClick != null) Modifier.argusClickable(rememberInteraction(), shape = RoundedCornerShape(8.dp), label = label, onClick = onClick) else Modifier)
+      .clearAndSetSemantics { contentDescription = label }
       .padding(horizontal = 8.dp, vertical = 10.dp),
     horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically,
   ) {

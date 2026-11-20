@@ -133,7 +133,7 @@ private fun ProjectHeader(
       if (hasWorktrees) {
         IconBtn(if (collapsed) Icon.chevronRight else Icon.chevronDown, if (collapsed) "Expand ${project.name}" else "Collapse ${project.name}", size = 14.dp, tint = theme.textMuted) { toggle() }
       } else {
-        Box(Modifier.size(48.dp))
+        Box(Modifier.size(16.dp))
       }
       Box(Modifier.weight(1f)) {
         PressableRow(
