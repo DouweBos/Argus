@@ -192,6 +192,17 @@ class AccountStoreTest {
     assertEquals(3, service.log.size)
   }
 
+  @Test fun aLinkBeingApprovedHereIsNotListedAsWaiting() = runTest {
+    val store = readyStore()
+    val mini = TestKey(2)
+    val host = mini.host("Mini")
+    service.addLink("req-4", "BCDF-GHJK", AccountLinkSubject(host, null, mapOf(host.id to mini.proof(host))))
+    service.addJoin(TestKey(5).device("Tablet"), TestKey(5).proof(TestKey(5).device("Tablet")))
+    store.link("BCDF-GHJK")
+    store.refreshRequests()
+    assertEquals(listOf("Tablet"), store.requests.value.map { it.subject?.member?.name })
+  }
+
   @Test fun mismatchedCodesDenyTheRequest() = runTest {
     val store = readyStore()
     val mini = TestKey(2)

@@ -117,6 +117,8 @@ fun JoinRequestPrompt(account: AccountStore) {
     }
   }
   LaunchedEffect(requests.map { it.requestId }) {
+    // Approved or denied elsewhere meanwhile: the question is moot.
+    if (asking?.let { a -> requests.none { it.requestId == a.requestId } } == true) asking = null
     if (asking != null || reviewing != null) return@LaunchedEffect
     val next = requests.firstOrNull { it.requestId !in seen } ?: return@LaunchedEffect
     seen += next.requestId

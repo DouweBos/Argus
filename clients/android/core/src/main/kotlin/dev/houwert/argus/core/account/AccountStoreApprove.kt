@@ -24,7 +24,10 @@ suspend fun AccountStore.refreshRequests() {
     return
   }
   val fetched = runCatching { client.joinRequests() }.getOrNull() ?: return
+  // A code typed or handed over here is already being approved here.
+  val approvingHere = setOfNotNull(pendingLink?.requestId)
   val next = fetched.filter { request ->
+    if (request.requestId in approvingHere) return@filter false
     val subject = request.subject ?: return@filter false
     val member = subject.member ?: return@filter false
     subject.proven && member.signPub != keys.signPub && state.value?.members?.get(member.id) == null
