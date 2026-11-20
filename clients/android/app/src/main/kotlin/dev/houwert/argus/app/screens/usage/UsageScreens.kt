@@ -60,7 +60,7 @@ fun UsageModelScreen(route: Route.UsageModel) {
   val router = LocalRouter.current
   val navigation = rememberUsageNavigation(host, router)
   Column(Modifier.fillMaxSize()) {
-    TitleBar(route.model, onBack = router::pop)
+    TitleBar("Model usage", onBack = router::pop)
     CompositionLocalProvider(LocalUsageNavigation provides navigation) {
       HostUsageModelView(host, route.tab.metric ?: UsageMetric.Cost, UsageModelKey(route.runner, route.model), route.range)
     }

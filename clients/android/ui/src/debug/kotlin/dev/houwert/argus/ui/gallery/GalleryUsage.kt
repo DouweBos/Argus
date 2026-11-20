@@ -84,7 +84,7 @@ private fun Story(story: UsageStory) {
       val summary = remember { UsageFixtures.summary }
       val key = if (story == UsageStory.Model) UsageModelKey("claude-code", "claude-opus-5-5") else UsageModelKey("opencode", "qwen3-coder-30b")
       Column {
-        TitleBar(key.model, onBack = {})
+        TitleBar("Model usage", onBack = {})
         UsageModelDetailView(UsageMetric.Cost, key, summary, null, false) {}
       }
     }
