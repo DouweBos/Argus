@@ -184,6 +184,11 @@ private fun SettingsRowLayout(minLabel: Int, spacing: Int, content: @Composable 
   Layout(content, Modifier.fillMaxWidth()) { measurables, constraints ->
     val width = constraints.maxWidth
     val gap = spacing.dp.roundToPx()
+    // A control slot that emitted nothing (a state with no action) lays out as the label alone.
+    if (measurables.size < 2) {
+      val label = measurables.firstOrNull()?.measure(Constraints(maxWidth = width))
+      return@Layout layout(width, label?.height ?: 0) { label?.placeRelative(0, 0) }
+    }
     val control = measurables[1].measure(Constraints(maxWidth = width))
     if (width - control.width - gap >= minLabel.dp.roundToPx()) {
       val label = measurables[0].measure(Constraints(maxWidth = width - control.width - gap))

@@ -21,7 +21,7 @@ object WorktreeCleanupFormat {
       unit++
     }
     val text = if (size >= 100 || unit == 0) "%.0f".format(Locale.US, size) else "%.1f".format(Locale.US, size)
-    return "$text ${units[unit]}"
+    return "${text.removeSuffix(".0")} ${units[unit]}"
   }
 
   fun relative(ms: Double, now: Long = System.currentTimeMillis()): String {
