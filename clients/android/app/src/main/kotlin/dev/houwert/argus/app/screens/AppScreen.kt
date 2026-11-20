@@ -10,7 +10,7 @@ import dev.houwert.argus.ui.components.TopBarScreen
 
 /** A screen under the app bar; pushed screens get a back arrow, a tab's root doesn't. */
 @Composable
-fun AppScreen(title: String, actions: @Composable RowScope.() -> Unit = {}, content: @Composable () -> Unit) {
+fun AppScreen(title: String, actions: (@Composable RowScope.() -> Unit)? = null, content: @Composable () -> Unit) {
   val router = LocalRouter.current
   val entry = LocalViewModelStoreOwner.current as? NavBackStackEntry
   val pushed = entry != null && entry.destination.route != Router.ROOT
