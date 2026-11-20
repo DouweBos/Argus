@@ -13,19 +13,12 @@ import dev.houwert.argus.ui.components.ConfirmDialog
 import dev.houwert.argus.ui.components.MenuAction
 import dev.houwert.argus.ui.components.MutedText
 import dev.houwert.argus.ui.components.OverflowMenu
-import dev.houwert.argus.ui.components.ScreenTopBar
 import dev.houwert.argus.ui.components.TextPromptDialog
 import dev.houwert.argus.ui.icons.Icon
 
-/** Top bars, dialogs, overflow menus and the check-code card. */
+/** Dialogs, overflow menus and the check-code card. */
 @Composable
 internal fun DialogStories() {
-  Story("Screen top bar") {
-    ScreenTopBar("Account", onBack = {})
-    ScreenTopBar("A much longer title that has to end before the actions", onBack = {}) {
-      OverflowMenu("More", listOf(MenuAction("Rename", Icon.pencil) {}))
-    }
-  }
   Story("Check code") { CheckCodeCard("482093") }
   Story("Overflow menu") {
     Row {

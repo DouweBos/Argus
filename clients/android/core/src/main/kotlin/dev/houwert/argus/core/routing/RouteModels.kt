@@ -1,8 +1,6 @@
 package dev.houwert.argus.core.routing
 
-import dev.houwert.argus.kit.protocol.generated.UsageRange
-
-// The small models routes carry, from `Stores/InboxFilter.swift` and `Usage/UsageSummaryFormat.swift`.
+// The small models routes carry, from `Stores/InboxFilter.swift`.
 // Whoever ports those stores should move these there rather than duplicate them.
 
 /**
@@ -20,17 +18,3 @@ data class InboxFilter(
     val all = InboxFilter()
   }
 }
-
-/** The Usage screen's tabs. Limits owns bare `/usage`. */
-enum class UsageTab(val rawValue: String, val title: String) {
-  Limits("limits", "Limits"),
-  Cost("cost", "Cost"),
-  Tokens("tokens", "Tokens");
-
-  companion object {
-    fun fromRaw(raw: String?): UsageTab? = entries.firstOrNull { it.rawValue == raw }
-  }
-}
-
-/** The range Usage shows when none is picked; it stays off the URL. */
-val UsageRange.Companion.default: UsageRange get() = UsageRange._30d

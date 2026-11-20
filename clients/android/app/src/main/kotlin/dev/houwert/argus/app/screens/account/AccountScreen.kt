@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.app.navigation.Route
+import dev.houwert.argus.app.screens.AppScreen
 import dev.houwert.argus.core.account.AccountStore
 import dev.houwert.argus.core.account.cancelSignInNeeded
 import dev.houwert.argus.core.account.dismissRemovedNotice
@@ -47,7 +48,6 @@ import dev.houwert.argus.ui.components.MenuAction
 import dev.houwert.argus.ui.components.MutedText
 import dev.houwert.argus.ui.components.OverflowMenu
 import dev.houwert.argus.ui.components.Screen
-import dev.houwert.argus.ui.components.ScreenTopBar
 import dev.houwert.argus.ui.components.SettingsGroup
 import dev.houwert.argus.ui.components.SettingsItem
 import dev.houwert.argus.ui.components.SettingsLinkRow
@@ -78,8 +78,7 @@ fun AccountScreen() {
     account.refreshDirectory()
     account.refreshRequests()
   }
-  Column(Modifier.fillMaxSize()) {
-    ScreenTopBar("Account", onBack = { router.pop() })
+  AppScreen("Account") {
     if (phase == AccountStore.Phase.Ready && signInNeeded == null) {
       SettingsPage { SignedIn(account) { resetting = true } }
     } else {

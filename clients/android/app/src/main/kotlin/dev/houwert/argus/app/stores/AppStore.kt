@@ -78,7 +78,12 @@ class AppStore(
   private val _loaded = MutableStateFlow(false)
   val loaded: StateFlow<Boolean> = _loaded.asStateFlow()
 
-  val deviceName: String get() = preferences.string(PreferenceKey.DEVICE_NAME)?.takeIf { it.isNotBlank() } ?: defaultDeviceName
+  internal val _deviceName = MutableStateFlow(preferences.string(PreferenceKey.DEVICE_NAME)?.takeIf { it.isNotBlank() } ?: defaultDeviceName)
+  /** This phone's name as computers list it. */
+  val deviceNameFlow: StateFlow<String> = _deviceName.asStateFlow()
+  val deviceName: String get() = _deviceName.value
+  /** Theme, transcript and agent defaults; see [AppPreferences]. */
+  val prefs = AppPreferences(preferences)
 
   private var started: Job? = null
   private var connectGeneration = 0

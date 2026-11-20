@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.LocalRouter
+import dev.houwert.argus.app.screens.AppScreen
 import dev.houwert.argus.core.account.AccountStore
 import dev.houwert.argus.core.account.LinkFlow
 import dev.houwert.argus.core.account.confirmLink
@@ -31,7 +32,6 @@ import dev.houwert.argus.ui.components.EmptyState
 import dev.houwert.argus.ui.components.Loading
 import dev.houwert.argus.ui.components.MutedText
 import dev.houwert.argus.ui.components.Screen
-import dev.houwert.argus.ui.components.ScreenTopBar
 import dev.houwert.argus.ui.components.TextInput
 import dev.houwert.argus.ui.components.ThemedTextField
 import dev.houwert.argus.ui.components.TitleText
@@ -51,8 +51,7 @@ fun AddComputerScreen() {
   DisposableEffect(Unit) {
     onDispose { if (account.link.value is LinkFlow.Confirm) account.perform { denyLink() } }
   }
-  Column(Modifier.fillMaxSize()) {
-    ScreenTopBar("Add a Computer", onBack = { router.pop() })
+  AppScreen("Add a Computer") {
     Screen {
       when (val flow = link) {
         LinkFlow.Idle, is LinkFlow.Failed -> EnterCode(account, (flow as? LinkFlow.Failed)?.message)

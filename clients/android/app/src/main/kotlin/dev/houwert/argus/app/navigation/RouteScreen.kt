@@ -5,8 +5,18 @@ import dev.houwert.argus.app.screens.MoreScreen
 import dev.houwert.argus.app.screens.PendingScreen
 import dev.houwert.argus.app.screens.account.AccountScreen
 import dev.houwert.argus.app.screens.account.AddComputerScreen
+import dev.houwert.argus.app.screens.accounts.ClaudeAccountsScreen
+import dev.houwert.argus.app.screens.computers.ComputerScreen
+import dev.houwert.argus.app.screens.devices.DeviceScreen
+import dev.houwert.argus.app.screens.devices.DevicesScreen
 import dev.houwert.argus.app.screens.home.HomeScreen
 import dev.houwert.argus.app.screens.pair.PairScreen
+import dev.houwert.argus.app.screens.settings.SettingsPaneScreen
+import dev.houwert.argus.app.screens.settings.SettingsScreen
+import dev.houwert.argus.app.screens.usage.UsageModelScreen
+import dev.houwert.argus.app.screens.usage.UsageModelsScreen
+import dev.houwert.argus.app.screens.usage.UsagePricesScreen
+import dev.houwert.argus.app.screens.usage.UsageScreen
 
 /**
  * Route to screen, in one place. Wave-2 screens replace their [PendingScreen]
@@ -20,14 +30,23 @@ fun RouteScreen(route: Route) {
     Route.More -> MoreScreen()
     Route.Account -> AccountScreen()
     Route.AddComputer -> AddComputerScreen()
-    is Route.Computer, Route.Agents, is Route.Project, is Route.Session, is Route.NewSession, is Route.CompareRun,
+    Route.Settings -> SettingsScreen()
+    is Route.SettingsPage -> SettingsPaneScreen(route.pane)
+    is Route.Computer -> ComputerScreen(route.deviceId)
+    Route.ClaudeAccounts -> ClaudeAccountsScreen()
+    Route.Devices -> DevicesScreen()
+    is Route.Device -> DeviceScreen(route)
+    Route.Usage -> UsageScreen()
+    is Route.UsageModel -> UsageModelScreen(route)
+    Route.UsagePrices -> UsagePricesScreen()
+    Route.UsageModels -> UsageModelsScreen()
+    Route.Agents, is Route.Project, is Route.Session, is Route.NewSession, is Route.CompareRun,
     is Route.Agent, is Route.StoppedAgent, is Route.Changes, is Route.Timeline, is Route.TurnChanges, is Route.FileDiff,
     is Route.QuickOpen, is Route.FileSearch, is Route.Terminals, is Route.Terminal, is Route.McpServers, is Route.Stashes,
-    is Route.Branches, is Route.Branch, is Route.Commit, is Route.BranchCompare, Route.Devices, Route.Inbox, is Route.Proposal,
+    is Route.Branches, is Route.Branch, is Route.Commit, is Route.BranchCompare, Route.Inbox, is Route.Proposal,
     Route.PullRequests, Route.Issues, is Route.Issue, is Route.Design, is Route.PullRequest, Route.Automations,
     is Route.Automation, Route.QuickRun, is Route.AutomationEditor, Route.DescribeAutomation, is Route.Run, Route.Blueprints,
-    is Route.Blueprint, Route.GenerateBlueprint, is Route.NewProject, Route.Settings, Route.Notifications, Route.Computers,
-    Route.ClaudeAccounts, Route.Usage, Route.UsagePrices, Route.UsageModels,
+    is Route.Blueprint, Route.GenerateBlueprint, is Route.NewProject, Route.Notifications, Route.Computers,
     -> PendingScreen(route)
   }
 }

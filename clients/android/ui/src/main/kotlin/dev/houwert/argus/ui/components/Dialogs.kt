@@ -31,29 +31,6 @@ import dev.houwert.argus.ui.icons.Icon as ArgusIcon
 import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.ui.theme.argusFont
 
-/** A pushed screen's top bar: the back arrow (system back does the same), the title, trailing actions. */
-@Composable
-fun ScreenTopBar(
-  title: String,
-  modifier: Modifier = Modifier,
-  onBack: (() -> Unit)? = null,
-  actions: (@Composable () -> Unit)? = null,
-) {
-  val theme = ArgusTheme.colors
-  Row(
-    modifier.fillMaxWidth().background(theme.bg).heightIn(min = 56.dp).padding(horizontal = 4.dp),
-    verticalAlignment = Alignment.CenterVertically,
-  ) {
-    if (onBack != null) IconBtn(ArgusIcon.arrowBack, "Back", tint = theme.text, onClick = onBack)
-    Text(
-      title,
-      Modifier.weight(1f).padding(horizontal = if (onBack == null) 12.dp else 4.dp).semantics { heading() },
-      color = theme.text, style = argusFont(18, FontWeight.SemiBold), maxLines = 1, overflow = TextOverflow.Ellipsis,
-    )
-    actions?.invoke()
-  }
-}
-
 /** A yes/no question before something that can't be undone (`.alert` with a destructive button). */
 @Composable
 fun ConfirmDialog(

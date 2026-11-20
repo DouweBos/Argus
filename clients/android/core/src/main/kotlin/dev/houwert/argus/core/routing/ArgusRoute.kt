@@ -1,5 +1,7 @@
 package dev.houwert.argus.core.routing
 
+import dev.houwert.argus.core.usage.UsageTab
+import dev.houwert.argus.core.usage.default
 import dev.houwert.argus.kit.protocol.generated.LinearIssueScope
 import dev.houwert.argus.kit.protocol.generated.UsageRange
 
