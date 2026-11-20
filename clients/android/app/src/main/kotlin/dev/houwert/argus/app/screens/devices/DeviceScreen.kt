@@ -1,5 +1,7 @@
 package dev.houwert.argus.app.screens.devices
 
+import dev.houwert.argus.app.telemetry.Telemetry
+import dev.houwert.argus.app.telemetry.TelemetryEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -80,7 +82,7 @@ fun DeviceScreen(route: Route.Device) {
   val connectionId by host.connectionId.collectAsState()
 
   val handle = remember { DeviceVideoHandle() }
-  val session = remember { DeviceSession(onWatchEnded = {}) }
+  val session = remember { DeviceSession(onWatchEnded = { Telemetry.capture(TelemetryEvent.DeviceWatched(it.durationMs, it.interacted)) }) }
   val hub = remember(host) { RuntimeStreamHub(host) }
   val status by session.status.collectAsState()
   val coded by session.codedSize.collectAsState()

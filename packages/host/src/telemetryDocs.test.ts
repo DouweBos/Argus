@@ -57,7 +57,6 @@ const ANDROID_SOURCES = ["clients/android/app/src/main"];
 const ANDROID_PENDING = new Set([
   "android_pair_failed",
   "android_saved_shown",
-  "android_device_watched",
   "android_image_viewer_used",
   "android_sessions_fold_toggled",
   "android_project_collapse_toggled",
