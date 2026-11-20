@@ -175,7 +175,12 @@ export function registerAgentCommands(): void {
     limitHandoffAccounts(p.agentId),
   );
   defineTypedCommand("handoff_agent_to_account", (p) =>
-    handoffAgentToAccount(p.agentId, p.accountId),
+    handoffAgentToAccount(
+      p.agentId,
+      p.accountId,
+      "limit_card",
+      p.includeChildren ?? false,
+    ),
   );
   defineTypedCommand("continue_agent_on_runner", (p) =>
     continueAgentOnRunner(p.agentId, p.runnerId, p.source),

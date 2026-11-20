@@ -41,7 +41,7 @@ public enum AccountReverifyError: Error, Equatable, Sendable {
 }
 
 /// The signed-in person as the sign-in provider knows them. Never leaves the device.
-public struct AccountProfile: Equatable, Sendable {
+public struct AccountProfile: Codable, Hashable, Sendable {
   public var firstName: String?
   public var lastName: String?
   public var username: String?

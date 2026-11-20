@@ -3468,6 +3468,7 @@ data class LimitHandoffAccount(
   @SerialName("label") val label: String,
   @SerialName("detail") @EncodeDefault val detail: String? = null,
   @SerialName("usage") @EncodeDefault val usage: UsageLimitWindow? = null,
+  @SerialName("children") val children: Long? = null,
 )
 
 @Serializable

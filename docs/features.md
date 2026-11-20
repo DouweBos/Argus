@@ -148,6 +148,9 @@ ciphertext.
   notification when they aren't connected.
 - **Live Activity** — the iPhone shows working agents on the Lock Screen and
   in the Dynamic Island, with Approve and Deny for permission prompts.
+- **Android app** — pair an Android phone with your computer to follow
+  and steer agents, answer permission prompts straight from the
+  notification, and keep working agents on a home-screen widget.
 - **Phone or tablet** — the web client is one column on a phone and
   splits into a two-pane layout on an iPad or a desktop browser, with the
   session list beside whatever you have open.

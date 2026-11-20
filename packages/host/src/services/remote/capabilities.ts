@@ -1406,13 +1406,17 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   },
 
   "agents.handoff_to_account": async (params) => {
-    const { agent_id, account_id } = parse("agents.handoff_to_account", params);
+    const { agent_id, account_id, include_children } = parse(
+      "agents.handoff_to_account",
+      params,
+    );
     requireAgent(agent_id);
     // Through the registry: importing accountSwitch here closes an import cycle.
     await control(() =>
       invokeCommand("handoff_agent_to_account", {
         agentId: agent_id,
         accountId: account_id,
+        includeChildren: include_children,
       }),
     );
 

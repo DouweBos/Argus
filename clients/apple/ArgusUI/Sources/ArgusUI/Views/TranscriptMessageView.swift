@@ -91,8 +91,8 @@ public struct TranscriptMessageView: View {
     }
     // A sent message is a quiet fill; a reply is plain text on the canvas, as on the Mac.
     .padding(isUser ? 11 : 0)
-    .background(isUser ? theme.accentSoft : .clear)
-    .clipShape(RoundedRectangle(cornerRadius: theme.radius))
+    // A shaped fill, not a clip: a reply has no padding, and clipping shaves glyphs that overhang their frame.
+    .background(isUser ? theme.accentSoft : .clear, in: RoundedRectangle(cornerRadius: theme.radius))
   }
 
   @ViewBuilder

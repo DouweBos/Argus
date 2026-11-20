@@ -116,7 +116,7 @@ extension AccountStore {
       requests = []
       approval = .idle
       pushFingerprint = nil
-      vault = AccountVault(keys: keys, root: verified.root, entries: [genesis])
+      vault = AccountVault(keys: keys, root: verified.root, entries: [genesis], profile: vault.profile)
       await vaultStore.save(vault)
       state = verified
       logError = nil

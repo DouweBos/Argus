@@ -229,6 +229,7 @@ the center, runtime and testing on the right.
 | `packages/host`     | `@argus/host` — sessions, agents, git, terminals, simulators, command registry. **Plain Node** |
 | `packages/peacock`  | `@argus/peacock` — the design system: tokens, icons, components                                |
 | `clients/apple`     | Argus for Mac (the desktop app) and the iPhone client, in SwiftUI                              |
+| `clients/android`   | The Android client, in Kotlin and Jetpack Compose                                              |
 | `clients/argus-web` | The web client                                                                                 |
 | `native/`           | Swift/ObjC simulator bridge                                                                    |
 

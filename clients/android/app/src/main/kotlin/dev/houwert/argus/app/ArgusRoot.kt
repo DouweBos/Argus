@@ -38,6 +38,7 @@ val LocalRouter = staticCompositionLocalOf<Router> { error("No Router") }
 @Composable
 fun ArgusRoot(app: AppStore) {
   val router = remember { Router() }
+  dev.houwert.argus.app.platform.LaunchAttach(router)
   val dark = isSystemInDarkTheme()
   ArgusTheme(dark = dark) {
     CompositionLocalProvider(LocalAppStore provides app, LocalRouter provides router) {
@@ -62,6 +63,7 @@ fun ArgusRoot(app: AppStore) {
           tabs.SaveableStateProvider(section.name) { TabHost(section, router) }
           ConnectionPill(app, Modifier.align(Alignment.TopCenter))
           ErrorToast(app, Modifier.align(Alignment.BottomCenter))
+          dev.houwert.argus.app.telemetry.TelemetryConsentGate()
         }
       }
     }

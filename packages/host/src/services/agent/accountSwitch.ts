@@ -17,7 +17,7 @@ import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { respawnAgent, sendAgentMessage } from "./agentService";
 import { isAgentBusy } from "./busy";
 import { liveConversation } from "./conversation/live";
-import { handoffCandidates } from "./limitHandoff";
+import { handoffCandidates, stalledChildren } from "./limitHandoff";
 import {
   CONTINUE_MESSAGE,
   forgetLimitResume,
@@ -27,7 +27,11 @@ import {
 import { pinSessionAccount } from "./sessionAccountPin";
 
 /** Which control asked for the move. */
-export type AccountSwitchSource = "auto_limit" | "limit_card" | "picker";
+export type AccountSwitchSource =
+  | "auto_limit"
+  | "limit_card_child"
+  | "limit_card"
+  | "picker";
 
 interface QueuedSwitch {
   /** The pin to restore if the switch fails: the one before the first queued pick. */
@@ -196,12 +200,14 @@ export async function pinSessionClaudeAccount(
 
 /**
  * The limit card's button: pin the session to `accountId`, move the agent onto
- * it and send the "continue" its stalled turn needs.
+ * it and send the "continue" its stalled turn needs. `includeChildren` moves its
+ * stalled spawned agents along; one that fails stays put without failing this.
  */
 export async function handoffAgentToAccount(
   agentId: string,
   accountId: string,
   source: AccountSwitchSource = "limit_card",
+  includeChildren = false,
 ): Promise<void> {
   const agent = appState.agents.get(agentId);
   if (!agent) {
@@ -216,6 +222,7 @@ export async function handoffAgentToAccount(
   if (isAgentBusy(agent)) {
     throw "The agent is still working. Try again when its turn ends.";
   }
+  const children = includeChildren ? stalledChildren(agentId, accountId) : [];
   await switchSessionClaudeAccount(agent.sessionId, accountId, agentId, source);
   if (appState.agents.get(agentId)?.accountId !== accountId) {
     throw "The agent couldn't move to that account.";
@@ -226,4 +233,13 @@ export async function handoffAgentToAccount(
     message: CONTINUE_MESSAGE,
     author: "Argus",
   });
+  await Promise.all(
+    children.map((child) =>
+      handoffAgentToAccount(child.agentId, accountId, "limit_card_child").catch(
+        (e: unknown) => {
+          warn(`[agent:${child.agentId}] child handoff failed: ${String(e)}`);
+        },
+      ),
+    ),
+  );
 }

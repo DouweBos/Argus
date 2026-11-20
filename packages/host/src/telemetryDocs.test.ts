@@ -5,7 +5,8 @@
  *
  * This test reads every catalog — the host's `EventMap`, the web client's
  * `EventMap`, the iOS client's `TelemetryEvent`, the Mac app's
- * `MacTelemetryEvent`, Argus Server's `ServerTelemetryEvent` — and the doc, and fails when they disagree, in
+ * `MacTelemetryEvent`, Argus Server's `ServerTelemetryEvent`, the Android
+ * client's `TelemetryEvent` — and the doc, and fails when they disagree, in
  * either direction: undocumented events, undocumented props, documented
  * events that no longer exist, and catalog entries nothing ever sends.
  */
@@ -37,12 +38,68 @@ const SERVER_CATALOG = path.join(
   REPO,
   "clients/apple/ArgusServer/Telemetry/ServerTelemetryEvent.swift",
 );
+const ANDROID_CATALOG = path.join(
+  REPO,
+  "clients/android/app/src/main/kotlin/dev/houwert/argus/app/telemetry/TelemetryEvent.kt",
+);
 /** Where a `capture(...)` call can plausibly live. */
 const HOST_SOURCES = ["packages", "clients/argus-web/src"];
 const WEB_SOURCES = ["clients/argus-web/src"];
 const IOS_SOURCES = ["clients/apple/ArgusRemote"];
 const MAC_SOURCES = ["clients/apple/ArgusDesktop"];
 const SERVER_SOURCES = ["clients/apple/ArgusServer"];
+const ANDROID_SOURCES = ["clients/android/app/src/main"];
+
+/**
+ * Android events ported with the iPhone catalog whose screens are still being
+ * built. Each one leaves this list in the change that first captures it.
+ */
+const ANDROID_PENDING = new Set([
+  "android_pair_failed",
+  "android_saved_shown",
+  "android_device_watched",
+  "android_image_viewer_used",
+  "android_sessions_fold_toggled",
+  "android_project_collapse_toggled",
+  "android_proposal_opened",
+  "android_inbox_filtered",
+  "android_follow_up_used",
+  "android_input_used",
+  "android_setting_changed",
+  "android_color_theme_changed",
+  "android_appearance_changed",
+  "android_default_changed",
+  "android_agent_start_submitted",
+  "android_share_finished",
+  "android_warnings_opened",
+  "android_notifications_cleared",
+  "android_mcp_servers_opened",
+  "android_session_used",
+  "android_home_used",
+  "android_new_session_opened",
+  "android_blueprint_opened",
+  "android_transcript_work_log_opened",
+  "android_artifact_opened",
+  "android_message_action",
+  "android_chat_history_used",
+  "android_file_viewed",
+  "android_design_opened",
+  "android_design_layer_selected",
+  "android_file_search_run",
+  "android_issue_searched",
+  "android_account_signed_in",
+  "android_account_signed_out",
+  "android_account_member_auth",
+  "android_account_removed_notice",
+  "android_member_removed",
+  "android_member_renamed",
+  "android_computer_added",
+  "android_join_acted",
+  "android_device_name_changed",
+  "android_account_reset",
+  "android_account_push_registered",
+  "android_account_woken",
+]);
 
 /**
  * Events whose prop shape PostHog dictates rather than us. They're documented
@@ -126,6 +183,29 @@ function swiftEvents(source: string): Event[] {
 }
 
 /**
+ * The Android catalog: one `data class` / `data object` per event, its name in
+ * `override val name = "…"` and its props as `"key" to …` pairs.
+ */
+function kotlinEvents(source: string): Event[] {
+  return source
+    .split(/\n {2}data (?:class|object) /)
+    .slice(1)
+    .flatMap((chunk) => {
+      const name = /override val name = "([^"]+)"/.exec(chunk)?.[1];
+      if (!name) {
+        return [];
+      }
+      const props = [...chunk.matchAll(/"([a-z][\w$]*)" to /g)].map(
+        (m) => m[1],
+      );
+
+      return [
+        { name, props, usage: `TelemetryEvent.${/^\w+/.exec(chunk)?.[0]}` },
+      ];
+    });
+}
+
+/**
  * Rows of the catalog tables, keyed by event name. Only tables whose first
  * column is `Event` count — the mode and route-pattern tables are prose.
  */
@@ -193,7 +273,8 @@ const web = hostEvents(fs.readFileSync(WEB_CATALOG, "utf-8"));
 const ios = swiftEvents(fs.readFileSync(IOS_CATALOG, "utf-8"));
 const mac = swiftEvents(fs.readFileSync(MAC_CATALOG, "utf-8"));
 const server = swiftEvents(fs.readFileSync(SERVER_CATALOG, "utf-8"));
-const catalog = [...host, ...web, ...ios, ...mac, ...server];
+const android = kotlinEvents(fs.readFileSync(ANDROID_CATALOG, "utf-8"));
+const catalog = [...host, ...web, ...ios, ...mac, ...server, ...android];
 
 describe("docs/telemetry-events.md", () => {
   it("reads both catalogs", () => {
@@ -203,6 +284,7 @@ describe("docs/telemetry-events.md", () => {
     expect(ios.length).toBeGreaterThan(10);
     expect(mac.length).toBeGreaterThan(5);
     expect(server.length).toBeGreaterThan(5);
+    expect(android.length).toBeGreaterThan(10);
     expect(rows.size).toBeGreaterThan(10);
   });
 
@@ -275,5 +357,25 @@ describe("telemetry catalogs", () => {
       .filter((event) => !sources.includes(event.usage))
       .map((event) => event.name);
     expect(dead, "in ServerTelemetryEvent but never captured").toEqual([]);
+  });
+
+  it("declares no Android event nothing sends", () => {
+    const sources = read(ANDROID_SOURCES, [".kt"], ANDROID_CATALOG);
+    const captured = (event: Event) =>
+      new RegExp(`\\b${event.usage.replace(".", "\\.")}\\b`).test(sources);
+    const dead = android
+      .filter((event) => !captured(event) && !ANDROID_PENDING.has(event.name))
+      .map((event) => event.name);
+    expect(dead, "in the Android TelemetryEvent but never captured").toEqual(
+      [],
+    );
+    const wired = android
+      .filter((event) => captured(event) && ANDROID_PENDING.has(event.name))
+      .map((event) => event.name);
+    expect(wired, "captured now: drop from ANDROID_PENDING").toEqual([]);
+    const unknown = [...ANDROID_PENDING].filter(
+      (name) => !android.some((event) => event.name === name),
+    );
+    expect(unknown, "in ANDROID_PENDING but not in the catalog").toEqual([]);
   });
 });

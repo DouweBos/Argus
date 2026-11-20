@@ -23,6 +23,26 @@ struct AccountProfileTests {
     #expect(store.profile == nil)
   }
 
+  @Test("the profile outlives a lapsed sign-in session, across launches")
+  func profileOutlivesSession() async throws {
+    auth.user = AccountProfile(firstName: "Ada", lastName: "Lovelace", email: "ada@example.com")
+    let vault = MemoryAccountVault(.empty)
+    let url = URL(string: "https://example.test/argus/account/v1")!
+    let store = AccountStore(
+      auth: auth, vault: vault, deviceKind: "ios", deviceName: { "Phone" }, baseURL: url, http: service.http)
+    await store.start()
+    await store.signIn(with: .apple)
+    auth.signedIn = false
+    await store.refresh()
+    #expect(store.profile?.displayName == "Ada Lovelace")
+
+    let relaunched = AccountStore(
+      auth: auth, vault: vault, deviceKind: "ios", deviceName: { "Phone" }, baseURL: url, http: service.http)
+    await relaunched.start()
+    #expect(relaunched.phase == .ready)
+    #expect(relaunched.profile?.displayName == "Ada Lovelace")
+  }
+
   @Test("the profile's name falls back to the username, then the email")
   func profileFallbacks() {
     let full = AccountProfile(firstName: "Ada", lastName: "Lovelace", username: "ada", email: "ada@example.com")

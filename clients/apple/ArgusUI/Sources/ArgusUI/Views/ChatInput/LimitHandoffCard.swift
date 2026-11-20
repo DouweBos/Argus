@@ -15,6 +15,7 @@ public struct LimitHandoffCard: View {
   @State private var pendingId: String?
   @State private var error: String?
   @State private var rowsHeight: CGFloat = 0
+  @State private var includeChildren = true
 
   public init(
     agentId: String, accounts: [ArgusProtocol.LimitHandoffAccount], onHandedOff: @escaping () -> Void
@@ -37,6 +38,15 @@ public struct LimitHandoffCard: View {
   static let maxRowsHeight: CGFloat = 220
 
   private var runners: [RemoteRunner] { host.continueRunners(agentId: agentId) }
+
+  /// Spawned agents stalled on the limit too, which an account move can take along.
+  nonisolated static func childCount(_ accounts: [ArgusProtocol.LimitHandoffAccount]) -> Int {
+    accounts.map { $0.children ?? 0 }.max() ?? 0
+  }
+
+  nonisolated static func childrenLabel(_ count: Int) -> String {
+    count == 1 ? "Also continue its spawned agent" : "Also continue its \(count) spawned agents"
+  }
 
   /// A stopped agent can't be moved, so its last stall offers nothing.
   nonisolated static func isStalled(_ status: RemoteAgentStatus?) -> Bool {
@@ -61,7 +71,9 @@ public struct LimitHandoffCard: View {
         Text(subtitle)
           .font(.scaled(size: 12))
           .foregroundStyle(theme.textSecondary)
-          .fixedSize(horizontal: false, vertical: true)
+          // Not fixedSize: measured at the window's minimum width it wraps a character a line,
+          // and the window grows past the screen to fit it.
+          .lineLimit(3)
       }
       ScrollView {
         VStack(alignment: .leading, spacing: 10) {
@@ -74,6 +86,11 @@ public struct LimitHandoffCard: View {
       // which pushes the window's toolbar and the composer off screen.
       .frame(height: min(rowsHeight, Self.maxRowsHeight))
       .scrollBounceBehavior(.basedOnSize)
+      if host.hasControl, Self.childCount(accounts) > 0 {
+        Toggle(Self.childrenLabel(Self.childCount(accounts)), isOn: $includeChildren)
+          .toggleStyle(.quietCheckbox)
+          .disabled(pendingId != nil)
+      }
       if let error {
         Text(error).font(.scaled(size: 12)).foregroundStyle(theme.error)
       }
@@ -177,7 +194,8 @@ public struct LimitHandoffCard: View {
     error = nil
     Task {
       do {
-        try await host.handoffAgent(agentId: agentId, accountId: accountId)
+        let children = includeChildren && (accounts.first { $0.accountId == accountId }?.children ?? 0) > 0
+        try await host.handoffAgent(agentId: agentId, accountId: accountId, includeChildren: children)
         onHandedOff()
       } catch {
         self.error = HostStore.describe(error)

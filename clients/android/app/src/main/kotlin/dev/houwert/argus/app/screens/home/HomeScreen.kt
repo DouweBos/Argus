@@ -1,124 +1,245 @@
 package dev.houwert.argus.app.screens.home
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.LocalRouter
+import dev.houwert.argus.app.navigation.AppSection
 import dev.houwert.argus.app.navigation.Route
-import dev.houwert.argus.core.sessions.SessionActivity
-import dev.houwert.argus.core.stores.BackgroundRefresh
-import dev.houwert.argus.core.stores.LoadPhase
+import dev.houwert.argus.core.stores.HostStore
+import dev.houwert.argus.core.stores.createScratchPad
+import dev.houwert.argus.core.stores.deleteScratchPad
 import dev.houwert.argus.core.stores.loadRecentAgents
+import dev.houwert.argus.core.stores.loadScratchPads
 import dev.houwert.argus.core.stores.loadSessions
+import dev.houwert.argus.core.stores.grouping
+import dev.houwert.argus.core.stores.groupingFlow
 import dev.houwert.argus.core.stores.refreshProjects
+import dev.houwert.argus.core.stores.removeProject
+import dev.houwert.argus.core.stores.scratchPadAgent
 import dev.houwert.argus.kit.net.Transport
+import dev.houwert.argus.kit.protocol.generated.RemoteAgentStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteProject
 import dev.houwert.argus.kit.protocol.generated.RemoteSession
-import kotlinx.coroutines.delay
+import dev.houwert.argus.kit.util.Labels
+import dev.houwert.argus.ui.components.Btn
+import dev.houwert.argus.ui.components.EmptyState
+import dev.houwert.argus.ui.components.IconBtn
+import dev.houwert.argus.ui.components.LiveRefresh
+import dev.houwert.argus.ui.components.Loading
+import dev.houwert.argus.ui.components.MutedText
+import dev.houwert.argus.ui.components.TopBarScreen
+import dev.houwert.argus.ui.icons.Icon
+import dev.houwert.argus.ui.sessions.AgentStatusRow
+import dev.houwert.argus.ui.sessions.SnoozeUntilDialog
+import dev.houwert.argus.ui.theme.ArgusTheme
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.launch
 
 /**
- * Minimal Home for wave 1: the connected computer's projects with their
- * sessions, so the connection is visibly working. Wave 2 builds the real one.
+ * `/`: Home, as on the Mac. Which computer this is, what needs you, each project's activity, the
+ * agents worth jumping back into, and the latest automation runs.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen() {
   val app = LocalAppStore.current
   val router = LocalRouter.current
+  val host = app.host
   val loaded by app.loaded.collectAsState()
+  val hosts by app.pairedHosts.collectAsState()
   val identity by app.identity.collectAsState()
-  val connection by app.host.connection.collectAsState()
-  val projects by app.host.projects.collectAsState()
-  val projectsLoaded by app.host.projectsLoaded.collectAsState()
-  val sessionsByRepo by app.host.sessionsByRepo.collectAsState()
+  val connection by host.connection.collectAsState()
+  val capabilities by host.capabilities.collectAsState()
+  val projects by host.projects.collectAsState()
+  val projectsLoaded by host.projectsLoaded.collectAsState()
+  val sessionsByRepo by host.sessionsByRepo.collectAsState()
+  val grouping by host.groupingFlow.collectAsState(host.grouping)
+  val recent by host.recentAgents.collectAsState()
+  val scratchPads by host.scratchPads.collectAsState()
+  val gitStatus by host.gitStatusBySession.collectAsState()
+  val collapsed by ProjectFolds.collapsed.collectAsState()
+  val unfolded by ProjectFolds.unfolded.collectAsState()
+  val runs by app.automations.runs.collectAsState()
+  val proposals by app.proposals.proposals.collectAsState()
+  val hasControl = "control" in capabilities
+  val scope = rememberCoroutineScope()
+  var refreshing by remember { mutableStateOf(false) }
+  var padToDelete by remember { mutableStateOf<RemoteSession?>(null) }
+  var projectToRemove by remember { mutableStateOf<RemoteProject?>(null) }
+  var snoozing by remember { mutableStateOf<RemoteSession?>(null) }
+  var openingPad by remember { mutableStateOf(false) }
+  val hostName = identity?.label ?: "Argus"
+  val ready = connection == Transport.State.Ready
 
-  // Projects arrive as events with a slow poll behind them.
-  LaunchedEffect(connection) {
-    if (connection != Transport.State.Ready) return@LaunchedEffect
-    while (true) {
-      BackgroundRefresh.run {
-        app.host.refreshProjects()
-        app.host.loadRecentAgents()
-        app.host.projects.value.forEach { app.host.loadSessions(it.repoRoot) }
-      }
-      delay(30_000)
+  suspend fun refresh() {
+    host.refreshProjects()
+    host.loadRecentAgents()
+    host.loadScratchPads()
+    app.automations.refresh()
+    app.proposals.refresh()
+  }
+
+  LiveRefresh(identity != null && ready, 30.seconds) { refresh() }
+  // Each card lists its project's sessions; agents come from the cross-project list.
+  LaunchedEffect(projects.map { it.repoRoot }, ready) {
+    if (!ready) return@LaunchedEffect
+    for (project in projects) if (sessionsByRepo[project.repoRoot] == null) host.loadSessions(project.repoRoot)
+  }
+
+  fun newSession(project: RemoteProject?) = router.push(Route.NewSession(project?.repoRoot))
+  fun openAgent(fetch: suspend () -> RemoteAgentStatus?) {
+    openingPad = true
+    scope.launch {
+      val agent = fetch()
+      openingPad = false
+      if (agent != null) router.push(Route.Agent(agent.agentId, Labels.agentName(agent)))
     }
   }
 
-  if (!loaded) return
-  if (identity == null) return Unpaired { router.push(Route.Pair) }
-
-  LazyColumn(Modifier.fillMaxSize()) {
-    item {
-      ListItem(
-        headlineContent = { Text(identity?.label ?: "", style = MaterialTheme.typography.titleLarge) },
-        supportingContent = { Text(connectionLabel(connection)) },
-      )
-    }
-    when (val phase = LoadPhase.of(projectsLoaded, null, projects.isEmpty())) {
-      LoadPhase.Loading -> item { Column(Modifier.fillMaxSize().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) { CircularProgressIndicator() } }
-      LoadPhase.Empty -> item { ListItem(headlineContent = { Text("No projects on this computer yet") }) }
-      is LoadPhase.Failed -> item { ListItem(headlineContent = { Text(phase.message) }) }
-      LoadPhase.Content -> projects.forEach { project ->
-        item(key = "p:${project.repoRoot}") { ProjectHeader(project) { router.push(Route.Project(project.repoRoot, project.name)) } }
-        items(sessionsByRepo[project.repoRoot].orEmpty(), key = { "s:${it.id}" }) { session ->
-          SessionRow(session) { router.push(Route.Session(session.id, SessionActivity.title(session), session.repoRoot)) }
-        }
-        item(key = "d:${project.repoRoot}") { HorizontalDivider() }
-      }
-    }
-  }
-}
-
-@Composable
-private fun Unpaired(onPair: () -> Unit) {
-  Column(
-    Modifier.fillMaxSize().padding(32.dp),
-    verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-    horizontalAlignment = Alignment.CenterHorizontally,
+  TopBarScreen(
+    "Home",
+    actions = {
+      if (hasControl && identity != null) IconBtn(Icon.blueprint, "New project") { router.push(Route.NewProject()) }
+      // The Mac sidebar's New Session, on the project last worked in.
+      if (hasControl && projects.isNotEmpty()) IconBtn(Icon.compose, "New session") { newSession(null) }
+    },
   ) {
-    Text("Pair with your computer", style = MaterialTheme.typography.titleLarge)
-    Text("Open Argus on your computer, then scan its pairing code or paste it here.", style = MaterialTheme.typography.bodyMedium)
-    Button(onClick = onPair) { Text("Pair a computer") }
+    if (loaded && hosts.isEmpty()) {
+      EmptyState(Icon.desktop, "No computers paired", body = "Pair with Argus on your Mac to drive its agents from here.") {
+        Btn("Pair a computer", icon = Icon.plus, hugs = true) { router.push(Route.Pair) }
+      }
+      return@TopBarScreen
+    }
+    PullToRefreshBox(refreshing, { scope.launch { refreshing = true; refresh(); refreshing = false } }, Modifier.fillMaxSize()) {
+      LazyColumn(Modifier.fillMaxSize().widthIn(max = 960.dp)) {
+        item("switcher") { ComputerSwitcher() }
+        if (!loaded || ((!ready || !projectsLoaded) && projects.isEmpty())) {
+          item("loading") { Loading("Connecting to $hostName") }
+          return@LazyColumn
+        }
+        needsYouSection(app.proposals.items(runs, emptySet()).needsYou(), { router.show(AppSection.Inbox) }, router::push)
+        // Projects
+        if (projects.isEmpty()) {
+          if (projectsLoaded && recent.isEmpty()) {
+            item("projects-header") { HomeSectionHeader("Projects") }
+            item("projects-empty") {
+              MutedText(
+                "Open a repository in Argus on $hostName and it'll show up here, or start a new one from a blueprint.",
+                Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+              )
+            }
+          }
+        } else {
+          item("projects-header") { HomeSectionHeader("Projects") }
+          val all = sessionsByRepo.values.flatten()
+          val actions = HomeProjectActions(router::push, ::newSession, { snoozing = it }, { projectToRemove = it })
+          for (project in projects) {
+            homeProjectSection(
+              host, project, sessionsByRepo[project.repoRoot].orEmpty(), grouping.sessionGroups(project.repoRoot), all, gitStatus,
+              collapsed, unfolded, hasControl, actions,
+            )
+          }
+        }
+        recentAgentsSection(host, grouping.recentAgentsByActivity, router::push) { router.show(AppSection.Agents) }
+        recentRunsSection(runs, { router.show(AppSection.Automations) }, router::push)
+        // One-off agents that belong to no project; opening one lands in its chat.
+        if (scratchPads.isNotEmpty() || hasControl) {
+          item("pads-header") { HomeSectionHeader("Scratch pads") }
+          items(scratchPads, key = { "pad:${it.id}" }) { pad ->
+            PressableRow(
+              pad.displayName ?: "Scratch pad", Modifier.padding(horizontal = 16.dp, vertical = 12.dp), enabled = !openingPad,
+              onClick = { openAgent { host.scratchPadAgent(pad) } },
+              menu = if (hasControl) ({ dismiss ->
+                androidx.compose.material3.DropdownMenuItem(
+                  { Text("Delete", color = ArgusTheme.colors.error) }, { dismiss(); padToDelete = pad },
+                  leadingIcon = { Icon(Icon.trash, null, tint = ArgusTheme.colors.error) },
+                )
+              }) else null,
+            ) { IconLabel(Icon.scratchPad, pad.displayName ?: "Scratch pad") }
+          }
+          if (hasControl) item("pad-new") {
+            PressableRow("New scratch pad", Modifier.padding(horizontal = 16.dp, vertical = 12.dp), enabled = !openingPad, onClick = { openAgent { host.createScratchPad() } }) {
+              IconLabel(Icon.plus, "New scratch pad", accent = true)
+            }
+          }
+        }
+        item("bottom") { Box(Modifier.size(24.dp)) }
+      }
+    }
+  }
+
+  padToDelete?.let { pad ->
+    AlertDialog(
+      { padToDelete = null },
+      title = { Text("Delete ${pad.displayName ?: "scratch pad"}?") },
+      text = { Text("Its agents are stopped and every file in its folder is removed.") },
+      confirmButton = { TextButton({ padToDelete = null; scope.launch { host.deleteScratchPad(pad.id) } }) { Text("Delete", color = ArgusTheme.colors.error) } },
+      dismissButton = { TextButton({ padToDelete = null }) { Text("Cancel") } },
+    )
+  }
+  projectToRemove?.let { project ->
+    AlertDialog(
+      { projectToRemove = null },
+      title = { Text("Remove ${project.name}?") },
+      text = { Text("Its agents and terminals stop. The repository and its worktrees stay on $hostName.") },
+      confirmButton = { TextButton({ projectToRemove = null; scope.launch { host.removeProject(project.repoRoot) } }) { Text("Remove", color = ArgusTheme.colors.error) } },
+      dismissButton = { TextButton({ projectToRemove = null }) { Text("Cancel") } },
+    )
+  }
+  snoozing?.let { SnoozeUntilDialog(host, it) { snoozing = null } }
+}
+
+@Composable
+private fun IconLabel(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, accent: Boolean = false) {
+  val theme = ArgusTheme.colors
+  Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+    Icon(icon, null, Modifier.size(18.dp), tint = theme.accent)
+    Text(label, color = if (accent) theme.accent else theme.text, style = ArgusTheme.typography.body, maxLines = 1, overflow = TextOverflow.Ellipsis)
   }
 }
 
-@Composable
-private fun ProjectHeader(project: RemoteProject, onOpen: () -> Unit) {
-  ListItem(
-    headlineContent = { Text(project.name, style = MaterialTheme.typography.titleMedium) },
-    modifier = Modifier.clickable(onClickLabel = "Open project", onClick = onOpen),
-  )
-}
+private const val RECENT_AGENT_LIMIT = 5
 
-@Composable
-private fun SessionRow(session: RemoteSession, onOpen: () -> Unit) {
-  ListItem(
-    headlineContent = { Text(SessionActivity.title(session)) },
-    supportingContent = { Text(session.branch) },
-    modifier = Modifier.padding(start = 16.dp).clickable(onClickLabel = "Open session", onClick = onOpen),
-  )
-}
-
-private fun connectionLabel(state: Transport.State) = when (state) {
-  Transport.State.Ready -> "Connected"
-  Transport.State.Connecting, Transport.State.Handshaking -> "Connecting"
-  Transport.State.Offline -> "Offline"
+/** Agents across every project: still working or waiting on you before the merely recent. The full list is the Agents tab. */
+private fun androidx.compose.foundation.lazy.LazyListScope.recentAgentsSection(
+  host: HostStore,
+  byActivity: List<RemoteAgentStatus>,
+  push: (Route) -> Unit,
+  seeAll: () -> Unit,
+) {
+  val agents = byActivity.take(RECENT_AGENT_LIMIT)
+  if (agents.isEmpty()) return
+  item("agents-header") { HomeSectionHeader("Recent agents", action = "See all" to seeAll) }
+  items(agents, key = { "agent:${it.agentId}" }) { agent ->
+    HomeRow(Labels.agentName(agent), onClick = { push(Route.Agent(agent.agentId, Labels.agentName(agent))) }) {
+      AgentStatusRow(host, agent)
+    }
+  }
 }
