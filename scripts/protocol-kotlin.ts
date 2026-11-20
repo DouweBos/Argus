@@ -465,8 +465,11 @@ function paramsType(type: string): string {
 /** A model named like one of the family's objects (`UsagePrices`) would resolve to the object; qualify it. */
 function unshadow(type: string, family: Record<string, unknown>): string {
   const objects = new Set(Object.keys(family).map(pascal));
+
   return type.replace(/(?<![\w.])[A-Z]\w*/g, (name) =>
-    objects.has(name) ? `dev.houwert.argus.kit.protocol.generated.${name}` : name,
+    objects.has(name)
+      ? `dev.houwert.argus.kit.protocol.generated.${name}`
+      : name,
   );
 }
 
