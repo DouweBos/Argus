@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -111,7 +110,7 @@ fun ReviewDraftBar(
   onAction: () -> Unit,
 ) {
   val theme = ArgusTheme.colors
-  Column(modifier.fillMaxWidth().background(theme.bgSecondary).navigationBarsPadding()) {
+  Column(modifier.fillMaxWidth().background(theme.bgSecondary)) {
     HorizontalDivider(color = theme.border, thickness = 0.5.dp)
     Row(
       Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
