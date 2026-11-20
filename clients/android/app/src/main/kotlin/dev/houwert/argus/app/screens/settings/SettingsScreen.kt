@@ -10,7 +10,8 @@ import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.app.navigation.Route
 import dev.houwert.argus.app.screens.AppScreen
-import dev.houwert.argus.app.stores.TelemetryMode
+import dev.houwert.argus.app.telemetry.Telemetry
+import dev.houwert.argus.app.telemetry.TelemetryMode
 import dev.houwert.argus.core.stores.refreshDeviceHosts
 import dev.houwert.argus.kit.net.Transport
 import dev.houwert.argus.ui.components.SettingsGroup
@@ -53,7 +54,7 @@ fun SettingsScreen() {
   val deviceHosts by app.host.deviceHosts.collectAsState()
   val deviceName by app.deviceNameFlow.collectAsState()
   val theme by app.prefs.theme.collectAsState()
-  val telemetry by app.prefs.telemetryMode.collectAsState()
+  val telemetry by Telemetry.mode.collectAsState()
 
   LaunchedEffect(connection) { if (connection == Transport.State.Ready) app.host.refreshDeviceHosts() }
 

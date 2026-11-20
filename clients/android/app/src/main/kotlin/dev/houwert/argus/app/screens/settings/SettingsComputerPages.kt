@@ -52,7 +52,10 @@ import dev.houwert.argus.ui.components.StatusDot
 import dev.houwert.argus.ui.components.label
 import dev.houwert.argus.ui.components.tone
 import dev.houwert.argus.ui.icons.Icon
+import dev.houwert.argus.ui.settings.WorktreeCleanupField
 import dev.houwert.argus.ui.settings.WorktreeCleanupSettings
+import dev.houwert.argus.app.telemetry.Telemetry
+import dev.houwert.argus.app.telemetry.TelemetryEvent
 import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.ui.theme.Tone
 import dev.houwert.argus.ui.theme.argusFont
@@ -148,7 +151,10 @@ fun AutomationsSettingsPage() {
               scope.launch {
                 val params = buildJsonObject { put("autonomy", next?.let(::JsonPrimitive) ?: JsonNull) }
                 runCatching { host.backend?.request(setDefaultAutonomy, params) }
-                  .onSuccess { autonomy = next }
+                  .onSuccess {
+                    autonomy = next
+                    Telemetry.capture(TelemetryEvent.DefaultChanged(TelemetryEvent.DefaultSetting.Autonomy, next ?: "none"))
+                  }
                   .onFailure { host.report(it, "automations") }
               }
             })
@@ -168,7 +174,17 @@ fun WorktreesSettingsPage() {
   val model = remember(host) { WorktreeCleanupModel(host) }
   LaunchedEffect(connection) { if (connection == Transport.State.Ready) model.load() }
   OnResume(connection == Transport.State.Ready) { model.load() }
-  SettingsPage { WorktreeCleanupSettings(model, canEdit = host.hasControl) }
+  SettingsPage {
+    WorktreeCleanupSettings(model, canEdit = host.hasControl) { field, value ->
+      val setting = when (field) {
+        WorktreeCleanupField.Enabled -> TelemetryEvent.DefaultSetting.WorktreeCleanupEnabled
+        WorktreeCleanupField.LandedDays -> TelemetryEvent.DefaultSetting.WorktreeCleanupLandedDays
+        WorktreeCleanupField.IdleDays -> TelemetryEvent.DefaultSetting.WorktreeCleanupIdleDays
+        WorktreeCleanupField.MaxSize -> TelemetryEvent.DefaultSetting.WorktreeCleanupMaxSize
+      }
+      Telemetry.capture(TelemetryEvent.DefaultChanged(setting, value))
+    }
+  }
 }
 
 @Composable

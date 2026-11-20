@@ -24,7 +24,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
 import dev.houwert.argus.app.LocalAppStore
-import dev.houwert.argus.app.stores.TelemetryMode
+import dev.houwert.argus.app.telemetry.Telemetry
+import dev.houwert.argus.app.telemetry.TelemetryMode
+import dev.houwert.argus.app.ArgusApplication
 import dev.houwert.argus.app.stores.applyDeviceName
 import dev.houwert.argus.app.stores.validatedDeviceName
 import dev.houwert.argus.ui.components.Btn
@@ -115,6 +117,10 @@ fun AlertsSettingsPage() {
   // Coming back from Android's settings.
   OnResume(connected = true) { enabled = NotificationManagerCompat.from(context).areNotificationsEnabled() }
   val canAsk = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !asked
+  val push = (context.applicationContext as ArgusApplication).platform.push
+  val pushState by push.state.collectAsState()
+  var pushEnabled by remember { mutableStateOf(push.enabled) }
+  val scope = rememberCoroutineScope()
   SettingsPage {
     SettingsGroup(footer = "Get alerted when an agent finishes or needs approval.") {
       SettingsRow("Notifications", description = if (enabled) "On" else if (canAsk) "Not enabled" else "Off in Android settings") {
@@ -129,19 +135,22 @@ fun AlertsSettingsPage() {
           }
         }
       }
+      SettingsToggleRow("Background push", pushEnabled, { on ->
+        pushEnabled = on
+        scope.launch { push.setEnabled(on) }
+      }, description = pushState.explanation)
     }
   }
 }
 
 @Composable
 fun PrivacySettingsPage() {
-  val prefs = LocalAppStore.current.prefs
-  val mode by prefs.telemetryMode.collectAsState()
+  val mode by Telemetry.mode.collectAsState()
   SettingsPage {
     SettingsGroup(title = "Privacy") {
       SettingsToggleRow(
         "Anonymous usage and crash reports", mode == TelemetryMode.Full,
-        { prefs.setTelemetryMode(if (it) TelemetryMode.Full else TelemetryMode.Presence) },
+        { Telemetry.setMode(if (it) TelemetryMode.Full else TelemetryMode.Presence) },
         description = "Off, Argus sends one anonymous heartbeat per launch so we can count installs. On, it also sends " +
           "which screens you open, which actions you take, and crash reports — never prompts, project names, branches or paths.",
       )
