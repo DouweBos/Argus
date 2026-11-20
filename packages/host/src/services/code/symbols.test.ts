@@ -109,16 +109,16 @@ describe.skipIf(!hasRg)("symbol index", () => {
     write("src/store.ts", "export function renamedHelper() {}\n");
     write("src/extra.py", "class ExtraStore:\n    pass\n");
     emitHostEvent("git_status_changed", { sessionId: "s1" });
-    await vi.waitFor(
-      async () =>
-        await expect(names("store")).resolves.toEqual([
-          "Store Sources/Store.swift:1",
-          "ExtraStore src/extra.py:1",
-        ]),
-    );
-    await expect(names("renamed")).resolves.toEqual([
-      "renamedHelper src/store.ts:1",
-    ]);
+    // ripgrep stores files as each finishes, so wait for both patched files.
+    await vi.waitFor(async () => {
+      await expect(names("store")).resolves.toEqual([
+        "Store Sources/Store.swift:1",
+        "ExtraStore src/extra.py:1",
+      ]);
+      await expect(names("renamed")).resolves.toEqual([
+        "renamedHelper src/store.ts:1",
+      ]);
+    });
     fs.rmSync(path.join(repo, "src/extra.py"));
     emitHostEvent("session:diff-changed:s1", {});
     await vi.waitFor(
