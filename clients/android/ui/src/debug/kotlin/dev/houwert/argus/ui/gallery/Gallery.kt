@@ -45,6 +45,7 @@ enum class GalleryPage(val title: String) {
   Home("Home"),
   Automations("Automations"),
   Integrations("Integrations"),
+  Git("Git"),
   Icons("Icons"),
 }
 
@@ -95,6 +96,7 @@ fun ArgusGallery(initialDark: Boolean = false, initialPage: GalleryPage = Galler
                 GalleryPage.Home -> HomePage()
                 GalleryPage.Automations -> AutomationsGalleryPage()
                 GalleryPage.Integrations -> IntegrationsGalleryPage()
+                GalleryPage.Git -> GitPage()
                 GalleryPage.Icons -> Unit
               }
             }
@@ -115,6 +117,7 @@ private fun pageIcon(page: GalleryPage) =
     GalleryPage.Home -> Icon.home
     GalleryPage.Automations -> Icon.automations
     GalleryPage.Integrations -> Icon.link
+    GalleryPage.Git -> Icon.branch
     GalleryPage.Icons -> Icon.image
   }
 

@@ -7,11 +7,13 @@ import dev.houwert.argus.core.backend.toStored
 import dev.houwert.argus.core.hosts.RouteSupervisor
 import dev.houwert.argus.core.offline.Outbox
 import dev.houwert.argus.core.offline.SavedAnswers
+import dev.houwert.argus.core.pullrequests.PullRequestsStore
 import dev.houwert.argus.core.stores.AutomationsStore
 import dev.houwert.argus.core.stores.BackgroundRefresh
 import dev.houwert.argus.core.stores.BlueprintsStore
 import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.HostStoreHooks
+import dev.houwert.argus.core.stores.NotificationsLog
 import dev.houwert.argus.core.stores.ProposalsStore
 import dev.houwert.argus.core.stores.hasConnectionBoundWork
 import dev.houwert.argus.core.stores.liveBackend
@@ -57,6 +59,10 @@ class AppStore(
   private val defaultDeviceName: String,
 ) {
   val host = HostStore(scope)
+  /** Warnings and errors shown this launch, behind Notifications. */
+  val notifications = NotificationsLog()
+  /** Cleared on every computer switch: another machine answers for another set of repos. */
+  val pullRequests = PullRequestsStore(host)
   val pendingDecisions = PendingDecisionStore(preferences)
   val agentHosts = AgentHostIndex(preferences)
   /** Push, notifications and widgets around the store; set by the application. */
@@ -86,7 +92,11 @@ class AppStore(
   init {
     host.hooks = HostStoreHooks(
       track = { Telemetry.capture(it) },
-      errorReported = { error, scope -> reportToTelemetry(error, scope) },
+      errorReported = { error, source ->
+        val level = if (HostStore.unsupportedMethod(error) == null) NotificationsLog.Level.Error else NotificationsLog.Level.Warning
+        notifications.push(level, HostStore.describe(error), source)
+        reportToTelemetry(error, source)
+      },
       endpointsChanged = { endpoints -> scope.launch { endpointsChanged(endpoints) } },
       notify = { platform.notify(it) },
       agentsSeen = { ids -> _activeHostId.value?.let { agentHosts.remember(ids, it) } },
@@ -292,6 +302,7 @@ class AppStore(
         automations.clear()
         blueprints.clear()
         proposals.clear()
+        pullRequests.clear()
       }
     }
   }
