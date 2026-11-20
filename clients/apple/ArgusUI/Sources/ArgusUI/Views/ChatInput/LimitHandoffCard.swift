@@ -71,7 +71,9 @@ public struct LimitHandoffCard: View {
         Text(subtitle)
           .font(.scaled(size: 12))
           .foregroundStyle(theme.textSecondary)
-          .fixedSize(horizontal: false, vertical: true)
+          // Not fixedSize: measured at the window's minimum width it wraps a character a line,
+          // and the window grows past the screen to fit it.
+          .lineLimit(3)
       }
       ScrollView {
         VStack(alignment: .leading, spacing: 10) {
