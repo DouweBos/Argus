@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.houwert.argus.app.LocalRouter
@@ -30,7 +29,6 @@ import dev.houwert.argus.ui.components.TitleText
 import dev.houwert.argus.ui.icons.Icon
 import dev.houwert.argus.ui.icons.SfSymbol
 import dev.houwert.argus.ui.theme.Tone
-import kotlinx.coroutines.launch
 
 /**
  * Account on a phone the account doesn't know yet: it asked to join, and a device already on the
@@ -41,10 +39,9 @@ fun ColumnScope.JoinAccountView(account: AccountStore, onReset: () -> Unit) {
   val join by account.join.collectAsState()
   val error by account.error.collectAsState()
   val router = LocalRouter.current
-  val scope = rememberCoroutineScope()
   val ended = @Composable { title: String, body: String ->
     EmptyState(SfSymbol["xmark.circle"], title, Modifier.heightIn(max = 280.dp), body = body)
-    Btn("Ask again") { scope.launch { account.retryJoin() } }
+    Btn("Ask again") { account.perform { retryJoin() } }
   }
   when (val flow = join) {
     JoinFlow.Idle, JoinFlow.Requesting -> Loading("Asking your account")
@@ -57,16 +54,16 @@ fun ColumnScope.JoinAccountView(account: AccountStore, onReset: () -> Unit) {
       TitleText("Compare the codes")
       MutedText("${flow.approverName} shows a code too. Only confirm if they're the same.")
       CheckCodeCard(flow.sas)
-      Btn("Codes match") { scope.launch { account.confirmJoinCode() } }
-      Btn("They don't match", tone = ButtonTone.Danger) { scope.launch { account.rejectJoinCode() } }
+      Btn("Codes match") { account.perform { confirmJoinCode() } }
+      Btn("They don't match", tone = ButtonTone.Danger) { account.perform { rejectJoinCode() } }
     }
     is JoinFlow.Confirmed -> Loading("Confirmed here. Finish on ${flow.approverName}")
     is JoinFlow.AlreadyApproved -> {
       TitleText("${flow.approverName} approved this $DEVICE_NOUN")
       MutedText("Check that Settings, Account, Devices on ${flow.approverName} shows this code next to this $DEVICE_NOUN.")
       CheckCodeCard(flow.sas)
-      Btn("Codes match") { scope.launch { account.confirmApprovedJoin() } }
-      Btn("Not mine", tone = ButtonTone.Danger) { scope.launch { account.rejectApprovedJoin() } }
+      Btn("Codes match") { account.perform { confirmApprovedJoin() } }
+      Btn("Not mine", tone = ButtonTone.Danger) { account.perform { rejectApprovedJoin() } }
     }
     JoinFlow.Denied -> ended("Not approved", "The request was turned down. Ask again when you're at your other device.")
     JoinFlow.Expired -> ended("The request expired", "Approve it within 10 minutes. Ask again to get a new one.")
@@ -82,5 +79,5 @@ fun ColumnScope.JoinAccountView(account: AccountStore, onReset: () -> Unit) {
       Btn("Reset account", tone = ButtonTone.Ghost, onClick = onReset)
     }
   }
-  Btn("Sign out", tone = ButtonTone.Ghost) { scope.launch { account.signOut() } }
+  Btn("Sign out", tone = ButtonTone.Ghost) { account.perform { signOut() } }
 }

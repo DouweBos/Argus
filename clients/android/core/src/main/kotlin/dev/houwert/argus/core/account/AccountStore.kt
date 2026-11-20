@@ -192,6 +192,9 @@ class AccountStore(
 
   fun host(hostId: String): Host? = _hosts.value.firstOrNull { it.id == hostId }
 
+  /** Run an action on the store's own scope, so a screen leaving (a browser sign-in returning) can't cancel it halfway. */
+  fun perform(action: suspend AccountStore.() -> Unit): Job = scope.launch { action() }
+
   // Lifecycle
 
   /**

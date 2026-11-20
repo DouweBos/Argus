@@ -15,7 +15,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -44,20 +43,18 @@ import dev.houwert.argus.ui.icons.SfSymbol
 import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.ui.theme.Tone
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 /** Approving a phone, Mac or computer that asked to join: compare the 6-digit code it shows, then add it. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ApproveJoinSheet(account: AccountStore, request: AccountJoinRequestInfo, onClose: () -> Unit) {
   val approval by account.approval.collectAsState()
-  val scope = rememberCoroutineScope()
   val name = request.subject?.member?.name ?: "This device"
   LaunchedEffect(request.requestId) { account.approve(request) }
   DisposableEffect(request.requestId) {
     onDispose {
       // Closed mid-compare: the request is refused, so the other device stops waiting.
-      if (account.approval.value is ApprovalFlow.Confirm) scope.launch { account.denyApproval() }
+      if (account.approval.value is ApprovalFlow.Confirm) account.perform { denyApproval() }
       account.resetApproval()
     }
   }
@@ -72,10 +69,10 @@ fun ApproveJoinSheet(account: AccountStore, request: AccountJoinRequestInfo, onC
         is ApprovalFlow.Confirm -> {
           MutedText("${flow.name} shows a code too. Only add it if they're the same.")
           CheckCodeCard(flow.sas)
-          Btn("Codes match, add it") { scope.launch { account.confirmApproval() } }
+          Btn("Codes match, add it") { account.perform { confirmApproval() } }
           Btn("They don't match", tone = ButtonTone.Danger) {
-            scope.launch {
-              account.denyApproval()
+            account.perform {
+              denyApproval()
               onClose()
             }
           }

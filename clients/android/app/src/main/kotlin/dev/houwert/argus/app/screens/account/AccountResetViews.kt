@@ -13,7 +13,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -35,7 +34,6 @@ import dev.houwert.argus.ui.components.ThemedTextField
 import dev.houwert.argus.ui.components.TitleText
 import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.ui.theme.Tone
-import kotlinx.coroutines.launch
 
 /** Starting the account over: the warning, the emailed code that confirms it's you, and the reset. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,7 +43,6 @@ fun AccountResetSheet(account: AccountStore, onClose: () -> Unit) {
   val error by account.error.collectAsState()
   val phase by account.phase.collectAsState()
   val signInNeeded by account.signInNeeded.collectAsState()
-  val scope = rememberCoroutineScope()
   var code by remember { mutableStateOf("") }
   var started by remember { mutableStateOf(false) }
   val close = {
@@ -55,7 +52,7 @@ fun AccountResetSheet(account: AccountStore, onClose: () -> Unit) {
   val confirm = {
     val typed = code
     code = ""
-    scope.launch { account.confirmResetCode(typed) }
+    account.perform { confirmResetCode(typed) }
   }
   LaunchedEffect(reset, phase, signInNeeded) {
     if (started && reset == ResetFlow.Idle && phase == AccountStore.Phase.Ready && signInNeeded == null) onClose()
@@ -75,7 +72,7 @@ fun AccountResetSheet(account: AccountStore, onClose: () -> Unit) {
           if (flow is ResetFlow.Failed) Banner(flow.message, tone = Tone.Danger)
           Btn("Reset account", tone = ButtonTone.Danger) {
             started = true
-            scope.launch { account.beginReset() }
+            account.perform { beginReset() }
           }
           Btn("Cancel", tone = ButtonTone.Ghost, onClick = close)
         }

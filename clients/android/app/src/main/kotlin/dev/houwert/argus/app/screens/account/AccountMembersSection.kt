@@ -15,7 +15,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,13 +40,11 @@ import dev.houwert.argus.ui.components.TextPromptDialog
 import dev.houwert.argus.ui.icons.Icon as ArgusIcon
 import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.ui.theme.argusFont
-import kotlinx.coroutines.launch
 
 /** Account, signed in: who is waiting to join, each reviewed with a code. */
 @Composable
 fun AccountRequestsGroup(account: AccountStore) {
   val requests by account.requests.collectAsState()
-  val scope = rememberCoroutineScope()
   var reviewing by remember { mutableStateOf<AccountJoinRequestInfo?>(null) }
   if (requests.isEmpty()) return
   SettingsGroup(
@@ -57,7 +54,7 @@ fun AccountRequestsGroup(account: AccountStore) {
     for (request in requests) {
       val member = request.subject?.member
       AccountMemberRow(AccountMemberText.icon(member), ArgusTheme.colors.accent, member?.name ?: "Unknown", AccountMemberText.kind(member)) {
-        Btn("Deny", tone = ButtonTone.Ghost, small = true, hugs = true) { scope.launch { account.deny(request.requestId) } }
+        Btn("Deny", tone = ButtonTone.Ghost, small = true, hugs = true) { account.perform { deny(request.requestId) } }
         Btn("Review", small = true, hugs = true) { reviewing = request }
       }
     }
@@ -69,7 +66,6 @@ fun AccountRequestsGroup(account: AccountStore) {
 @Composable
 fun AccountDevicesGroup(account: AccountStore) {
   val state by account.state.collectAsState()
-  val scope = rememberCoroutineScope()
   var removing by remember { mutableStateOf<AccountMember?>(null) }
   var renaming by remember { mutableStateOf<AccountMember?>(null) }
   val devices = state?.liveMembers?.filter { it.role == AccountMember.Role.Device } ?: emptyList()
@@ -93,12 +89,12 @@ fun AccountDevicesGroup(account: AccountStore) {
   }
   removing?.let { device ->
     ConfirmDialog(
-      "Remove “${device.name}” from your account?", "Remove", { scope.launch { account.remove(device.id) } }, { removing = null },
+      "Remove “${device.name}” from your account?", "Remove", { account.perform { remove(device.id) } }, { removing = null },
       message = "It's disconnected from every computer on your account and has to be approved again to come back.", destructive = true,
     )
   }
   renaming?.let { member ->
-    TextPromptDialog("Rename “${member.name}”", member.name, "Rename", { scope.launch { account.rename(member.id, it) } }, { renaming = null })
+    TextPromptDialog("Rename “${member.name}”", member.name, "Rename", { account.perform { rename(member.id, it) } }, { renaming = null })
   }
 }
 

@@ -10,7 +10,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -38,7 +37,6 @@ import dev.houwert.argus.ui.components.ThemedTextField
 import dev.houwert.argus.ui.components.TitleText
 import dev.houwert.argus.ui.icons.SfSymbol
 import dev.houwert.argus.ui.theme.Tone
-import kotlinx.coroutines.launch
 
 /** Add a computer to the account by the code it shows (`argus-host login`, or signing in to Argus). */
 @Composable
@@ -46,13 +44,12 @@ fun AddComputerScreen() {
   val account = LocalAppStore.current.account
   val router = LocalRouter.current
   val link by account.link.collectAsState()
-  val scope = rememberCoroutineScope()
   LaunchedEffect(Unit) {
     // A link already under way (handed over by a paired computer) stays.
     if (account.link.value is LinkFlow.Done || account.link.value is LinkFlow.Failed) account.resetLink()
   }
   DisposableEffect(Unit) {
-    onDispose { if (account.link.value is LinkFlow.Confirm) scope.launch { account.denyLink() } }
+    onDispose { if (account.link.value is LinkFlow.Confirm) account.perform { denyLink() } }
   }
   Column(Modifier.fillMaxSize()) {
     ScreenTopBar("Add a Computer", onBack = { router.pop() })
@@ -64,8 +61,8 @@ fun AddComputerScreen() {
           TitleText("Compare the codes")
           MutedText("${flow.hostName} shows a code too. Only confirm if they're the same.")
           CheckCodeCard(flow.sas)
-          Btn("Codes match") { scope.launch { account.confirmLink() } }
-          Btn("They don't match", tone = ButtonTone.Danger) { scope.launch { account.denyLink() } }
+          Btn("Codes match") { account.perform { confirmLink() } }
+          Btn("They don't match", tone = ButtonTone.Danger) { account.perform { denyLink() } }
         }
         is LinkFlow.Done -> {
           EmptyState(
@@ -84,10 +81,9 @@ fun AddComputerScreen() {
 
 @Composable
 private fun ColumnScope.EnterCode(account: AccountStore, failure: String?) {
-  val scope = rememberCoroutineScope()
   var code by rememberSaveable { mutableStateOf("") }
   val valid = AccountCodec.normalizeUserCode(code).length == 9
-  val submit = { if (valid) scope.launch { account.link(code) } }
+  val submit = { if (valid) account.perform { link(code) } }
   MutedText("On the computer, run argus-host login or sign in to Argus. Type the code it shows.")
   ThemedTextField(code, { code = it }, "WDJB-MJHT", mono = true, input = TextInput.Code, onSubmit = { submit() })
   Btn("Continue", enabled = valid) { submit() }

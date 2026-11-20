@@ -107,7 +107,8 @@ class ClerkAuth(
     openBrowser(external)
     val back = waiting.await()
     oauth = null
-    val nonce = back.toHttpUrl().queryParameter("rotating_token_nonce")
+    // A custom scheme, which OkHttp's URL parser refuses.
+    val nonce = android.net.Uri.parse(back).getQueryParameter("rotating_token_nonce")
     val id = signIn["id"].stringValue ?: throw ClerkError(INCOMPLETE)
     val finished = call("GET", "/v1/client/sign_ins/$id", query = listOfNotNull(nonce?.let { "rotating_token_nonce" to it }))["response"] as? JsonObject
     // A first-time GitHub or Apple user has no account yet: Clerk hands the sign-in over to a sign-up.

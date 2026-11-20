@@ -18,7 +18,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -64,7 +63,6 @@ import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.ui.theme.Tone
 import dev.houwert.argus.ui.theme.argusFont
 import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.launch
 
 /** Settings, Account: sign in once and every computer on the account shows up, with no QR per computer. */
 @Composable
@@ -111,7 +109,6 @@ fun AccountScreen() {
 @Composable
 private fun ColumnScope.SignIn(account: AccountStore) {
   val router = LocalRouter.current
-  val scope = rememberCoroutineScope()
   val phase by account.phase.collectAsState()
   val signingInWith by account.signingInWith.collectAsState()
   val awaitingCode by account.awaitingEmailCode.collectAsState()
@@ -120,8 +117,8 @@ private fun ColumnScope.SignIn(account: AccountStore) {
   var email by rememberSaveable { mutableStateOf("") }
   var code by rememberSaveable { mutableStateOf("") }
   val busy = phase == AccountStore.Phase.SigningIn
-  val sendCode = { if ("@" in email) scope.launch { account.sendEmailCode(email) } }
-  val verify = { scope.launch { account.verifyEmailCode(code) } }
+  val sendCode = { if ("@" in email) account.perform { sendEmailCode(email) } }
+  val verify = { account.perform { verifyEmailCode(code) } }
 
   TitleText(AccountSignInCopy.title(signInNeeded))
   MutedText(
@@ -129,10 +126,10 @@ private fun ColumnScope.SignIn(account: AccountStore) {
       ?: "Your computers show up here with their current addresses, so you can connect without scanning a code for each one.",
   )
   Btn("Sign in with GitHub", tone = ButtonTone.Secondary, icon = BrandIcons.github, busy = signingInWith == AccountSignInProvider.GitHub, enabled = !busy) {
-    scope.launch { account.signIn(AccountSignInProvider.GitHub) }
+    account.perform { signIn(AccountSignInProvider.GitHub) }
   }
   Btn("Sign in with Apple", tone = ButtonTone.Secondary, busy = signingInWith == AccountSignInProvider.Apple, enabled = !busy) {
-    scope.launch { account.signIn(AccountSignInProvider.Apple) }
+    account.perform { signIn(AccountSignInProvider.Apple) }
   }
   Card {
     if (awaitingCode) {
@@ -161,7 +158,6 @@ private fun ColumnScope.SignIn(account: AccountStore) {
 private fun ColumnScope.SignedIn(account: AccountStore, onReset: () -> Unit) {
   val theme = ArgusTheme.colors
   val router = LocalRouter.current
-  val scope = rememberCoroutineScope()
   val hosts by account.hosts.collectAsState()
   val logError by account.logError.collectAsState()
   val error by account.error.collectAsState()
@@ -245,19 +241,19 @@ private fun ColumnScope.SignedIn(account: AccountStore, onReset: () -> Unit) {
 
   if (confirmingSignOut) {
     ConfirmDialog(
-      "Sign out of your account?", "Sign out", { scope.launch { account.signOut() } }, { confirmingSignOut = false },
+      "Sign out of your account?", "Sign out", { account.perform { signOut() } }, { confirmingSignOut = false },
       message = "This $DEVICE_NOUN is taken off the account and its account key is deleted. Computers you paired with a QR code keep working.",
       destructive = true,
     )
   }
   removing?.let { host ->
     ConfirmDialog(
-      "Remove “${host.name}” from your account?", "Remove", { scope.launch { account.remove(host.id) } }, { removing = null },
+      "Remove “${host.name}” from your account?", "Remove", { account.perform { remove(host.id) } }, { removing = null },
       message = "Your devices stop connecting to it through the account. Link it again with a new code.", destructive = true,
     )
   }
   renaming?.let { host ->
-    TextPromptDialog("Rename “${host.name}”", host.name, "Rename", { scope.launch { account.rename(host.id, it) } }, { renaming = null })
+    TextPromptDialog("Rename “${host.name}”", host.name, "Rename", { account.perform { rename(host.id, it) } }, { renaming = null })
   }
 }
 
