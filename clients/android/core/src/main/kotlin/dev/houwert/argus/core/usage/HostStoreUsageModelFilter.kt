@@ -15,8 +15,8 @@ import kotlinx.serialization.json.JsonObject
 /** Hand-built so an empty filter can go out as an explicit null, which the host reads as "clear". */
 private val setFilterCommand = RawCommand(Methods.UsageSetModelFilter.name, MethodsTypes.UsageSetModelFilterResult.serializer())
 
-/** A rule for any runner sends `"runner": null`; the host requires the key. */
-private val filterJson = Json(ProtocolJson.json) { explicitNulls = true }
+/** The host requires nullable usage fields present (a rule's `"runner": null`, a price's unset rates); generated params drop nulls. */
+internal val usageWireJson = Json(ProtocolJson.json) { explicitNulls = true }
 
 suspend fun HostStore.loadUsageModelFilter() {
   val backend = backend ?: return
@@ -36,7 +36,7 @@ suspend fun HostStore.saveUsageModelFilter(filter: UsageModelFilter): String? {
   val previous = _usageModelFilter.value
   _usageModelFilter.value = filter
   try {
-    val wire = filter.orNull?.let { filterJson.encodeToJsonElement(UsageModelFilter.serializer(), it) } ?: JsonNull
+    val wire = filter.orNull?.let { usageWireJson.encodeToJsonElement(UsageModelFilter.serializer(), it) } ?: JsonNull
     _usageModelFilter.value = backend.request(setFilterCommand, JsonObject(mapOf("filter" to wire))).filter ?: UsageModelFilters.empty
   } catch (e: Exception) {
     _usageModelFilter.value = previous

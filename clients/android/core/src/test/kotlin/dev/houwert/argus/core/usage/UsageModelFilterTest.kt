@@ -7,6 +7,7 @@ import dev.houwert.argus.core.support.settle
 import dev.houwert.argus.kit.protocol.generated.Methods
 import dev.houwert.argus.kit.protocol.generated.UsageModelFilter
 import dev.houwert.argus.kit.protocol.generated.UsageModelRule
+import dev.houwert.argus.kit.protocol.generated.UsagePriceOverride
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -77,6 +78,17 @@ class UsageModelFilterTest {
     store.loadUsageModelFilter()
     assertNotNull(store.saveUsageModelFilter(UsageModelFilters.empty))
     assertEquals(listOf("claude-haiku-4-5"), store.usageModelFilter.value?.exclude?.map { it.model })
+  }
+
+  @Test fun unsetPriceFieldsGoOutAsNulls() = runTest {
+    val store = HostStore(backgroundScope)
+    val backend = FakeBackend()
+    backend.reply(Methods.UsageSetPrices, """{"overrides":[],"list":[]}""")
+    attach(store, backend)
+    assertNull(store.saveUsagePrices(listOf(UsagePriceOverride("m", inputPerMtok = 1.5))))
+    val sent = backend.params(Methods.UsageSetPrices)?.get("overrides")?.jsonArray?.single()?.jsonObject
+    assertEquals(JsonNull, sent?.get("output_per_mtok"))
+    assertEquals(JsonNull, sent?.get("map_to"))
   }
 
   @Test fun pushedLimitsUpdateTheirAccount() = runTest {
