@@ -88,6 +88,9 @@ internal fun SettingsGalleryPage() {
     AccountAvatar("DB")
     AccountAvatar(null, size = 32.dp)
     AccountAvatar("A", size = 24.dp)
+    // A picture, and a cleartext one that is never fetched and keeps its initials.
+    AccountAvatar("GH", imageUrl = "https://avatars.githubusercontent.com/u/9919?v=4")
+    AccountAvatar("NF", imageUrl = "http://example.com/a.png", size = 32.dp)
   }
   Story("Top bar") {
     Box(Modifier.fillMaxWidth().height(120.dp)) {

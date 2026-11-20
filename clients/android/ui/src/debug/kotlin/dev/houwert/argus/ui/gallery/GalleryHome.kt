@@ -28,6 +28,7 @@ import dev.houwert.argus.ui.sessions.ProjectRootState
 import dev.houwert.argus.ui.sessions.SessionRow
 import dev.houwert.argus.ui.sessions.SidebarSectionHeader
 import dev.houwert.argus.ui.syntax.SyntaxLanguage
+import dev.houwert.argus.ui.usage.UsageLimitsStrip
 
 private val now = System.currentTimeMillis().toDouble()
 
@@ -53,6 +54,12 @@ struct Greeter {
 
 @Composable
 internal fun HomePage() {
+  Story("Plan limits") {
+    SidebarSectionHeader("Plan limits")
+    UsageLimitsStrip(UsageFixtures.limits, Modifier.padding(vertical = 4.dp))
+    SidebarSectionHeader("Plan limits, several accounts")
+    UsageLimitsStrip(UsageFixtures.pooledLimits, Modifier.padding(vertical = 4.dp))
+  }
   Story("Session rows") {
     SidebarSectionHeader("Needs you")
     SessionRow(session("s1", "fix-merge", "Fix the flaky merge test"), listOf(agent("s1", RemoteAgentStatusStatus.requiresAction, 3)), git = git, detailed = true)

@@ -169,7 +169,9 @@ private fun FilterValueIcon(field: IssueFilter.Field, value: String, issues: Lis
     }
     field == IssueFilter.Field.StatusType -> IssueStatusGlyph(value)
     field == IssueFilter.Field.Priority -> PriorityGlyph(value.toIntOrNull() ?: 0)
-    (field == IssueFilter.Field.Assignee || field == IssueFilter.Field.Creator) && value != IssueFilters.NONE -> LinearAvatar(value, size = 16.dp)
+    field == IssueFilter.Field.Assignee && value != IssueFilters.NONE ->
+      LinearAvatar(value, url = issues.firstOrNull { it.assignee == value }?.assigneeAvatarUrl, size = 16.dp)
+    field == IssueFilter.Field.Creator && value != IssueFilters.NONE -> LinearAvatar(value, size = 16.dp)
     field == IssueFilter.Field.Labels && value != IssueFilters.NONE -> {
       val hex = issues.firstNotNullOfOrNull { issue -> issue.labelColors?.firstOrNull { it.name == value }?.color }
       Box(Modifier.size(8.dp).background(linearColor(hex) ?: theme.textMuted, CircleShape))

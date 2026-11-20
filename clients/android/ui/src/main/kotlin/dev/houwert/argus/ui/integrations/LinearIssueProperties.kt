@@ -113,7 +113,7 @@ fun LinearIssueProperties(
     val assignee = issue.assignee
     PropertyRow(assignee?.let { "Assigned to $it" } ?: "Unassigned") {
       if (assignee != null) {
-        LinearAvatar(assignee, size = 16.dp)
+        LinearAvatar(assignee, url = issue.assigneeAvatarUrl, size = 16.dp)
         Value(assignee)
       } else {
         PropertyIcon(Icon.person)

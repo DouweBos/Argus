@@ -19,6 +19,7 @@ biometric = "1.1.0"
 work = "2.11.1"
 posthog = "3.76.2"
 google-services = "4.4.4"
+coil = "3.2.0"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -52,6 +53,8 @@ glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = 
 biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
 work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 posthog-android = { module = "com.posthog:posthog-android", version.ref = "posthog" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
 [plugins]

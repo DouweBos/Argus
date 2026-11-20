@@ -71,7 +71,7 @@ fun LinearIssueCard(
         issue.parent?.let { "${it.identifier} › ${issue.identifier}" } ?: issue.identifier,
         Modifier.weight(1f), color = theme.textMuted, style = argusFont(11, mono = true), maxLines = 1, overflow = TextOverflow.Ellipsis,
       )
-      issue.assignee?.let { LinearAvatar(it, size = 18.dp) }
+      issue.assignee?.let { LinearAvatar(it, url = issue.assigneeAvatarUrl, size = 18.dp) }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
       IssueStatusGlyph(issue.state.type, Modifier.padding(top = 2.dp), color = issue.state.color)
@@ -133,13 +133,10 @@ private fun IssueChip(content: @Composable () -> Unit) {
   ) { content() }
 }
 
-/**
- * A Linear user's initials. The picture is a signed URL only the computer can fetch, so the
- * phone shows initials, as it does for anyone without one.
- */
+/** A Linear user's picture, or their initials while it loads, when it fails, or without one. */
 @Composable
-fun LinearAvatar(name: String, modifier: Modifier = Modifier, size: Dp = 18.dp) {
-  AccountAvatar(LinearAvatarText.initials(name), modifier, size = size)
+fun LinearAvatar(name: String, modifier: Modifier = Modifier, url: String? = null, size: Dp = 18.dp) {
+  AccountAvatar(LinearAvatarText.initials(name), modifier, imageUrl = url, size = size)
 }
 
 object LinearAvatarText {

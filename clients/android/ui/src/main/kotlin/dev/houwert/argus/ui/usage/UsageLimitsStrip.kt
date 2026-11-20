@@ -64,13 +64,15 @@ fun UsageMeterLine(window: UsageLimitWindow, nowMs: Long, modifier: Modifier = M
   ) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
       Text(window.label, color = theme.textMuted, style = argusFont(11), maxLines = 1)
+      // The reset caption takes the slack so "% left" sits at the trailing edge.
       if (reset != null) {
         Text(
-          "· ${reset.lowercaseFirst()}", Modifier.weight(1f, fill = false), color = theme.textMuted.copy(alpha = theme.textMuted.alpha * 0.7f),
+          "· ${reset.lowercaseFirst()}", Modifier.weight(1f), color = theme.textMuted.copy(alpha = theme.textMuted.alpha * 0.7f),
           style = argusFont(11), maxLines = 1, overflow = TextOverflow.Ellipsis,
         )
+      } else {
+        Box(Modifier.weight(1f))
       }
-      Box(Modifier.weight(1f))
       Text(
         "$left% left", color = if (tone == Tone.Accent) theme.textSecondary else tone.color(theme),
         style = argusFont(11).copy(fontFeatureSettings = "tnum"),

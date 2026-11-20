@@ -32,6 +32,7 @@ import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.app.navigation.AppSection
 import dev.houwert.argus.app.navigation.Route
+import dev.houwert.argus.app.telemetry.TelemetryEvent.HomeAction
 import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.createScratchPad
 import dev.houwert.argus.core.stores.deleteScratchPad
@@ -43,6 +44,7 @@ import dev.houwert.argus.core.stores.groupingFlow
 import dev.houwert.argus.core.stores.refreshProjects
 import dev.houwert.argus.core.stores.removeProject
 import dev.houwert.argus.core.stores.scratchPadAgent
+import dev.houwert.argus.core.usage.loadUsageLimits
 import dev.houwert.argus.kit.net.Transport
 import dev.houwert.argus.kit.protocol.generated.RemoteAgentStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteProject
@@ -59,6 +61,7 @@ import dev.houwert.argus.ui.icons.Icon
 import dev.houwert.argus.ui.sessions.AgentStatusRow
 import dev.houwert.argus.ui.sessions.SnoozeUntilDialog
 import dev.houwert.argus.ui.theme.ArgusTheme
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.launch
 
@@ -88,6 +91,7 @@ fun HomeScreen() {
   val unfolded by ProjectFolds.unfolded.collectAsState()
   val runs by app.automations.runs.collectAsState()
   val proposals by app.proposals.proposals.collectAsState()
+  val usageLimits by host.usageLimits.collectAsState()
   val hasControl = "control" in capabilities
   val scope = rememberCoroutineScope()
   var refreshing by remember { mutableStateOf(false) }
@@ -107,6 +111,8 @@ fun HomeScreen() {
   }
 
   LiveRefresh(identity != null && ready, 30.seconds) { refresh() }
+  // usage_limits.changed keeps the strip fresh between polls.
+  LiveRefresh(identity != null && ready, 1.minutes) { host.loadUsageLimits() }
   // Each card lists its project's sessions; agents come from the cross-project list.
   LaunchedEffect(projects.map { it.repoRoot }, ready) {
     if (!ready) return@LaunchedEffect
@@ -144,7 +150,10 @@ fun HomeScreen() {
           item("loading") { Loading("Connecting to $hostName") }
           return@LazyColumn
         }
-        needsYouSection(app.proposals.items(runs, emptySet()).needsYou(), { router.show(AppSection.Inbox) }, router::push)
+        planLimitsSection(usageLimits) { router.push(Route.Usage) }
+        needsYouSection(
+          app.proposals.items(runs, emptySet()).needsYou(), { followHomeLink(HomeAction.Inbox) { router.show(AppSection.Inbox) } }, router::push,
+        )
         // Projects
         if (projects.isEmpty()) {
           if (projectsLoaded && recent.isEmpty()) {
@@ -159,7 +168,14 @@ fun HomeScreen() {
         } else {
           item("projects-header") { HomeSectionHeader("Projects") }
           val all = sessionsByRepo.values.flatten()
-          val actions = HomeProjectActions(router::push, ::newSession, { snoozing = it }, { projectToRemove = it })
+          val push = { route: Route ->
+            when (route) {
+              is Route.Session -> followHomeLink(HomeAction.Session) { router.push(route) }
+              is Route.Project -> followHomeLink(HomeAction.Project) { router.push(route) }
+              else -> router.push(route)
+            }
+          }
+          val actions = HomeProjectActions(push, ::newSession, { snoozing = it }, { projectToRemove = it })
           for (project in projects) {
             homeProjectSection(
               host, project, sessionsByRepo[project.repoRoot].orEmpty(), grouping.sessionGroups(project.repoRoot), all, gitStatus,
@@ -167,8 +183,8 @@ fun HomeScreen() {
             )
           }
         }
-        recentAgentsSection(host, grouping.recentAgentsByActivity, router::push) { router.show(AppSection.Agents) }
-        recentRunsSection(runs, { router.show(AppSection.Automations) }, router::push)
+        recentAgentsSection(host, grouping.recentAgentsByActivity, router::push) { followHomeLink(HomeAction.Agents) { router.show(AppSection.Agents) } }
+        recentRunsSection(runs, { followHomeLink(HomeAction.Automations) { router.show(AppSection.Automations) } }, router::push)
         // One-off agents that belong to no project; opening one lands in its chat.
         if (scratchPads.isNotEmpty() || hasControl) {
           item("pads-header") { HomeSectionHeader("Scratch pads") }

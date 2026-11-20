@@ -34,8 +34,7 @@ fun AccountProfileSummary(account: AccountStore, avatarSize: Dp = 48.dp, modifie
     horizontalArrangement = Arrangement.spacedBy(if (compact) 8.dp else 12.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
-    // No picture loader yet: initials stand in for an uploaded picture.
-    AccountAvatar(profile?.initials, size = avatarSize)
+    AccountAvatar(profile?.initials, imageUrl = profile?.imageUrl, size = avatarSize)
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
       Text(
         AccountProfileText.title(phase, profile, compact), color = theme.text,

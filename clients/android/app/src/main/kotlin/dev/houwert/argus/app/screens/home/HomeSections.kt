@@ -35,7 +35,11 @@ import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.app.navigation.AppSection
 import dev.houwert.argus.app.navigation.Route
+import dev.houwert.argus.app.telemetry.Telemetry
+import dev.houwert.argus.app.telemetry.TelemetryEvent
 import dev.houwert.argus.core.stores.hasUnreadReport
+import dev.houwert.argus.core.usage.UsageLimitFormat
+import dev.houwert.argus.kit.protocol.generated.ClaudeUsageLimits
 import dev.houwert.argus.kit.util.Labels
 import dev.houwert.argus.ui.components.RunStatusBadge
 import dev.houwert.argus.ui.components.StatusDot
@@ -46,7 +50,21 @@ import dev.houwert.argus.ui.components.tone
 import dev.houwert.argus.ui.icons.Icon
 import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.ui.theme.argusFont
+import dev.houwert.argus.ui.usage.UsageLimitsStrip
 import kotlinx.coroutines.launch
+
+/** Follows a Home link, counting which kind. */
+fun followHomeLink(action: TelemetryEvent.HomeAction, go: () -> Unit) {
+  Telemetry.capture(TelemetryEvent.HomeUsed(action))
+  go()
+}
+
+/** What's left of each plan window, shown only once the host reports some; the link opens Usage. */
+fun LazyListScope.planLimitsSection(limits: ClaudeUsageLimits?, onUsage: () -> Unit) {
+  if (UsageLimitFormat.groups(limits).isEmpty()) return
+  item("limits-header") { HomeSectionHeader("Plan limits", action = "View usage" to { followHomeLink(TelemetryEvent.HomeAction.Usage, onUsage) }) }
+  item("limits") { UsageLimitsStrip(limits, Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) }
+}
 
 /** A section header with an optional count and a trailing link, as the Mac's `HomeSection` draws them. */
 @Composable

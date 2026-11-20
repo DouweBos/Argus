@@ -79,7 +79,7 @@ fun LinearIssueActivityView(
           Modifier.clearAndSetSemantics { contentDescription = "Subscribers: " + subscribers.joinToString(", ") { it.name } },
           horizontalArrangement = Arrangement.spacedBy((-5).dp),
         ) {
-          for (person in subscribers.take(5)) LinearAvatar(person.name, Modifier.border(1.5.dp, theme.bg, CircleShape), size = 20.dp)
+          for (person in subscribers.take(5)) LinearAvatar(person.name, Modifier.border(1.5.dp, theme.bg, CircleShape), url = person.avatarUrl, size = 20.dp)
         }
       }
     }
@@ -129,7 +129,7 @@ fun LinearHistoryLine(event: LinearHistoryEvent, modifier: Modifier = Modifier) 
   ) {
     Box(Modifier.width(18.dp).padding(top = 1.dp), contentAlignment = Alignment.Center) {
       val actor = event.actor
-      if (actor != null && event.kind == LinearHistoryEventKind.created) LinearAvatar(actor, size = 16.dp)
+      if (actor != null && event.kind == LinearHistoryEventKind.created) LinearAvatar(actor, url = event.actorAvatarUrl, size = 16.dp)
       else Icon(IntegrationIcon.history(event.kind), null, Modifier.size(14.dp), tint = theme.textMuted)
     }
     Text(
@@ -182,7 +182,7 @@ fun LinearCommentBody(comment: LinearComment, onLink: (String) -> Unit, modifier
   val author = comment.author ?: "Someone"
   Column(modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-      LinearAvatar(author, size = 18.dp)
+      LinearAvatar(author, url = comment.authorAvatarUrl, size = 18.dp)
       Text(author, color = theme.text, style = argusFont(12, FontWeight.SemiBold))
       Text(Labels.timeAgo(comment.createdAt), color = theme.textMuted, style = argusFont(12))
     }

@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.houwert.argus.ui.icons.SfSymbol
+import dev.houwert.argus.ui.images.RemoteImage
 import dev.houwert.argus.ui.theme.ArgusColors
 import dev.houwert.argus.ui.theme.ArgusMetrics
 import dev.houwert.argus.ui.theme.ArgusTheme
@@ -49,11 +50,11 @@ import dev.houwert.argus.ui.theme.ThemePreference
 import dev.houwert.argus.ui.theme.argusFont
 
 /**
- * The signed-in person's picture, or their initials on a tinted circle; a person glyph while
- * signed out or the name isn't known yet. Screens load the picture and pass it as `image`.
+ * A person's picture, or their initials on a tinted circle; a person glyph while signed out or the
+ * name isn't known yet. The initials show until [imageUrl] loads, and stay when it can't.
  */
 @Composable
-fun AccountAvatar(initials: String?, modifier: Modifier = Modifier, image: Painter? = null, size: Dp = 44.dp) {
+fun AccountAvatar(initials: String?, modifier: Modifier = Modifier, imageUrl: String? = null, image: Painter? = null, size: Dp = 44.dp) {
   val theme = ArgusTheme.colors
   Box(modifier.size(size).clip(CircleShape).background(theme.accentSoft).clearAndSetSemantics {}, contentAlignment = Alignment.Center) {
     when {
@@ -62,6 +63,7 @@ fun AccountAvatar(initials: String?, modifier: Modifier = Modifier, image: Paint
         Text(initials, color = theme.accent, style = argusFont(size.value * 0.4f, FontWeight.SemiBold).copy(lineHeight = (size.value * 0.4f).sp))
       else -> Icon(SfSymbol["person.fill"], null, Modifier.size(size * 0.55f), tint = theme.accent)
     }
+    if (image == null) RemoteImage(imageUrl, Modifier.fillMaxSize())
   }
 }
 
