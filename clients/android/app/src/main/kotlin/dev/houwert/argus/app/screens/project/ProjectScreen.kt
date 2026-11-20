@@ -76,6 +76,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun ProjectScreen(repoRoot: String, name: String) {
   val app = LocalAppStore.current
+  val defaultMode by app.prefs.defaultPermissionMode.collectAsState()
   val router = LocalRouter.current
   val host = app.host
   val theme = ArgusTheme.colors
@@ -127,7 +128,7 @@ fun ProjectScreen(repoRoot: String, name: String) {
       groups.isEmpty() && hasControl -> AgentStartPane(
         host, repoRoot, (sessions.firstOrNull { it.kind == RemoteSessionKind.projectRoot } ?: sessions.firstOrNull())?.id,
         workspace = StartWorkspace.Kind.Worktree,
-        defaults = AgentStartDefaults(mode = app.prefs.defaultPermissionMode.value?.rawValue),
+        defaults = AgentStartDefaults(mode = defaultMode?.rawValue),
         preferences = app.preferences,
       ) { started ->
         router.push(Route.of(started))

@@ -98,6 +98,10 @@ object Notifier {
           .build(),
       )
     }
+    // Android 13+ lets the user refuse notifications; posting then would throw.
+    if (Build.VERSION.SDK_INT >= 33 &&
+      ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+    ) return
     runCatching { NotificationManagerCompat.from(context).notify(tag, 0, builder.build()) }
   }
 

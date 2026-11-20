@@ -41,6 +41,7 @@ fun lastActiveProject(host: HostStore): String? {
 @Composable
 fun NewSessionScreen(repoRoot: String?) {
   val app = LocalAppStore.current
+  val defaultMode by app.prefs.defaultPermissionMode.collectAsState()
   val router = LocalRouter.current
   val host = app.host
   val sessionsByRepo by host.sessionsByRepo.collectAsState()
@@ -57,7 +58,7 @@ fun NewSessionScreen(repoRoot: String?) {
     // A late root session or project changes what the composer was built on.
     key(project, rootSessionId) {
       AgentStartPane(host, project, rootSessionId, workspace = StartWorkspace.Kind.Worktree,
-        defaults = AgentStartDefaults(mode = app.prefs.defaultPermissionMode.value?.rawValue),
+        defaults = AgentStartDefaults(mode = defaultMode?.rawValue),
         picksProject = repoRoot == null, takesShare = true, preferences = app.preferences,
       ) { started ->
         // Back from the new session skips this composer, as closing the Mac's sheet does.

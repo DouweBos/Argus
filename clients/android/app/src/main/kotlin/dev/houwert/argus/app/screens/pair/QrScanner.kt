@@ -1,5 +1,7 @@
 package dev.houwert.argus.app.screens.pair
 
+import androidx.camera.core.ExperimentalGetImage
+import androidx.camera.core.ImageProxy
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -63,7 +65,7 @@ fun QrScanner(onCode: (String) -> Unit, modifier: Modifier = Modifier) {
         val preview = Preview.Builder().build().also { it.surfaceProvider = view.surfaceProvider }
         val analysis = ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build()
         analysis.setAnalyzer(executor) { proxy ->
-          val media = proxy.image
+          val media = proxy.mediaImage()
           if (media == null || reported) return@setAnalyzer proxy.close()
           scanner.process(InputImage.fromMediaImage(media, proxy.imageInfo.rotationDegrees))
             .addOnSuccessListener { codes ->
@@ -82,3 +84,7 @@ fun QrScanner(onCode: (String) -> Unit, modifier: Modifier = Modifier) {
     },
   )
 }
+
+/** CameraX marks the raw image experimental; ML Kit needs it to read the frame. */
+@androidx.annotation.OptIn(markerClass = [ExperimentalGetImage::class])
+private fun ImageProxy.mediaImage() = image
