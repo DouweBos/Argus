@@ -204,11 +204,13 @@ export function parseDiff(raw: string): DiffFile[] {
     let currentHunkLines: string[] = [];
     let nextOld = 0;
     let nextNew = 0;
+    let oldLeft = 0;
+    let newLeft = 0;
 
     for (let j = bodyStart; j < lines.length; j++) {
       const line = lines[j];
       const hunkMatch = line.match(
-        /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@(.*)/,
+        /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)/,
       );
 
       if (hunkMatch) {
@@ -220,18 +222,25 @@ export function parseDiff(raw: string): DiffFile[] {
         currentHunk = {
           header: line,
           oldStart: parseInt(hunkMatch[1], 10),
-          newStart: parseInt(hunkMatch[2], 10),
+          newStart: parseInt(hunkMatch[3], 10),
           lines: [],
           patch: "",
         };
         currentHunkLines = [line];
         nextOld = currentHunk.oldStart;
         nextNew = currentHunk.newStart;
+        oldLeft = hunkMatch[2] == null ? 1 : parseInt(hunkMatch[2], 10);
+        newLeft = hunkMatch[4] == null ? 1 : parseInt(hunkMatch[4], 10);
         hunks.push(currentHunk);
         continue;
       }
 
       if (!currentHunk) {
+        continue;
+      }
+      // A bare empty line is blank context only while the header still
+      // expects lines; past that it is the diff's own trailing newline.
+      if (line === "" && (oldLeft <= 0 || newLeft <= 0)) {
         continue;
       }
       currentHunkLines.push(line);
@@ -243,6 +252,7 @@ export function parseDiff(raw: string): DiffFile[] {
           newNum: nextNew,
         });
         nextNew++;
+        newLeft--;
       } else if (line.startsWith("-")) {
         currentHunk.lines.push({
           type: "remove",
@@ -250,6 +260,7 @@ export function parseDiff(raw: string): DiffFile[] {
           oldNum: nextOld,
         });
         nextOld++;
+        oldLeft--;
       } else if (line.startsWith(" ") || line === "") {
         currentHunk.lines.push({
           type: "context",
@@ -259,6 +270,8 @@ export function parseDiff(raw: string): DiffFile[] {
         });
         nextOld++;
         nextNew++;
+        oldLeft--;
+        newLeft--;
       } else if (line.startsWith("\\")) {
         // Git's "\ No newline at end of file" marker — attach to the
         // preceding line rather than consuming a slot of its own.

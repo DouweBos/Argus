@@ -7,7 +7,12 @@ package dev.houwert.argus.kit.util
 object InlineDiff {
   data class Stats(val additions: Int, val deletions: Int)
 
-  private fun lines(text: String): List<String> = if (text.isEmpty()) emptyList() else text.split("\n")
+  /** A final newline terminates the last line rather than starting another. */
+  internal fun lines(text: String): List<String> {
+    if (text.isEmpty()) return emptyList()
+    val lines = text.split("\n")
+    return if (lines.size > 1 && lines.last().isEmpty()) lines.dropLast(1) else lines
+  }
 
   internal fun matchEdges(old: List<String>, new: List<String>): Pair<Int, Int> {
     val limit = minOf(old.size, new.size)

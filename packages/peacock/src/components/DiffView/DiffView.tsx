@@ -37,6 +37,19 @@ function linePrefixChar(type: DiffLine["type"]): string {
   return " ";
 }
 
+/** Lines of `text`, a final newline terminating the last one rather than starting another. */
+function splitLines(text: string): string[] {
+  if (text === "") {
+    return [];
+  }
+  const lines = text.split("\n");
+  if (lines.length > 1 && lines[lines.length - 1] === "") {
+    lines.pop();
+  }
+
+  return lines;
+}
+
 /**
  * Compute a simple line-level diff between two strings.
  *
@@ -44,8 +57,8 @@ function linePrefixChar(type: DiffLine["type"]): string {
  * sees the change in context rather than a raw red/green block.
  */
 function computeDiffLines(oldStr: string, newStr: string): DiffLine[] {
-  const oldLines = oldStr.split("\n");
-  const newLines = newStr.split("\n");
+  const oldLines = splitLines(oldStr);
+  const newLines = splitLines(newStr);
 
   let prefixLen = 0;
   while (
@@ -94,7 +107,7 @@ function computeDiffLines(oldStr: string, newStr: string): DiffLine[] {
 
 /** Build diff lines for a Write tool (entire content is new). */
 function writeLines(content: string): DiffLine[] {
-  return content.split("\n").map((line, i) => ({
+  return splitLines(content).map((line, i) => ({
     type: "add" as const,
     content: line,
     lineNo: i + 1,
@@ -169,8 +182,8 @@ export function computeDiffStats(
   oldStr: string,
   newStr: string,
 ): { additions: number; deletions: number } {
-  const oldLines = oldStr.split("\n");
-  const newLines = newStr.split("\n");
+  const oldLines = splitLines(oldStr);
+  const newLines = splitLines(newStr);
 
   let prefixLen = 0;
   while (

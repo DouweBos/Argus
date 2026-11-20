@@ -100,11 +100,6 @@ public enum DiffParser {
   }
 
   public static func parse(_ raw: String) -> [DiffFile] {
-    // Split on the file boundary. The reference splits with `/^diff --git /m`,
-    // which leaves the newline *before* each boundary attached to the previous
-    // chunk — so every file but the last ends with a blank line, and that
-    // blank is parsed as a trailing context row. Reproduced rather than
-    // tidied up, so both clients render a file identically.
     let chunks = raw.components(separatedBy: "\ndiff --git ")
     var normalized: [String] = []
     for (index, chunk) in chunks.enumerated() {
@@ -113,7 +108,6 @@ public enum DiffParser {
         guard body.hasPrefix("diff --git ") else { continue }
         body.removeFirst("diff --git ".count)
       }
-      if index < chunks.count - 1 { body += "\n" }
       normalized.append(body)
     }
 
@@ -169,17 +163,24 @@ public enum DiffParser {
       var current: DiffHunk?
       var nextOld = 0
       var nextNew = 0
+      var oldLeft = 0
+      var newLeft = 0
       var lineId = 0
 
       for line in lines.dropFirst(bodyStart) {
-        if let starts = hunkStarts(line) {
+        if let range = hunkRange(line) {
           if let open = current { hunks.append(open) }
           current = DiffHunk(header: line, lines: [])
-          nextOld = starts.old
-          nextNew = starts.new
+          nextOld = range.old
+          nextNew = range.new
+          oldLeft = range.oldCount
+          newLeft = range.newCount
           continue
         }
         guard current != nil else { continue }
+        // A bare empty line is blank context only while the header still
+        // expects lines; past that it is the diff's own trailing newline.
+        if line.isEmpty && (oldLeft <= 0 || newLeft <= 0) { continue }
         lineId += 1
 
         if line.hasPrefix("+") {
@@ -187,17 +188,21 @@ public enum DiffParser {
             DiffLine(kind: .add, text: String(line.dropFirst()),
                      oldNumber: nil, newNumber: nextNew, id: lineId))
           nextNew += 1
+          newLeft -= 1
         } else if line.hasPrefix("-") {
           current?.lines.append(
             DiffLine(kind: .remove, text: String(line.dropFirst()),
                      oldNumber: nextOld, newNumber: nil, id: lineId))
           nextOld += 1
+          oldLeft -= 1
         } else if line.hasPrefix(" ") || line.isEmpty {
           current?.lines.append(
             DiffLine(kind: .context, text: line.isEmpty ? "" : String(line.dropFirst()),
                      oldNumber: nextOld, newNumber: nextNew, id: lineId))
           nextOld += 1
           nextNew += 1
+          oldLeft -= 1
+          newLeft -= 1
         } else if line.hasPrefix("\\") {
           // "\ No newline at end of file" attaches to the preceding line
           // rather than consuming a numbered slot of its own.
@@ -214,18 +219,12 @@ public enum DiffParser {
     }
   }
 
-  /// Parse `@@ -a,b +c,d @@` into the two starting line numbers.
-  static func hunkStarts(_ header: String) -> (old: Int, new: Int)? {
-    guard header.hasPrefix("@@ -") else { return nil }
-    guard let match = header.range(
-      of: #"^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@"#, options: .regularExpression)
+  /// Parse `@@ -a,b +c,d @@` into starts and counts; an omitted count is 1.
+  static func hunkRange(_ header: String) -> (old: Int, oldCount: Int, new: Int, newCount: Int)? {
+    guard header.hasPrefix("@@ -"),
+      let match = header.firstMatch(of: /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/),
+      let old = Int(match.1), let new = Int(match.3)
     else { return nil }
-    let spec = header[match].dropFirst(4)
-    let sides = spec.components(separatedBy: " +")
-    guard sides.count >= 2,
-      let old = Int(sides[0].components(separatedBy: ",")[0]),
-      let new = Int(sides[1].components(separatedBy: " ")[0].components(separatedBy: ",")[0])
-    else { return nil }
-    return (old, new)
+    return (old, match.2.flatMap { Int($0) } ?? 1, new, match.4.flatMap { Int($0) } ?? 1)
   }
 }

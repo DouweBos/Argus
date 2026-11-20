@@ -11,6 +11,14 @@ public enum InlineDiff {
     public var deletions: Int
   }
 
+  /// A final newline terminates the last line rather than starting another.
+  static func lines(_ text: String) -> [String] {
+    guard !text.isEmpty else { return [] }
+    var lines = text.components(separatedBy: "\n")
+    if lines.count > 1, lines.last == "" { lines.removeLast() }
+    return lines
+  }
+
   static func matchEdges(_ old: [String], _ new: [String]) -> (prefix: Int, suffix: Int) {
     let limit = min(old.count, new.count)
     var prefix = 0
@@ -25,8 +33,8 @@ public enum InlineDiff {
   }
 
   public static func compute(old: String, new: String) -> [DiffLine] {
-    let oldLines = old.isEmpty ? [] : old.components(separatedBy: "\n")
-    let newLines = new.isEmpty ? [] : new.components(separatedBy: "\n")
+    let oldLines = lines(old)
+    let newLines = lines(new)
     let (prefix, suffix) = matchEdges(oldLines, newLines)
 
     var lines: [DiffLine] = []
@@ -55,15 +63,14 @@ public enum InlineDiff {
 
   /// A Write is all additions — there was nothing there before.
   public static func writeLines(_ content: String) -> [DiffLine] {
-    guard !content.isEmpty else { return [] }
-    return content.components(separatedBy: "\n").enumerated().map { index, text in
+    lines(content).enumerated().map { index, text in
       DiffLine(kind: .add, text: text, oldNumber: nil, newNumber: index + 1, id: index + 1)
     }
   }
 
   public static func stats(old: String, new: String) -> Stats {
-    let oldLines = old.isEmpty ? [] : old.components(separatedBy: "\n")
-    let newLines = new.isEmpty ? [] : new.components(separatedBy: "\n")
+    let oldLines = lines(old)
+    let newLines = lines(new)
     let (prefix, suffix) = matchEdges(oldLines, newLines)
     return Stats(
       additions: max(0, newLines.count - prefix - suffix),
@@ -71,7 +78,6 @@ public enum InlineDiff {
   }
 
   public static func writeStats(_ content: String) -> Stats {
-    Stats(additions: content.isEmpty ? 0 : content.components(separatedBy: "\n").count,
-          deletions: 0)
+    Stats(additions: lines(content).count, deletions: 0)
   }
 }

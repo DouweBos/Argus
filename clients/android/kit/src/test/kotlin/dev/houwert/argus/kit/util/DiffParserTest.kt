@@ -69,6 +69,23 @@ class DiffParserTest {
     assertTrue(markers.all { it.oldNumber == null && it.newNumber == null })
   }
 
+  @Test fun endsEveryHunkOnItsLastRealLine() {
+    for (file in DiffParser.parse(fixture().raw)) {
+      val last = file.hunks.lastOrNull()?.lines?.lastOrNull() ?: continue
+      assertTrue(!(last.kind == DiffLineKind.CONTEXT && last.text.isEmpty()), file.displayPath)
+    }
+  }
+
+  @Test fun keepsBlankLinesInsideAHunk() {
+    val lines = DiffParser.parse(fixture().raw).first { it.newPath == "blank.txt" }.hunks.first().lines
+    val c = DiffLineKind.CONTEXT
+    val r = DiffLineKind.REMOVE
+    val a = DiffLineKind.ADD
+    assertEquals(listOf(c, r, c, c, r, c, a, c, a), lines.map { it.kind })
+    assertEquals("", lines.last().text)
+    assertEquals(7, lines.last().newNumber)
+  }
+
   @Test fun anEmptyDiffYieldsNoFiles() {
     assertTrue(DiffParser.parse("").isEmpty())
     assertTrue(DiffParser.parse("no diff here\njust text").isEmpty())
@@ -76,6 +93,16 @@ class DiffParserTest {
 }
 
 class InlineDiffTest {
+  @Test fun aFinalNewlineEndsTheLastLineRatherThanAddingABlankOne() {
+    assertEquals(listOf("x", "y"), InlineDiff.writeLines("x\ny\n").map { it.text })
+    assertEquals(InlineDiff.Stats(2, 0), InlineDiff.writeStats("x\ny\n"))
+    assertEquals(
+      listOf(DiffLineKind.CONTEXT, DiffLineKind.REMOVE, DiffLineKind.ADD),
+      InlineDiff.compute("a\nb\n", "a\nB\n").map { it.kind },
+    )
+    assertEquals(listOf("x", ""), InlineDiff.writeLines("x\n\n").map { it.text })
+  }
+
   @Test fun aMiddleReplacementKeepsTheSharedEdgesAsContext() {
     val lines = InlineDiff.compute("a\nb\nc", "a\nB\nc")
     assertEquals(listOf(DiffLineKind.CONTEXT, DiffLineKind.REMOVE, DiffLineKind.ADD, DiffLineKind.CONTEXT), lines.map { it.kind })

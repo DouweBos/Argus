@@ -94,6 +94,24 @@ struct DiffParserTests {
     #expect(markers.allSatisfy { $0.oldNumber == nil && $0.newNumber == nil })
   }
 
+  @Test("ends every hunk on its last real line, not the diff's trailing newline")
+  func noPhantomTrailingLine() throws {
+    for file in DiffParser.parse(try fixture().raw) {
+      guard let last = file.hunks.last?.lines.last else { continue }
+      #expect(!(last.kind == .context && last.text.isEmpty), "\(file.displayPath)")
+    }
+  }
+
+  @Test("keeps blank lines inside a hunk, bare or space-prefixed")
+  func blankLines() throws {
+    let blank = DiffParser.parse(try fixture().raw).first { $0.newPath == "blank.txt" }
+    let lines = blank?.hunks.first?.lines ?? []
+    #expect(lines.map(\.kind) == [
+      .context, .remove, .context, .context, .remove, .context, .add, .context, .add,
+    ])
+    #expect(lines.last?.text == "" && lines.last?.newNumber == 7)
+  }
+
   @Test("an empty diff yields no files")
   func empty() {
     #expect(DiffParser.parse("").isEmpty)
@@ -118,6 +136,14 @@ struct InlineDiffTests {
     #expect(InlineDiff.stats(old: "a\nb\nc", new: "a\nB\nc") == .init(additions: 1, deletions: 1))
     #expect(InlineDiff.stats(old: "a", new: "a") == .init(additions: 0, deletions: 0))
     #expect(InlineDiff.stats(old: "", new: "x\ny") == .init(additions: 2, deletions: 0))
+  }
+
+  @Test("a final newline ends the last line rather than adding a blank one")
+  func trailingNewline() {
+    #expect(InlineDiff.writeLines("x\ny\n").map(\.text) == ["x", "y"])
+    #expect(InlineDiff.writeStats("x\ny\n") == .init(additions: 2, deletions: 0))
+    #expect(InlineDiff.compute(old: "a\nb\n", new: "a\nB\n").map(\.kind) == [.context, .remove, .add])
+    #expect(InlineDiff.writeLines("x\n\n").map(\.text) == ["x", ""])
   }
 
   @Test("a Write is all additions, and an empty one is nothing")

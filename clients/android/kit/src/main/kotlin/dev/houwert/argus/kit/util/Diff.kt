@@ -68,8 +68,6 @@ object DiffParser {
   }
 
   fun parse(raw: String): List<DiffFile> {
-    // The reference splits with `/^diff --git /m`, which leaves the newline before each boundary on
-    // the previous chunk, so every file but the last ends with a blank context row. Reproduced on purpose.
     val chunks = raw.split("\ndiff --git ")
     val normalized = mutableListOf<String>()
     chunks.forEachIndexed { index, chunk ->
@@ -78,7 +76,6 @@ object DiffParser {
         if (!body.startsWith("diff --git ")) return@forEachIndexed
         body = body.removePrefix("diff --git ")
       }
-      if (index < chunks.size - 1) body += "\n"
       normalized.add(body)
     }
     return normalized.map(::parseFile)
@@ -131,33 +128,44 @@ object DiffParser {
     var current = mutableListOf<DiffLine>()
     var nextOld = 0
     var nextNew = 0
+    var oldLeft = 0
+    var newLeft = 0
     var lineId = 0
 
     for (line in lines.drop(bodyStart)) {
-      val starts = hunkStarts(line)
-      if (starts != null) {
+      val range = hunkRange(line)
+      if (range != null) {
         header?.let { hunks.add(DiffHunk(it, current)) }
         header = line
         current = mutableListOf()
-        nextOld = starts.first
-        nextNew = starts.second
+        nextOld = range.old
+        nextNew = range.new
+        oldLeft = range.oldCount
+        newLeft = range.newCount
         continue
       }
       if (header == null) continue
+      // A bare empty line is blank context only while the header still expects lines; past that it is
+      // the diff's own trailing newline.
+      if (line.isEmpty() && (oldLeft <= 0 || newLeft <= 0)) continue
       lineId += 1
       when {
         line.startsWith("+") -> {
           current.add(DiffLine(DiffLineKind.ADD, line.drop(1), null, nextNew, lineId))
           nextNew += 1
+          newLeft -= 1
         }
         line.startsWith("-") -> {
           current.add(DiffLine(DiffLineKind.REMOVE, line.drop(1), nextOld, null, lineId))
           nextOld += 1
+          oldLeft -= 1
         }
         line.startsWith(" ") || line.isEmpty() -> {
           current.add(DiffLine(DiffLineKind.CONTEXT, line.drop(1), nextOld, nextNew, lineId))
           nextOld += 1
           nextNew += 1
+          oldLeft -= 1
+          newLeft -= 1
         }
         // "\ No newline at end of file" attaches to the line before rather than taking a numbered slot.
         line.startsWith("\\") -> current.add(DiffLine(DiffLineKind.NO_NEWLINE, line.drop(2), null, null, lineId))
@@ -167,14 +175,20 @@ object DiffParser {
     return DiffFile(oldPath, newPath, status, hunks, isBinary)
   }
 
-  private val hunkHeader = Regex("""^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@""")
+  internal data class HunkRange(val old: Int, val oldCount: Int, val new: Int, val newCount: Int)
 
-  /** `@@ -a,b +c,d @@` to the two starting line numbers. */
-  internal fun hunkStarts(header: String): Pair<Int, Int>? {
+  private val hunkHeader = Regex("""^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@""")
+
+  /** `@@ -a,b +c,d @@` to starts and counts; an omitted count is 1. */
+  internal fun hunkRange(header: String): HunkRange? {
     if (!header.startsWith("@@ -")) return null
     val match = hunkHeader.find(header) ?: return null
-    val old = match.groupValues[1].toIntOrNull() ?: return null
-    val new = match.groupValues[2].toIntOrNull() ?: return null
-    return old to new
+    val (old, oldCount, new, newCount) = match.destructured
+    return HunkRange(
+      old.toIntOrNull() ?: return null,
+      oldCount.ifEmpty { "1" }.toIntOrNull() ?: return null,
+      new.toIntOrNull() ?: return null,
+      newCount.ifEmpty { "1" }.toIntOrNull() ?: return null,
+    )
   }
 }
