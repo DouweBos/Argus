@@ -1,6 +1,8 @@
 package dev.houwert.argus.app.screens.account
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -60,7 +62,7 @@ fun AccountResetSheet(account: AccountStore, onClose: () -> Unit) {
     if (signInNeeded != null) onClose()
   }
   ModalBottomSheet(onDismissRequest = close, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = ArgusTheme.colors.bg) {
-    Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 20.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 20.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
       when (val flow = reset) {
         ResetFlow.Idle, is ResetFlow.Failed -> {
           TitleText("Reset your account?")

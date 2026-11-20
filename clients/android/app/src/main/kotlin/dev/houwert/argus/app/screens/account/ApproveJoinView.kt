@@ -1,6 +1,8 @@
 package dev.houwert.argus.app.screens.account
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -60,7 +62,7 @@ fun ApproveJoinSheet(account: AccountStore, request: AccountJoinRequestInfo, onC
   }
   ModalBottomSheet(onDismissRequest = onClose, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = ArgusTheme.colors.bg) {
     Column(
-      Modifier.padding(horizontal = 20.dp).padding(bottom = 20.dp).navigationBarsPadding().heightIn(min = 240.dp),
+      Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 20.dp).navigationBarsPadding().heightIn(min = 240.dp),
       verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
       TitleText("Approve $name")
