@@ -1,3 +1,4 @@
 <resources>
   <string name="app_name">Argus</string>
+  <string name="widget_agents_description">Agents waiting on you and the ones still running, on every computer.</string>
 </resources>

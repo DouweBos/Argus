@@ -424,3 +424,75 @@ platform :ios do
     UI.success("Uploaded Argus #{version} (#{build_number}) to TestFlight")
   end
 end
+
+ANDROID_PACKAGE = "dev.houwert.argus"
+# Google Play caps a release's notes per language at 500 characters.
+PLAY_NOTES_LIMIT = 500
+
+platform :android do
+  desc "Build the signed Android app (AAB + APK) and upload the AAB to Google Play's internal track. The Release workflow runs it next to the Mac and iPhone legs, so all three share a version and build number. Pass upload:false to only build."
+  lane :release do |options|
+    keystore = ENV["ARGUS_ANDROID_KEYSTORE"].to_s
+    UI.user_error!("Missing ARGUS_ANDROID_KEYSTORE (path to the upload keystore)") if keystore.empty? || !File.exist?(keystore)
+    %w[ARGUS_ANDROID_KEYSTORE_PASSWORD ARGUS_ANDROID_KEY_ALIAS ARGUS_ANDROID_KEY_PASSWORD].each do |name|
+      UI.user_error!("Missing #{name}") if ENV[name].to_s.empty?
+    end
+
+    root = File.expand_path("..", __dir__)
+    project = File.join(root, "clients/android")
+    out = File.join(root, "release-android")
+    FileUtils.rm_rf(out)
+    FileUtils.mkdir_p(out)
+    # Play versions are plain x.y.z like the App Store's; app/build.gradle.kts drops the suffix itself.
+    version = read_package_version.sub(/-.*\z/, "")
+    build_number = ci_build_number
+    ENV["ARGUS_BUILD_NUMBER"] = build_number
+
+    unless File.exist?(File.join(project, "app/google-services.json"))
+      UI.important("clients/android/app/google-services.json is missing: this build ships with push notifications off")
+    end
+    sh("cd #{project.shellescape} && ./gradlew --no-daemon :app:bundleRelease :app:assembleRelease")
+
+    aab = File.join(out, "Argus-Android-#{version}-#{build_number}.aab")
+    apk = File.join(out, "Argus-Android-#{version}.apk")
+    FileUtils.cp(File.join(project, "app/build/outputs/bundle/release/app-release.aab"), aab)
+    FileUtils.cp(File.join(project, "app/build/outputs/apk/release/app-release.apk"), apk)
+
+    if options.fetch(:upload, true)
+      json_key = ENV["PLAY_SERVICE_ACCOUNT_JSON"].to_s
+      UI.user_error!("Missing PLAY_SERVICE_ACCOUNT_JSON") if json_key.empty?
+
+      # supply reads the release notes from metadata/<locale>/changelogs/<versionCode>.txt.
+      metadata = File.join(out, "metadata")
+      changelogs = File.join(metadata, "en-US/changelogs")
+      FileUtils.mkdir_p(changelogs)
+      File.write(File.join(changelogs, "#{build_number}.txt"), play_notes(File.read(release_notes_file)))
+
+      upload_to_play_store(
+        package_name:            ANDROID_PACKAGE,
+        track:                   "internal",
+        aab:                     aab,
+        json_key_data:           json_key,
+        metadata_path:           metadata,
+        # A Play app that was never published only takes draft releases.
+        release_status:          ENV.fetch("PLAY_RELEASE_STATUS", "completed"),
+        skip_upload_apk:         true,
+        skip_upload_metadata:    true,
+        skip_upload_images:      true,
+        skip_upload_screenshots: true,
+      )
+      UI.success("Uploaded Argus #{version} (#{build_number}) to Google Play's internal track")
+    end
+
+    # The release workflow attaches the APK to the GitHub release once every leg has passed.
+    File.write(File.join(root, "release-assets.txt"), "#{apk}\n")
+  end
+
+  # Play shows plain text: drop the section headings and commit hashes the changelog carries.
+  def play_notes(markdown)
+    lines = markdown.lines.map(&:rstrip).reject { |l| l.empty? || l.start_with?("#") }
+    notes = lines.map { |l| l.sub(/\A- (?:[0-9a-f]{7}: )?/, "• ") }.join("\n")
+    notes = "Bug fixes and improvements." if notes.empty?
+    notes.length > PLAY_NOTES_LIMIT ? "#{notes[0, PLAY_NOTES_LIMIT - 1]}…" : notes
+  end
+end

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Applies pending changesets for a release channel and writes this version's
-# notes: all of them, the Mac's and the iPhone's. Every job of a release run
+# notes: all of them, the Mac's, the iPhone's and Android's. Every job of a release run
 # calls it on the same commit, so each gets the same version without passing
 # files around.
 # Writes `version`, `has_changes` and `build` (for the leg named by $PLATFORM) to $GITHUB_OUTPUT.
@@ -41,18 +41,21 @@ else
   fi
 fi
 
-# release-notes.md, -mac.md and -ios.md, and CHANGELOG.md without the platform markers.
+# release-notes.md, -mac.md, -ios.md and -android.md, and CHANGELOG.md without the platform markers.
 pnpm exec tsx scripts/changesets/release-notes.ts
-# A release with only iPhone changes still ships the Mac app: give it the full notes.
+# A release with only phone changes still ships the Mac app: give it the full notes.
 [ -s release-notes-mac.md ] || cp release-notes.md release-notes-mac.md
 
 VERSION=$(node -p "require('./package.json').version")
 echo "Releasing v${VERSION} on ${CHANNEL}"
 echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 echo "has_changes=true" >> "$GITHUB_OUTPUT"
-# Whether $PLATFORM (a build leg) has anything to ship: the iPhone sits out a release with no iPhone changes.
+# Whether $PLATFORM (a build leg) has anything to ship: a phone sits out a release with no changes of its own.
 if [ "${PLATFORM:-}" = "ios" ] && [ ! -s release-notes-ios.md ]; then
   echo "No iPhone changes in v${VERSION}: skipping TestFlight"
+  echo "build=false" >> "$GITHUB_OUTPUT"
+elif [ "${PLATFORM:-}" = "android" ] && [ ! -s release-notes-android.md ]; then
+  echo "No Android changes in v${VERSION}: skipping Google Play"
   echo "build=false" >> "$GITHUB_OUTPUT"
 else
   echo "build=true" >> "$GITHUB_OUTPUT"

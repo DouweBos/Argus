@@ -19,6 +19,8 @@ import kotlinx.coroutines.CoroutineScope
 class ArgusApplication : Application() {
   lateinit var app: AppStore
     private set
+  lateinit var platform: dev.houwert.argus.app.platform.AndroidPlatform
+    private set
 
   override fun onCreate() {
     super.onCreate()
@@ -31,6 +33,9 @@ class ArgusApplication : Application() {
       networkPaths = AndroidNetworkPathWatcher(this),
       defaultDeviceName = deviceName(),
     )
+    dev.houwert.argus.app.telemetry.Telemetry.start(this, app.preferences)
+    platform = dev.houwert.argus.app.platform.AndroidPlatform(this, app, AndroidSecretStore(this))
+    app.platform = platform
     app.initialize()
   }
 

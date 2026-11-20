@@ -1,7 +1,7 @@
 /**
  * The changesets changelog generator: the stock line format, plus a marker
- * naming the changeset's platforms so a release can give the Mac and the
- * iPhone their own notes. release-notes.ts strips the markers again.
+ * naming the changeset's platforms so a release can give the Mac, the
+ * iPhone and Android their own notes. release-notes.ts strips the markers again.
  */
 
 import { readFileSync } from "node:fs";
