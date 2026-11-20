@@ -57,7 +57,6 @@ const ANDROID_SOURCES = ["clients/android/app/src/main"];
 const ANDROID_PENDING = new Set([
   "android_pair_failed",
   "android_saved_shown",
-  "android_device_watched",
   "android_image_viewer_used",
   "android_sessions_fold_toggled",
   "android_project_collapse_toggled",
@@ -65,10 +64,6 @@ const ANDROID_PENDING = new Set([
   "android_inbox_filtered",
   "android_follow_up_used",
   "android_input_used",
-  "android_setting_changed",
-  "android_color_theme_changed",
-  "android_appearance_changed",
-  "android_default_changed",
   "android_agent_start_submitted",
   "android_share_finished",
   "android_warnings_opened",

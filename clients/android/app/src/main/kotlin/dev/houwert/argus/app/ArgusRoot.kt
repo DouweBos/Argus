@@ -1,6 +1,5 @@
 package dev.houwert.argus.app
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -10,7 +9,11 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
+import android.app.Activity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -26,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import dev.houwert.argus.app.navigation.AppSection
 import dev.houwert.argus.app.navigation.Router
 import dev.houwert.argus.app.navigation.TabHost
+import dev.houwert.argus.app.screens.account.AccountRemovedNotice
+import dev.houwert.argus.app.screens.account.JoinRequestPrompt
 import dev.houwert.argus.app.stores.AppStore
 import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.kit.net.Transport
@@ -39,8 +44,10 @@ val LocalRouter = staticCompositionLocalOf<Router> { error("No Router") }
 fun ArgusRoot(app: AppStore) {
   val router = remember { Router() }
   dev.houwert.argus.app.platform.LaunchAttach(router)
-  val dark = isSystemInDarkTheme()
-  ArgusTheme(dark = dark) {
+  val themePreference by app.prefs.theme.collectAsState()
+  val colorTheme by app.prefs.colorTheme.collectAsState()
+  ArgusTheme(preference = themePreference, colorTheme = colorTheme) {
+    SystemBarsFollowTheme(ArgusTheme.colors.isDark)
     CompositionLocalProvider(LocalAppStore provides app, LocalRouter provides router) {
       val section by router.section.collectAsState()
       val tabs = rememberSaveableStateHolder()
@@ -62,6 +69,8 @@ fun ArgusRoot(app: AppStore) {
           // Each tab keeps its stack while another is showing.
           tabs.SaveableStateProvider(section.name) { TabHost(section, router) }
           ConnectionPill(app, Modifier.align(Alignment.TopCenter))
+          AccountRemovedNotice(Modifier.align(Alignment.TopCenter))
+          JoinRequestPrompt(app.account)
           ErrorToast(app, Modifier.align(Alignment.BottomCenter))
           dev.houwert.argus.app.telemetry.TelemetryConsentGate()
         }
@@ -93,4 +102,18 @@ private fun ErrorToast(app: AppStore, modifier: Modifier) {
     app.host.clearError()
   }
   Snackbar(modifier.padding(12.dp)) { Text(message) }
+}
+
+/** The status and navigation bar icons follow the app's scheme, which may differ from the system's. */
+@Composable
+private fun SystemBarsFollowTheme(dark: Boolean) {
+  val view = LocalView.current
+  if (view.isInEditMode) return
+  SideEffect {
+    val window = (view.context as? Activity)?.window ?: return@SideEffect
+    WindowCompat.getInsetsController(window, view).apply {
+      isAppearanceLightStatusBars = !dark
+      isAppearanceLightNavigationBars = !dark
+    }
+  }
 }

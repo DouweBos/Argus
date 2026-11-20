@@ -28,6 +28,12 @@ import dev.houwert.argus.app.screens.git.ReviewGuideScreen
 import dev.houwert.argus.app.screens.git.StashesScreen
 import dev.houwert.argus.app.screens.git.WarningsScreen
 import dev.houwert.argus.app.screens.PendingScreen
+import dev.houwert.argus.app.screens.account.AccountScreen
+import dev.houwert.argus.app.screens.account.AddComputerScreen
+import dev.houwert.argus.app.screens.accounts.ClaudeAccountsScreen
+import dev.houwert.argus.app.screens.computers.ComputerScreen
+import dev.houwert.argus.app.screens.devices.DeviceScreen
+import dev.houwert.argus.app.screens.devices.DevicesScreen
 import dev.houwert.argus.app.screens.files.FileScreen
 import dev.houwert.argus.app.screens.files.FileSearchScreen
 import dev.houwert.argus.app.screens.files.QuickOpenScreen
@@ -35,10 +41,16 @@ import dev.houwert.argus.app.screens.home.AgentsScreen
 import dev.houwert.argus.app.screens.home.ComputersScreen
 import dev.houwert.argus.app.screens.home.HomeScreen
 import dev.houwert.argus.app.screens.newproject.NewProjectScreen
+import dev.houwert.argus.app.screens.pair.PairScreen
 import dev.houwert.argus.app.screens.project.ProjectScreen
 import dev.houwert.argus.app.screens.quickrun.QuickRunScreen
+import dev.houwert.argus.app.screens.settings.SettingsPaneScreen
+import dev.houwert.argus.app.screens.settings.SettingsScreen
 import dev.houwert.argus.app.screens.start.NewSessionScreen
-import dev.houwert.argus.app.screens.pair.PairScreen
+import dev.houwert.argus.app.screens.usage.UsageModelScreen
+import dev.houwert.argus.app.screens.usage.UsageModelsScreen
+import dev.houwert.argus.app.screens.usage.UsagePricesScreen
+import dev.houwert.argus.app.screens.usage.UsageScreen
 
 /**
  * Route to screen, in one place. Wave-2 screens replace their [PendingScreen]
@@ -85,9 +97,20 @@ fun RouteScreen(route: Route) {
     is Route.Issue -> IssueScreen(route.ref)
     is Route.Design -> DesignScreen(route.url, route.sessionId)
     is Route.CompareRun -> CompareRunScreen(route.groupId)
-    is Route.Computer, is Route.Session, is Route.Agent, is Route.StoppedAgent, is Route.Timeline, is Route.Terminals,
-    is Route.Terminal, is Route.McpServers, Route.Devices, Route.Settings, Route.Account, Route.AddComputer,
-    Route.ClaudeAccounts, Route.Usage, Route.UsagePrices, Route.UsageModels,
+    Route.Account -> AccountScreen()
+    Route.AddComputer -> AddComputerScreen()
+    Route.Settings -> SettingsScreen()
+    is Route.SettingsPage -> SettingsPaneScreen(route.pane)
+    is Route.Computer -> ComputerScreen(route.deviceId)
+    Route.ClaudeAccounts -> ClaudeAccountsScreen()
+    Route.Devices -> DevicesScreen()
+    is Route.Device -> DeviceScreen(route)
+    Route.Usage -> UsageScreen()
+    is Route.UsageModel -> UsageModelScreen(route)
+    Route.UsagePrices -> UsagePricesScreen()
+    Route.UsageModels -> UsageModelsScreen()
+    is Route.Session, is Route.Agent, is Route.StoppedAgent, is Route.Timeline, is Route.Terminals, is Route.Terminal,
+    is Route.McpServers,
     -> PendingScreen(route)
   }
 }

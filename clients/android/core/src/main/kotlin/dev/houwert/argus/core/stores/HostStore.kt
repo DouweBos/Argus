@@ -3,15 +3,23 @@ package dev.houwert.argus.core.stores
 import dev.houwert.argus.core.backend.HostBackend
 import dev.houwert.argus.core.backend.HostEvent
 import dev.houwert.argus.core.backend.toStored
+import dev.houwert.argus.core.devices.DeviceInputQueue
+import dev.houwert.argus.core.devices.MediaRouter
 import dev.houwert.argus.core.offline.Outbox
 import dev.houwert.argus.core.offline.SavedAnswers
+import dev.houwert.argus.core.usage.mergeUsageLimits
 import dev.houwert.argus.kit.net.Transport
 import dev.houwert.argus.kit.net.TransportException
 import dev.houwert.argus.kit.protocol.EventEnvelope
 import dev.houwert.argus.kit.protocol.generated.Events
 import dev.houwert.argus.kit.protocol.generated.RemoteAgentCapabilities
 import dev.houwert.argus.kit.protocol.generated.RemoteAgentStatus
+import dev.houwert.argus.kit.protocol.generated.ClaudeUsageLimits
+import dev.houwert.argus.kit.protocol.generated.ClaudeUsageSummary
 import dev.houwert.argus.kit.protocol.generated.RemoteClaudeAccount
+import dev.houwert.argus.kit.protocol.generated.UsageModelFilter
+import dev.houwert.argus.kit.protocol.generated.UsagePrices
+import dev.houwert.argus.kit.protocol.generated.UsageRange
 import dev.houwert.argus.kit.protocol.generated.RemoteClaudeLoginState
 import dev.houwert.argus.kit.protocol.generated.RemoteDevice
 import dev.houwert.argus.kit.protocol.generated.RemoteDeviceClaimState
@@ -28,6 +36,7 @@ import dev.houwert.argus.kit.protocol.generated.RemoteSessionKind
 import dev.houwert.argus.kit.protocol.generated.RemoteStoppedAgent
 import dev.houwert.argus.kit.protocol.generated.RemoteTask
 import dev.houwert.argus.kit.protocol.generated.RemoteTodo
+import dev.houwert.argus.kit.protocol.generated.RunnerAccount
 import dev.houwert.argus.kit.protocol.isOutsideProjects
 import dev.houwert.argus.kit.storage.RemoteEndpoint
 import java.io.IOException
@@ -173,6 +182,9 @@ class HostStore(
   val claudeAccounts: StateFlow<List<RemoteClaudeAccount>?> = _claudeAccounts.asStateFlow()
   internal val _activeClaudeAccountId = MutableStateFlow<String?>(null)
   val activeClaudeAccountId: StateFlow<String?> = _activeClaudeAccountId.asStateFlow()
+  /** Runners besides Claude Code and their sign-in; null until the first load. */
+  internal val _runnerAccounts = MutableStateFlow<List<RunnerAccount>?>(null)
+  val runnerAccounts: StateFlow<List<RunnerAccount>?> = _runnerAccounts.asStateFlow()
   /** The computer's in-flight Claude sign-in, if any. */
   internal val _claudeLogin = MutableStateFlow<RemoteClaudeLoginState?>(null)
   val claudeLogin: StateFlow<RemoteClaudeLoginState?> = _claudeLogin.asStateFlow()
@@ -184,6 +196,32 @@ class HostStore(
   val deviceClaims: StateFlow<Map<String, RemoteDeviceClaimState>> = _deviceClaims.asStateFlow()
   internal val _connectionId = MutableStateFlow<String?>(null)
   val connectionId: StateFlow<String?> = _connectionId.asStateFlow()
+
+  // Usage: plan limits, the summary for a range, hand-set prices and counted models.
+  internal val _usageLimits = MutableStateFlow<ClaudeUsageLimits?>(null)
+  val usageLimits: StateFlow<ClaudeUsageLimits?> = _usageLimits.asStateFlow()
+  /** Why the last usage load failed, cleared by the next success. */
+  internal val _usageLimitsError = MutableStateFlow<String?>(null)
+  val usageLimitsError: StateFlow<String?> = _usageLimitsError.asStateFlow()
+  internal val _usageLimitsLoading = MutableStateFlow(false)
+  val usageLimitsLoading: StateFlow<Boolean> = _usageLimitsLoading.asStateFlow()
+  internal val _usageSummary = MutableStateFlow<ClaudeUsageSummary?>(null)
+  val usageSummary: StateFlow<ClaudeUsageSummary?> = _usageSummary.asStateFlow()
+  internal val _usageSummaryError = MutableStateFlow<String?>(null)
+  val usageSummaryError: StateFlow<String?> = _usageSummaryError.asStateFlow()
+  /** The range a summary load is in flight for; a newer one supersedes it. */
+  internal val _usageSummaryLoadingRange = MutableStateFlow<UsageRange?>(null)
+  val usageSummaryLoadingRange: StateFlow<UsageRange?> = _usageSummaryLoadingRange.asStateFlow()
+  internal val _usagePrices = MutableStateFlow<UsagePrices?>(null)
+  val usagePrices: StateFlow<UsagePrices?> = _usagePrices.asStateFlow()
+  internal val _usagePricesError = MutableStateFlow<String?>(null)
+  val usagePricesError: StateFlow<String?> = _usagePricesError.asStateFlow()
+  internal val _usageModelFilter = MutableStateFlow<UsageModelFilter?>(null)
+  val usageModelFilter: StateFlow<UsageModelFilter?> = _usageModelFilter.asStateFlow()
+  internal val _usageModelFilterError = MutableStateFlow<String?>(null)
+  val usageModelFilterError: StateFlow<String?> = _usageModelFilterError.asStateFlow()
+  /** A model the price editor should open with, added by "Set price" on its detail. */
+  var pendingPriceModel: String? = null
 
   /** The most recent error worth showing, if any. */
   internal val _lastError = MutableStateFlow<String?>(null)
@@ -199,6 +237,10 @@ class HostStore(
   /** Binary device-screen frames, for the devices screens to parse. */
   private val _media = MutableSharedFlow<ByteArray>(extraBufferCapacity = 120)
   val media: SharedFlow<ByteArray> = _media
+  /** Parsed frames by stream, for `registerMediaSink`; see `devices/HostStoreDevices.kt`. */
+  internal val mediaRouter = MediaRouter()
+  /** Touches, buttons and keys, sent one at a time in order. */
+  internal val deviceInput by lazy { DeviceInputQueue(scope) }
 
   /** Draft diff comments per session or pull request; see `HostStoreReview.kt`. */
   val reviews = dev.houwert.argus.core.git.DiffReviewDrafts()
@@ -326,9 +368,21 @@ class HostStore(
     _claudeAccounts.value = null
     _activeClaudeAccountId.value = null
     _claudeLogin.value = null
+    _runnerAccounts.value = null
     _deviceStates.value = emptyMap()
     _deviceClaims.value = emptyMap()
     _connectionId.value = null
+    mediaRouter.clear()
+    _usageLimits.value = null
+    _usageLimitsError.value = null
+    _usageLimitsLoading.value = false
+    _usageSummary.value = null
+    _usageSummaryError.value = null
+    _usageSummaryLoadingRange.value = null
+    _usagePrices.value = null
+    _usagePricesError.value = null
+    _usageModelFilter.value = null
+    _usageModelFilterError.value = null
     _lastError.value = null
     forgetTranscriptSync()
     heldEpochs.clear()
@@ -365,7 +419,10 @@ class HostStore(
           for (agentId in watchedAgents) scope.launch { backend?.subscribe(agentId, true) }
         }
       }
-      is HostEvent.Media -> _media.tryEmit(event.data)
+      is HostEvent.Media -> {
+        mediaRouter.deliver(event.data)
+        _media.tryEmit(event.data)
+      }
       is HostEvent.Event -> handle(event.envelope)
     }
   }
@@ -405,6 +462,7 @@ class HostStore(
         _activeClaudeAccountId.value = it.activeId
       }
       Events.ClaudeAccountsLogin.name -> envelope.decode(Events.ClaudeAccountsLogin)?.let { _claudeLogin.value = it }
+      Events.UsageLimitsChanged.name -> envelope.decode(Events.UsageLimitsChanged)?.let { mergeUsageLimits(it) }
       Events.Notification.name -> envelope.decode(Events.Notification)?.let { hooks.notify(it) }
     }
     eventObservers.values.toList().forEach { it(envelope) }

@@ -17,7 +17,7 @@
     <activity
       android:name=".MainActivity"
       android:exported="true"
-      android:launchMode="singleTop"
+      android:launchMode="singleTask"
       android:windowSoftInputMode="adjustResize">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
@@ -41,6 +41,13 @@
         <action android:name="android.intent.action.SEND_MULTIPLE" />
         <category android:name="android.intent.category.DEFAULT" />
         <data android:mimeType="image/*" />
+      </intent-filter>
+      <!-- Clerk's GitHub and Apple sign-in return here from the browser. -->
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="${applicationId}" android:host="callback" />
       </intent-filter>
     </activity>
 

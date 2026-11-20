@@ -1,6 +1,11 @@
 package dev.houwert.argus.ui.icons
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.PanTool
+import androidx.compose.material.icons.outlined.SettingsInputAntenna
+import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.automirrored.outlined.CallMerge
@@ -116,6 +121,7 @@ import androidx.compose.material.icons.outlined.SyncProblem
 import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material.icons.outlined.Timeline
+import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material.icons.outlined.UnfoldMore
 import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material.icons.outlined.VerticalAlignBottom
@@ -256,11 +262,18 @@ object Icon {
   val automations = Icons.Outlined.History
   val blueprint = Icons.Outlined.DesignServices
   val devices = Icons.Outlined.Smartphone
+  val tv = Icons.Outlined.Tv
   val runtimes = Icons.Outlined.SmartDisplay
   val pullRequests = pullRequest
   val issues = issue
   val settings = gear
   val notifications = Icons.Outlined.Notifications
+  // Settings pages.
+  val textCursor = Icons.Outlined.TextFields
+  val palette = Icons.Outlined.Palette
+  val alerts = Icons.Outlined.NotificationsActive
+  val privacy = Icons.Outlined.PanTool
+  val connection = Icons.Outlined.SettingsInputAntenna
   /** The phone's tab for every destination without one of its own. */
   val more = Icons.Outlined.MoreHoriz
   /** A session's uncommitted changes. */

@@ -85,5 +85,6 @@ dependencies {
   implementation(libs.biometric)
   implementation(libs.work.runtime)
   implementation(libs.posthog.android)
+  implementation(libs.okhttp)
   testImplementation(libs.junit)
 }

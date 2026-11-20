@@ -184,6 +184,11 @@ private fun SettingsRowLayout(minLabel: Int, spacing: Int, content: @Composable 
   Layout(content, Modifier.fillMaxWidth()) { measurables, constraints ->
     val width = constraints.maxWidth
     val gap = spacing.dp.roundToPx()
+    // A control slot that emitted nothing (a state with no action) lays out as the label alone.
+    if (measurables.size < 2) {
+      val label = measurables.firstOrNull()?.measure(Constraints(maxWidth = width))
+      return@Layout layout(width, label?.height ?: 0) { label?.placeRelative(0, 0) }
+    }
     val control = measurables[1].measure(Constraints(maxWidth = width))
     if (width - control.width - gap >= minLabel.dp.roundToPx()) {
       val label = measurables[0].measure(Constraints(maxWidth = width - control.width - gap))
@@ -203,7 +208,10 @@ private fun SettingsRowLayout(minLabel: Int, spacing: Int, content: @Composable 
   }
 }
 
-/** A row that opens something: icon, title, an optional value, a chevron. The whole row is the target. */
+/**
+ * A row that opens something: icon, title, an optional value, a chevron. The whole row is the target.
+ * `showsTitle = false` lets a rich `leading` (a profile summary) fill the row; the title stays its label.
+ */
 @Composable
 fun SettingsLinkRow(
   title: String,
@@ -211,6 +219,7 @@ fun SettingsLinkRow(
   icon: ImageVector? = null,
   value: String? = null,
   leading: (@Composable () -> Unit)? = null,
+  showsTitle: Boolean = true,
   onClick: () -> Unit,
 ) {
   val theme = ArgusTheme.colors
@@ -226,10 +235,11 @@ fun SettingsLinkRow(
     verticalAlignment = Alignment.CenterVertically,
   ) {
     when {
+      leading != null && !showsTitle -> Box(Modifier.weight(1f)) { leading() }
       leading != null -> leading()
       icon != null -> SettingsRowIcon(icon)
     }
-    Text(title, Modifier.weight(1f), color = theme.text, style = argusFont(15))
+    if (showsTitle) Text(title, Modifier.weight(1f), color = theme.text, style = argusFont(15))
     if (value != null) Text(value, color = theme.textSecondary, style = argusFont(15), maxLines = 1, overflow = TextOverflow.Ellipsis)
     Icon(Icon.chevronRight, null, Modifier.size(18.dp), tint = theme.textMuted)
   }

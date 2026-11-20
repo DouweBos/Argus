@@ -1,5 +1,6 @@
 package dev.houwert.argus.core.routing
 
+import dev.houwert.argus.core.usage.UsageTab
 import dev.houwert.argus.core.routing.ArgusRoute.Automation
 import dev.houwert.argus.core.routing.ArgusRoute.Blueprint
 import dev.houwert.argus.core.routing.ArgusRoute.Design

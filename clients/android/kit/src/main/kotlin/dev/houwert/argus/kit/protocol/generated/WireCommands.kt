@@ -3075,7 +3075,7 @@ object Commands {
 
   object AccountDenyJoin : RemoteCommand<CommandsTypes.AccountDenyJoinParams, IgnoredResult>("account_deny_join", "host", serializer(), serializer())
 
-  object AccountDeviceKey : RemoteCommand<EmptyParams, AccountDeviceKey?>("account_device_key", "host", serializer(), serializer())
+  object AccountDeviceKey : RemoteCommand<EmptyParams, dev.houwert.argus.kit.protocol.generated.AccountDeviceKey?>("account_device_key", "host", serializer(), serializer())
 
   object AccountDismissReset : RemoteCommand<EmptyParams, AccountStatus>("account_dismiss_reset", "host", serializer(), serializer())
 
@@ -3117,7 +3117,7 @@ object Commands {
 
   object AddToGitignore : RemoteCommand<CommandsTypes.AddToGitignoreParams, IgnoredResult>("add_to_gitignore", "admin", serializer(), serializer())
 
-  object AgentForkPoint : RemoteCommand<CommandsTypes.AgentForkPointParams, AgentForkPoint>("agent_fork_point", "admin", serializer(), serializer())
+  object AgentForkPoint : RemoteCommand<CommandsTypes.AgentForkPointParams, dev.houwert.argus.kit.protocol.generated.AgentForkPoint>("agent_fork_point", "admin", serializer(), serializer())
 
   object AgentSetPinned : RemoteCommand<CommandsTypes.AgentSetPinnedParams, CommandsTypes.AgentSetPinnedResult>("agent_set_pinned", "admin", serializer(), serializer())
 
@@ -3129,7 +3129,7 @@ object Commands {
 
   object AutofillPrTemplate : RemoteCommand<CommandsTypes.AutofillPrTemplateParams, String?>("autofill_pr_template", "admin", serializer(), serializer())
 
-  object AutomationCalibration : RemoteCommand<CommandsTypes.AutomationCalibrationParams, AutomationCalibration>("automation_calibration", "admin", serializer(), serializer())
+  object AutomationCalibration : RemoteCommand<CommandsTypes.AutomationCalibrationParams, dev.houwert.argus.kit.protocol.generated.AutomationCalibration>("automation_calibration", "admin", serializer(), serializer())
 
   object AutomationCancelRun : RemoteCommand<CommandsTypes.AutomationCancelRunParams, AutomationRun>("automation_cancel_run", "admin", serializer(), serializer())
 
@@ -3137,7 +3137,7 @@ object Commands {
 
   object AutomationDelete : RemoteCommand<CommandsTypes.AutomationDeleteParams, IgnoredResult>("automation_delete", "admin", serializer(), serializer())
 
-  object AutomationDraft : RemoteCommand<CommandsTypes.AutomationDraftParams, AutomationDraft>("automation_draft", "admin", serializer(), serializer())
+  object AutomationDraft : RemoteCommand<CommandsTypes.AutomationDraftParams, dev.houwert.argus.kit.protocol.generated.AutomationDraft>("automation_draft", "admin", serializer(), serializer())
 
   object AutomationGateLogClear : RemoteCommand<EmptyParams, IgnoredResult>("automation_gate_log_clear", "admin", serializer(), serializer())
 
@@ -3183,7 +3183,7 @@ object Commands {
 
   object BlueprintDelete : RemoteCommand<CommandsTypes.BlueprintDeleteParams, IgnoredResult>("blueprint_delete", "admin", serializer(), serializer())
 
-  object BlueprintDraft : RemoteCommand<CommandsTypes.BlueprintDraftParams, BlueprintDraft>("blueprint_draft", "admin", serializer(), serializer())
+  object BlueprintDraft : RemoteCommand<CommandsTypes.BlueprintDraftParams, dev.houwert.argus.kit.protocol.generated.BlueprintDraft>("blueprint_draft", "admin", serializer(), serializer())
 
   object BlueprintRevise : RemoteCommand<CommandsTypes.BlueprintReviseParams, CommandsTypes.BlueprintReviseResult>("blueprint_revise", "admin", serializer(), serializer())
 
@@ -3197,7 +3197,7 @@ object Commands {
 
   object BootSimulator : RemoteCommand<CommandsTypes.BootSimulatorParams, IgnoredResult>("boot_simulator", "admin", serializer(), serializer())
 
-  object BrowserDevtools : RemoteCommand<CommandsTypes.BrowserDevtoolsParams, BrowserDevtools?>("browser_devtools", "host", serializer(), serializer())
+  object BrowserDevtools : RemoteCommand<CommandsTypes.BrowserDevtoolsParams, dev.houwert.argus.kit.protocol.generated.BrowserDevtools?>("browser_devtools", "host", serializer(), serializer())
 
   object BrowserElementAt : RemoteCommand<CommandsTypes.BrowserElementAtParams, BrowserElementHit?>("browser_element_at", "admin", serializer(), serializer())
 
@@ -3259,7 +3259,7 @@ object Commands {
 
   object ClaudeAuthLogout : RemoteCommand<CommandsTypes.ClaudeAuthLogoutParams, IgnoredResult>("claude_auth_logout", "admin", serializer(), serializer())
 
-  object ClaudeAuthStatus : RemoteCommand<CommandsTypes.ClaudeAuthStatusParams, ClaudeAuthStatus>("claude_auth_status", "admin", serializer(), serializer())
+  object ClaudeAuthStatus : RemoteCommand<CommandsTypes.ClaudeAuthStatusParams, dev.houwert.argus.kit.protocol.generated.ClaudeAuthStatus>("claude_auth_status", "admin", serializer(), serializer())
 
   object ClearAgentTranscript : RemoteCommand<CommandsTypes.ClearAgentTranscriptParams, IgnoredResult>("clear_agent_transcript", "admin", serializer(), serializer())
 
@@ -3323,7 +3323,7 @@ object Commands {
 
   object DeviceElementCapture : RemoteCommand<CommandsTypes.DeviceElementCaptureParams, JsonElement>("device_element_capture", "admin", serializer(), serializer())
 
-  object DeviceInputEndpoint : RemoteCommand<CommandsTypes.DeviceInputEndpointParams, DeviceInputEndpoint?>("device_input_endpoint", "admin", serializer(), serializer())
+  object DeviceInputEndpoint : RemoteCommand<CommandsTypes.DeviceInputEndpointParams, dev.houwert.argus.kit.protocol.generated.DeviceInputEndpoint?>("device_input_endpoint", "admin", serializer(), serializer())
 
   object DeviceOpenLink : RemoteCommand<CommandsTypes.DeviceOpenLinkParams, IgnoredResult>("device_open_link", "admin", serializer(), serializer())
 
@@ -3347,9 +3347,9 @@ object Commands {
 
   object FigmaDesignRef : RemoteCommand<CommandsTypes.FigmaDesignRefParams, DesignRef?>("figma_design_ref", "admin", serializer(), serializer())
 
-  object FigmaFrame : RemoteCommand<CommandsTypes.FigmaFrameParams, FigmaFrame?>("figma_frame", "admin", serializer(), serializer())
+  object FigmaFrame : RemoteCommand<CommandsTypes.FigmaFrameParams, dev.houwert.argus.kit.protocol.generated.FigmaFrame?>("figma_frame", "admin", serializer(), serializer())
 
-  object FigmaFrameDetails : RemoteCommand<CommandsTypes.FigmaFrameDetailsParams, FigmaFrameDetails?>("figma_frame_details", "admin", serializer(), serializer())
+  object FigmaFrameDetails : RemoteCommand<CommandsTypes.FigmaFrameDetailsParams, dev.houwert.argus.kit.protocol.generated.FigmaFrameDetails?>("figma_frame_details", "admin", serializer(), serializer())
 
   object ForkChatInSession : RemoteCommand<CommandsTypes.ForkChatInSessionParams, ForkChatResult>("fork_chat_in_session", "admin", serializer(), serializer())
 
@@ -3507,7 +3507,7 @@ object Commands {
 
   object GitFetch : RemoteCommand<CommandsTypes.GitFetchParams, String>("git_fetch", "admin", serializer(), serializer())
 
-  object GitFileHistory : RemoteCommand<CommandsTypes.GitFileHistoryParams, List<GitCommit>>("git_file_history", "admin", serializer(), serializer())
+  object GitFileHistory : RemoteCommand<CommandsTypes.GitFileHistoryParams, List<dev.houwert.argus.kit.protocol.generated.GitCommit>>("git_file_history", "admin", serializer(), serializer())
 
   object GitFormatPatch : RemoteCommand<CommandsTypes.GitFormatPatchParams, FormatPatchResult>("git_format_patch", "admin", serializer(), serializer())
 
@@ -3537,7 +3537,7 @@ object Commands {
 
   object GitListTags : RemoteCommand<CommandsTypes.GitListTagsParams, List<GitTag>>("git_list_tags", "admin", serializer(), serializer())
 
-  object GitLog : RemoteCommand<CommandsTypes.GitLogParams, List<GitCommit>>("git_log", "admin", serializer(), serializer())
+  object GitLog : RemoteCommand<CommandsTypes.GitLogParams, List<dev.houwert.argus.kit.protocol.generated.GitCommit>>("git_log", "admin", serializer(), serializer())
 
   object GitMarkResolved : RemoteCommand<CommandsTypes.GitMarkResolvedParams, IgnoredResult>("git_mark_resolved", "admin", serializer(), serializer())
 
@@ -3585,7 +3585,7 @@ object Commands {
 
   object GitRunnerCancel : RemoteCommand<CommandsTypes.GitRunnerCancelParams, IgnoredResult>("git_runner_cancel", "admin", serializer(), serializer())
 
-  object GitRunnerInfo : RemoteCommand<CommandsTypes.GitRunnerInfoParams, GitRunnerInfo>("git_runner_info", "admin", serializer(), serializer())
+  object GitRunnerInfo : RemoteCommand<CommandsTypes.GitRunnerInfoParams, dev.houwert.argus.kit.protocol.generated.GitRunnerInfo>("git_runner_info", "admin", serializer(), serializer())
 
   object GitRunnerOutput : RemoteCommand<CommandsTypes.GitRunnerOutputParams, GitRunnerOutputChunk>("git_runner_output", "admin", serializer(), serializer())
 
@@ -3621,7 +3621,7 @@ object Commands {
 
   object GitStashShow : RemoteCommand<CommandsTypes.GitStashShowParams, String>("git_stash_show", "admin", serializer(), serializer())
 
-  object GitStatus : RemoteCommand<CommandsTypes.GitStatusParams, GitStatus>("git_status", "admin", serializer(), serializer())
+  object GitStatus : RemoteCommand<CommandsTypes.GitStatusParams, dev.houwert.argus.kit.protocol.generated.GitStatus>("git_status", "admin", serializer(), serializer())
 
   object GitSubmoduleDeinit : RemoteCommand<CommandsTypes.GitSubmoduleDeinitParams, IgnoredResult>("git_submodule_deinit", "admin", serializer(), serializer())
 
@@ -3701,7 +3701,7 @@ object Commands {
 
   object LinearGetIssue : RemoteCommand<CommandsTypes.LinearGetIssueParams, LinearIssueDetail?>("linear_get_issue", "admin", serializer(), serializer())
 
-  object LinearIssueContext : RemoteCommand<CommandsTypes.LinearIssueContextParams, LinearIssueContext?>("linear_issue_context", "admin", serializer(), serializer())
+  object LinearIssueContext : RemoteCommand<CommandsTypes.LinearIssueContextParams, dev.houwert.argus.kit.protocol.generated.LinearIssueContext?>("linear_issue_context", "admin", serializer(), serializer())
 
   object LinearListIssues : RemoteCommand<CommandsTypes.LinearListIssuesParams, List<LinearIssue>>("linear_list_issues", "admin", serializer(), serializer())
 
@@ -3799,7 +3799,7 @@ object Commands {
 
   object LspFormat : RemoteCommand<CommandsTypes.LspFormatParams, List<LspTextEdit>>("lsp_format", "admin", serializer(), serializer())
 
-  object LspHover : RemoteCommand<CommandsTypes.LspHoverParams, LspHover?>("lsp_hover", "admin", serializer(), serializer())
+  object LspHover : RemoteCommand<CommandsTypes.LspHoverParams, dev.houwert.argus.kit.protocol.generated.LspHover?>("lsp_hover", "admin", serializer(), serializer())
 
   object LspReferences : RemoteCommand<CommandsTypes.LspReferencesParams, List<LspLocation>>("lsp_references", "admin", serializer(), serializer())
 
@@ -3807,9 +3807,9 @@ object Commands {
 
   object LspRestart : RemoteCommand<CommandsTypes.LspRestartParams, IgnoredResult>("lsp_restart", "admin", serializer(), serializer())
 
-  object LspSignatureHelp : RemoteCommand<CommandsTypes.LspSignatureHelpParams, LspSignatureHelp?>("lsp_signature_help", "admin", serializer(), serializer())
+  object LspSignatureHelp : RemoteCommand<CommandsTypes.LspSignatureHelpParams, dev.houwert.argus.kit.protocol.generated.LspSignatureHelp?>("lsp_signature_help", "admin", serializer(), serializer())
 
-  object LspStatus : RemoteCommand<CommandsTypes.LspStatusParams, LspStatus>("lsp_status", "admin", serializer(), serializer())
+  object LspStatus : RemoteCommand<CommandsTypes.LspStatusParams, dev.houwert.argus.kit.protocol.generated.LspStatus>("lsp_status", "admin", serializer(), serializer())
 
   object LspWorkspaceSymbols : RemoteCommand<CommandsTypes.LspWorkspaceSymbolsParams, List<CodeSymbol>>("lsp_workspace_symbols", "admin", serializer(), serializer())
 
@@ -4027,13 +4027,13 @@ object Commands {
 
   object SimulatorButton : RemoteCommand<CommandsTypes.SimulatorButtonParams, IgnoredResult>("simulator_button", "admin", serializer(), serializer())
 
-  object SimulatorDeviceState : RemoteCommand<CommandsTypes.SimulatorDeviceStateParams, SimulatorDeviceState>("simulator_device_state", "monitor", serializer(), serializer())
+  object SimulatorDeviceState : RemoteCommand<CommandsTypes.SimulatorDeviceStateParams, dev.houwert.argus.kit.protocol.generated.SimulatorDeviceState>("simulator_device_state", "monitor", serializer(), serializer())
 
   object SimulatorKeyboard : RemoteCommand<CommandsTypes.SimulatorKeyboardParams, IgnoredResult>("simulator_keyboard", "admin", serializer(), serializer())
 
-  object SimulatorSetFold : RemoteCommand<CommandsTypes.SimulatorSetFoldParams, SimulatorDeviceState>("simulator_set_fold", "admin", serializer(), serializer())
+  object SimulatorSetFold : RemoteCommand<CommandsTypes.SimulatorSetFoldParams, dev.houwert.argus.kit.protocol.generated.SimulatorDeviceState>("simulator_set_fold", "admin", serializer(), serializer())
 
-  object SimulatorSetOrientation : RemoteCommand<CommandsTypes.SimulatorSetOrientationParams, SimulatorDeviceState>("simulator_set_orientation", "admin", serializer(), serializer())
+  object SimulatorSetOrientation : RemoteCommand<CommandsTypes.SimulatorSetOrientationParams, dev.houwert.argus.kit.protocol.generated.SimulatorDeviceState>("simulator_set_orientation", "admin", serializer(), serializer())
 
   object SimulatorTouch : RemoteCommand<CommandsTypes.SimulatorTouchParams, IgnoredResult>("simulator_touch", "admin", serializer(), serializer())
 
@@ -4081,7 +4081,7 @@ object Commands {
 
   object TerminalResize : RemoteCommand<CommandsTypes.TerminalResizeParams, IgnoredResult>("terminal_resize", "admin", serializer(), serializer())
 
-  object TerminalScrollback : RemoteCommand<CommandsTypes.TerminalScrollbackParams, TerminalScrollback>("terminal_scrollback", "admin", serializer(), serializer())
+  object TerminalScrollback : RemoteCommand<CommandsTypes.TerminalScrollbackParams, dev.houwert.argus.kit.protocol.generated.TerminalScrollback>("terminal_scrollback", "admin", serializer(), serializer())
 
   object TerminalWrite : RemoteCommand<CommandsTypes.TerminalWriteParams, IgnoredResult>("terminal_write", "admin", serializer(), serializer())
 
@@ -4115,7 +4115,7 @@ object Commands {
 
   object WatchSession : RemoteCommand<CommandsTypes.WatchSessionParams, IgnoredResult>("watch_session", "admin", serializer(), serializer())
 
-  object WorktreeCleanupPreview : RemoteCommand<EmptyParams, WorktreeCleanupPreview>("worktree_cleanup_preview", "admin", serializer(), serializer())
+  object WorktreeCleanupPreview : RemoteCommand<EmptyParams, dev.houwert.argus.kit.protocol.generated.WorktreeCleanupPreview>("worktree_cleanup_preview", "admin", serializer(), serializer())
 
   object WorktreeCleanupRun : RemoteCommand<EmptyParams, WorktreeCleanupSweep>("worktree_cleanup_run", "admin", serializer(), serializer())
 

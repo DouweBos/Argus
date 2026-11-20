@@ -3254,11 +3254,11 @@ object Methods {
 
   object UsageModelFilter : RemoteCommand<MethodsTypes.UsageModelFilterParams, MethodsTypes.UsageModelFilterResult>("usage.model_filter", "control", serializer(), serializer())
 
-  object UsagePrices : RemoteCommand<MethodsTypes.UsagePricesParams, UsagePrices>("usage.prices", "control", serializer(), serializer())
+  object UsagePrices : RemoteCommand<MethodsTypes.UsagePricesParams, dev.houwert.argus.kit.protocol.generated.UsagePrices>("usage.prices", "control", serializer(), serializer())
 
   object UsageSetModelFilter : RemoteCommand<MethodsTypes.UsageSetModelFilterParams, MethodsTypes.UsageSetModelFilterResult>("usage.set_model_filter", "control", serializer(), serializer())
 
-  object UsageSetPrices : RemoteCommand<MethodsTypes.UsageSetPricesParams, UsagePrices>("usage.set_prices", "control", serializer(), serializer())
+  object UsageSetPrices : RemoteCommand<MethodsTypes.UsageSetPricesParams, dev.houwert.argus.kit.protocol.generated.UsagePrices>("usage.set_prices", "control", serializer(), serializer())
 
   object UsageSummary : RemoteCommand<MethodsTypes.UsageSummaryParams, ClaudeUsageSummary>("usage.summary", "control", serializer(), serializer())
 

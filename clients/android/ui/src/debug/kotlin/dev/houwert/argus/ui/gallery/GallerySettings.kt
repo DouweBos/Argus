@@ -15,7 +15,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.padding
+import dev.houwert.argus.core.settings.WorktreeCleanupModel
+import dev.houwert.argus.kit.protocol.generated.WorktreeCleanupEntry
+import dev.houwert.argus.kit.protocol.generated.WorktreeCleanupGuard
+import dev.houwert.argus.kit.protocol.generated.WorktreeCleanupPolicy
+import dev.houwert.argus.kit.protocol.generated.WorktreeCleanupPreview
+import dev.houwert.argus.kit.protocol.generated.WorktreeCleanupReason
+import dev.houwert.argus.kit.protocol.generated.WorktreeCleanupSweep
+import dev.houwert.argus.kit.protocol.generated.WorktreeCleanupSweepTrigger
 import dev.houwert.argus.ui.components.AccountAvatar
+import dev.houwert.argus.ui.components.TopBarScreen
+import dev.houwert.argus.ui.settings.WorktreeCleanupSettings
 import dev.houwert.argus.ui.components.ColorSchemeCards
 import dev.houwert.argus.ui.components.ColorThemeCards
 import dev.houwert.argus.ui.components.GrantLabel
@@ -78,5 +89,41 @@ internal fun SettingsGalleryPage() {
     AccountAvatar(null, size = 32.dp)
     AccountAvatar("A", size = 24.dp)
   }
+  Story("Top bar") {
+    Box(Modifier.fillMaxWidth().height(120.dp)) {
+      TopBarScreen("Computer details", onBack = {}, actions = { SettingsHeaderButton("Edit", icon = Icon.pencil) {} }) {
+        MutedText("Screen content", Modifier.padding(16.dp))
+      }
+    }
+  }
+  Story("Worktree cleanup") {
+    val model = remember { WorktreeCleanupModel { null }.also { it.fill(GalleryWorktrees.preview()) } }
+    WorktreeCleanupSettings(model)
+  }
   Box(Modifier.height(24.dp))
+}
+
+/** A dry run with a dozen-ish worktrees: some going, some kept by a guard. */
+internal object GalleryWorktrees {
+  private const val DAY = 86_400_000.0
+
+  fun preview(now: Double = System.currentTimeMillis().toDouble()): WorktreeCleanupPreview {
+    fun entry(branch: String, project: String, reason: WorktreeCleanupReason, days: Int, gb: Double, blocked: WorktreeCleanupGuard? = null) =
+      WorktreeCleanupEntry(
+        "s-$branch", "/repo/$project", project, branch, null, gb * 1e9, now - days * DAY,
+        if (reason == WorktreeCleanupReason.landed) now - days * DAY else null, reason, blocked,
+      )
+    return WorktreeCleanupPreview(
+      WorktreeCleanupPolicy(enabled = true, landedDays = 7, idleDays = 30, maxGb = 100.0),
+      listOf(
+        entry("fix-toolbar", "Argus", WorktreeCleanupReason.landed, 9, 1.4),
+        entry("usage-bars", "Argus", WorktreeCleanupReason.landed, 12, 0.8),
+        entry("old-spike", "Peacock", WorktreeCleanupReason.idle, 41, 2.2),
+        entry("android-devices", "Argus", WorktreeCleanupReason.idle, 33, 3.1, WorktreeCleanupGuard.uncommitted),
+        entry("release-notes", "Website", WorktreeCleanupReason.landed, 8, 0.3, WorktreeCleanupGuard.agentRunning),
+      ),
+      totalBytes = 48e9,
+      lastSweep = WorktreeCleanupSweep(now - 2 * DAY, WorktreeCleanupSweepTrigger.scheduled, emptyList(), 4.2e9, 0),
+    )
+  }
 }

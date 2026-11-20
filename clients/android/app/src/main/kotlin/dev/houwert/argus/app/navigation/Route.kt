@@ -1,7 +1,9 @@
 package dev.houwert.argus.app.navigation
 
 import dev.houwert.argus.core.git.ReviewGuideTarget
+import dev.houwert.argus.core.usage.UsageTab
 import dev.houwert.argus.kit.protocol.generated.RemoteGitBranch
+import dev.houwert.argus.kit.protocol.generated.UsageRange
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -47,6 +49,8 @@ sealed interface Route {
   @Serializable data class Commit(val sessionId: String, val hash: String, val subject: String) : Route
   @Serializable data class BranchCompare(val sessionId: String, val left: String, val right: String) : Route
   @Serializable data object Devices : Route
+  /** One live mirrored device; [platform] is the wire's `ios` or `android`. */
+  @Serializable data class Device(val id: String, val platform: String, val name: String, val isTv: Boolean) : Route
   @Serializable data object Inbox : Route
   @Serializable data class Proposal(val id: String) : Route
   @Serializable data object PullRequests : Route
@@ -68,12 +72,16 @@ sealed interface Route {
   @Serializable data object GenerateBlueprint : Route
   @Serializable data class NewProject(val blueprintId: String? = null) : Route
   @Serializable data object Settings : Route
+  /** One Settings sub-page, by its `SettingsPane` raw value. */
+  @Serializable data class SettingsPage(val pane: String) : Route
   @Serializable data object Notifications : Route
   @Serializable data object Computers : Route
   @Serializable data object Account : Route
   @Serializable data object AddComputer : Route
   @Serializable data object ClaudeAccounts : Route
   @Serializable data object Usage : Route
+  /** One model's detail under Cost or Tokens, as the desktop's `/usage/:tab/models/:runner/:model`. */
+  @Serializable data class UsageModel(val tab: UsageTab, val runner: String, val model: String, val range: UsageRange) : Route
   @Serializable data object UsagePrices : Route
   @Serializable data object UsageModels : Route
   /** The phone's fifth tab: every destination without a tab of its own. */

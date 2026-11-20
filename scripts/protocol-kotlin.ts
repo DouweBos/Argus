@@ -462,6 +462,14 @@ function paramsType(type: string): string {
   return type.replace(/\?$/, "");
 }
 
+/** A model named like one of the family's objects (`UsagePrices`) would resolve to the object; qualify it. */
+function unshadow(type: string, family: Record<string, unknown>): string {
+  const objects = new Set(Object.keys(family).map(pascal));
+  return type.replace(/(?<![\w.])[A-Z]\w*/g, (name) =>
+    objects.has(name) ? `dev.houwert.argus.kit.protocol.generated.${name}` : name,
+  );
+}
+
 function commandsFile(): string {
   const emitter = new Emitter();
   const entries: string[] = [];
@@ -482,7 +490,7 @@ function commandsFile(): string {
     );
     emitter.append(own);
     entries.push(
-      `  object ${base} : RemoteCommand<${params}, ${result}>(${ktString(name)}, ${ktString(spec.tier)}, serializer(), serializer())`,
+      `  object ${base} : RemoteCommand<${unshadow(params, commands)}, ${unshadow(result, commands)}>(${ktString(name)}, ${ktString(spec.tier)}, serializer(), serializer())`,
     );
   }
 
@@ -512,7 +520,7 @@ function methodsFile(): string {
       : "IgnoredResult";
     emitter.append(own);
     entries.push(
-      `  object ${base} : RemoteCommand<${p}, ${r}>(${ktString(name)}, "control", serializer(), serializer())`,
+      `  object ${base} : RemoteCommand<${unshadow(p, params)}, ${unshadow(r, params)}>(${ktString(name)}, "control", serializer(), serializer())`,
     );
   }
 
