@@ -317,7 +317,7 @@ struct AgentTab: View {
 }
 
 /// The focused agent: its transcript, kept live, and the input that drives it.
-/// Before the first message the composer sits mid-pane under a title instead.
+/// Before the first message a title fills the empty transcript.
 struct AgentPane: View {
   @Environment(\.theme) private var theme
   @Environment(DesktopModel.self) private var model
@@ -353,16 +353,14 @@ struct AgentPane: View {
             Rectangle().strokeBorder(theme.accent, lineWidth: 2).allowsHitTesting(false)
           }
         }
-        .overlay(alignment: .bottom) {
-          if fresh { AgentStartTitle(sessionId: sessionId).padding(.bottom, 18) }
+        .overlay {
+          if fresh { AgentStartTitle(sessionId: sessionId) }
         }
       HuddleTypingBar(agentId: agentId)
       ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
         MacTelemetry.capture(.inputUsed(affordance: affordance.rawValue))
       }
       .startWorkspace(workspace, session: fresh ? model.session(sessionId) : nil, replacing: agentId)
-      // Shares the height with the transcript above, which centres the composer.
-      if fresh { Color.clear.frame(maxHeight: .infinity) }
     }
     .environment(\.composerDropInbox, drops)
     .receivesPickedElements(sessionId: sessionId, into: drops)
