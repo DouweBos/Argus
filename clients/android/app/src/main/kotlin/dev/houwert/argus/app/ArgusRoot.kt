@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import dev.houwert.argus.app.navigation.AppSection
 import dev.houwert.argus.app.navigation.Router
 import dev.houwert.argus.app.navigation.TabHost
+import dev.houwert.argus.app.screens.account.AccountRemovedNotice
+import dev.houwert.argus.app.screens.account.JoinRequestPrompt
 import dev.houwert.argus.app.stores.AppStore
 import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.kit.net.Transport
@@ -62,6 +64,8 @@ fun ArgusRoot(app: AppStore) {
           // Each tab keeps its stack while another is showing.
           tabs.SaveableStateProvider(section.name) { TabHost(section, router) }
           ConnectionPill(app, Modifier.align(Alignment.TopCenter))
+          AccountRemovedNotice(Modifier.align(Alignment.TopCenter))
+          JoinRequestPrompt(app.account)
           ErrorToast(app, Modifier.align(Alignment.BottomCenter))
           dev.houwert.argus.app.telemetry.TelemetryConsentGate()
         }

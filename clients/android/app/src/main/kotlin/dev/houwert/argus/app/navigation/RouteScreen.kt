@@ -3,6 +3,8 @@ package dev.houwert.argus.app.navigation
 import androidx.compose.runtime.Composable
 import dev.houwert.argus.app.screens.MoreScreen
 import dev.houwert.argus.app.screens.PendingScreen
+import dev.houwert.argus.app.screens.account.AccountScreen
+import dev.houwert.argus.app.screens.account.AddComputerScreen
 import dev.houwert.argus.app.screens.accounts.ClaudeAccountsScreen
 import dev.houwert.argus.app.screens.computers.ComputerScreen
 import dev.houwert.argus.app.screens.devices.DeviceScreen
@@ -44,6 +46,8 @@ fun RouteScreen(route: Route) {
     is Route.FileSearch -> FileSearchScreen(route.sessionId, route.label)
     Route.QuickRun -> QuickRunScreen()
     is Route.NewProject -> NewProjectScreen(route.blueprintId)
+    Route.Account -> AccountScreen()
+    Route.AddComputer -> AddComputerScreen()
     Route.Settings -> SettingsScreen()
     is Route.SettingsPage -> SettingsPaneScreen(route.pane)
     is Route.Computer -> ComputerScreen(route.deviceId)
@@ -59,7 +63,7 @@ fun RouteScreen(route: Route) {
     is Route.Branches, is Route.Branch, is Route.Commit, is Route.BranchCompare, Route.Inbox, is Route.Proposal,
     Route.PullRequests, Route.Issues, is Route.Issue, is Route.Design, is Route.PullRequest, Route.Automations,
     is Route.Automation, is Route.AutomationEditor, Route.DescribeAutomation, is Route.Run, Route.Blueprints,
-    is Route.Blueprint, Route.GenerateBlueprint, Route.Notifications, Route.Account, Route.AddComputer,
+    is Route.Blueprint, Route.GenerateBlueprint, Route.Notifications,
     -> PendingScreen(route)
   }
 }

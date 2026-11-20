@@ -54,6 +54,7 @@ import dev.houwert.argus.ui.theme.argusFont
 @Composable
 internal fun ChromePage() {
   val theme = ArgusTheme.colors
+  DialogStories()
   Story("Pill tab bar") {
     var tab by remember { mutableStateOf("agents") }
     PillTabBar(
