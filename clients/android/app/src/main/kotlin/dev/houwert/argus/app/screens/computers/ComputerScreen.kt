@@ -22,7 +22,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.LocalRouter
+import dev.houwert.argus.app.navigation.Route
 import dev.houwert.argus.app.screens.AppScreen
+import dev.houwert.argus.app.screens.account.AccountPresenceText
+import dev.houwert.argus.app.stores.addConnectedHostToAccount
+import dev.houwert.argus.app.stores.presence
+import dev.houwert.argus.core.account.AccountStore
+import dev.houwert.argus.core.account.refreshDirectory
+import dev.houwert.argus.core.account.remove
+import dev.houwert.argus.ui.components.LiveRefresh
+import kotlin.time.Duration.Companion.milliseconds
 import dev.houwert.argus.kit.net.Transport
 import dev.houwert.argus.kit.storage.DeviceIdentity
 import dev.houwert.argus.ui.components.Badge
@@ -51,7 +60,7 @@ import kotlinx.coroutines.launch
 fun ComputerScreen(deviceId: String) {
   val app = LocalAppStore.current
   val router = LocalRouter.current
-  val hosts by app.pairedHosts.collectAsState()
+  val hosts by app.hosts.collectAsState()
   val computer = hosts.firstOrNull { it.deviceId == deviceId }
   AppScreen(computer?.label ?: "Computer") {
     SettingsPage {
@@ -80,6 +89,14 @@ private fun ComputerContent(computer: DeviceIdentity) {
   val active = computer.deviceId == activeId
   val ready = active && connection == Transport.State.Ready
   var confirmingUnpair by remember { mutableStateOf(false) }
+  val phase by app.account.phase.collectAsState()
+  // Collected so presence re-reads as the directory refreshes.
+  val accountHostsSeen by app.account.hosts.collectAsState()
+  val presence = remember(computer, accountHostsSeen) { app.presence(computer) }
+  // Presence moves while the screen is open: a host going quiet or coming back.
+  LiveRefresh(enabled = computer.isAccountHost, interval = AccountStore.PRESENCE_POLL_INTERVAL_MS.milliseconds) {
+    app.account.refreshDirectory()
+  }
 
   SettingsGroup(title = "Connection") {
     SettingsRow(if (active) connection.label else "Not connected", description = GrantLabel.text(computer.capabilities)) {
@@ -94,9 +111,30 @@ private fun ComputerContent(computer: DeviceIdentity) {
         }
       }
     }
+    presence?.let {
+      SettingsRow(
+        "Argus Account",
+        description = "On your Argus account, so it connects without a QR code. " + AccountPresenceText.text(it.online, it.lastSeen),
+      )
+    }
   }
 
   if (!computer.isAccountHost) NameGroup(computer)
+
+  if (phase == AccountStore.Phase.Ready && computer.accountHostId == null) {
+    SettingsGroup(
+      title = "Your account",
+      footer = "Add it to your Argus account so your other devices reach it without a QR code, and from anywhere through its own " +
+        "tunnel. Confirm the code on the computer too.",
+    ) {
+      SettingsRow("Add to your account") {
+        Btn("Add", tone = ButtonTone.Secondary, small = true, hugs = true, enabled = ready) {
+          router.push(Route.AddComputer)
+          scope.launch { app.addConnectedHostToAccount() }
+        }
+      }
+    }
+  }
 
   SettingsGroup(
     title = "Addresses",
@@ -130,7 +168,17 @@ private fun ComputerContent(computer: DeviceIdentity) {
     computer.pairedAt?.let { SettingsRow("Paired", description = DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it.toLong()))) }
   }
 
-  if (!computer.isAccountHost) {
+  if (computer.isAccountHost) {
+    SettingsGroup(footer = "Every device on your account stops connecting to it. Link it again with a new code.") {
+      Box(Modifier.fillMaxWidth().padding(SettingsLayout.rowPadding), contentAlignment = Alignment.CenterEnd) {
+        Btn("Remove from Account", tone = ButtonTone.Danger, small = true, hugs = true) {
+          val id = computer.accountHostId ?: return@Btn
+          app.account.perform { remove(id) }
+          router.popToRoot()
+        }
+      }
+    }
+  } else {
     SettingsGroup(
       footer = "Removes this computer's key from the phone. Nothing on the computer changes — revoke the device there to cut it off for good.",
     ) {

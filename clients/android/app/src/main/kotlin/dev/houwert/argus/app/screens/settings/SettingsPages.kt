@@ -27,7 +27,7 @@ import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.telemetry.Telemetry
 import dev.houwert.argus.app.telemetry.TelemetryMode
 import dev.houwert.argus.app.ArgusApplication
-import dev.houwert.argus.app.stores.applyDeviceName
+import dev.houwert.argus.app.stores.setDeviceName
 import dev.houwert.argus.app.stores.validatedDeviceName
 import dev.houwert.argus.ui.components.Btn
 import dev.houwert.argus.ui.components.ButtonTone
@@ -59,7 +59,7 @@ fun NameSettingsPage() {
     val valid = validatedDeviceName(name) ?: return
     if (!savable) return
     scope.launch {
-      app.applyDeviceName(valid)
+      if (!app.setDeviceName(valid)) return@launch
       saved = true
       delay(1200)
       saved = false

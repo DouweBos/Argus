@@ -1,5 +1,8 @@
 package dev.houwert.argus.app.push
 
+import dev.houwert.argus.core.account.AccountPushToken
+import dev.houwert.argus.core.account.pushRegistered
+import dev.houwert.argus.core.account.setPushToken
 import android.content.Context
 import dev.houwert.argus.app.notifications.Notifier
 import dev.houwert.argus.app.stores.AppStore
@@ -28,6 +31,7 @@ class PushController(private val context: Context, private val app: AppStore, pr
 
   suspend fun setEnabled(on: Boolean) {
     app.preferences.set(if (on) "on" else "off", PreferenceKey.PUSH_ENABLED)
+    if (!on) app.account.setPushToken(null)
     val backend = app.host.liveBackend ?: return
     if (on) {
       register(backend)
@@ -49,6 +53,14 @@ class PushController(private val context: Context, private val app: AppStore, pr
     if (!Notifier.allowed(context)) return run { _state.value = PushState.Denied }
     val token = PushTokens.deviceToken(context) ?: return run { _state.value = PushState.NoToken }
 
+    val keys = PushTokens.relayKeys(secrets)
+    // The account seals for every computer on it, including ones this phone never opened.
+    app.account.setPushToken(AccountPushToken(token = token, environment = "production", pushKey = keys.pushKey))
+    if (app.identity.value?.isAccountHost == true && app.account.pushRegistered) {
+      app.preferences.set(token, PreferenceKey.PUSH_TOKEN)
+      return run { _state.value = PushState.Registered }
+    }
+
     val info = try {
       backend.request(Methods.DevicePushInfo, MethodsTypes.DevicePushInfoParams())
     } catch (e: Exception) {
@@ -58,7 +70,6 @@ class PushController(private val context: Context, private val app: AppStore, pr
     }
     if (!info.configured) return run { _state.value = PushState.Unconfigured }
 
-    val keys = PushTokens.relayKeys(secrets)
     info.relayUrl?.let { relay ->
       when (PushTokens.registerWithRelay(relay, token, keys.authKey)) {
         PushTokens.RelayResult.Conflict -> return run { _state.value = PushState.Conflict }

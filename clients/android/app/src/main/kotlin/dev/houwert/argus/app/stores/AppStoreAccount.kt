@@ -35,7 +35,7 @@ internal suspend fun AppStore.startAccount() {
   // A removal reaches the connected computer at once, not at its next poll.
   account.onLogAppended = { scope.launch { syncAccount() } }
   // Set here, renamed from the account list, or renamed from another device.
-  account.onNameChanged = { name -> preferences.set(name, PreferenceKey.DEVICE_NAME) }
+  account.onNameChanged = { name -> scope.launch { applyDeviceName(name) } }
   account.start()
 }
 

@@ -10,6 +10,8 @@ import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.app.navigation.Route
 import dev.houwert.argus.app.screens.AppScreen
+import dev.houwert.argus.app.screens.account.AccountProfileSummary
+import androidx.compose.ui.unit.dp
 import dev.houwert.argus.app.telemetry.Telemetry
 import dev.houwert.argus.app.telemetry.TelemetryMode
 import dev.houwert.argus.core.stores.refreshDeviceHosts
@@ -60,7 +62,11 @@ fun SettingsScreen() {
 
   AppScreen("Settings") {
     SettingsPage {
-      SettingsGroup { SettingsLinkRow("Argus Account", icon = Icon.person) { router.push(Route.Account) } }
+      SettingsGroup {
+        SettingsLinkRow("Argus Account", leading = { AccountProfileSummary(app.account, avatarSize = 48.dp) }, showsTitle = false) {
+          router.push(Route.Account)
+        }
+      }
 
       SettingsGroup(title = "This ${deviceNoun()}") {
         PaneRow(SettingsPane.Name, deviceName)

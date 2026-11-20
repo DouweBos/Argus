@@ -208,7 +208,10 @@ private fun SettingsRowLayout(minLabel: Int, spacing: Int, content: @Composable 
   }
 }
 
-/** A row that opens something: icon, title, an optional value, a chevron. The whole row is the target. */
+/**
+ * A row that opens something: icon, title, an optional value, a chevron. The whole row is the target.
+ * `showsTitle = false` lets a rich `leading` (a profile summary) fill the row; the title stays its label.
+ */
 @Composable
 fun SettingsLinkRow(
   title: String,
@@ -216,6 +219,7 @@ fun SettingsLinkRow(
   icon: ImageVector? = null,
   value: String? = null,
   leading: (@Composable () -> Unit)? = null,
+  showsTitle: Boolean = true,
   onClick: () -> Unit,
 ) {
   val theme = ArgusTheme.colors
@@ -231,10 +235,11 @@ fun SettingsLinkRow(
     verticalAlignment = Alignment.CenterVertically,
   ) {
     when {
+      leading != null && !showsTitle -> Box(Modifier.weight(1f)) { leading() }
       leading != null -> leading()
       icon != null -> SettingsRowIcon(icon)
     }
-    Text(title, Modifier.weight(1f), color = theme.text, style = argusFont(15))
+    if (showsTitle) Text(title, Modifier.weight(1f), color = theme.text, style = argusFont(15))
     if (value != null) Text(value, color = theme.textSecondary, style = argusFont(15), maxLines = 1, overflow = TextOverflow.Ellipsis)
     Icon(Icon.chevronRight, null, Modifier.size(18.dp), tint = theme.textMuted)
   }
