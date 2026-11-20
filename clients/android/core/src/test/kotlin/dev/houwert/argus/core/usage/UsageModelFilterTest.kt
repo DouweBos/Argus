@@ -14,6 +14,8 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 
 class UsageModelFilterTest {
   private val haiku = UsageModelRule(null, "claude-haiku-4-5")
@@ -54,6 +56,16 @@ class UsageModelFilterTest {
     attach(store, backend)
     assertNull(store.saveUsageModelFilter(UsageModelFilters.empty))
     assertEquals(JsonNull, backend.params(Methods.UsageSetModelFilter)?.get("filter"))
+  }
+
+  @Test fun aRuleForAnyRunnerSendsAnExplicitNull() = runTest {
+    val store = HostStore(backgroundScope)
+    val backend = FakeBackend()
+    backend.reply(Methods.UsageSetModelFilter, """{"filter":{"include":[],"exclude":[{"runner":null,"model":"claude-haiku-4-5"}]}}""")
+    attach(store, backend)
+    assertNull(store.saveUsageModelFilter(UsageModelFilter(emptyList(), listOf(haiku))))
+    val rule = backend.params(Methods.UsageSetModelFilter)?.get("filter")?.jsonObject?.get("exclude")?.jsonArray?.single()?.jsonObject
+    assertEquals(JsonNull, rule?.get("runner"))
   }
 
   @Test fun aRefusedSavePutsThePreviousFilterBack() = runTest {
