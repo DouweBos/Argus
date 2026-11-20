@@ -1,5 +1,6 @@
 package dev.houwert.argus.app.stores
 
+import dev.houwert.argus.core.account.AccountStore
 import dev.houwert.argus.core.backend.GatewayBackend
 import dev.houwert.argus.core.backend.toStored
 import dev.houwert.argus.core.hosts.RouteSupervisor
@@ -13,6 +14,8 @@ import dev.houwert.argus.core.stores.liveBackend
 import dev.houwert.argus.core.stores.openOffline
 import dev.houwert.argus.core.stores.refreshHeldLists
 import dev.houwert.argus.core.stores.swapBackend
+import dev.houwert.argus.kit.account.AccountAuthenticating
+import dev.houwert.argus.kit.account.KeystoreAccountVault
 import dev.houwert.argus.kit.net.EndpointRacer
 import dev.houwert.argus.kit.net.NetworkPathWatcher
 import dev.houwert.argus.kit.net.Transport
@@ -28,7 +31,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -39,22 +45,34 @@ import kotlinx.coroutines.launch
  * [scope] must be the main scope; all state lives on it.
  */
 class AppStore(
-  private val scope: CoroutineScope,
+  internal val scope: CoroutineScope,
   val keystore: Keystore,
   val preferences: Preferences,
-  private val sealedFiles: SealedFiles,
+  internal val sealedFiles: SealedFiles,
   networkPaths: NetworkPathWatcher,
   /** This phone's name as computers list it. */
   private val defaultDeviceName: String,
+  /** The Argus account's sign-in provider (Clerk). */
+  accountAuth: AccountAuthenticating,
 ) {
   val host = HostStore(scope)
+  /** The Argus account: sign-in, and the computers on it. Wired in [AppStoreAccount]. */
+  val account = AccountStore(scope, accountAuth, KeystoreAccountVault(keystore), ACCOUNT_DEVICE_KIND, { deviceName }, baseUrl = accountBaseUrl(preferences))
 
   private val _pairedHosts = MutableStateFlow(emptyList<DeviceIdentity>())
   val pairedHosts: StateFlow<List<DeviceIdentity>> = _pairedHosts.asStateFlow()
-  private val _activeHostId = MutableStateFlow<String?>(null)
+  /** Hosts on the signed-in account, rebuilt from its verified log; their grants live here only. */
+  internal val _accountHosts = MutableStateFlow(emptyList<DeviceIdentity>())
+  val accountHosts: StateFlow<List<DeviceIdentity>> = _accountHosts.asStateFlow()
+  /** Every computer this phone can reach, one row each. */
+  val hosts: StateFlow<List<DeviceIdentity>> =
+    combine(_pairedHosts, _accountHosts) { paired, account -> DeviceIdentity.merging(paired, account) }
+      .stateIn(scope, SharingStarted.Eagerly, emptyList())
+  private val allHosts get() = DeviceIdentity.merging(_pairedHosts.value, _accountHosts.value)
+  internal val _activeHostId = MutableStateFlow<String?>(null)
   val activeHostId: StateFlow<String?> = _activeHostId.asStateFlow()
   /** The computer being connected to or shown. */
-  private val _identity = MutableStateFlow<DeviceIdentity?>(null)
+  internal val _identity = MutableStateFlow<DeviceIdentity?>(null)
   val identity: StateFlow<DeviceIdentity?> = _identity.asStateFlow()
   /** False until the stored pairings are read, so the first frame doesn't flash the pair screen. */
   private val _loaded = MutableStateFlow(false)
@@ -95,6 +113,8 @@ class AppStore(
     _pairedHosts.value = stored.hosts
     _activeHostId.value = stored.activeId
     _loaded.value = true
+    // An account host connects once the account's log has listed it.
+    scope.launch { startAccount() }
     stored.active?.let { connect(it) }
   }
 
@@ -107,7 +127,7 @@ class AppStore(
   }
 
   suspend fun selectHost(deviceId: String) {
-    val identity = _pairedHosts.value.firstOrNull { it.deviceId == deviceId } ?: return
+    val identity = allHosts.firstOrNull { it.deviceId == deviceId } ?: return
     if (deviceId == _activeHostId.value && host.liveBackend != null && host.connection.value != Transport.State.Offline) return
     // Adopt the target before awaiting, so a screen pushed on the same tap can name it.
     _identity.value = identity
@@ -168,6 +188,7 @@ class AppStore(
         attempt.transport.close()
         return
       }
+      if (identity.isAccountHost) account.setConnectionFailing(false)
       val backend = GatewayBackend(attempt.transport)
       host.attach(backend)
       routes.connected(attempt.endpoint)
@@ -177,6 +198,8 @@ class AppStore(
       host.connectFailed("Couldn't reach this computer on any known address.")
       // Re-raced on the next network change or recheck.
       routes.connected(null)
+      // Its tunnel may have moved: watch the directory for the new address.
+      if (identity.isAccountHost) account.setConnectionFailing(true)
     }
   }
 
@@ -189,7 +212,7 @@ class AppStore(
     get() {
       val id = _identity.value?.deviceId ?: return null
       if (_activeHostId.value != id) return null
-      return _pairedHosts.value.firstOrNull { it.deviceId == id } ?: _identity.value
+      return allHosts.firstOrNull { it.deviceId == id } ?: _identity.value
     }
 
   fun recheckRoutes() {
@@ -200,6 +223,7 @@ class AppStore(
 
   private suspend fun adoptRoute(attempt: EndpointRacer.Attempt, upgrade: Boolean): Boolean {
     val identity = currentIdentity ?: return false
+    if (identity.isAccountHost) account.setConnectionFailing(false)
     val backend = GatewayBackend(attempt.transport)
     if (host.liveBackend == null) {
       // The connect that failed, reaching it now: the full post-connect run.
@@ -220,11 +244,12 @@ class AppStore(
       host.setCapabilities(result.capabilities)
       updateHost(identity.deviceId) { it.copy(capabilities = result.capabilities) }
     }
+    syncAccount()
     // Learn the tunnels of a phone paired over Wi-Fi, without forgetting one that just isn't up now.
     runCatching { backend.request(Methods.HostEndpoints, MethodsTypes.HostEndpointsParams()) }.getOrNull()?.let { result ->
       val live = result.endpoints.mapNotNull { it.toStored() }
       updateHost(identity.deviceId) { it.copy(endpoints = DeviceIdentity.mergedEndpoints(it.endpoints, live), url = winningUrl) }
-      _identity.value = _pairedHosts.value.firstOrNull { it.deviceId == identity.deviceId } ?: _identity.value
+      _identity.value = allHosts.firstOrNull { it.deviceId == identity.deviceId } ?: _identity.value
     }
   }
 
@@ -234,6 +259,7 @@ class AppStore(
   }
 
   private fun updateHost(deviceId: String, patch: (DeviceIdentity) -> DeviceIdentity) {
+    if (patchAccountHost(deviceId, patch)) return
     _pairedHosts.value = keystore.update(deviceId, patch).hosts
   }
 }

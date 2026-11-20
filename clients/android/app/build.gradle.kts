@@ -49,5 +49,6 @@ dependencies {
   implementation(libs.camerax.view)
   implementation(libs.mlkit.barcode)
   implementation(libs.kotlinx.serialization.json)
+  implementation(libs.okhttp)
   testImplementation(libs.junit)
 }
