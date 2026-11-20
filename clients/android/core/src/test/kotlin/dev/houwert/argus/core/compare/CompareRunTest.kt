@@ -13,11 +13,7 @@ import dev.houwert.argus.kit.protocol.generated.RemoteCompareRun
 import dev.houwert.argus.kit.protocol.generated.RemoteCompareRunState
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
 import org.junit.Test
 
 class CompareRunTest {
@@ -45,30 +41,6 @@ class CompareRunTest {
     assertEquals(RemoteCompareRunState.running, CompareRuns.summary(listOf(run(RemoteCompareRunState.passed), run(RemoteCompareRunState.running))))
     assertEquals(RemoteCompareRunState.failed, CompareRuns.summary(listOf(run(RemoteCompareRunState.running), run(RemoteCompareRunState.failed))))
     assertEquals(RemoteCompareRunState.passed, CompareRuns.summary(listOf(run(RemoteCompareRunState.passed))))
-  }
-
-  @Test fun aStartWithSlotsAsksForOneCompareRunDefaultsOnlyOnTheDefaultRunner() = runTest {
-    val backend = FakeBackend()
-    backend.reply(Methods.SessionsCreateCompare, """{"group_id":"g","sessions":[${sessionJson("x", "g")},${sessionJson("y", "g", 1)}]}""")
-    backend.reply(Methods.SessionsList, """{"sessions":[]}""")
-    val store = HostStore(backgroundScope)
-    attach(store, backend)
-
-    val started = store.startCompare(
-      repoRoot = "/r", baseBranch = "main", prompt = "fix it", displayText = "fix it",
-      slots = listOf(CompareSlot(), CompareSlot(runnerId = "codex", model = "gpt-5")),
-      defaultModel = "opus", defaultEffort = "high",
-    )
-
-    assertEquals("x", started?.first()?.id)
-    val params = backend.params(Methods.SessionsCreateCompare)!!
-    assertEquals("fix it", params.string("prompt"))
-    val slots = params["slots"] as JsonArray
-    assertEquals(2, slots.size)
-    assertEquals("opus", (slots.first() as JsonObject).string("model"))
-    assertEquals("gpt-5", (slots.last() as JsonObject).string("model"))
-    val effort = (slots.last() as JsonObject)["effort"]
-    assertTrue(effort == null || effort == JsonNull)
   }
 
   @Test fun keepingDecodesWhatTheComputerDid() = runTest {

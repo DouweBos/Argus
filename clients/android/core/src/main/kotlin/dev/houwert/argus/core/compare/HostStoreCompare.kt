@@ -9,59 +9,13 @@ import dev.houwert.argus.core.stores.loadSessions
 import dev.houwert.argus.kit.protocol.generated.Methods
 import dev.houwert.argus.kit.protocol.generated.MethodsTypes
 import dev.houwert.argus.kit.protocol.generated.RemoteCompareSlot
-import dev.houwert.argus.kit.protocol.generated.RemoteImageAttachment
 import dev.houwert.argus.kit.protocol.generated.RemoteModelInfo
-import dev.houwert.argus.kit.protocol.generated.RemotePermissionMode
 import dev.houwert.argus.kit.protocol.generated.RemoteSession
 import dev.houwert.argus.kit.protocol.generated.SessionCompareGroup
 import kotlinx.coroutines.flow.update
 
 // Compare runs: one prompt on several runners or models, a session per slot,
 // scored side by side, then one kept and the rest deleted.
-
-/**
- * One session per slot off [baseBranch], each starting on the prompt once set up.
- * Settings' [defaultModel]/[defaultEffort] belong to the default runner only, as for a single start.
- * Returns the run's sessions in slot order; null when the computer refused.
- */
-suspend fun HostStore.startCompare(
-  repoRoot: String,
-  baseBranch: String?,
-  prompt: String,
-  displayText: String,
-  slots: List<CompareSlot>,
-  images: List<RemoteImageAttachment> = emptyList(),
-  permissionMode: RemotePermissionMode? = null,
-  defaultModel: String? = null,
-  defaultEffort: String? = null,
-  linearIssue: String? = null,
-): List<RemoteSession>? {
-  val backend = backend ?: return null
-  val wireSlots = slots.map {
-    MethodsTypes.SessionsCreateCompareParamsSlotsItem(
-      runnerId = it.runnerId,
-      model = it.model ?: defaultModel.takeIf { _ -> it.runnerId == null },
-      effort = it.effort ?: defaultEffort.takeIf { _ -> it.runnerId == null },
-    )
-  }
-  return try {
-    val result = backend.request(
-      Methods.SessionsCreateCompare,
-      MethodsTypes.SessionsCreateCompareParams(
-        repoRoot = repoRoot, description = displayText, baseBranch = baseBranch, prompt = prompt,
-        images = images.ifEmpty { null }, permissionMode = permissionMode, linearIssue = linearIssue, slots = wireSlots,
-      ),
-    )
-    result.sessions.forEach { creatingSessions[it.id] = it }
-    val ids = result.sessions.map { it.id }.toSet()
-    _sessionsByRepo.update { map -> map + (repoRoot to result.sessions + map[repoRoot].orEmpty().filter { it.id !in ids }) }
-    loadSessions(repoRoot)
-    result.sessions
-  } catch (e: Exception) {
-    report(e, "session:compare")
-    null
-  }
-}
 
 /** The run's sessions this store holds, in slot order. */
 fun HostStore.compareSessions(groupId: String): List<RemoteSession> =

@@ -21,10 +21,6 @@
     var body: some View {
       VStack(alignment: .leading, spacing: 4) {
         if !flow.issues.isEmpty { PickedIssueChips(issues: $flow.issues).padding(.top, 6) }
-        if composer.isComparing {
-          PhoneCompareSlots(composer: composer).padding(.horizontal, 6)
-          Divider().overlay(theme.border)
-        }
         // One line with the branch pushed right when it fits; otherwise the pills wrap, never cut off.
         ViewThatFits(in: .horizontal) {
           HStack(spacing: 2) {
@@ -54,8 +50,7 @@
     @ViewBuilder
     private var pills: some View {
       if flow.issues.isEmpty, flow.options.count > 1 { workspaceMenu.fixedSize() }
-      // A compare run's slots pick their runners above.
-      if !host.runners.isEmpty, !composer.isComparing { runnerPill.fixedSize() }
+      if !host.runners.isEmpty { runnerPill.fixedSize() }
       if flow.repoRoot != nil, host.linearConnected { issuePill.fixedSize() }
     }
 
@@ -167,11 +162,6 @@
       return flow.branches.map { .init(value: $0.name, label: $0.name) }
     }
 
-    /// The runner sheet's row that turns the start into a compare run; no runner id looks like it.
-    private static let compareChoice = "\u{0}compare"
-
-    private var offersCompare: Bool { composer.offersCompare && flow.offersCompare }
-
     @ViewBuilder
     private func picked(_ which: Sheet) -> some View {
       switch which {
@@ -192,18 +182,9 @@
           options: [.init(value: "", label: "Default", hint: "Use the computer's default")]
             + host.runners.map {
               .init(value: $0.id, label: $0.displayName, hint: $0.pickerHint, disabled: !$0.isAvailable)
-            }
-            + (offersCompare
-              ? [.init(value: Self.compareChoice, label: "Compare runners", hint: "The same prompt on 2–5 runners or models, side by side")]
-              : []),
+            },
           selected: [composer.runner?.id ?? ""]
-        ) { id in
-          if id == Self.compareChoice {
-            composer.beginCompare()
-          } else {
-            composer.setRunner(host.runners.first { $0.id == id })
-          }
-        }
+        ) { id in composer.setRunner(host.runners.first { $0.id == id }) }
       }
     }
   }

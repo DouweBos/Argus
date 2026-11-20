@@ -6,22 +6,6 @@ import dev.houwert.argus.kit.protocol.generated.RemoteCompareRunState
 import dev.houwert.argus.kit.protocol.generated.RemoteCompareSlot
 import dev.houwert.argus.kit.protocol.generated.RemoteCompareSlotAgentStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteSession
-import java.util.UUID
-
-/** One runner/model a compare run starts the prompt on. */
-data class CompareSlot(
-  val id: String = UUID.randomUUID().toString(),
-  /** Null is the computer's default runner. */
-  val runnerId: String? = null,
-  /** Null lets the runner choose. */
-  val model: String? = null,
-  val effort: String? = null,
-) {
-  companion object {
-    const val MINIMUM = 2
-    const val MAXIMUM = 5
-  }
-}
 
 // One slot of a compare run as the computer scores it: the generated `RemoteCompareSlot`.
 
