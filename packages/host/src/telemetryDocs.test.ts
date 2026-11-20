@@ -55,7 +55,6 @@ const ANDROID_SOURCES = ["clients/android/app/src/main"];
  * built. Each one leaves this list in the change that first captures it.
  */
 const ANDROID_PENDING = new Set([
-  "android_pair_failed",
   "android_saved_shown",
   "android_image_viewer_used",
   "android_sessions_fold_toggled",
@@ -65,7 +64,6 @@ const ANDROID_PENDING = new Set([
   "android_share_finished",
   "android_warnings_opened",
   "android_notifications_cleared",
-  "android_home_used",
   "android_new_session_opened",
   "android_blueprint_opened",
   "android_file_viewed",
@@ -84,7 +82,6 @@ const ANDROID_PENDING = new Set([
   "android_device_name_changed",
   "android_account_reset",
   "android_account_push_registered",
-  "android_account_woken",
 ]);
 
 /**
