@@ -121,6 +121,7 @@ import androidx.compose.material.icons.outlined.SyncProblem
 import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material.icons.outlined.Timeline
+import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material.icons.outlined.UnfoldMore
 import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material.icons.outlined.VerticalAlignBottom
@@ -261,6 +262,7 @@ object Icon {
   val automations = Icons.Outlined.History
   val blueprint = Icons.Outlined.DesignServices
   val devices = Icons.Outlined.Smartphone
+  val tv = Icons.Outlined.Tv
   val runtimes = Icons.Outlined.SmartDisplay
   val pullRequests = pullRequest
   val issues = issue

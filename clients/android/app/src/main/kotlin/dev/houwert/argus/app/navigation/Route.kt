@@ -44,6 +44,8 @@ sealed interface Route {
   @Serializable data class Commit(val sessionId: String, val hash: String, val subject: String) : Route
   @Serializable data class BranchCompare(val sessionId: String, val left: String, val right: String) : Route
   @Serializable data object Devices : Route
+  /** One live mirrored device; [platform] is the wire's `ios` or `android`. */
+  @Serializable data class Device(val id: String, val platform: String, val name: String, val isTv: Boolean) : Route
   @Serializable data object Inbox : Route
   @Serializable data class Proposal(val id: String) : Route
   @Serializable data object PullRequests : Route
