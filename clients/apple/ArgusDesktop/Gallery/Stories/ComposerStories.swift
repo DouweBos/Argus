@@ -88,10 +88,10 @@
       [ArgusProtocol.LimitHandoffAccount].self,
       from: Data(
         """
-        [{"account_id":"work","label":"Work","detail":"team",
+        [{"account_id":"work","label":"Work","detail":"team","children":2,
           "usage":{"id":"weekly","kind":"weekly","label":"Weekly","used_percent":68,"resets_at":\(
             (Date().timeIntervalSince1970 + 2 * 86400 + 18 * 3600) * 1000)}},
-         {"account_id":"side","label":"Side projects","detail":"max",
+         {"account_id":"side","label":"Side projects","detail":"max","children":2,
           "usage":{"id":"five_hour","kind":"five_hour","label":"5-hour","used_percent":12}}]
         """.utf8))
 

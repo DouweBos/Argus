@@ -35,6 +35,8 @@ sealed interface Route {
   @Serializable data class TurnChanges(val sessionId: String, val label: String, val checkpointId: String) : Route
   /** One changed file's diff; [mode] is the Changes screen's `branch` or `working`. */
   @Serializable data class FileDiff(val sessionId: String, val path: String, val mode: String) : Route
+  /** One session file, read-only; [source] is where it was opened from (`chat_link`, `changes`, `quick_open`, `search`, `link`). */
+  @Serializable data class File(val sessionId: String, val path: String, val line: Int? = null, val source: String) : Route
   @Serializable data class QuickOpen(val sessionId: String, val label: String) : Route
   @Serializable data class FileSearch(val sessionId: String, val label: String) : Route
   @Serializable data class Terminals(val sessionId: String, val label: String) : Route

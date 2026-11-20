@@ -1,9 +1,11 @@
 # Releasing Argus
 
-One workflow ships both apps: a signed + notarized arm64 build of Argus for
-Mac (`fastlane mac mac_app_release`) uploaded to a GitHub release, and the
-iPhone app (`fastlane ios testflight`) uploaded to TestFlight. Both carry the
-same version and build number.
+One workflow ships every app: a signed + notarized arm64 build of Argus for
+Mac (`fastlane mac mac_app_release`) uploaded to a GitHub release, the iPhone
+app (`fastlane ios testflight`) uploaded to TestFlight, and the Android app
+(`fastlane android release`) uploaded to Google Play's internal track, with its
+APK attached to the same GitHub release. All of them carry the same version and
+build number.
 
 ## TL;DR
 
@@ -26,7 +28,8 @@ same version and build number.
    Share a screenshot from any app straight into Argus.
    ```
 
-   `mac`, `ios`, or `mac, ios` for a change both apps get. It's a comment
+   `mac`, `ios`, `android`, or a list such as `mac, ios, android` for a change
+   several apps get. It's a comment
    because changesets reads every frontmatter key as a package; `pnpm lint`
    fails a changeset without one.
 
@@ -39,40 +42,47 @@ same version and build number.
    - Build, sign with Developer ID, notarize via App Store Connect API, staple.
    - Build the iPhone app, sign it with the App Store profiles and upload it to
      TestFlight, with the CHANGELOG section as "What to Test".
-   - Publish a GitHub release with the `.dmg`, the `.zip` and the Sparkle
-     appcasts, and the CHANGELOG section as the release body.
+   - Build the Android app, sign it with the upload key and upload the AAB to
+     Google Play's internal track, with its CHANGELOG entries as release notes.
+   - Publish a GitHub release with the `.dmg`, the `.zip`, the Sparkle
+     appcasts and the Android `.apk`, and the CHANGELOG section as the release
+     body.
 
 3. Send the `.dmg` link to friends.
 
 ## Version and build numbers
 
-Both apps get `package.json`'s version and the same build number, the
-workflow's run number + 2000, so `0.75.0 (2042)` names the same code on the Mac
-and the phone. The App Store only takes plain `x.y.z` versions, so a beta or
-alpha cut reaches TestFlight as its base version (`0.75.0-beta.1` uploads as
+Every app gets `package.json`'s version and the same build number, the
+workflow's run number + 2000, so `0.75.0 (2042)` names the same code on the
+Mac, the iPhone and Android (where the build number is the `versionCode`). The
+App Store and Play only get plain `x.y.z` versions, so a beta or alpha cut
+reaches TestFlight and Play as its base version (`0.75.0-beta.1` uploads as
 `0.75.0`); the build number still tells them apart.
 
-The two apps build in parallel, as a `mac` and an `ios` leg of one matrix job.
-Each leg applies the changesets itself (`scripts/release-version.sh`); on the
-same commit that always gives the same version. A `publish` job runs once both
-legs have passed: it tags (and on production pushes the version commit), then
-creates the GitHub release from the Mac leg's assets. A failed leg cancels the
-other and nothing is tagged — but if the iPhone leg had already uploaded, that
-TestFlight build stays.
+The apps build in parallel: a `mac` and an `ios` leg of one matrix job on an
+Xcode runner, and an `android` job on Linux. Each leg applies the changesets
+itself (`scripts/release-version.sh`); on the same commit that always gives the
+same version. A `publish` job runs once every leg has passed: it tags (and on
+production pushes the version commit), then creates the GitHub release from the
+Mac and Android legs' assets. A failed Apple leg cancels the other one, and any
+failed leg means nothing is tagged — but a build TestFlight or Play already
+took stays there.
 
 ## Release notes per app
 
 `CHANGELOG.md` and the GitHub release list every change. Each app's own notes
 only list its entries: the Mac's Sparkle update and Electron cutover feed get
-the `mac` ones, TestFlight's "What to Test" the `ios` ones. The changelog
+the `mac` ones, TestFlight's "What to Test" the `ios` ones, Play's release notes
+the `android` ones (as plain text, cut at Play's 500 characters). The changelog
 generator (`scripts/changesets/changelog.ts`) marks each entry with its
 platforms, and `scripts/changesets/release-notes.ts` splits the notes and
 strips the markers again before anything is committed.
 
 A release with no `ios` entries skips the iPhone leg: nothing is uploaded to
 TestFlight, and the phone simply has no build with that version and build
-number. A release with only `ios` entries still ships the Mac, with the full
-notes.
+number. The same goes for `android` entries and the Android leg (no Play upload,
+no APK on the release). A release with only phone entries still ships the Mac,
+with the full notes.
 
 ## iPhone setup
 
@@ -89,6 +99,39 @@ in the `group.dev.houwert.argus` App Group, and writes the App Store profiles
 the release workflow signs with. Testers are managed in App Store Connect →
 TestFlight: internal testers get every build once Apple has processed it;
 external groups need a Beta App Review first.
+
+## Android setup
+
+The Android leg needs these once:
+
+1. **An upload key.** Create it with
+   `keytool -genkeypair -v -keystore argus-upload.jks -alias argus -keyalg RSA -keysize 4096 -validity 10000`,
+   keep the `.jks` out of the repo (`*.jks` is ignored), and store it as the
+   `ANDROID_KEYSTORE_BASE64` secret (`base64 -i argus-upload.jks | pbcopy`)
+   with its passwords and alias below. Play App Signing holds the app signing
+   key; this one only signs uploads, and the APK on the GitHub release.
+2. **The Play Console app**, `dev.houwert.argus`. Play's API cannot create
+   apps, and the first AAB must be uploaded by hand through the console
+   (Testing → Internal testing): build one with
+   `bundle exec fastlane android release upload:false` (with the keystore env
+   vars and `GITHUB_RUN_NUMBER` set) and upload `release-android/*.aab`. After
+   that the workflow uploads every build. Until the app's first release has
+   passed review, Play only takes draft releases: set the repository variable
+   `PLAY_RELEASE_STATUS` to `draft`, and remove it afterwards.
+3. **A Play service account.** In Google Cloud, create a service account with a
+   JSON key, then invite its email in Play Console → Users and permissions with
+   release rights for the app. The JSON key is `PLAY_SERVICE_ACCOUNT_JSON`.
+4. **Firebase, for push.** Create a Firebase project, add the Android app
+   `dev.houwert.argus` and commit its `google-services.json` to
+   `clients/android/app/`. Without the file the app builds with push off.
+5. **The push relay's FCM credentials.** The relay at `houwert.dev/argus/push`
+   sends Android notifications (`service: "fcm"`) through FCM's HTTP v1 API, so
+   it needs a service account of that same Firebase project with the Firebase
+   Cloud Messaging role.
+
+Every channel uploads to the internal track, as every channel reaches
+TestFlight on the iPhone: internal testers get betas and alphas too. Promote a
+build to closed, open or production testing in the Play Console.
 
 ## Local release (escape hatch)
 
@@ -119,6 +162,11 @@ and variables → Actions**:
 | `APP_STORE_CONNECT_API_KEY_ID`        | Key ID of the App Store Connect API key (e.g. `ABCD1234`)                                                                                                                                                                                                         |
 | `APP_STORE_CONNECT_API_KEY_ISSUER_ID` | Issuer UUID for the API key                                                                                                                                                                                                                                       |
 | `APP_STORE_CONNECT_API_KEY_CONTENT`   | Raw contents of the `.p8` file (newlines preserved)                                                                                                                                                                                                               |
+| `ANDROID_KEYSTORE_BASE64`             | The Android upload keystore (`.jks`), base64-encoded; decoded into the runner's temp dir for the build                                                                                                                                                            |
+| `ANDROID_KEYSTORE_PASSWORD`           | The upload keystore's password                                                                                                                                                                                                                                    |
+| `ANDROID_KEY_ALIAS`                   | The upload key's alias in the keystore                                                                                                                                                                                                                            |
+| `ANDROID_KEY_PASSWORD`                | The upload key's password                                                                                                                                                                                                                                         |
+| `PLAY_SERVICE_ACCOUNT_JSON`           | JSON key of the Google Play service account `supply` uploads with                                                                                                                                                                                                 |
 | `RELEASE_TOKEN`                       | GitHub PAT used to push the version-bump commit/tag back to `main` and to create the release. Needs `contents: write` on the Argus repo. The default `GITHUB_TOKEN` can't push past branch protection — `RELEASE_TOKEN` (issued by a human or a bot account) can. |
 
 ## Branch protection

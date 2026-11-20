@@ -17,11 +17,55 @@
     <activity
       android:name=".MainActivity"
       android:exported="true"
+      android:launchMode="singleTop"
       android:windowSoftInputMode="adjustResize">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
+      <!-- argus:// links, as the Mac and the iPhone open them. -->
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="argus" />
+      </intent-filter>
+      <!-- Shared links, text and screenshots start an agent with them as its draft. -->
+      <intent-filter android:label="Start an agent">
+        <action android:name="android.intent.action.SEND" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="text/plain" />
+      </intent-filter>
+      <intent-filter android:label="Start an agent">
+        <action android:name="android.intent.action.SEND" />
+        <action android:name="android.intent.action.SEND_MULTIPLE" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="image/*" />
+      </intent-filter>
     </activity>
+
+    <receiver
+      android:name=".notifications.NotificationActionReceiver"
+      android:exported="false" />
+
+    <receiver
+      android:name=".widgets.AgentsWidgetReceiver"
+      android:exported="true"
+      android:label="Agents">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/agents_widget_info" />
+    </receiver>
+
+    <service
+      android:name=".push.ArgusMessagingService"
+      android:exported="false">
+      <intent-filter>
+        <action android:name="com.google.firebase.MESSAGING_EVENT" />
+      </intent-filter>
+    </service>
   </application>
 </manifest>

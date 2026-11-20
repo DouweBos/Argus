@@ -35,10 +35,10 @@ export function LimitHandoff({ agentId }: { agentId: string }) {
       pendingId={pendingId}
       onHandoff={
         hasControl
-          ? (accountId) => {
+          ? (accountId, includeChildren) => {
               setPendingId(accountId);
               setError(null);
-              handoff(agentId, accountId)
+              handoff(agentId, accountId, includeChildren)
                 .catch((err: unknown) => setError(describeError(err)))
                 .finally(() => setPendingId(null));
             }

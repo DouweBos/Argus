@@ -1,8 +1,10 @@
 import type { LimitHandoffAccount } from "@argus/remote-protocol";
+import { useState } from "react";
 import { WarningIcon } from "../../icons/Icons";
 import { Avatar } from "../Avatar/Avatar";
 import { Button } from "../Button/Button";
 import { CalloutCard } from "../CalloutCard/CalloutCard";
+import { CheckboxRow } from "../CheckboxRow/CheckboxRow";
 import { formatLimitResume } from "../LimitResumeBanner/LimitResumeBanner";
 import { Spinner } from "../Spinner/Spinner";
 import styles from "./LimitHandoffCard.module.css";
@@ -14,8 +16,11 @@ export interface LimitHandoffCardProps {
   pendingId?: string | null;
   /** Why the last handoff failed. */
   error?: string | null;
-  /** Renders the buttons; omit for clients that can't control the agent. */
-  onHandoff?: (accountId: string) => void;
+  /**
+   * Renders the buttons; omit for clients that can't control the agent.
+   * `includeChildren` is the "also continue its spawned agents" pick.
+   */
+  onHandoff?: (accountId: string, includeChildren: boolean) => void;
   className?: string;
   /** Reference time, so reset times are deterministic in stories. */
   now?: Date;
@@ -46,10 +51,12 @@ export function LimitHandoffCard({
   className,
   now,
 }: LimitHandoffCardProps) {
+  const [includeChildren, setIncludeChildren] = useState(true);
   if (accounts.length === 0) {
     return null;
   }
   const busy = pendingId != null;
+  const children = Math.max(0, ...accounts.map((a) => a.children ?? 0));
 
   return (
     <CalloutCard
@@ -83,7 +90,12 @@ export function LimitHandoffCard({
                 }
                 size="sm"
                 variant="secondary"
-                onClick={() => onHandoff(a.account_id)}
+                onClick={() =>
+                  onHandoff(
+                    a.account_id,
+                    includeChildren && (a.children ?? 0) > 0,
+                  )
+                }
               >
                 {pendingId === a.account_id ? "Switching" : "Continue here"}
               </Button>
@@ -91,6 +103,20 @@ export function LimitHandoffCard({
           </li>
         ))}
       </ul>
+      {onHandoff && children > 0 && (
+        <div className={styles.children}>
+          <CheckboxRow
+            checked={includeChildren}
+            disabled={busy}
+            label={
+              children === 1
+                ? "Also continue its spawned agent"
+                : `Also continue its ${children} spawned agents`
+            }
+            onChange={setIncludeChildren}
+          />
+        </div>
+      )}
       {error && (
         <p className={styles.error} role="alert">
           {error}

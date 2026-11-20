@@ -1,13 +1,18 @@
 package dev.houwert.argus.app.stores
 
+import dev.houwert.argus.app.telemetry.Telemetry
+import dev.houwert.argus.app.telemetry.TelemetryEvent
 import dev.houwert.argus.core.backend.GatewayBackend
 import dev.houwert.argus.core.backend.toStored
 import dev.houwert.argus.core.hosts.RouteSupervisor
 import dev.houwert.argus.core.offline.Outbox
 import dev.houwert.argus.core.offline.SavedAnswers
+import dev.houwert.argus.core.stores.AutomationsStore
 import dev.houwert.argus.core.stores.BackgroundRefresh
+import dev.houwert.argus.core.stores.BlueprintsStore
 import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.HostStoreHooks
+import dev.houwert.argus.core.stores.ProposalsStore
 import dev.houwert.argus.core.stores.hasConnectionBoundWork
 import dev.houwert.argus.core.stores.liveBackend
 import dev.houwert.argus.core.stores.openOffline
@@ -18,7 +23,10 @@ import dev.houwert.argus.kit.net.NetworkPathWatcher
 import dev.houwert.argus.kit.net.Transport
 import dev.houwert.argus.kit.protocol.generated.Methods
 import dev.houwert.argus.kit.protocol.generated.MethodsTypes
+import dev.houwert.argus.kit.storage.AgentHostIndex
 import dev.houwert.argus.kit.storage.DeviceIdentity
+import dev.houwert.argus.kit.storage.PendingDecision
+import dev.houwert.argus.kit.storage.PendingDecisionStore
 import dev.houwert.argus.kit.storage.Keystore
 import dev.houwert.argus.kit.storage.PreferenceKey
 import dev.houwert.argus.kit.storage.Preferences
@@ -29,6 +37,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 /**
@@ -39,7 +48,7 @@ import kotlinx.coroutines.launch
  * [scope] must be the main scope; all state lives on it.
  */
 class AppStore(
-  private val scope: CoroutineScope,
+  val scope: CoroutineScope,
   val keystore: Keystore,
   val preferences: Preferences,
   private val sealedFiles: SealedFiles,
@@ -48,6 +57,14 @@ class AppStore(
   private val defaultDeviceName: String,
 ) {
   val host = HostStore(scope)
+  val pendingDecisions = PendingDecisionStore(preferences)
+  val agentHosts = AgentHostIndex(preferences)
+  /** Push, notifications and widgets around the store; set by the application. */
+  var platform: AppPlatform = AppPlatform.None
+  // Per-computer stores beside [host]; cleared when the active computer changes (see the init block at the end).
+  val automations = AutomationsStore(host)
+  val blueprints = BlueprintsStore(host)
+  val proposals = ProposalsStore(host)
 
   private val _pairedHosts = MutableStateFlow(emptyList<DeviceIdentity>())
   val pairedHosts: StateFlow<List<DeviceIdentity>> = _pairedHosts.asStateFlow()
@@ -73,7 +90,12 @@ class AppStore(
 
   init {
     host.hooks = HostStoreHooks(
+      track = { Telemetry.capture(it) },
+      errorReported = { error, scope -> reportToTelemetry(error, scope) },
       endpointsChanged = { endpoints -> scope.launch { endpointsChanged(endpoints) } },
+      notify = { platform.notify(it) },
+      agentsSeen = { ids -> _activeHostId.value?.let { agentHosts.remember(ids, it) } },
+      decisionUndelivered = { agentId, toolUseId, decision -> queueOfflineDecision(agentId, toolUseId, decision) },
       connectionChanged = { state ->
         if (state == Transport.State.Ready || state == Transport.State.Offline) routes.connectionChanged(state == Transport.State.Ready)
       },
@@ -114,6 +136,7 @@ class AppStore(
   suspend fun selectHost(deviceId: String) {
     val identity = _pairedHosts.value.firstOrNull { it.deviceId == deviceId } ?: return
     if (deviceId == _activeHostId.value && host.liveBackend != null && host.connection.value != Transport.State.Offline) return
+    Telemetry.capture(TelemetryEvent.HostSwitched(_pairedHosts.value.size))
     // Adopt the target before awaiting, so a screen pushed on the same tap can name it.
     _identity.value = identity
     _activeHostId.value = deviceId
@@ -125,6 +148,9 @@ class AppStore(
   }
 
   suspend fun pairCompleted(identity: DeviceIdentity) {
+    Telemetry.capture(
+      TelemetryEvent.Paired(identity.endpoints?.firstOrNull()?.kind?.name?.lowercase() ?: "unknown", "control" in identity.capabilities),
+    )
     disconnect()
     host.reset()
     val state = keystore.add(identity)
@@ -147,6 +173,7 @@ class AppStore(
       disconnect()
       host.reset()
     }
+    agentHosts.forget(deviceId)
     SavedAnswers.remove(sealedFiles, deviceId)
     Outbox.remove(sealedFiles, deviceId)
     val state = keystore.remove(deviceId)
@@ -190,6 +217,18 @@ class AppStore(
     host.detach()
   }
 
+  private val unsupportedSeen = mutableSetOf<String>()
+
+  private fun reportToTelemetry(error: Throwable, scope: String) {
+    // Version skew, not a bug: counted once per method rather than reported.
+    HostStore.unsupportedMethod(error)?.let { method ->
+      if (unsupportedSeen.add(method)) Telemetry.capture(TelemetryEvent.HostFeatureUnsupported(method))
+      return
+    }
+    Telemetry.capture(TelemetryEvent.AppError(scope, HostStore.describe(error)))
+    Telemetry.captureException(error, source = "app_error", extra = mapOf("scope" to scope))
+  }
+
   private val currentIdentity: DeviceIdentity?
     get() {
       val id = _identity.value?.deviceId ?: return null
@@ -213,6 +252,7 @@ class AppStore(
       onReady(backend, identity, attempt.url)
       return true
     }
+    if (upgrade) routes.route?.kind?.let { from -> Telemetry.capture(TelemetryEvent.RouteUpgraded(from, attempt.endpoint.kind)) }
     host.swapBackend(backend)
     updateHost(identity.deviceId) { it.copy(url = attempt.url) }
     return true
@@ -231,6 +271,15 @@ class AppStore(
       updateHost(identity.deviceId) { it.copy(endpoints = DeviceIdentity.mergedEndpoints(it.endpoints, live), url = winningUrl) }
       _identity.value = _pairedHosts.value.firstOrNull { it.deviceId == identity.deviceId } ?: _identity.value
     }
+    platform.connected(backend)
+  }
+
+  /** Which computer owns an agent: a push carries only its id. */
+  fun hostId(forAgent: String): String? = agentHosts.host(forAgent)
+
+  fun queueOfflineDecision(agentId: String, toolUseId: String, decision: String) {
+    val hostId = _activeHostId.value ?: agentHosts.host(agentId)
+    pendingDecisions.queue(PendingDecision(agentId, hostId, toolUseId, decision, System.currentTimeMillis().toDouble()))
   }
 
   private suspend fun endpointsChanged(endpoints: List<RemoteEndpoint>) {
@@ -240,5 +289,15 @@ class AppStore(
 
   private fun updateHost(deviceId: String, patch: (DeviceIdentity) -> DeviceIdentity) {
     _pairedHosts.value = keystore.update(deviceId, patch).hosts
+  }
+
+  init {
+    scope.launch {
+      activeHostId.drop(1).collect {
+        automations.clear()
+        blueprints.clear()
+        proposals.clear()
+      }
+    }
   }
 }

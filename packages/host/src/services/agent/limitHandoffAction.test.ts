@@ -162,4 +162,67 @@ describe("handoffAgentToAccount", () => {
     expect(h.send).not.toHaveBeenCalled();
     expect(appState.sessions.get("s1")!.claude_account_id).toBe("personal");
   });
+
+  describe("with children", () => {
+    function addChild(id: string, parent: string, sessionId: string): void {
+      appState.sessions.set(sessionId, {
+        id: sessionId,
+        claude_account_id: "personal",
+      } as never);
+      appState.agents.set(id, {
+        ...addAgent(),
+        agentId: id,
+        sessionId,
+        parentAgentId: parent,
+        turnWaiters: [],
+      } as AgentSession);
+    }
+
+    beforeEach(() => {
+      addAgent({ parentAgentId: null });
+      addChild("c1", "a1", "s2");
+      addChild("g1", "c1", "s3");
+    });
+
+    it("moves the stalled children and theirs along when asked", async () => {
+      await handoffAgentToAccount("a1", "work", "limit_card", true);
+
+      for (const [agent, session] of [
+        ["c1", "s2"],
+        ["g1", "s3"],
+      ]) {
+        expect(appState.sessions.get(session)!.claude_account_id).toBe("work");
+        expect(h.send).toHaveBeenCalledWith(agent, "continue");
+      }
+      expect(h.capture).toHaveBeenCalledWith(
+        "agent_account_switched",
+        expect.objectContaining({ source: "limit_card_child", success: true }),
+      );
+    });
+
+    it("leaves the children alone unless asked", async () => {
+      await handoffAgentToAccount("a1", "work");
+
+      expect(appState.sessions.get("s2")!.claude_account_id).toBe("personal");
+      expect(h.send).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps the parent's move when a child fails", async () => {
+      h.respawn.mockImplementation(async (agentId: string) => {
+        if (agentId === "c1") {
+          throw "spawn failed";
+        }
+        const agent = appState.agents.get(agentId)!;
+        agent.accountId =
+          appState.sessions.get(agent.sessionId)!.claude_account_id ??
+          undefined;
+      });
+
+      await handoffAgentToAccount("a1", "work", "limit_card", true);
+
+      expect(appState.agents.get("a1")!.accountId).toBe("work");
+      expect(appState.agents.get("g1")!.accountId).toBe("work");
+      expect(appState.sessions.get("s2")!.claude_account_id).toBe("personal");
+    });
+  });
 });

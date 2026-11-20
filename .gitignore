@@ -11,7 +11,7 @@ node_modules
 dist
 dist-host
 dist-ssr
-release
+/release
 *.local
 
 # Editor directories and files
@@ -76,6 +76,8 @@ build/icon.iconset/
 
 # Argus Server's release lane output
 release-mac-server
+# The Android release lane's output
+release-android
 # The removed Electron app's build output, left behind in older checkouts
 dist-electron
 release-server

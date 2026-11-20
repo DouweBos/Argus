@@ -5698,21 +5698,25 @@ extension ArgusProtocol {
     public struct HandoffAgentToAccountParams: Codable, Sendable {
       public var agentId: String
       public var accountId: String
+      public var includeChildren: Bool?
 
       enum CodingKeys: String, CodingKey {
         case agentId = "agentId"
         case accountId = "accountId"
+        case includeChildren = "includeChildren"
       }
 
-      public init(agentId: String, accountId: String) {
+      public init(agentId: String, accountId: String, includeChildren: Bool? = nil) {
         self.agentId = agentId
         self.accountId = accountId
+        self.includeChildren = includeChildren
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(agentId, forKey: .agentId)
         try c.encode(accountId, forKey: .accountId)
+        try c.encodeIfPresent(includeChildren, forKey: .includeChildren)
       }
     }
 

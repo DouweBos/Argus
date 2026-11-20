@@ -5,8 +5,9 @@
  *   release-notes.md       every entry (GitHub release, website)
  *   release-notes-mac.md   the Mac's entries (Sparkle, the Electron cutover feed)
  *   release-notes-ios.md   the iPhone's entries (TestFlight's "What to Test"); empty when it has none
+ *   release-notes-android.md  Android's entries (Play's release notes); empty when it has none
  *
- * An entry without a marker goes to both apps.
+ * An entry without a marker goes to every app.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";

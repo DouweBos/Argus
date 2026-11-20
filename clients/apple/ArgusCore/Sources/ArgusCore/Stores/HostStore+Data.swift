@@ -359,7 +359,8 @@ extension HostStore {
       return message
     }
 
-    if merged != existing {
+    // An empty first page still lands, so an empty chat reads as loaded.
+    if merged != existing || messagesByAgent[key] == nil {
       messagesByAgent[key] = merged
     }
 

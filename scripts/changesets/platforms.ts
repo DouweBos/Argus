@@ -1,10 +1,10 @@
 /**
- * Which app a changeset is for, from a `# platforms: mac, ios` comment in its
- * frontmatter. A comment because changesets reads every frontmatter key as a
- * package name.
+ * Which app a changeset is for, from a `# platforms: mac, ios, android` comment
+ * in its frontmatter. A comment because changesets reads every frontmatter key
+ * as a package name.
  */
 
-export const PLATFORMS = ["mac", "ios"] as const;
+export const PLATFORMS = ["mac", "ios", "android"] as const;
 export type Platform = (typeof PLATFORMS)[number];
 
 const COMMENT = /^#\s*platforms:\s*(.*)$/m;

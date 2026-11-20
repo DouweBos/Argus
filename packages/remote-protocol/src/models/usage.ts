@@ -46,6 +46,8 @@ export const LimitHandoffAccount = z.object({
   detail: z.string().nullable(),
   /** The window closest to its limit; null when the plan's usage isn't known. */
   usage: UsageLimitWindow.nullable(),
+  /** Spawned agents stalled on the limit too that can move along; absent from older hosts. */
+  children: z.number().int().nonnegative().optional(),
 });
 export type LimitHandoffAccount = z.infer<typeof LimitHandoffAccount>;
 

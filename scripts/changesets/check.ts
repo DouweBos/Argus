@@ -1,6 +1,6 @@
 /**
  * Fails when a pending changeset doesn't say which app it's for, so a release
- * never sends the iPhone the Mac's notes. See docs/releases.md.
+ * never sends the phones the Mac's notes. See docs/releases.md.
  */
 
 import { readdirSync, readFileSync } from "node:fs";
@@ -17,7 +17,7 @@ const missing = readdirSync(dir)
 
 if (missing.length > 0) {
   process.stderr.write(
-    `These changesets don't name their app. Add \`# platforms: ${PLATFORMS.join(", ")}\` (one or both) to the frontmatter:\n` +
+    `These changesets don't name their app. Add \`# platforms: ${PLATFORMS.join(", ")}\` (any combination) to the frontmatter:\n` +
       missing.map((name) => `  .changeset/${name}`).join("\n") +
       "\n",
   );

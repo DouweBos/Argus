@@ -1,6 +1,6 @@
 # Argus
 
-Agentic IDE for front-end development: Argus for Mac (native SwiftUI over a Node host core), an iPhone client and a web client. Multiple Claude Code agents work in parallel, each in an isolated git worktree, with an embedded browser, iOS simulators and Android emulators.
+Agentic IDE for front-end development: Argus for Mac (native SwiftUI over a Node host core), an iPhone client, an Android client and a web client. Multiple Claude Code agents work in parallel, each in an isolated git worktree, with an embedded browser, iOS simulators and Android emulators.
 
 Argus for Mac replaced the Electron app in v0.72.0, and the Electron app has since been removed. Production Mac releases still publish `cutover-mac.yml`, the feed still-installed Electron apps update into Argus for Mac from — keep it.
 
@@ -10,12 +10,13 @@ Argus for Mac replaced the Electron app in v0.72.0, and the Electron app has sin
 - `pnpm lint` — `pnpm typecheck && eslint && prettier --check`, plus the CSS-module, import-cycle and Swift style checks and `pnpm gen:protocol --check`
 - `pnpm build:mac-host --out <dir> [--sign <identity>]` — stage Node + `dist-host` + node-pty + resources for the Mac app (its Xcode build phase runs it)
 - `swift test` in `clients/apple/{ArgusKit,ArgusCore,ArgusUI}`; `xcodebuild -project clients/apple/ArgusRemote.xcodeproj -scheme ArgusDesktop -destination 'platform=macOS' build` for the Mac app (`test` runs `ArgusDesktopTests`). Debug Mac builds ("Argus Dev") default to `~/.argus-mac-dev` — never point a dev build's `ARGUS_HOME` at `~/.argus`; `ARGUS_ATTACH_HOME=~/.argus` is allowed, since it only ever attaches as a client to the Argus running there (no host, no lock, no migration). Never drive the running Argus with UI scripting
-- Releases: the `Release` workflow ships Argus for Mac (`fastlane mac mac_app_release`) and the iPhone app to TestFlight (`fastlane ios testflight`) in one run, with the same version (`package.json`; the iPhone drops a `-beta.N`/`-alpha.N` suffix) and build number (workflow run number + 2000). `fastlane ios testflight_setup` once, locally, creates the App Store Connect app, any missing extension App IDs and the App Store profiles; rerun it after adding an iPhone target
+- Releases: the `Release` workflow ships Argus for Mac (`fastlane mac mac_app_release`), the iPhone app to TestFlight (`fastlane ios testflight`) and the Android app to Google Play's internal track (`fastlane android release`, its APK also on the GitHub release) in one run, with the same version (`package.json`; the phones drop a `-beta.N`/`-alpha.N` suffix) and build number (workflow run number + 2000, Android's `versionCode`). `fastlane ios testflight_setup` once, locally, creates the App Store Connect app, any missing extension App IDs and the App Store profiles; rerun it after adding an iPhone target. Android's one-time setup (upload key, Play Console app, Firebase) is in `docs/releases.md`
 - `pnpm gen:protocol` — regenerate ArgusKit's Swift wire types (`ArgusKit/Sources/ArgusKit/Generated/`) from the command catalog
 - `pnpm dev:host` / `pnpm start:host` — the host core as a plain Node process (`dist-host/argus-host.js`, no Electron). Prints the gateway address; type `pair` to pair a device from the terminal
 - `pnpm storybook` — Peacock design system at :6006
 - `pnpm gallery [filter] [--theme dark|light] [--no-build] [--browse]` — the Mac app's SwiftUI stories (`clients/apple/ArgusDesktop/Gallery/`) rendered to PNGs against fixtures, no host and no visible window; prints the paths. `--browse` opens them live
 - `pnpm gallery [filter] --ios [--device "iPad Pro 13-inch (M5)"]` — the iOS app's stories (`clients/apple/ArgusRemote/Gallery/`, same ids as the Mac's, fixtures shared through `GalleryFixtures` in ArgusCore) rendered on a simulator of its own through conductor
+- `cd clients/android && ./gradlew :kit:test :core:test :ui:testDebugUnitTest :app:assembleDebug` — build and unit-test the Android app (JDK 17); `./gradlew :app:installDebug` puts `dev.houwert.argus.dev` on an emulator
 - Tooling via `mise.toml` (node 24, pnpm 12)
 
 ## Architecture
@@ -29,6 +30,10 @@ pnpm monorepo. Three-panel layout: workspace sidebar / agent control / runtime &
 - `clients/apple` → the native Swift apps, one Xcode project (`ArgusRemote.xcodeproj`):
   - `ArgusKit` (protocol, Noise, generated wire types, `Transport` for the gateway, `LocalTransport` for the host's UI socket), `ArgusCore` (the shared stores behind a `HostBackend`: `GatewayBackend` for the phone, `LocalBackend` for the Mac; the transcript reducer; `HostSupervisor`; no SwiftUI), `ArgusUI` (design system + shared views, iOS 18 and macOS 15)
   - `ArgusRemote` — the iOS app shell. `ArgusDesktop` — Argus for Mac, the desktop app (see `docs/mac-app.md`): bundles and supervises the Node host and talks to it over `$ARGUS_HOME/host.sock`
+
+- `clients/android` → the native Android app (Kotlin + Jetpack Compose, Gradle, JDK 17), a port of the iPhone app; application id `dev.houwert.argus` (`.dev` on debug builds):
+  - `:kit` (protocol, Noise, pairing, generated wire types in `kit/…/protocol/generated/` from `pnpm gen:protocol`, the gateway transport), `:core` (the stores behind a `HostBackend`, `ArgusRoute`, the transcript reducer, offline cache; no Compose), `:ui` (the Compose design system and shared views), `:app` (the app shell: screens, navigation, push via FCM, notifications, widgets)
+  - Push needs `clients/android/app/google-services.json` (the Firebase project's config); without it the app builds with push off
 
 ### Web client (`clients/argus-web`)
 
@@ -66,12 +71,12 @@ Node.js + TypeScript. No Electron — a Linux box or a CLI can run it.
 
 **Routing** (the route is the single source of truth for which screen shows; full inventory in [`docs/routing.md`](docs/routing.md) — update when adding/renaming/removing routes):
 
-1. Every screen has a route. New screens → add it to `ArgusRoute` (`clients/apple/ArgusCore/Sources/ArgusCore/Routing/`, the Mac and the phone) and, when the web client has the screen, to `packages/client-core/src/routes/route.ts`, then doc it.
+1. Every screen has a route. New screens → add it to `ArgusRoute` (`clients/apple/ArgusCore/Sources/ArgusCore/Routing/`, the Mac and the iPhone; `clients/android/core/…/routing/ArgusRoute.kt` for Android) and, when the web client has the screen, to `packages/client-core/src/routes/route.ts`, then doc it.
 2. On the Mac, navigate through `DesktopModel.navigate`, one navigation per user action (two back-to-back stack history and break the back button).
 3. Read the route, don't mirror it — no separate "which screen" state.
 4. **Prefer routes over ad-hoc state for switching views inside a screen.** If a tab, sub-view, sidebar selection, or filtered drill-down (e.g. focused branch/tag/file) changes what the screen shows, give it its own route. That makes "which item is selected" a single route-equality check, gets back/forward and deep links for free, and prevents two pieces of state disagreeing about what's active.
 
-**Design system (`@argus/peacock`) — all of the web client's visuals come from Peacock** (the Mac and iPhone apps use ArgusUI):
+**Design system (`@argus/peacock`) — all of the web client's visuals come from Peacock** (the Mac and iPhone apps use ArgusUI, Android its `:ui` module):
 
 1. Check Storybook first. If something fits, use it.
 2. Missing/new variant → add to `packages/peacock/src/components/` with `.module.css` + `.stories.tsx`. No duplicate one-offs in `clients/argus-web`.
@@ -92,7 +97,7 @@ Every Peacock component ships with a Storybook story covering meaningful states.
 3. Register in `packages/host/src/commands/<domain>.ts` via `defineTypedCommand("command_name", (p) => …)` — params are validated at dispatch, results checked in dev and tests
 4. `pnpm gen:protocol` to regenerate the Swift types
 
-**The Mac app is the desktop app.** Every desktop feature lands in `ArgusDesktop` (plus host commands), with the iPhone client in the same PR. Releases ship it with `fastlane mac mac_app_release` (the release workflow).
+**The Mac app is the desktop app.** Every desktop feature lands in `ArgusDesktop` (plus host commands), with the iPhone and Android clients in the same PR. Releases ship it with `fastlane mac mac_app_release` (the release workflow).
 
 **Design a screen, don't just expose its fields.** Before building UI, find the screen that already does the same job (picking projects, editing a playbook, a run history) and reuse its components — two screens choosing the same thing must look and work the same. Extract the shared piece rather than copying it. Lists get one row per item with an icon and a trailing control, never a column of controls inside a `LabeledContent`; the primary action goes in the toolbar, not a section header; long multi-selects get Select All / Clear. Then add or update its gallery story (`ArgusDesktop/Gallery/Stories/` and its iOS twin in `ArgusRemote/Gallery/Stories/`, realistic fixtures — a dozen projects, a running and a failed run), run `pnpm gallery <id>` and `pnpm gallery <id> --ios` and look at both themes before calling it done — compiling is not a design review.
 
@@ -103,7 +108,7 @@ Every Peacock component ships with a Storybook story covering meaningful states.
 - A new custom `ButtonStyle` applies `.clickable()` in its `makeBody`
 - Never call `.pointerStyle` directly. Native `.bordered` / `.borderedProminent` buttons keep the macOS arrow
 
-**The iOS client is a first-class citizen.** Every feature you add or change on the desktop also lands in `clients/apple` in the same PR. The only excuses are that it genuinely makes no sense on a phone (window management, tray, simulator HID injection) or that exposing it over the gateway is a real security risk — say which, don't just skip it. "Desktop first, phone later" is how the phone falls behind.
+**The phone clients are first-class citizens.** Every feature you add or change on the desktop also lands in `clients/apple` (iPhone) and `clients/android` in the same PR. The only excuses are that it genuinely makes no sense on a phone (window management, tray, simulator HID injection) or that exposing it over the gateway is a real security risk — say which, don't just skip it. "Desktop first, phone later" is how the phone falls behind.
 
 Adding one (worked example: `automations.revise_playbook`):
 
@@ -114,6 +119,13 @@ Adding one (worked example: `automations.revise_playbook`):
 5. UI in `ArgusRemote/Views/` or `Screens/`, gated on `app.hasControl` when the method is control-tier
 6. A new Swift file in `ArgusRemote` needs four `project.pbxproj` entries by hand (build file, file reference, group child, sources phase). Shared code belongs in `ArgusCore`/`ArgusUI` (SPM, no pbxproj edits); `ArgusDesktop` uses a file-system-synchronized group
 7. Verify with `xcodebuild -project clients/apple/ArgusRemote.xcodeproj -scheme ArgusRemote -destination 'generic/platform=iOS Simulator' build` — `pnpm lint` does not see Swift
+
+Android mirrors steps 4–7 (1–3 are shared):
+
+1. `pnpm gen:protocol` regenerates the Kotlin wire types (`clients/android/kit/…/protocol/generated/Wire*.kt`) next to the Swift ones
+2. A store method in `:core` (`clients/android/core/…/stores/`), calling the method through the `HostBackend`
+3. UI in `:app` (`clients/android/app/…/screens/`), composed from `:ui`, gated on control when the method is control-tier
+4. Verify with `cd clients/android && ./gradlew :kit:test :core:test :app:assembleDebug` — `pnpm lint` does not see Kotlin
 
 **Worktrees:** `~/.argus/worktrees/{RepoName}-argus-worktrees/{branch}/`. Post-`git worktree add` setup (copy dirs, symlink files, run commands) configured in `.argus.json`.
 
@@ -127,7 +139,7 @@ Adding one (worked example: `automations.revise_playbook`):
 - The scope is the area, not the path — existing ones include `remote`, `ios`, `peacock`, `llm`, `terminal`, `automations`, `devices`, `push`, `settings`, `mcp`, `web`. Reuse one before inventing another; drop it entirely when a change is genuinely repo-wide.
 - The type has to match the changeset: a `feat` is a `minor`, a `fix` is a `patch`, and anything with no changeset should not be a `feat` or a `fix`.
 
-**Changesets:** every user-visible change gets one in `.changeset/`. Written for end users: 1–2 short sentences, present tense, no internals/file paths/type names. Bump `argus` for app changes, `@argus/peacock` for public design-system changes. `patch` for fixes, `minor` for new behavior. Skip for pure refactors/tests/tooling. Name the app it's for with a `# platforms: mac`, `ios` or `mac, ios` comment in the frontmatter (a comment, since changesets reads keys as packages): the Mac update and TestFlight each get only their own entries, and `pnpm lint` fails a changeset without one.
+**Changesets:** every user-visible change gets one in `.changeset/`. Written for end users: 1–2 short sentences, present tense, no internals/file paths/type names. Bump `argus` for app changes, `@argus/peacock` for public design-system changes. `patch` for fixes, `minor` for new behavior. Skip for pure refactors/tests/tooling. Name the app it's for with a `# platforms: mac`, `ios`, `android` or a list like `mac, ios, android` comment in the frontmatter (a comment, since changesets reads keys as packages): the Mac update, TestFlight and Google Play each get only their own entries, and `pnpm lint` fails a changeset without one.
 
 **Telemetry: a feature ships with the events that measure it.** Every user-facing behaviour you add or change gets events in the same commit — "there is no event for it yet" is a gap to close, not a reason to skip it. Ask what question the event answers ("is this used?", "does it fail?") and send the smallest thing that answers it.
 

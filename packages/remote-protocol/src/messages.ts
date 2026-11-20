@@ -333,6 +333,8 @@ export const MethodParams = {
   "agents.handoff_to_account": z.object({
     agent_id: z.string(),
     account_id: z.string(),
+    /** Move the agent's stalled spawned agents along too. */
+    include_children: z.boolean().optional(),
   }),
   "agents.stop": z.object({ agent_id: z.string() }),
   "agents.set_model": z.object({ agent_id: z.string(), model: z.string() }),

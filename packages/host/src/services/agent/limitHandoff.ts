@@ -4,6 +4,7 @@
  * project opts in (`limitAutoSwitch`), since people keep personal and work plans apart.
  */
 
+import type { AgentSession } from "./models";
 import type {
   ClaudeAccountLimits,
   LimitHandoffAccount,
@@ -48,6 +49,39 @@ export function handoffCandidates(agentId: string): ClaudeAccount[] {
       !a.needs_reauth &&
       !a.rate_limited,
   );
+}
+
+/**
+ * Agents spawned under `agentId`, and theirs, that are stalled on a limit too
+ * and could move to `accountId` with it.
+ */
+export function stalledChildren(
+  agentId: string,
+  accountId: string,
+): AgentSession[] {
+  const found: AgentSession[] = [];
+  const seen = new Set([agentId]);
+  const parents = [agentId];
+  while (parents.length > 0) {
+    const parent = parents.pop();
+    for (const agent of appState.agents.values()) {
+      if (agent.parentAgentId !== parent || seen.has(agent.agentId)) {
+        continue;
+      }
+      seen.add(agent.agentId);
+      parents.push(agent.agentId);
+      if (
+        agent.status !== "stopped" &&
+        agent.status !== "error" &&
+        isLimitStalled(agent.agentId) &&
+        handoffCandidates(agent.agentId).some((a) => a.id === accountId)
+      ) {
+        found.push(agent);
+      }
+    }
+  }
+
+  return found;
 }
 
 /** The window closest to its limit, when the probe could read the plan. */
@@ -129,6 +163,7 @@ export async function limitHandoffAccounts(
             (a.email && a.email !== label ? a.email : a.subscription_type) ??
             null,
           usage,
+          children: stalledChildren(agentId, a.id).length,
         };
       }),
     ),

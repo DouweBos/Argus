@@ -1756,6 +1756,7 @@ object CommandsTypes {
   data class HandoffAgentToAccountParams(
     @SerialName("agentId") val agentId: String,
     @SerialName("accountId") val accountId: String,
+    @SerialName("includeChildren") val includeChildren: Boolean? = null,
   )
 
   @Serializable
