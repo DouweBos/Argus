@@ -13,5 +13,10 @@
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
+    <!-- Pairs from an am start with a code extra, for scripted runs against a scratch host. -->
+    <activity
+      android:name="dev.houwert.argus.app.DevPairActivity"
+      android:exported="true"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar" />
   </application>
 </manifest>
