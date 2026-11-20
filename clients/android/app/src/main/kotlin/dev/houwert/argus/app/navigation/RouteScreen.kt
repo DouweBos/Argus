@@ -27,7 +27,6 @@ import dev.houwert.argus.app.screens.git.PullRequestsScreen
 import dev.houwert.argus.app.screens.git.ReviewGuideScreen
 import dev.houwert.argus.app.screens.git.StashesScreen
 import dev.houwert.argus.app.screens.git.WarningsScreen
-import dev.houwert.argus.app.screens.PendingScreen
 import dev.houwert.argus.app.screens.account.AccountScreen
 import dev.houwert.argus.app.screens.account.AddComputerScreen
 import dev.houwert.argus.app.screens.accounts.ClaudeAccountsScreen
@@ -40,6 +39,7 @@ import dev.houwert.argus.app.screens.files.QuickOpenScreen
 import dev.houwert.argus.app.screens.home.AgentsScreen
 import dev.houwert.argus.app.screens.home.ComputersScreen
 import dev.houwert.argus.app.screens.home.HomeScreen
+import dev.houwert.argus.app.screens.agent.McpServersScreen
 import dev.houwert.argus.app.screens.newproject.NewProjectScreen
 import dev.houwert.argus.app.screens.pair.PairScreen
 import dev.houwert.argus.app.screens.project.ProjectScreen
@@ -47,6 +47,12 @@ import dev.houwert.argus.app.screens.quickrun.QuickRunScreen
 import dev.houwert.argus.app.screens.settings.SettingsPaneScreen
 import dev.houwert.argus.app.screens.settings.SettingsScreen
 import dev.houwert.argus.app.screens.start.NewSessionScreen
+import dev.houwert.argus.app.screens.pair.PairScreen
+import dev.houwert.argus.app.screens.session.SessionScreen
+import dev.houwert.argus.app.screens.session.SessionTimelineScreen
+import dev.houwert.argus.app.screens.session.StoppedAgentScreen
+import dev.houwert.argus.app.screens.terminals.TerminalScreen
+import dev.houwert.argus.app.screens.terminals.TerminalsScreen
 import dev.houwert.argus.app.screens.usage.UsageModelScreen
 import dev.houwert.argus.app.screens.usage.UsageModelsScreen
 import dev.houwert.argus.app.screens.usage.UsagePricesScreen
@@ -62,6 +68,12 @@ fun RouteScreen(route: Route) {
     Route.Pair -> PairScreen()
     Route.Projects -> HomeScreen()
     Route.More -> MoreScreen()
+    is Route.Session, is Route.Agent -> SessionScreen(route)
+    is Route.StoppedAgent -> StoppedAgentScreen(route)
+    is Route.Timeline -> SessionTimelineScreen(route)
+    is Route.Terminals -> TerminalsScreen(route)
+    is Route.Terminal -> TerminalScreen(route)
+    is Route.McpServers -> McpServersScreen(route)
     is Route.Changes -> ChangesScreen(route.sessionId, route.label)
     is Route.TurnChanges -> ChangesScreen(route.sessionId, route.label, "turn:${route.checkpointId}")
     is Route.FileDiff -> FileDiffScreen(route.sessionId, route.path, route.mode)
@@ -109,8 +121,5 @@ fun RouteScreen(route: Route) {
     is Route.UsageModel -> UsageModelScreen(route)
     Route.UsagePrices -> UsagePricesScreen()
     Route.UsageModels -> UsageModelsScreen()
-    is Route.Session, is Route.Agent, is Route.StoppedAgent, is Route.Timeline, is Route.Terminals, is Route.Terminal,
-    is Route.McpServers,
-    -> PendingScreen(route)
   }
 }

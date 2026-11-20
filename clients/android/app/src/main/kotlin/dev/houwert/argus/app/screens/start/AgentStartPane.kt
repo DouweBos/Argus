@@ -1,5 +1,8 @@
 package dev.houwert.argus.app.screens.start
 
+import dev.houwert.argus.kit.protocol.generated.RemotePermissionMode
+import dev.houwert.argus.app.telemetry.TelemetryEvent
+import dev.houwert.argus.app.telemetry.Telemetry
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -15,7 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,6 +50,15 @@ import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.listBranches
 import dev.houwert.argus.core.stores.loadRunners
 import dev.houwert.argus.kit.protocol.generated.RemoteGitBranchScope
+import dev.houwert.argus.kit.storage.Preferences
+import dev.houwert.argus.app.platform.ShareIntake
+import dev.houwert.argus.ui.composer.ChatInputView
+import dev.houwert.argus.ui.composer.PendingImage
+import dev.houwert.argus.ui.composer.attach
+import dev.houwert.argus.ui.composer.ComposerDrafts
+import dev.houwert.argus.ui.composer.ComposerStarter
+import dev.houwert.argus.ui.composer.asComposerHost
+import dev.houwert.argus.ui.composer.rememberComposerModel
 import dev.houwert.argus.ui.components.PickerOption
 import dev.houwert.argus.ui.components.PickerSheet
 import dev.houwert.argus.ui.components.argusClickable
@@ -74,6 +85,9 @@ fun AgentStartPane(
   defaults: AgentStartDefaults = AgentStartDefaults(),
   picksProject: Boolean = false,
   hostWaits: Boolean = false,
+  preferences: Preferences = ComposerDrafts.preferences,
+  /** The new-agent screen: another app's share becomes the opening draft. */
+  takesShare: Boolean = false,
   onStarted: (StartedAgent) -> Unit,
 ) {
   val theme = ArgusTheme.colors
@@ -91,10 +105,7 @@ fun AgentStartPane(
   val runners by host.runners.collectAsState()
   val projects by host.projects.collectAsState()
   val sessions by host.sessionsByRepo.collectAsState()
-  var text by remember { mutableStateOf("") }
-  var sending by remember { mutableStateOf(false) }
   var picker by remember { mutableStateOf<Picker?>(null) }
-  val scope = rememberCoroutineScope()
   val project = projects.firstOrNull { it.repoRoot == root }
   val session = sessionId?.let { id -> sessions.values.flatten().firstOrNull { it.id == id } }
 
@@ -105,18 +116,38 @@ fun AgentStartPane(
   // Only a new worktree needs a base, read again for another project.
   LaunchedEffect(flow.needsBases, root, bases) { root?.let { if (flow.needsBases) bases.load(it, host) } }
 
-  fun send() {
-    val message = text.trim()
-    if (sending || !flow.ready(message)) return
-    sending = true
-    scope.launch {
-      val started = flow.start(ComposerStart(message, message, runnerId = runnerId))
-      sending = false
-      if (started != null) {
-        text = ""
-        onStarted(started)
-      }
+  val starter = ComposerStarter(
+    // Unset, the computer starts it in Auto; the pill says so.
+    defaultMode = defaults.mode ?: RemotePermissionMode.auto.rawValue,
+    defaultModel = defaults.model,
+    // A new worktree's branch is named from the text.
+    needsText = kind == StartWorkspace.Kind.Worktree,
+    ready = flow.picksReady,
+    placeholder = "What should it do?",
+  ) { request ->
+    val started = flow.start(request.copy(runnerId = request.runnerId ?: runnerId))
+    if (started != null) {
+      Telemetry.capture(
+        TelemetryEvent.AgentStartSubmitted(
+          workspace = TelemetryEvent.StartWorkspace.entries.first { it.name == kind.name },
+          changedWorkspace = kind != workspace,
+          hasImages = request.images.isNotEmpty(),
+          effortSet = request.effort != null,
+          changedProject = root != repoRoot,
+        ),
+      )
+      onStarted(started)
     }
+    started != null
+  }
+  val composer = rememberComposerModel(remember(host) { host.asComposerHost() }, null, sessionId, starter, preferences)
+  // Taken once, including a share that arrives while this screen is up.
+  val share by ShareIntake.pending.collectAsState()
+  LaunchedEffect(composer, share, takesShare) {
+    if (!takesShare || share == null) return@LaunchedEffect
+    val items = ShareIntake.take() ?: return@LaunchedEffect
+    if (items.draft.isNotBlank()) composer.setText(items.draft)
+    composer.attach(items.images.map { PendingImage(it) })
   }
 
   Column(
@@ -149,52 +180,30 @@ fun AgentStartPane(
       }
     }
 
-    // The composer card with its footer strip.
+    // The composer, its footer strip picking where the agent works and what it starts on.
     Column(Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
-      val shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)
-      Row(
-        Modifier.fillMaxWidth().background(theme.bgSecondary, shape).border(1.dp, theme.border, shape).padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
-        verticalAlignment = Alignment.Bottom,
-      ) {
-        Box(Modifier.weight(1f).padding(vertical = 8.dp)) {
-          if (text.isEmpty()) Text("What should it do?", color = theme.textMuted, style = ArgusTheme.typography.body)
-          BasicTextField(
-            text, { text = it }, Modifier.fillMaxWidth().semantics { contentDescription = "Message" },
-            textStyle = ArgusTheme.typography.body.copy(color = theme.text), cursorBrush = SolidColor(theme.accent), maxLines = 8,
-          )
-        }
-        val canSend = flow.ready(text) && !sending
-        Box(
-          Modifier.size(40.dp).argusClickable(rememberInteraction(), enabled = canSend, shape = RoundedCornerShape(50), label = "Start agent") { send() }
-            .semantics { contentDescription = "Start agent" },
-          contentAlignment = Alignment.Center,
+      ChatInputView(composer, footer = {
+        Row(
+          Modifier.fillMaxWidth()
+            .horizontalScroll(rememberScrollState()).padding(horizontal = 6.dp, vertical = 2.dp),
+          horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically,
         ) {
-          Box(Modifier.size(32.dp).background(if (canSend) theme.accent else theme.border, RoundedCornerShape(50)), contentAlignment = Alignment.Center) {
-            Icon(Icon.send, null, Modifier.size(16.dp), tint = if (canSend) theme.onAccent else theme.textMuted)
+          if (flow.options.size > 1) FooterPill(kindIcon(kind), kindLabel(kind, session?.kind), "Workspace: ${kindLabel(kind, session?.kind)}") { picker = Picker.Workspace }
+          // Only the icon until a runner is picked.
+          if (runners.isNotEmpty()) {
+            val runner = runners.firstOrNull { it.id == runnerId }
+            FooterPill(Icon.terminal, runner?.displayName, "Runner: ${runner?.displayName ?: "Default"}") { picker = Picker.Runner }
+          }
+          when (kind) {
+            StartWorkspace.Kind.Current -> session?.branch?.let { FooterPill(Icon.branch, it, "Branch $it", onClick = null) }
+            StartWorkspace.Kind.Worktree -> {
+              val title = StartWorkspace.baseTitle(base ?: preselected, loadingBases)
+              FooterPill(Icon.branch, title, "Base branch: ${base ?: preselected ?: "Project default"}") { picker = Picker.Base }
+            }
+            StartWorkspace.Kind.Existing -> FooterPill(Icon.branch, existing ?: "Pick a branch", "Existing branch", accent = existing == null) { picker = Picker.Existing }
           }
         }
-      }
-      val footShape = RoundedCornerShape(bottomStart = 14.dp, bottomEnd = 14.dp)
-      Row(
-        Modifier.fillMaxWidth().background(theme.bgSecondary, footShape).border(1.dp, theme.border, footShape)
-          .horizontalScroll(rememberScrollState()).padding(horizontal = 6.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically,
-      ) {
-        if (flow.options.size > 1) FooterPill(kindIcon(kind), kindLabel(kind, session?.kind), "Workspace: ${kindLabel(kind, session?.kind)}") { picker = Picker.Workspace }
-        // Only the icon until a runner is picked.
-        if (runners.isNotEmpty()) {
-          val runner = runners.firstOrNull { it.id == runnerId }
-          FooterPill(Icon.terminal, runner?.displayName, "Runner: ${runner?.displayName ?: "Default"}") { picker = Picker.Runner }
-        }
-        when (kind) {
-          StartWorkspace.Kind.Current -> session?.branch?.let { FooterPill(Icon.branch, it, "Branch $it", onClick = null) }
-          StartWorkspace.Kind.Worktree -> {
-            val title = StartWorkspace.baseTitle(base ?: preselected, loadingBases)
-            FooterPill(Icon.branch, title, "Base branch: ${base ?: preselected ?: "Project default"}") { picker = Picker.Base }
-          }
-          StartWorkspace.Kind.Existing -> FooterPill(Icon.branch, existing ?: "Pick a branch", "Existing branch", accent = existing == null) { picker = Picker.Existing }
-        }
-      }
+      })
     }
   }
 

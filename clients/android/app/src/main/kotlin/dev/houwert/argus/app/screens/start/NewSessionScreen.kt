@@ -1,5 +1,6 @@
 package dev.houwert.argus.app.screens.start
 
+import dev.houwert.argus.core.sessions.AgentStartDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -55,7 +56,10 @@ fun NewSessionScreen(repoRoot: String?) {
   TopBarScreen("New Session", onBack = router::pop) {
     // A late root session or project changes what the composer was built on.
     key(project, rootSessionId) {
-      AgentStartPane(host, project, rootSessionId, workspace = StartWorkspace.Kind.Worktree, picksProject = repoRoot == null) { started ->
+      AgentStartPane(host, project, rootSessionId, workspace = StartWorkspace.Kind.Worktree,
+        defaults = AgentStartDefaults(mode = app.prefs.defaultPermissionMode.value?.rawValue),
+        picksProject = repoRoot == null, takesShare = true, preferences = app.preferences,
+      ) { started ->
         // Back from the new session skips this composer, as closing the Mac's sheet does.
         router.replaceTop(Route.of(started), 1)
         if (started is StartedAgent.Session) scope.launch { host.loadSessions(started.session.repoRoot) }

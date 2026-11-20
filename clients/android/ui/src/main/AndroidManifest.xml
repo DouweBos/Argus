@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <!-- Serves a transcript image to the share sheet. -->
+    <provider
+      android:name="dev.houwert.argus.ui.transcript.SharedImageProvider"
+      android:authorities="${applicationId}.argus.images"
+      android:exported="false"
+      android:grantUriPermissions="true" />
+  </application>
+</manifest>

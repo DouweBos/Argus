@@ -44,6 +44,9 @@ enum class GalleryPage(val title: String) {
   Chrome("Chrome"),
   Devices("Devices"),
   Usage("Usage"),
+  Transcript("Transcript"),
+  Composer("Composer"),
+  Session("Session"),
   Home("Home"),
   Automations("Automations"),
   Integrations("Integrations"),
@@ -97,6 +100,9 @@ fun ArgusGallery(initialDark: Boolean = false, initialPage: GalleryPage = Galler
                 GalleryPage.Settings -> SettingsGalleryPage()
                 GalleryPage.Chrome -> ChromePage()
                 GalleryPage.Devices -> DevicesPage()
+                GalleryPage.Transcript -> TranscriptGalleryPage()
+                GalleryPage.Composer -> ComposerGalleryPage()
+                GalleryPage.Session -> SessionGalleryPage()
                 GalleryPage.Home -> HomePage()
                 GalleryPage.Automations -> AutomationsGalleryPage()
                 GalleryPage.Integrations -> IntegrationsGalleryPage()
@@ -120,6 +126,9 @@ private fun pageIcon(page: GalleryPage) =
     GalleryPage.Chrome -> Icon.sidePanel
     GalleryPage.Devices -> Icon.devices
     GalleryPage.Usage -> Icon.usage
+    GalleryPage.Transcript -> Icon.agent
+    GalleryPage.Composer -> Icon.send
+    GalleryPage.Session -> Icon.details
     GalleryPage.Home -> Icon.home
     GalleryPage.Automations -> Icon.automations
     GalleryPage.Integrations -> Icon.link

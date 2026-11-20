@@ -1,5 +1,6 @@
 package dev.houwert.argus.app.screens.git
 
+import dev.houwert.argus.ui.transcript.MarkdownView
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -203,7 +204,7 @@ fun PullRequestScreen(repo: String, number: Int, label: String) {
         Card { ReviewGuideLink(ReviewGuideTarget.PullRequest(repo, number, detail.headSha), "#$number guide") }
       }
       if (detail.checks.isNotEmpty()) Checks(detail)
-      if (detail.body.isNotEmpty()) Card { SelectionContainer { BodyText(detail.body) } }
+      if (detail.body.isNotEmpty()) Card { SelectionContainer { MarkdownView(detail.body, baseSize = 14) } }
       if (detail.comments.isNotEmpty()) {
         SectionHeader("Conversation", count = detail.comments.size)
         for (entry in detail.comments) {
@@ -212,7 +213,7 @@ fun PullRequestScreen(repo: String, number: Int, label: String) {
               BodyText(entry.author ?: "someone")
               entry.reviewState?.let { Badge(it.lowercase(), tone = if (it == "APPROVED") Tone.Success else Tone.Muted) }
             }
-            SelectionContainer { Text(entry.body, color = ArgusTheme.colors.text, style = argusFont(13)) }
+            SelectionContainer { MarkdownView(entry.body, baseSize = 13) }
           }
         }
       }

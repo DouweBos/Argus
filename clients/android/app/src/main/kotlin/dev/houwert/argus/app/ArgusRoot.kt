@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dev.houwert.argus.app.navigation.AppSection
 import dev.houwert.argus.app.navigation.Router
+import dev.houwert.argus.app.screens.session.sessionNav
 import dev.houwert.argus.app.navigation.TabHost
 import dev.houwert.argus.app.screens.account.AccountRemovedNotice
 import dev.houwert.argus.app.screens.account.JoinRequestPrompt
@@ -53,7 +54,8 @@ fun ArgusRoot(app: AppStore) {
       val tabs = rememberSaveableStateHolder()
       Scaffold(
         bottomBar = {
-          NavigationBar {
+          val chats by router.sessionNav.chatsShown.collectAsState()
+          if (chats == 0) NavigationBar {
             AppSection.tabs.forEach { tab ->
               NavigationBarItem(
                 selected = tab == section,

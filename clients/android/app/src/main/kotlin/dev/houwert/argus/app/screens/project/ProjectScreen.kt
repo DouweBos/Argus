@@ -1,5 +1,6 @@
 package dev.houwert.argus.app.screens.project
 
+import dev.houwert.argus.core.sessions.AgentStartDefaults
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -126,6 +127,8 @@ fun ProjectScreen(repoRoot: String, name: String) {
       groups.isEmpty() && hasControl -> AgentStartPane(
         host, repoRoot, (sessions.firstOrNull { it.kind == RemoteSessionKind.projectRoot } ?: sessions.firstOrNull())?.id,
         workspace = StartWorkspace.Kind.Worktree,
+        defaults = AgentStartDefaults(mode = app.prefs.defaultPermissionMode.value?.rawValue),
+        preferences = app.preferences,
       ) { started ->
         router.push(Route.of(started))
         scope.launch { refresh() }

@@ -1,5 +1,8 @@
 package dev.houwert.argus.ui.components
 
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.ripple
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -210,6 +213,8 @@ fun <ID> PillTabBar(
   iconsOnly: Boolean = false,
   framed: Boolean = false,
   trailing: (@Composable RowScope.() -> Unit)? = null,
+  /** A tab's long-press, for its own menu (pin, close). */
+  onLongPress: ((ID) -> Unit)? = null,
 ) {
   val theme = ArgusTheme.colors
   Row(
@@ -225,7 +230,18 @@ fun <ID> PillTabBar(
       val interaction = rememberInteraction()
       val color = if (selected) theme.pillSelectedText else theme.text
       Row(
-        Modifier.argusClickable(interaction, shape = CircleShape, role = Role.Tab, label = tab.title) { onSelect(tab.id) }
+        (
+          if (onLongPress == null) Modifier.argusClickable(interaction, shape = CircleShape, role = Role.Tab, label = tab.title) { onSelect(tab.id) }
+          else Modifier.clip(CircleShape).combinedClickable(
+            interactionSource = interaction.source,
+            indication = ripple(),
+            role = Role.Tab,
+            onClickLabel = tab.title,
+            onLongClickLabel = "More for ${tab.title}",
+            onLongClick = { onLongPress(tab.id) },
+            onClick = { onSelect(tab.id) },
+          )
+        )
           .semantics {
             this.selected = selected
             contentDescription = tab.title

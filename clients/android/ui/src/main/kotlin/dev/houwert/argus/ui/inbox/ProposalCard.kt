@@ -1,5 +1,6 @@
 package dev.houwert.argus.ui.inbox
 
+import dev.houwert.argus.ui.transcript.MarkdownView
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -168,7 +169,7 @@ fun ProposalCard(
 
   Card(modifier.alpha(if (busy) 0.5f else 1f).animateContentSize()) {
     ProposalHeader(content, actions.openDetails)
-    SelectionContainer { BodyText(content.summary) }
+    SelectionContainer { MarkdownView(content.summary, baseSize = 14) }
     if (content.rationale.isNotEmpty()) MutedText(content.rationale)
     content.revisionRequest?.takeIf { it.isNotEmpty() }?.let { Banner(it, tone = Tone.Accent, title = "You asked for a revision") }
     if (decided != null) Banner(decided, tone = Tone.Muted)

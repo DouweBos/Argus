@@ -3,8 +3,9 @@ package dev.houwert.argus.core.stores
 import dev.houwert.argus.core.git.DiffReviewComment
 import dev.houwert.argus.core.git.DiffReviewPrompt
 import dev.houwert.argus.core.git.SessionDiffScope
+import dev.houwert.argus.core.sessions.AgentStartDefaults
+import dev.houwert.argus.core.sessions.ComposerStart
 import dev.houwert.argus.kit.protocol.generated.RemoteAgentStatusStatus
-import dev.houwert.argus.kit.protocol.generated.RemotePermissionMode
 
 // Diff review: draft comments on lines, sent to a session's agent as one message,
 // or a fresh agent asked to review the diff.
@@ -45,13 +46,12 @@ fun HostStore.frontAgent(inSession: String, preferring: String? = null): String?
 suspend fun HostStore.sendReview(
   sessionId: String,
   preferring: String? = null,
-  model: String? = null,
-  permissionMode: RemotePermissionMode? = null,
+  defaults: AgentStartDefaults = AgentStartDefaults(),
 ): String? {
   val comments = reviews.comments(sessionId)
   if (comments.isEmpty()) return null
   val agentId = frontAgent(sessionId, preferring)
-    ?: spawnAgent(sessionId, model = model, permissionMode = permissionMode)?.agentId
+    ?: startAgent(sessionId, defaults.mode, defaults.model)
     ?: return null
   reviews.clear(sessionId)
   hooks.track(StoreEvent.DiffReviewed(StoreEvent.DiffReviewAction.Send, comments.size))
@@ -63,12 +63,11 @@ suspend fun HostStore.sendReview(
 suspend fun HostStore.requestCodeReview(
   sessionId: String,
   baseBranch: String?,
-  model: String? = null,
-  permissionMode: RemotePermissionMode? = null,
+  defaults: AgentStartDefaults = AgentStartDefaults(),
+  onSpawned: ((agentId: String, sessionId: String) -> Unit)? = null,
 ): String? {
   val (message, display) = DiffReviewPrompt.reviewRequest(baseBranch)
-  val agentId = spawnAgent(sessionId, model = model, permissionMode = permissionMode)?.agentId ?: return null
+  val agentId = startAgent(sessionId, ComposerStart(message, display), defaults, onSpawned) ?: return null
   hooks.track(StoreEvent.DiffReviewed(StoreEvent.DiffReviewAction.RequestReview, reviews.comments(sessionId).size))
-  sendMessage(agentId, message, displayText = display)
   return agentId
 }

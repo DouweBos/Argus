@@ -69,11 +69,15 @@ class PhoneAgentStart(
       (_kind.value == StartWorkspace.Kind.Worktree || (_kind.value == StartWorkspace.Kind.Existing && branches.value.isEmpty()))
 
   /** Whether the composer may send: something to say where it goes, and somewhere to go. */
-  fun ready(text: String): Boolean = when (_kind.value) {
-    StartWorkspace.Kind.Current -> sessionId != null
-    StartWorkspace.Kind.Worktree -> _repoRoot.value != null && text.isNotBlank()
-    StartWorkspace.Kind.Existing -> _repoRoot.value != null && existingBranch.value != null
-  }
+  fun ready(text: String): Boolean = picksReady && (_kind.value != StartWorkspace.Kind.Worktree || text.isNotBlank())
+
+  /** Every choice the footer makes is in; the text is the composer's to check. */
+  val picksReady: Boolean
+    get() = when (_kind.value) {
+      StartWorkspace.Kind.Current -> sessionId != null
+      StartWorkspace.Kind.Worktree -> _repoRoot.value != null
+      StartWorkspace.Kind.Existing -> _repoRoot.value != null && existingBranch.value != null
+    }
 
   suspend fun start(request: ComposerStart): StartedAgent? {
     val repoRoot = _repoRoot.value

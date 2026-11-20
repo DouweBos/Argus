@@ -1,5 +1,7 @@
 package dev.houwert.argus.core.stores
 
+import dev.houwert.argus.core.agents.AgentMcpServers
+import dev.houwert.argus.core.agents.McpServerActivity
 import dev.houwert.argus.core.backend.HostBackend
 import dev.houwert.argus.core.backend.HostEvent
 import dev.houwert.argus.core.backend.toStored
@@ -173,6 +175,17 @@ class HostStore(
   /** Locally chosen effort per agent; the monitor snapshot doesn't carry it. */
   internal val _effortByAgent = MutableStateFlow(emptyMap<String, String>())
   val effortByAgent: StateFlow<Map<String, String>> = _effortByAgent.asStateFlow()
+  /** Side questions asked of each agent this visit; see `HostStoreSideQuestions.kt`. */
+  internal val _sideQuestionsByAgent = MutableStateFlow(emptyMap<String, List<SideQuestion>>())
+  val sideQuestionsByAgent: StateFlow<Map<String, List<SideQuestion>>> = _sideQuestionsByAgent.asStateFlow()
+  /** Each agent's MCP servers as its CLI last reported them; see `HostStoreAgentMcp.kt`. */
+  internal val _mcpServersByAgent = MutableStateFlow(emptyMap<String, AgentMcpServers>())
+  val mcpServersByAgent: StateFlow<Map<String, AgentMcpServers>> = _mcpServersByAgent.asStateFlow()
+  internal val _mcpServersErrorByAgent = MutableStateFlow(emptyMap<String, String>())
+  val mcpServersErrorByAgent: StateFlow<Map<String, String>> = _mcpServersErrorByAgent.asStateFlow()
+  /** A server being reconnected, toggled or signed in to, by `agentId\u0000server`. */
+  internal val _mcpServerActivity = MutableStateFlow(emptyMap<String, McpServerActivity>())
+  val mcpServerActivity: StateFlow<Map<String, McpServerActivity>> = _mcpServerActivity.asStateFlow()
   internal val _devices = MutableStateFlow(emptyList<RemoteDevice>())
   val devices: StateFlow<List<RemoteDevice>> = _devices.asStateFlow()
   internal val _deviceHosts = MutableStateFlow(emptyList<RemoteDeviceHost>())
@@ -363,6 +376,10 @@ class HostStore(
     _statusByAgent.value = emptyMap()
     _goneAgents.value = emptySet()
     _effortByAgent.value = emptyMap()
+    _sideQuestionsByAgent.value = emptyMap()
+    _mcpServersByAgent.value = emptyMap()
+    _mcpServersErrorByAgent.value = emptyMap()
+    _mcpServerActivity.value = emptyMap()
     _devices.value = emptyList()
     _deviceHosts.value = emptyList()
     _claudeAccounts.value = null

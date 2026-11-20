@@ -49,9 +49,12 @@ object FileLinks {
     Pattern.compile("(?<![$WORD/@-])($core)(?::(\\d+))?(?::(\\d+))?(?![$WORD])", Pattern.CASE_INSENSITIVE)
   }
 
-  private val urlPattern: Pattern =
-    Pattern.compile("https?://[^\\s<>\"']+", Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CHARACTER_CLASS)
-  private val mentionPattern: Pattern = Pattern.compile("(^|\\s)@((?:\\\\\\s|\\S)+)", Pattern.UNICODE_CHARACTER_CLASS)
+  private val urlPattern: Pattern = unicode("https?://[^\\s<>\"']+", Pattern.CASE_INSENSITIVE)
+  private val mentionPattern: Pattern = unicode("(^|\\s)@((?:\\\\\\s|\\S)+)")
+
+  /** Android's ICU regex is Unicode-aware already and rejects the flag the JVM needs for it. */
+  private fun unicode(regex: String, flags: Int = 0): Pattern =
+    runCatching { Pattern.compile(regex, flags or Pattern.UNICODE_CHARACTER_CLASS) }.getOrElse { Pattern.compile(regex, flags) }
   private val fileRefRegex = Regex("""^(.*?)(?::(\d+))?(?::(\d+))?$""")
   private val shellEscape = Regex("""\\(\s)""")
 

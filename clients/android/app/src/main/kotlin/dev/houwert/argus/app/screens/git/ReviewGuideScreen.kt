@@ -1,5 +1,6 @@
 package dev.houwert.argus.app.screens.git
 
+import dev.houwert.argus.ui.transcript.MarkdownView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -125,7 +126,7 @@ fun ReviewGuideScreen(target: ReviewGuideTarget, label: String) {
       } else {
         val visited = visitedAll[target.key].orEmpty()
         Card {
-          ReviewGuideHeader(guide, stale = state.stale, visited = visited.size, canRewrite = control, overview = { SelectionContainer { BodyText(it) } }) { write(true) }
+          ReviewGuideHeader(guide, stale = state.stale, visited = visited.size, canRewrite = control, overview = { SelectionContainer { MarkdownView(it, baseSize = 13) } }) { write(true) }
         }
         if (generating) MutedText("Rewriting the guide")
         Card {
@@ -173,7 +174,7 @@ private fun StopView(target: ReviewGuideTarget, guide: RemoteReviewGuide, index:
         if (stop.mechanical) Badge("Mechanical")
       }
       SelectionContainer { Text(stop.title, color = theme.text, style = argusFont(20, FontWeight.SemiBold)) }
-      if (stop.summary.isNotEmpty()) SelectionContainer { Text(stop.summary, color = theme.text, style = argusFont(13)) }
+      if (stop.summary.isNotEmpty()) SelectionContainer { MarkdownView(stop.summary, baseSize = 13) }
     }
     if (stop.lookClosely.isNotEmpty()) LookClosely(stop, target.sessionId)
     for (file in host.reviewGuides.files(target, stop)) {
@@ -207,7 +208,7 @@ private fun StopView(target: ReviewGuideTarget, guide: RemoteReviewGuide, index:
           verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
           Text(answer.question, color = theme.text, style = argusFont(13, FontWeight.Medium))
-          SelectionContainer { Text(answer.answer, color = theme.text, style = argusFont(13)) }
+          SelectionContainer { MarkdownView(answer.answer, baseSize = 13) }
         }
       }
       if (control) {
