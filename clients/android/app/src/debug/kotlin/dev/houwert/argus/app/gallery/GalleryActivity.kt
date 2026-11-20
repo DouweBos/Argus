@@ -9,7 +9,7 @@ import dev.houwert.argus.ui.gallery.GalleryPage
 
 /**
  * The design-system gallery as its own launcher entry in debug builds. Extras pick the start:
- * `dark` (boolean) and `page` (a [GalleryPage] name), e.g. `am start -n … --ez dark true --es page Lists`.
+ * `dark` (boolean), `page` (a [GalleryPage] name) and `story` (a page's story, where it has several), e.g. `am start -n … --ez dark true --es page Lists`.
  */
 class GalleryActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -17,6 +17,6 @@ class GalleryActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     val dark = intent.getBooleanExtra("dark", false)
     val page = GalleryPage.entries.firstOrNull { it.name == intent.getStringExtra("page") } ?: GalleryPage.Tokens
-    setContent { ArgusGallery(initialDark = dark, initialPage = page) }
+    setContent { ArgusGallery(initialDark = dark, initialPage = page, initialStory = intent.getStringExtra("story")) }
   }
 }
