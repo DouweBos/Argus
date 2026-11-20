@@ -3,10 +3,11 @@ package dev.houwert.argus.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -160,8 +161,10 @@ fun DiffLinesView(lines: List<DiffLine>, modifier: Modifier = Modifier, collapse
   var showAll by remember(lines) { mutableStateOf(false) }
   val visible = if (showAll || !collapses) lines else lines.take(COLLAPSED_COUNT)
   Column(modifier.fillMaxWidth()) {
-    // Bands as wide as the widest line, so a scrolled row keeps its tint.
-    Column(Modifier.horizontalScroll(rememberScrollState()).width(IntrinsicSize.Max)) {
+    // Bands as wide as the widest line (at least the card), so a scrolled row keeps its tint.
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+    val minWidth = maxWidth
+    Column(Modifier.horizontalScroll(rememberScrollState()).widthIn(min = minWidth).width(IntrinsicSize.Max)) {
       for (line in visible) {
         Row(Modifier.fillMaxWidth().background(DiffColors.band(line.kind, theme)).padding(vertical = 1.dp)) {
           Text(
@@ -173,6 +176,7 @@ fun DiffLinesView(lines: List<DiffLine>, modifier: Modifier = Modifier, collapse
           )
         }
       }
+    }
     }
     if (collapses && lines.size > COLLAPSED_COUNT) {
       AccentLink(if (showAll) "Collapse" else "See all ${lines.size} lines", Modifier.padding(horizontal = 4.dp), size = 12) { showAll = !showAll }
@@ -259,8 +263,7 @@ fun CommitRow(subject: String, hash: String, author: String, age: String?, modif
     BodyText(subject, maxLines = 2)
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
       MonoText(hash.take(8), size = 11, color = theme.textMuted)
-      MutedText(author, Modifier.weight(1f, fill = false), maxLines = 1)
-      Spacer(Modifier.weight(1f))
+      MutedText(author, Modifier.weight(1f), maxLines = 1)
       if (age != null) MutedText(age)
     }
   }
