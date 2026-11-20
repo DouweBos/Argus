@@ -6,17 +6,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,12 +41,11 @@ import dev.houwert.argus.kit.protocol.isOpen
 import dev.houwert.argus.kit.protocol.isPinned
 import dev.houwert.argus.kit.util.Labels
 import dev.houwert.argus.ui.components.Badge
+import dev.houwert.argus.ui.components.DateTimePickerDialog
 import dev.houwert.argus.ui.icons.Icon
 import dev.houwert.argus.ui.theme.ArgusTheme
 import java.time.Instant
-import java.time.LocalTime
 import java.time.ZoneId
-import java.time.ZoneOffset
 import kotlinx.coroutines.launch
 
 /** A finished chat: its title, when it ended, how long it ran and, off its session, the branch. */
@@ -145,45 +137,14 @@ fun SessionRowMenuItems(host: HostStore, session: RemoteSession, dismiss: () -> 
   DropdownMenuItem({ Text("Snooze Until") }, { dismiss(); customSnooze() }, leadingIcon = { Icon(Icon.clock, null, tint = theme.textSecondary) })
 }
 
-/** Snooze until a day and time of your choosing: a date picker, then a time picker. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Snooze until a day and time of your choosing. */
 @Composable
 fun SnoozeUntilDialog(host: HostStore, session: RemoteSession, onDismiss: () -> Unit) {
-  val zone = ZoneId.systemDefault()
-  val initial = session.snoozedUntil?.let { Instant.ofEpochMilli(it.toLong()).atZone(zone) }
-    ?: SnoozePreset.Tomorrow.date()!!
-  val dateState = rememberDatePickerState(
-    initialSelectedDateMillis = initial.toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-  )
-  val timeState = rememberTimePickerState(initial.hour, initial.minute)
-  var pickingTime by remember { mutableStateOf(false) }
   val scope = rememberCoroutineScope()
-  val title = SessionActivity.title(session)
-  DatePickerDialog(
-    onDismissRequest = onDismiss,
-    confirmButton = {
-      if (pickingTime) {
-        TextButton({
-          val day = Instant.ofEpochMilli(dateState.selectedDateMillis ?: return@TextButton).atZone(ZoneOffset.UTC).toLocalDate()
-          val until = day.atTime(LocalTime.of(timeState.hour, timeState.minute)).atZone(zone).toInstant().toEpochMilli()
-          if (until <= System.currentTimeMillis()) return@TextButton
-          onDismiss()
-          scope.launch { host.snoozeSession(session, until) }
-        }) { Text("Snooze") }
-      } else {
-        TextButton({ pickingTime = true }, enabled = dateState.selectedDateMillis != null) { Text("Next") }
-      }
-    },
-    dismissButton = { TextButton(onDismiss) { Text("Cancel") } },
-  ) {
-    if (pickingTime) {
-      Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("Snooze $title until", style = ArgusTheme.typography.headline, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        TimePicker(timeState)
-        Text("It leaves the list until then, and comes back with a notification.", style = ArgusTheme.typography.footnote, color = ArgusTheme.colors.textSecondary)
-      }
-    } else {
-      DatePicker(dateState, title = { Text("Snooze $title until", Modifier.padding(start = 24.dp, top = 16.dp), maxLines = 1, overflow = TextOverflow.Ellipsis) })
-    }
-  }
+  val initial = session.snoozedUntil?.let { Instant.ofEpochMilli(it.toLong()).atZone(ZoneId.systemDefault()) } ?: SnoozePreset.Tomorrow.date()!!
+  DateTimePickerDialog(
+    "Snooze ${SessionActivity.title(session)} until", initial, "Snooze",
+    { scope.launch { host.snoozeSession(session, it.toInstant().toEpochMilli()) } }, onDismiss,
+    footnote = "It leaves the list until then, and comes back with a notification.",
+  )
 }
