@@ -37,6 +37,7 @@ import dev.houwert.argus.ui.components.MutedText
 import dev.houwert.argus.ui.components.ReviewableDiffHunksView
 import dev.houwert.argus.ui.components.Screen
 import dev.houwert.argus.ui.components.ViewedToggle
+import dev.houwert.argus.ui.components.firstChangedLine
 import dev.houwert.argus.ui.icons.Icon as Icons
 import dev.houwert.argus.ui.theme.Tone
 import kotlin.time.Duration.Companion.seconds
@@ -80,7 +81,11 @@ fun FileDiffScreen(sessionId: String, path: String, mode: String) {
   LaunchedEffect(sessionId, path, mode) { refresh() }
   LiveRefresh(connection == Transport.State.Ready, 5.seconds) { refresh() }
 
-  GitScaffold(path.substringAfterLast('/'), bottomBar = { SessionReviewBar(sessionId) }) {
+  val router = dev.houwert.argus.app.LocalRouter.current
+  val viewFile = file?.takeIf { control && it.status != DiffFileStatus.DELETED }?.let { current ->
+    listOf(BarAction("View file", Icons.file) { router.push(dev.houwert.argus.app.navigation.Route.File(sessionId, path, current.firstChangedLine, "changes")) })
+  }.orEmpty()
+  GitScaffold(path.substringAfterLast('/'), viewFile, bottomBar = { SessionReviewBar(sessionId) }) {
     Screen {
       val current = file
       val error = failure

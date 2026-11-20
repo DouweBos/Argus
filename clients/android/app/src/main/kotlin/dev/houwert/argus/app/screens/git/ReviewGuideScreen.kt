@@ -175,7 +175,7 @@ private fun StopView(target: ReviewGuideTarget, guide: RemoteReviewGuide, index:
       SelectionContainer { Text(stop.title, color = theme.text, style = argusFont(20, FontWeight.SemiBold)) }
       if (stop.summary.isNotEmpty()) SelectionContainer { Text(stop.summary, color = theme.text, style = argusFont(13)) }
     }
-    if (stop.lookClosely.isNotEmpty()) LookClosely(stop)
+    if (stop.lookClosely.isNotEmpty()) LookClosely(stop, target.sessionId)
     for (file in host.reviewGuides.files(target, stop)) {
       Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -240,8 +240,9 @@ private fun StopView(target: ReviewGuideTarget, guide: RemoteReviewGuide, index:
 }
 
 @Composable
-private fun LookClosely(stop: RemoteReviewGuideStop) {
+private fun LookClosely(stop: RemoteReviewGuideStop, sessionId: String?) {
   val theme = ArgusTheme.colors
+  val router = LocalRouter.current
   Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
       Icon(Icons.eye, null, Modifier.size(13.dp), tint = theme.warning)
@@ -254,7 +255,14 @@ private fun LookClosely(stop: RemoteReviewGuideStop) {
       ) {
         SelectionContainer { Text(flag.note, color = theme.text, style = argusFont(13)) }
         flag.path?.let { path ->
-          MonoText(flag.line?.let { "$path:${it.toInt()}" } ?: path, size = 11, color = theme.textMuted, maxLines = 1, truncateHead = true)
+          val location = flag.line?.let { "$path:${it.toInt()}" } ?: path
+          val line = flag.line?.toInt()
+          // Opens the file where the target has a checkout to read it from.
+          if (sessionId != null && line != null) {
+            dev.houwert.argus.ui.components.AccentLink(location, size = 11) { router.push(Route.File(sessionId, path, line, "changes")) }
+          } else {
+            MonoText(location, size = 11, color = theme.textMuted, maxLines = 1, truncateHead = true)
+          }
         }
       }
     }
