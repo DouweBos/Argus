@@ -14,13 +14,15 @@ extension HostStore {
     return result?.accounts ?? []
   }
 
-  /// Pin the session to `accountId`, move the agent there and continue its turn.
-  /// Throws the host's reason so the card can show it in place.
-  public func handoffAgent(agentId: String, accountId: String) async throws {
+  /// Pin the session to `accountId`, move the agent there and continue its turn,
+  /// with its stalled spawned agents when `includeChildren`. Throws the host's reason
+  /// so the card can show it in place.
+  public func handoffAgent(agentId: String, accountId: String, includeChildren: Bool = false) async throws {
     guard let backend else { return }
     try await backend.request(
       .agentsHandoffToAccount,
-      ArgusProtocol.MethodsTypes.AgentsHandoffToAccountParams(agentId: agentId, accountId: accountId),
+      ArgusProtocol.MethodsTypes.AgentsHandoffToAccountParams(
+        agentId: agentId, accountId: accountId, includeChildren: includeChildren ? true : nil),
       as: IgnoredResult.self)
     // Nothing re-broadcasts the session list on this write.
     guard let sessionId = statusByAgent[agentId]?.sessionId else { return }

@@ -9491,19 +9491,22 @@ extension ArgusProtocol {
     public var label: String
     public var detail: String?
     public var usage: UsageLimitWindow?
+    public var children: Int?
 
     enum CodingKeys: String, CodingKey {
       case accountId = "account_id"
       case label = "label"
       case detail = "detail"
       case usage = "usage"
+      case children = "children"
     }
 
-    public init(accountId: String, label: String, detail: String? = nil, usage: UsageLimitWindow? = nil) {
+    public init(accountId: String, label: String, detail: String? = nil, usage: UsageLimitWindow? = nil, children: Int? = nil) {
       self.accountId = accountId
       self.label = label
       self.detail = detail
       self.usage = usage
+      self.children = children
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -9512,6 +9515,7 @@ extension ArgusProtocol {
       try c.encode(label, forKey: .label)
       try c.encode(detail, forKey: .detail)
       try c.encode(usage, forKey: .usage)
+      try c.encodeIfPresent(children, forKey: .children)
     }
   }
 

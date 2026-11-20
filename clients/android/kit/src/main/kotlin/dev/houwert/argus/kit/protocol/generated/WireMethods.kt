@@ -137,6 +137,7 @@ object MethodsTypes {
   data class AgentsHandoffToAccountParams(
     @SerialName("agent_id") val agentId: String,
     @SerialName("account_id") val accountId: String,
+    @SerialName("include_children") val includeChildren: Boolean? = null,
   )
 
   @Serializable

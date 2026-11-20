@@ -50,4 +50,15 @@ struct LimitHandoffCardTests {
     #expect(LimitHandoffCard.usageCaption(noReset, now: now) == "Weekly 57% left")
     #expect(LimitHandoffCard.usageCaption(nil, now: now) == "Usage unknown")
   }
+
+  @Test("the children offer counts the most any account can take along")
+  func children() {
+    func account(_ id: String, _ children: Int?) -> ArgusProtocol.LimitHandoffAccount {
+      ArgusProtocol.LimitHandoffAccount(accountId: id, label: id, children: children)
+    }
+    #expect(LimitHandoffCard.childCount([account("w", nil)]) == 0)
+    #expect(LimitHandoffCard.childCount([account("w", 1), account("s", 3)]) == 3)
+    #expect(LimitHandoffCard.childrenLabel(1) == "Also continue its spawned agent")
+    #expect(LimitHandoffCard.childrenLabel(3) == "Also continue its 3 spawned agents")
+  }
 }

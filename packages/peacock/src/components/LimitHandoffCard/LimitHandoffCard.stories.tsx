@@ -58,6 +58,15 @@ export const SeveralAccounts: Story = {
   args: { accounts: [work, side, unknown] },
 };
 
+export const WithSpawnedAgents: Story = {
+  args: {
+    accounts: [
+      { ...work, children: 3 },
+      { ...side, children: 3 },
+    ],
+  },
+};
+
 export const UsageUnknown: Story = { args: { accounts: [unknown] } };
 
 export const HandingOff: Story = {

@@ -242,7 +242,7 @@ export interface EventMap {
     had_history: boolean;
     queued: boolean;
     after_limit: boolean;
-    source: "auto_limit" | "limit_card" | "picker";
+    source: "auto_limit" | "limit_card_child" | "limit_card" | "picker";
     success: boolean;
   };
   agent_transferred: {

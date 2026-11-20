@@ -202,10 +202,13 @@ export const AGENT_COMMANDS = {
     params: AgentId,
     result: z.array(LimitHandoffAccount),
   },
-  /** Move a limit-stalled agent onto another account and continue its turn. */
+  /** Move a limit-stalled agent (and, asked, its stalled children) onto another account and continue. */
   handoff_agent_to_account: {
     tier: "admin",
-    params: AgentId.extend({ accountId: z.string() }),
+    params: AgentId.extend({
+      accountId: z.string(),
+      includeChildren: z.boolean().optional(),
+    }),
     result: Void,
   },
   /** Continue the chat in a new agent on another runner, seeded with its context. */

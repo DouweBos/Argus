@@ -29,7 +29,11 @@ interface AgentExtrasState {
   loadHandoff: (agentId: string) => Promise<void>;
   clearHandoff: (agentId: string) => void;
   /** Move the agent onto `accountId` and continue its turn. Throws the host's reason. */
-  handoff: (agentId: string, accountId: string) => Promise<void>;
+  handoff: (
+    agentId: string,
+    accountId: string,
+    includeChildren: boolean,
+  ) => Promise<void>;
 }
 
 const EMPTY = {
@@ -89,10 +93,11 @@ export const useAgentExtrasStore = create<AgentExtrasState>()((set) => ({
     set((s) => ({ handoffByAgent: { ...s.handoffByAgent, [agentId]: [] } }));
   },
 
-  handoff: async (agentId, accountId) => {
+  handoff: async (agentId, accountId, includeChildren) => {
     await request(connected(), "agents.handoff_to_account", {
       agent_id: agentId,
       account_id: accountId,
+      include_children: includeChildren || undefined,
     });
     set((s) => ({ handoffByAgent: { ...s.handoffByAgent, [agentId]: [] } }));
   },
