@@ -2,6 +2,7 @@ package dev.houwert.argus.core.stores
 
 import dev.houwert.argus.core.blueprints.BlueprintForm
 import dev.houwert.argus.core.blueprints.isRunning
+import dev.houwert.argus.core.backend.requestWithNulls
 import dev.houwert.argus.kit.protocol.generated.Blueprint
 import dev.houwert.argus.kit.protocol.generated.BlueprintOverrides
 import dev.houwert.argus.kit.protocol.generated.BlueprintRun
@@ -76,9 +77,15 @@ class BlueprintsStore(val host: HostStore) {
     val backend = host.backend ?: return null
     return try {
       val saved = if (id != null) {
-        backend.request(Methods.BlueprintsUpdate, MethodsTypes.BlueprintsUpdateParams(id, form.updateInput)).blueprint
+        backend.requestWithNulls(
+          Methods.BlueprintsUpdate, MethodsTypes.BlueprintsUpdateParams(id, form.updateInput),
+          "patch.agent.runner", "patch.agent.model", "patch.agent.permission_mode",
+        ).blueprint
       } else {
-        backend.request(Methods.BlueprintsCreate, MethodsTypes.BlueprintsCreateParams(form.createInput)).blueprint
+        backend.requestWithNulls(
+          Methods.BlueprintsCreate, MethodsTypes.BlueprintsCreateParams(form.createInput),
+          "input.copy_project_settings_from", "input.agent.runner", "input.agent.model", "input.agent.permission_mode",
+        ).blueprint
       }
       upsert(saved)
       _error.value = null

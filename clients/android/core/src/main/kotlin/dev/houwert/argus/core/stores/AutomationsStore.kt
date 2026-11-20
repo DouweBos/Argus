@@ -3,6 +3,7 @@ package dev.houwert.argus.core.stores
 import dev.houwert.argus.core.automations.AutomationInput
 import dev.houwert.argus.core.automations.newAutomationDetail
 import dev.houwert.argus.core.backend.RawCommand
+import dev.houwert.argus.core.backend.requestWithNulls
 import dev.houwert.argus.kit.protocol.generated.AutomationCalibration
 import dev.houwert.argus.kit.protocol.generated.Methods
 import dev.houwert.argus.kit.protocol.generated.MethodsTypes
@@ -290,10 +291,11 @@ class AutomationsStore(val host: HostStore) {
   ): String? {
     val backend = host.backend ?: return null
     return try {
-      // `model` is always sent (null for the default): the generated params encode it explicitly.
-      val run = backend.request(
+      // The host wants `model` present, null for the default.
+      val run = backend.requestWithNulls(
         Methods.AutomationsRunScratch,
         MethodsTypes.AutomationsRunScratchParams(name, playbook, repoRoots, sourceIds, model, guardrails),
+        "model",
       ).run
       host.hooks.track(StoreEvent.RunActed(StoreEvent.RunAction.StartScratch))
       _runs.update { listOf(run) + it }
