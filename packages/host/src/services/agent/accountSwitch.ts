@@ -16,7 +16,6 @@ import { setSessionClaudeAccount } from "../session/sessionOps";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { respawnAgent, sendAgentMessage } from "./agentService";
 import { isAgentBusy } from "./busy";
-import { liveConversation } from "./conversation/live";
 import { handoffCandidates, stalledChildren } from "./limitHandoff";
 import {
   CONTINUE_MESSAGE,
@@ -24,6 +23,7 @@ import {
   isLimitStalled,
   limitResumeAt,
 } from "./limitResume";
+import { hasHistory, resumeRefOf } from "./resumeRef";
 import { pinSessionAccount } from "./sessionAccountPin";
 
 /** Which control asked for the move. */
@@ -105,10 +105,8 @@ async function moveAgent(
   source: AccountSwitchSource,
 ): Promise<void> {
   const { agentId, sessionId } = agent;
-  const hadHistory = agent.turnsCompleted > 0;
-  const resumeRef = hadHistory
-    ? liveConversation(agentId)?.sessionId
-    : undefined;
+  const hadHistory = hasHistory(agent);
+  const resumeRef = hadHistory ? (resumeRefOf(agent) ?? undefined) : undefined;
   if (hadHistory && !resumeRef) {
     // Respawning would drop the conversation; it moves on its next resume.
     warn(`[agent:${agentId}] no Claude session to resume on the new account`);

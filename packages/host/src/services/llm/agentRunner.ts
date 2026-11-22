@@ -11,6 +11,7 @@
 import { emitHostEvent } from "@argus/host/bus";
 import { appState } from "../../state";
 import { respawnAgent } from "../agent/agentService";
+import { hasHistory } from "../agent/resumeRef";
 import { getRunnerById } from "./registry";
 
 /**
@@ -33,7 +34,7 @@ export async function setAgentRunner(
   if (agent.runner.id === runnerId) {
     return;
   }
-  if (agent.turnsCompleted > 0 || agent.inflightPrompts > 0) {
+  if (hasHistory(agent) || agent.inflightPrompts > 0) {
     throw "The runner is fixed once the agent has started working — start a new agent to use a different runner";
   }
 

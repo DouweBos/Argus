@@ -187,6 +187,10 @@ export interface AgentSession {
    * exit-plan-restore falls back to the system default.
    */
   prePlanPermissionMode?: string | null;
+  /** The runner's id for the current conversation; null while it has none. */
+  resumeRef?: string | null;
+  /** Spawned onto an existing conversation, so it has history before its first turn. */
+  resumed?: boolean;
   /** Claude account the subprocess was spawned with. */
   accountId?: string;
   /** Spawned with the conductor guide in its prompt and its subagents'. */

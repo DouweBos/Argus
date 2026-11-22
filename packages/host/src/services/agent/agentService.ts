@@ -917,6 +917,8 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     integrationsGuide: integrationsSection !== null,
     relatedProjectCount: relatedProjects.length,
     profile,
+    resumeRef: resumeSessionId ?? null,
+    resumed: Boolean(resumeSessionId),
   };
   if (args.register) {
     appState.agents.set(agentId, agentSession);
@@ -1097,9 +1099,16 @@ export function onStreamLine(agentId: string, line: string): void {
 
   if (line.includes('"subtype":"init"')) {
     try {
-      const parsed = JSON.parse(line) as { type?: string; model?: string };
+      const parsed = JSON.parse(line) as {
+        type?: string;
+        model?: string;
+        session_id?: string;
+      };
       if (parsed.type === "system" && parsed.model) {
         session.resolvedModel = parsed.model;
+      }
+      if (parsed.type === "system" && parsed.session_id) {
+        session.resumeRef = parsed.session_id;
       }
     } catch {
       // Non-fatal.

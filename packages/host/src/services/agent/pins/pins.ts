@@ -11,6 +11,7 @@ import { appState } from "../../../state";
 import { capture as telemetryCapture } from "../../telemetry/telemetry";
 import { loadHistoryIndex } from "../chatHistory";
 import { liveConversation } from "../conversation/live";
+import { resumeRefOf } from "../resumeRef";
 import {
   type PinnedChat,
   getPin,
@@ -35,7 +36,7 @@ function liveFields(agent: AgentSession): Omit<PinnedChat, "pinnedAt"> {
     agentId: agent.agentId,
     sessionId: agent.sessionId,
     repoRoot,
-    runnerSessionId: conv?.sessionId ?? undefined,
+    runnerSessionId: resumeRefOf(agent) ?? undefined,
     runnerId: agent.runner.id,
     model: agent.model ?? undefined,
     permissionMode: agent.permissionMode ?? undefined,
