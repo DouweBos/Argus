@@ -43,12 +43,15 @@ import {
   parseMcpStatus,
 } from "./mcpStatus";
 import { toClaudePermissionMode } from "./permissionModes";
+import { TurnCost } from "./turnCost";
 
 export interface ClaudeCodeHandleInit {
   agentId: string;
   child: ChildProcess;
   stdin: Writable;
   combinedSystemPrompt: string;
+  /** Started with `--resume`. */
+  resumed?: boolean;
   /** Added to every subagent's context when it starts. */
   subagentContext?: string;
   permissionPreHook?: PermissionPreHook;
@@ -95,6 +98,7 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
   private readonly controlHandler: ControlHandler;
   private readonly agentId: string;
   private readonly permissionPreHook: PermissionPreHook | null;
+  private readonly turnCost: TurnCost;
   private exited = false;
 
   constructor(init: ClaudeCodeHandleInit) {
@@ -104,6 +108,7 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
     this.stdin = init.stdin;
     this.permissionPreHook = init.permissionPreHook ?? null;
     this.controlHandler = new ControlHandler(init.agentId);
+    this.turnCost = new TurnCost(init.resumed === true);
     this.wireStdioErrors();
     this.wireStderr();
     this.wireStdoutReadline();
@@ -316,7 +321,7 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
         // fall through — forward unrecognised lines.
       }
 
-      this.emit("stream-event", line);
+      this.emit("stream-event", this.turnCost.rewrite(line));
     });
   }
 

@@ -70,7 +70,8 @@ export type LlmStreamEvent =
       modelUsage?: Record<string, { contextWindow?: number }>;
       result?: string;
       subtype: "error" | "success";
-      total_cost_usd: number;
+      /** This turn's, not a running total; absent when the runner didn't say. */
+      total_cost_usd?: number;
       type: "result";
       usage: TokenUsage;
     } | {
