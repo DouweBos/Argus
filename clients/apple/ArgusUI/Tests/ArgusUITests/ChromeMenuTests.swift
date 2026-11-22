@@ -88,6 +88,29 @@
       #expect(model.highlightedItem == nil)
     }
 
+    @Test("a submenu takes the keys, follows its parent's rows and hands back the row that opened it")
+    func submenu() {
+      let model = ChromeMenuModel()
+      func account(_ names: [String]) -> ChromeMenuEntry {
+        .submenu("Account") { for name in names { ChromeMenuItem(name) {} } }
+      }
+      model.entries = [.item(ChromeMenuItem("Plain") {}), account(["Work"])]
+      model.highlighted = 0
+      #expect(!model.enterSubmenu())
+      model.highlighted = 1
+      #expect(model.enterSubmenu())
+      #expect(model.focused.highlightedItem?.title == "Work")
+
+      model.entries = [.item(ChromeMenuItem("Plain") {}), account(["Work", "Side"])]
+      model.refreshSubmenu()
+      model.focused.move(1)
+      #expect(model.focused.highlightedItem?.title == "Side")
+
+      model.closeSubmenu()
+      #expect(model.focused === model)
+      #expect(model.highlighted == 1)
+    }
+
     @Test("a row's letter picks it, shown as its hint, unless the row is disabled")
     func letterKeys() {
       let model = ChromeMenuModel()

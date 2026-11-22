@@ -9,9 +9,9 @@
     public var id: String { rawValue }
   }
 
-  /// The pills along the phone composer's foot, as the Mac's: model (and
-  /// account), effort and permission mode drop a menu in place; linked projects
-  /// and side questions open a sheet.
+  /// The pills along the phone composer's foot, as the Mac's: model, effort,
+  /// permission mode and overflow drop a menu in place; linked projects and
+  /// side questions open a sheet.
   struct PhoneComposerPills: View {
     let composer: ComposerModel
     @Binding var picker: PhoneComposerPicker?
@@ -57,6 +57,48 @@
           .buttonStyle(.argusPlain)
           .accessibilityLabel("Side question")
         }
+        if composer.offersOverflowMenu {
+          if dividers { ComposerPillDivider() }
+          overflowMenu
+        }
+    }
+
+    private var overflowMenu: some View {
+      Menu {
+        // A Menu doesn't report opening; its rows appear on the first open only, so that's what counts.
+        Group { if composer.offersAccounts { accountMenu } }
+          .onAppear { composer.onAffordance?(.overflowMenu) }
+      } label: {
+        ComposerPillLabel(
+          icon: Icon.ellipsis, accent: composer.hasPendingAccountSwitch, chevron: false, iconRotation: .degrees(90))
+      }
+      .menuIndicator(.hidden)
+      .accessibilityLabel(composer.overflowMenuLabel)
+    }
+
+    private var accountMenu: some View {
+      Menu {
+        Picker("Account", selection: Binding(get: { composer.checkedAccountId }, set: composer.setAccount)) {
+          if composer.offersFollowDefault {
+            Button {} label: {
+              Text("Follow computer default")
+              if let hint = composer.activeAccountName { Text(hint) }
+            }
+            .tag(ComposerModel.followDefaultAccount)
+          }
+          ForEach(composer.accounts, id: \.id) { account in
+            Button {} label: {
+              Label(account.displayName, systemImage: Icon.person)
+              if let hint = composer.accountHint(account.id) { Text(hint) }
+            }
+            .tag(account.id)
+          }
+        }
+        .pickerStyle(.inline)
+      } label: {
+        Label("Account", systemImage: Icon.person)
+        if let account = composer.effectiveAccountName { Text(account) }
+      }
     }
 
     private func modelMenu(compact: Bool) -> some View {
@@ -75,37 +117,11 @@
           }
           .pickerStyle(.inline)
         }
-        if composer.offersAccounts {
-          Picker("Account", selection: Binding(get: { composer.checkedAccountId }, set: composer.setAccount)) {
-            if composer.offersFollowDefault {
-              Button {} label: {
-                Text("Follow computer default")
-                if let hint = composer.activeAccountName { Text(hint) }
-              }
-              .tag(ComposerModel.followDefaultAccount)
-            }
-            ForEach(composer.accounts, id: \.id) { account in
-              Button {} label: {
-                Label(account.displayName, systemImage: Icon.person)
-                if let hint = composer.accountHint(account.id) { Text(hint) }
-              }
-              .tag(account.id)
-            }
-          }
-          .pickerStyle(.inline)
-        }
       } label: {
         ComposerPillLabel(icon: Icon.agent, title: compact ? Self.short(composer.modelLabel) : composer.modelLabel, chevron: !compact)
       }
       .menuIndicator(.hidden)
-      .accessibilityLabel(modelAccessibilityLabel)
-    }
-
-    private var modelAccessibilityLabel: String {
-      guard composer.offersAccounts, let account = composer.effectiveAccountName else {
-        return "Model: \(composer.modelLabel)"
-      }
-      return "Model: \(composer.modelLabel), account: \(account)"
+      .accessibilityLabel("Model: \(composer.modelLabel)")
     }
 
     private func effortMenu(compact: Bool) -> some View {

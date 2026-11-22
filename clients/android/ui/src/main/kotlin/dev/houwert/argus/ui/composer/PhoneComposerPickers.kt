@@ -8,7 +8,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import dev.houwert.argus.kit.protocol.subtitle
 import dev.houwert.argus.ui.components.FlowRow
 import dev.houwert.argus.ui.components.PickerOption
 import dev.houwert.argus.ui.components.PickerSheet
@@ -16,11 +15,12 @@ import dev.houwert.argus.ui.icons.Icon
 import dev.houwert.argus.ui.theme.ArgusTheme
 
 /** Which sheet the phone composer's pill row has open. */
-enum class PhoneComposerPicker { Model, Account, Mode, Effort, Project, SideQuestion }
+enum class PhoneComposerPicker { Model, Mode, Effort, Project, SideQuestion }
 
 /**
- * The pills along the composer's foot: model, account, effort and permission mode open a picker
- * sheet; linked projects and side questions open theirs. They wrap rather than ever cut one off.
+ * The pills along the composer's foot: model, effort and permission mode open a picker sheet;
+ * linked projects and side questions open theirs, and the overflow drops a menu. They wrap rather
+ * than ever cut one off.
  */
 @Composable
 fun PhoneComposerPills(composer: ComposerModel, modifier: Modifier = Modifier, onPick: (PhoneComposerPicker) -> Unit) {
@@ -31,14 +31,8 @@ fun PhoneComposerPills(composer: ComposerModel, modifier: Modifier = Modifier, o
   FlowRow(modifier, spacing = 2.dp, rowSpacing = 0.dp, packed = true) {
     val modelLabel = composer.modelLabel
     ComposerPillLabel(
-      Icon.agent, modelAccessibility(composer), title = modelLabel.removePrefix("Claude "), chevron = false, enabled = enabled,
+      Icon.agent, "Model: $modelLabel", title = modelLabel.removePrefix("Claude "), chevron = false, enabled = enabled,
     ) { onPick(PhoneComposerPicker.Model) }
-    if (composer.offersAccounts) {
-      ComposerPillLabel(
-        Icon.person, "Account: ${composer.effectiveAccountName ?: "Default account"}", chevron = false,
-        accent = composer.hasPendingAccountSwitch, enabled = enabled,
-      ) { onPick(PhoneComposerPicker.Account) }
-    }
     if (composer.effortLevels.isNotEmpty()) {
       val effort = ComposerEffort.label(composer.effort)
       ComposerPillLabel(Icon.clock, "Effort: $effort", title = effort, chevron = false, enabled = enabled) {
@@ -60,12 +54,8 @@ fun PhoneComposerPills(composer: ComposerModel, modifier: Modifier = Modifier, o
         enabled = enabled,
       ) { onPick(PhoneComposerPicker.SideQuestion) }
     }
+    if (composer.offersAccounts) ComposerOverflowMenu(composer)
   }
-}
-
-private fun modelAccessibility(composer: ComposerModel): String {
-  val account = composer.effectiveAccountName
-  return if (composer.offersAccounts && account != null) "Model: ${composer.modelLabel}, account: $account" else "Model: ${composer.modelLabel}"
 }
 
 /** The effort picker's value for "no level": the CLI default. */
@@ -82,18 +72,6 @@ fun PhoneComposerPickerSheet(composer: ComposerModel, which: PhoneComposerPicker
       setOf(composer.pickedModel ?: "default"),
       { composer.setModel(it) }, onDismiss,
       emptyMessage = "No agent has reported its models yet.",
-    )
-    PhoneComposerPicker.Account -> PickerSheet(
-      "Account",
-      (if (composer.offersFollowDefault) listOf(PickerOption(FOLLOW_DEFAULT_ACCOUNT, "Follow computer default", composer.activeAccountName)) else emptyList()) +
-        composer.accounts.map { account ->
-          PickerOption(
-            account.id, composer.accountName(account.id) ?: account.id,
-            listOfNotNull(composer.accountHint(account.id), account.subtitle.ifEmpty { null }).joinToString(" · ").ifEmpty { null },
-          )
-        },
-      setOf(composer.checkedAccountId),
-      { composer.setAccount(it) }, onDismiss,
     )
     PhoneComposerPicker.Mode -> PickerSheet(
       "Permission mode",

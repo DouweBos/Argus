@@ -88,6 +88,7 @@ import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.OpenInFull
 import androidx.compose.material.icons.outlined.Paid
@@ -185,6 +186,7 @@ object Icon {
   val plus = Icons.Outlined.Add
   val close = Icons.Outlined.Close
   val ellipsis = Icons.Outlined.MoreHoriz
+  val ellipsisVertical = Icons.Outlined.MoreVert
   val home = Icons.Outlined.Home
   val arrowBack = Icons.AutoMirrored.Outlined.ArrowBack
   val keyboard = Icons.Outlined.Keyboard

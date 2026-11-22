@@ -49,6 +49,12 @@
           setup: { await loadAccountMenu($0.host) }
         ) { AccountMenuStory(starts: true) },
         GalleryStory(
+          "composer/overflow", fixtures: GalleryFixtures.transcript(.idle, runningOn: "work"),
+          setup: { await loadAccountMenu($0.host) }
+        ) {
+          ChatComposerStory(agentId: GalleryFixtures.transcriptAgent, sessionId: GalleryFixtures.transcriptSession)
+        },
+        GalleryStory(
           "composer/usage-limits", fixtures: GalleryFixtures.composer.merging(GalleryFixtures.usage) { $1 },
           setup: { await $0.host.loadUsageLimits() }
         ) { UsageLimitsComposerStory() },
@@ -93,10 +99,13 @@
 
   /// The chat composer at the foot of an empty screen, as under a transcript.
   private struct ChatComposerStory: View {
+    var agentId = "a1"
+    var sessionId: String?
+
     var body: some View {
       VStack(spacing: 0) {
         Spacer()
-        ChatInputView(agentId: "a1")
+        ChatInputView(agentId: agentId, sessionId: sessionId)
       }
     }
   }

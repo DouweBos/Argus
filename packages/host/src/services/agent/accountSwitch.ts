@@ -1,5 +1,5 @@
 /**
- * The model picker's Claude account switch. The account is baked into the
+ * The chat composer's Claude account switch. The account is baked into the
  * subprocess env at spawn, so moving an agent means respawning it in place —
  * with `--resume` once it has a conversation, and only once it's idle.
  */

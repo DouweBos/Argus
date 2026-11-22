@@ -5,15 +5,19 @@
   @MainActor
   public struct ChromeMenuSurface: View {
     @State private var model: ChromeMenuModel
+    private let edge: ChromeMenuEdge
 
-    public init(@ChromeMenuBuilder _ entries: () -> [ChromeMenuEntry]) {
+    /// `openSubmenu` is the row to draw with its submenu showing.
+    public init(openSubmenu: Int? = nil, edge: ChromeMenuEdge = .below, @ChromeMenuBuilder _ entries: () -> [ChromeMenuEntry]) {
       let model = ChromeMenuModel()
       model.entries = ChromeMenuEntry.tidy(entries())
+      if let openSubmenu { model.showSubmenu(at: openSubmenu) }
+      self.edge = edge
       _model = State(initialValue: model)
     }
 
     public var body: some View {
-      ChromeMenuView(model: model, minWidth: 0, scrollHeight: nil) { _ in }
+      ChromeMenuPanes(model: model, edge: edge)
     }
   }
 #endif

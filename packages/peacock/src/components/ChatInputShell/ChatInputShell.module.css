@@ -91,8 +91,22 @@
   flex-shrink: 0;
 }
 
+.actionsHug {
+  flex-grow: 0;
+}
+
+.overflow {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.overflow:empty {
+  display: none;
+}
+
 .trailing {
   display: flex;
+  margin-left: auto;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;

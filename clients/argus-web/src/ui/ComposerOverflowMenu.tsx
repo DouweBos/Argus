@@ -1,7 +1,6 @@
 /**
- * Which Claude account an agent's session runs as, from the composer. Only
- * offered with more than one account; the computer moves the agent once any
- * running turn ends and captures `agent_account_switched` itself.
+ * The composer's ⋮ menu. Account is only offered with more than one; the
+ * computer captures the switch itself as `agent_account_switched`.
  */
 
 import { useEffect, useMemo } from "react";
@@ -11,12 +10,13 @@ import {
   FOLLOW_DEFAULT_ACCOUNT,
   offersAccountPicker,
 } from "@argus/client-core";
-import { Icons, PickerChip } from "@argus/peacock";
+import { Icons, OverflowMenu } from "@argus/peacock";
 import { useClaudeAccountsStore } from "../stores/claudeAccounts";
 import { useConnectionStore } from "../stores/connection";
 import { useProjectsStore } from "../stores/projects";
+import { capture } from "../telemetry/telemetry";
 
-export function AccountChip({
+export function ComposerOverflowMenu({
   agentId,
   sessionId,
 }: {
@@ -55,23 +55,32 @@ export function AccountChip({
   if (!sessionId || !accounts || !offersAccountPicker(accounts)) {
     return null;
   }
+  const account = accountPickerLabel(accounts, pinned);
 
   return (
-    <PickerChip
-      header="Run this session as"
-      leading={<Icons.OrganizationIcon size={11} />}
-      label={accountPickerLabel(accounts, pinned)}
-      muted={!pinned}
-      options={options}
-      selected={[pinned ?? FOLLOW_DEFAULT_ACCOUNT]}
-      title="Claude account"
-      onSelect={(value) => {
-        setAgentAccount(
-          agentId,
-          sessionId,
-          value === FOLLOW_DEFAULT_ACCOUNT ? null : value,
-        ).catch(() => {});
-      }}
+    <OverflowMenu
+      title={`More options, account: ${account}`}
+      items={[
+        {
+          label: "Account",
+          description: account,
+          icon: <Icons.OrganizationIcon size={12} />,
+          children: options.map(({ value, name, description }) => ({
+            label: name,
+            description,
+            title: description,
+            selected: value === (pinned ?? FOLLOW_DEFAULT_ACCOUNT),
+            onClick: () => {
+              setAgentAccount(
+                agentId,
+                sessionId,
+                value === FOLLOW_DEFAULT_ACCOUNT ? null : value,
+              ).catch(() => {});
+            },
+          })),
+        },
+      ]}
+      onOpen={() => capture("web_composer_overflow_opened")}
     />
   );
 }

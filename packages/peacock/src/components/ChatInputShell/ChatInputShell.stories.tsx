@@ -3,6 +3,7 @@ import { useState } from "react";
 import { SendIcon } from "../../icons/Icons";
 import { Button } from "../Button/Button";
 import { Chip } from "../Chip/Chip";
+import { OverflowMenu } from "../OverflowMenu/OverflowMenu";
 import { ChatInputShell } from "./ChatInputShell";
 
 const meta: Meta<typeof ChatInputShell> = {
@@ -75,6 +76,41 @@ export const Default: Story = {
       </div>
     );
   },
+};
+
+export const WithOverflow: Story = {
+  render: () => (
+    <div style={{ width: 340 }}>
+      <ChatInputShell
+        actions={
+          <>
+            <Chip bare>Claude Opus 5.5</Chip>
+            <Chip bare>Accept edits</Chip>
+            <Chip bare>Extra high</Chip>
+            <Chip bare>Link project</Chip>
+          </>
+        }
+        overflow={
+          <OverflowMenu
+            title="More options"
+            items={[
+              {
+                label: "Account",
+                children: [{ label: "Work", selected: true }],
+              },
+            ]}
+          />
+        }
+        trailing={
+          <Button variant="send" aria-label="Send">
+            <SendIcon size={13} />
+          </Button>
+        }
+      >
+        <Textarea value="" onChange={() => {}} />
+      </ChatInputShell>
+    </div>
+  ),
 };
 
 export const Disabled: Story = {

@@ -250,6 +250,7 @@ export * from "./components/DragLayer/DragLayer";
 export * from "./components/GateLogRow/GateLogRow";
 export * from "./components/WorkLogRow/WorkLogRow";
 export * from "./components/MenuChip/MenuChip";
+export * from "./components/OverflowMenu/OverflowMenu";
 export * from "./components/ToggleList/ToggleList";
 export * from "./components/AutomationFields/AutomationFields";
 export * from "./components/AutomationFields/GuardrailFields";

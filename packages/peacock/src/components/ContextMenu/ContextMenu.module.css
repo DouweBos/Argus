@@ -57,6 +57,13 @@
   white-space: nowrap;
 }
 
+.description {
+  display: block;
+  overflow: hidden;
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+}
+
 .separator {
   height: 1px;
   margin: 4px 6px;

@@ -49,10 +49,10 @@ Switching never interrupts a running agent — each agent keeps the account it
 started with.
 
 **Pinning a session to an account.** Once you have more than one account, the
-model picker in the chat input grows an **Account** section. Pin a session there
-to run it on a specific account regardless of which one is active — handy when
-one account is rate-limited and you want work to continue on another in
-parallel. Sessions default to _Follow app default_. Picking an account moves the
+chat input grows a **⋮** button whose menu has an **Account** submenu. Pin a
+session there to run it on a specific account regardless of which one is
+active — handy when one account is rate-limited and you want work to continue on
+another in parallel. Sessions default to _Follow app default_. Picking an account moves the
 chat's agent onto it and carries the conversation over; an agent in the middle
 of a turn moves as soon as that turn ends.
 

@@ -138,6 +138,7 @@ export interface EventMap {
   };
   web_chat_history_used: { action: "delete" | "search" };
   web_transcript_work_log_opened: { working: boolean };
+  web_composer_overflow_opened: undefined;
   web_mcp_servers_opened: undefined;
   web_proposal_handled: { action: ProposalAction };
   web_proposal_opened: undefined;

@@ -12,11 +12,13 @@ import SwiftUI
     var chevronOnHover = false
     /// Its dropdown is showing.
     var open = false
+    /// Stands the ellipsis up: SF Symbols has no vertical one.
+    var iconRotation = Angle.zero
     @State private var hovering = false
 
     public init(
       icon: String, title: String? = nil, accent: Bool = false, chevron: Bool = true, chevronOnHover: Bool = false,
-      open: Bool = false
+      open: Bool = false, iconRotation: Angle = .zero
     ) {
       self.icon = icon
       self.title = title
@@ -24,11 +26,12 @@ import SwiftUI
       self.chevron = chevron
       self.chevronOnHover = chevronOnHover
       self.open = open
+      self.iconRotation = iconRotation
     }
 
     public var body: some View {
       HStack(spacing: 5) {
-        Image(systemName: icon).font(.scaled(size: Self.iconSize))
+        Image(systemName: icon).font(.scaled(size: Self.iconSize)).rotationEffect(iconRotation)
         if let title {
           Text(title).font(.scaled(size: Self.titleSize)).lineLimit(1)
         }

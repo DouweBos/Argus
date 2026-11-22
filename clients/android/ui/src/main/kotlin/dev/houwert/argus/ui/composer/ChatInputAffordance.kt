@@ -18,6 +18,8 @@ enum class ChatInputAffordance(val rawValue: String) {
   SideAnswerSent("side_answer_sent"),
   /** A start composer's runner was picked. */
   RunnerPicked("runner_picked"),
+  /** The composer's ⋮ menu was opened. */
+  OverflowMenu("overflow_menu"),
   /** Dictated words landed in the draft, from the mic button. */
   Dictation("dictation"),
   /** Dictated words landed in the draft, from a hold-to-talk key. */

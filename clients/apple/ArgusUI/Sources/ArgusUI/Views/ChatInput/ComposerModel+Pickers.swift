@@ -65,6 +65,14 @@ extension ComposerModel {
     return sessionId != nil
   }
 
+  /// The ⋮ pill shows only with something in it; compare slots pick per runner, so they offer no account.
+  public var offersOverflowMenu: Bool { offersAccounts && !isComparing }
+
+  public var overflowMenuLabel: String {
+    guard let account = effectiveAccountName else { return "More options" }
+    return "More options, account: \(account)"
+  }
+
   public var accounts: [RemoteClaudeAccount] { host.claudeAccounts ?? [] }
 
   /// A start's pick, else the session's pinned account, or `followDefaultAccount`.

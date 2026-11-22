@@ -24,6 +24,7 @@
     @State var isDropTarget = false
     @State var handoffAccounts: [ArgusProtocol.LimitHandoffAccount]? = []
     @State var showingSideQuestion = false
+    @State var showingOverflow = false
     @State var boxWidth: CGFloat = 0
 
     init(

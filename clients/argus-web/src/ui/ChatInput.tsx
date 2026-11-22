@@ -43,12 +43,12 @@ import { useHuddleStore } from "../stores/huddle";
 import { useProjectsStore } from "../stores/projects";
 import { useRunnerSupport } from "../stores/runnerSupport";
 import { useTranscriptsStore } from "../stores/transcripts";
-import { AccountChip } from "./AccountChip";
 import {
   AgentLimits,
   USAGE_LIMITS_COMMAND,
   useUsageLimitsCommand,
 } from "./AgentLimits";
+import { ComposerOverflowMenu } from "./ComposerOverflowMenu";
 import { SideQuestionsDialog } from "./SideQuestionsDialog";
 import { useMentionPicker } from "./useMentionPicker";
 
@@ -692,7 +692,6 @@ export function ChatInput({
           )}
         </div>
       )}
-      <AccountChip agentId={agentId} sessionId={sessionId} />
       {hasControl && sideQuestion && (
         <Chip
           bare
@@ -789,6 +788,9 @@ export function ChatInput({
       <ChatInputShell
         above={above}
         actions={actions}
+        overflow={
+          <ComposerOverflowMenu agentId={agentId} sessionId={sessionId} />
+        }
         trailing={trailing}
         dragOver={dragOver}
         onDragEnter={(e) => {

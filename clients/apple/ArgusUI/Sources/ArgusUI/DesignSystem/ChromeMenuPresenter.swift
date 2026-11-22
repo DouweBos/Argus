@@ -147,7 +147,7 @@
       controller.model.entries = ChromeMenuEntry.tidy(entries())
       if controller.isOpen {
         // Inside this update the panel's hosting view hasn't seen the new rows, so it would measure the old ones.
-        DispatchQueue.main.async { controller.layout() }
+        DispatchQueue.main.async { controller.refresh() }
       } else if controller.justDismissed {
         // The click that closed it by leaving the panel lands on the trigger; don't reopen.
         DispatchQueue.main.async { binding.wrappedValue = false }
@@ -213,6 +213,7 @@
       panel.contentView = hosting
       self.panel = panel
       self.hosting = hosting
+      model.closeSubmenu()
       model.highlighted = nil
       layout()
       window.addChildWindow(panel, ordered: .above)
@@ -232,6 +233,11 @@
       if notify { onDismiss?() }
     }
 
+    func refresh() {
+      model.refreshSubmenu()
+      layout()
+    }
+
     /// Sizes the panel to its rows and hangs it off the trigger, scrolling when the screen is too short.
     func layout() {
       guard let panel, let hosting, let anchor, let window = anchor.window else { return }
@@ -241,26 +247,49 @@
       let below = rect.minY - gap - screen.minY - 8
       let above = screen.maxY - rect.maxY - gap - 8
 
-      var size = NSHostingView(rootView: root(minWidth: rect.width, scrollHeight: nil)).fittingSize
+      var size = fittingSize(model, minWidth: rect.width)
       let fitsPreferred = size.height <= (edge == .below ? below : above)
       let placeBelow = fitsPreferred ? edge == .below : below >= above
       let room = max(80, placeBelow ? below : above)
       let scrolls = size.height > room
       if scrolls { size.height = room }
-      hosting.rootView = root(minWidth: size.width, scrollHeight: scrolls ? room - 8 : nil)
-      let x = min(max(rect.minX, screen.minX + 4), screen.maxX - size.width - 4)
+      var x = min(max(rect.minX, screen.minX + 4), screen.maxX - size.width - 4)
+      var panes = ChromeMenuPanes(
+        model: model, edge: placeBelow ? .below : .above, minWidth: size.width, scrollHeight: scrolls ? room - 8 : nil)
+
+      if let submenu = model.submenu {
+        var child = fittingSize(submenu, minWidth: 0)
+        if child.height > room {
+          child.height = room
+          panes.submenuScrollHeight = room - 8
+        }
+        let beside = child.width + ChromeMenuPanes.gap
+        panes.submenuLeads = x + size.width + beside > screen.maxX - 4
+        if panes.submenuLeads { x -= beside }
+        size = CGSize(width: size.width + beside, height: max(size.height, child.height))
+      }
+      hosting.rootView = root(panes)
       let y = placeBelow ? rect.minY - gap - size.height : rect.maxY + gap
       panel.setFrame(NSRect(x: x, y: y, width: size.width, height: size.height), display: true)
       panel.invalidateShadow()
     }
 
-    private func root(minWidth: CGFloat, scrollHeight: CGFloat?) -> AnyView {
-      AnyView(
-        ChromeMenuView(model: model, minWidth: minWidth, scrollHeight: scrollHeight) { [weak self] item in
-          self?.pick(item)
-        }
-        .environment(\.theme, theme)
-      )
+    private func fittingSize(_ menu: ChromeMenuModel, minWidth: CGFloat) -> CGSize {
+      let view = ChromeMenuView(model: menu, minWidth: minWidth, scrollHeight: nil) { _ in }
+      return NSHostingView(rootView: view.environment(\.theme, theme)).fittingSize
+    }
+
+    private func root(_ panes: ChromeMenuPanes) -> AnyView {
+      var panes = panes
+      panes.enter = { [weak self] index in self?.changeSubmenu { $0.showSubmenu(at: index) } }
+      panes.pick = { [weak self] item in self?.pick(item) }
+      return AnyView(panes.environment(\.theme, theme))
+    }
+
+    private func changeSubmenu(_ change: (ChromeMenuModel) -> Void) {
+      let open = model.openRow
+      change(model)
+      if model.openRow != open { layout() }
     }
 
     private func pick(_ item: ChromeMenuItem) {
@@ -276,17 +305,27 @@
     private func handle(_ event: NSEvent) -> Bool {
       switch event.keyCode {
       case 125:  // ↓
-        model.move(1)
+        model.focused.move(1)
       case 126:  // ↑
-        model.move(-1)
+        model.focused.move(-1)
+      case 124:  // →
+        changeSubmenu { _ = $0.enterSubmenu() }
+      case 123:  // ←
+        changeSubmenu { $0.closeSubmenu() }
       case 36, 76:  // Return, Enter
-        if let item = model.highlightedItem { pick(item) }
+        if let item = model.focused.highlightedItem {
+          if item.opensSubmenu { changeSubmenu { _ = $0.enterSubmenu() } } else { pick(item) }
+        }
       case 53:  // Esc
-        dismiss(restoreFocus: true, notify: true)
+        if model.submenu != nil {
+          changeSubmenu { $0.closeSubmenu() }
+        } else {
+          dismiss(restoreFocus: true, notify: true)
+        }
       default:
         let modifiers = event.modifierFlags.intersection([.command, .control, .option])
         guard modifiers.isEmpty, let typed = event.charactersIgnoringModifiers?.first,
-          let item = model.item(forKey: typed)
+          let item = model.focused.item(forKey: typed)
         else { return false }
         pick(item)
       }

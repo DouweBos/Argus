@@ -15,6 +15,8 @@ export interface ChatInputShellProps extends Omit<
   above?: ReactNode;
   /** Toolbar content on the left side of the bottom bar (chips, meta). */
   actions?: ReactNode;
+  /** Follows the actions without scrolling away with them, e.g. an overflow menu. */
+  overflow?: ReactNode;
   /** Toolbar content on the right side of the bottom bar (send/stop etc). */
   trailing?: ReactNode;
   /** Dims the card to indicate a disabled state. */
@@ -54,6 +56,7 @@ const ChatInputShellBase = forwardRef<HTMLDivElement, ChatInputShellProps>(
       children,
       above,
       actions,
+      overflow,
       trailing,
       disabled,
       dragOver,
@@ -94,7 +97,14 @@ const ChatInputShellBase = forwardRef<HTMLDivElement, ChatInputShellProps>(
         ) : (
           hasBar && (
             <div className={styles.bar}>
-              <div className={styles.actions}>{actions}</div>
+              <div
+                className={[styles.actions, overflow && styles.actionsHug]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                {actions}
+              </div>
+              {overflow && <div className={styles.overflow}>{overflow}</div>}
               <div className={styles.trailing}>{trailing}</div>
             </div>
           )

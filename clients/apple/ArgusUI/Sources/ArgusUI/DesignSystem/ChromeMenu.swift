@@ -23,7 +23,11 @@
     public var keepsOpen: Bool
     /// A letter that picks the row while the menu is open; shown as its hint when there's no shortcut.
     public var key: Character?
+    /// The rows this one opens beside the menu instead of acting; one level deep.
+    var children: [ChromeMenuEntry] = []
     public var action: () -> Void
+
+    var opensSubmenu: Bool { !children.isEmpty }
 
     public init(
       _ title: String, subtitle: String? = nil, icon: ChromeIcon? = nil, shortcut: String? = nil,
@@ -92,6 +96,9 @@
     // update, and a read there makes it depend on its own write and loop.
     var entries: [ChromeMenuEntry] = []
     var highlighted: Int?
+    /// The row whose submenu is showing, and that submenu.
+    var openRow: Int?
+    var submenu: ChromeMenuModel?
 
     /// The highlighted row, if it is still an enabled item.
     var highlightedItem: ChromeMenuItem? {
@@ -130,6 +137,8 @@
     let minWidth: CGFloat
     /// Set when the list is taller than the room on screen.
     let scrollHeight: CGFloat?
+    /// The pointer reached a row, or clicked one that opens a submenu.
+    var enter: (Int) -> Void = { _ in }
     let pick: (ChromeMenuItem) -> Void
 
     var body: some View {
@@ -162,15 +171,16 @@
           case .item(let item):
             ChromeMenuRow(
               item: item, reserveIcon: reserveIcon, reserveCheck: reserveCheck,
-              highlighted: model.highlighted == index
+              highlighted: model.highlighted == index || model.openRow == index
             ) { hovering in
               if hovering, !item.disabled {
                 model.highlighted = index
+                enter(index)
               } else if model.highlighted == index {
                 model.highlighted = nil
               }
             } pick: {
-              pick(item)
+              if item.opensSubmenu { enter(index) } else { pick(item) }
             }
             .id(index)
           case .divider:
@@ -237,7 +247,12 @@
         if let shortcut = item.shortcut {
           KeyHint(shortcut, size: 11, boxed: false).foregroundStyle(theme.textMuted)
         }
-        if reserveCheck {
+        if item.opensSubmenu {
+          Image(systemName: Icon.chevronRight)
+            .font(.scaled(size: 9, weight: .semibold))
+            .foregroundStyle(theme.textSecondary)
+            .frame(width: TextScale.shared(12))
+        } else if reserveCheck {
           Image(systemName: Icon.check)
             .font(.scaled(size: 11, weight: .semibold))
             .foregroundStyle(theme.text)

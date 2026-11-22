@@ -3,6 +3,7 @@ import {
   type ReactNode,
   type RefObject,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -16,6 +17,8 @@ export interface ContextMenuAction {
    * has at least one entry. */
   children?: ContextMenuItem[];
   danger?: boolean;
+  /** A second, muted line under the label. */
+  description?: ReactNode;
   disabled?: boolean;
   icon?: ReactNode;
   label: ReactNode;
@@ -62,7 +65,9 @@ export interface ContextMenuProps {
    * close-timer in sync. Internal use — submenus pass these in. */
   onMenuMouseEnter?: () => void;
   onMenuMouseLeave?: () => void;
-  /** Viewport coordinates for the menu's top-left. Use a trigger's
+  /** `"above"` grows the menu up from `position`, for triggers at the bottom of the screen. */
+  placement?: "above" | "below";
+  /** Viewport coordinates for the menu's top-left (bottom-left when placed above). Use a trigger's
    * `getBoundingClientRect()` (e.g. `{ x: rect.right - width, y: rect.bottom + 4 }`)
    * or the native event's `clientX/Y` for right-click menus. */
   position: ContextMenuPosition;
@@ -90,6 +95,7 @@ const DEFAULT_MENU_WIDTH = 240;
 export function ContextMenu({
   items,
   position,
+  placement = "below",
   onClose,
   submenu = false,
   onMenuMouseEnter,
@@ -173,13 +179,16 @@ export function ContextMenu({
     [],
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!menuRef.current) {
       return;
     }
     const rect = menuRef.current.getBoundingClientRect();
     const pad = 8;
     let { x, y } = position;
+    if (placement === "above") {
+      y -= rect.height;
+    }
     if (x + rect.width > window.innerWidth - pad) {
       x = window.innerWidth - rect.width - pad;
     }
@@ -196,16 +205,18 @@ export function ContextMenu({
 
     menuRef.current.style.left = `${x}px`;
     menuRef.current.style.top = `${y}px`;
-  }, [position]);
+  }, [position, placement]);
 
   const computeSubmenuPosition = (rowRect: DOMRect): ContextMenuPosition => {
     const menuRect = menuRef.current?.getBoundingClientRect();
     const pad = 8;
     const parentRight = menuRect?.right ?? rowRect.right;
     const parentLeft = menuRect?.left ?? rowRect.left;
+    // Measured: `width` leaves out the menu's padding and border.
+    const outerWidth = menuRect?.width ?? width;
     let x = parentRight;
-    if (x + width > window.innerWidth - pad) {
-      x = parentLeft - width;
+    if (x + outerWidth > window.innerWidth - pad) {
+      x = parentLeft - outerWidth;
     }
 
     return { x, y: rowRect.top - 4 };
@@ -278,9 +289,8 @@ export function ContextMenu({
             if (hasChildren) {
               cancelOpenTimer();
               cancelCloseTimer();
-              if (isOpen) {
-                setOpenSubmenu(null);
-              } else {
+              // Hover may have opened it already, so a click never closes it.
+              if (!isOpen) {
                 const rect = e.currentTarget.getBoundingClientRect();
                 setOpenSubmenu({
                   index: i,
@@ -323,7 +333,12 @@ export function ContextMenu({
               onMouseLeave={handleRowMouseLeave}
             >
               {item.icon && <span className={styles.icon}>{item.icon}</span>}
-              <span className={styles.label}>{item.label}</span>
+              <span className={styles.label}>
+                {item.label}
+                {item.description && (
+                  <span className={styles.description}>{item.description}</span>
+                )}
+              </span>
               {item.trailing !== undefined && (
                 <span className={styles.trailing}>{item.trailing}</span>
               )}

@@ -2,8 +2,8 @@
   import ArgusCore
   import SwiftUI
 
-  /// The pills along the composer's foot: a start's runner, model (and account),
-  /// effort, permission mode and linked projects — each a dropdown over the agent's state.
+  /// The pills along the composer's foot: a start's runner, model, effort,
+  /// permission mode, linked projects and overflow — each a dropdown over the agent's state.
   extension MacChatInputView {
     var controlRow: some View {
       // Wraps instead of growing: a fixed-size row widened the middle column
@@ -31,6 +31,10 @@
           ComposerPillDivider()
           sideQuestionButton
         }
+        if composer.offersOverflowMenu {
+          ComposerPillDivider()
+          overflowMenu
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .disabled(!composer.isEnabled)
@@ -44,12 +48,24 @@
       }
       .buttonStyle(.argusPlain)
       .fixedSize()
-      .help(modelHelp)
+      .help("Switch model")
     }
 
-    private var modelHelp: String {
-      guard composer.offersAccounts, let account = composer.effectiveAccountName else { return "Switch model" }
-      return "Switch model or account · on \(account)"
+    private var overflowMenu: some View {
+      ChromeMenuButton(isPresented: $showingOverflow, edge: .above) {
+        ComposerOverflowMenu.entries(composer)
+      } label: { open in
+        ComposerPillLabel(
+          icon: Icon.ellipsis, accent: composer.hasPendingAccountSwitch, chevron: false, open: open,
+          iconRotation: .degrees(90))
+      }
+      .buttonStyle(.argusPlain)
+      .fixedSize()
+      .help(composer.overflowMenuLabel)
+      .accessibilityLabel(composer.overflowMenuLabel)
+      .onChange(of: showingOverflow) { _, showing in
+        if showing { composer.onAffordance?(.overflowMenu) }
+      }
     }
 
     /// Which CLI the started agent runs on; one whose CLI is missing opens its setup, or is

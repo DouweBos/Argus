@@ -236,6 +236,25 @@ export function EllipsisIcon({ size = 12, className, ...rest }: IconProps) {
   );
 }
 
+export function EllipsisVerticalIcon({
+  size = 12,
+  className,
+  ...rest
+}: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M8 4.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm0 5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm0 5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" />
+    </svg>
+  );
+}
+
 export function CopyIcon({ size = 12, className, ...rest }: IconProps) {
   return (
     <svg

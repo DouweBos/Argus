@@ -61,13 +61,20 @@
         },
         // An agent running on Work while the computer's default is Personal; then a start composer.
         GalleryStory(
-          "composer/account-menu/running", size: CGSize(width: 360, height: 0),
+          "composer/account-menu/running", size: CGSize(width: 520, height: 0),
           fixtures: GalleryFixtures.transcript(.idle, runningOn: "work"), setup: { await loadAccountMenu($0.host) }
         ) { AccountMenuStory(starts: false) },
         GalleryStory(
-          "composer/account-menu/start", size: CGSize(width: 360, height: 0),
+          "composer/account-menu/start", size: CGSize(width: 520, height: 0),
           fixtures: GalleryFixtures.transcript(.idle), setup: { await loadAccountMenu($0.host) }
         ) { AccountMenuStory(starts: true) },
+        GalleryStory(
+          "composer/overflow", size: CGSize(width: 760, height: 0),
+          fixtures: GalleryFixtures.transcript(.idle, runningOn: "work"), setup: { await loadAccountMenu($0.host) }
+        ) {
+          ChatInputView(agentId: GalleryFixtures.transcriptAgent, sessionId: GalleryFixtures.transcriptSession)
+            .padding(.vertical, 12)
+        },
         GalleryStory(
           "composer/usage-limits", size: CGSize(width: 760, height: 0),
           fixtures: GalleryFixtures.composer.merging(GalleryFixtures.usage) { $1 },
@@ -116,7 +123,7 @@
       ]}
       """
 
-    /// The model pill's menu, drawn open.
+    /// The ⋮ pill's menu, drawn open on its Account submenu.
     private struct AccountMenuStory: View {
       let starts: Bool
       @Environment(HostStore.self) private var host
@@ -125,7 +132,7 @@
         let composer = ComposerModel(
           agentId: GalleryFixtures.transcriptAgent, sessionId: GalleryFixtures.transcriptSession, host: host,
           starter: starts ? ComposerStarter(defaultMode: "auto") { _ in true } : nil, style: .desktop)
-        ChromeMenuSurface { ComposerModelMenu.entries(composer) }
+        ChromeMenuSurface(openSubmenu: 0, edge: .above) { ComposerOverflowMenu.entries(composer) }
           .padding(12)
       }
     }

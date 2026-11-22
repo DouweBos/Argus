@@ -44,23 +44,29 @@ fun <T> MenuChip(
     ) { open = true }
     DropdownMenu(open, { open = false }, containerColor = ArgusTheme.colors.surface) {
       for (option in options) {
-        DropdownMenuItem(
-          text = {
-            Column {
-              Text(option.label, style = argusFont(15))
-              if (option.hint != null) Text(option.hint, color = ArgusTheme.colors.textMuted, style = argusFont(12))
-            }
-          },
-          trailingIcon = if (option.value == selection) ({ Icon(Icon.check, "Selected", tint = ArgusTheme.colors.accent) }) else null,
-          enabled = !option.disabled,
-          onClick = {
-            open = false
-            onSelect(option.value)
-          },
-        )
+        MenuOptionItem(option, option.value == selection) {
+          open = false
+          onSelect(option.value)
+        }
       }
     }
   }
+}
+
+/** A choice in a dropdown: label, hint and a check on the picked one. */
+@Composable
+fun <T> MenuOptionItem(option: PickerOption<T>, selected: Boolean, onClick: () -> Unit) {
+  DropdownMenuItem(
+    text = {
+      Column {
+        Text(option.label, style = argusFont(15))
+        if (option.hint != null) Text(option.hint, color = ArgusTheme.colors.textMuted, style = argusFont(12))
+      }
+    },
+    trailingIcon = if (selected) ({ Icon(Icon.check, "Selected", tint = ArgusTheme.colors.accent) }) else null,
+    enabled = !option.disabled,
+    onClick = onClick,
+  )
 }
 
 object MenuChipText {

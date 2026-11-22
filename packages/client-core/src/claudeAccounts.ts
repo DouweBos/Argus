@@ -141,7 +141,7 @@ export function automationAccountOptions(
   ];
 }
 
-/** What the account chip reads: the pinned account, else "Default account". */
+/** What the account picker reads: the pinned account, else "Default account". */
 export function accountPickerLabel(
   accounts: ClaudeAccountLike[],
   pinnedId: string | null | undefined,
