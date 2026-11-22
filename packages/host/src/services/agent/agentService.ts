@@ -34,7 +34,11 @@ import type {
 } from "./models";
 import type { NewSpare } from "./spares";
 import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
-import type { LlmRunner, PermissionPreHook } from "../llm/runners/types";
+import type {
+  LlmRunner,
+  LlmRunnerHandle,
+  PermissionPreHook,
+} from "../llm/runners/types";
 import type { RuntimePlatform, Session, SessionKind } from "../session/models";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import os from "node:os";
@@ -1025,6 +1029,11 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   handle.on("exit", () => closeMcpSessionsForSpawn(spawnId));
 
   handle.on("exit", (exitCode: number) => {
+    if (retired.has(handle)) {
+      dropPendingPrompts(agentId);
+
+      return;
+    }
     const agentEntry = appState.agents.get(agentId);
     // If the slot was reused by a respawn (restore-at-turn), this `child`
     // is the abandoned old handle. Drop the close event silently.
@@ -1388,7 +1397,7 @@ export async function restoreAgentAtTurn(args: {
     newClaudeSessionId = forked.resumeRef;
     seeded = !newClaudeSessionId && args.seed !== undefined;
     if (!newClaudeSessionId && !seeded) {
-      session.suppressStatus = false;
+      failRespawn(args.agentId);
       throw "Failed to truncate Claude session JSONL — nothing to resume";
     }
   }
@@ -1411,16 +1420,21 @@ export async function restoreAgentAtTurn(args: {
 
   // Respawn under the same agent slot. Passing `undefined` for model and
   // permission mode lets `startAgent` inherit both from the reused slot.
-  await startAgent(
-    sessionId,
-    undefined,
-    undefined,
-    newClaudeSessionId ?? undefined,
-    undefined,
-    undefined,
-    session.parentAgentId ?? undefined,
-    args.agentId,
-  );
+  try {
+    await startAgent(
+      sessionId,
+      undefined,
+      undefined,
+      newClaudeSessionId ?? undefined,
+      undefined,
+      undefined,
+      session.parentAgentId ?? undefined,
+      args.agentId,
+    );
+  } catch (e) {
+    failRespawn(args.agentId);
+    throw e;
+  }
 
   telemetryCapture("agent_restored", {
     is_fresh_start: args.keepTurnNumber === 0,
@@ -2018,6 +2032,33 @@ export function listAgents(sessionId: string): AgentInfo[] {
   return result;
 }
 
+/** Handles Argus killed on purpose: their exit says nothing about the agent. */
+const retired = new WeakSet<LlmRunnerHandle>();
+
+/** A respawn failed with the old child gone: whatever holds the slot is dead. */
+function failRespawn(agentId: string): void {
+  const slot = appState.agents.get(agentId);
+  if (!slot) {
+    return;
+  }
+  const { handle } = slot;
+  retired.add(handle);
+  handle
+    .kill()
+    .then(() => handle.cleanup())
+    .catch((e: unknown) => {
+      warn(`[agent:${agentId}] killing a failed respawn: ${String(e)}`);
+    });
+  slot.status = "error";
+  slot.suppressStatus = false;
+  for (const resolve of slot.turnWaiters) {
+    resolve("error");
+  }
+  slot.turnWaiters.length = 0;
+  slot.exitWaiters.length = 0;
+  emitAgentStatus(agentId, "error");
+}
+
 /** Agents between kill and respawn; messages for them wait for the new child. */
 const respawning = new Map<string, Promise<void>>();
 
@@ -2065,13 +2106,7 @@ export async function respawnAgent(
   try {
     await done;
   } catch (e) {
-    // The old child is gone and its exit was suppressed — don't leave the
-    // slot looking alive.
-    if (appState.agents.get(agentId) === session) {
-      session.status = "error";
-      session.suppressStatus = false;
-      emitAgentStatus(agentId, "error");
-    }
+    failRespawn(agentId);
     throw e;
   } finally {
     respawning.delete(agentId);
