@@ -14,6 +14,7 @@ import { liveConversation } from "../conversation/live";
 import { resumeRefOf } from "../resumeRef";
 import {
   type PinnedChat,
+  clearPinRunnerSession,
   getPin,
   isPinned,
   listPins,
@@ -52,6 +53,11 @@ export function refreshPin(agent: AgentSession): void {
   }
   const { agentId: _id, repoRoot, ...fields } = liveFields(agent);
   updatePin(agent.agentId, { ...fields, ...(repoRoot ? { repoRoot } : {}) });
+}
+
+/** The chat was cleared, so the next start mustn't resume what it was. */
+export function forgetPinnedConversation(agentId: string): void {
+  clearPinRunnerSession(agentId);
 }
 
 /**

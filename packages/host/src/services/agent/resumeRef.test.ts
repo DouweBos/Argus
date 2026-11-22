@@ -23,6 +23,8 @@ const { setAgentRunner } = await import("../llm/agentRunner");
 const { registerRunner, getRunnerById } = await import("../llm/registry");
 const { getPin, removePin } = await import("./pins/store");
 const { setAgentPinned } = await import("./pins/pins");
+const { emptyConversation, reduceEvent } =
+  await import("./conversation/reducer");
 const { fakeClaude } = await import("./agentService.testkit");
 
 let fake: ReturnType<typeof fakeClaude>;
@@ -70,5 +72,63 @@ describe("a resumed chat before its first new turn", () => {
     setAgentPinned(id, true, "ipc");
 
     expect(getPin(id)?.runnerSessionId).toBe("conversation-1");
+  });
+});
+
+describe("a cleared chat", () => {
+  beforeEach(() => {
+    fake = fakeClaude();
+  });
+
+  afterEach(() => {
+    for (const id of appState.agents.keys()) {
+      removePin(id);
+    }
+    appState.agents.clear();
+    appState.sessions.clear();
+  });
+
+  const reset = {
+    type: "conversation_reset" as const,
+    new_conversation_id: "not-a-session-id",
+    session_id: "conversation-1",
+  };
+
+  it("doesn't bring the cleared context back on another account", async () => {
+    const id = await resumed();
+    fake.spawns[0]!.line(reset);
+
+    await switchSessionClaudeAccount("s1", "work", id);
+
+    expect(fake.spawns[1]!.args.resumeRef).toBeNull();
+  });
+
+  it("resumes what was said after the clear", async () => {
+    const id = await resumed();
+    fake.spawns[0]!.line(reset);
+    fake.spawns[0]!.turn("conversation-2");
+
+    await switchSessionClaudeAccount("s1", "work", id);
+
+    expect(fake.spawns[1]!.args.resumeRef).toBe("conversation-2");
+  });
+
+  it("takes the cleared conversation off its pin", async () => {
+    const id = await resumed();
+    setAgentPinned(id, true, "ipc");
+
+    fake.spawns[0]!.line(reset);
+
+    expect(getPin(id)?.runnerSessionId).toBeUndefined();
+  });
+
+  it("forgets the session id the transcript was folded under", () => {
+    const cleared = reduceEvent(
+      { ...emptyConversation(), sessionId: "conversation-1", resuming: true },
+      reset,
+    );
+
+    expect(cleared.sessionId).toBeUndefined();
+    expect(cleared.resuming).toBe(false);
   });
 });

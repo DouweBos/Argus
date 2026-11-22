@@ -215,6 +215,9 @@ export function reduceEvent(
   existing: AgentConversation,
   event: LlmStreamEvent,
 ): AgentConversation {
+  if (event.type === "conversation_reset") {
+    return { ...existing, sessionId: undefined, resuming: false };
+  }
   // A --resume replays the last turn. Skip it (but let init refresh session
   // metadata) and clear the flag on the first result.
   if (existing.resuming) {

@@ -110,7 +110,12 @@ import {
   onTurnResult,
 } from "./limitResume";
 import { resultSubtype } from "./models";
-import { adoptPinOnResume, isPinned, refreshPin } from "./pins/pins";
+import {
+  adoptPinOnResume,
+  forgetPinnedConversation,
+  isPinned,
+  refreshPin,
+} from "./pins/pins";
 import { withHistorySeed } from "./runnerHandoff/seed";
 import {
   buildRuntimeSection,
@@ -1109,6 +1114,20 @@ export function onStreamLine(agentId: string, line: string): void {
       }
       if (parsed.type === "system" && parsed.session_id) {
         session.resumeRef = parsed.session_id;
+      }
+    } catch {
+      // Non-fatal.
+    }
+  }
+
+  if (line.includes('"conversation_reset"')) {
+    try {
+      if (
+        (JSON.parse(line) as { type?: string }).type === "conversation_reset"
+      ) {
+        // The reset's own id isn't a resume id; the next init names that.
+        session.resumeRef = null;
+        forgetPinnedConversation(agentId);
       }
     } catch {
       // Non-fatal.

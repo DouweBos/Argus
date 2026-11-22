@@ -124,6 +124,17 @@ export function updatePin(
   }
 }
 
+/** `updatePin` keeps what a patch leaves out, so forgetting is its own write. */
+export function clearPinRunnerSession(agentId: string): void {
+  const pins = load();
+  const current = pins.get(agentId);
+  if (!current?.runnerSessionId) {
+    return;
+  }
+  pins.set(agentId, { ...current, runnerSessionId: undefined });
+  save(pins);
+}
+
 export function removePin(agentId: string): boolean {
   const pins = load();
   if (!pins.delete(agentId)) {
