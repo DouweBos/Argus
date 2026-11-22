@@ -90,3 +90,53 @@ describe("a respawn that fails", () => {
     expect(on("status")).toContain("error");
   });
 });
+
+describe("events from a child that was replaced", () => {
+  beforeEach(setUp);
+  afterEach(tearDown);
+
+  const permission = {
+    request_id: "r1",
+    tool_use_id: "t1",
+    tool_name: "Bash",
+    tool_input: {},
+  };
+
+  it("don't land on the new one", async () => {
+    const old = fake.spawns[0]!;
+    await respawnAgent(id);
+    events.length = 0;
+
+    old.state("running");
+    old.emit("stderr", "old child died");
+    old.emit("permission-request", permission);
+    old.emit("capabilities", { commands: [], models: [] });
+    old.emit("permission-cancel", permission);
+
+    expect(appState.agents.get(id)!.status).toBe("idle");
+    expect(appState.agentPendingPermissions.get(id)?.size ?? 0).toBe(0);
+    expect(events).toEqual([]);
+  });
+
+  it("don't land while it is being killed", async () => {
+    const old = fake.spawns[0]!;
+    old.dying = () => {
+      old.result();
+      old.emit("permission-request", permission);
+    };
+
+    await respawnAgent(id);
+
+    expect(appState.agents.get(id)!.turnsCompleted).toBe(0);
+    expect(on("event")).toEqual([]);
+    expect(on("permission")).toEqual([]);
+  });
+
+  it("still lets the new one through", async () => {
+    await respawnAgent(id);
+
+    fake.spawns[1]!.turn();
+
+    expect(appState.agents.get(id)!.turnsCompleted).toBe(1);
+  });
+});

@@ -969,7 +969,20 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     emitAccountsChanged();
   };
 
+  // A retired or replaced child can still talk while it dies.
+  const isCurrent = (): boolean => {
+    if (retired.has(handle)) {
+      return false;
+    }
+    const slot = appState.agents.get(agentId);
+
+    return !slot || slot.handle === handle;
+  };
+
   handle.on("stderr", (line: string) => {
+    if (!isCurrent()) {
+      return;
+    }
     // A dead refresh token only shows up here — surface it on the account so
     // Settings can offer a re-login instead of claiming it's signed in.
     noteRunFailure(classifyRunFailure(line));
@@ -977,6 +990,9 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   });
 
   handle.on("permission-request", (payload: unknown) => {
+    if (!isCurrent()) {
+      return;
+    }
     const p = payload as PermissionRequestPayload;
     if (p?.tool_use_id) {
       let pending = appState.agentPendingPermissions.get(agentId);
@@ -990,6 +1006,9 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   });
 
   handle.on("permission-cancel", (payload: unknown) => {
+    if (!isCurrent()) {
+      return;
+    }
     const p = payload as { tool_use_id?: string };
     if (p?.tool_use_id) {
       appState.agentPendingPermissions.get(agentId)?.delete(p.tool_use_id);
@@ -998,11 +1017,17 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   });
 
   handle.on("capabilities", (payload: unknown) => {
+    if (!isCurrent()) {
+      return;
+    }
     rememberStartOptions(runner.id, payload);
     emitHostEvent(`agent:capabilities:${agentId}`, payload);
   });
 
   handle.on("stream-event", (line: string) => {
+    if (!isCurrent()) {
+      return;
+    }
     // A revoked token or spent quota reaches us as an API error in the stream,
     // not on stderr. The cheap pre-gate skips parsing ordinary lines.
     if (
@@ -1030,8 +1055,6 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
 
   handle.on("exit", (exitCode: number) => {
     if (retired.has(handle)) {
-      dropPendingPrompts(agentId);
-
       return;
     }
     const agentEntry = appState.agents.get(agentId);
@@ -1370,9 +1393,7 @@ export async function restoreAgentAtTurn(args: {
   session.suppressStatus = true;
 
   // Kill the old handle and wait for exit.
-  const oldHandle = session.handle;
-  await oldHandle.kill();
-  oldHandle.cleanup();
+  await retireChild(args.agentId, session.handle);
 
   // Fork the transcript via the runner, or fall back to seeding the history.
   let newClaudeSessionId: string | null = null;
@@ -2035,6 +2056,17 @@ export function listAgents(sessionId: string): AgentInfo[] {
 /** Handles Argus killed on purpose: their exit says nothing about the agent. */
 const retired = new WeakSet<LlmRunnerHandle>();
 
+/** Kill a child Argus is replacing; from here on nothing it says counts. */
+async function retireChild(
+  agentId: string,
+  handle: LlmRunnerHandle,
+): Promise<void> {
+  retired.add(handle);
+  await handle.kill();
+  handle.cleanup();
+  dropPendingPrompts(agentId);
+}
+
 /** A respawn failed with the old child gone: whatever holds the slot is dead. */
 function failRespawn(agentId: string): void {
   const slot = appState.agents.get(agentId);
@@ -2088,8 +2120,7 @@ export async function respawnAgent(
   }
 
   const done = (async () => {
-    await session.handle.kill();
-    session.handle.cleanup();
+    await retireChild(agentId, session.handle);
 
     await startAgent(
       sessionId,
