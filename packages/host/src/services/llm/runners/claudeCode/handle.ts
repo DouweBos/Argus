@@ -53,6 +53,7 @@ export interface ClaudeCodeHandleInit {
   combinedSystemPrompt: string;
   /** Started with `--resume`. */
   resumed?: boolean;
+  allowRules?: string[];
   /** Added to every subagent's context when it starts. */
   subagentContext?: string;
   permissionPreHook?: PermissionPreHook;
@@ -90,7 +91,8 @@ export type ClaudeCodeHandleEvent =
   | "permission-cancel"
   | "permission-request"
   | "stderr"
-  | "stream-event";
+  | "stream-event"
+  | "turn-stop";
 
 export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
   readonly runnerId = "claude-code";
@@ -110,6 +112,9 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
     this.permissionPreHook = init.permissionPreHook ?? null;
     this.controlHandler = new ControlHandler(init.agentId);
     this.turnCost = new TurnCost(init.resumed === true);
+    for (const rule of init.allowRules ?? []) {
+      this.controlHandler.addAllowRule(rule);
+    }
     this.wireStdioErrors();
     this.wireStderr();
     this.wireStdoutReadline();
@@ -345,12 +350,15 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
       const permPrefix = `agent:permission:`;
       const permCancelPrefix = `agent:permission-cancel:`;
       const capPrefix = `agent:capabilities:`;
+      const stopPrefix = `agent:turn-stop:`;
       if (channel.startsWith(permPrefix)) {
         this.emit("permission-request", data as PermissionRequestPayload);
       } else if (channel.startsWith(permCancelPrefix)) {
         this.emit("permission-cancel", data as PermissionCancelPayload);
       } else if (channel.startsWith(capPrefix)) {
         this.emit("capabilities", data as InitializeResponse);
+      } else if (channel.startsWith(stopPrefix)) {
+        this.emit("turn-stop", data);
       }
     };
 

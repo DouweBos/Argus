@@ -12,6 +12,8 @@ const { getMcpAuthToken, getMcpPort, startMcpServer, stopMcpServer } =
   await import("./server");
 const { closeMcpSessionsForSpawn, mcpSessionCount, SPAWN_ID_HEADER } =
   await import("./sessions");
+const { hasOpenMcpCall } = await import("./openCalls");
+const { appState } = await import("../../state");
 
 async function post(
   body: unknown,
@@ -32,7 +34,10 @@ async function post(
   return res;
 }
 
-async function open(spawnId: string): Promise<string> {
+async function open(
+  spawnId: string,
+  headers: Record<string, string> = {},
+): Promise<string> {
   const res = await post(
     {
       jsonrpc: "2.0",
@@ -44,7 +49,7 @@ async function open(spawnId: string): Promise<string> {
         clientInfo: { name: "test", version: "1" },
       },
     },
-    { [SPAWN_ID_HEADER]: spawnId },
+    { [SPAWN_ID_HEADER]: spawnId, ...headers },
   );
 
   return res.headers.get("mcp-session-id")!;
@@ -76,5 +81,38 @@ describe("mcp sessions", () => {
 
     closeMcpSessionsForSpawn("spawn-b");
     expect(mcpSessionCount()).toBe(0);
+  });
+
+  it("knows which agent has a call open over a real connection", async () => {
+    const turnWaiters: ((status: "idle") => void)[] = [];
+    appState.agents.set("child", {
+      agentId: "child",
+      status: "running",
+      turnsCompleted: 0,
+      resultSummary: null,
+      exitWaiters: [],
+      turnWaiters,
+    } as never);
+    const session = await open("spawn-c", { "x-argus-agent-id": "parent" });
+    expect(hasOpenMcpCall("parent")).toBe(false);
+
+    const call = post(
+      {
+        jsonrpc: "2.0",
+        id: 3,
+        method: "tools/call",
+        params: { name: "wait_for_agent", arguments: { agent_id: "child" } },
+      },
+      { "mcp-session-id": session },
+    );
+    await vi.waitFor(() => expect(turnWaiters).toHaveLength(1));
+    expect(hasOpenMcpCall("parent")).toBe(true);
+
+    turnWaiters[0]!("idle");
+    await call;
+
+    expect(hasOpenMcpCall("parent")).toBe(false);
+    closeMcpSessionsForSpawn("spawn-c");
+    appState.agents.clear();
   });
 });

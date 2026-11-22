@@ -290,6 +290,13 @@ struct AgentTab: View {
               .help("Pinned: resumed when Argus restarts")
               .accessibilityLabel("Pinned")
           }
+          if agent.isPaused {
+            Image(systemName: Icon.snooze)
+              .font(.scaled(size: 9, weight: .semibold))
+              .foregroundStyle(.secondary)
+              .help("Paused to free memory: your next message resumes it")
+              .accessibilityLabel("Paused")
+          }
           Text(name).lineLimit(1)
           if children > 0 {
             Badge(label: "\(children)", tone: .accent)

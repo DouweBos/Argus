@@ -42,7 +42,9 @@ import { appState } from "../../state";
 import { applyPushedEntries } from "../account/lifecycle";
 import { remoteAccountStatus, requestLinkFromPaired } from "../account/service";
 import {
+  ensureAwake,
   interruptAgent,
+  needsWake,
   respondToPermission,
   setAgentEffort,
   setAgentModel,
@@ -63,6 +65,7 @@ import {
   liveCursor,
   readConversation,
 } from "../agent/conversation/live";
+import { showsPaused } from "../agent/lifecycleState";
 import { limitHandoffAccounts } from "../agent/limitHandoff";
 import {
   dismissLimitResume,
@@ -677,6 +680,7 @@ export function toRemoteAgentStatus(a: AgentSession): RemoteAgentStatus {
     ...(runnerSessionId ? { runner_session_id: runnerSessionId } : {}),
     runner_id: a.runner.id,
     pinned: isPinned(a.agentId),
+    ...(showsPaused(a) ? { paused: true } : {}),
     ...(a.accountId ? { account_id: a.accountId } : {}),
   };
 }
@@ -1054,14 +1058,21 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         "finish_sign_in needs a callback_url",
       );
     }
-    const outcome = await control(() =>
-      agentMcpControl(
-        a,
+    const outcome = await control(async () => {
+      let agent = a;
+      if (needsWake(agent_id)) {
+        await ensureAwake(agent_id, "mcp");
+        agent = requireAgent(agent_id);
+      }
+      agent.idleSince = Date.now();
+
+      return agentMcpControl(
+        agent,
         action === "finish_sign_in"
           ? { action, server, callbackUrl: callback_url ?? "" }
           : { action, server },
-      ),
-    );
+      );
+    });
 
     return {
       auth_url: outcome.authUrl,

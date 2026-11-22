@@ -200,7 +200,7 @@ struct SessionView: View {
         tabs: agents.map { agent in
           PillTab(
             id: agent.agentId, title: Labels.agentName(agent, among: agents),
-            symbol: agent.isPinned ? Icon.pin : Icon.agent, indicator: agent.awaiting != nil)
+            symbol: agent.tabSymbol, indicator: agent.awaiting != nil)
         } + (drafting ? [PillTab(id: Self.draftTab, title: "New agent", symbol: Icon.plus)] : []),
         selection: selectedTab, compact: true
       ) { picked in

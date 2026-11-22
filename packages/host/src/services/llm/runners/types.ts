@@ -11,6 +11,7 @@
  */
 
 import type { InitializeResponse } from "./claudeCode/protocol";
+import type { TurnStop } from "../../agent/backgroundState";
 import type { McpServers } from "../../mcp/userConfig";
 
 // ---------------------------------------------------------------------------
@@ -110,6 +111,8 @@ export interface LlmRunnerSpawnArgs {
    * {@link PermissionPreHook} doc.
    */
   permissionPreHook?: PermissionPreHook;
+  /** "Always allow" rules the agent was given before this child. */
+  allowRules?: string[];
   /**
    * Tool patterns the runner must refuse outright, e.g. `Bash(git push:*)`.
    * Enforced by the runner itself, ahead of any permission mode.
@@ -198,7 +201,8 @@ export interface LlmRunnerHandle {
     ((event: "permission-cancel", cb: (payload: unknown) => void) => void) &
     ((event: "permission-request", cb: (payload: unknown) => void) => void) &
     ((event: "stderr", cb: (line: string) => void) => void) &
-    ((event: "stream-event", cb: (line: string) => void) => void);
+    ((event: "stream-event", cb: (line: string) => void) => void) &
+    ((event: "turn-stop", cb: (stop: TurnStop) => void) => void);
   /**
    * Send a user prompt + optional image attachments. `steer` asks for it to
    * reach the turn in flight now; a runner that can't inject mid-turn cancels

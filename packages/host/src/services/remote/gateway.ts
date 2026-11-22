@@ -293,6 +293,7 @@ const TYPED_AGENT_KINDS = new Set([
   "permission",
   "permission-cancel",
   "permission-resolved",
+  "paused",
   "pinned",
   "queue",
   "status",
@@ -1090,6 +1091,7 @@ export class DeviceConnection implements DeviceMediaController {
       case "account":
       case "limit-resume":
       case "limit-stall":
+      case "paused":
       case "pinned":
         this.pushAgentStatus(agentId);
         break;

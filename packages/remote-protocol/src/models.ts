@@ -167,6 +167,11 @@ export const RemoteAgentStatus = z.object({
   runner_id: z.string().optional(),
   /** Resumed automatically when the host restarts. Absent on older hosts. */
   pinned: z.boolean().optional(),
+  /**
+   * Idle with its process let go to free memory; the next message resumes it.
+   * A flag beside `status`, whose values shipped clients treat as a closed set.
+   */
+  paused: z.boolean().optional(),
   /** Claude account its process runs as, which can differ from the computer's current default. Absent on older hosts. */
   account_id: z.string().optional(),
 });

@@ -64,7 +64,9 @@ import { emitAccountsChanged } from "../claudeAuth/claudeAuth";
 import { getConductorBinDir } from "../cli/conductor";
 import { getRunnerById, resolveDefaultRunner } from "../llm/registry";
 import { resolveModelForAgent } from "../llm/resolve";
+import { isClaudeBased } from "../llm/runners/claudeCode/family";
 import { toCanonicalPermissionMode } from "../llm/runners/claudeCode/permissionModes";
+import { findClaudeTranscript } from "../llm/runners/claudeCode/transcriptFork";
 import { getMcpAuthToken, getMcpPort } from "../mcp/server";
 import { closeMcpSessionsForSpawn, SPAWN_ID_HEADER } from "../mcp/sessions";
 import { buildMergedMcpServers } from "../mcp/userConfig";
@@ -81,6 +83,13 @@ import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { noteUsageRateLimitLine } from "../usage/limits";
 import { recordTurnUsage } from "../usage/turns";
 import { ensureAgentTmpDir } from "./agentTmp";
+import {
+  foldBackgroundLine,
+  foldTurnStop,
+  newBackgroundState,
+  scanResumedTranscript,
+  type TurnStop,
+} from "./backgroundState";
 import { carriedSettings, carryOver } from "./carryOver";
 import { loadConversationByRunnerSession } from "./chatHistory";
 import {
@@ -99,18 +108,30 @@ import {
   contextWindowFromModelUsage,
   rememberContextWindow,
 } from "./contextWindow";
+import { setInflight } from "./conversation/folded";
 import { stageConversation } from "./conversation/live";
 import { fromSavedMessages } from "./conversation/reducer";
 import { forgetAgent } from "./forget";
 import {
   bindLifecycle,
   dropPendingPrompts,
+  ensureAwake,
   failRespawn,
-  isRetired,
-  pendingRespawn,
+  holdSend,
+  interruptWithoutTurn,
+  needsWake,
   retireChild,
-  withTransition,
 } from "./lifecycle";
+import {
+  cancelAllTransitions,
+  cancelTransition,
+  type HeldSend,
+  isRetired,
+  isWaking,
+  markRetired,
+  transitionOf,
+  withTransition,
+} from "./lifecycleState";
 import { noteLimitStallStarted } from "./limitHandoff";
 import {
   cancelLimitResume,
@@ -119,7 +140,10 @@ import {
   noteRateLimitLine,
   onTurnResult,
 } from "./limitResume";
+import { refreshMcpStatus } from "./mcpStatus";
+import { isQueueParked, takeUndelivered, unparkQueue } from "./messageQueue";
 import { resultSubtype } from "./models";
+import { pausedSpawn } from "./pausedSpawn";
 import {
   adoptPinOnResume,
   forgetPinnedConversation,
@@ -136,6 +160,7 @@ import { clearSpares, hasSpare, killSpare, takeSpare } from "./spares";
 import { spawnConfigStamp } from "./spawnStamp";
 import { rememberStartOptions } from "./startOptions";
 import { usageTokens } from "./usageTokens";
+import { hasAnswer, settleTurnWaiters } from "./waiters";
 
 // ---------------------------------------------------------------------------
 // Lazy device helpers
@@ -387,6 +412,13 @@ export async function startAgent(
     profile,
     reused: Boolean(reuseAgentId),
     register: true,
+    mayRegister: reuseAgentId
+      ? () =>
+          // No previous: it was stopped before this could even spawn.
+          Boolean(previous) &&
+          appState.agents.get(reuseAgentId) === previous &&
+          transitionOf(reuseAgentId)?.cancelled !== true
+      : undefined,
   });
 
   if (!reuseAgentId) {
@@ -420,6 +452,9 @@ export async function startAgent(
   } catch (e) {
     throw `Agent failed to initialize: ${String(e)}`;
   }
+  if (reuseAgentId) {
+    await restoreEffort(agentSession);
+  }
 
   return agentInfoOf(agentSession);
 }
@@ -444,6 +479,20 @@ function agentInfoOf(agent: AgentSession): AgentInfo {
     runner_id: agent.runner.id,
     pinned: isPinned(agent.agentId),
   };
+}
+
+/** A new child starts on the model's default effort. */
+async function restoreEffort(agent: AgentSession): Promise<void> {
+  if (!agent.effort) {
+    return;
+  }
+  try {
+    await agent.handle.setEffort(agent.effort);
+  } catch (e) {
+    warn(`[agent:${agent.agentId}] effort not restored: ${String(e)}`);
+    agent.effort = null;
+    emitHostEvent(`agent:effort-changed:${agent.agentId}`, null);
+  }
 }
 
 /**
@@ -481,6 +530,7 @@ function announceStart(
   agent.parentAgentId = request.parentAgentId ?? null;
   agent.createdAt = Date.now();
   agent.lastEventAt = agent.createdAt;
+  agent.idleSince = agent.createdAt;
   appState.agents.set(agent.agentId, agent);
   telemetryCapture("agent_started", {
     has_model: Boolean(request.model),
@@ -597,13 +647,11 @@ function resolveSpawnPlan(
   const { model: effectiveModel } = resolveModelForAgent({
     session: {
       runner_id: runner.id,
-      // Restore-at-turn reuses the previous agent's model so we don't drop
-      // variant suffixes (e.g. `[1m]`) that aren't preserved in the JSONL.
-      model: onSessionRunner
-        ? (argusSession.model ?? carried.model ?? null)
-        : (carried.model ?? null),
+      model: onSessionRunner ? (argusSession.model ?? null) : null,
     },
-    agentOverride: { model: opts.model ?? null },
+    // A replacement keeps the agent's own model, variant suffix (`[1m]`) and
+    // all: the JSONL doesn't preserve that.
+    agentOverride: { model: opts.model ?? carried.model ?? null },
     ...(onSessionRunner ? { argusConfig: projectLlmConfig } : {}),
     runnerDefaultModel: runner.defaultModel?.() ?? null,
   });
@@ -631,6 +679,8 @@ interface SpawnArgs {
   reused: boolean;
   /** Listed in `appState.agents` before its first event lands; a spare stays out. */
   register: boolean;
+  /** Asked once the child exists; false kills it instead of listing it. */
+  mayRegister?: () => boolean;
 }
 
 /** Spawn the CLI and wire its events; the caller decides when it's listed. */
@@ -640,14 +690,15 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     agentId,
     plan,
     resumeSessionId,
-    appendSystemPrompt,
-    platformsOverride,
     parentAgentId,
     previous,
   } = args;
   const { runner, accountId } = args.plan;
   const carried = carryOver(previous);
   const profile = args.profile ?? carried.profile;
+  const appendSystemPrompt =
+    args.appendSystemPrompt ?? carried.appendSystemPrompt;
+  const platformsOverride = args.platformsOverride ?? carried.platformsOverride;
   const attachedDevices = profile?.devices ?? [];
   const sessionId = argusSession.id;
   const worktreePath = argusSession.path;
@@ -882,11 +933,21 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     debugLogPath,
     env,
     permissionPreHook,
+    allowRules: carried.allowRules,
     disallowedTools: [
       ...automationDisallowedTools(sessionId),
       ...(deviceControl ? [] : [CONDUCTOR_DISALLOWED]),
     ],
   });
+
+  if (args.register && args.mayRegister?.() === false) {
+    // Stopped, deleted, moved or quit while it spawned: nobody owns this child.
+    markRetired(handle);
+    await handle.kill();
+    handle.cleanup();
+    closeMcpSessionsForSpawn(spawnId);
+    throw "The agent went away while it was starting";
+  }
 
   // Construct the AgentSession now so event handlers can mutate it. The
   // handle's events fire on the next tick, so we have time to install the
@@ -896,14 +957,16 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     sessionId,
     runner,
     handle,
-    status: "idle",
+    // A wake is already running for the messages it's waking to deliver.
+    status: previous?.paused ? previous.status : "idle",
     parentAgentId: parentAgentId ?? null,
-    resultSummary: null,
-    exitWaiters: [],
-    turnWaiters: [],
     emitsSessionState: false,
     ...carried,
+    appendSystemPrompt,
+    platformsOverride,
     lastEventAt: Date.now(),
+    idleSince: Date.now(),
+    background: newBackgroundState(Boolean(resumeSessionId)),
     inflightPrompts: 0,
     model: plan.model,
     permissionMode: plan.permissionMode,
@@ -917,6 +980,14 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   };
   if (args.register) {
     appState.agents.set(agentId, agentSession);
+  }
+  if (resumeSessionId && agentSession.background && isClaudeBased(runner)) {
+    scanResumedTranscript(
+      agentSession.background,
+      findClaudeTranscript(worktreePath, resumeSessionId),
+    ).catch((e: unknown) => {
+      warn(`[agent:${agentId}] transcript scan failed: ${String(e)}`);
+    });
   }
 
   // A resume spawn inherits a finished conversation: start it from saved
@@ -1002,6 +1073,12 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     emitHostEvent(`agent:permission-cancel:${agentId}`, payload);
   });
 
+  handle.on("turn-stop", (stop: TurnStop) => {
+    if (isCurrent() && agentSession.background) {
+      foldTurnStop(agentSession.background, stop);
+    }
+  });
+
   handle.on("capabilities", (payload: unknown) => {
     if (!isCurrent()) {
       return;
@@ -1048,6 +1125,13 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     // is the abandoned old handle. Drop the close event silently.
     if (agentEntry && agentEntry.handle !== handle) {
       info(`[agent:${agentId}] old child closed after respawn — ignored`);
+
+      return;
+    }
+    // The wake reports it and puts the slot back as paused.
+    if (agentEntry && isWaking(agentId)) {
+      markRetired(handle);
+      dropPendingPrompts(agentId);
 
       return;
     }
@@ -1119,6 +1203,11 @@ export function onStreamLine(agentId: string, line: string): void {
   }
   // Heartbeat: bump last-activity on every non-blank event.
   session.lastEventAt = Date.now();
+  // A waking child's own chatter isn't the turn the held messages wait on.
+  const waking = isWaking(agentId);
+  if (session.background && !waking) {
+    foldBackgroundLine(session.background, line);
+  }
 
   if (line.includes('"subtype":"init"')) {
     try {
@@ -1185,7 +1274,7 @@ export function onStreamLine(agentId: string, line: string): void {
   }
 
   // session_state_changed → status transitions + turn waiters.
-  if (line.includes('"session_state_changed"')) {
+  if (!waking && line.includes('"session_state_changed"')) {
     try {
       const parsed = JSON.parse(line) as {
         type?: string;
@@ -1213,12 +1302,10 @@ export function onStreamLine(agentId: string, line: string): void {
           // A prompt written mid-turn joins that turn and gets no `result`
           // of its own; idle means every prompt has been answered.
           session.inflightPrompts = 0;
+          session.idleSince = Date.now();
         }
         if (parsed.state === "idle" && prev !== "idle") {
-          for (const resolve of session.turnWaiters) {
-            resolve("idle");
-          }
-          session.turnWaiters.length = 0;
+          settleTurnWaiters(session, "idle");
         }
       }
     } catch {
@@ -1265,7 +1352,7 @@ export function onStreamLine(agentId: string, line: string): void {
   }
 
   // Capture final result event.
-  if (line.includes('"result"') && line.includes('"type"')) {
+  if (!waking && line.includes('"result"') && line.includes('"type"')) {
     try {
       const parsed = JSON.parse(line) as {
         type?: string;
@@ -1322,13 +1409,11 @@ export function onStreamLine(agentId: string, line: string): void {
         ) {
           const prev = session.status;
           session.status = "idle";
+          session.idleSince = Date.now();
           if (prev !== "idle") {
             emitAgentStatus(agentId, "idle");
           }
-          for (const resolve of session.turnWaiters) {
-            resolve("idle");
-          }
-          session.turnWaiters.length = 0;
+          settleTurnWaiters(session, "idle");
         }
         if (
           onTurnResult(agentId, (message) => sendAgentMessage(agentId, message))
@@ -1370,9 +1455,23 @@ export async function restoreAgentAtTurn(args: {
     throw `Cannot restore agent in session kind "${argusSession?.kind ?? "unknown"}"`;
   }
 
-  return withTransition(args.agentId, "restoring", () =>
-    restoreInPlace(args, session, argusSession),
-  );
+  const underWay = transitionOf(args.agentId)?.kind;
+  if (underWay === "waking" || underWay === "pausing") {
+    // The messages it holds were written against turns being cut.
+    cancelTransition(args.agentId);
+  }
+
+  return withTransition(args.agentId, "restoring", () => {
+    const current = appState.agents.get(args.agentId);
+    if (!current) {
+      throw `No agent found: ${args.agentId}`;
+    }
+    if (current.paused) {
+      emitHostEvent(`agent:paused:${args.agentId}`, false);
+    }
+
+    return restoreInPlace(args, current, argusSession);
+  });
 }
 
 /** The kill, fork and respawn of a rewind, under its lock. */
@@ -1436,6 +1535,8 @@ async function restoreInPlace(
     }
   }
 
+  // The cut may drop the turns these came from; a seed is set again below.
+  session.pendingSeed = undefined;
   // Respawn under the same agent slot. Passing `undefined` for model and
   // permission mode lets `startAgent` inherit both from the reused slot.
   try {
@@ -1559,6 +1660,7 @@ export async function stopAgent(agentId: string): Promise<void> {
     throw `No agent found: ${agentId}`;
   }
 
+  cancelTransition(agentId);
   refreshPin(session);
   session.status = "stopped";
 
@@ -1573,6 +1675,8 @@ export async function stopAgent(agentId: string): Promise<void> {
   telemetryCapture("agent_stopped");
 }
 
+const TRANSITION_QUIT_WAIT_MS = 3000;
+
 /**
  * Kill every live agent's runner subprocess. Intended for `before-quit`
  * cleanup so claude CLI children don't linger after Argus exits — they
@@ -1581,6 +1685,7 @@ export async function stopAgent(agentId: string): Promise<void> {
  */
 export async function destroyAllAgents(): Promise<void> {
   clearSpares();
+  const settled = cancelAllTransitions();
   const sessions = Array.from(appState.agents.values());
   if (sessions.length === 0) {
     return;
@@ -1599,6 +1704,13 @@ export async function destroyAllAgents(): Promise<void> {
       }
     }),
   );
+  // Whatever a transition was spawning kills itself once it sees the cancel.
+  await Promise.race([
+    settled,
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, TRANSITION_QUIT_WAIT_MS).unref();
+    }),
+  ]);
   appState.agents.clear();
 }
 
@@ -1612,6 +1724,9 @@ export async function interruptAgent(agentId: string): Promise<void> {
     throw `No agent found: ${agentId}`;
   }
   if (session.status === "stopped" || session.status === "error") {
+    return;
+  }
+  if (interruptWithoutTurn(agentId)) {
     return;
   }
 
@@ -1638,11 +1753,7 @@ export function waitForAgent(
     throw `No agent found: ${agentId}`;
   }
 
-  if (
-    session.status === "stopped" ||
-    session.status === "error" ||
-    (session.status === "idle" && session.turnsCompleted > 0)
-  ) {
+  if (hasAnswer(session)) {
     return Promise.resolve({
       status: session.status,
       result: session.resultSummary,
@@ -1732,11 +1843,7 @@ export function waitForAnyAgent(
   });
 
   for (const { id, session } of sessions) {
-    if (
-      session.status === "stopped" ||
-      session.status === "error" ||
-      (session.status === "idle" && session.turnsCompleted > 0)
-    ) {
+    if (hasAnswer(session)) {
       return Promise.resolve({
         agentId: id,
         result: session.resultSummary,
@@ -1826,7 +1933,7 @@ export function sendAgentMessage(
   agentId: string,
   message: string,
   images?: ImageAttachment[],
-  opts: { steer?: boolean } = {},
+  opts: Omit<HeldSend, "images" | "text"> = {},
 ): void {
   const agentEntry = appState.agents.get(agentId);
   if (!agentEntry) {
@@ -1836,10 +1943,10 @@ export function sendAgentMessage(
     throw `Agent is not running: ${agentId}`;
   }
   cancelLimitResume(agentId);
+  const transition = transitionOf(agentId);
   // The old child is being killed; stdin written now would be lost.
-  const respawn = pendingRespawn(agentId);
-  if (respawn) {
-    respawn
+  if (transition?.kind === "respawning" || transition?.kind === "restoring") {
+    transition.settled
       .then(() => sendAgentMessage(agentId, message, images, opts))
       .catch((e) => {
         warn(`[agent:${agentId}] message after respawn failed: ${String(e)}`);
@@ -1848,6 +1955,37 @@ export function sendAgentMessage(
     return;
   }
 
+  const parked = isQueueParked(agentId);
+  // What couldn't be delivered last time goes first.
+  const sends: HeldSend[] = [
+    ...(parked ? takeUndelivered(agentId) : []),
+    { ...opts, text: message, images },
+  ];
+  const hold =
+    agentEntry.paused === true ||
+    transition?.kind === "waking" ||
+    transition?.kind === "pausing";
+  for (const send of sends) {
+    if (hold) {
+      holdSend(agentEntry, send);
+    } else {
+      writeMessage(agentId, send);
+    }
+  }
+  if (parked) {
+    unparkQueue(agentId);
+  }
+}
+
+/** Put a message on the live child's stdin. */
+function writeMessage(
+  agentId: string,
+  { text: message, images, steer }: HeldSend,
+): void {
+  const agentEntry = appState.agents.get(agentId);
+  if (!agentEntry) {
+    throw `No agent found: ${agentId}`;
+  }
   // Track slash command usage for autocomplete sorting.
   const trimmed = message.trim();
   if (trimmed.startsWith("/")) {
@@ -1867,7 +2005,7 @@ export function sendAgentMessage(
   const seeded = seed ? withHistorySeed(seed, message) : message;
   const outgoing = note ? `${note}\n\n${seeded}` : seeded;
   try {
-    agentEntry.handle.send(outgoing, images ?? [], opts);
+    agentEntry.handle.send(outgoing, images ?? [], steer ? { steer } : {});
     if (seed) {
       agentEntry.pendingSeed = undefined;
     }
@@ -1948,6 +2086,9 @@ export async function setAgentModel(
   agentId: string,
   model: string,
 ): Promise<void> {
+  if (needsWake(agentId)) {
+    await ensureAwake(agentId, "model");
+  }
   const session = appState.agents.get(agentId);
   if (!session) {
     throw `No agent found: ${agentId}`;
@@ -1959,6 +2100,7 @@ export async function setAgentModel(
   await session.handle.setModel(model);
 
   session.model = model;
+  session.idleSince = Date.now();
   refreshPin(session);
 
   emitHostEvent(`agent:model-changed:${agentId}`, model);
@@ -1973,6 +2115,9 @@ export async function setAgentPermissionMode(
   agentId: string,
   mode: string,
 ): Promise<void> {
+  if (needsWake(agentId)) {
+    await ensureAwake(agentId, "mode");
+  }
   const session = appState.agents.get(agentId);
   if (!session) {
     throw `No agent found: ${agentId}`;
@@ -1996,6 +2141,7 @@ export async function setAgentPermissionMode(
   }
 
   session.permissionMode = mode;
+  session.idleSince = Date.now();
   refreshPin(session);
 
   emitHostEvent(`agent:permission-mode-changed:${agentId}`, mode);
@@ -2010,6 +2156,9 @@ export async function setAgentEffort(
   agentId: string,
   level: string | null,
 ): Promise<void> {
+  if (needsWake(agentId)) {
+    await ensureAwake(agentId, "effort");
+  }
   const session = appState.agents.get(agentId);
   if (!session) {
     throw `No agent found: ${agentId}`;
@@ -2020,6 +2169,7 @@ export async function setAgentEffort(
 
   await session.handle.setEffort(level);
   session.effort = level;
+  session.idleSince = Date.now();
   refreshPin(session);
 
   emitHostEvent(`agent:effort-changed:${agentId}`, level);
@@ -2050,6 +2200,33 @@ export function listAgents(sessionId: string): AgentInfo[] {
   return result;
 }
 
+/** Short: the pause waits on it. */
+const MCP_STATUS_BEFORE_PAUSE_MS = 1500;
+
+function spawnPaused(
+  paused: AgentSession,
+  mayRegister: () => boolean,
+): Promise<AgentSession> {
+  const { argusSession, runner, accountId } = pausedSpawn(paused);
+
+  return spawnAgentSession({
+    argusSession,
+    agentId: paused.agentId,
+    plan: {
+      runner,
+      accountId,
+      model: paused.model,
+      permissionMode: paused.permissionMode ?? DEFAULT_AGENT_PERMISSION_MODE,
+    },
+    resumeSessionId: paused.resumeRef ?? undefined,
+    parentAgentId: paused.parentAgentId ?? undefined,
+    previous: paused,
+    reused: true,
+    register: true,
+    mayRegister,
+  });
+}
+
 bindLifecycle({
   emitStatus: emitAgentStatus,
   respawn: (session, resumeRef) =>
@@ -2063,9 +2240,24 @@ bindLifecycle({
       session.parentAgentId ?? undefined,
       session.agentId,
     ),
+  wake: async (paused, mayRegister) => spawnPaused(paused, mayRegister),
+  restoreEffort,
+  beforePause: async (agent) => {
+    await refreshMcpStatus(agent, MCP_STATUS_BEFORE_PAUSE_MS);
+  },
+  write: writeMessage,
+  setInflight,
+  release: (agentId) => {
+    simulatorPool.releaseSimulator(agentId).catch((e) => {
+      warn(`[agent:${agentId}] simulator release failed: ${String(e)}`);
+    });
+    webBrowserPool.releaseBrowser(agentId).catch((e) => {
+      warn(`[agent:${agentId}] web browser release failed: ${String(e)}`);
+    });
+  },
 });
 
-export { respawnAgent } from "./lifecycle";
+export { ensureAwake, needsWake, respawnAgent } from "./lifecycle";
 
 // ---------------------------------------------------------------------------
 // respond_to_permission
@@ -2120,6 +2312,11 @@ export function respondToPermission(
   }
 
   appState.agentPendingPermissions.get(agentId)?.delete(toolUseId);
+  if (allowAll === true && allowRule) {
+    session.allowRules = [
+      ...new Set([...(session.allowRules ?? []), allowRule]),
+    ];
+  }
 
   // Tell the renderer the prompt was answered so it clears the pending state
   // and republishes the snapshot. Essential when a remote (web) client answers:

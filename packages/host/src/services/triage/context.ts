@@ -27,6 +27,7 @@ const SAFE_SETTINGS = [
   "updater_channel",
   "automations_enabled",
   "warm_agents",
+  "agent_idle_timeout_minutes",
   "default_permission_mode",
   "default_autonomy",
   "remote_enabled",

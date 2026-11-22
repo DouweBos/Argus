@@ -56,6 +56,7 @@ import dev.houwert.argus.ui.components.IconBtn
 import dev.houwert.argus.ui.components.LiveRefresh
 import dev.houwert.argus.ui.components.PillTab
 import dev.houwert.argus.ui.components.PillTabBar
+import dev.houwert.argus.ui.components.tabIcon
 import dev.houwert.argus.ui.icons.Icon
 import dev.houwert.argus.ui.theme.ArgusTheme
 import kotlinx.coroutines.launch
@@ -231,7 +232,7 @@ fun SessionScreen(route: Route) {
           if (showsTabs) {
             TabStrip(
               tabs = agents.map { agent ->
-                PillTab(agent.agentId, Labels.agentName(agent, agents), if (agent.pinned == true) Icon.pin else Icon.agent, indicator = agent.awaiting != null)
+                PillTab(agent.agentId, Labels.agentName(agent, agents), agent.tabIcon, indicator = agent.awaiting != null)
               } + if (drafting) listOf(PillTab(DRAFT_TAB, "New agent", Icon.plus)) else emptyList(),
               selection = if (drafting) DRAFT_TAB else focusedAgentId,
               canAdd = canStart && !drafting,

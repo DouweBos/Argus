@@ -258,11 +258,14 @@ public struct RemoteAgentStatus: Codable, Hashable, Sendable, Identifiable {
   public var runnerId: String?
   /// The host resumes it on its next start; nil from older hosts.
   public var pinned: Bool?
+  /// Idle with its process let go to free memory; the next message resumes it. Nil from older hosts.
+  public var paused: Bool?
   /// Claude account its process runs as, which may not be the computer's current default; nil from older hosts.
   public var accountId: String?
 
   public var id: String { agentId }
   public var isPinned: Bool { pinned == true }
+  public var isPaused: Bool { paused == true }
 
   enum CodingKeys: String, CodingKey {
     case agentId = "agent_id"
@@ -281,7 +284,7 @@ public struct RemoteAgentStatus: Codable, Hashable, Sendable, Identifiable {
     case effort
     case runnerSessionId = "runner_session_id"
     case runnerId = "runner_id"
-    case pinned
+    case pinned, paused
     case accountId = "account_id"
   }
 }

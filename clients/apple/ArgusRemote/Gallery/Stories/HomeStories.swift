@@ -24,6 +24,7 @@
             Spacer(minLength: 0)
           }
         },
+        GalleryStory("sessions/agent-tabs", screen: false, chrome: false) { AgentTabsStory() },
         GalleryStory("sessions/snooze-sheet", fixtures: GalleryFixtures.home, setup: load) {
           NavigationStack { SnoozeUntilForm(session: GalleryFixtures.argusSession("s-long")) }
         },
@@ -64,6 +65,32 @@
         }
         .listStyle(.plain)
         .navigationTitle("Home")
+      }
+    }
+
+    /// A session's tab pills, scrolled as they are on a phone and wrapped to show them all.
+    private struct AgentTabsStory: View {
+      private let agents = GalleryFixtures.agentTabs
+
+      var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+          bar(Array(agents.prefix(3)), selection: "a-tab-paused")
+          bar(Array(agents.suffix(2)), selection: "a-tab-pin")
+        }
+        .padding(16)
+      }
+
+      private func bar(_ shown: [RemoteAgentStatus], selection: String) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+          PillTabBar(
+            tabs: shown.map { agent in
+              PillTab(
+                id: agent.agentId, title: Labels.agentName(agent, among: agents), symbol: agent.tabSymbol,
+                indicator: agent.awaiting != nil)
+            },
+            selection: selection, compact: true
+          ) { _ in }
+        }
       }
     }
 

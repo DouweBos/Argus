@@ -16,6 +16,7 @@ import {
   startHostConversations,
   stopHostConversations,
 } from "./services/agent/conversation/hostDriver";
+import { startIdlePause, stopIdlePause } from "./services/agent/idlePause";
 import {
   startLimitAutoSwitch,
   stopLimitAutoSwitch,
@@ -267,6 +268,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   startHostConversations();
   startLiveActivities();
   startWarmPolicy({ spawn: spawnSpare });
+  startIdlePause();
   startLimitAutoSwitch();
   // Pinned chats come back idle once the MCP server is listening.
   startPinnedChats();
@@ -323,6 +325,7 @@ export function stopHostServices(): void {
   stopHostConversations();
   stopLiveActivities();
   stopWarmPolicy();
+  stopIdlePause();
   stopLimitAutoSwitch();
   stopMcpServer();
   stopRemote();

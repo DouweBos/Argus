@@ -2144,6 +2144,27 @@ export function PlayPauseIcon({ size = 16, className, ...rest }: IconProps) {
   );
 }
 
+/** A crescent moon with a Z: snoozed or paused. */
+export function SnoozeIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.5"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M6 3.2a5.7 5.7 0 1 0 6.9 8.1A5.2 5.2 0 0 1 6 3.2Z" />
+      <path d="M10.2 1.8h4l-4 4.4h4" />
+    </svg>
+  );
+}
+
 /** The app icon's drop glyph, in the accent. */
 export function ArgusMark({ size = 32, className, ...rest }: IconProps) {
   // Two marks on one page must not share a gradient id.

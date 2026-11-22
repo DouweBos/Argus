@@ -11,6 +11,7 @@
 import { emitHostEvent } from "@argus/host/bus";
 import { appState } from "../../state";
 import { respawnAgent } from "../agent/agentService";
+import { hasHeldSends, transitionOf } from "../agent/lifecycleState";
 import { hasHistory } from "../agent/resumeRef";
 import { getRunnerById } from "./registry";
 
@@ -23,6 +24,8 @@ export async function setAgentRunner(
   agentId: string,
   runnerId: string,
 ): Promise<void> {
+  // A wake or respawn under way replaces the slot this is about to change.
+  await transitionOf(agentId)?.settled;
   const agent = appState.agents.get(agentId);
   if (!agent) {
     throw `No agent found: ${agentId}`;
@@ -34,7 +37,7 @@ export async function setAgentRunner(
   if (agent.runner.id === runnerId) {
     return;
   }
-  if (hasHistory(agent) || agent.inflightPrompts > 0) {
+  if (hasHistory(agent) || agent.inflightPrompts > 0 || hasHeldSends(agentId)) {
     throw "The runner is fixed once the agent has started working — start a new agent to use a different runner";
   }
 

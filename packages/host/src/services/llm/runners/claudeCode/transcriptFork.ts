@@ -125,25 +125,60 @@ export function latestClaudeSessionId(cwd: string): string | null {
  * started elsewhere (the repo root, another app) is copied in, keeping its id.
  */
 export function ensureClaudeTranscriptAt(cwd: string, sessionId: string): void {
-  const root = path.join(os.homedir(), ".claude", "projects");
-  const destDir = path.join(root, claudeProjectSlug(cwd));
-  const dest = path.join(destDir, `${sessionId}.jsonl`);
+  const dest = transcriptPath(cwd, sessionId);
   if (fs.existsSync(dest)) {
     return;
   }
+  const src = findClaudeTranscript(cwd, sessionId);
+  if (src) {
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.copyFileSync(src, dest);
+  }
+}
+
+function transcriptPath(cwd: string, sessionId: string): string {
+  return path.join(
+    os.homedir(),
+    ".claude",
+    "projects",
+    claudeProjectSlug(cwd),
+    `${sessionId}.jsonl`,
+  );
+}
+
+/** Past this the CLI cuts a project dir's name short and adds a hash. */
+const MAX_SLUG = 200;
+
+/**
+ * A conversation's transcript: the one under its cwd, else the newest. A long
+ * cwd's plain dir only ever holds the copy an earlier resume left there.
+ */
+export function findClaudeTranscript(
+  cwd: string,
+  sessionId: string,
+): string | null {
+  const here = transcriptPath(cwd, sessionId);
+  if (claudeProjectSlug(cwd).length <= MAX_SLUG && fs.existsSync(here)) {
+    return here;
+  }
+  const root = path.join(os.homedir(), ".claude", "projects");
   let dirs: string[];
   try {
     dirs = fs.readdirSync(root);
   } catch {
-    return;
+    return null;
   }
+  let newest: { file: string; mtimeMs: number } | null = null;
   for (const dir of dirs) {
-    const src = path.join(root, dir, `${sessionId}.jsonl`);
-    if (fs.existsSync(src)) {
-      fs.mkdirSync(destDir, { recursive: true });
-      fs.copyFileSync(src, dest);
-
-      return;
+    const file = path.join(root, dir, `${sessionId}.jsonl`);
+    if (!fs.existsSync(file)) {
+      continue;
+    }
+    const { mtimeMs } = fs.statSync(file);
+    if (!newest || mtimeMs > newest.mtimeMs) {
+      newest = { file, mtimeMs };
     }
   }
+
+  return newest?.file ?? null;
 }

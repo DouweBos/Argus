@@ -37,7 +37,15 @@ export interface QueuedMessage {
   queued_at: number;
 }
 
+/** Queues that wait for the user instead of draining on their own. */
+const parked = new Set<string>();
+/** Queued again after a send that failed; their bubble is already in the chat. */
+const undelivered = new WeakSet<QueuedMessage>();
+
 function emit(agentId: string): void {
+  if (listQueue(agentId).length === 0) {
+    parked.delete(agentId);
+  }
   emitHostEvent(`agent:queue:${agentId}`, listQueue(agentId));
 }
 
@@ -55,16 +63,7 @@ export function enqueueMessage(
     images?: QueuedImage[];
   },
 ): QueuedMessage {
-  const queued: QueuedMessage = {
-    id: crypto.randomUUID(),
-    text: message.text,
-    ...(message.displayText && message.displayText !== message.text
-      ? { display_text: message.displayText }
-      : {}),
-    ...(message.author ? { author: message.author } : {}),
-    ...(message.images?.length ? { images: message.images } : {}),
-    queued_at: Date.now(),
-  };
+  const queued = toQueued(message);
 
   const existing = appState.agentQueues.get(agentId) ?? [];
   if (existing.length >= MAX_PER_AGENT) {
@@ -74,6 +73,24 @@ export function enqueueMessage(
   emit(agentId);
 
   return queued;
+}
+
+function toQueued(message: {
+  text: string;
+  displayText?: string;
+  author?: string;
+  images?: QueuedImage[];
+}): QueuedMessage {
+  return {
+    id: crypto.randomUUID(),
+    text: message.text,
+    ...(message.displayText && message.displayText !== message.text
+      ? { display_text: message.displayText }
+      : {}),
+    ...(message.author ? { author: message.author } : {}),
+    ...(message.images?.length ? { images: message.images } : {}),
+    queued_at: Date.now(),
+  };
 }
 
 export function removeQueuedMessage(agentId: string, id: string): void {
@@ -134,6 +151,68 @@ export function promoteQueuedMessage(agentId: string, id: string): boolean {
   return true;
 }
 
+/** Back at the head, in order, and waiting for the user to try again. */
+export function requeueUndelivered(
+  agentId: string,
+  messages: {
+    text: string;
+    displayText?: string;
+    author?: string;
+    images?: QueuedImage[];
+  }[],
+): void {
+  const returned = messages.map((message) => {
+    const queued = toQueued(message);
+    undelivered.add(queued);
+
+    return queued;
+  });
+  appState.agentQueues.set(agentId, [...returned, ...listQueue(agentId)]);
+  parked.add(agentId);
+  emit(agentId);
+}
+
+export function isQueueParked(agentId: string): boolean {
+  return parked.has(agentId);
+}
+
+export function wasShown(message: QueuedMessage): boolean {
+  return undelivered.has(message);
+}
+
+/** Let the queue drain again. Announced, since its event is what drains it. */
+export function unparkQueue(agentId: string): void {
+  if (parked.delete(agentId)) {
+    emit(agentId);
+  }
+}
+
+/** Take out what couldn't be delivered, to go ahead of a send. */
+export function takeUndelivered(agentId: string): {
+  text: string;
+  displayText?: string;
+  author?: string;
+  images?: QueuedImage[];
+}[] {
+  const queue = listQueue(agentId);
+  const taken = queue.filter(wasShown);
+  if (taken.length === 0) {
+    return [];
+  }
+  appState.agentQueues.set(
+    agentId,
+    queue.filter((m) => !wasShown(m)),
+  );
+  emit(agentId);
+
+  return taken.map((m) => ({
+    text: m.text,
+    displayText: m.display_text,
+    author: m.author,
+    images: m.images,
+  }));
+}
+
 /** Pop the oldest queued message, or undefined when the queue is empty. */
 export function dequeueMessage(agentId: string): QueuedMessage | undefined {
   const existing = appState.agentQueues.get(agentId);
@@ -149,6 +228,7 @@ export function dequeueMessage(agentId: string): QueuedMessage | undefined {
 
 /** Drop an agent's queue entirely — it stopped, or its session went away. */
 export function clearQueue(agentId: string): void {
+  parked.delete(agentId);
   if (!appState.agentQueues.has(agentId)) {
     return;
   }

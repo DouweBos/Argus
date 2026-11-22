@@ -136,6 +136,11 @@ export class ArgusTaskStore implements TaskStore {
     return this.tasks.get(taskId)?.augmented ?? false;
   }
 
+  /** A task is still running, whether or not anyone is polling it. */
+  hasWorking(): boolean {
+    return [...this.tasks.values()].some((t) => !isTerminal(t.task.status));
+  }
+
   /** Drop every task and timer — the connection is gone. */
   clear(): void {
     for (const stored of this.tasks.values()) {

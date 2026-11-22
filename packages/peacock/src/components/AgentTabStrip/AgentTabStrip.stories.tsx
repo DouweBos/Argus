@@ -37,5 +37,24 @@ export const Single: Story = {
   render: () => <Strip tabs={TABS.slice(0, 1)} />,
 };
 
+/** Idle agents whose process was let go until the next message. */
+export const Paused: Story = {
+  render: () => (
+    <Strip
+      tabs={[
+        { id: "a", title: "Fix the sidebar", status: "accent", busy: true },
+        { id: "b", title: "Token audit", status: "idle", paused: true },
+        { id: "c", title: "Release notes", status: "idle" },
+        {
+          id: "d",
+          title: "Rework the onboarding flow for a brand new machine",
+          status: "idle",
+          paused: true,
+        },
+      ]}
+    />
+  ),
+};
+
 /** No agents yet: just the `+`. */
 export const Empty: Story = { render: () => <Strip tabs={[]} /> };

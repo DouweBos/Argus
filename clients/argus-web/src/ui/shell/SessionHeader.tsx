@@ -63,6 +63,7 @@ function tabOf(agent: RemoteAgentStatus): AgentTab {
     title: agentLabel(agent.agent_id, agent),
     status,
     busy: agent.status === "running",
+    paused: agent.paused === true,
   };
 }
 

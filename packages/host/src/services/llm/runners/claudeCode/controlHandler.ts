@@ -15,6 +15,7 @@ import type {
   McpControlPayload,
   PermissionDecision,
 } from "./protocol";
+import type { TurnStop } from "../../../agent/backgroundState";
 import { info, warn } from "@argus/host/logger";
 import {
   type AllowRule,
@@ -114,9 +115,15 @@ export class ControlHandler {
       this.initResolve = resolve;
       this.initReject = reject;
     });
+    // A child killed before anyone waited on it mustn't be an unhandled rejection.
+    this.initPromise.catch(() => undefined);
 
+    const hooks: Record<string, unknown> = {
+      Stop: [{ hookCallbackIds: [TURN_STOP_HOOK_ID] }],
+    };
     const request: Record<string, unknown> = {
       subtype: "initialize",
+      hooks,
     };
     if (appendSystemPrompt) {
       request.appendSystemPrompt = appendSystemPrompt;
@@ -125,9 +132,7 @@ export class ControlHandler {
     // Workflow subagents get this through a hook answered over stdio instead.
     if (subagentContext) {
       this.subagentContext = subagentContext;
-      request.hooks = {
-        SubagentStart: [{ hookCallbackIds: [SUBAGENT_CONTEXT_HOOK_ID] }],
-      };
+      hooks.SubagentStart = [{ hookCallbackIds: [SUBAGENT_CONTEXT_HOOK_ID] }];
     }
 
     return JSON.stringify({
@@ -239,6 +244,10 @@ export class ControlHandler {
     const payload = request.request;
 
     if (payload.subtype === "hook_callback") {
+      if (payload.callback_id === TURN_STOP_HOOK_ID) {
+        emit(`agent:turn-stop:${this.agentId}`, turnStop(payload.input));
+      }
+
       return buildHookResponse(
         request.request_id,
         payload.callback_id === SUBAGENT_CONTEXT_HOOK_ID
@@ -522,6 +531,18 @@ export class ControlHandler {
 // ---------------------------------------------------------------------------
 
 export const SUBAGENT_CONTEXT_HOOK_ID = "argus_subagent_context";
+export const TURN_STOP_HOOK_ID = "argus_turn_stop";
+
+/** The `Stop` hook's snapshot of what outlives the turn. */
+function turnStop(input: Record<string, unknown>): TurnStop {
+  const count = (value: unknown): number | null =>
+    Array.isArray(value) ? value.length : null;
+
+  return {
+    tasks: count(input.background_tasks),
+    scheduled: count(input.session_crons),
+  };
+}
 
 /** Answer a hook callback; no context is an empty, no-op hook result. */
 function buildHookResponse(requestId: string, context: string | null): string {

@@ -32,6 +32,9 @@ val RemoteSessionProgress.fraction: Double? get() = if (total > 0) (current / to
 val RemoteAgentStatus.id: String get() = agentId
 val RemoteAgentStatus.isPinned: Boolean get() = pinned == true
 
+/** Idle with its process let go; the next message resumes it. */
+val RemoteAgentStatus.isPaused: Boolean get() = paused == true
+
 val RemoteStoppedAgent.id: String get() = historyId
 val RemoteStoppedAgent.isImported: Boolean get() = importedFrom != null
 val RemoteStoppedAgent.isPinned: Boolean get() = pinned == true

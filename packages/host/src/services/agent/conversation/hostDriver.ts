@@ -26,8 +26,12 @@ import { sendAgentMessage } from "../agentService";
 import { createCheckpoint, recordTurnEnd } from "../checkpoints";
 import {
   dequeueMessage,
+  isQueueParked,
   listQueue,
   promoteQueuedMessage,
+  type QueuedMessage,
+  unparkQueue,
+  wasShown,
 } from "../messageQueue";
 import { runnerCommandFor } from "../runnerCommand";
 import { isSessionViewed } from "../warmPolicy";
@@ -57,6 +61,7 @@ import {
   withPermissionPending,
   withSystemMessage,
 } from "./reducer";
+import { type WakeFailure, withWakeFailure } from "./wakeFailure";
 
 const AWAITING_ANSWER_GRACE_MS = 750;
 const PERMISSION_RETRY_MS = 50;
@@ -163,6 +168,20 @@ function route(channel: string, payload: unknown): void {
         author: author ?? undefined,
         sent: sent ?? undefined,
       });
+      break;
+    }
+    case "paused":
+      // Either way a new process is next; the old one's stderr explains nothing.
+      if (payload === true) {
+        entry.stderrTail = undefined;
+      }
+      break;
+    case "wake-failed": {
+      const tail = entry.stderrTail;
+      entry.stderrTail = undefined;
+      update(id, entry, (c) =>
+        withWakeFailure(c, payload as WakeFailure, tail),
+      );
       break;
     }
     case "stderr":
@@ -465,6 +484,7 @@ export async function sendQueuedMessageNow(
   if (!promoteQueuedMessage(agentId, id)) {
     throw `No queued message ${id} for ${agentId}`;
   }
+  unparkQueue(agentId);
   const live = agent.status !== "stopped" && agent.status !== "error";
   if (live && entry) {
     if (busy) {
@@ -480,6 +500,14 @@ export async function sendQueuedMessageNow(
   return { mid_turn: false };
 }
 
+/** What a queued message's bubble shows, should its send fail. */
+function shownAs(message: QueuedMessage): {
+  displayText?: string;
+  author?: string;
+} {
+  return { displayText: message.display_text, author: message.author };
+}
+
 /**
  * Write the head of the queue into the running turn. No checkpoint: the turn
  * is mid-edit. The CLI reports one idle for the lot, and the queue drains then.
@@ -490,9 +518,15 @@ function sendMidTurn(agentId: string, entry: Tracked): void {
     return;
   }
   // Sent before the dequeue, so a failed write leaves it queued.
-  sendAgentMessage(agentId, next.text, next.images, { steer: true });
+  sendAgentMessage(agentId, next.text, next.images, {
+    steer: true,
+    ...shownAs(next),
+  });
   entry.inflight = true;
   dequeueMessage(agentId);
+  if (wasShown(next)) {
+    return;
+  }
   userMessage(agentId, entry, next.display_text ?? next.text, {
     images: next.images,
     author: next.author,
@@ -506,7 +540,11 @@ function sendMidTurn(agentId: string, entry: Tracked): void {
  * signals can't dispatch two messages into one turn.
  */
 function trySendNextQueued(agentId: string, entry: Tracked): boolean {
-  if (entry.inflight || listQueue(agentId).length === 0) {
+  if (
+    entry.inflight ||
+    isQueueParked(agentId) ||
+    listQueue(agentId).length === 0
+  ) {
     return false;
   }
   // Claimed before the dequeue: its queue event re-enters here synchronously.
@@ -518,23 +556,29 @@ function trySendNextQueued(agentId: string, entry: Tracked): boolean {
     return false;
   }
   (async () => {
+    // A retry keeps the bubble and checkpoint of its first try.
+    const shown = wasShown(next);
     let checkpointId: string | undefined;
     try {
-      checkpointId = (await createCheckpoint(entry.sessionId)).id;
+      if (!shown) {
+        checkpointId = (await createCheckpoint(entry.sessionId)).id;
+      }
     } catch {
       // A checkpoint is a nicety; the send goes ahead without one.
     }
     if (trackedEntry(agentId) !== entry) {
       return;
     }
-    userMessage(agentId, entry, next.display_text ?? next.text, {
-      images: next.images,
-      author: next.author,
-      checkpointId,
-      sent: next.text,
-    });
+    if (!shown) {
+      userMessage(agentId, entry, next.display_text ?? next.text, {
+        images: next.images,
+        author: next.author,
+        checkpointId,
+        sent: next.text,
+      });
+    }
     try {
-      sendAgentMessage(agentId, next.text, next.images);
+      sendAgentMessage(agentId, next.text, next.images, shownAs(next));
     } catch (e) {
       entry.inflight = false;
       warn(`[conversations] queued send to ${agentId} failed: ${String(e)}`);

@@ -73,6 +73,16 @@ internal fun ChromePage() {
       view, { view = it }, compact = true, iconsOnly = true, framed = true,
     )
   }
+  Story("Agent tabs") {
+    var agent by remember { mutableStateOf("paused") }
+    PillTabBar(
+      listOf(
+        PillTab("run", "Fix the sidebar", ArgusIcon.agent), PillTab("paused", "Token audit", ArgusIcon.snooze),
+        PillTab("pin", "Triage", ArgusIcon.pin),
+      ),
+      agent, { agent = it }, compact = true,
+    )
+  }
   Story("Breadcrumb and badges") {
     Breadcrumb(listOf(BreadcrumbStep("Argus", badge = "Argus", badgeKey = "/r/Argus") {}, BreadcrumbStep("Unify the start composer")))
     FlowRow(spacing = 6.dp, packed = true) { for (p in galleryProjects) ProjectBadge(p, key = "/r/$p", size = 22.dp) }

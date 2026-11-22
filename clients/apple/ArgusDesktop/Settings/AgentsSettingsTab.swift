@@ -15,6 +15,11 @@ struct AgentsSettingsTab: View {
     (.autoMerge, "Auto-merge", "Also merge it once CI is green. Opt-in only."),
   ]
 
+  /// Minutes, and 0 for never. An hour matches the prompt cache.
+  private static let idleTimeouts: [(Int, String)] = [
+    (0, "Never"), (15, "15 min"), (30, "30 min"), (60, "1 h"), (240, "4 h"),
+  ]
+
   var body: some View {
     SettingsPage {
       SettingsGroup(
@@ -66,6 +71,23 @@ struct AgentsSettingsTab: View {
             SettingsCaption(
               "Agents kept started for the sessions you're looking at, so a new one is ready at once. "
                 + "Each is a running Claude Code process with its MCP servers.")
+          }
+        } else {
+          SettingsLoading()
+        }
+      }
+
+      SettingsGroup("Inactive agents") {
+        if let settings = host.settings {
+          SettingsRow(
+            "Pause after",
+            description: "Frees an idle agent's memory. Your next message resumes the chat. "
+              + "Agents with work still running are never paused."
+          ) {
+            Picker("Pause after", selection: idleTimeout(settings)) {
+              ForEach(Self.idleTimeouts, id: \.0) { minutes, label in Text(label).tag(minutes) }
+            }
+            .pickerStyle(.segmented)
           }
         } else {
           SettingsLoading()
@@ -186,6 +208,18 @@ struct AgentsSettingsTab: View {
         Task {
           await host.save(.warmAgents, ["warm_agents": .number(Double(next))]) {
             $0.warmAgents = next
+          }
+        }
+      })
+  }
+
+  private func idleTimeout(_ settings: ArgusProtocol.AppSettings) -> Binding<Int> {
+    Binding(
+      get: { settings.agentIdleTimeoutMinutes ?? 60 },
+      set: { next in
+        Task {
+          await host.save(.agentIdleTimeoutMinutes, ["agent_idle_timeout_minutes": .number(Double(next))]) {
+            $0.agentIdleTimeoutMinutes = next
           }
         }
       })

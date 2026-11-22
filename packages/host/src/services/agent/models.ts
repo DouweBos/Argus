@@ -2,9 +2,12 @@
  * Data types for the LLM agent lifecycle.
  */
 
+import type { BackgroundState } from "./backgroundState";
 import type { InitializeResponse } from "../llm/runners/claudeCode/protocol";
 import type { LlmRunner, LlmRunnerHandle } from "../llm/runners/types";
+import type { RuntimePlatform } from "../session/models";
 import type { ToolId } from "../tools/types";
+import type { RemoteMcpServerStatus } from "@argus/remote-protocol";
 
 // ---------------------------------------------------------------------------
 // AgentStatus
@@ -187,6 +190,22 @@ export interface AgentSession {
    * exit-plan-restore falls back to the system default.
    */
   prePlanPermissionMode?: string | null;
+  /**
+   * Its process was let go while it was idle: `handle` is that dead child's,
+   * and the next send resumes the conversation. Not a status.
+   */
+  paused?: boolean;
+  /** Since when nothing has stood in the way of pausing it; not `lastEventAt`. */
+  idleSince?: number;
+  /** What the CLI has going outside its turns. */
+  background?: BackgroundState;
+  /** Last reported MCP servers, the answer while paused. */
+  mcpServers?: RemoteMcpServerStatus[];
+  /** Spawn-only extras a replacement child gets again. */
+  appendSystemPrompt?: string;
+  platformsOverride?: RuntimePlatform[];
+  /** The "always allow" rules given to the agent so far. */
+  allowRules?: string[];
   /** The runner's id for the current conversation; null while it has none. */
   resumeRef?: string | null;
   /** Spawned onto an existing conversation, so it has history before its first turn. */

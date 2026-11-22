@@ -20,6 +20,9 @@
         GalleryStory("settings/accounts", size: CGSize(width: 760, height: 1000), fixtures: GalleryFixtures.runnerAccounts) {
           AccountsSettingsTab().environment(HostSettingsModel())
         },
+        GalleryStory("settings/agents", size: CGSize(width: 760, height: 1000), fixtures: GalleryFixtures.runnerAccounts) {
+          AgentsStage()
+        },
         GalleryStory("settings/drafted-messages/conventions", size: CGSize(width: 760, height: 300)) {
           DraftedMessagesStage(style: .conventions)
         },
@@ -144,6 +147,17 @@
         ],
         mcpUrls: ["https://sam-mbp.argus.houwert.dev/mcp", "http://127.0.0.1:47615/mcp"],
         devices: [], connectedDeviceIds: [])
+    }
+
+    /// Settings → Agents as a host answers it, the idle timeout set.
+    private struct AgentsStage: View {
+      @State private var host = HostSettingsModel()
+
+      var body: some View {
+        AgentsSettingsTab()
+          .environment(host)
+          .onAppear { host.galleryFill(.init(warmAgents: 1, agentIdleTimeoutMinutes: 60)) }
+      }
     }
 
     private struct DraftedMessagesStage: View {

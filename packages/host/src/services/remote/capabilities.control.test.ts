@@ -334,7 +334,12 @@ describe("control capability gating", () => {
   it("allows a control device to send a message", async () => {
     const ctx = makeCtx(["monitor", "control"]);
     await dispatch("agents.send", { agent_id: "a1", message: "hi" }, ctx);
-    expect(sendAgentMessage).toHaveBeenCalledWith("a1", "hi", undefined);
+    expect(sendAgentMessage).toHaveBeenCalledWith(
+      "a1",
+      "hi",
+      undefined,
+      expect.anything(),
+    );
   });
 
   it("queues a send that lands mid-turn instead of injecting it", async () => {

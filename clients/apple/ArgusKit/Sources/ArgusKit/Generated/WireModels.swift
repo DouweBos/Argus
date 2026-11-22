@@ -1639,6 +1639,7 @@ extension ArgusProtocol {
     public var commitMessageStyle: AppSettingsCommitMessageStyle?
     public var commitMessageInstructions: String?
     public var warmAgents: Int?
+    public var agentIdleTimeoutMinutes: Int?
     public var usageModelFilter: UsageModelFilter?
     public var launchRoute: AppSettingsLaunchRoute?
     public var linearMarkStarted: Bool?
@@ -1689,6 +1690,7 @@ extension ArgusProtocol {
       case commitMessageStyle = "commit_message_style"
       case commitMessageInstructions = "commit_message_instructions"
       case warmAgents = "warm_agents"
+      case agentIdleTimeoutMinutes = "agent_idle_timeout_minutes"
       case usageModelFilter = "usage_model_filter"
       case launchRoute = "launch_route"
       case linearMarkStarted = "linear_mark_started"
@@ -1723,7 +1725,7 @@ extension ArgusProtocol {
       case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, worktreeCleanupEnabled: Bool? = nil, worktreeCleanupLandedDays: Int? = nil, worktreeCleanupIdleDays: Int? = nil, worktreeCleanupMaxGb: Double? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, claudeArtifacts: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, usageModelFilter: UsageModelFilter? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, remoteLanWebClient: Bool? = nil, remoteKeepAwake: Bool? = nil, remoteMcpEnabled: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, worktreeCleanupEnabled: Bool? = nil, worktreeCleanupLandedDays: Int? = nil, worktreeCleanupIdleDays: Int? = nil, worktreeCleanupMaxGb: Double? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, claudeArtifacts: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, agentIdleTimeoutMinutes: Int? = nil, usageModelFilter: UsageModelFilter? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, remoteLanWebClient: Bool? = nil, remoteKeepAwake: Bool? = nil, remoteMcpEnabled: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
       self.worktreeCleanupEnabled = worktreeCleanupEnabled
@@ -1740,6 +1742,7 @@ extension ArgusProtocol {
       self.commitMessageStyle = commitMessageStyle
       self.commitMessageInstructions = commitMessageInstructions
       self.warmAgents = warmAgents
+      self.agentIdleTimeoutMinutes = agentIdleTimeoutMinutes
       self.usageModelFilter = usageModelFilter
       self.launchRoute = launchRoute
       self.linearMarkStarted = linearMarkStarted
@@ -1792,6 +1795,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(commitMessageStyle, forKey: .commitMessageStyle)
       try c.encodeIfPresent(commitMessageInstructions, forKey: .commitMessageInstructions)
       try c.encodeIfPresent(warmAgents, forKey: .warmAgents)
+      try c.encodeIfPresent(agentIdleTimeoutMinutes, forKey: .agentIdleTimeoutMinutes)
       try c.encodeIfPresent(usageModelFilter, forKey: .usageModelFilter)
       try c.encodeIfPresent(launchRoute, forKey: .launchRoute)
       try c.encodeIfPresent(linearMarkStarted, forKey: .linearMarkStarted)
@@ -13926,6 +13930,7 @@ extension ArgusProtocol {
     public var runnerSessionId: String?
     public var runnerId: String?
     public var pinned: Bool?
+    public var paused: Bool?
     public var accountId: String?
 
     enum CodingKeys: String, CodingKey {
@@ -13948,10 +13953,11 @@ extension ArgusProtocol {
       case runnerSessionId = "runner_session_id"
       case runnerId = "runner_id"
       case pinned = "pinned"
+      case paused = "paused"
       case accountId = "account_id"
     }
 
-    public init(agentId: String, sessionId: String, sessionLabel: String? = nil, projectName: String? = nil, title: String? = nil, status: RemoteAgentStatusStatus, model: String? = nil, contextWindow: Double? = nil, permissionMode: String? = nil, parentAgentId: String? = nil, createdAt: Double? = nil, lastActivityAt: Double? = nil, awaiting: RemoteAgentStatusAwaiting? = nil, limitResumeAt: Double? = nil, limitStalled: Bool? = nil, effort: String? = nil, runnerSessionId: String? = nil, runnerId: String? = nil, pinned: Bool? = nil, accountId: String? = nil) {
+    public init(agentId: String, sessionId: String, sessionLabel: String? = nil, projectName: String? = nil, title: String? = nil, status: RemoteAgentStatusStatus, model: String? = nil, contextWindow: Double? = nil, permissionMode: String? = nil, parentAgentId: String? = nil, createdAt: Double? = nil, lastActivityAt: Double? = nil, awaiting: RemoteAgentStatusAwaiting? = nil, limitResumeAt: Double? = nil, limitStalled: Bool? = nil, effort: String? = nil, runnerSessionId: String? = nil, runnerId: String? = nil, pinned: Bool? = nil, paused: Bool? = nil, accountId: String? = nil) {
       self.agentId = agentId
       self.sessionId = sessionId
       self.sessionLabel = sessionLabel
@@ -13971,6 +13977,7 @@ extension ArgusProtocol {
       self.runnerSessionId = runnerSessionId
       self.runnerId = runnerId
       self.pinned = pinned
+      self.paused = paused
       self.accountId = accountId
     }
 
@@ -13995,6 +14002,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(runnerSessionId, forKey: .runnerSessionId)
       try c.encodeIfPresent(runnerId, forKey: .runnerId)
       try c.encodeIfPresent(pinned, forKey: .pinned)
+      try c.encodeIfPresent(paused, forKey: .paused)
       try c.encodeIfPresent(accountId, forKey: .accountId)
     }
   }

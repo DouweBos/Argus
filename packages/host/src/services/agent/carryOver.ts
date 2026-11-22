@@ -17,16 +17,28 @@ export function carriedSettings(previous: AgentSession | null | undefined): {
 
 export type CarriedState = Pick<
   AgentSession,
+  | "allowRules"
+  | "appendSystemPrompt"
   | "contextWindow"
   | "costUsd"
   | "createdAt"
+  | "effort"
+  | "exitWaiters"
   | "lastToolName"
   | "lastToolUseAt"
+  | "mcpServers"
+  | "pendingNote"
+  | "pendingSeed"
+  | "platformsOverride"
+  | "prePlanPermissionMode"
   | "profile"
+  | "resolvedModel"
+  | "resultSummary"
   | "suppressStatus"
   | "tokensTotal"
   | "toolUsesTotal"
   | "turnsCompleted"
+  | "turnWaiters"
 >;
 
 /** What the replacement's session starts with; fresh values without a previous one. */
@@ -43,6 +55,19 @@ export function carryOver(
     lastToolUseAt: previous?.lastToolUseAt ?? null,
     lastToolName: previous?.lastToolName ?? null,
     contextWindow: previous?.contextWindow ?? null,
+    resolvedModel: previous?.resolvedModel,
+    resultSummary: previous?.resultSummary ?? null,
     profile: previous?.profile,
+    appendSystemPrompt: previous?.appendSystemPrompt,
+    platformsOverride: previous?.platformsOverride,
+    allowRules: previous?.allowRules,
+    effort: previous?.effort,
+    prePlanPermissionMode: previous?.prePlanPermissionMode,
+    pendingSeed: previous?.pendingSeed,
+    pendingNote: previous?.pendingNote,
+    mcpServers: previous?.mcpServers,
+    // The same arrays, not copies: a waiter takes itself out of the one it joined.
+    exitWaiters: previous?.exitWaiters ?? [],
+    turnWaiters: previous?.turnWaiters ?? [],
   };
 }

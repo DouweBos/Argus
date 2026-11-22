@@ -79,6 +79,7 @@ import {
 import { registerAutomationTools } from "./automationTools";
 import { removeEndpointFile, writeEndpointFile } from "./endpointFile";
 import { registerIntegrationTools } from "./integrationTools";
+import { trackOpenCalls } from "./openCalls";
 import { findPastAgent, registerPastAgentTools } from "./pastAgentTools";
 import { registerPrWatchTools } from "./prWatchTools";
 import { isGitRepo, collectAllProjects } from "./projectDiscovery";
@@ -523,8 +524,8 @@ type SpawnAgentArgs = z.infer<z.ZodObject<typeof spawnAgentShape>>;
  */
 export function createMcpServer(
   callerAgentId: string | null = null,
+  taskStore = new ArgusTaskStore(),
 ): McpServer {
-  const taskStore = new ArgusTaskStore();
   const server = new McpServer(
     { name: "argus", version: "1.0.0" },
     {
@@ -1546,7 +1547,8 @@ export function createMcpServer(
       // agent has finished a turn while still alive (idle with turnsCompleted > 0).
       // Mirror the gate in waitForAgent so a finished-but-alive agent isn't blocked.
       const finishedTurn =
-        session.status === "idle" && session.turnsCompleted > 0;
+        session.status === "idle" &&
+        (session.turnsCompleted > 0 || Boolean(session.resultSummary));
       if (
         session.status !== "stopped" &&
         session.status !== "error" &&
@@ -3195,6 +3197,7 @@ export async function startMcpServer(): Promise<number> {
       const spawnId =
         (req.headers[SPAWN_ID_HEADER] as string | undefined) ?? null;
 
+      let track: (() => void) | undefined;
       if (!transport) {
         // New session — create a fresh McpServer + transport pair.
         // Each session needs its own McpServer because the MCP SDK's
@@ -3204,7 +3207,8 @@ export async function startMcpServer(): Promise<number> {
         // spawns without the agent knowing its own ID.
         const callerAgentId =
           (req.headers["x-argus-agent-id"] as string | undefined) ?? null;
-        const mcpServer = createMcpServer(callerAgentId);
+        const taskStore = new ArgusTaskStore();
+        const mcpServer = createMcpServer(callerAgentId, taskStore);
         if (req.headers[CLIENT_HEADER] === "cli") {
           capture("mcp_client_connected", { via: "cli", access: "admin" });
         }
@@ -3220,6 +3224,13 @@ export async function startMcpServer(): Promise<number> {
         };
 
         await mcpServer.connect(transport);
+        if (callerAgentId) {
+          const connected = transport;
+          track = () =>
+            trackOpenCalls(callerAgentId, connected, () =>
+              taskStore.hasWorking(),
+            );
+        }
       }
 
       await transport.handleRequest(req, res);
@@ -3228,6 +3239,8 @@ export async function startMcpServer(): Promise<number> {
       // the initialize handshake inside handleRequest, not during connect.
       if (transport.sessionId && !hasMcpSession(transport.sessionId)) {
         addMcpSession(transport.sessionId, transport, spawnId);
+        // Only a session gets a close to stop the tracking at.
+        track?.();
       }
     } else if (req.method === "GET") {
       // SSE stream for server-initiated messages.

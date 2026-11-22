@@ -677,6 +677,7 @@ data class AppSettings(
   @SerialName("commit_message_style") val commitMessageStyle: AppSettingsCommitMessageStyle? = null,
   @SerialName("commit_message_instructions") val commitMessageInstructions: String? = null,
   @SerialName("warm_agents") val warmAgents: Long? = null,
+  @SerialName("agent_idle_timeout_minutes") val agentIdleTimeoutMinutes: Long? = null,
   @SerialName("usage_model_filter") val usageModelFilter: UsageModelFilter? = null,
   @SerialName("launch_route") val launchRoute: AppSettingsLaunchRoute? = null,
   @SerialName("linear_mark_started") val linearMarkStarted: Boolean? = null,
@@ -5127,6 +5128,7 @@ data class RemoteAgentStatus(
   @SerialName("runner_session_id") val runnerSessionId: String? = null,
   @SerialName("runner_id") val runnerId: String? = null,
   @SerialName("pinned") val pinned: Boolean? = null,
+  @SerialName("paused") val paused: Boolean? = null,
   @SerialName("account_id") val accountId: String? = null,
 )
 

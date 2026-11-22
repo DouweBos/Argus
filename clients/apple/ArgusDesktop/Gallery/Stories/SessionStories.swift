@@ -25,6 +25,13 @@
           }
           .padding(8)
         },
+        GalleryStory("sessions/agent-tabs", size: CGSize(width: 760, height: 0)) {
+          AgentTabBar(
+            agents: GalleryFixtures.agentTabs, focused: "a-tab-paused", canStart: true,
+            select: { _ in }, start: {}, close: { _ in }
+          )
+          .padding(8)
+        },
       ]
     }
 

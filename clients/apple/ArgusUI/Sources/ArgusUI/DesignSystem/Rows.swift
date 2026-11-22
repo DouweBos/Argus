@@ -1,6 +1,14 @@
 import ArgusKit
 import SwiftUI
 
+extension RemoteAgentStatus {
+  /// What its pill tab shows. Paused outranks pinned: it's what differs right now.
+  public var tabSymbol: String {
+    if isPaused { return Icon.snooze }
+    return isPinned ? Icon.pin : Icon.agent
+  }
+}
+
 extension RemoteAgentState {
   public var tone: Tone {
     switch self {

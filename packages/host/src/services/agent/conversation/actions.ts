@@ -16,7 +16,12 @@ import { emitHostEvent } from "@argus/host/bus";
 import { appState } from "../../../state";
 import { restoreAgentAtTurn, sendAgentMessage } from "../agentService";
 import { createCheckpoint, restoreCheckpoint } from "../checkpoints";
-import { clearQueue, enqueueMessage, listQueue } from "../messageQueue";
+import {
+  clearQueue,
+  enqueueMessage,
+  listQueue,
+  unparkQueue,
+} from "../messageQueue";
 import { runnerCommandFor } from "../runnerCommand";
 import { buildHistorySeed } from "../runnerHandoff/seed";
 import {
@@ -86,12 +91,15 @@ export async function submitAgentMessage(
     listQueue(agentId).length > 0
   ) {
     enqueueMessage(agentId, message);
+    // Sending is the retry a failed wake waits for.
+    unparkQueue(agentId);
 
     return { queued: true };
   }
+  const shownAs = { displayText: message.displayText, author: message.author };
   if (!isFolding(agentId)) {
     // A UI still folds this conversation; it records the bubble from this.
-    sendAgentMessage(agentId, message.text, message.images);
+    sendAgentMessage(agentId, message.text, message.images, shownAs);
     emitHostEvent(`agent:remote-message:${agentId}`, {
       message: message.displayText ?? message.text,
       images: message.images,
@@ -116,7 +124,7 @@ export async function submitAgentMessage(
     sent: message.text,
   });
   try {
-    sendAgentMessage(agentId, message.text, message.images);
+    sendAgentMessage(agentId, message.text, message.images, shownAs);
   } catch (e) {
     setInflight(agentId, false);
     throw e;
@@ -175,9 +183,7 @@ export async function rewindAgent(
     throw "This message has no checkpoint to restore from";
   }
   const { resend } = options;
-  if (resend) {
-    setInflight(agentId, true);
-  }
+  setInflight(agentId, Boolean(resend));
   changeConversation(agentId, (c) => ({
     ...c,
     sessionId: undefined,

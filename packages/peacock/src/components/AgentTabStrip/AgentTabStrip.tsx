@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CloseIcon, PlusIcon } from "../../icons/Icons";
+import { CloseIcon, PlusIcon, SnoozeIcon } from "../../icons/Icons";
 import { StatusDot, type StatusTone } from "../Badge/Badge";
 import { FlatIconButton } from "../FlatIconButton/FlatIconButton";
 import styles from "./AgentTabStrip.module.css";
@@ -10,6 +10,8 @@ export interface AgentTab {
   status: StatusTone;
   /** Working right now: the dot pulses. */
   busy?: boolean;
+  /** Idle with its process let go: a snooze mark sits before the title. */
+  paused?: boolean;
 }
 
 export interface AgentTabStripProps {
@@ -51,11 +53,24 @@ export function AgentTabStrip({
                 aria-selected={selected}
                 className={styles.tabButton}
                 role="tab"
-                title={tab.title}
+                title={
+                  tab.paused
+                    ? `${tab.title} (paused: your next message resumes it)`
+                    : tab.title
+                }
                 type="button"
                 onClick={() => onSelect(tab.id)}
               >
                 <StatusDot pulse={tab.busy} tone={tab.status} />
+                {tab.paused && (
+                  <span
+                    aria-label="Paused"
+                    className={styles.paused}
+                    role="img"
+                  >
+                    <SnoozeIcon size={11} />
+                  </span>
+                )}
                 <span className={styles.title}>{tab.title}</span>
               </button>
               {onClose && (

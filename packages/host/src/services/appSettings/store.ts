@@ -91,6 +91,11 @@ export interface AppSettings {
    */
   warm_agents?: number;
   /**
+   * Minutes an agent sits idle before the host lets its process go; the next
+   * message resumes the conversation. 0 never pauses; defaults to 60.
+   */
+  agent_idle_timeout_minutes?: number;
+  /**
    * Models Usage counts or leaves out, matched on the model id before any
    * price mapping. Absent counts every model.
    */

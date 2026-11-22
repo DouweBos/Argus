@@ -141,6 +141,17 @@ export interface EventMap {
     action: "disable" | "enable" | "finish_sign_in" | "reconnect" | "sign_in";
     success: boolean;
   };
+  agent_paused: {
+    /** It had a conversation to resume, rather than never having been used. */
+    had_turns: boolean;
+    idle_bucket: "<30m" | "1-4h" | "4h+" | "30-60m";
+  };
+  agent_woken: {
+    /** What needed the process back. */
+    trigger: "effort" | "mcp" | "message" | "mode" | "model";
+    success: boolean;
+    duration_bucket: "<1s" | "1-3s" | "3-10s" | "10s+";
+  };
   agent_pinned: {
     action: "pin" | "unpin";
     /** A live agent, or a saved chat whose agent is gone. */

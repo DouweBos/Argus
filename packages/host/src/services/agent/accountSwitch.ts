@@ -36,8 +36,6 @@ export type AccountSwitchSource =
 interface QueuedSwitch {
   /** The pin to restore if the switch fails: the one before the first queued pick. */
   previousPin: string | null;
-  /** The slot the idle waiter hangs on; a respawn by anything else drops it. */
-  waitingOn: AgentSession;
   source: AccountSwitchSource;
 }
 
@@ -55,8 +53,8 @@ function onAccount(agent: AgentSession): boolean {
   );
 }
 
-function waitForIdle(agent: AgentSession, entry: QueuedSwitch): void {
-  entry.waitingOn = agent;
+/** The waiter survives respawns and wakes: they carry the agent's waiters over. */
+function waitForIdle(agent: AgentSession): void {
   // Deferred: waiters are resolved inside a loop that clears the list after.
   agent.turnWaiters.push((status) =>
     queueMicrotask(() => {
@@ -82,7 +80,7 @@ function applyQueued(agentId: string): void {
   }
   if (isAgentBusy(agent)) {
     // A queued message went out on the same idle.
-    waitForIdle(agent, entry);
+    waitForIdle(agent);
 
     return;
   }
@@ -172,11 +170,8 @@ export async function switchSessionClaudeAccount(
   }
   if (isAgentBusy(agent)) {
     if (!pending) {
-      const entry = { previousPin: previous, waitingOn: agent, source };
-      queued.set(agent.agentId, entry);
-      waitForIdle(agent, entry);
-    } else if (pending.waitingOn !== agent) {
-      waitForIdle(agent, pending);
+      queued.set(agent.agentId, { previousPin: previous, source });
+      waitForIdle(agent);
     }
 
     return;

@@ -25,6 +25,9 @@ export class FakeHandle extends EventEmitter {
   }
 
   send = (message: string): void => {
+    if (this.killed) {
+      throw "dead handle";
+    }
     this.sent.push(message);
   };
 

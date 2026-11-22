@@ -51,6 +51,7 @@ function SessionAgents({ agents }: { agents: RemoteAgentStatus[] }) {
           name={
             <span className="aw-inline">
               {a.pinned && <Icons.PinIcon size={10} />}
+              {a.paused && <Icons.SnoozeIcon size={10} />}
               {agentLabel(a.agent_id, a)}
             </span>
           }
