@@ -23,6 +23,16 @@ struct GitFailureTests {
     #expect(GitFailure.classify("fatal: The current branch topic has no upstream branch.").actions(canRetry: true) == [.publishBranch])
   }
 
+  @Test("a fetch race and a stalled remote offer Retry")
+  func transientWording() {
+    let race = GitFailure.classify("Another git process updated the remote branches at the same time. Try again.")
+    #expect(race.kind == .lockFileExists)
+    let stalled = GitFailure.classify(
+      "The remote stopped responding. Check your internet connection and try again.")
+    #expect(stalled.kind == .networkTimeout)
+    #expect([race, stalled].allSatisfy { $0.actions(canRetry: true).first == .retry })
+  }
+
   @Test("a branch named after a conflict isn't a conflict")
   func conflictWordInName() {
     #expect(GitFailure.classify("error: pathspec 'conflict-b' did not match").kind == .unknown)

@@ -131,7 +131,10 @@ public struct GitFailure: Equatable, Sendable {
     if has("is already (used by|checked out at) worktree") {
       return failure(.branchCheckedOut, "Branch is already checked out in another worktree")
     }
-    if has(#"index\.lock"#, #"unable to create '.*\.lock'"#, "another git process is using this repository") {
+    if has(
+      #"index\.lock"#, #"unable to create '.*\.lock'"#, "another git process is using this repository",
+      "another git process updated the remote branches")
+    {
       return failure(.lockFileExists, "Another git process is holding the index lock")
     }
     if has("no upstream branch", "there is no tracking information", "the current branch .* has no upstream") {
@@ -151,7 +154,7 @@ public struct GitFailure: Equatable, Sendable {
     }
     if has(
       "could not resolve host", "unable to access", "operation timed out", "connection timed out",
-      "network is unreachable", "couldn't reach the remote")
+      "network is unreachable", "couldn't reach the remote", "the remote stopped responding", "operation too slow")
     {
       return failure(.networkTimeout, "Network error contacting remote", "retry")
     }

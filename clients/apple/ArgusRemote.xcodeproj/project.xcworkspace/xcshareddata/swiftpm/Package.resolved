@@ -1,5 +1,5 @@
 {
-  "originHash" : "d1bff7390696d3c142255b8a338f6e95398478ce5a80e51168f85efaf50e3d9a",
+  "originHash" : "9650672bb66057b7b8c74c97a8560a57eedb101c0189b268cf208044bbffc7d9",
   "pins" : [
     {
       "identity" : "clerk-ios",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/DouweBos/Grove.git",
       "state" : {
-        "revision" : "07f5d8260fdccd530442db8dab8e5b7c614a87c9",
-        "version" : "0.6.0"
+        "revision" : "ea48cb798a2a7c9d699fa45b18adf9ad54ccf65d",
+        "version" : "0.10.0"
       }
     },
     {
