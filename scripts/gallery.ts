@@ -5,6 +5,7 @@
  * ever showing. Or `--browse` to click through them live.
  *
  *   pnpm gallery [filter] [--theme dark|light] [--out <dir>] [--no-build] [--browse]
+ *                [--workspace <path>]  (builds through it, e.g. to override a package locally)
  *   pnpm gallery [filter] --ios [--device "iPad Pro 13-inch (M5)"]  (default: iPhone 17)
  *
  * `--ios` renders the iOS app's stories (`clients/apple/ArgusRemote/Gallery/`,
@@ -45,6 +46,7 @@ function parse(argv: string[]) {
     browse: false,
     ios: false,
     device: "iPhone 17",
+    workspace: "",
     outSet: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -58,6 +60,8 @@ function parse(argv: string[]) {
       options.ios = true;
     } else if (arg === "--device") {
       options.device = argv[++i] ?? options.device;
+    } else if (arg === "--workspace") {
+      options.workspace = path.resolve(argv[++i] ?? "");
     } else if (arg === "--no-build") {
       options.build = false;
     } else if (arg === "--browse") {
@@ -72,13 +76,17 @@ function parse(argv: string[]) {
   return options;
 }
 
-async function build(): Promise<void> {
+async function build(workspace: string): Promise<void> {
+  const container = workspace
+    ? ["-workspace", workspace]
+    : ["-project", "clients/apple/ArgusRemote.xcodeproj"];
+  // A workspace resolves packages its own way, so it keeps its own build.
+  const derived = workspace ? `${DERIVED}-workspace` : DERIVED;
   try {
     await run(
       "xcodebuild",
       [
-        "-project",
-        "clients/apple/ArgusRemote.xcodeproj",
+        ...container,
         "-scheme",
         "ArgusDesktop",
         "-configuration",
@@ -86,7 +94,7 @@ async function build(): Promise<void> {
         "-destination",
         "platform=macOS,arch=arm64",
         "-derivedDataPath",
-        DERIVED,
+        derived,
         "build",
         "-quiet",
         "ARGUS_SKIP_HOST_BUNDLE=YES",
@@ -104,7 +112,7 @@ async function build(): Promise<void> {
   fs.rmSync(path.dirname(BUNDLE), { recursive: true, force: true });
   fs.mkdirSync(path.dirname(BUNDLE), { recursive: true });
   await run("ditto", [
-    path.join(DERIVED, "Build/Products/Debug/Argus.app"),
+    path.join(derived, "Build/Products/Debug/Argus.app"),
     BUNDLE,
   ]);
   await run("/usr/libexec/PlistBuddy", [
@@ -132,7 +140,7 @@ async function main(): Promise<void> {
     return;
   }
   if (options.build) {
-    await build();
+    await build(options.workspace);
   }
   if (!fs.existsSync(BUNDLE)) {
     throw new Error("no gallery build yet — drop --no-build");
