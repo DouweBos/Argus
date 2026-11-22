@@ -118,6 +118,12 @@ final class GitWorkspace: GitHostSending {
     reflog.undoManager = undo
     branchesReview.onRepositoryChanged = refresh
     branchesReview.undoManager = undo
+    let commands = HostGitCommands(
+      sessionId: session.id, features: features, host: ViewModelGitHost(host: self), repository: repository,
+      naming: GitWorkspaces.naming)
+    stashes.commands = commands
+    reflog.commands = commands
+    branchesReview.commands = commands
   }
 
   // MARK: Lifecycle

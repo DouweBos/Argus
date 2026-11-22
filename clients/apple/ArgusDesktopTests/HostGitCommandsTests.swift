@@ -11,12 +11,14 @@ import Testing
 private final class SpyHost: GitHostSending {
   struct Reached: Error {}
   private(set) var sent: [(name: String, params: [String: Any])] = []
+  private(set) var tracked: [MacTelemetryEvent.GitAction] = []
 
   func send<C: RemoteCommand>(
     _ command: sending C.Type, _ params: C.Params, label: String, track: MacTelemetryEvent.GitAction?
   ) async throws -> C.Result {
     let json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(params)) as? [String: Any]
     sent.append((C.name, json ?? [:]))
+    if let track { tracked.append(track) }
     throw Reached()
   }
 }
@@ -83,6 +85,39 @@ struct HostGitCommandsTests {
     #expect(params?["branch"] as? String == "review")
     #expect(params?["ref"] as? String == "HEAD:refs/heads/review")
     #expect(params?["tags"] as? String == "follow")
+  }
+
+  @Test func aViewModelsMutationReachesTheHostUntracked() async {
+    let spy = SpyHost()
+    let repository = MockGitRepository()
+    let review = BranchesReviewViewModel(repository: repository)
+    review.commands = HostGitCommands(
+      sessionId: "s1", features: .argus(isProjectRoot: true, isRemote: false), host: ViewModelGitHost(host: spy),
+      repository: repository, naming: GitNaming(name: "grove"))
+    await review.refresh()
+    guard let branch = review.branches.first(where: { $0.isDeletable }) else {
+      Issue.record("the mock repository has no deletable branch")
+      return
+    }
+    review.requestDelete([branch])
+    guard let pending = review.pendingDelete else {
+      Issue.record("nothing to confirm")
+      return
+    }
+    await review.confirmDelete(pending)
+    #expect(spy.sent.map(\.name) == ["git_delete_branch"])
+    // The view model reports the action itself.
+    #expect(spy.tracked.isEmpty)
+    #expect(review.errorMessage != nil)
+  }
+
+  @Test func theViewModelsHostDoesNotKeepTheWorkspaceAlive() {
+    var spy: SpyHost? = SpyHost()
+    let sender = ViewModelGitHost(host: spy)
+    weak let released = spy
+    spy = nil
+    #expect(released == nil)
+    #expect(sender.host == nil)
   }
 
   @Test func anOptionTheHostLacksIsRefusedRatherThanDropped() async {
