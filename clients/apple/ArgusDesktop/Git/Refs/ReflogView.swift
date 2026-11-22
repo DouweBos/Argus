@@ -100,6 +100,8 @@ struct ReflogView: View {
     Button("Hard Reset to Here", role: .destructive) { reflog.requestReset(to: entry, mode: .hard) }
     Divider()
     Button("New Branch Here") { createBranch(from: entry) }
+      .disabled(!workspace.features.contains(.createBranch))
+      .help(workspace.features.contains(.createBranch) ? "" : GitFeature.createBranch.unavailableReason)
     Button("Copy SHA") { Clipboard.copy(entry.newSHA) }
   }
 

@@ -9,6 +9,8 @@ struct BranchesReviewView: View {
   let workspace: GitWorkspace
 
   private var review: BranchesReviewViewModel { workspace.branchesReview }
+  /// The review deletes through GroveKit, so the host's rule has to be checked here.
+  private var canDelete: Bool { review.canDelete && workspace.features.contains(.editBranches) }
 
   var body: some View {
     VStack(spacing: 0) {
@@ -64,7 +66,8 @@ struct BranchesReviewView: View {
       }
       .buttonStyle(QuietTabButtonStyle())
       Button("Delete Selected", role: .destructive) { review.requestDelete(review.selectedBranches) }
-        .disabled(review.selectedIDs.isEmpty || !review.canDelete)
+        .disabled(review.selectedIDs.isEmpty || !canDelete)
+        .help(workspace.features.contains(.editBranches) ? "" : GitFeature.editBranches.unavailableReason)
     }
     .controlSize(.small)
     .padding(.horizontal, 12)
@@ -92,7 +95,7 @@ struct BranchesReviewView: View {
         }
         .contextMenu {
           Button("Delete", role: .destructive) { review.requestDelete([branch]) }
-            .disabled(!branch.isDeletable || !review.canDelete)
+            .disabled(!branch.isDeletable || !canDelete)
           Button("Copy Name") { Clipboard.copy(branch.name) }
         }
       }
