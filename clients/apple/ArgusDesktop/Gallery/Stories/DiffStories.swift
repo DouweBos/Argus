@@ -17,6 +17,14 @@
         story("git/diff/theme", size: CGSize(width: 980, height: 520)) { StoryDiff(colorTheme: .ocean) },
         story("git/diff/lfs", size: CGSize(width: 760, height: 340)) { StoryDiff(diff: parsed(lfsPatch)) },
         story("git/diff/image", size: CGSize(width: 840, height: 420)) { StoryImageDiff() },
+        story("git/diff/code-compare", size: CGSize(width: 820, height: 460)) {
+          CodeCompareSheet(
+            path: "src/session/merge.ts",
+            comparison: CodeHunks(
+              base: "export function merge(root: string) {\n  return git.merge(root)\n}\n",
+              current: "export function merge(root: string, branch: string) {\n  return git.merge(root, branch)\n}\n"),
+            keepMine: {}, reload: {}, close: {})
+        },
       ]
     }
 

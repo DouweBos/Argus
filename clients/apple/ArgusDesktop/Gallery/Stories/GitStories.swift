@@ -15,6 +15,9 @@
       [
         panel("git/changes", worktree: true, view: .working),
         panel("git/changes/last-turn", worktree: true, view: .working, scope: .lastTurn),
+        panel("git/changes/file", worktree: true, view: .working, file: "src/session/merge.ts"),
+        // A staged addition, which takes hunk and line actions like an edit.
+        panel("git/changes/added-file", worktree: true, view: .working, file: "src/session/strategy.test.ts"),
         panel("git/branch", worktree: true, view: .branch),
         // Twelve turns over two agents, one whose checkpoint is gone and one restored to.
         panel("timeline", worktree: true, view: .timeline(turn: nil)),
@@ -42,14 +45,14 @@
     }
 
     private static func panel(
-      _ id: String, worktree: Bool, view: GitRoute, scope: SessionDiffScope = .uncommitted
+      _ id: String, worktree: Bool, view: GitRoute, scope: SessionDiffScope = .uncommitted, file: String? = nil
     ) -> GalleryStory {
       let sessionId = worktree ? GalleryGit.worktreeSessionId : GalleryGit.rootSessionId
       let fixtures = GalleryFixtures.git(sessionId: sessionId, path: worktree ? worktreePath : rootPath)
         .merging(GalleryFixtures.pullRequests) { git, _ in git }
       return GalleryStory(id, size: screen, chrome: true, fixtures: fixtures, setup: { stage in
         await attach(stage)
-        await load(stage, sessionId: sessionId, view: view, scope: scope)
+        await load(stage, sessionId: sessionId, view: view, scope: scope, file: file)
       }) {
         GitPanelStory(sessionId: sessionId, view: view)
       }
@@ -65,12 +68,17 @@
 
     /// Reads the repository before the shot: GroveKit's first refresh outlasts the render's settle.
     @MainActor
-    private static func load(_ stage: GalleryStage, sessionId: String, view: GitRoute, scope: SessionDiffScope) async {
+    private static func load(
+      _ stage: GalleryStage, sessionId: String, view: GitRoute, scope: SessionDiffScope, file: String?
+    ) async {
       guard let session = stage.host.session(id: sessionId),
         let workspace = await stage.model.git.open(session)
       else { return }
       workspace.visible = view
       await workspace.refreshAll()
+      if let file, let entry = workspace.workingCopy.statusEntries.first(where: { $0.path == file }) {
+        await workspace.workingCopy.select(entry)
+      }
       workspace.scopedDiff.scope = scope
       await workspace.scopedDiff.load()
       if case .timeline(let turnId) = view {
