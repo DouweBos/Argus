@@ -127,23 +127,27 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
   // -------------------------------------------------------------------------
 
   send(message: string, images: ImageAttachment[] = []): void {
+    this.requireRunning();
     const payload = buildUserMessagePayload(message, images);
     this.safeWriteLine(payload);
   }
 
   async interrupt(): Promise<void> {
+    this.requireRunning();
     const [json, promise] = this.controlHandler.buildInterruptRequest();
     this.safeWriteLine(json);
     await promise;
   }
 
   async setModel(model: string): Promise<void> {
+    this.requireRunning();
     const [json, promise] = this.controlHandler.buildSetModelRequest(model);
     this.safeWriteLine(json);
     await promise;
   }
 
   async setPermissionMode(mode: string): Promise<void> {
+    this.requireRunning();
     const native = toClaudePermissionMode(mode) ?? mode;
     const [json, promise] =
       this.controlHandler.buildSetPermissionModeRequest(native);
@@ -152,12 +156,14 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
   }
 
   async setEffort(level: string | null): Promise<void> {
+    this.requireRunning();
     const [json, promise] = this.controlHandler.buildSetEffortRequest(level);
     this.safeWriteLine(json);
     await promise;
   }
 
   async mcpStatus(): Promise<RunnerMcpServerStatus[]> {
+    this.requireRunning();
     const [json, promise] = this.controlHandler.buildMcpStatusRequest();
     this.safeWriteLine(json);
 
@@ -165,6 +171,7 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
   }
 
   async mcpControl(request: RunnerMcpControl): Promise<RunnerMcpControlResult> {
+    this.requireRunning();
     const [json, promise] = this.controlHandler.buildMcpControlRequest(
       mcpControlPayload(request),
     );
@@ -174,6 +181,7 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
   }
 
   respondToPermission(decision: PermissionDecisionInput): void {
+    this.requireRunning();
     const response = this.controlHandler.respond(
       decision.toolUseId,
       decision.decision,
@@ -233,6 +241,20 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
   // -------------------------------------------------------------------------
   // Internal: wire child stdio
   // -------------------------------------------------------------------------
+
+  /** A write to a child that's gone would vanish, and its answer never come. */
+  private requireRunning(): void {
+    const { exitCode, signalCode, killed } = this.child;
+    if (
+      this.exited ||
+      killed ||
+      (exitCode ?? signalCode ?? null) !== null ||
+      this.stdin.destroyed ||
+      this.stdin.writableEnded
+    ) {
+      throw "The agent's Claude Code process isn't running";
+    }
+  }
 
   /**
    * Guarded write — silently drops writes once the pipe is gone or the
