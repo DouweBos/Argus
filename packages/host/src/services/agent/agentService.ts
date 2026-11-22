@@ -34,11 +34,7 @@ import type {
 } from "./models";
 import type { NewSpare } from "./spares";
 import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
-import type {
-  LlmRunner,
-  LlmRunnerHandle,
-  PermissionPreHook,
-} from "../llm/runners/types";
+import type { LlmRunner, PermissionPreHook } from "../llm/runners/types";
 import type { RuntimePlatform, Session, SessionKind } from "../session/models";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import os from "node:os";
@@ -85,6 +81,7 @@ import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { noteUsageRateLimitLine } from "../usage/limits";
 import { recordTurnUsage } from "../usage/turns";
 import { ensureAgentTmpDir } from "./agentTmp";
+import { carriedSettings, carryOver } from "./carryOver";
 import { loadConversationByRunnerSession } from "./chatHistory";
 import {
   CONDUCTOR_DISALLOWED,
@@ -105,6 +102,15 @@ import {
 import { stageConversation } from "./conversation/live";
 import { fromSavedMessages } from "./conversation/reducer";
 import { forgetAgent } from "./forget";
+import {
+  bindLifecycle,
+  dropPendingPrompts,
+  failRespawn,
+  isRetired,
+  pendingRespawn,
+  retireChild,
+  withTransition,
+} from "./lifecycle";
 import { noteLimitStallStarted } from "./limitHandoff";
 import {
   cancelLimitResume,
@@ -292,17 +298,6 @@ function seedResumedConversation(
     });
   } catch (e) {
     warn(`[agent:${agentId}] failed to seed resumed transcript: ${String(e)}`);
-  }
-}
-
-/** The process that asked is gone, so its prompts can't be answered any more. */
-function dropPendingPrompts(agentId: string): void {
-  const pending = appState.agentPendingPermissions.get(agentId);
-  appState.agentPendingPermissions.delete(agentId);
-  for (const toolUseId of pending?.keys() ?? []) {
-    emitHostEvent(`agent:permission-cancel:${agentId}`, {
-      tool_use_id: toolUseId,
-    });
   }
 }
 
@@ -554,7 +549,7 @@ function resolveSpawnPlan(
     runnerIdOverride?: string;
   },
 ): SpawnPlan {
-  const previousAgentForModel = opts.previous;
+  const carried = carriedSettings(opts.previous);
 
   // Resolve the permission mode: explicit caller override → the mode the
   // reused slot ran with (restore-at-turn / restart) → app-wide default.
@@ -563,7 +558,7 @@ function resolveSpawnPlan(
   // deliberate mode here — spares included.
   const effectivePermissionMode =
     opts.permissionMode ??
-    previousAgentForModel?.permissionMode ??
+    carried.permissionMode ??
     DEFAULT_AGENT_PERMISSION_MODE;
 
   // Resolve the runner. The session's `runner_id` is only the default for
@@ -572,9 +567,7 @@ function resolveSpawnPlan(
   // sessions persisted before `runner_id` existed default to `"claude-code"`.
   const sessionDefaultRunnerId = sessionRunnerId(argusSession);
   const runnerId =
-    opts.runnerIdOverride ??
-    previousAgentForModel?.runner.id ??
-    sessionDefaultRunnerId;
+    opts.runnerIdOverride ?? carried.runnerId ?? sessionDefaultRunnerId;
   let runner: LlmRunner | null = getRunnerById(runnerId);
   if (!runner) {
     // Runner was unregistered between session create and now — fall back
@@ -607,8 +600,8 @@ function resolveSpawnPlan(
       // Restore-at-turn reuses the previous agent's model so we don't drop
       // variant suffixes (e.g. `[1m]`) that aren't preserved in the JSONL.
       model: onSessionRunner
-        ? (argusSession.model ?? previousAgentForModel?.model ?? null)
-        : (previousAgentForModel?.model ?? null),
+        ? (argusSession.model ?? carried.model ?? null)
+        : (carried.model ?? null),
     },
     agentOverride: { model: opts.model ?? null },
     ...(onSessionRunner ? { argusConfig: projectLlmConfig } : {}),
@@ -653,7 +646,8 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     previous,
   } = args;
   const { runner, accountId } = args.plan;
-  const profile = args.profile ?? previous?.profile;
+  const carried = carryOver(previous);
+  const profile = args.profile ?? carried.profile;
   const attachedDevices = profile?.devices ?? [];
   const sessionId = argusSession.id;
   const worktreePath = argusSession.path;
@@ -908,16 +902,8 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     exitWaiters: [],
     turnWaiters: [],
     emitsSessionState: false,
-    turnsCompleted: previous?.turnsCompleted ?? 0,
-    suppressStatus: previous?.suppressStatus ?? false,
-    createdAt: previous?.createdAt ?? Date.now(),
+    ...carried,
     lastEventAt: Date.now(),
-    toolUsesTotal: previous?.toolUsesTotal ?? 0,
-    costUsd: previous?.costUsd ?? 0,
-    tokensTotal: previous?.tokensTotal ?? 0,
-    lastToolUseAt: previous?.lastToolUseAt ?? null,
-    lastToolName: previous?.lastToolName ?? null,
-    contextWindow: previous?.contextWindow ?? null,
     inflightPrompts: 0,
     model: plan.model,
     permissionMode: plan.permissionMode,
@@ -971,7 +957,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
 
   // A retired or replaced child can still talk while it dies.
   const isCurrent = (): boolean => {
-    if (retired.has(handle)) {
+    if (isRetired(handle)) {
       return false;
     }
     const slot = appState.agents.get(agentId);
@@ -1054,7 +1040,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   handle.on("exit", () => closeMcpSessionsForSpawn(spawnId));
 
   handle.on("exit", (exitCode: number) => {
-    if (retired.has(handle)) {
+    if (isRetired(handle)) {
       return;
     }
     const agentEntry = appState.agents.get(agentId);
@@ -1376,11 +1362,7 @@ export async function restoreAgentAtTurn(args: {
   if (!forkTranscript && args.seed === undefined) {
     throw `Restore-at-turn is not supported by runner "${session.runner.id}"`;
   }
-  const onClaude =
-    (session.runner.baseRunnerId ?? session.runner.id) === "claude-code";
-
-  const sessionId = session.sessionId;
-  const argusSession = appState.sessions.get(sessionId);
+  const argusSession = appState.sessions.get(session.sessionId);
   if (
     !argusSession ||
     (argusSession.kind !== "worktree" && argusSession.kind !== "project_root")
@@ -1388,6 +1370,21 @@ export async function restoreAgentAtTurn(args: {
     throw `Cannot restore agent in session kind "${argusSession?.kind ?? "unknown"}"`;
   }
 
+  return withTransition(args.agentId, "restoring", () =>
+    restoreInPlace(args, session, argusSession),
+  );
+}
+
+/** The kill, fork and respawn of a rewind, under its lock. */
+async function restoreInPlace(
+  args: Parameters<typeof restoreAgentAtTurn>[0],
+  session: AgentSession,
+  argusSession: Session & { path: string },
+): Promise<{ claude_session_id: string | null }> {
+  const forkTranscript = session.runner.forkTranscript;
+  const onClaude =
+    (session.runner.baseRunnerId ?? session.runner.id) === "claude-code";
+  const sessionId = session.sessionId;
   // Pin status to "running" + silence the emit channel.
   session.status = "running";
   session.suppressStatus = true;
@@ -1840,9 +1837,9 @@ export function sendAgentMessage(
   }
   cancelLimitResume(agentId);
   // The old child is being killed; stdin written now would be lost.
-  const pendingRespawn = respawning.get(agentId);
-  if (pendingRespawn) {
-    pendingRespawn
+  const respawn = pendingRespawn(agentId);
+  if (respawn) {
+    respawn
       .then(() => sendAgentMessage(agentId, message, images, opts))
       .catch((e) => {
         warn(`[agent:${agentId}] message after respawn failed: ${String(e)}`);
@@ -2053,100 +2050,22 @@ export function listAgents(sessionId: string): AgentInfo[] {
   return result;
 }
 
-/** Handles Argus killed on purpose: their exit says nothing about the agent. */
-const retired = new WeakSet<LlmRunnerHandle>();
-
-/** Kill a child Argus is replacing; from here on nothing it says counts. */
-async function retireChild(
-  agentId: string,
-  handle: LlmRunnerHandle,
-): Promise<void> {
-  retired.add(handle);
-  await handle.kill();
-  handle.cleanup();
-  dropPendingPrompts(agentId);
-}
-
-/** A respawn failed with the old child gone: whatever holds the slot is dead. */
-function failRespawn(agentId: string): void {
-  const slot = appState.agents.get(agentId);
-  if (!slot) {
-    return;
-  }
-  const { handle } = slot;
-  retired.add(handle);
-  handle
-    .kill()
-    .then(() => handle.cleanup())
-    .catch((e: unknown) => {
-      warn(`[agent:${agentId}] killing a failed respawn: ${String(e)}`);
-    });
-  slot.status = "error";
-  slot.suppressStatus = false;
-  for (const resolve of slot.turnWaiters) {
-    resolve("error");
-  }
-  slot.turnWaiters.length = 0;
-  slot.exitWaiters.length = 0;
-  emitAgentStatus(agentId, "error");
-}
-
-/** Agents between kill and respawn; messages for them wait for the new child. */
-const respawning = new Map<string, Promise<void>>();
-
-/**
- * Restart an agent in place so it picks up new spawn-time settings — a runner
- * or Claude account switch. The agent id is reused so the tab and conversation
- * slot survive the swap, and the runner already stamped on the slot is what
- * the new subprocess spawns under. `keepModel` holds on to the model, which
- * only a runner switch invalidates; `resumeRef` carries the conversation over.
- */
-export async function respawnAgent(
-  agentId: string,
-  opts: { keepModel?: boolean; resumeRef?: string } = {},
-): Promise<void> {
-  const session = appState.agents.get(agentId);
-  if (!session) {
-    return;
-  }
-  const { sessionId, parentAgentId } = session;
-
-  // Silence the kill → spawn status flicker in the UI.
-  session.suppressStatus = true;
-  if (!opts.keepModel) {
-    // The old runner's model id means nothing to the new one; drop it so the
-    // spawn cascade falls through to the runner default.
-    session.model = null;
-  }
-
-  const done = (async () => {
-    await retireChild(agentId, session.handle);
-
-    await startAgent(
-      sessionId,
+bindLifecycle({
+  emitStatus: emitAgentStatus,
+  respawn: (session, resumeRef) =>
+    startAgent(
+      session.sessionId,
       undefined,
       undefined,
-      opts.resumeRef,
+      resumeRef,
       undefined,
       undefined,
-      parentAgentId ?? undefined,
-      agentId,
-    );
-  })();
-  respawning.set(agentId, done);
-  try {
-    await done;
-  } catch (e) {
-    failRespawn(agentId);
-    throw e;
-  } finally {
-    respawning.delete(agentId);
-    const fresh = appState.agents.get(agentId);
-    if (fresh) {
-      fresh.suppressStatus = false;
-    }
-  }
-}
+      session.parentAgentId ?? undefined,
+      session.agentId,
+    ),
+});
+
+export { respawnAgent } from "./lifecycle";
 
 // ---------------------------------------------------------------------------
 // respond_to_permission

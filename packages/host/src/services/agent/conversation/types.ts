@@ -26,19 +26,21 @@ export type {
 // ---------------------------------------------------------------------------
 
 export type LlmStreamEvent =
-  {
+  | {
       /** `/clear`: the context is gone. Not the id to resume; `init` carries that. */
       new_conversation_id: string;
       session_id: string;
       type: "conversation_reset";
-    } | {
+    }
+  | {
       /** A background task (or a foreground one being tracked) began. */
       is_backgrounded?: boolean;
       subtype: "task_started";
       task_id: string;
       tool_use_id?: string;
       type: "system";
-    } | {
+    }
+  | {
       /** A task settled. `usage` is set for subagents. */
       status: "completed" | "failed" | "stopped";
       subtype: "task_notification";
@@ -46,12 +48,14 @@ export type LlmStreamEvent =
       tool_use_id?: string;
       type: "system";
       usage?: { duration_ms?: number };
-    } | {
+    }
+  | {
       /** Authoritative idle/running signal from the CLI. */
       state: "idle" | "requires_action" | "running";
       subtype: "session_state_changed";
       type: "system";
-    } | {
+    }
+  | {
       /** Emitted when an API request fails with a retryable error. */
       attempt: number;
       error_status: number | null;
@@ -59,12 +63,14 @@ export type LlmStreamEvent =
       retry_delay_ms: number;
       subtype: "api_retry";
       type: "system";
-    } | {
+    }
+  | {
       /** Generic status update from the CLI. */
       status: string;
       subtype: "status";
       type: "system";
-    } | {
+    }
+  | {
       duration_ms: number;
       /** Per-model usage; each entry carries the CLI's `contextWindow`. */
       modelUsage?: Record<string, { contextWindow?: number }>;
@@ -74,7 +80,8 @@ export type LlmStreamEvent =
       total_cost_usd?: number;
       type: "result";
       usage: TokenUsage;
-    } | {
+    }
+  | {
       message: {
         content: LlmContentBlock[];
         model: string;
@@ -83,12 +90,14 @@ export type LlmStreamEvent =
       /** Present when this assistant message is from a sub-agent (Task/Agent tool). */
       parent_tool_use_id?: string | null;
       type: "assistant";
-    } | {
+    }
+  | {
       message: { content: LlmToolResult[] };
       /** Present when this tool_result is from a sub-agent (Task/Agent tool). */
       parent_tool_use_id?: string | null;
       type: "user";
-    } | {
+    }
+  | {
       model: string;
       session_id: string;
       /** Skills specifically (plugins, user settings, bundled). */
