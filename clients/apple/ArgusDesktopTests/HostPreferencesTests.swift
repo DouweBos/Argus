@@ -164,7 +164,7 @@ struct HostPreferencesTests {
     let f = Fixture()
     defer { f.cleanUp() }
     let host = FakeHost()
-    host.ui["runtime.platform"] = #""video""#
+    host.ui["runtime.platform"] = #""desktop""#
     f.home.set("android", forKey: RuntimeModel.Keys.platform)
 
     await f.sync.attach(host.io)
@@ -172,7 +172,7 @@ struct HostPreferencesTests {
     await f.sync.flush()
 
     #expect(f.home.string(forKey: RuntimeModel.Keys.platform) == "android")
-    #expect(host.ui["runtime.platform"] == #""video""#)
+    #expect(host.ui["runtime.platform"] == #""desktop""#)
   }
 
   @Test func aSecondWindowTakesButNeverGives() async {
