@@ -42,6 +42,7 @@ import dev.houwert.argus.kit.protocol.generated.RemoteToolCall
 import dev.houwert.argus.kit.protocol.generated.RemoteToolCallStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteToolResultBlock
 import dev.houwert.argus.kit.protocol.generated.RemoteToolResultBlockText
+import dev.houwert.argus.kit.util.LinkedProjects
 import dev.houwert.argus.ui.theme.ArgusMetrics
 import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.ui.transcript.AgentTranscript
@@ -193,7 +194,11 @@ private object GalleryTranscript {
           "- The README has a new *Appearance* section\n- Nothing changes for people who never open the picker",
       ),
     ),
-    RemoteMessage("m5", RemoteMessageRole.user, listOf("Nice. Run the tests and clean the build folder."), emptyList(), timestamp = T0 + 400_000),
+    RemoteMessage(
+      "m5", RemoteMessageRole.user,
+      listOf(LinkedProjects.buildPreamble(listOf("/Users/me/Work/Grove", "/Users/me/Work/website"), "Nice. Run the tests and clean the build folder.")),
+      emptyList(), timestamp = T0 + 400_000,
+    ),
     assistant(
       "m6", 405, text = listOf("Running the suite in the background while I update the snapshot."),
       calls = listOf(

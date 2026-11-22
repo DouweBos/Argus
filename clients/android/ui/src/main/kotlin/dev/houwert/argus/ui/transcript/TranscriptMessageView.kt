@@ -69,20 +69,6 @@ private fun MessageColumn(message: RemoteMessage, isUser: Boolean, modifier: Mod
   val settledCalls = message.toolCalls.filter { !pending.isPending(it) }
   val hasBubble = textBlocks.isNotEmpty() || settledCalls.isNotEmpty() || message.command != null
   Column(modifier, horizontalAlignment = align, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-    val source = message.source
-    if (message.isError == true || source != null || message.author != null) {
-      Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (source != null) Badge(source.parentLabel?.let { "$it → ${source.tool}" } ?: "MCP · ${source.tool}")
-        message.author?.let { Badge(it) }
-        if (message.isError == true) Badge("error", tone = Tone.Danger)
-      }
-    }
-    val paths = linked?.paths.orEmpty()
-    if (paths.isNotEmpty()) {
-      Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        for (path in paths) Chip(path.substringAfterLast('/').ifEmpty { path }, icon = Icon.folder)
-      }
-    }
     // Attachments sit beside the bubble, not inside it, so they read as sent with it.
     val refs = message.images.orEmpty()
     if (refs.isNotEmpty()) {
@@ -107,6 +93,20 @@ private fun MessageColumn(message: RemoteMessage, isUser: Boolean, modifier: Mod
           }
         }
         for (call in settledCalls) ToolCallCard(call)
+      }
+    }
+    val source = message.source
+    if (message.isError == true || source != null || message.author != null) {
+      Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (source != null) Badge(source.parentLabel?.let { "$it → ${source.tool}" } ?: "MCP · ${source.tool}")
+        message.author?.let { Badge(it) }
+        if (message.isError == true) Badge("error", tone = Tone.Danger)
+      }
+    }
+    val paths = linked?.paths.orEmpty()
+    if (paths.isNotEmpty()) {
+      Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        for (path in paths) Chip(path.substringAfterLast('/').ifEmpty { path }, icon = Icon.folder)
       }
     }
     if (HostStore.isOptimistic(message.id)) {

@@ -1,8 +1,8 @@
 import ArgusUI
 import SwiftUI
 
-/// One message: badges, attachments, its text as one selectable TextKit view,
-/// and its tool calls. A call waiting on a decision is drawn in the prompt
+/// One message: attachments, its text as one selectable TextKit view, its tool
+/// calls, and the badges and chips under them. A call waiting on a decision is drawn in the prompt
 /// area at the bottom instead, so it never shows twice.
 struct TranscriptMessageRow: View, Equatable {
   @Environment(\.theme) private var theme
@@ -59,8 +59,6 @@ struct TranscriptMessageRow: View, Equatable {
 
   private var content: some View {
     VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
-      badges
-      chips
       images
       if let command = message.command {
         commandBody(command)
@@ -70,6 +68,8 @@ struct TranscriptMessageRow: View, Equatable {
       ForEach(calls) { call in
         TranscriptToolCall(agentKey: agentKey, messageId: message.id, call: call)
       }
+      badges
+      chips
     }
   }
 

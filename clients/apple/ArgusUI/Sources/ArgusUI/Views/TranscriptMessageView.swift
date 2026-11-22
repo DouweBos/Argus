@@ -37,13 +37,13 @@ public struct TranscriptMessageView: View {
     HStack {
       if isUser { Spacer(minLength: 40) }
       VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
-        badges
-        chips
         // Attachments sit beside the bubble, not inside it: an image in the
         // background makes the bubble stretch to the image's width and reads
         // as part of the message body rather than something sent with it.
         images
         if hasBubbleContent { bubble }
+        badges
+        chips
         if HostStore.isOptimistic(id: message.id) {
           SendingLabel()
         } else if let timestamp = message.timestamp {

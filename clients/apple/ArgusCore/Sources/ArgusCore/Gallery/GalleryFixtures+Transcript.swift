@@ -225,7 +225,11 @@ extension GalleryFixtures {
     [
       user(
         "u1", 0,
-        "The transcript on the iPad stretches edge to edge while the composer is capped. Put both in the reading column, like the Mac."
+        LinkedProjects.buildPreamble(
+          paths: ["/Users/dev/Projects/Grove", "/Users/dev/Projects/conductor"],
+          message:
+            "The transcript on the iPad stretches edge to edge while the composer is capped. Put both in the reading column, like the Mac."
+        )
       ),
       assistant("m1", 2, text: ["I'll start with how the Mac lays out its column, then compare the phone's rows."]),
       assistant(
