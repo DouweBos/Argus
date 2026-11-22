@@ -10,7 +10,7 @@ struct ConflictDetailView: View {
   let workspace: GitWorkspace
   let entry: StatusEntry
   @State private var merged = ""
-  @State private var loaded: String?
+  @State private var result = ConflictResult.loading
   @State private var isSaving = false
 
   private var vm: WorkingCopyViewModel { workspace.workingCopy }
@@ -31,7 +31,7 @@ struct ConflictDetailView: View {
     } bottom: {
       mergedEditor
     }
-    .task(id: entry.path) { load() }
+    .task(id: entry.path) { await load() }
   }
 
   private func side(_ side: ConflictSide, label: String, text: String?) -> some View {
@@ -73,29 +73,40 @@ struct ConflictDetailView: View {
             .help("Conflict markers are still in the result")
             .accessibilityLabel("Conflict markers left")
         }
-        Button("Revert", action: load)
-          .disabled(merged == loaded)
+        Button("Revert") { Task { await load() } }
+          .disabled(result.text == nil || merged == result.text || isSaving)
         Button("Save & Mark Resolved") { Task { await save() } }
           .buttonStyle(.borderedProminent)
-          .disabled(isSaving || loaded == nil)
+          .disabled(isSaving || result.text == nil)
       }
       .controlSize(.small)
       .padding(.horizontal, 10)
       .frame(height: 32)
       Divider()
-      ConflictTextView(text: $merged)
+      switch result {
+      case .loading:
+        ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
+      case .loaded:
+        ConflictTextView(text: $merged)
+      case .unreadable(let reason):
+        QuietEmptyState(icon: "exclamationmark.triangle", title: "Couldn't read the result", message: reason) {
+          Button("Try Again") { Task { await load() } }
+        }
+      }
     }
   }
 
-  private func load() {
-    let url = workspace.repository.path.appendingPathComponent(entry.path)
-    let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
-    merged = text
-    loaded = text
+  private func load() async {
+    result = .loading
+    let read = await ConflictResult.read(entry.path, in: workspace.repository.path, runner: workspace.runner)
+    guard !Task.isCancelled else { return }
+    merged = read.text ?? ""
+    result = read
   }
 
   /// Writes through the host, which keeps writes inside the worktree, then stages it.
   private func save() async {
+    guard result.text != nil else { return }
     isSaving = true
     defer { isSaving = false }
     let id = workspace.sessionId

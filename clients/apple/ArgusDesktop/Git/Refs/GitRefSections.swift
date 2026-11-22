@@ -157,7 +157,9 @@ struct GitRefSections: View {
     .modifier(NavigatorRowHighlight(selected: false))
     .help(worktree.path)
     .contextMenu {
-      Button("Reveal in Finder") { NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: worktree.path) }
+      if workspace.features.contains(.reveal) {
+        Button("Reveal in Finder") { NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: worktree.path) }
+      }
       Button("Copy Path") { Clipboard.copy(worktree.path) }
     }
   }

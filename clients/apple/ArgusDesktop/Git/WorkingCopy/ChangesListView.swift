@@ -84,7 +84,7 @@ struct ChangesListView: View {
       Button("Unstage All") { Task { await actions.unstageAll() } }
         .disabled(vm.stagedFiles.isEmpty)
       // The patch file is on this Mac; a remote session's git can't read it.
-      if !workspace.isRemote {
+      if workspace.features.contains(.applyPatch) {
         Divider()
         Button("Apply Patch") { PatchPanels.chooseToApply(workspace: workspace) }
       }

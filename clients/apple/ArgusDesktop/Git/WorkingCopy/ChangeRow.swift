@@ -95,7 +95,7 @@ struct ChangeRowMenu: View {
     Button(entries.count > 1 ? "Copy \(entries.count) Paths" : "Copy Path") {
       Clipboard.copy(entries.map(\.path).joined(separator: "\n"))
     }
-    if !workspace.isRemote {
+    if workspace.features.contains(.reveal) {
       Button("Reveal in Finder") {
         NSWorkspace.shared.activateFileViewerSelecting(
           entries.map { workspace.repository.path.appendingPathComponent($0.path) })
@@ -138,7 +138,7 @@ private struct ChangeFileActionsMenu: View {
     if entries.count == 1, let first = existing.first {
       Button("Rename") { vm.requestRename(first) }
     }
-    if !existing.isEmpty {
+    if !existing.isEmpty, workspace.features.contains(.trash) {
       Button(existing.count > 1 ? "Move \(existing.count) Files to Trash" : "Move to Trash") {
         vm.requestDelete(existing)
       }

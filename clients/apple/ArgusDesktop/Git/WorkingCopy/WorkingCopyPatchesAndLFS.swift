@@ -145,7 +145,7 @@ struct ChangeLFSAndPatchMenu: View {
   ) -> [Item] {
     let vm = workspace.workingCopy
     var items: [Item] = []
-    if section != .conflicted, !workspace.isRemote {
+    if section != .conflicted, workspace.features.contains(.export) {
       let patchEntries = vm.patchEntries(for: entry, side: section.side)
       items.append(
         Item(
@@ -207,7 +207,7 @@ struct TrackedFileMenu: View {
     Button("Blame") { model.navigate(.sessionGit(id: workspace.sessionId, view: .blame(path: path, ref: nil))) }
     Divider()
     Button("Copy Path") { Clipboard.copy(path) }
-    if !workspace.isRemote {
+    if workspace.features.contains(.reveal) {
       Button("Reveal in Finder") {
         NSWorkspace.shared.activateFileViewerSelecting([workspace.repository.path.appendingPathComponent(path)])
       }

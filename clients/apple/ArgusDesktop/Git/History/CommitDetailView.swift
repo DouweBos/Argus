@@ -194,7 +194,7 @@ private struct CommitSelectionSummary: View {
         Button("Squash \(commits.count) Commits") { history.request(.squashCommits(commits)) }
           .disabled(!history.canSquash(commits))
         Button("Save as Patch") { Task { await actions.savePatch(commits) } }
-          .disabled(!history.canSavePatch(commits))
+          .disabled(!actions.workspace.features.contains(.export) || !history.canSavePatch(commits))
       }
       ScrollView {
         VStack(spacing: 4) { ForEach(commits) { CommitSummaryTile(commit: $0) } }

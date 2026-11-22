@@ -125,8 +125,8 @@ struct HistoryActions {
     menu.addItem(.separator())
     let patchTitle = selected.count > 1 ? "Save \(selected.count) Commits as Patch" : "Save as Patch"
     menu.addItem(
-      ActionMenuItem(patchTitle, enabled: history.canSavePatch(selected)) { Task { await savePatch(selected) } })
-    menu.addItem(ActionMenuItem("Export Archive") { Task { await exportArchive(commit) } })
+      ActionMenuItem(patchTitle, enabled: workspace.features.contains(.export) && history.canSavePatch(selected)) { Task { await savePatch(selected) } })
+    menu.addItem(ActionMenuItem("Export Archive", enabled: workspace.features.contains(.export)) { Task { await exportArchive(commit) } })
   }
 
   // MARK: Panels

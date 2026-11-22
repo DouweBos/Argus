@@ -94,8 +94,10 @@ struct FileHistorySheet: View {
         close()
         model.navigate(.sessionGit(id: workspace.sessionId, view: .blame(path: path, ref: ref)))
       }
-      Button("Export") { Task { await export() } }
-        .disabled(history.selectedCommit == nil)
+      if workspace.features.contains(.export) {
+        Button("Export") { Task { await export() } }
+          .disabled(history.selectedCommit == nil)
+      }
       Button("Restore This Version") { confirmingRestore = history.selectedCommit }
       .disabled(!history.canRestoreSelected)
       Button("Done", action: close).keyboardShortcut(.cancelAction)
