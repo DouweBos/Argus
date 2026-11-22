@@ -36,6 +36,7 @@ import path from "node:path";
 import { info, warn } from "@argus/host/logger";
 import { noteCodexRateLimits } from "../../../usage/codexLiveLimits";
 import { toCanonicalPermissionMode } from "../claudeCode/permissionModes";
+import { killChild } from "../killChild";
 import { JsonRpcPeer } from "../rpc";
 import { matchesDisallowed } from "./disallowed";
 import { PLAN_MODE_INSTRUCTIONS, toCodexPermissions } from "./permissionModes";
@@ -186,26 +187,7 @@ export class CodexHandle extends EventEmitter implements LlmRunnerHandle {
   }
 
   async kill(): Promise<void> {
-    if (this.child.exitCode !== null || this.child.killed) {
-      return;
-    }
-    const exited = new Promise<void>((resolve) => {
-      this.child.once("close", () => resolve());
-    });
-    try {
-      this.child.kill();
-    } catch (e) {
-      info(`[agent:${this.agentId}] child.kill() returned: ${String(e)}`);
-    }
-    await Promise.race([exited, delay(2000)]);
-    if (this.child.exitCode === null && this.child.pid !== undefined) {
-      try {
-        process.kill(this.child.pid, "SIGKILL");
-      } catch {
-        // Already gone.
-      }
-      await Promise.race([exited, delay(1000)]);
-    }
+    await killChild(this.child, this.agentId);
   }
 
   // -------------------------------------------------------------------------
@@ -589,8 +571,4 @@ function sandboxPolicy(perms: CodexPermissions, cwd: string): object {
         excludeSlashTmp: false,
       };
   }
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

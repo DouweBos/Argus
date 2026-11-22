@@ -36,6 +36,7 @@ import EventEmitter from "node:events";
 import readline from "node:readline";
 import type { Writable } from "node:stream";
 import { info, warn } from "@argus/host/logger";
+import { hasExited, killChild } from "../killChild";
 import { ControlHandler } from "./controlHandler";
 import {
   mcpControlPayload,
@@ -205,37 +206,8 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
   }
 
   async kill(): Promise<void> {
-    if (this.child.exitCode !== null || this.child.killed) {
-      return;
-    }
-    const exited = new Promise<void>((resolve) => {
-      const onExit = () => resolve();
-      this.child.once("exit", onExit);
-      this.child.once("close", onExit);
-    });
-    try {
-      this.child.kill();
-    } catch (e) {
-      info(`[agent:${this.agentId}] child.kill() returned: ${String(e)}`);
-    }
-    await Promise.race([
-      exited,
-      new Promise<void>((resolve) => setTimeout(resolve, 2000)),
-    ]);
-    // Backstop: if SIGTERM didn't take, SIGKILL by pid. The Claude CLI
-    // sometimes blocks in MCP HTTP I/O and ignores SIGTERM, leaving zombies
-    // parented to Argus that keep ticking event loops.
-    if (this.child.exitCode === null && this.child.pid !== undefined) {
-      try {
-        process.kill(this.child.pid, "SIGKILL");
-      } catch {
-        // ESRCH: already gone — race-resolved between the check and kill.
-      }
-      await Promise.race([
-        exited,
-        new Promise<void>((resolve) => setTimeout(resolve, 1000)),
-      ]);
-    }
+    // Escalates: the CLI can block in MCP HTTP I/O and ignore SIGTERM.
+    await killChild(this.child, this.agentId);
   }
 
   // -------------------------------------------------------------------------
@@ -244,11 +216,10 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
 
   /** A write to a child that's gone would vanish, and its answer never come. */
   private requireRunning(): void {
-    const { exitCode, signalCode, killed } = this.child;
     if (
       this.exited ||
-      killed ||
-      (exitCode ?? signalCode ?? null) !== null ||
+      this.child.killed ||
+      hasExited(this.child) ||
       this.stdin.destroyed ||
       this.stdin.writableEnded
     ) {
