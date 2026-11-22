@@ -77,11 +77,17 @@ struct HistoryActions {
     menu.addItem(ActionMenuItem("Copy Message") { Clipboard.copy(commit.message) })
     menu.addItem(.separator())
     menu.addItem(
-      ActionMenuItem("Check Out \(short)", enabled: workspace.isProjectRoot && commit.id != history.headSHA) {
+      ActionMenuItem("Check Out \(short)", enabled: workspace.features.contains(.checkout) && commit.id != history.headSHA) {
         confirmCheckout(commit)
       })
-    menu.addItem(ActionMenuItem("Create Branch Here") { history.request(.createBranch(commit)) })
-    menu.addItem(ActionMenuItem("Create Tag Here") { history.request(.createTag(commit)) })
+    menu.addItem(
+      ActionMenuItem("Create Branch Here", enabled: workspace.features.contains(.createBranch)) {
+        history.request(.createBranch(commit))
+      })
+    menu.addItem(
+      ActionMenuItem("Create Tag Here", enabled: workspace.features.contains(.tag)) {
+        history.request(.createTag(commit))
+      })
     menu.addItem(.separator())
     menu.addItem(
       ActionMenuItem("Cherry-Pick \(short)", enabled: commit.id != history.headSHA) {

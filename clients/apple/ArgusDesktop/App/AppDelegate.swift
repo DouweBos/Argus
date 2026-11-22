@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     SheetOutsideClick.install()
     HistoryInput.install(model)
     CloseShortcut.install(model)
+    ShortcutRouter.install(model)
     #if DEBUG
       if let gallery = GalleryMode.kind {
         ShotsActiveAppearance.install()

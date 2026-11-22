@@ -61,6 +61,7 @@ struct MainWindow: View {
     .onChange(of: imageViewer.isPresented) { _, shown in
       if shown { MacTelemetry.capture(.imageViewerUsed(action: .open)) }
     }
+    .overlay(alignment: .bottom) { GitCommandNotice() }
     .overlay(alignment: .top) {
       if model.palette.isPresented {
         ZStack(alignment: .top) {

@@ -53,11 +53,7 @@ struct CodePanel: View {
   /// The view's own keys, live only while it's on screen.
   @ViewBuilder private var shortcuts: some View {
     Group {
-      Button("Find in Files") {
-        code.navigatorVisible = true
-        code.navigatorMode = .search
-        code.focusSearch()
-      }
+      Button("Find in Files") { code.findInFiles() }
       .keyboardShortcut("f", modifiers: [.command, .shift])
     }
     .hidden()

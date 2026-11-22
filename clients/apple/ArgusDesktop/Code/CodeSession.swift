@@ -79,6 +79,13 @@ final class CodeSession {
 
   func focusSearch() { searchFocusRequest += 1 }
 
+  /// ⇧⌘F: the navigator's search, ready to type in.
+  func findInFiles() {
+    navigatorVisible = true
+    navigatorMode = .search
+    focusSearch()
+  }
+
   /// Find References' locations in the Search navigator, under the symbol's name.
   func showReferences(_ matches: [ArgusProtocol.CodeSearchMatch], title: String) {
     searchForm.text = title

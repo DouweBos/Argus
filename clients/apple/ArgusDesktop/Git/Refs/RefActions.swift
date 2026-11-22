@@ -254,6 +254,22 @@ struct RefActions {
     }
   }
 
+  /// Grove's Snapshot: a stash of the changes that leaves them in place.
+  func snapshot() {
+    GitDialogs.sheet(theme: theme) { dismiss in
+      GitNameSheet(
+        title: "Save Snapshot", label: "Message", primary: "Save", toggle: "Include untracked files",
+        dismiss: dismiss
+      ) { message, untracked in
+        Task {
+          await workspace.run(.snapshot, label: "Saving a snapshot") {
+            _ = try await workspace.repository.saveSnapshot(message: message, includeUntracked: untracked)
+          }
+        }
+      }
+    }
+  }
+
   func newTag(at target: String? = nil) {
     GitDialogs.sheet(theme: theme) { dismiss in
       TagSheet(target: target ?? "HEAD", dismiss: dismiss) { name, target, message in

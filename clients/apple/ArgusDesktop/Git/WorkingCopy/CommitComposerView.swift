@@ -12,6 +12,7 @@ struct CommitComposerView: View {
   @State private var pickingGitmoji = false
   @State private var drafting = false
   @FocusState private var subjectFocused: Bool
+  @FocusState private var bodyFocused: Bool
 
   private var vm: WorkingCopyViewModel { workspace.workingCopy }
 
@@ -41,6 +42,7 @@ struct CommitComposerView: View {
         Rectangle().fill(theme.border).frame(height: 1)
         TextField("Description", text: $vm.commitBody, axis: .vertical)
           .textFieldStyle(.plain)
+          .focused($bodyFocused)
           .lineLimit(3...8)
           .padding(.horizontal, 9)
           .padding(.vertical, 7)
@@ -74,13 +76,14 @@ struct CommitComposerView: View {
           .help("Ask a new agent to review these changes before you commit")
         Button(vm.commitButtonTitle, action: commit)
           .buttonStyle(AccentButtonStyle())
-          .keyboardShortcut(.return, modifiers: .command)
           .disabled(!vm.canCommit)
           .help(disabledReason ?? "Commit (⌘↩)")
       }
     }
     .font(.scaled(size: 12))
     .padding(12)
+    .onChange(of: subjectFocused || bodyFocused) { _, focused in workspace.commitMessageFocused = focused }
+    .onDisappear { workspace.commitMessageFocused = false }
     .sheet(isPresented: $managingTemplates) { CommitTemplatesSheet(store: CommitPreferences.templates) }
   }
 
@@ -156,12 +159,7 @@ struct CommitComposerView: View {
     workspace.track(action, success: true)
   }
 
-  private var disabledReason: String? {
-    if !vm.conflictedFiles.isEmpty { return "Resolve the conflicts first" }
-    if !vm.isAmend && vm.stagedFiles.isEmpty { return "Stage changes to commit" }
-    if vm.commitSubject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Enter a summary" }
-    return nil
-  }
+  private var disabledReason: String? { vm.commitBlocker }
 
   private func commit() {
     guard vm.canCommit else { return }

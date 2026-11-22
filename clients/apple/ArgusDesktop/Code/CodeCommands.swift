@@ -27,7 +27,9 @@ struct CodeCommands: View {
     .disabled(!language)
     Divider()
     ForEach(Self.editing, id: \.self) { command in
-      EditorCommandButton(command: command, document: document, enabled: focused && document?.isEditable == true)
+      EditorCommandButton(
+        command: command, document: document, enabled: focused && document?.isEditable == true,
+        showsKey: command != .insertLineBelow || !model.binds(.commit, to: .git(.commit)))
     }
     Divider()
     Button("Send Selection to Agent") { document?.sendSelectionToAgent() }
@@ -46,12 +48,14 @@ struct EditorCommandButton: View {
   let command: EditorCommand
   let document: EditorDocument?
   var enabled = true
+  /// Off while something else on screen owns the key.
+  var showsKey = true
 
   var body: some View {
     // A chord (⌘K ⌘0) can't be a menu key; the editor handles it itself.
     Button(command.title) { document?.perform(command) }
       .keyboardShortcut(
-        command.chordPrefix == nil ? KeyboardShortcut(command.shortcut.key, modifiers: command.shortcut.modifiers) : nil)
+        showsKey && command.chordPrefix == nil ? KeyboardShortcut(command.shortcut.key, modifiers: command.shortcut.modifiers) : nil)
       .disabled(document == nil || !enabled)
   }
 }
@@ -73,7 +77,7 @@ struct CodeSaveCommands: View {
       guard let code else { return }
       Task { _ = await code.saveAll() }
     }
-    .keyboardShortcut("s", modifiers: [.command, .option])
+    .keyboardShortcut(model.binds(.snapshot, to: .git(.snapshot)) ? nil : ShortcutChord.snapshot.keyboardShortcut)
     .disabled(code == nil)
   }
 }

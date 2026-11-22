@@ -10,6 +10,8 @@ final class KeyWindow {
   static let shared = KeyWindow()
 
   private(set) var isMain = true
+  /// The main window itself is key: no sheet on it, no popover or other window.
+  private(set) var takesCommands = true
   @ObservationIgnored private var observers: [NSObjectProtocol] = []
 
   private init() {
@@ -29,7 +31,9 @@ final class KeyWindow {
   }
 
   private func update() {
-    isMain = Self.isMain(NSApp.keyWindow)
+    let key = NSApp.keyWindow
+    isMain = Self.isMain(key)
+    takesCommands = isMain && key?.sheetParent == nil
   }
 
   /// ⌘W: the key window when it isn't the main one.

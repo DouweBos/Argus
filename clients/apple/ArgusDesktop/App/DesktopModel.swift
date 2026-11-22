@@ -83,6 +83,10 @@ final class DesktopModel {
   var addingProject = false
   /// The Import from Claude Code sheet.
   var importingCliProjects = false
+  /// What the last git command from a menu or key has to say.
+  var gitNotice: GitNotice?
+  /// The side panel's Diff tab has the keys.
+  var diffTabFocused = false
   /// A folder pick on a paired host's disk (`pickFolder`).
   var hostFolderRequest: HostFolderRequest?
   /// The machine the sidebar is narrowed to; nil shows every attached one.

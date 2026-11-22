@@ -161,7 +161,7 @@ except where macOS or the Mac app's own layout already uses the keys.
 | ⌘N                    | New session                                                | File  |
 | ⇧⌘O                   | Open a session (quick switcher)                            | File  |
 | ⌘O                    | Add project                                                | File  |
-| ⇧⌘P                   | Command palette                                            | File  |
+| ⇧⌘P                   | Command palette (Pull in the git view and Diff tab)        | File  |
 | ⌘⌫                    | Delete session                                             | File  |
 | ⌘,                    | Settings                                                   | Argus |
 | ⇧⌘A, ⌘T               | New agent in the session on screen                         | Agent |
@@ -194,6 +194,10 @@ Where they differ from the old Electron app:
 - **⌘J** shows the side panel, where terminals live too, as VS Code's does
   its panel. **⌥⌘H** isn't used: it's macOS's Hide Others, so there is no
   project-home shortcut. **⌘B** is the code view's navigator, not the app sidebar.
+
+The Git menu's keys work from anywhere in a session, or only in the git
+view and the Diff tab where another command wants the same key:
+[the list](git.md#keyboard-shortcuts-at-a-glance).
 
 The code view takes a few of these keys for its own, as VS Code and Xcode
 do, only while it's on screen: ⇧⌘O is Open Quickly there instead of Open

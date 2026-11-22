@@ -128,6 +128,19 @@ extension MacTelemetryEvent {
     case gitCreatePullRequest = "git_create_pull_request"
     case gitCommit = "git_commit"
     case gitStash = "git_stash"
+    case gitSnapshot = "git_snapshot"
+    case gitUndo = "git_undo"
+  }
+
+  /// Why a git command from a menu, key or button didn't run.
+  enum GitRefusalReason: String {
+    case unsupported, busy
+    case noRemote = "no_remote"
+    case noBranch = "no_branch"
+    case noChanges = "no_changes"
+    case cannotCommit = "cannot_commit"
+    case nothingToUndo = "nothing_to_undo"
+    case notReady = "not_ready"
   }
 
   /// The menu-bar item's menu.

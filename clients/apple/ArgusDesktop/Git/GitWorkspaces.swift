@@ -32,6 +32,14 @@ final class GitWorkspaces {
     return nil
   }
 
+  /// The session's repository, waiting out an open already running.
+  func ready(_ session: RemoteSession) async -> GitWorkspace? {
+    while case .opening = slots[session.id] {
+      do { try await Task.sleep(for: .milliseconds(50)) } catch { return nil }
+    }
+    return await open(session)
+  }
+
   /// Opens the session's repository once; later calls return the same one.
   @discardableResult
   func open(_ session: RemoteSession) async -> GitWorkspace? {

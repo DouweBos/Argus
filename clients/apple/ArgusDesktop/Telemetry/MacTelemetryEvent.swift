@@ -151,6 +151,7 @@ enum MacTelemetryEvent {
     case stashApply = "stash_apply"
     case stashPop = "stash_pop"
     case stashDrop = "stash_drop"
+    case snapshot
     case tagCreate = "tag_create"
     case tagDelete = "tag_delete"
     case fetch
@@ -266,6 +267,7 @@ enum MacTelemetryEvent {
   case agentCloseConfirmed(closed: Bool, running: Bool)
   /// One of the keyboard commands for agents, panels and screens was used.
   case menuCommandUsed(action: MenuCommandAction, via: MenuCommandSource)
+  case gitCommandRefused(action: MenuCommandAction, reason: GitRefusalReason, via: MenuCommandSource)
   /// An item in the menu-bar item's menu that does something.
   case menuBarUsed(action: MenuBarAction)
   /// The menu-bar item was shown or hidden, from Settings or by dragging it off the menu bar.
@@ -464,6 +466,7 @@ enum MacTelemetryEvent {
     case .sessionPanelSwitched: "mac_session_panel_switched"
     case .agentCloseConfirmed: "mac_agent_close_confirmed"
     case .menuCommandUsed: "mac_menu_command_used"
+    case .gitCommandRefused: "mac_git_command_refused"
     case .menuBarUsed: "mac_menu_bar_used"
     case .menuBarToggled: "mac_menu_bar_toggled"
     case .loginItem: "mac_login_item"
@@ -618,6 +621,8 @@ enum MacTelemetryEvent {
       ["closed": closed, "running": running]
     case .menuCommandUsed(let action, let via):
       ["action": action.rawValue, "via": via.rawValue]
+    case .gitCommandRefused(let action, let reason, let via):
+      ["action": action.rawValue, "reason": reason.rawValue, "via": via.rawValue]
     case .menuBarUsed(let action):
       ["action": action.rawValue]
     case .menuBarToggled(let shown, let via, let serverInstalled):

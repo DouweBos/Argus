@@ -49,6 +49,7 @@ struct SessionDiffTab: View {
         ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
       }
     }
+    .background { DiffTabFocus { model.diffTabFocused = $0 } }
     .task(id: session.id) {
       viewed = ViewedFiles(scope: .session(id: session.id, mode: "working"), host: model.store)
       await model.git.open(session)

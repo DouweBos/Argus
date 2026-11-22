@@ -15,6 +15,8 @@ final class GitWorkspace {
   let isProjectRoot: Bool
   /// On a paired host: git runs there, and its broadcasts stand in for a file watcher.
   let isRemote: Bool
+  /// What this session's git can do.
+  let features: Set<GitFeature>
   let repository: GitRepository
   /// Runs git where the worktree is, for what GroveKit's engine doesn't wrap.
   let runner: any GitRunner
@@ -41,6 +43,9 @@ final class GitWorkspace {
   var failure: GitFailure?
   /// Runs the failed command again, for Retry and Stash and Retry.
   private(set) var retry: (@MainActor () async -> Void)?
+  var canRetry: Bool { retry != nil }
+  /// The commit's summary or description has the caret.
+  var commitMessageFocused = false
   /// The last push, so Pull Then Push and Force Push can repeat it.
   var lastPush: ArgusProtocol.CommandsTypes.GitPushV2Params?
   var hostError: String? {
@@ -78,6 +83,7 @@ final class GitWorkspace {
     self.isRemote = isRemote
     repoRoot = session.repoRoot
     isProjectRoot = session.kind == .projectRoot
+    features = GitFeature.supported(isProjectRoot: session.kind == .projectRoot, isRemote: isRemote)
     self.repository = repository
     self.runner = runner
     self.host = host

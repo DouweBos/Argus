@@ -37,8 +37,9 @@ enum MenuCommand {
     case .goHome: model.navigate(.home)
     case .goTo(let route): model.navigate(route)
     case .git(let action):
-      guard let workspace = model.gitInFront else { return }
-      action.post(to: workspace.sessionId)
+      guard Self.keyIsForGit(action, model) else { return }
+      // The runner reports it, as it knows whether the command ran at all.
+      return model.runGitCommand(action, via: via ?? Self.source)
     }
     MacTelemetry.capture(.menuCommandUsed(action: action, via: via ?? Self.source))
   }
@@ -56,6 +57,16 @@ enum MenuCommand {
     case .goTo: .goToScreen
     case .git(let action): action.telemetry
     }
+  }
+
+  /// A key the router left alone still reaches the menu, whose binding can trail the key window.
+  @MainActor
+  private static func keyIsForGit(_ action: GitMenuAction, _ model: DesktopModel) -> Bool {
+    guard let event = NSApp.currentEvent, event.type == .keyDown, let chord = ShortcutChord(event: event) else {
+      return true
+    }
+    guard let window = event.window ?? NSApp.window(withWindowNumber: event.windowNumber) else { return false }
+    return ShortcutRouter.resolve(chord, model.shortcutContext(in: window)) == .git(action)
   }
 
   /// A key equivalent arrives as the current event; a click doesn't.

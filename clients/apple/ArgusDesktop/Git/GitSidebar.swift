@@ -21,7 +21,7 @@ struct GitSidebar: View {
         .frame(maxWidth: .infinity, alignment: .leading)
       Rectangle().fill(theme.border).frame(height: 1)
       List {
-        if workspace.isProjectRoot {
+        if workspace.features.contains(.checkout) {
           GitRefSections(workspace: workspace, session: session, view: view)
             .listRowSeparator(.hidden)
             .listSectionSeparator(.hidden)

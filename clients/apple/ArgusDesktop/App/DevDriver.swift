@@ -107,6 +107,7 @@
         // that isn't key, and a driven window never is.
         switch command["panel"] as? String {
         case "agents": model.openAgents(session: id)
+        case "code": model.navigate(.sessionCode(id: id, path: command["file"] as? String, line: nil))
         case "git":
           let view = (command["gitView"] as? String).flatMap(GitRoute.init(devString:)) ?? .working
           model.navigate(.sessionGit(id: id, view: view))
@@ -151,6 +152,25 @@
         guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
         model.togglePanelTab(.device, via: .shortcut)
         return ["panel": model.sidePanelVisible]
+      case "shortcuts":
+        // What the last key did: the notice, the palette and the code view's panes.
+        guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
+        let code = model.activeCodeSession
+        return [
+          "notice": model.gitNotice?.message ?? "", "palette": model.palette.isPresented,
+          "navigator": code?.navigatorVisible ?? false, "search": code?.navigatorMode == .search,
+          "problems": code.map { model.languages.client($0.sessionId).problemsExpanded } ?? false,
+          "diffFocused": model.diffTabFocused, "sheet": self.window?.attachedSheet != nil,
+          "busy": model.route.sessionId.flatMap(model.git.workspace)?.hostBusy ?? "",
+          "failure": model.route.sessionId.flatMap(model.git.workspace)?.failure?.message ?? "",
+        ]
+      case "openPanelTab":
+        // What the "+" menu does, by the tab's kind.
+        guard let model = AppDelegate.current?.model,
+          let kind = (command["kind"] as? String).flatMap(PanelTabKind.init)
+        else { return ["error": "kind?"] }
+        model.focusPanelTab(kind, via: .button)
+        return ["ok": true]
       case "toggleSidePanel":
         // What ⌘J does.
         guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
@@ -280,7 +300,8 @@
             let keys = (mods.contains(.control) ? "⌃" : "") + (mods.contains(.option) ? "⌥" : "")
               + (mods.contains(.shift) ? "⇧" : "") + (mods.contains(.command) ? "⌘" : "")
             let shortcut = item.keyEquivalent.isEmpty ? "" : " " + keys + item.keyEquivalent.uppercased()
-            return item.title + shortcut + (item.isEnabled ? "" : " (disabled)")
+            let reason = item.subtitle.map { " [\($0)]" } ?? ""
+            return item.title + shortcut + reason + (item.isEnabled ? "" : " (disabled)")
           }
         ]
       case "dropFiles":

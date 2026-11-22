@@ -64,7 +64,7 @@ private struct GitToolbarButtons: View {
       PillAction(id: "fetch", title: "Fetch", symbol: "arrow.down.circle", help: "Fetch from all remotes", disabled: busy) {
         Task { await actions.fetch() }
       },
-      workspace.isProjectRoot
+      workspace.features.contains(.createBranch)
         ? PillAction(id: "branch", title: "New Branch", symbol: "arrow.triangle.branch") { actions.newBranch() }
         : PillAction(id: "branch", title: "Rename Branch", symbol: "arrow.triangle.branch") {
           actions.renameSessionBranch()
@@ -74,7 +74,7 @@ private struct GitToolbarButtons: View {
         disabled: busy || workspace.workingCopy.changedCount == 0
       ) { actions.stash() },
     ]
-    if workspace.isProjectRoot {
+    if workspace.features.contains(.tag) {
       items.append(PillAction(id: "tag", title: "New Tag", symbol: "tag") { actions.newTag() })
     }
     items += [

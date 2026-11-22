@@ -178,11 +178,9 @@ private struct ProjectCommands: View {
     Button("Open Session") { MenuCommand.quickSwitcher.run(model) }
       .keyboardShortcut("o", modifiers: [.command, .shift])
       .disabled(model.store.projects.isEmpty || model.activeCodeSession != nil)
-    // The git panel's Pull owns ⇧⌘P while it's on screen, as on the desktop.
-    Button("Command Palette") {
-      if model.palette.isPresented { model.palette.isPresented = false } else { model.palette.present() }
-    }
-    .keyboardShortcut(model.gitInFront != nil ? nil : KeyboardShortcut("p", modifiers: [.command, .shift]))
+    Button("Command Palette") { model.toggleCommandPalette() }
+      .keyboardShortcut(
+        model.binds(.pull, to: .commandPalette) ? ShortcutChord.pull.keyboardShortcut : nil)
   }
 }
 

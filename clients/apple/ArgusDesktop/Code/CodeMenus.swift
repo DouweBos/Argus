@@ -81,7 +81,7 @@ struct CodeViewCommands: View {
     }
     Divider()
     Button("Toggle Navigator") { code?.navigatorVisible.toggle() }
-      .keyboardShortcut("b", modifiers: .command)
+      .keyboardShortcut(model.binds(.branch, to: .git(.branch)) ? nil : ShortcutChord.branch.keyboardShortcut)
       .disabled(code == nil)
     Button("Show Files") { code?.showNavigator(.files) }
       .keyboardShortcut("e", modifiers: [.shift, .command])
@@ -89,12 +89,9 @@ struct CodeViewCommands: View {
     Button("Show Changes") { code?.showNavigator(.changes) }
       .keyboardShortcut("g", modifiers: [.control, .shift])
       .disabled(code == nil)
-    Button("Toggle Problems") {
-      guard let code else { return }
-      model.languages.client(code.sessionId).problemsExpanded.toggle()
-    }
-    .keyboardShortcut("m", modifiers: [.shift, .command])
-    .disabled(code == nil)
+    Button("Toggle Problems") { model.toggleProblems() }
+      .keyboardShortcut(model.binds(.merge, to: .git(.merge)) ? nil : ShortcutChord.merge.keyboardShortcut)
+      .disabled(code == nil)
     Button("Toggle Terminal") { model.togglePanelTab(.terminal, via: .shortcut) }
       .keyboardShortcut("`", modifiers: .control)
       .disabled(code == nil)

@@ -59,7 +59,8 @@ struct StashesView: View {
     PanelHeader(title: "Stashes", detail: stashes.stashes.isEmpty ? nil : "\(stashes.stashes.count)") {
       if stashes.isLoading && !stashes.stashes.isEmpty { ProgressView().controlSize(.small) }
       Button {
-        GitMenuAction.stash.post(to: workspace.sessionId)
+        guard let session = model.session(workspace.sessionId) else { return }
+        RefActions(workspace: workspace, session: session, model: model, theme: theme).stash()
       } label: {
         Label("Stash Changes", systemImage: "plus")
       }

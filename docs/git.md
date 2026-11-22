@@ -105,7 +105,7 @@ add it to that stash.
 
 ## Branches
 
-- **⌘B** opens "New branch…" while the git panel is in front.
+- **⌘B** opens New Branch from anywhere in the session but the code view.
 - The sidebar lists local, pinned, archived, and remote branches.
   Pinned branches are also shown inline within the main tree so they
   appear in both places.
@@ -254,16 +254,22 @@ Everything but auto-fetch is personal, stored in
 
 ## Keyboard shortcuts at a glance
 
-The Git menu lists them. Keys something else also uses (⇧⌘P, ⇧⌘F, ⌘B, ⇧⌘M,
-⌘↩) only apply while the git panel is in front.
+The Git menu lists them, and greys out what the session can't do with the
+reason under it. Pressing such a key says why instead of doing nothing.
 
-| Combo   | Action                                                 |
-| ------- | ------------------------------------------------------ |
-| **⇧⌘F** | Fetch                                                  |
-| **⇧⌘P** | Pull…                                                  |
-| **⇧⌘U** | Push…                                                  |
-| **⌘B**  | New branch… (in a worktree session, rename its branch) |
-| **⇧⌘M** | Merge…                                                 |
-| **⇧⌘R** | Rebase…                                                |
-| **⌘↩**  | Commit                                                 |
-| **⇧⌘S** | Stash…                                                 |
+| Combo   | Action                                                | Works                                       |
+| ------- | ----------------------------------------------------- | ------------------------------------------- |
+| **⇧⌘U** | Push                                                  | Anywhere in a session                       |
+| **⇧⌘R** | Rebase                                                | Anywhere in a session                       |
+| **⇧⌘S** | Stash                                                 | Anywhere in a session                       |
+| **⇧⌘F** | Fetch                                                 | In a session, except Code (Find in Files)   |
+| **⌘B**  | New branch (in a worktree session, rename its branch) | In a session, except Code (navigator)       |
+| **⇧⌘M** | Merge                                                 | In a session, except Code (problems)        |
+| **⇧⌘P** | Pull                                                  | Git view, or the Diff tab while it's in use |
+| **⌘↩**  | Commit                                                | Git view, or the Diff tab while it's in use |
+| **⌥⌘S** | Save a snapshot: a stash that leaves the changes      | Git view, or the Diff tab while it's in use |
+| **⌥⌘Z** | Undo the last git action                              | Git view, or the Diff tab while it's in use |
+
+Merge and Rebase need the project root, as the host only runs them there.
+A key yields to sheets, other windows and text still being composed, and ⌘↩
+to whatever editor, composer or comment box you're typing in.
