@@ -32,6 +32,7 @@
 		62E03119A15A5081356F0C0E /* ArgusKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6625E1D6BCC577429BF7B696 /* ArgusKit */; };
 		6897D3167EEB3794CED55DDA /* ProjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0194276208D56EEC2428E4B /* ProjectView.swift */; };
 		6B0F00000000000000000003 /* GroveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6B0F00000000000000000002 /* GroveKit */; };
+		6B0F00000000000000000005 /* GroveUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6B0F00000000000000000004 /* GroveUIKit */; };
 		71F924F0B3BDE15E0083BDEE /* ComputerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46E305D96C871BB99B7DB468 /* ComputerView.swift */; };
 		774DC572A2AF220B00F3CF38 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6C14566E26586DC89C61830 /* HomeView.swift */; };
 		792DC62433CAABA830D81267 /* ArgusKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7C60136A1C7D698866F581E8 /* ArgusKit */; };
@@ -398,6 +399,7 @@
 				ED1700000000000000000004 /* ArgusEditor in Frameworks */,
 				7E2A00000000000000000003 /* SwiftTerm in Frameworks */,
 				6B0F00000000000000000003 /* GroveKit in Frameworks */,
+				6B0F00000000000000000005 /* GroveUIKit in Frameworks */,
 				5A4C00000000000000000004 /* ArgusUpdate in Frameworks */,
 				5B4D00000000000000000006 /* ArgusMenuBar in Frameworks */,
 			);
@@ -754,6 +756,7 @@
 				ED1700000000000000000003 /* ArgusEditor */,
 				7E2A00000000000000000002 /* SwiftTerm */,
 				6B0F00000000000000000002 /* GroveKit */,
+				6B0F00000000000000000004 /* GroveUIKit */,
 				5A4C00000000000000000003 /* ArgusUpdate */,
 				5B4D00000000000000000005 /* ArgusMenuBar */,
 			);
@@ -1851,6 +1854,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 6B0F00000000000000000001 /* XCRemoteSwiftPackageReference "Grove" */;
 			productName = GroveKit;
+		};
+		6B0F00000000000000000004 /* GroveUIKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6B0F00000000000000000001 /* XCRemoteSwiftPackageReference "Grove" */;
+			productName = GroveUIKit;
 		};
 		7C60136A1C7D698866F581E8 /* ArgusKit */ = {
 			isa = XCSwiftPackageProductDependency;

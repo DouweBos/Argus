@@ -128,7 +128,7 @@ struct CodeCompareSheet: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      DiffPane(diff: comparison.diffResult(path: path), path: "\(path) — disk ↔ your edits")
+      DiffPane(diff: comparison.diffResult(path: path), path: path, title: "\(path) — disk ↔ your edits")
       Divider()
       HStack {
         Text("Removed lines are on disk only; added lines are your unsaved edits.")

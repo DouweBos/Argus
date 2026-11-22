@@ -11,6 +11,8 @@ final class ScopedDiffModel {
   var scope: SessionDiffScope = .uncommitted
   private(set) var turns: [SessionTurn] = []
   private(set) var files: [FileDiff] = []
+  /// The commits `files` compare; nil until they load.
+  private(set) var range: (from: String, to: String)?
   private(set) var isLoading = false
   private(set) var errorMessage: String?
   /// The file the diff shows, kept across reloads while it's still changed.
@@ -56,6 +58,7 @@ final class ScopedDiffModel {
     let id = loadId
     if loadedScope != scope {
       files = []
+      range = nil
       loadedScope = scope
     }
     isLoading = true
@@ -63,13 +66,15 @@ final class ScopedDiffModel {
     await loadTurns()
     do {
       let diffs: [FileDiff]
-      if let range = try await host.diffRange(sessionId: sessionId, scope: scope) {
+      let compared = try await host.diffRange(sessionId: sessionId, scope: scope)
+      if let range = compared {
         diffs = try await repository.diff(from: range.from, to: range.to)
       } else {
         diffs = []
       }
       guard id == loadId else { return }
       files = diffs
+      range = compared
     } catch {
       guard id == loadId else { return }
       files = []

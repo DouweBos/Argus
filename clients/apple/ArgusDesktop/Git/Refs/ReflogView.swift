@@ -1,5 +1,6 @@
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// Where HEAD has been: each move with its commit and changes; reset back to
@@ -86,7 +87,7 @@ struct ReflogView: View {
           menu(entry)
         }
         Divider()
-        FileDiffsView(files: diffs, isLoading: loadingDiffs)
+        FileDiffsView(files: diffs, isLoading: loadingDiffs, images: .commit(entry.newSHA, in: workspace.repository))
       }
     } else {
       QuietEmptyState(icon: "clock.arrow.circlepath", title: "Select an entry")

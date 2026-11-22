@@ -3,6 +3,15 @@ import ArgusUI
 import GroveKit
 import SwiftUI
 
+/// Blame's code sizes at the text scale; monospaced, so a line's width is its length.
+@MainActor
+enum BlameMetrics {
+  static var font: NSFont { .monospacedSystemFont(ofSize: TextScale.shared(11.5), weight: .regular) }
+  static var gutterFont: NSFont { .monospacedSystemFont(ofSize: TextScale.shared(10.5), weight: .regular) }
+  static var lineHeight: CGFloat { TextScale.shared(17).rounded() }
+  static var charWidth: CGFloat { ("M" as NSString).size(withAttributes: [.font: font]).width }
+}
+
 /// A blamed file as an `NSTableView`: a gutter naming each block's commit,
 /// the line number and the text, all drawn per row with no subviews.
 struct BlameTableView: NSViewRepresentable {
@@ -73,7 +82,7 @@ struct BlameTableView: NSViewRepresentable {
       dateRange = (dates.min() ?? .distantPast, dates.max() ?? .distantFuture)
       let longest = lines.map(\.text.count).max() ?? 0
       table.tableColumns.first?.width = max(
-        BlameLineView.textX + CGFloat(longest) * DiffMetrics.charWidth + 20, table.enclosingScrollView?.bounds.width ?? 0)
+        BlameLineView.textX + CGFloat(longest) * BlameMetrics.charWidth + 20, table.enclosingScrollView?.bounds.width ?? 0)
       table.reloadData()
     }
 
@@ -205,21 +214,21 @@ final class BlameLineView: NSView {
       NSRect(x: 0, y: 0, width: bounds.width, height: 1).fill()
       if let entry = line.entry {
         let date = Self.dateFormatter.string(from: entry.authorDate)
-        draw(String(entry.commitSHA.prefix(7)), x: 8, width: 56, font: DiffMetrics.gutterFont, color: palette.muted)
-        draw(date, x: 66, width: 66, font: DiffMetrics.gutterFont, color: palette.secondary)
+        draw(String(entry.commitSHA.prefix(7)), x: 8, width: 56, font: BlameMetrics.gutterFont, color: palette.muted)
+        draw(date, x: 66, width: 66, font: BlameMetrics.gutterFont, color: palette.secondary)
         draw(entry.authorName, x: 134, width: 90, font: Self.gutterTextFont, color: palette.secondary)
         draw(entry.summary, x: 228, width: Self.gutterWidth - 234, font: Self.gutterTextFont, color: palette.text)
       }
     }
     let number = "\(line.number)" as NSString
-    let numberAttrs: [NSAttributedString.Key: Any] = [.font: DiffMetrics.gutterFont, .foregroundColor: palette.muted]
+    let numberAttrs: [NSAttributedString.Key: Any] = [.font: BlameMetrics.gutterFont, .foregroundColor: palette.muted]
     let size = number.size(withAttributes: numberAttrs)
     number.draw(
       at: NSPoint(x: Self.gutterWidth + Self.numberWidth - size.width - 4, y: (bounds.height - size.height) / 2),
       withAttributes: numberAttrs)
-    let attrs: [NSAttributedString.Key: Any] = [.font: DiffMetrics.font, .foregroundColor: palette.text]
+    let attrs: [NSAttributedString.Key: Any] = [.font: BlameMetrics.font, .foregroundColor: palette.text]
     let text = line.text.replacingOccurrences(of: "\t", with: "    ") as NSString
-    text.draw(at: NSPoint(x: Self.textX, y: (bounds.height - DiffMetrics.lineHeight) / 2 + 1), withAttributes: attrs)
+    text.draw(at: NSPoint(x: Self.textX, y: (bounds.height - BlameMetrics.lineHeight) / 2 + 1), withAttributes: attrs)
   }
 
   private func draw(_ string: String, x: CGFloat, width: CGFloat, font: NSFont, color: NSColor) {

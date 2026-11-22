@@ -1,6 +1,7 @@
 import ArgusCore
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// Picks what the session's diff covers: the working copy, the last turn, an earlier turn or the whole branch.
@@ -116,14 +117,19 @@ struct ScopedDiffPane: View {
       review: current.map {
         DiffReviewContext.session(
           workspace.sessionId, path: $0.path, scope: scoped.reviewScope, store: model.store)
+      },
+      images: scoped.range.map {
+        GitDiffImages(repository: workspace.repository, old: .commit($0.from), new: .commit($0.to))
       })
   }
 
   /// A deleted file has no lines to open.
-  private func openLine(_ file: FileDiff) -> ((Int) -> Void)? {
+  private func openLine(_ file: FileDiff) -> (@MainActor @Sendable (Int) -> Void)? {
     guard file.status != .deleted else { return nil }
-    return { line in
-      model.openCode(session: workspace.sessionId, path: file.path, line: line, source: .diff)
+    let sessionId = workspace.sessionId
+    let path = file.path
+    return { [model] line in
+      model.openCode(session: sessionId, path: path, line: line, source: .diff)
     }
   }
 }

@@ -2,6 +2,7 @@
   import ArgusCore
   import ArgusUI
   import GroveKit
+  import GroveUIKit
   import SwiftUI
 
   enum DiffReviewStories {
@@ -71,15 +72,19 @@
 
   private struct ReviewedDiff: View {
     @Environment(DesktopModel.self) private var model
-    let layout: DiffLayout
+    @Environment(\.theme) private var theme
+    let layout: GitDiffLayout
 
     var body: some View {
       VStack(spacing: 0) {
-        DiffTableView(
-          diff: DiffReviewStories.diff, layout: layout,
-          review: DiffReviewContext.session(
+        GitDiffView(
+          diff: DiffReviewStories.diff, options: GitDiffOptions(layout: .constant(layout)),
+          annotations: DiffReviewContext.session(
             DiffReviewStories.sessionId, path: DiffReviewStories.diff.filePath, scope: "uncommitted changes",
-            store: model.store))
+            store: model.store
+          ).annotations(theme: theme)
+        )
+        .argusGitUI()
         DiffReviewBar(sessionId: DiffReviewStories.sessionId)
       }
     }

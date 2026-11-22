@@ -96,32 +96,3 @@ struct DiffCommentComposer: View {
     .onAppear { focused = true }
   }
 }
-
-/// A comment row in the diff table: the SwiftUI card, inset to line up with the code.
-final class DiffCommentRowView: NSView {
-  static let identifier = NSUserInterfaceItemIdentifier("DiffCommentRowView")
-  private var host: NSHostingView<AnyView>?
-
-  convenience init() {
-    self.init(frame: .zero)
-    identifier = Self.identifier
-  }
-
-  func configure(_ card: DiffCommentCard, theme: Theme, inset: CGFloat) {
-    let root = AnyView(card.padding(.leading, inset).environment(\.theme, theme))
-    if let host {
-      host.rootView = root
-    } else {
-      let host = NSHostingView(rootView: root)
-      host.translatesAutoresizingMaskIntoConstraints = false
-      addSubview(host)
-      NSLayoutConstraint.activate([
-        host.leadingAnchor.constraint(equalTo: leadingAnchor),
-        host.trailingAnchor.constraint(equalTo: trailingAnchor),
-        host.topAnchor.constraint(equalTo: topAnchor),
-        host.bottomAnchor.constraint(equalTo: bottomAnchor),
-      ])
-      self.host = host
-    }
-  }
-}

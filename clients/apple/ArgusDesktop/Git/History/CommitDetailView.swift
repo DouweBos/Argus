@@ -1,5 +1,6 @@
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// The selected commit: header, then its changeset or file tree. A
@@ -30,9 +31,10 @@ struct CommitDetailView: View {
         Rectangle().fill(theme.border).frame(height: 1)
         switch history.detailTab {
         case .changeset:
-          FileDiffsView(files: history.commitDiffs, isLoading: history.isLoadingDiff) { file in
-            AnyView(fileMenu(file.path, commit: commit))
-          }
+          FileDiffsView(
+            files: history.commitDiffs, isLoading: history.isLoadingDiff,
+            fileMenu: { file in AnyView(fileMenu(file.path, commit: commit)) },
+            images: .commit(commit.id, in: history.repository))
         case .tree:
           CommitTreeList(history: history) { fileMenu($0, commit: commit) }
         }

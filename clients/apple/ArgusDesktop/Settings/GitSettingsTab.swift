@@ -1,6 +1,7 @@
 import ArgusCore
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// Settings → Git: the git panel's defaults on this Mac, and commit signing
@@ -11,8 +12,12 @@ struct GitSettingsTab: View {
   @AppStorage(GitPreferences.ignoreWhitespaceKey) private var ignoreWhitespace = false
   @State private var signingSession: String?
 
-  private var diffLayout: Binding<DiffLayout> {
-    Binding(get: { DiffLayoutSetting.shared.layout }, set: { DiffLayoutSetting.shared.set($0, via: .settings) })
+  private var diffLayout: Binding<GitDiffLayout> {
+    Binding(get: { DiffViewSettings.shared.layout }, set: { DiffViewSettings.shared.setLayout($0, via: .settings) })
+  }
+
+  private var wrapsLines: Binding<Bool> {
+    Binding(get: { DiffViewSettings.shared.wrapsLines }, set: { DiffViewSettings.shared.setWrapsLines($0, via: .settings) })
   }
 
   /// One session per project: a repository's sessions share its config.
@@ -38,9 +43,10 @@ struct GitSettingsTab: View {
         }
         SettingsRow("Diff layout", description: "Unified in one column, or split side by side.") {
           Picker("Diff layout", selection: diffLayout) {
-            ForEach(DiffLayout.allCases) { Text($0.title).tag($0) }
+            ForEach(GitDiffLayout.allCases) { Text($0.title).tag($0) }
           }
         }
+        SettingsToggleRow("Wrap lines in diffs", isOn: wrapsLines)
         SettingsToggleRow("Ignore whitespace in diffs", isOn: $ignoreWhitespace)
       }
       CommitMessageStyleSection()

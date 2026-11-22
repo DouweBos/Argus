@@ -122,6 +122,11 @@ enum MacTelemetryEvent {
     case more
   }
 
+  enum DiffOption: String {
+    case wrapLines = "wrap_lines"
+    case imageMode = "image_mode"
+  }
+
   enum GitAction: String {
     case stage
     case unstage
@@ -360,7 +365,9 @@ enum MacTelemetryEvent {
   /// A git view was picked from the panel's pill bar or its More menu; `view` is the route segment.
   case gitViewPicked(view: String, via: GitViewSource)
   /// Diffs switched between unified and split, from a diff's header or Settings.
-  case diffLayoutChanged(layout: String, via: DiffLayoutSetting.Source)
+  case diffLayoutChanged(layout: String, via: DiffViewSettings.Source)
+  /// Another diff option changed: Wrap Lines, or how image diffs compare.
+  case diffOptionChanged(option: DiffOption, value: String, via: DiffViewSettings.Source)
   /// Another host was paired, attached, detached, forgotten, renamed or shown.
   case hostsUsed(action: HostsAction, success: Bool)
   /// A pull request was opened, merged, commented on or closed through the host's `gh`.
@@ -502,6 +509,7 @@ enum MacTelemetryEvent {
     case .gitRecoveryUsed: "mac_git_recovery_used"
     case .gitViewPicked: "mac_git_view_picked"
     case .diffLayoutChanged: "mac_diff_layout_changed"
+    case .diffOptionChanged: "mac_diff_option_changed"
     case .hostsUsed: "mac_hosts_used"
     case .pullRequestActed: "mac_pull_request_acted"
     case .accountJoinActed: "mac_account_join_acted"
@@ -691,6 +699,8 @@ enum MacTelemetryEvent {
       ["view": view, "via": via.rawValue]
     case .diffLayoutChanged(let layout, let via):
       ["layout": layout, "via": via.rawValue]
+    case .diffOptionChanged(let option, let value, let via):
+      ["option": option.rawValue, "value": value, "via": via.rawValue]
     case .hostsUsed(let action, let success):
       ["action": action.rawValue, "success": success]
     case .pullRequestActed(let action):

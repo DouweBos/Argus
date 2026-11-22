@@ -662,6 +662,7 @@ change only the repository on screen.
 | ------------------------------ | ------- | --------------------------------------------------------------------------------------------------------- |
 | **Changes list**               | List    | `List` shows changed files flat; `Tree` groups them by directory; `All files` also lists unchanged files. |
 | **Diff layout**                | Unified | Unified in one column, or split side by side.                                                             |
+| **Wrap lines in diffs**        | Off     | Wrap long lines instead of scrolling sideways. Every diff's header has the same toggle.                   |
 | **Ignore whitespace in diffs** | Off     | Hide pure-whitespace changes when comparing files.                                                        |
 
 Pulling follows the repository's own `pull.rebase` / `pull.ff` git config,

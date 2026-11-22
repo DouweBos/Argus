@@ -28,6 +28,7 @@ final class HomeDefaults {
   }
 
   func string(forKey key: String) -> String? { values[key] as? String }
+  func bool(forKey key: String) -> Bool? { values[key] as? Bool }
   func stringArray(forKey key: String) -> [String]? { values[key] as? [String] }
   func dictionary(forKey key: String) -> [String: Any]? { values[key] as? [String: Any] }
   func data(forKey key: String) -> Data? { values[key] as? Data }

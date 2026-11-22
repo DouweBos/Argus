@@ -1,6 +1,7 @@
 import ArgusCore
 import ArgusUI
 import Foundation
+import GroveUIKit
 import Testing
 
 @testable import Argus
@@ -27,7 +28,8 @@ struct TextScaleTests {
     let first = tracker.changed()
     let second = tracker.changed()
     #expect(!unchanged && first && !second)
-    #expect(DiffMetrics.font.pointSize > 11.5)
+    #expect(BlameMetrics.font.pointSize > 11.5)
+    #expect(GitUIStyle.argus(.dark, scale: TextScale.shared.factor).fontScale == CGFloat(17) / 13)
     #expect(CommitListMetrics.rowHeight == 31)
   }
 }

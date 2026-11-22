@@ -88,7 +88,7 @@ A real git workflow lives inside Argus:
 - **Branches** — create, switch, delete; sessions branch from your
   configured base branch automatically.
 - **Worktrees** — one per session; managed for you.
-- **Diff viewer** — file- and hunk-level, side-by-side or inline.
+- **Diff viewer** — file- and hunk-level, side-by-side or inline, with syntax and changed-word highlights, line wrapping, and image and Git LFS diffs.
 - **Hunk-level staging** — accept individual hunks, reject others, and
   refine before committing.
 - **Commit & amend** — commit from the UI.

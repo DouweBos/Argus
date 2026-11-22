@@ -1,6 +1,7 @@
 import AppKit
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// Every commit that touched one file, with the file's diff in each; restore
@@ -53,7 +54,10 @@ struct FileHistorySheet: View {
         }
         .overlay { if history.isLoading && history.commits.isEmpty { ProgressView().controlSize(.small) } }
         .frame(minWidth: 240, idealWidth: 300, maxWidth: 420)
-        DiffPane(diff: history.fileDiff, path: path, isLoading: history.isLoadingDiff)
+        DiffPane(
+          diff: history.fileDiff, path: path, isLoading: history.isLoadingDiff,
+          images: history.selectedCommit.map { .commit($0.id, in: workspace.repository) }
+        )
           .frame(minWidth: 400)
       }
     }

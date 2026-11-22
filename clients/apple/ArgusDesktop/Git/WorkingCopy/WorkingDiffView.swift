@@ -1,6 +1,7 @@
 import ArgusCore
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// The selected change's diff, with hunk and line staging for its side.
@@ -33,10 +34,8 @@ struct WorkingDiffView: View {
         diff: vm.currentDiff,
         path: vm.selectedEntry?.path,
         isLoading: vm.isDiffLoading,
-        actions: vm.selectedEntry == nil ? nil : (vm.selectedSide == .staged ? .staged : .unstaged),
-        onAction: { action, hunk, lines in
-          Task { await WorkingCopyActions(workspace: workspace).hunk(action, hunk, lines) }
-        },
+        staging: staging,
+        sideSwitch: sideSwitch,
         openLine: openLine,
         review: vm.selectedEntry.map { entry in
           DiffReviewContext.session(
@@ -45,6 +44,7 @@ struct WorkingDiffView: View {
         },
         ignoreWhitespace: Binding(
           get: { vm.ignoreWhitespace }, set: { on in Task { await vm.setIgnoreWhitespace(on) } }),
+        images: images,
         accessory: accessory
       )
       // An edit to the shown file can turn its mark to changed.
@@ -53,33 +53,37 @@ struct WorkingDiffView: View {
   }
 
   private var accessory: AnyView? {
-    let mark = vm.selectedEntry.flatMap { entry in viewed.map { ViewedCheckbox(viewed: $0, path: entry.path) } }
-    guard mark != nil || vm.canSwitchDiffSide else { return nil }
-    return AnyView(
-      HStack(spacing: 8) {
-        mark
-        if vm.canSwitchDiffSide { sidePicker }
-      })
+    vm.selectedEntry.flatMap { entry in viewed.map { AnyView(ViewedCheckbox(viewed: $0, path: entry.path)) } }
+  }
+
+  private var staging: GitDiffStaging? {
+    guard let entry = vm.selectedEntry,
+      (vm.selectedSide == .staged ? entry.indexStatus : entry.workdirStatus).supportsHunkActions
+    else { return nil }
+    return GitDiffStaging(side: vm.selectedSide) { action, hunk, lines in
+      Task { await WorkingCopyActions(workspace: workspace).hunk(action, hunk, lines) }
+    }
+  }
+
+  private var sideSwitch: GitDiffSideSwitch? {
+    guard vm.selectedEntry != nil, vm.canSwitchDiffSide else { return nil }
+    return GitDiffSideSwitch(side: vm.selectedSide) { side in Task { await vm.setDiffSide(side) } }
+  }
+
+  private var images: GitDiffImages {
+    let staged = vm.selectedSide == .staged
+    return GitDiffImages(
+      repository: vm.repository, old: staged ? .commit("HEAD") : .index, new: staged ? .index : .workingTree,
+      reloadToken: vm.diffLoadCount)
   }
 
   /// A deleted file has no lines to open.
-  private var openLine: ((Int) -> Void)? {
+  private var openLine: (@MainActor @Sendable (Int) -> Void)? {
     guard let entry = vm.selectedEntry, entry.workdirStatus != .deleted, entry.indexStatus != .deleted else { return nil }
-    return { line in
-      model.openCode(session: workspace.sessionId, path: entry.path, line: line, source: .diff)
+    let sessionId = workspace.sessionId
+    let path = entry.path
+    return { [model] line in
+      model.openCode(session: sessionId, path: path, line: line, source: .diff)
     }
-  }
-
-  private var sidePicker: some View {
-    HStack(spacing: 2) {
-      ForEach([DiffSide.unstaged, .staged], id: \.self) { side in
-        Button(side == .staged ? "Staged" : "Unstaged") {
-          if side != vm.selectedSide { Task { await vm.setDiffSide(side) } }
-        }
-        .buttonStyle(QuietTabButtonStyle(selected: vm.selectedSide == side))
-        .accessibilityAddTraits(vm.selectedSide == side ? .isSelected : [])
-      }
-    }
-    .fixedSize()
   }
 }

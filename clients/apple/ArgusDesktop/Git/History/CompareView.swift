@@ -1,5 +1,6 @@
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// Two refs side by side: what each has that the other lacks, whether merging
@@ -39,7 +40,9 @@ struct CompareView: View {
             review: { [model, workspace, left, right] path in
               DiffReviewContext.session(
                 workspace.sessionId, path: path, scope: "diff from \(left) to \(right)", store: model.store)
-            })
+            },
+            images: GitDiffImages(
+              repository: workspace.repository, old: .commit(compare.mergeBase ?? left), new: .commit(right)))
         }
       }
     }

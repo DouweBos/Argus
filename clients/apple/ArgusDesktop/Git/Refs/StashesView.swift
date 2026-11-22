@@ -1,5 +1,6 @@
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// The stash list beside the selected stash's changes; apply, pop, drop,
@@ -129,7 +130,9 @@ struct StashesView: View {
         .padding(.horizontal, 12)
         .frame(height: 34)
         .overlay(alignment: .bottom) { Rectangle().fill(theme.border).frame(height: 1) }
-        FileDiffsView(files: stashes.stashDiffs, isLoading: stashes.isLoadingDiff)
+        FileDiffsView(
+          files: stashes.stashDiffs, isLoading: stashes.isLoadingDiff,
+          images: .commit(stash.sha, in: stashes.repository))
       }
     } else {
       QuietEmptyState(icon: "tray.full", title: "Select a stash")

@@ -1,6 +1,7 @@
 #if DEBUG
   import AppKit
   import ArgusCore
+  import GroveUIKit
   import UserNotifications
 
   /// Drives this app's own window from JSON files, so a dev build can be
@@ -679,8 +680,8 @@
         // Selects diff rows by index, as a click would; a driven window is
         // never key, so the table's own mouse tracking doesn't run.
         guard let root = window.contentView?.superview else { return ["error": "no view"] }
-        func findTable(_ view: NSView) -> DiffNSTableView? {
-          (view as? DiffNSTableView) ?? view.subviews.lazy.compactMap(findTable).first
+        func findTable(_ view: NSView) -> GitDiffTableView? {
+          (view as? GitDiffTableView) ?? view.subviews.lazy.compactMap(findTable).first
         }
         guard let table = findTable(root) else { return ["error": "no diff table"] }
         let rows = IndexSet(command["rows"] as? [Int] ?? [])

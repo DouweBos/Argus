@@ -1,6 +1,7 @@
 import ArgusCore
 import Foundation
 import GroveKit
+import GroveUIKit
 
 /// What a diff needs to take review comments: the drafts on its file and where new ones go.
 struct DiffReviewContext {
@@ -40,26 +41,24 @@ enum DiffReviewAnchors {
     }).joined(separator: "\n")
   }
 
-  /// Each comment that still sits in `diff`: the hunk and the line index it hangs under.
-  static func anchors(_ comments: [DiffReviewComment], in diff: DiffResult) -> [Anchor] {
-    comments.compactMap { comment in
-      for (h, hunk) in diff.hunks.enumerated() {
-        if let i = hunk.lines.firstIndex(where: { line in
-          number(line, comment.side).map {
-            comment.anchors(path: comment.path, side: comment.side, last: $0, text: line.content)
-          } ?? false
-        }) {
-          return Anchor(comment: comment.id, hunk: h, line: i)
+  /// Where a comment still sits in `diff`: the hunk and the line index it hangs under.
+  static func anchor(_ comment: DiffReviewComment, in diff: DiffResult) -> GitDiffLineAnchor? {
+    let side = comment.side
+    let last = comment.lines.upperBound
+    for (h, hunk) in diff.hunks.enumerated() {
+      let lines = hunk.lines
+      var i = 0
+      // The number first, in place: copying the comment or each line is a stall across 100k of them.
+      while i < lines.count {
+        if (side == .new ? lines[i].newLineNumber : lines[i].oldLineNumber) == last,
+          comment.anchors(path: comment.path, side: side, last: last, text: lines[i].content)
+        {
+          return GitDiffLineAnchor(hunk: h, line: i)
         }
+        i += 1
       }
-      return nil
     }
-  }
-
-  struct Anchor: Equatable {
-    let comment: UUID
-    let hunk: Int
-    let line: Int
+    return nil
   }
 }
 

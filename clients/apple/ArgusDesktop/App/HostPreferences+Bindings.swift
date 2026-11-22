@@ -1,6 +1,7 @@
 import ArgusCore
 import ArgusKit
 import Foundation
+import GroveUIKit
 
 /// Where each value lives here and on the host. A key the Electron app keeps
 /// too (`app/lib/hostPrefBindings.ts`) must mean the same in both.
@@ -61,12 +62,12 @@ extension HostPreferences {
       Binding(
         slot: .setting("git_diff_layout"),
         read: {
-          home.string(forKey: GitPreferences.diffLayoutKey).flatMap(DiffLayout.init(rawValue:))
+          home.string(forKey: GitPreferences.diffLayoutKey).flatMap(GitDiffLayout.init(rawValue:))
             .map { .string($0.telemetryName) }
         },
         write: { value in
-          if value == .string("unified") { home.set(DiffLayout.inline.rawValue, forKey: GitPreferences.diffLayoutKey) }
-          if value == .string("split") { home.set(DiffLayout.split.rawValue, forKey: GitPreferences.diffLayoutKey) }
+          if value == .string("unified") { home.set(GitDiffLayout.inline.rawValue, forKey: GitPreferences.diffLayoutKey) }
+          if value == .string("split") { home.set(GitDiffLayout.split.rawValue, forKey: GitPreferences.diffLayoutKey) }
         }),
       Binding(
         slot: .setting("git_ignore_whitespace"),
