@@ -16,7 +16,7 @@ final class GitWorkspaces {
 
   private(set) var slots: [String: Slot] = [:]
   /// Grove's names, so restacks and branch parents are shared with Grove on the same repository.
-  private static let naming = GitNaming(name: "grove")
+  static let naming = GitNaming(name: "grove")
   private let host: HostStore
   private var stopObserving: (() -> Void)?
 

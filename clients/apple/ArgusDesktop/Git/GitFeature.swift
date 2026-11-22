@@ -1,24 +1,22 @@
-/// What one session's git can do. The host refuses these outside the project root,
-/// and a paired host's files aren't on this Mac.
-enum GitFeature: CaseIterable, Hashable {
-  case createBranch, editBranches, checkout, merge, rebase, push, tag, remotes
-  case submodules, bisect
-  case reveal, trash, export, applyPatch
+import GroveKit
 
+extension GitFeature {
   /// The host's `requireProjectScope` commands, by what they'd do.
   static let projectRootOnly: Set<GitFeature> = [
     .createBranch, .editBranches, .checkout, .merge, .rebase, .tag, .remotes, .submodules, .bisect,
   ]
   static let localOnly: Set<GitFeature> = [.reveal, .trash, .export, .applyPatch]
+  /// Dialog options the host's commands have no parameter for.
+  static let notOnTheHost: Set<GitFeature> = [.skipHooks, .autostash, .cancel]
+}
 
-  static func supported(isProjectRoot: Bool, isRemote: Bool) -> Set<GitFeature> {
-    var features = Set(allCases)
-    if !isProjectRoot { features.subtract(projectRootOnly) }
-    if isRemote { features.subtract(localOnly) }
+extension GitFeatures {
+  /// What one session's git can do: the host's rules, and whether its files are on this Mac.
+  static func argus(isProjectRoot: Bool, isRemote: Bool) -> GitFeatures {
+    var features = GitFeatures.all
+    features.remove(GitFeature.notOnTheHost, reason: "Argus doesn't offer this")
+    if !isProjectRoot { features.remove(GitFeature.projectRootOnly, reason: "Only in the project root") }
+    if isRemote { features.remove(GitFeature.localOnly, reason: "Only for repositories on this Mac") }
     return features
-  }
-
-  var unavailableReason: String {
-    Self.localOnly.contains(self) ? "Only for repositories on this Mac" : "Only in the project root"
   }
 }

@@ -1,4 +1,5 @@
 import Foundation
+import GroveKit
 import Testing
 
 @testable import Argus
@@ -19,7 +20,7 @@ struct GitFeatureTests {
   /// GroveKit runs these on a worktree's own branch, so the host's rule doesn't apply.
   private static let runByGroveKit: Set<String> = ["gitReset", "gitCherryPick"]
 
-  @Test func agreesWithTheHostsProjectScopeRules() throws {
+  @MainActor @Test func agreesWithTheHostsProjectScopeRules() throws {
     let scoped = try Self.projectScopedHostFunctions()
     #expect(scoped == Set(Self.hostCommands.keys).union(Self.runByGroveKit))
     #expect(Set(Self.hostCommands.values) == GitFeature.projectRootOnly)
@@ -27,8 +28,8 @@ struct GitFeatureTests {
 
   @Test(arguments: [true, false], [true, false])
   func supportedFollowsScopeAndMachine(isProjectRoot: Bool, isRemote: Bool) {
-    let features = GitFeature.supported(isProjectRoot: isProjectRoot, isRemote: isRemote)
-    for feature in GitFeature.allCases {
+    let features = GitFeatures.argus(isProjectRoot: isProjectRoot, isRemote: isRemote)
+    for feature in GitFeature.allCases where !GitFeature.notOnTheHost.contains(feature) {
       let allowed =
         (isProjectRoot || !GitFeature.projectRootOnly.contains(feature))
         && (!isRemote || !GitFeature.localOnly.contains(feature))
@@ -38,7 +39,7 @@ struct GitFeatureTests {
   }
 
   @Test func aWorktreeRefusesMergeAndRebaseAndRenamesOnBranch() {
-    let features = GitFeature.supported(isProjectRoot: false, isRemote: false)
+    let features = GitFeatures.argus(isProjectRoot: false, isRemote: false)
     let refused = GitMenuAction.allCases.filter { $0.refusal(features: features) != nil }
     #expect(refused == [.merge, .rebase])
     #expect(GitMenuAction.branch.title(features) == "Rename Session Branch")

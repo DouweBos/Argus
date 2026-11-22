@@ -67,7 +67,7 @@ struct BranchesReviewView: View {
       .buttonStyle(QuietTabButtonStyle())
       Button("Delete Selected", role: .destructive) { review.requestDelete(review.selectedBranches) }
         .disabled(review.selectedIDs.isEmpty || !canDelete)
-        .help(workspace.features.contains(.editBranches) ? "" : GitFeature.editBranches.unavailableReason)
+        .help(workspace.features.unavailableReason(.editBranches) ?? "")
     }
     .controlSize(.small)
     .padding(.horizontal, 12)

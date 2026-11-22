@@ -101,7 +101,7 @@ struct ReflogView: View {
     Divider()
     Button("New Branch Here") { createBranch(from: entry) }
       .disabled(!workspace.features.contains(.createBranch))
-      .help(workspace.features.contains(.createBranch) ? "" : GitFeature.createBranch.unavailableReason)
+      .help(workspace.features.unavailableReason(.createBranch) ?? "")
     Button("Copy SHA") { Clipboard.copy(entry.newSHA) }
   }
 

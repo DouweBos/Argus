@@ -10,9 +10,9 @@ struct GitRefusal: Equatable {
 }
 
 extension GitMenuAction {
-  func refusal(features: Set<GitFeature>) -> GitRefusal? {
-    guard let feature, !features.contains(feature) else { return nil }
-    return GitRefusal(kind: .unsupported, message: feature.unavailableReason)
+  func refusal(features: GitFeatures) -> GitRefusal? {
+    guard let feature, let reason = features.unavailableReason(feature) else { return nil }
+    return GitRefusal(kind: .unsupported, message: reason)
   }
 
   /// What the repository's current state rules out.
@@ -55,8 +55,8 @@ extension WorkingCopyViewModel {
 }
 
 extension DesktopModel {
-  func gitFeatures(_ session: RemoteSession) -> Set<GitFeature> {
-    GitFeature.supported(isProjectRoot: session.kind == .projectRoot, isRemote: host(ofSession: session.id) != Hosts.local)
+  func gitFeatures(_ session: RemoteSession) -> GitFeatures {
+    GitFeatures.argus(isProjectRoot: session.kind == .projectRoot, isRemote: host(ofSession: session.id) != Hosts.local)
   }
 
   /// One path for menus, keys and buttons: opens the repository if needed and waits for what the command reads.

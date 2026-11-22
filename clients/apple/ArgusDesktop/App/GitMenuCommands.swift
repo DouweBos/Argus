@@ -1,4 +1,5 @@
 import ArgusKit
+import GroveKit
 import SwiftUI
 
 /// The Git menu. `ShortcutRouter` takes the keys; an item only shows the one it would get.
@@ -7,7 +8,7 @@ struct GitMenuCommands: View {
 
   var body: some View {
     let session = KeyWindow.shared.takesCommands ? model.gitSession : nil
-    let features = session.map(model.gitFeatures) ?? []
+    let features = session.map(model.gitFeatures) ?? .all
     item(.fetch, session, features)
     item(.pull, session, features)
     item(.push, session, features)
@@ -25,7 +26,7 @@ struct GitMenuCommands: View {
     item(.undo, session, features)
   }
 
-  private func item(_ action: GitMenuAction, _ session: RemoteSession?, _ features: Set<GitFeature>) -> some View {
+  private func item(_ action: GitMenuAction, _ session: RemoteSession?, _ features: GitFeatures) -> some View {
     let refusal = session.flatMap { self.refusal(action, $0, features) }
     let bound = action.chord.flatMap { model.binds($0, to: .git(action)) ? $0.keyboardShortcut : nil }
     return Button {
@@ -40,7 +41,7 @@ struct GitMenuCommands: View {
   }
 
   /// State only counts while the repository is watched; otherwise the command reads it and says.
-  private func refusal(_ action: GitMenuAction, _ session: RemoteSession, _ features: Set<GitFeature>) -> GitRefusal? {
+  private func refusal(_ action: GitMenuAction, _ session: RemoteSession, _ features: GitFeatures) -> GitRefusal? {
     if let refusal = action.refusal(features: features) { return refusal }
     guard let workspace = model.git.workspace(session.id), workspace.isActive, workspace.refs.hasLoaded else {
       return nil

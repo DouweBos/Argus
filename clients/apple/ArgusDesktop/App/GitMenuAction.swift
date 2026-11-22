@@ -1,3 +1,4 @@
+import GroveKit
 import SwiftUI
 
 /// The git commands the menu, the keys and the tooltips share.
@@ -20,7 +21,7 @@ enum GitMenuAction: String, CaseIterable {
     }
   }
 
-  func title(_ features: Set<GitFeature>) -> String {
+  func title(_ features: GitFeatures) -> String {
     switch self {
     case .fetch: "Fetch"
     case .pull: "Pull"

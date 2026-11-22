@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusKit
 import Foundation
 import GroveKit
 import Observation
@@ -9,14 +10,14 @@ import Observation
 /// `RepositorySession`.
 @MainActor
 @Observable
-final class GitWorkspace {
+final class GitWorkspace: GitHostSending {
   let sessionId: String
   let repoRoot: String
   let isProjectRoot: Bool
   /// On a paired host: git runs there, and its broadcasts stand in for a file watcher.
   let isRemote: Bool
   /// What this session's git can do.
-  let features: Set<GitFeature>
+  let features: GitFeatures
   let repository: GitRepository
   /// Runs git where the worktree is, for what GroveKit's engine doesn't wrap.
   let runner: any GitRunner
@@ -83,7 +84,7 @@ final class GitWorkspace {
     self.isRemote = isRemote
     repoRoot = session.repoRoot
     isProjectRoot = session.kind == .projectRoot
-    features = GitFeature.supported(isProjectRoot: session.kind == .projectRoot, isRemote: isRemote)
+    features = GitFeatures.argus(isProjectRoot: session.kind == .projectRoot, isRemote: isRemote)
     self.repository = repository
     self.runner = runner
     self.host = host
@@ -282,6 +283,33 @@ final class GitWorkspace {
       if let action { track(action, success: false) }
       await refreshAll()
       return nil
+    }
+  }
+
+  /// The kit's mutations for this session, through the host.
+  var commands: HostGitCommands {
+    HostGitCommands(
+      sessionId: sessionId, features: features, host: self, repository: repository, naming: GitWorkspaces.naming)
+  }
+
+  /// Like `host`, for a dialog that shows the failure itself.
+  func send<C: RemoteCommand>(
+    _ command: sending C.Type, _ params: C.Params, label: String, track action: MacTelemetryEvent.GitAction?
+  ) async throws -> C.Result {
+    guard let backend = host.backend else { throw CancellationError() }
+    hostBusy = label
+    defer { hostBusy = nil }
+    do {
+      let result = try await backend.request(command, params)
+      hostError = nil
+      if let action { track(action, success: true) }
+      await refreshAll()
+      await host.refreshGitStatuses(repoRoot: repoRoot)
+      return result
+    } catch {
+      if let action { track(action, success: false) }
+      await refreshAll()
+      throw error
     }
   }
 
