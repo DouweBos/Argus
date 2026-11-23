@@ -74,6 +74,11 @@ describe("claude accounts", () => {
       expect(claudeAccountEnv("abc")).toEqual({
         [CREDENTIAL_ENV]: accountCredentialDir("abc"),
         [CONFIG_ENV]: accountConfigDir("abc"),
+        CLAUDE_CODE_PLUGIN_CACHE_DIR: path.join(
+          os.homedir(),
+          ".claude",
+          "plugins",
+        ),
       });
     });
 
@@ -211,6 +216,30 @@ describe("claude accounts", () => {
 
       expect(env[CREDENTIAL_ENV]).toBe(accountCredentialDir("abc"));
       expect(env[CONFIG_ENV]).toBe(accountConfigDir("abc"));
+    });
+
+    it("names the shared plugins dir by its own path for every account", () => {
+      upsertClaudeAccount({ id: "abc" });
+      const env = envForAccount("abc", {});
+
+      expect(env.CLAUDE_CODE_PLUGIN_CACHE_DIR).toBe(
+        path.join(os.homedir(), ".claude", "plugins"),
+      );
+    });
+
+    it("clears its plugins dir for the default account but keeps the user's", () => {
+      const ours = path.join(os.homedir(), ".claude", "plugins");
+
+      expect(
+        envForAccount(DEFAULT_ACCOUNT_ID, {
+          CLAUDE_CODE_PLUGIN_CACHE_DIR: ours,
+        }).CLAUDE_CODE_PLUGIN_CACHE_DIR,
+      ).toBeUndefined();
+      expect(
+        envForAccount(DEFAULT_ACCOUNT_ID, {
+          CLAUDE_CODE_PLUGIN_CACHE_DIR: "/somewhere/else",
+        }).CLAUDE_CODE_PLUGIN_CACHE_DIR,
+      ).toBe("/somewhere/else");
     });
   });
 

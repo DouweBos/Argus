@@ -39,6 +39,8 @@ const SCHEMA_VERSION = 1;
 const CLAUDE_BIN = "claude";
 const CREDENTIAL_ENV = "CLAUDE_SECURESTORAGE_CONFIG_DIR";
 const CONFIG_ENV = "CLAUDE_CONFIG_DIR";
+const PLUGIN_ENV = "CLAUDE_CODE_PLUGIN_CACHE_DIR";
+const ACCOUNT_ENV_KEYS = [CREDENTIAL_ENV, CONFIG_ENV, PLUGIN_ENV];
 
 /** Id of the pre-existing `~/.claude` login. Sets no credential env var. */
 export const DEFAULT_ACCOUNT_ID = "default";
@@ -129,6 +131,21 @@ export function accountConfigDir(id: string): string {
 
 function sharedClaudeDir(): string {
   return path.join(os.homedir(), ".claude");
+}
+
+function sharedPluginsDir(): string {
+  return path.join(sharedClaudeDir(), "plugins");
+}
+
+/** Whether Argus set this env value, so it may replace or clear it. */
+function isOurs(key: string, value: string | undefined): boolean {
+  if (value === undefined) {
+    return false;
+  }
+
+  return key === PLUGIN_ENV
+    ? value === sharedPluginsDir()
+    : value.startsWith(accountsRootDir());
 }
 
 /**
@@ -233,6 +250,9 @@ export function claudeAccountEnv(id: string): Record<string, string> {
   return {
     [CREDENTIAL_ENV]: accountCredentialDir(id),
     [CONFIG_ENV]: ensureAccountConfigDir(id),
+    // The CLI records absolute plugin paths and refuses any spelled through
+    // another config dir, so every account must name the shared dir the same way.
+    [PLUGIN_ENV]: sharedPluginsDir(),
   };
 }
 
@@ -246,9 +266,9 @@ export function envForAccount(
   base: NodeJS.ProcessEnv = process.env,
 ): NodeJS.ProcessEnv {
   const env = { ...base };
-  for (const key of [CREDENTIAL_ENV, CONFIG_ENV]) {
-    // Only ours — a value the user set themselves is theirs to keep.
-    if (env[key]?.startsWith(accountsRootDir())) {
+  // Only ours — a value the user set themselves is theirs to keep.
+  for (const key of ACCOUNT_ENV_KEYS) {
+    if (isOurs(key, env[key])) {
       Reflect.deleteProperty(env, key);
     }
   }
@@ -424,12 +444,12 @@ export function getClaudeAccount(id: string): ClaudeAccount | undefined {
  */
 export function applyActiveAccountToProcessEnv(): void {
   const env = claudeAccountEnv(getActiveAccountId());
-  for (const key of [CREDENTIAL_ENV, CONFIG_ENV]) {
+  for (const key of ACCOUNT_ENV_KEYS) {
     const dir = env[key];
     if (dir) {
       fs.mkdirSync(dir, { recursive: true });
       process.env[key] = dir;
-    } else if (process.env[key]?.startsWith(accountsRootDir())) {
+    } else if (isOurs(key, process.env[key])) {
       Reflect.deleteProperty(process.env, key);
     }
   }
