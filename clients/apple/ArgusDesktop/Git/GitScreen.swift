@@ -86,7 +86,7 @@ struct GitWorkspaceView: View {
   private var content: some View {
     switch view {
     case .working:
-      WorkingCopyView(workspace: workspace)
+      WorkingCopyView(workspace: workspace, session: session)
     case .branch, .history, .branches, .tags:
       HistoryScreen(
         workspace: workspace, history: workspace.visibleHistory ?? workspace.history, ref: view.historyRef,
@@ -102,7 +102,7 @@ struct GitWorkspaceView: View {
   private var single: some View {
     switch view {
     case .conflicts:
-      ConflictsView(workspace: workspace)
+      ConflictsView(workspace: workspace, session: session)
     case .compare(let left, let right):
       CompareView(workspace: workspace, left: left, right: right)
     case .blame(let path, let ref):

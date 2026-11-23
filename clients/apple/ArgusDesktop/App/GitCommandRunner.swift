@@ -43,17 +43,6 @@ extension GitMenuAction {
   }
 }
 
-extension WorkingCopyViewModel {
-  var commitBlocker: String? {
-    if !conflictedFiles.isEmpty { return "Resolve the conflicts first" }
-    if !isAmend && stagedFiles.isEmpty { return "Stage changes to commit" }
-    if commitSubject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Enter a summary" }
-    // All that is left of `canCommit`.
-    if !canCommit { return "A commit is already running" }
-    return nil
-  }
-}
-
 extension DesktopModel {
   func gitFeatures(_ session: RemoteSession) -> GitFeatures {
     GitFeatures.argus(isProjectRoot: session.kind == .projectRoot, isRemote: host(ofSession: session.id) != Hosts.local)

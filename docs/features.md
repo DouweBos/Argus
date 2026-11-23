@@ -112,8 +112,14 @@ A real git workflow lives inside Argus:
   pinned and record a parent for pulls; Delete Branch warns about commits
   only it has and can delete its remote branch too. Remotes are added,
   renamed and repointed from the sidebar.
+- **Changes** — the commit composer over the changed files, beside the
+  picked file's diff. Space stages the selection, ⌘A selects every file,
+  Shift-arrows extend it, Return or a double-click opens the file. Stash
+  only the files you pick, save their changes as a patch, or apply one.
 - **Merge & rebase** — Argus runs them for you and surfaces conflicts
-  with an inline resolver; a merge can squash the branch into one commit.
+  where you commit: both versions side by side above the merged result,
+  which you can edit and save as the resolution, or keep one side whole.
+  A merge can squash the branch into one commit.
 - **Pull request** — open a draft PR directly from the session.
 - **Pull request state** — a session whose branch has a GitHub PR shows
   GitHub's PR icon next to it in the session list: green when open, grey

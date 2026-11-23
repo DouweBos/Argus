@@ -132,6 +132,15 @@ struct HostGitCommands: GitCommandPerforming {
       _ = try await host.send(
         Host.GitStashBranch.self, .init(id: id, stashRef: "stash@{\(index)}", branchName: name),
         label: "Creating \(name)", track: .branchCreate)
+    case .saveConflictResolution(let path, let contents):
+      // The host keeps the write inside the worktree, wherever it is; marking it resolved stages it.
+      let name = (path as NSString).lastPathComponent
+      _ = try await host.send(
+        Host.GitWriteConflictMerged.self, .init(id: id, filePath: path, contents: contents), label: "Saving \(name)",
+        track: nil)
+      _ = try await host.send(
+        Host.GitMarkResolved.self, .init(id: id, filePath: path), label: "Marking \(name) resolved",
+        track: .resolveConflict)
     case .fetch, .setUpstream, .deleteRemoteBranch, .applyStash, .dropStash, .snapshot:
       // One remote, unsetting an upstream and the stash list: the host has no command for these.
       try await host.runLocally(label: Self.localLabel(command), track: Self.localAction(command)) {

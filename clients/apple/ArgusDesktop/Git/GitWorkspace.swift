@@ -122,6 +122,7 @@ final class GitWorkspace: GitHostSending {
       sessionId: session.id, features: features, host: ViewModelGitHost(host: self), repository: repository,
       naming: GitWorkspaces.naming)
     stashes.commands = commands
+    workingCopy.commands = commands
     reflog.commands = commands
     branchesReview.commands = commands
   }

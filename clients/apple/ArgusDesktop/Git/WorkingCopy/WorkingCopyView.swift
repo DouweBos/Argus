@@ -1,55 +1,129 @@
 import ArgusCore
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
-/// The working copy: the commit composer over the changed files, beside the
-/// selected file's diff, under the in-progress operation's banner.
+/// The working copy, from GroveUIKit, with Argus's own parts in its slots: the diff scope, the review-aware
+/// diff, Claude's draft and Review beside Commit, and File History and Blame in a row's menu.
 struct WorkingCopyView: View {
-  @Environment(\.theme) private var theme
+  @Environment(DesktopModel.self) private var model
   let workspace: GitWorkspace
-  /// File history lives in the history view; nil hides the menu item.
+  let session: RemoteSession
+  /// File history lives in the history view; nil leaves the menu item out.
   var onShowFileHistory: ((String) -> Void)? = nil
+  @AppStorage("git.changes.leftWidth") private var leftWidth: Double = 360
+  @State private var managingTemplates = false
 
   private var vm: WorkingCopyViewModel { workspace.workingCopy }
 
   var body: some View {
     VStack(spacing: 0) {
-      if let error = vm.errorMessage {
-        let typed = workspace.isRemote ? RemoteGitFailures.shared.recent(sessionId: workspace.sessionId) : nil
-        GitFailureBanner(
-          workspace: workspace, session: nil,
-          failure: typed.map { GitFailure(kind: $0.kind, message: error, recovery: $0.recovery, details: $0.details) }
-            ?? GitFailure.classify(error),
-          canRetry: false
-        ) { vm.clearError() }
-      }
-      if vm.isInOperation {
-        OperationBanner(workspace: workspace)
-        Rectangle().fill(theme.border).frame(height: 1)
-      }
-      // The composer over the files, beside the diff, split by hairlines.
-      ResizableHSplit(key: "git.changes", leadingMin: 260, leadingIdeal: 360, leadingMax: 560, trailingMin: 280) {
-        VStack(spacing: 0) {
-          CommitComposerView(workspace: workspace)
-          Rectangle().fill(theme.border).frame(height: 1)
-          Group {
-            if workspace.scopedDiff.scope == .uncommitted {
-              ChangesListView(workspace: workspace, onShowFileHistory: onShowFileHistory)
-            } else {
-              ScopedChangesList(workspace: workspace)
-            }
-          }
-          .frame(maxHeight: .infinity)
-        }
-      } trailing: {
-        if workspace.scopedDiff.scope == .uncommitted {
-          WorkingDiffView(workspace: workspace)
-        } else {
-          ScopedDiffPane(workspace: workspace)
-        }
+      WorkingCopyErrorBanner(workspace: workspace)
+      GitWorkingCopyView(viewModel: vm, host: host, slots: slots)
+        .padding([.horizontal, .bottom], 12)
+        .padding(.top, 10)
+    }
+    .gitFeatures(workspace.features)
+    .sheet(isPresented: $managingTemplates) { CommitTemplatesSheet(store: CommitPreferences.templates) }
+    .onChange(of: workspace.suppressLfsWarning, initial: true) { _, suppressed in
+      if suppressed { vm.dismissLFSWarning() }
+    }
+  }
+
+  private var host: GitWorkingCopyHost {
+    var host = GitWorkingCopyHost.argus(workspace: workspace, session: session, model: model)
+    host.manageTemplates = { managingTemplates = true }
+    host.leftWidth = $leftWidth
+    return host
+  }
+
+  private var slots: GitWorkingCopySlots {
+    var slots = GitWorkingCopySlots()
+    slots.filesHeader = AnyView(DiffScopeMenu(workspace: workspace))
+    slots.diff = { _ in AnyView(WorkingDiffView(workspace: workspace)) }
+    slots.composerAccessory = AnyView(CommitDraftAndReview(workspace: workspace))
+    slots.rowMenu = { entry, entries in
+      AnyView(ChangeHistoryItems(workspace: workspace, entry: entry, entries: entries, onShowFileHistory: onShowFileHistory))
+    }
+    if workspace.scopedDiff.scope != .uncommitted {
+      slots.replacement = (
+        files: AnyView(ScopedChangesList(workspace: workspace)), detail: AnyView(ScopedDiffPane(workspace: workspace))
+      )
+    }
+    return slots
+  }
+}
+
+/// The view model's last failure, typed for the banner's fixes where the host said what went wrong.
+struct WorkingCopyErrorBanner: View {
+  let workspace: GitWorkspace
+
+  var body: some View {
+    let vm = workspace.workingCopy
+    if let error = vm.errorMessage {
+      let typed = workspace.isRemote ? RemoteGitFailures.shared.recent(sessionId: workspace.sessionId) : nil
+      GitFailureBanner(
+        workspace: workspace, session: nil,
+        failure: typed.map { GitFailure(kind: $0.kind, message: error, recovery: $0.recovery, details: $0.details) }
+          ?? GitFailure.classify(error),
+        canRetry: false
+      ) { vm.clearError() }
+    }
+  }
+}
+
+/// Claude's draft of the message for the staged changes (⌥⌘G), and a review by a new agent.
+private struct CommitDraftAndReview: View {
+  @Environment(DesktopModel.self) private var model
+  let workspace: GitWorkspace
+  @State private var drafting = false
+
+  private var vm: WorkingCopyViewModel { workspace.workingCopy }
+
+  var body: some View {
+    Button(action: draft) {
+      if drafting {
+        ProgressView().controlSize(.small)
+      } else {
+        Image(systemName: "sparkles")
       }
     }
-    .modifier(WorkingCopyDialogs(workspace: workspace))
+    .buttonStyle(FlatIconButtonStyle(size: 26))
+    .keyboardShortcut("g", modifiers: [.command, .option])
+    .disabled(drafting || vm.stagedFiles.isEmpty)
+    .help(vm.stagedFiles.isEmpty ? "Stage changes to draft a message" : "Draft a message with Claude (⌥⌘G)")
+    .accessibilityLabel("Draft commit message")
+    Button("Review") { Task { await model.requestCodeReview(session: workspace.sessionId) } }
+      .buttonStyle(.secondary)
+      .disabled(vm.changedCount == 0 && workspace.isProjectRoot)
+      .help("Ask a new agent to review these changes before you commit")
+  }
+
+  private func draft() {
+    guard !drafting, !vm.stagedFiles.isEmpty else { return }
+    drafting = true
+    Task {
+      await workspace.draftCommitMessage()
+      drafting = false
+    }
+  }
+}
+
+/// File History and Blame for a changed file git already knows.
+private struct ChangeHistoryItems: View {
+  @Environment(DesktopModel.self) private var model
+  let workspace: GitWorkspace
+  let entry: StatusEntry
+  let entries: [StatusEntry]
+  var onShowFileHistory: ((String) -> Void)?
+
+  var body: some View {
+    if entries.count == 1, entry.workdirStatus != .untracked, entry.indexStatus != .added {
+      if let onShowFileHistory {
+        Button("File History") { onShowFileHistory(entry.path) }
+      }
+      Button("Blame") { model.navigate(.sessionGit(id: workspace.sessionId, view: .blame(path: entry.path, ref: nil))) }
+    }
   }
 }

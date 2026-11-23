@@ -1,5 +1,6 @@
 import ArgusCore
 import ArgusUI
+import GroveUIKit
 import SwiftUI
 
 /// The Files tab: the code view's navigator (changes, tree, search); a file opens in the code view.
@@ -63,7 +64,7 @@ private struct DiffTabDialogs: ViewModifier {
   let shown: Bool
 
   func body(content: Content) -> some View {
-    if shown { content.modifier(WorkingCopyDialogs(workspace: workspace)) } else { content }
+    if shown { content.gitWorkingCopyDialogs(workspace.workingCopy) } else { content }
   }
 }
 

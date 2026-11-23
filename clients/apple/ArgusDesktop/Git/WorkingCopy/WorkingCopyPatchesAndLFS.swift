@@ -33,6 +33,28 @@ enum PatchPanels {
     }
   }
 
+  /// For the kit's Apply Patch.
+  static func chooseFile() async -> URL? {
+    let panel = NSOpenPanel()
+    panel.allowsMultipleSelection = false
+    panel.canChooseDirectories = false
+    panel.message = "Choose a patch to apply to the working tree"
+    return await withCheckedContinuation { done in
+      present(panel) { response in done.resume(returning: response == .OK ? DevPanelPath.url ?? panel.url : nil) }
+    }
+  }
+
+  /// For the kit's Create Patch.
+  static func chooseDestination(name: String, message: String) async -> URL? {
+    let panel = NSSavePanel()
+    panel.nameFieldStringValue = name
+    panel.message = message
+    panel.allowedContentTypes = [UTType(filenameExtension: "patch") ?? .plainText]
+    return await withCheckedContinuation { done in
+      present(panel) { response in done.resume(returning: response == .OK ? DevPanelPath.url ?? panel.url : nil) }
+    }
+  }
+
   private static func present(_ panel: NSSavePanel, then finish: @escaping (NSApplication.ModalResponse) -> Void) {
     #if DEBUG
       // A driven dev build can't click through a panel; it names the file instead.

@@ -74,6 +74,7 @@ struct HostGitCommandsTests {
     (.renameCurrentBranch(to: "renamed"), "rename_session_branch"),
     (.stashAndCheckout("main"), "git_stash_and_checkout"),
     (.discardAndCheckout("main"), "git_discard_and_checkout"),
+    (.saveConflictResolution(path: "dir/a.txt", contents: "both\n"), "git_write_conflict_merged"),
   ]
 
   private func commands(
@@ -100,6 +101,17 @@ struct HostGitCommandsTests {
       await #expect(throws: GitFeatureError.self) { try await commands(spy, isProjectRoot: false).perform(command) }
       #expect(spy.sent.isEmpty, "\(command)")
     }
+  }
+
+  @Test func aConflictsEditedResultIsWrittenThroughTheHostAndNothingElseOnFailure() async {
+    let spy = SpyHost()
+    let save = GitCommand.saveConflictResolution(path: "dir/a.txt", contents: "both\n")
+    await #expect(throws: SpyHost.Reached.self) { try await commands(spy).perform(save) }
+    // A failed write never marks the file resolved, and the view model reports the failure itself.
+    #expect(spy.sent.map(\.name) == ["git_write_conflict_merged"])
+    #expect(spy.sent.first?.params["filePath"] as? String == "dir/a.txt")
+    #expect(spy.sent.first?.params["contents"] as? String == "both\n")
+    #expect(spy.tracked.isEmpty)
   }
 
   @Test func pushKeepsTheLocksBranchAndPushesHead() async {
