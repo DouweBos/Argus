@@ -135,9 +135,19 @@ function sharedClaudeDir(): string {
  * Entries that must stay per-account even though `~/.claude` has them. Sharing
  * `.credentials.json` would hand every account the same token — the keychain
  * fallback for a namespaced store — and `.oauth_refresh.lock` would make two
- * accounts skip each other's token refresh.
+ * accounts skip each other's token refresh. `remote-settings.json` and
+ * `policy-limits.json` (and their sidecars) are the signed-in org's managed
+ * policy: shared, one org's marketplaces and rules leak into every account.
  */
 const NEVER_SHARED = new Set([".credentials.json", ".oauth_refresh.lock"]);
+const NEVER_SHARED_PREFIXES = ["remote-settings.json", "policy-limits.json"];
+
+function isNeverShared(entry: string): boolean {
+  return (
+    NEVER_SHARED.has(entry) ||
+    NEVER_SHARED_PREFIXES.some((prefix) => entry.startsWith(prefix))
+  );
+}
 
 /**
  * Create the account's config dir and keep it linked to the shared `~/.claude`.
@@ -164,9 +174,9 @@ export function ensureAccountConfigDir(id: string): string {
   }
   for (const entry of entries) {
     const target = path.join(dir, entry);
-    // Drop links an older Argus left behind, so an account that had its token
-    // or refresh lock shared stops sharing it.
-    if (NEVER_SHARED.has(entry)) {
+    // Drop links an older Argus left behind, so an account that had its token,
+    // refresh lock or org policy shared stops sharing it.
+    if (isNeverShared(entry)) {
       if (isSymlink(target)) {
         fs.rmSync(target, { force: true });
       }

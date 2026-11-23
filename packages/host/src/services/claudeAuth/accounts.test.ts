@@ -159,6 +159,29 @@ describe("claude accounts", () => {
 
       expect(fs.existsSync(own)).toBe(true);
     });
+
+    it("drops another org's managed policy links", () => {
+      upsertClaudeAccount({ id: "abc" });
+      const dir = accountConfigDir("abc");
+      fs.mkdirSync(dir, { recursive: true });
+      const policy = [
+        "remote-settings.json",
+        "remote-settings.json.signature.json",
+        "remote-settings.json.synced-at",
+        "policy-limits.json",
+      ];
+      for (const entry of policy) {
+        const shared = path.join(fakeHome, ".claude", entry);
+        fs.writeFileSync(shared, "{}");
+        fs.symlinkSync(shared, path.join(dir, entry));
+      }
+
+      ensureAccountConfigDir("abc");
+
+      for (const entry of policy) {
+        expect(fs.existsSync(path.join(dir, entry))).toBe(false);
+      }
+    });
   });
 
   describe("envForAccount", () => {
