@@ -66,7 +66,10 @@ import { getRunnerById, resolveDefaultRunner } from "../llm/registry";
 import { resolveModelForAgent } from "../llm/resolve";
 import { isClaudeBased } from "../llm/runners/claudeCode/family";
 import { toCanonicalPermissionMode } from "../llm/runners/claudeCode/permissionModes";
-import { findClaudeTranscript } from "../llm/runners/claudeCode/transcriptFork";
+import {
+  claudeProjectSlug,
+  findClaudeTranscript,
+} from "../llm/runners/claudeCode/transcriptFork";
 import { getMcpAuthToken, getMcpPort } from "../mcp/server";
 import { closeMcpSessionsForSpawn, SPAWN_ID_HEADER } from "../mcp/sessions";
 import { buildMergedMcpServers } from "../mcp/userConfig";
@@ -1525,7 +1528,7 @@ async function restoreInPlace(
         os.homedir(),
         ".claude",
         "projects",
-        argusSession.path.replace(/[^a-zA-Z0-9]/g, "-"),
+        claudeProjectSlug(argusSession.path),
         `${args.sourceClaudeSessionId}.jsonl`,
       );
       const fs = await import("node:fs");
@@ -1577,7 +1580,7 @@ async function restoreInPlace(
         os.homedir(),
         ".claude",
         "projects",
-        argusSession.path.replace(/[^a-zA-Z0-9]/g, "-"),
+        claudeProjectSlug(argusSession.path),
         `${newClaudeSessionId}.jsonl`,
       );
       const content = fs.readFileSync(newFile, "utf8");

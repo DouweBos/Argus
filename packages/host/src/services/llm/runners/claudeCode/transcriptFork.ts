@@ -11,9 +11,23 @@ import os from "node:os";
 import path from "node:path";
 import { truncateClaudeJsonl } from "../../../session/truncateClaudeJsonl";
 
-/** Slug rule used by the Claude Code CLI for `~/.claude/projects/<slug>/`. */
+/** Past this the CLI cuts a project dir's name short and adds a hash of the cwd. */
+const MAX_SLUG = 200;
+
+/** The Claude Code CLI's dir for a cwd's transcripts, `~/.claude/projects/<slug>/`. */
 export function claudeProjectSlug(cwd: string): string {
-  return cwd.replace(/[^a-zA-Z0-9]/g, "-");
+  const slug = cwd.replace(/[^a-zA-Z0-9]/g, "-");
+  if (slug.length <= MAX_SLUG) {
+    return slug;
+  }
+  // The CLI's own 32-bit string hash, so both name the same dir.
+  let hash = 0;
+  for (let i = 0; i < cwd.length; i++) {
+    hash = (hash << 5) - hash + cwd.charCodeAt(i);
+    hash |= 0;
+  }
+
+  return `${slug.slice(0, MAX_SLUG)}-${Math.abs(hash).toString(36)}`;
 }
 
 /**
@@ -146,19 +160,16 @@ function transcriptPath(cwd: string, sessionId: string): string {
   );
 }
 
-/** Past this the CLI cuts a project dir's name short and adds a hash. */
-const MAX_SLUG = 200;
-
 /**
- * A conversation's transcript: the one under its cwd, else the newest. A long
- * cwd's plain dir only ever holds the copy an earlier resume left there.
+ * A conversation's transcript: the one under its cwd, else the newest. An
+ * older Argus left stale copies of a long cwd's in a dir the CLI never reads.
  */
 export function findClaudeTranscript(
   cwd: string,
   sessionId: string,
 ): string | null {
   const here = transcriptPath(cwd, sessionId);
-  if (claudeProjectSlug(cwd).length <= MAX_SLUG && fs.existsSync(here)) {
+  if (fs.existsSync(here)) {
     return here;
   }
   const root = path.join(os.homedir(), ".claude", "projects");
