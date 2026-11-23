@@ -79,7 +79,7 @@
   enum GalleryStories {
     static var all: [GalleryStory] {
       AutomationStories.all + ComposerStories.all + SessionStories.all + DiffReviewStories.all + DiffStories.all + ReviewGuideStories.all
-        + SettingsStories.all + DeviceStories.all + FileStories.all + HomeStories.all + RuntimeStories.all + GitStories.all + GitDialogStories.all + GitWorkingCopyStories.all
+        + SettingsStories.all + DeviceStories.all + FileStories.all + HomeStories.all + RuntimeStories.all + GitStories.all + GitDialogStories.all + GitWorkingCopyStories.all + GitCompactStories.all
         + TranscriptStories.all + CompareStories.all + BlueprintStories.all
     }
   }
