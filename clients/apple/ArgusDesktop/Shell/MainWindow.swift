@@ -1,4 +1,5 @@
 import ArgusUI
+import GroveUIKit
 import SwiftUI
 
 /// The three panels: workspace sidebar, agent control, and the side panel's tabs.
@@ -58,6 +59,9 @@ struct MainWindow: View {
     .onChange(of: model.route) { fitColumns() }
     // One image viewer for the window: a card over the window, as the desktop shows one.
     .overlay { ImageViewerPanel() }
+    // Menus, keys and toolbar items have no view of their own to hang a git dialog on.
+    .gitDialogs(model.gitDialogs)
+    .argusGitUI()
     .onChange(of: imageViewer.isPresented) { _, shown in
       if shown { MacTelemetry.capture(.imageViewerUsed(action: .open)) }
     }

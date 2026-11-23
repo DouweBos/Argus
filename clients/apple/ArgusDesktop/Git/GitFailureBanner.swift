@@ -9,7 +9,6 @@ import SwiftUI
 /// the desktop's error banner offers them.
 struct GitFailureBanner: View {
   @Environment(DesktopModel.self) private var model
-  @Environment(\.theme) private var theme
   let workspace: GitWorkspace
   /// Publishing needs the session's branch; nil leaves that fix out.
   let session: RemoteSession?
@@ -32,34 +31,29 @@ struct GitFailureBanner: View {
     case .publishBranch:
       guard let session else { return }
       dismiss()
-      RefActions(workspace: workspace, session: session, model: model, theme: theme).push()
+      RefActions(workspace: workspace, session: session, model: model).push()
     case .pullThenPush:
-      guard let push = workspace.lastPush else { return }
+      guard let push = workspace.lastPush, let (remote, branch) = Self.destination(of: push) else { return }
       let strategy = await workspace.repository.defaultPullStrategy()
-      guard
-        await workspace.host(
-          GitCommands.GitPullV2.self, .init(id: id, strategy: strategy.wire, remote: push.remote, branch: push.branch),
-          label: "Pulling", track: .pull) != nil
+      let commands = workspace.commands
+      guard (try? await commands.perform(.pull(remote: remote, branch: branch, strategy: strategy, options: PullOptions())))
+        != nil
       else { return }
-      await workspace.host(GitCommands.GitPushV2.self, push, label: "Pushing", track: .push)
+      try? await commands.perform(push)
     case .forceWithLease:
-      guard var push = workspace.lastPush,
+      guard let push = workspace.lastPush.flatMap(Self.forced), let (_, branch) = Self.destination(of: push),
         await GitDialogs.confirm(
-          "Force push \(push.branch ?? "the branch")?",
+          "Force push \(branch)?",
           message: "This replaces the remote branch with yours, unless someone pushed since your last fetch.",
           action: "Force Push", destructive: true)
       else { return }
-      push.forceWithLease = true
-      push.force = nil
-      workspace.lastPush = push
-      await workspace.host(GitCommands.GitPushV2.self, push, label: "Force pushing", track: .push)
+      try? await workspace.commands.perform(push)
     case .retry:
       await workspace.retry?()
     case .stashAndRetry:
       guard
-        await workspace.host(
-          GitCommands.GitStashSave.self, .init(id: id, includeUntracked: true, keepIndex: false, message: nil),
-          label: "Stashing", track: .stashCreate) != nil
+        (try? await workspace.commands.perform(
+          .stash(message: nil, includeUntracked: true, keepIndex: false, paths: nil))) != nil
       else { return }
       await workspace.retry?()
     case .openConflicts:
@@ -78,6 +72,27 @@ struct GitFailureBanner: View {
       model.navigate(.sessionGit(id: id, view: .settings))
     case .copyDetails:
       Clipboard.copy(failure.details ?? failure.message)
+    }
+  }
+}
+
+extension GitFailureBanner {
+  /// The remote and branch a push went to.
+  static func destination(of push: GitCommand) -> (String, String)? {
+    switch push {
+    case .push(let remote, let branch, _, _, _), .pushBranch(_, let remote, let branch, _, _, _): (remote, branch)
+    default: nil
+    }
+  }
+
+  /// The same push, forced with a lease.
+  static func forced(_ push: GitCommand) -> GitCommand? {
+    switch push {
+    case .push(let remote, let branch, _, let setUpstream, let options):
+      .push(remote: remote, branch: branch, forceWithLease: true, setUpstream: setUpstream, options: options)
+    case .pushBranch(let local, let remote, let target, _, let setUpstream, let options):
+      .pushBranch(local, remote: remote, as: target, forceWithLease: true, setUpstream: setUpstream, options: options)
+    default: nil
     }
   }
 }

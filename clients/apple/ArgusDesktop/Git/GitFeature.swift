@@ -7,7 +7,7 @@ extension GitFeature {
   ]
   static let localOnly: Set<GitFeature> = [.reveal, .trash, .export, .applyPatch]
   /// Dialog options the host's commands have no parameter for.
-  static let notOnTheHost: Set<GitFeature> = [.skipHooks, .autostash, .cancel]
+  static let notOnTheHost: Set<GitFeature> = [.skipHooks, .autostash, .cancel, .verifySignatures, .recurseSubmodules]
 }
 
 extension GitFeatures {

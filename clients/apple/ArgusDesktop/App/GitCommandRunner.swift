@@ -94,13 +94,10 @@ extension DesktopModel {
   }
 
   private func perform(_ action: GitMenuAction, workspace: GitWorkspace, session: RemoteSession) async {
-    let dark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-    // A menu has no environment to read the theme from.
-    let theme = Theme.resolved(for: dark ? .dark : .light, colorTheme: AppPreferences.shared.colorTheme)
-    let actions = RefActions(workspace: workspace, session: session, model: self, theme: theme)
+    let actions = RefActions(workspace: workspace, session: session, model: self)
     switch action {
     case .fetch: await actions.fetch()
-    case .pull: await actions.pull()
+    case .pull: actions.pull()
     case .push: actions.push()
     case .branch:
       if gitFeatures(session).contains(.createBranch) { actions.newBranch() } else { actions.renameSessionBranch() }

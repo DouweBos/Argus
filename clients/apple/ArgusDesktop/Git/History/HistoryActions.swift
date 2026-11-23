@@ -2,11 +2,11 @@ import AppKit
 import ArgusKit
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import UniformTypeIdentifiers
 
-/// What the History screen does to commits: the host's typed commands where
-/// Argus has its own flow (checkout, branch, tag), GroveKit for the rest.
-/// Host-run actions report their telemetry here; GroveKit's through `onAction`.
+/// What the History screen does to commits: checkout, branch and tag through the
+/// host's commands, GroveKit's view model for the rest, which reports through `onAction`.
 @MainActor
 struct HistoryActions {
   let workspace: GitWorkspace
@@ -18,27 +18,14 @@ struct HistoryActions {
   // MARK: Host-run
 
   func checkout(_ commit: CommitInfo) async {
-    await workspace.host(
-      ArgusProtocol.Commands.GitCheckout.self, .init(id: workspace.sessionId, branch: commit.id),
-      label: "Checking out \(commit.shortSHA)", track: .checkout)
+    try? await workspace.commands.perform(.checkout(commit.id))
   }
 
-  @discardableResult
-  func createBranch(_ name: String, at commit: CommitInfo, checkout: Bool) async -> Bool {
-    let done = await workspace.host(
-      ArgusProtocol.Commands.GitCreateBranch.self,
-      .init(id: workspace.sessionId, name: name, startPoint: commit.id, checkout: checkout),
-      label: "Creating \(name)", track: .branchCreate)
-    return done != nil
-  }
-
-  @discardableResult
-  func createTag(_ name: String, at commit: CommitInfo, message: String?) async -> Bool {
-    let done = await workspace.host(
-      ArgusProtocol.Commands.GitCreateTag.self,
-      .init(id: workspace.sessionId, name: name, ref: commit.id, message: message),
-      label: "Tagging \(name)", track: .tagCreate)
-    return done != nil
+  /// New Branch and New Tag at a commit, run through the host.
+  var dialogContext: GitDialogContext {
+    var context = GitDialogContext(repository: workspace.repository, refs: workspace.refs, commands: workspace.commands)
+    context.undo = workspace.undo
+    return context
   }
 
   // MARK: GroveKit

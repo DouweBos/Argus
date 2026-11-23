@@ -61,7 +61,7 @@ struct StashesView: View {
       if stashes.isLoading && !stashes.stashes.isEmpty { ProgressView().controlSize(.small) }
       Button {
         guard let session = model.session(workspace.sessionId) else { return }
-        RefActions(workspace: workspace, session: session, model: model, theme: theme).stash()
+        RefActions(workspace: workspace, session: session, model: model).stash()
       } label: {
         Label("Stash Changes", systemImage: "plus")
       }
@@ -156,20 +156,8 @@ struct StashesView: View {
   }
 
   private func branch(from stash: StashEntry) {
-    let workspace = workspace
-    GitDialogs.sheet(theme: theme) { dismiss in
-      GitNameSheet(
-        title: "New Branch from \(Self.ref(stash))", label: "Branch name", primary: "Create",
-        validate: RefName.isValid, dismiss: dismiss
-      ) { name, _ in
-        Task {
-          await workspace.host(
-            GitCommands.GitStashBranch.self,
-            .init(id: workspace.sessionId, stashRef: Self.ref(stash), branchName: name),
-            label: "Creating \(name)", track: .branchCreate)
-        }
-      }
-    }
+    guard let session = model.session(workspace.sessionId) else { return }
+    RefActions(workspace: workspace, session: session, model: model).present(.branchFromStash(index: stash.id))
   }
 
   private static func ref(_ stash: StashEntry) -> String { "stash@{\(stash.id)}" }

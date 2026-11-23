@@ -48,7 +48,7 @@ final class GitWorkspace: GitHostSending {
   /// The commit's summary or description has the caret.
   var commitMessageFocused = false
   /// The last push, so Pull Then Push and Force Push can repeat it.
-  var lastPush: ArgusProtocol.CommandsTypes.GitPushV2Params?
+  var lastPush: GitCommand?
   var hostError: String? {
     get { failure?.message }
     set {
@@ -273,29 +273,27 @@ final class GitWorkspace: GitHostSending {
   func host<C: RemoteCommand>(
     _ command: sending C.Type, _ params: C.Params, label: String, track action: MacTelemetryEvent.GitAction? = nil
   ) async -> C.Result? {
-    guard let backend = host.backend else { return nil }
-    hostBusy = label
-    defer { hostBusy = nil }
+    try? await sendShowingFailure(command, params, label: label, track: action)
+  }
+
+  /// Like `host`, throwing as well, for a dialog that shows the failure while the banner offers its fixes.
+  func sendShowingFailure<C: RemoteCommand>(
+    _ command: sending C.Type, _ params: C.Params, label: String, track action: MacTelemetryEvent.GitAction?
+  ) async throws -> C.Result {
     do {
-      let result = try await backend.request(command, params)
-      hostError = nil
-      if let action { track(action, success: true) }
-      await refreshAll()
-      await host.refreshGitStatuses(repoRoot: repoRoot)
-      return result
+      return try await send(command, params, label: label, track: action)
     } catch {
       failure = GitFailure(error: error) ?? GitFailure.classify(HostStore.describe(error), operation: C.name)
       retry = { [weak self] in _ = await self?.host(command, params, label: label, track: action) }
-      if let action { track(action, success: false) }
-      await refreshAll()
-      return nil
+      throw error
     }
   }
 
-  /// The kit's mutations for this session, through the host.
+  /// The kit's mutations for this session through the host; a failure also lands in the banner.
   var commands: HostGitCommands {
     HostGitCommands(
-      sessionId: sessionId, features: features, host: self, repository: repository, naming: GitWorkspaces.naming)
+      sessionId: sessionId, features: features, host: BannerGitHost(workspace: self), repository: repository,
+      naming: GitWorkspaces.naming)
   }
 
   /// Like `host`, for a dialog that shows the failure itself.
@@ -319,24 +317,30 @@ final class GitWorkspace: GitHostSending {
     }
   }
 
-  /// Runs a GroveKit mutation, reporting its outcome; failures land in `hostError`.
-  @discardableResult
-  func run(_ action: MacTelemetryEvent.GitAction, label: String, _ work: () async throws -> Void) async -> Bool {
+  /// A GroveKit mutation the host has no command for, with the busy state, telemetry and refresh a host one gets.
+  func runLocally(label: String, track action: MacTelemetryEvent.GitAction?, _ work: () async throws -> Void) async throws {
     hostBusy = label
     defer { hostBusy = nil }
     do {
       try await work()
       hostError = nil
-      track(action, success: true)
+      if let action { track(action, success: true) }
       await refreshAll()
-      return true
     } catch {
-      failure = GitFailure.classify(error.localizedDescription, operation: action.rawValue)
-      retry = nil
-      track(action, success: false)
+      if let action { track(action, success: false) }
       await refreshAll()
-      return false
+      throw error
     }
+  }
+
+  func willPush(_ command: GitCommand) {
+    lastPush = command
+  }
+
+  /// A failure with nothing to repeat.
+  func showFailure(_ failure: GitFailure) {
+    self.failure = failure
+    retry = nil
   }
 
   /// Fills the composer with Claude's message for the staged changes; a
@@ -374,5 +378,34 @@ final class GitWorkspace: GitHostSending {
       track(redo ? .redo : .undo, success: false)
     }
     await refreshAll()
+  }
+}
+
+/// The workspace as RefActions and the dialogs reach the host: a failure also lands in the banner with its fixes.
+@MainActor
+struct BannerGitHost: GitHostSending {
+  let workspace: GitWorkspace
+
+  func send<C: RemoteCommand>(
+    _ command: sending C.Type, _ params: C.Params, label: String, track: MacTelemetryEvent.GitAction?
+  ) async throws -> C.Result {
+    try await workspace.sendShowingFailure(command, params, label: label, track: track)
+  }
+
+  func runLocally(label: String, track: MacTelemetryEvent.GitAction?, _ work: () async throws -> Void) async throws {
+    do {
+      try await workspace.runLocally(label: label, track: track, work)
+    } catch {
+      workspace.showFailure(GitFailure.classify(error.localizedDescription, operation: track?.rawValue))
+      throw error
+    }
+  }
+
+  func track(_ action: MacTelemetryEvent.GitAction, success: Bool) {
+    workspace.track(action, success: success)
+  }
+
+  func willPush(_ command: GitCommand) {
+    workspace.willPush(command)
   }
 }

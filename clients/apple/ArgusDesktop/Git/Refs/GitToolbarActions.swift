@@ -25,7 +25,7 @@ private struct GitToolbarButtons: View {
   let session: RemoteSession
 
   var body: some View {
-    let actions = RefActions(workspace: workspace, session: session, model: model, theme: theme)
+    let actions = RefActions(workspace: workspace, session: session, model: model)
     // What doesn't fit beside the switcher overflows, so the switcher never moves.
     PillActionGroup(
       actions: primary(actions), menu: menu(actions),

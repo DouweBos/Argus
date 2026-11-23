@@ -11,9 +11,9 @@ extension DesktopModel {
   }
 
   /// Through the git panel's checkout, so a dirty tree still asks to stash or discard.
-  func switchBranch(_ session: RemoteSession, to branch: String, theme: Theme) async {
+  func switchBranch(_ session: RemoteSession, to branch: String) async {
     guard branch != session.branch, let git = await git.open(session) else { return }
-    await RefActions(workspace: git, session: session, model: self, theme: theme).checkout(branch)
+    await RefActions(workspace: git, session: session, model: self).checkout(branch)
     await store.loadSessions(repoRoot: session.repoRoot)
     await store.loadGitStatus(sessionId: session.id)
   }

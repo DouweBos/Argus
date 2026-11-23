@@ -8,10 +8,13 @@ import Testing
 
 /// Records what reached the host, then stops the command there.
 @MainActor
-private final class SpyHost: GitHostSending {
+final class SpyHost: GitHostSending {
   struct Reached: Error {}
   private(set) var sent: [(name: String, params: [String: Any])] = []
   private(set) var tracked: [MacTelemetryEvent.GitAction] = []
+  /// What ran on the repository instead, by its busy label.
+  private(set) var local: [String] = []
+  private(set) var pushes: [GitCommand] = []
 
   func send<C: RemoteCommand>(
     _ command: sending C.Type, _ params: C.Params, label: String, track: MacTelemetryEvent.GitAction?
@@ -20,6 +23,19 @@ private final class SpyHost: GitHostSending {
     sent.append((C.name, json ?? [:]))
     if let track { tracked.append(track) }
     throw Reached()
+  }
+
+  func runLocally(label: String, track: MacTelemetryEvent.GitAction?, _ work: () async throws -> Void) async throws {
+    local.append(label)
+    if let track { tracked.append(track) }
+  }
+
+  func track(_ action: MacTelemetryEvent.GitAction, success: Bool) {
+    tracked.append(action)
+  }
+
+  func willPush(_ command: GitCommand) {
+    pushes.append(command)
   }
 }
 
@@ -50,11 +66,21 @@ struct HostGitCommandsTests {
     (.pruneRemote("up"), "git_prune_remote"),
     (.stash(message: nil, includeUntracked: true, keepIndex: true, paths: nil), "git_stash_save"),
     (.branchFromStash(index: 1, name: "saved"), "git_stash_branch"),
+    (
+      .pushBranch(
+        "topic", remote: "origin", as: "review", forceWithLease: true, setUpstream: true, options: PushOptions(tags: .all)),
+      "git_push_v2"
+    ),
+    (.renameCurrentBranch(to: "renamed"), "rename_session_branch"),
+    (.stashAndCheckout("main"), "git_stash_and_checkout"),
+    (.discardAndCheckout("main"), "git_discard_and_checkout"),
   ]
 
-  private func commands(_ spy: SpyHost, isProjectRoot: Bool = true) -> HostGitCommands {
+  private func commands(
+    _ spy: SpyHost, isProjectRoot: Bool = true, features: GitFeatures? = nil
+  ) -> HostGitCommands {
     HostGitCommands(
-      sessionId: "s1", features: .argus(isProjectRoot: isProjectRoot, isRemote: false), host: spy,
+      sessionId: "s1", features: features ?? .argus(isProjectRoot: isProjectRoot, isRemote: false), host: spy,
       repository: MockGitRepository(), naming: GitNaming(name: "grove"))
   }
 
@@ -120,11 +146,63 @@ struct HostGitCommandsTests {
     #expect(sender.host == nil)
   }
 
+  /// Even with features that claim otherwise, the adapter refuses what the host can't do.
   @Test func anOptionTheHostLacksIsRefusedRatherThanDropped() async {
     let spy = SpyHost()
     let pull = GitCommand.pull(
       remote: nil, branch: nil, strategy: .merge, options: PullOptions(verifySignatures: true))
-    await #expect(throws: HostGitCommands.UnsupportedOption.self) { try await commands(spy).perform(pull) }
+    await #expect(throws: HostGitCommands.UnsupportedOption.self) { try await commands(spy, features: .all).perform(pull) }
+    let push = GitCommand.pushBranch(
+      "a", remote: "o", as: "a", forceWithLease: false, setUpstream: false,
+      options: PushOptions(recurseSubmodules: .check))
+    await #expect(throws: HostGitCommands.UnsupportedOption.self) { try await commands(spy, features: .all).perform(push) }
     #expect(spy.sent.isEmpty)
+  }
+
+  @Test(arguments: [GitFeature.verifySignatures, .recurseSubmodules, .skipHooks, .autostash, .cancel])
+  func argusLacksWhatTheHostHasNoParameterFor(_ feature: GitFeature) async {
+    #expect(!GitFeatures.argus(isProjectRoot: true, isRemote: false).contains(feature))
+    let spy = SpyHost()
+    let pull = GitCommand.pull(remote: nil, branch: nil, strategy: .merge, options: PullOptions(verifySignatures: true))
+    await #expect(throws: GitFeatureError.self) { try await commands(spy).perform(pull) }
+    #expect(spy.sent.isEmpty)
+  }
+
+  @Test func pushesAreRememberedForTheBannersFixes() async {
+    let spy = SpyHost()
+    let push = GitCommand.pushBranch(
+      "topic", remote: "fork", as: "review", forceWithLease: false, setUpstream: true, options: PushOptions())
+    await #expect(throws: SpyHost.Reached.self) { try await commands(spy).perform(push) }
+    #expect(spy.pushes == [push])
+    #expect(spy.sent.first?.params["ref"] as? String == "refs/heads/topic:refs/heads/review")
+    #expect(spy.sent.first?.params["branch"] as? String == "review")
+    #expect(GitFailureBanner.destination(of: push)! == ("fork", "review"))
+    #expect(
+      GitFailureBanner.forced(push)
+        == .pushBranch("topic", remote: "fork", as: "review", forceWithLease: true, setUpstream: true, options: PushOptions()))
+  }
+
+  @Test func whatTheHostLacksRunsLocallyAndIsTrackedOnce() async throws {
+    let local: [(GitCommand, MacTelemetryEvent.GitAction)] = [
+      (.fetch(remote: "fork"), .fetch), (.setUpstream(branch: "a", upstream: nil), .setUpstream),
+      (.deleteRemoteBranch(name: "a", remote: "origin"), .branchDelete), (.applyStash(index: 0, drop: true), .stashPop),
+      (.applyStash(index: 0, drop: false), .stashApply), (.dropStash(index: 0), .stashDrop),
+      (.snapshot(message: "wip", includeUntracked: true), .snapshot),
+    ]
+    for (command, action) in local {
+      let spy = SpyHost()
+      try await commands(spy).perform(command)
+      #expect(spy.sent.isEmpty && spy.local.count == 1, "\(command)")
+      #expect(spy.tracked == [action], "\(command)")
+    }
+  }
+
+  @Test func syncFetchesThroughTheHostAndIsTrackedOnce() async {
+    let spy = SpyHost()
+    await #expect(throws: SpyHost.Reached.self) {
+      try await commands(spy).perform(.sync(remote: nil, strategy: .rebase))
+    }
+    #expect(spy.sent.map(\.name) == ["git_fetch"])
+    #expect(spy.tracked == [.sync])
   }
 }

@@ -5,6 +5,7 @@ import ArgusKit
 import ArgusUI
 import ArgusUpdate
 import Foundation
+import GroveUIKit
 import Observation
 
 /// The app: the supervised host, the backend to it, the shared store, and the
@@ -26,6 +27,8 @@ final class DesktopModel {
   /// The inbox in full, from the host's catalog — the Mac's inbox and proposal screens.
   let inbox: InboxStore
   let palette = CommandPaletteModel()
+  /// The git dialogs menus, keys and toolbar items open; the main window shows them.
+  let gitDialogs = GitDialogPresenter.argus()
   /// Each session's side panel: terminals, device, browser, files, diff and pull request tabs.
   let panels = SidePanelModel()
   let agentTabOrder = AgentTabOrder()

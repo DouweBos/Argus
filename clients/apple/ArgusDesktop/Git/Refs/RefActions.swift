@@ -1,26 +1,25 @@
 import ArgusKit
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 typealias GitCommands = ArgusProtocol.Commands
 
-/// Branch flows shared by the sidebar menus and the toolbar. Argus-specific
-/// ones run through the host's git commands so its rules apply.
+/// Branch flows shared by the sidebar menus, the toolbar and the Git menu. Every change runs
+/// through the host's git commands so its rules apply; a failure shows in the panel's banner.
 @MainActor
 struct RefActions {
   let workspace: GitWorkspace
   let session: RemoteSession
   let model: DesktopModel
-  let theme: Theme
   /// Read once: every row's context menu names it, and a scan per row is slow with thousands of refs.
   let currentBranch: BranchInfo?
 
-  init(workspace: GitWorkspace, session: RemoteSession, model: DesktopModel, theme: Theme) {
+  init(workspace: GitWorkspace, session: RemoteSession, model: DesktopModel) {
     self.workspace = workspace
     self.session = session
     self.model = model
-    self.theme = theme
     currentBranch = workspace.refs.localBranches.first(where: \.isHEAD)
   }
 
@@ -30,151 +29,97 @@ struct RefActions {
   var currentName: String { currentBranch?.name ?? "HEAD" }
   var remoteNames: [String] { workspace.refs.remotes.map(\.name) }
 
+  /// What the dialogs run against: the session's base leads their pickers, and Pin goes through the host.
+  var dialogContext: GitDialogContext {
+    var context = GitDialogContext(repository: workspace.repository, refs: workspace.refs, commands: workspace.commands)
+    context.preferredBranch = session.baseBranch
+    context.undo = workspace.undo
+    context.pinBranch = { [self] name in await setPinned(name, true) }
+    return context
+  }
+
+  func present(_ dialog: GitDialog) {
+    model.gitDialogs.present(dialog, context: dialogContext)
+  }
+
+  /// Runs a command; a failure, or a missing feature, is in the banner.
+  @discardableResult
+  func run(_ command: GitCommand) async -> Bool {
+    do {
+      try await workspace.commands.perform(command)
+      return true
+    } catch let error as GitFeatureError {
+      workspace.showFailure(GitFailure(kind: .unknown, message: error.reason))
+      return false
+    } catch {
+      return false
+    }
+  }
+
   // MARK: Branches
 
   /// Checks out `branch`; a dirty tree that blocks it offers stash or discard.
   func checkout(_ branch: String) async {
-    let label = "Checking out \(branch)"
-    if await workspace.host(GitCommands.GitCheckout.self, .init(id: id, branch: branch), label: label, track: .checkout)
-      != nil
-    {
-      return
-    }
+    if await run(.checkout(branch)) { return }
     // The host's message for this is unreliable; a dirty tree is what blocks a checkout.
     guard workspace.workingCopy.changedCount > 0, workspace.hostError != nil else { return }
     let choice = await GitDialogs.choose(
       "Uncommitted changes",
       message: "Your changes would be overwritten by checking out \(branch). Stash them and switch, or discard them?",
-      buttons: ["Stash & Switch", "Discard & Switch"])
+      buttons: ["Stash and Switch", "Discard and Switch"])
     workspace.hostError = nil
     switch choice {
     case 0:
-      await workspace.host(
-        GitCommands.GitStashAndCheckout.self, .init(id: id, branch: branch), label: label, track: .checkout)
+      await run(.stashAndCheckout(branch))
     case 1:
       guard
         await GitDialogs.confirm(
-          "Discard all changes?", message: "Uncommitted changes are lost for good.", action: "Discard & Switch",
+          "Discard all changes?", message: "Uncommitted changes are lost for good.", action: "Discard and Switch",
           destructive: true)
       else { return }
-      await workspace.host(
-        GitCommands.GitDiscardAndCheckout.self, .init(id: id, branch: branch), label: label, track: .checkout)
+      await run(.discardAndCheckout(branch))
     default:
       break
     }
   }
 
   func newBranch(from start: String? = nil) {
-    GitDialogs.sheet(theme: theme) { dismiss in
-      BranchSheet(startPoint: start ?? currentName, dismiss: dismiss) { name, start, checkout in
-        Task {
-          await workspace.host(
-            GitCommands.GitCreateBranch.self, .init(id: id, name: name, startPoint: start, checkout: checkout),
-            label: "Creating \(name)", track: .branchCreate)
-        }
-      }
-    }
+    present(.createBranch(from: start))
   }
 
   func rename(_ branch: String) {
-    GitDialogs.sheet(theme: theme) { dismiss in
-      GitNameSheet(
-        title: "Rename \(branch)", label: "New name", primary: "Rename", initial: branch,
-        validate: { RefName.isValid($0) && $0 != branch }, dismiss: dismiss
-      ) { name, _ in
-        Task {
-          await workspace.host(
-            GitCommands.GitRenameBranch.self, .init(id: id, from: branch, to: name), label: "Renaming \(branch)",
-            track: .branchRename)
-        }
-      }
-    }
+    present(.renameBranch(branch))
   }
 
   /// The session's own branch: the host renames it and updates the session.
   func renameSessionBranch() {
-    let branch = session.branch
-    GitDialogs.sheet(theme: theme) { dismiss in
-      GitNameSheet(
-        title: "Rename Branch", label: "New name", primary: "Rename", initial: branch,
-        validate: { RefName.isValid($0) && $0 != branch }, dismiss: dismiss
-      ) { name, _ in
-        Task {
-          await workspace.host(
-            GitCommands.RenameSessionBranch.self, .init(id: id, branch: name), label: "Renaming \(branch)",
-            track: .branchRename)
-        }
-      }
-    }
+    present(.renameCurrentBranch)
   }
 
-  /// Deletes after a confirm; one with commits HEAD lacks warns and goes with `-D`.
-  func delete(_ branch: String) async {
-    let unmerged = ((try? await workspace.repository.aheadBehind(branch: branch, base: "HEAD"))?.ahead ?? 0) > 0
-    guard
-      await GitDialogs.confirm(
-        unmerged ? "\(branch) isn't fully merged" : "Delete \(branch)?",
-        message: unmerged
-          ? "It has commits \(currentName) doesn't. Deleting it loses them."
-          : "The branch is removed locally.",
-        action: unmerged ? "Delete Anyway" : "Delete", destructive: true)
-    else { return }
-    await workspace.host(
-      GitCommands.GitDeleteBranch.self, .init(id: id, name: branch, force: unmerged), label: "Deleting \(branch)",
-      track: .branchDelete)
+  /// Warns about commits HEAD lacks and offers the remote branch and a forced delete.
+  func delete(_ branch: BranchInfo) {
+    present(.deleteBranch(branch))
   }
 
   func merge(_ branch: String, squash: Bool = false) async {
-    await workspace.host(
-      GitCommands.GitMergeBranch.self, .init(id: id, from: branch, into: currentBranch?.name, squash: squash),
-      label: "Merging \(branch)", track: .merge)
+    await run(.merge(branch, squash: squash))
   }
 
   func rebaseCurrent(onto branch: String) async {
-    await workspace.host(
-      GitCommands.GitRebaseOnto.self, .init(id: id, upstream: branch), label: "Rebasing onto \(branch)",
-      track: .rebase)
+    await run(.rebase(onto: branch))
   }
 
-  /// The Git menu's Merge… and Rebase…: pick the other branch first, as Grove's dialogs.
+  /// The Git menu's Merge and Rebase: pick the other branch first.
   func chooseMerge() {
-    pickBranch(title: "Merge into \(currentName)", primary: "Merge", squashOption: true) { branch, squash in
-      Task { await merge(branch, squash: squash) }
-    }
+    present(.merge)
   }
 
   func chooseRebase() {
-    pickBranch(title: "Rebase \(currentName)", primary: "Rebase") { branch, _ in
-      Task { await rebaseCurrent(onto: branch) }
-    }
-  }
-
-  private func pickBranch(
-    title: String, primary: String, squashOption: Bool = false, submit: @escaping (String, Bool) -> Void
-  ) {
-    var names = workspace.refs.localBranches.filter { !$0.isHEAD }.map(\.name)
-    // A session's base is the usual pick, so it leads.
-    if let base = session.baseBranch.flatMap(names.firstIndex(of:)) { names.insert(names.remove(at: base), at: 0) }
-    GitDialogs.sheet(theme: theme) { dismiss in
-      BranchPickSheet(
-        title: title, primary: primary, branches: names, squashOption: squashOption, dismiss: dismiss, submit: submit)
-    }
+    present(.rebase)
   }
 
   func setUpstream(_ branch: BranchInfo) {
-    let initial = branch.upstream ?? "\(remoteNames.first ?? "origin")/\(branch.name)"
-    GitDialogs.sheet(theme: theme) { dismiss in
-      GitNameSheet(
-        title: "Set Upstream of \(branch.name)", label: "Upstream (remote/branch)", primary: "Set",
-        initial: initial, dismiss: dismiss
-      ) { upstream, _ in
-        Task {
-          await workspace.host(
-            GitCommands.GitSetUpstream.self, .init(id: id, branch: branch.name, upstream: upstream),
-            label: "Setting upstream", track: .setUpstream)
-        }
-      }
-    }
+    present(.trackRemoteBranch(branch))
   }
 
   func setPinned(_ branch: String, _ pinned: Bool) async {
@@ -209,83 +154,37 @@ struct RefActions {
 
   // MARK: Push and pull
 
+  /// Pushes `branch`, the checked-out one by default; one without an upstream is published.
   func push(_ branch: BranchInfo? = nil) {
     guard let branch = branch ?? currentBranch else { return }
-    GitDialogs.sheet(theme: theme) { dismiss in
-      PushSheet(
-        remotes: remoteNames, branch: branch.name, hasUpstream: branch.upstream != nil, dismiss: dismiss,
-        submit: { params in
-          workspace.lastPush = params
-          Task { await workspace.host(GitCommands.GitPushV2.self, params, label: "Pushing", track: .push) }
-        }, sessionId: id)
-    }
+    present(.push(branch: branch.name))
   }
 
-  func pull() async {
-    let strategy = await workspace.repository.defaultPullStrategy()
-    GitDialogs.sheet(theme: theme) { dismiss in
-      PullSheet(remotes: remoteNames, branch: currentName, initialStrategy: strategy, dismiss: dismiss) {
-        remote, branch, strategy in
-        Task {
-          await workspace.host(
-            GitCommands.GitPullV2.self, .init(id: id, strategy: strategy, remote: remote, branch: branch),
-            label: "Pulling", track: .pull)
-        }
-      }
-    }
+  func pull() {
+    present(.pull)
   }
 
   func fetch() async {
-    await workspace.host(GitCommands.GitFetch.self, .init(id: id), label: "Fetching", track: .fetch)
+    await run(.fetch(remote: nil))
   }
 
   // MARK: Stash and tags
 
   func stash() {
-    GitDialogs.sheet(theme: theme) { dismiss in
-      StashSheet(dismiss: dismiss) { message, untracked, keepIndex in
-        Task {
-          await workspace.host(
-            GitCommands.GitStashSave.self,
-            .init(id: id, includeUntracked: untracked, keepIndex: keepIndex, message: message),
-            label: "Stashing", track: .stashCreate)
-        }
-      }
-    }
+    present(.stash())
   }
 
   /// Grove's Snapshot: a stash of the changes that leaves them in place.
   func snapshot() {
-    GitDialogs.sheet(theme: theme) { dismiss in
-      GitNameSheet(
-        title: "Save Snapshot", label: "Message", primary: "Save", toggle: "Include untracked files",
-        dismiss: dismiss
-      ) { message, untracked in
-        Task {
-          await workspace.run(.snapshot, label: "Saving a snapshot") {
-            _ = try await workspace.repository.saveSnapshot(message: message, includeUntracked: untracked)
-          }
-        }
-      }
-    }
+    present(.snapshot)
   }
 
   func newTag(at target: String? = nil) {
-    GitDialogs.sheet(theme: theme) { dismiss in
-      TagSheet(target: target ?? "HEAD", dismiss: dismiss) { name, target, message in
-        Task {
-          await workspace.host(
-            GitCommands.GitCreateTag.self, .init(id: id, name: name, ref: target, message: message),
-            label: "Tagging", track: .tagCreate)
-        }
-      }
-    }
+    present(.createTag(at: target))
   }
 
   func pushTag(_ tag: String) async {
-    await workspace.host(
-      GitCommands.GitPushTag.self, .init(id: id, name: tag, remote: remoteNames.first), label: "Pushing \(tag)",
-      track: .push)
+    await run(.pushTag(tag, remote: remoteNames.first))
   }
 
   func deleteTag(_ tag: String) async {
@@ -294,7 +193,6 @@ struct RefActions {
         "Delete tag \(tag)?", message: "The tag is removed locally; remotes keep their copy.", action: "Delete",
         destructive: true)
     else { return }
-    await workspace.host(
-      GitCommands.GitDeleteTag.self, .init(id: id, name: tag), label: "Deleting \(tag)", track: .tagDelete)
+    await run(.deleteTag(tag))
   }
 }

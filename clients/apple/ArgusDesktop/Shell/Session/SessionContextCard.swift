@@ -254,7 +254,7 @@ struct SessionContextCard: View {
           ChromeMenuItem(branch, checked: branch == (git?.branch ?? session.branch)) {
             guard branch != (git?.branch ?? session.branch) else { return }
             MacTelemetry.capture(.contextCardUsed(action: .switchBranch))
-            Task { await model.switchBranch(session, to: branch, theme: theme) }
+            Task { await model.switchBranch(session, to: branch) }
           }
         }
       }

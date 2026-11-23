@@ -1,6 +1,7 @@
 import ArgusCore
 import ArgusKit
 import Foundation
+import GroveKit
 
 /// The host as GroveKit's view models reach it. Weak, as the workspace owns them, and silent on
 /// telemetry, as they report their own actions through `onAction`.
@@ -24,4 +25,12 @@ struct ViewModelGitHost: GitHostSending {
       throw Failure(message: GitFailure(error: error)?.message ?? HostStore.describe(error))
     }
   }
+
+  /// The view models' own work, as before: they show its failure and report it themselves.
+  func runLocally(label: String, track: MacTelemetryEvent.GitAction?, _ work: () async throws -> Void) async throws {
+    try await work()
+  }
+
+  func track(_ action: MacTelemetryEvent.GitAction, success: Bool) {}
+  func willPush(_ command: GitCommand) {}
 }

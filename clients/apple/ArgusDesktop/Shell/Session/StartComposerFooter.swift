@@ -143,7 +143,7 @@ struct StartComposerFooter: View {
   private func switchBranch(to branch: String) {
     guard branch != session.branch else { return }
     MacTelemetry.capture(.startBranchSwitched)
-    Task { await model.switchBranch(session, to: branch, theme: theme) }
+    Task { await model.switchBranch(session, to: branch) }
   }
 
   private func pullRequestButton(_ pr: RemotePullRequest) -> some View {

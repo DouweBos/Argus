@@ -15,7 +15,7 @@ struct GitRefSections: View {
   private var refs: RepositoryRefs { workspace.refs }
 
   var body: some View {
-    let actions = RefActions(workspace: workspace, session: session, model: model, theme: theme)
+    let actions = RefActions(workspace: workspace, session: session, model: model)
     let marks = actions.marks
     let local = refs.localBranches.filter { !marks.isArchived($0.name) }
     let pinned = refs.localBranches.filter { marks.isPinned($0.name) }
@@ -137,8 +137,7 @@ struct GitRefSections: View {
           Button("Fetch \(remote.name)") { Task { await actions.fetch(remote: remote.name) } }
           Button("Prune Stale Branches") { Task { await actions.pruneRemote(remote.name) } }
           Divider()
-          Button("Rename") { actions.renameRemote(remote.name) }
-          Button("Set URL") { actions.setRemoteURL(remote) }
+          Button("Rename or Set URL") { actions.editRemote(remote) }
           Button("Copy URL") { Clipboard.copy(remote.url) }
           Divider()
           Button("Add Remote") { actions.addRemote() }

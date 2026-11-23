@@ -9,6 +9,12 @@ protocol GitHostSending {
   func send<C: RemoteCommand>(
     _ command: sending C.Type, _ params: C.Params, label: String, track: MacTelemetryEvent.GitAction?
   ) async throws -> C.Result
+  /// What the host has no command for, run on the repository with the same busy state and telemetry.
+  func runLocally(label: String, track: MacTelemetryEvent.GitAction?, _ work: () async throws -> Void) async throws
+  /// One action made of several host commands, reported once.
+  func track(_ action: MacTelemetryEvent.GitAction, success: Bool)
+  /// The push about to run, for the banner's Pull Then Push and Force Push.
+  func willPush(_ command: GitCommand)
 }
 
 /// The kit's commands through the host's, which hold the locks and the project's rules.
@@ -40,14 +46,16 @@ struct HostGitCommands: GitCommandPerforming {
         Host.GitPullV2.self, .init(id: id, strategy: strategy.wire, remote: remote, branch: branch), label: "Pulling",
         track: .pull)
     case .push(let remote, let branch, let lease, let setUpstream, let options):
-      if options.recurseSubmodules != nil { throw UnsupportedOption(option: "push submodules along") }
       // `branch` is what the host's push lock checks; `ref` is what it pushes, whatever the local branch is called.
-      _ = try await host.send(
-        Host.GitPushV2.self,
-        .init(
-          id: id, remote: remote, branch: branch, forceWithLease: lease, setUpstream: setUpstream,
-          tags: .init(rawValue: options.tags.rawValue), ref: "HEAD:refs/heads/\(branch)"),
-        label: "Pushing", track: .push)
+      host.willPush(command)
+      try await push(remote: remote, as: branch, ref: "HEAD:refs/heads/\(branch)", lease: lease, setUpstream: setUpstream,
+                     options: options)
+    case .pushBranch(let local, let remote, let target, let lease, let setUpstream, let options):
+      host.willPush(command)
+      try await push(remote: remote, as: target, ref: "refs/heads/\(local):refs/heads/\(target)", lease: lease,
+                     setUpstream: setUpstream, options: options)
+    case .sync(let remote, let strategy):
+      try await sync(remote: remote, strategy: strategy)
     case .createBranch(let name, let start, let checkout, let track, let parent):
       _ = try await host.send(
         Host.GitCreateBranch.self, .init(id: id, name: name, startPoint: start, checkout: checkout),
@@ -59,6 +67,10 @@ struct HostGitCommands: GitCommandPerforming {
     case .renameBranch(let old, let new):
       _ = try await host.send(
         Host.GitRenameBranch.self, .init(id: id, from: old, to: new), label: "Renaming \(old)", track: .branchRename)
+    case .renameCurrentBranch(let new):
+      // The session's own branch: the host renames it and moves the session along.
+      _ = try await host.send(
+        Host.RenameSessionBranch.self, .init(id: id, branch: new), label: "Renaming", track: .branchRename)
     case .deleteBranch(let name, let force):
       _ = try await host.send(
         Host.GitDeleteBranch.self, .init(id: id, name: name, force: force), label: "Deleting \(name)",
@@ -70,6 +82,12 @@ struct HostGitCommands: GitCommandPerforming {
     case .checkout(let name):
       _ = try await host.send(
         Host.GitCheckout.self, .init(id: id, branch: name), label: "Checking out \(name)", track: .checkout)
+    case .stashAndCheckout(let name):
+      _ = try await host.send(
+        Host.GitStashAndCheckout.self, .init(id: id, branch: name), label: "Checking out \(name)", track: .checkout)
+    case .discardAndCheckout(let name):
+      _ = try await host.send(
+        Host.GitDiscardAndCheckout.self, .init(id: id, branch: name), label: "Checking out \(name)", track: .checkout)
     case .merge(let branch, let squash):
       _ = try await host.send(
         Host.GitMergeBranch.self, .init(id: id, from: branch, squash: squash), label: "Merging \(branch)",
@@ -116,10 +134,74 @@ struct HostGitCommands: GitCommandPerforming {
         label: "Creating \(name)", track: .branchCreate)
     case .fetch, .setUpstream, .deleteRemoteBranch, .applyStash, .dropStash, .snapshot:
       // One remote, unsetting an upstream and the stash list: the host has no command for these.
-      try await RepositoryCommands(repository: repository, features: features).perform(command, progress: progress)
+      try await host.runLocally(label: Self.localLabel(command), track: Self.localAction(command)) {
+        try await RepositoryCommands(repository: repository, features: features).perform(command, progress: progress)
+      }
     default:
       // Not sent to the host yet; the views that run these still call the repository.
       try await RepositoryCommands(repository: repository, features: features).perform(command, progress: progress)
+    }
+  }
+
+  private func push(
+    remote: String, as branch: String, ref: String, lease: Bool, setUpstream: Bool, options: PushOptions,
+    track: MacTelemetryEvent.GitAction? = .push
+  ) async throws {
+    if options.recurseSubmodules != nil { throw UnsupportedOption(option: "push submodules along") }
+    _ = try await host.send(
+      Host.GitPushV2.self,
+      .init(
+        id: sessionId, remote: remote, branch: branch, forceWithLease: lease, setUpstream: setUpstream,
+        tags: .init(rawValue: options.tags.rawValue), ref: ref),
+      label: "Pushing", track: track)
+  }
+
+  /// Fetch, then pull what's behind and push what's ahead; an unpublished branch is published to `remote`.
+  private func sync(remote: String?, strategy: PullStrategy) async throws {
+    do {
+      _ = try await host.send(Host.GitFetch.self, .init(id: sessionId), label: "Syncing", track: nil)
+      guard let branch = try await repository.localBranches().first(where: \.isHEAD) else {
+        throw GitCommandError.detachedHead
+      }
+      guard branch.upstream != nil else {
+        try await push(
+          remote: remote ?? "origin", as: branch.name, ref: "HEAD:refs/heads/\(branch.name)", lease: false,
+          setUpstream: true, options: PushOptions(), track: nil)
+        return host.track(.sync, success: true)
+      }
+      if try await repository.aheadBehind(branch: "HEAD", base: "@{upstream}").behind > 0 {
+        _ = try await host.send(
+          Host.GitPullV2.self, .init(id: sessionId, strategy: strategy.wire), label: "Syncing", track: nil)
+      }
+      if try await repository.aheadBehind(branch: "HEAD", base: "@{upstream}").ahead > 0 {
+        _ = try await host.send(Host.GitPushV2.self, .init(id: sessionId), label: "Syncing", track: nil)
+      }
+      host.track(.sync, success: true)
+    } catch {
+      host.track(.sync, success: false)
+      throw error
+    }
+  }
+
+  private static func localLabel(_ command: GitCommand) -> String {
+    switch command {
+    case .fetch(let remote?): "Fetching \(remote)"
+    case .deleteRemoteBranch(let name, _): "Deleting \(name)"
+    case .snapshot: "Saving a snapshot"
+    case .setUpstream: "Untracking"
+    default: "Stashing"
+    }
+  }
+
+  private static func localAction(_ command: GitCommand) -> MacTelemetryEvent.GitAction? {
+    switch command {
+    case .fetch: .fetch
+    case .setUpstream: .setUpstream
+    case .deleteRemoteBranch: .branchDelete
+    case .applyStash(_, let drop): drop ? .stashPop : .stashApply
+    case .dropStash: .stashDrop
+    case .snapshot: .snapshot
+    default: nil
     }
   }
 }

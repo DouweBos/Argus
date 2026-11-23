@@ -6,9 +6,7 @@ import SwiftUI
 extension RefActions {
   /// One remote; the host's fetch takes them all, so this runs through GroveKit.
   func fetch(remote: String) async {
-    await workspace.run(.fetch, label: "Fetching \(remote)") {
-      try await workspace.repository.fetch(remote: remote, progress: nil)
-    }
+    await run(.fetch(remote: remote))
   }
 
   /// Grove's Sync: fetch, then pull what's behind and push what's ahead, through
@@ -16,66 +14,16 @@ extension RefActions {
   func sync() async {
     guard let branch = currentBranch else { return }
     guard branch.upstream != nil else { return push(branch) }
-    let id = session.id
-    guard await workspace.host(GitCommands.GitFetch.self, .init(id: id), label: "Syncing") != nil else {
-      return workspace.track(.sync, success: false)
-    }
-    var head = workspace.refs.localBranches.first(where: \.isHEAD)
-    if (head?.behind ?? 0) > 0 {
-      let strategy = await workspace.repository.defaultPullStrategy().wire
-      guard
-        await workspace.host(GitCommands.GitPullV2.self, .init(id: id, strategy: strategy), label: "Syncing")
-          != nil
-      else { return workspace.track(.sync, success: false) }
-      head = workspace.refs.localBranches.first(where: \.isHEAD)
-    }
-    if (head?.ahead ?? 0) > 0 {
-      guard await workspace.host(GitCommands.GitPushV2.self, .init(id: id), label: "Syncing") != nil else {
-        return workspace.track(.sync, success: false)
-      }
-    }
-    workspace.track(.sync, success: true)
+    await run(.sync(remote: nil, strategy: await workspace.repository.defaultPullStrategy()))
   }
 
   func addRemote() {
-    GitDialogs.sheet(theme: theme) { dismiss in
-      RemoteSheet(dismiss: dismiss) { name, url in
-        Task {
-          await workspace.host(
-            GitCommands.GitAddRemote.self, .init(id: session.id, name: name, url: url), label: "Adding \(name)",
-            track: .remote)
-        }
-      }
-    }
+    present(.addRemote)
   }
 
-  func renameRemote(_ remote: String) {
-    GitDialogs.sheet(theme: theme) { dismiss in
-      GitNameSheet(
-        title: "Rename \(remote)", label: "New name", primary: "Rename", initial: remote,
-        validate: { RefName.isValid($0) && $0 != remote }, dismiss: dismiss
-      ) { name, _ in
-        Task {
-          await workspace.host(
-            GitCommands.GitRenameRemote.self, .init(id: session.id, from: remote, to: name),
-            label: "Renaming \(remote)", track: .remote)
-        }
-      }
-    }
-  }
-
-  func setRemoteURL(_ remote: RemoteInfo) {
-    GitDialogs.sheet(theme: theme) { dismiss in
-      GitNameSheet(
-        title: "URL of \(remote.name)", label: "URL", primary: "Set", initial: remote.url, dismiss: dismiss
-      ) { url, _ in
-        Task {
-          await workspace.host(
-            GitCommands.GitSetRemoteUrl.self, .init(id: session.id, name: remote.name, url: url),
-            label: "Setting URL", track: .remote)
-        }
-      }
-    }
+  /// Renames it or points it elsewhere.
+  func editRemote(_ remote: RemoteInfo) {
+    present(.editRemote(remote))
   }
 
   func removeRemote(_ remote: String) async {
@@ -84,15 +32,11 @@ extension RefActions {
         "Remove \(remote)?", message: "Its remote-tracking branches go with it.", action: "Remove",
         destructive: true)
     else { return }
-    await workspace.host(
-      GitCommands.GitRemoveRemote.self, .init(id: session.id, name: remote), label: "Removing \(remote)",
-      track: .remote)
+    await run(.removeRemote(remote))
   }
 
   func pruneRemote(_ remote: String) async {
-    await workspace.host(
-      GitCommands.GitPruneRemote.self, .init(id: session.id, name: remote), label: "Pruning \(remote)",
-      track: .remote)
+    await run(.pruneRemote(remote))
   }
 
   /// `remote/feature/x` checks out as a local `feature/x` tracking it.
@@ -108,9 +52,7 @@ extension RefActions {
         "Delete \(name) on \(remote)?", message: "The branch is removed from the remote for everyone.",
         action: "Delete", destructive: true)
     else { return }
-    await workspace.run(.branchDelete, label: "Deleting \(branch.name)") {
-      try await workspace.repository.deleteRemoteBranch(name: name, remote: remote)
-    }
+    await run(.deleteRemoteBranch(name: name, remote: remote))
   }
 
   static func localName(of branch: BranchInfo) -> String {

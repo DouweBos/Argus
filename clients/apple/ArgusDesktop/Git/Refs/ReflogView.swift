@@ -6,6 +6,7 @@ import SwiftUI
 /// Where HEAD has been: each move with its commit and changes; reset back to
 /// one, or branch from it.
 struct ReflogView: View {
+  @Environment(DesktopModel.self) private var model
   @Environment(\.theme) private var theme
   let workspace: GitWorkspace
   @State private var diffs: [FileDiff] = []
@@ -106,20 +107,10 @@ struct ReflogView: View {
     Button("Copy SHA") { Clipboard.copy(entry.newSHA) }
   }
 
+  /// The kit's New Branch at the entry's commit, so it can track, pin and be undone like any other.
   private func createBranch(from entry: ReflogEntry) {
-    let workspace = workspace
-    GitDialogs.sheet(theme: theme) { dismiss in
-      GitNameSheet(
-        title: "New Branch at \(entry.newSHA.prefix(7))", label: "Branch name", primary: "Create",
-        toggle: "Check out the new branch", validate: RefName.isValid, dismiss: dismiss
-      ) { name, checkout in
-        Task {
-          workspace.reflog.beginCreateBranch(from: entry)
-          workspace.reflog.dismissError()
-          await workspace.reflog.createBranch(named: name, checkout: checkout)
-        }
-      }
-    }
+    guard let session = model.session(workspace.sessionId) else { return }
+    RefActions(workspace: workspace, session: session, model: model).newBranch(from: entry.newSHA)
   }
 
   private func loadDiffs() async {

@@ -101,9 +101,19 @@ A real git workflow lives inside Argus:
   next turn starts. Restoring waits until no agent in the session is
   working. On the iPhone it's on the session's screen, restoring with
   control.
-- **Stash** — list, apply, drop.
+- **Stash** — list, apply, drop, branch from a stash; stash with or without
+  untracked files, keep staged changes, or stash only some files. **Save
+  Snapshot** stashes a copy and leaves the changes in place.
+- **Push, pull and sync** — Push picks the remote, the branch name there,
+  which tags go along and a lease-protected force push; a branch without an
+  upstream is published. Pull suggests the upstream, the session's base and
+  each remote's main branch, with merge, rebase or fast-forward.
+- **Branches, tags and remotes** — New Branch can track its start, be
+  pinned and record a parent for pulls; Delete Branch warns about commits
+  only it has and can delete its remote branch too. Remotes are added,
+  renamed and repointed from the sidebar.
 - **Merge & rebase** — Argus runs them for you and surfaces conflicts
-  with an inline resolver.
+  with an inline resolver; a merge can squash the branch into one commit.
 - **Pull request** — open a draft PR directly from the session.
 - **Pull request state** — a session whose branch has a GitHub PR shows
   GitHub's PR icon next to it in the session list: green when open, grey

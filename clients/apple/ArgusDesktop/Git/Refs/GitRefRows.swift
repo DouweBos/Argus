@@ -77,7 +77,7 @@ struct BranchMenu: View {
     Button("Compare with \(current)") { actions.compareWithCurrent(name) }.disabled(branch.isHEAD)
     Divider()
     Button(branch.upstream == nil ? "Publish" : "Push") { actions.push(branch) }
-    if branch.isHEAD { Button("Pull") { Task { await actions.pull() } } }
+    if branch.isHEAD { Button("Pull") { actions.pull() } }
     Button("Set Upstream") { actions.setUpstream(branch) }
     Button("Create Pull Request") { actions.createPullRequest() }
     Divider()
@@ -89,7 +89,7 @@ struct BranchMenu: View {
     Button("Rename") { actions.rename(name) }
     Button("Copy Name") { Clipboard.copy(name) }
     Divider()
-    Button("Delete", role: .destructive) { Task { await actions.delete(name) } }.disabled(branch.isHEAD)
+    Button("Delete", role: .destructive) { actions.delete(branch) }.disabled(branch.isHEAD)
   }
 }
 

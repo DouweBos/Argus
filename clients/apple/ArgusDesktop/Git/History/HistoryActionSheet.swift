@@ -1,5 +1,6 @@
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// The sheet for whatever `HistoryAction` the view model has pending.
@@ -11,13 +12,9 @@ struct HistoryActionSheet: View {
   var body: some View {
     switch action {
     case .createBranch(let commit):
-      RefNameSheet(kind: .branch, commit: commit, error: actions.workspace.hostError) { name, checkout, _ in
-        if await actions.createBranch(name, at: commit, checkout: checkout) { history.dismissAction() }
-      }
+      GitDialogView(.createBranch(from: commit.id), context: actions.dialogContext).argusGitUI()
     case .createTag(let commit):
-      RefNameSheet(kind: .tag, commit: commit, error: actions.workspace.hostError) { name, _, message in
-        if await actions.createTag(name, at: commit, message: message) { history.dismissAction() }
-      }
+      GitDialogView(.createTag(at: commit.id), context: actions.dialogContext).argusGitUI()
     case .revert(let commit):
       CommitActionSheet(
         history: history, commits: [commit], symbol: "arrow.uturn.backward", title: "Revert Commit",
@@ -162,56 +159,5 @@ struct ResetCommitSheet: View {
     }
     .padding(.vertical, 2)
     .tag(mode)
-  }
-}
-
-/// Name a new branch or tag at a commit.
-struct RefNameSheet: View {
-  enum Kind { case branch, tag }
-  @Environment(\.theme) private var theme
-  let kind: Kind
-  let commit: CommitInfo
-  let error: String?
-  let create: (_ name: String, _ checkout: Bool, _ message: String?) async -> Void
-  @State private var name = ""
-  @State private var checkout = false
-  @State private var message = ""
-  @State private var busy = false
-  @Environment(\.dismiss) private var dismiss
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 14) {
-      SheetHeader(
-        symbol: kind == .branch ? "arrow.triangle.branch" : "tag",
-        title: kind == .branch ? "Create Branch" : "Create Tag", message: "At \(commit.shortSHA).")
-      CommitSummaryTile(commit: commit)
-      TextField(kind == .branch ? "Branch name" : "Tag name", text: $name)
-        .textFieldStyle(.roundedBorder)
-        .onSubmit { if canCreate { Task { await submit() } } }
-      if kind == .branch {
-        Toggle("Check out after creating", isOn: $checkout).toggleStyle(.checkbox)
-      } else {
-        TextField("Message (optional, makes an annotated tag)", text: $message, axis: .vertical)
-          .textFieldStyle(.roundedBorder)
-          .lineLimit(2...4)
-      }
-      if let error { SheetBanner(message: error, tone: .danger) }
-      SheetFooter(primaryTitle: "Create", isBusy: busy, isDisabled: !canCreate, cancel: { dismiss() }) {
-        await submit()
-      }
-    }
-    .padding(20)
-    .frame(width: 440)
-  }
-
-  private var canCreate: Bool {
-    !busy && !name.trimmingCharacters(in: .whitespaces).isEmpty && !name.contains(" ")
-  }
-
-  private func submit() async {
-    busy = true
-    let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
-    await create(name.trimmingCharacters(in: .whitespaces), checkout, trimmed.isEmpty ? nil : trimmed)
-    busy = false
   }
 }
