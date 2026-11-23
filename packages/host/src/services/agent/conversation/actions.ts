@@ -214,6 +214,7 @@ export async function rewindAgent(
     keepTurnNumber: userTurnsBefore(conv.messages, idx),
     cutoffTimestampMs: target.timestamp,
     seed: historySeed(conv.messages.slice(0, idx), agent.runner),
+    resending: Boolean(resend),
   });
   if (options.restoreFiles && target.checkpointId) {
     await restoreCheckpoint(agent.sessionId, target.checkpointId);

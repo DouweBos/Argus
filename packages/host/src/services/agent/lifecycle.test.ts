@@ -851,6 +851,63 @@ describe("what overtakes a respawn", () => {
   });
 });
 
+describe("a rewind", () => {
+  beforeEach(setUp);
+  afterEach(tearDown);
+
+  function twoTurns(): string {
+    finishTurn();
+    changeConversation(id, (c) => ({
+      ...c,
+      messages: [
+        {
+          id: "m1",
+          role: "user",
+          textBlocks: ["first"],
+          toolCalls: [],
+          timestamp: 1,
+        },
+        {
+          id: "m2",
+          role: "user",
+          textBlocks: ["second"],
+          toolCalls: [],
+          timestamp: 2,
+        },
+      ],
+    }));
+
+    return "m2";
+  }
+
+  it("without a resend leaves the agent idle, ready for the next message", async () => {
+    const at = twoTurns();
+    events.length = 0;
+
+    await rewindAgent(id, at);
+
+    expect(agent().status).toBe("idle");
+    expect(on("status")).toEqual(["idle"]);
+    await expect(submitAgentMessage(id, { text: "next" })).resolves.toEqual({
+      queued: false,
+    });
+    await vi.waitFor(() => expect(child(1).sent).toHaveLength(1));
+    expect(child(1).sent[0]).toMatch(/next$/);
+  });
+
+  it("with a resend runs it straight away", async () => {
+    const at = twoTurns();
+    events.length = 0;
+
+    await rewindAgent(id, at, { resend: { text: "edited" } });
+
+    expect(agent().status).toBe("running");
+    expect(child(1).sent).toHaveLength(1);
+    expect(child(1).sent[0]).toMatch(/edited$/);
+    expect(on("status")).not.toContain("idle");
+  });
+});
+
 describe("a paused agent that goes away", () => {
   beforeEach(setUp);
   afterEach(tearDown);

@@ -1441,6 +1441,8 @@ export async function restoreAgentAtTurn(args: {
   cutoffTimestampMs: number;
   /** History to start from when the runner can't fork natively. */
   seed?: string;
+  /** A message goes out right after, so the agent stays running for it. */
+  resending?: boolean;
 }): Promise<{ claude_session_id: string | null }> {
   const session = appState.agents.get(args.agentId);
   if (!session) {
@@ -1568,8 +1570,12 @@ async function restoreInPlace(
   const fresh = appState.agents.get(args.agentId);
   if (fresh) {
     fresh.suppressStatus = false;
-    fresh.status = "running";
     fresh.pendingSeed = seeded ? args.seed : undefined;
+    // A resumed CLI says nothing until it gets a message, so no idle would come.
+    fresh.status = args.resending ? "running" : "idle";
+    if (!args.resending) {
+      emitAgentStatus(args.agentId, "idle");
+    }
   }
 
   // Verify the truncated JSONL.
