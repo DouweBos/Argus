@@ -196,6 +196,32 @@ public final class AutomationsStore {
     }
   }
 
+  /// A new webhook secret, replacing any old one. The secret comes back this
+  /// once and is never readable again; nil means the computer refused.
+  public func rotateWebhook(id: String) async -> RemoteWebhookSecret? {
+    guard let backend = host.backend else { return nil }
+    struct Params: Encodable { let automation_id: String }
+    do {
+      let secret: RemoteWebhookSecret
+      if backend.kind == .local {
+        let result = try await backend.request(ArgusProtocol.Commands.AutomationWebhookRotate.self, .init(id: id))
+        secret = RemoteWebhookSecret(url: result.url, secret: result.secret)
+      } else {
+        secret = try await backend.request(
+          .automationsRotateWebhook, Params(automation_id: id), as: RemoteWebhookSecret.self)
+      }
+      detailById[id]?.webhook?.hasSecret = true
+      detailById[id]?.webhook?.url = secret.url
+      error = nil
+
+      return secret
+    } catch {
+      fail("Couldn't make a webhook secret", error)
+
+      return nil
+    }
+  }
+
   public func setEnabled(id: String, enabled: Bool) async {
     guard let backend = host.backend else { return }
     struct Params: Encodable {

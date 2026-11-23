@@ -273,6 +273,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "automations.save_memory": DENIED,
   "automations.delete_memory": DENIED,
   "automations.set_enabled": DENIED,
+  "automations.rotate_webhook": DENIED,
   "automations.run_now": DENIED,
   "automations.run_scratch": DENIED,
   "automations.save_scratch_run": DENIED,

@@ -11,6 +11,8 @@ public enum AutomationText {
   public static func nextRun(_ automation: RemoteAutomation) -> String {
     guard automation.triggerKind != .manual else { return "Manual" }
     guard automation.enabled else { return "Paused" }
+    if automation.triggerKind == .signal { return "When an event arrives" }
+    if automation.triggerKind == .webhook { return "When its webhook is called" }
     guard let next = automation.nextRunAt else { return "—" }
     return "\(timestamp(next)) (\(Labels.until(next) ?? "now"))"
   }

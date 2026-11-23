@@ -1,5 +1,7 @@
 import {
   cronLabel,
+  DEFAULT_SIGNAL_TRIGGER,
+  DEFAULT_WEBHOOK_TRIGGER,
   defaultOnceAt,
   draftScheduleError,
   formatTimestamp,
@@ -14,23 +16,34 @@ import { Input } from "../Input/Input";
 import { SegmentedControl } from "../SegmentedControl/SegmentedControl";
 import { Toggle } from "../Toggle/Toggle";
 import styles from "./AutomationFields.module.css";
+import { SignalTriggerFields } from "./SignalTriggerFields";
+import { WebhookTriggerFields } from "./WebhookTriggerFields";
 
 const PREVIEW_COUNT = 5;
 
 type TriggerDraft = Pick<
   RemoteAutomationDetail,
-  "catch_up" | "cron" | "enabled" | "run_at" | "timezone" | "trigger_kind"
+  | "catch_up"
+  | "cron"
+  | "enabled"
+  | "run_at"
+  | "signal"
+  | "timezone"
+  | "trigger_kind"
+  | "webhook"
 >;
 
-/** When an automation fires: a cron, one date and time, or only by hand. */
+/** When an automation fires: a cron, one date and time, new signals, or only by hand. */
 export function TriggerFields({
   disabled,
   draft,
   onChange,
+  onRotateWebhookSecret,
 }: {
   disabled?: boolean;
   draft: TriggerDraft;
   onChange: (value: Partial<RemoteAutomationDetail>) => void;
+  onRotateWebhookSecret?: () => Promise<{ url: string | null; secret: string }>;
 }) {
   const timezone = draft.timezone || localTimezone();
   const scheduleError = draftScheduleError(draft);
@@ -62,6 +75,8 @@ export function TriggerFields({
         options={[
           { label: "Schedule", value: "schedule" as const },
           { label: "Once", value: "once" as const },
+          { label: "Signal", value: "signal" as const },
+          { label: "Webhook", value: "webhook" as const },
           { label: "Manual", value: "manual" as const },
         ]}
         value={draft.trigger_kind}
@@ -73,6 +88,8 @@ export function TriggerFields({
               trigger_kind === "once" && !draft.run_at
                 ? defaultOnceAt(timezone)
                 : draft.run_at,
+            signal: draft.signal ?? DEFAULT_SIGNAL_TRIGGER,
+            webhook: draft.webhook ?? DEFAULT_WEBHOOK_TRIGGER,
             timezone,
           })
         }
@@ -81,6 +98,28 @@ export function TriggerFields({
         <p className={styles.caption}>
           Only runs when someone presses Run now.
         </p>
+      )}
+      {draft.trigger_kind === "signal" && (
+        <SignalTriggerFields
+          disabled={disabled}
+          signal={draft.signal ?? DEFAULT_SIGNAL_TRIGGER}
+          onChange={(signal) => onChange({ signal })}
+        />
+      )}
+      {draft.trigger_kind === "webhook" && (
+        <WebhookTriggerFields
+          disabled={disabled}
+          webhook={draft.webhook ?? DEFAULT_WEBHOOK_TRIGGER}
+          onChange={(pacing) =>
+            onChange({
+              webhook: {
+                ...(draft.webhook ?? DEFAULT_WEBHOOK_TRIGGER),
+                ...pacing,
+              },
+            })
+          }
+          onRotateSecret={onRotateWebhookSecret}
+        />
       )}
       {draft.trigger_kind === "once" && (
         <div className={styles.schedule}>

@@ -10,10 +10,11 @@
 
 import type { PullRequestDetail } from "../../github/prDetail";
 import type { InterestingPullRequest } from "../../github/pullRequests";
-import type { SignalSource, WorkItem } from "../types";
+import type { SignalEvent, SignalSource, WorkItem } from "../types";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { getPullRequestDetail } from "../../github/prDetail";
+import { failedLogExcerpt } from "../../github/prWatch/fetch";
 import { listInterestingPullRequests } from "../../github/pullRequests";
 import { collectAllProjects } from "../../mcp/projectDiscovery";
 import { GITHUB_PRS_SOURCE_ID } from "../sourceIds";
@@ -143,6 +144,60 @@ function toWorkItem(
   };
 }
 
+/** Your open PRs, freshest first, each with its detail when it could be fetched. */
+async function myDetailedPrs(
+  repoRoots: string[],
+): Promise<{ pr: InterestingPullRequest; detail: PullRequestDetail | null }[]> {
+  let prs: InterestingPullRequest[];
+  try {
+    prs = await listInterestingPullRequests(await repoRootsToScan(repoRoots));
+  } catch {
+    return [];
+  }
+
+  const mine = prs
+    .filter((pr) => pr.reasons.includes("author"))
+    .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
+    .slice(0, MAX_DETAILED);
+
+  return Promise.all(
+    mine.map(async (pr) => {
+      const [owner, repo] = pr.repoNameWithOwner.split("/");
+      const detail = await getPullRequestDetail(owner, repo, pr.number).catch(
+        () => null,
+      );
+
+      return { pr, detail };
+    }),
+  );
+}
+
+/** One event per red PR, keyed by its head so a new push that fails fires again. */
+export function ciFailedEvent(
+  pr: InterestingPullRequest,
+  detail: PullRequestDetail,
+): SignalEvent | null {
+  const failing = detail.checks.filter(
+    (c) => c.conclusion && FAILING.includes(c.conclusion),
+  );
+  if (failing.length === 0) {
+    return null;
+  }
+  const head = detail.commitList.at(-1)?.oid ?? "head";
+
+  return {
+    kind: "ci_failed",
+    key: `ci_failed:${pr.repoNameWithOwner}#${pr.number}:${head}`,
+    item: toWorkItem(pr, detail),
+    detail: {
+      failing_checks: failing.map((c) => ({ name: c.name, url: c.detailsUrl })),
+    },
+  };
+}
+
+/** Logs are a download each, so only the first few red checks get theirs. */
+const MAX_LOGS = 3;
+
 async function repoRootsToScan(scoped: string[]): Promise<string[]> {
   const roots = new Set(scoped);
   for (const project of collectAllProjects()) {
@@ -167,29 +222,38 @@ export const githubPrsSource: SignalSource = {
     }
   },
 
+  events: ["ci_failed"],
+
   async fetchAssigned({ repoRoots }) {
-    let prs: InterestingPullRequest[];
-    try {
-      prs = await listInterestingPullRequests(await repoRootsToScan(repoRoots));
-    } catch {
+    return (await myDetailedPrs(repoRoots)).map(({ pr, detail }) =>
+      toWorkItem(pr, detail),
+    );
+  },
+
+  async fetchEvents({ kinds, repoRoots }) {
+    if (!kinds.includes("ci_failed")) {
       return [];
     }
 
-    const mine = prs
-      .filter((pr) => pr.reasons.includes("author"))
-      .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
-      .slice(0, MAX_DETAILED);
+    return (await myDetailedPrs(repoRoots))
+      .map(({ pr, detail }) => (detail ? ciFailedEvent(pr, detail) : null))
+      .filter((e): e is SignalEvent => e !== null);
+  },
 
-    return Promise.all(
-      mine.map(async (pr) => {
-        const [owner, repo] = pr.repoNameWithOwner.split("/");
-        const detail = await getPullRequestDetail(owner, repo, pr.number).catch(
-          () => null,
-        );
+  async enrichEvent(event) {
+    const checks = event.detail.failing_checks;
+    if (!checks) {
+      return event;
+    }
+    const withLogs = await Promise.all(
+      checks.map(async (check, i) => {
+        const log = i < MAX_LOGS ? await failedLogExcerpt(check.url) : null;
 
-        return toWorkItem(pr, detail);
+        return log ? { ...check, log_tail: log } : check;
       }),
     );
+
+    return { ...event, detail: { ...event.detail, failing_checks: withLogs } };
   },
 };
 

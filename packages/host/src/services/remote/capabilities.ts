@@ -283,6 +283,7 @@ import {
   remoteSignalSources,
   saveRemoteScratchRun,
   startRemoteScratchRun,
+  rotateRemoteWebhook,
   setRemoteAutomationEnabled,
   toRemoteAutomationRun,
   updateRemoteAutomation,
@@ -2660,6 +2661,11 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return await control(() =>
       setRemoteAutomationEnabled(automation_id, enabled),
     );
+  },
+  "automations.rotate_webhook": async (params) => {
+    const { automation_id } = parse("automations.rotate_webhook", params);
+
+    return await control(() => rotateRemoteWebhook(automation_id));
   },
   "automations.run_now": async (params) => {
     const { automation_id } = parse("automations.run_now", params);

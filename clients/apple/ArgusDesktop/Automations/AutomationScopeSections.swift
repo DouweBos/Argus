@@ -73,7 +73,7 @@ struct PlaybookEditor: View {
 }
 
 /// "n of m" plus a one-click Select All / Clear, so a long list isn't sixteen clicks.
-private struct ScopeHeader: View {
+struct ScopeHeader: View {
   let title: String
   let ids: [String]
   @Binding var selection: [String]

@@ -24,7 +24,7 @@ const SEARCH_FIELDS =
 
 const SEARCH_LIMIT = "50";
 
-interface GhSearchItem {
+export interface GhSearchItem {
   number?: number;
   title?: string;
   body?: string;
@@ -36,7 +36,7 @@ interface GhSearchItem {
   updatedAt?: string;
 }
 
-async function gh(args: string[]): Promise<string | null> {
+export async function gh(args: string[]): Promise<string | null> {
   try {
     const { stdout } = await execFileAsync("gh", args, {
       maxBuffer: 10 * 1024 * 1024,
@@ -50,7 +50,7 @@ async function gh(args: string[]): Promise<string | null> {
   }
 }
 
-async function search(extraArgs: string[]): Promise<GhSearchItem[]> {
+export async function search(extraArgs: string[]): Promise<GhSearchItem[]> {
   const stdout = await gh([
     "search",
     ...extraArgs,
@@ -78,7 +78,7 @@ async function search(extraArgs: string[]): Promise<GhSearchItem[]> {
  * would be worked in. Built from every project Argus knows about plus the
  * automation's own scope.
  */
-async function buildSlugIndex(
+export async function buildSlugIndex(
   repoRoots: string[],
 ): Promise<Map<string, string>> {
   const roots = new Set(repoRoots);

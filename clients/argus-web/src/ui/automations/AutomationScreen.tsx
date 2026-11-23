@@ -44,6 +44,16 @@ function automationMeta(automation: RemoteAutomation): string {
     return "Manual — runs when someone presses Run now";
   }
   const schedule = scheduleLabel(automation);
+  if (automation.trigger_kind === "signal") {
+    return automation.enabled
+      ? "Runs when one of its events happens"
+      : `${schedule} · paused`;
+  }
+  if (automation.trigger_kind === "webhook") {
+    return automation.enabled
+      ? "Runs when its webhook is called"
+      : `${schedule} · paused`;
+  }
   if (automation.trigger_kind === "once") {
     return automation.enabled ? schedule : `${schedule} · paused`;
   }
@@ -205,6 +215,11 @@ export function AutomationScreen({ automationId }: { automationId: string }) {
               sources={sources}
               onChange={setDraft}
               onRevisePlaybook={hasControl ? () => setRevising(true) : undefined}
+              onRotateWebhookSecret={
+                hasControl
+                  ? () => store().rotateWebhook(automationId)
+                  : undefined
+              }
             />
           )
         }

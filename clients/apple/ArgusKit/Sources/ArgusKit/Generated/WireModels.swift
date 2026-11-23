@@ -2365,22 +2365,6 @@ extension ArgusProtocol {
     }
   }
 
-  public struct AutomationInputTriggerKind: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let manual = AutomationInputTriggerKind(rawValue: "manual")
-    public static let once = AutomationInputTriggerKind(rawValue: "once")
-    public static let schedule = AutomationInputTriggerKind(rawValue: "schedule")
-  }
-
   public struct AutomationInputAutonomy: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -2402,9 +2386,11 @@ extension ArgusProtocol {
     public var name: String
     public var description: String
     public var enabled: Bool
-    public var triggerKind: AutomationInputTriggerKind
+    public var triggerKind: RemoteAutomationTriggerKind
     public var cron: String
     public var runAt: String?
+    public var signal: RemoteSignalTrigger?
+    public var webhook: RemoteWebhookTriggerInput?
     public var timezone: String
     public var catchUp: Bool
     public var repoRoots: [String]
@@ -2424,6 +2410,8 @@ extension ArgusProtocol {
       case triggerKind = "trigger_kind"
       case cron = "cron"
       case runAt = "run_at"
+      case signal = "signal"
+      case webhook = "webhook"
       case timezone = "timezone"
       case catchUp = "catch_up"
       case repoRoots = "repo_roots"
@@ -2437,13 +2425,15 @@ extension ArgusProtocol {
       case guardrails = "guardrails"
     }
 
-    public init(name: String, description: String, enabled: Bool, triggerKind: AutomationInputTriggerKind, cron: String, runAt: String? = nil, timezone: String, catchUp: Bool, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String? = nil, autonomy: AutomationInputAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails) {
+    public init(name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationTriggerKind, cron: String, runAt: String? = nil, signal: RemoteSignalTrigger? = nil, webhook: RemoteWebhookTriggerInput? = nil, timezone: String, catchUp: Bool, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String? = nil, autonomy: AutomationInputAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails) {
       self.name = name
       self.description = description
       self.enabled = enabled
       self.triggerKind = triggerKind
       self.cron = cron
       self.runAt = runAt
+      self.signal = signal
+      self.webhook = webhook
       self.timezone = timezone
       self.catchUp = catchUp
       self.repoRoots = repoRoots
@@ -2465,6 +2455,8 @@ extension ArgusProtocol {
       try c.encode(triggerKind, forKey: .triggerKind)
       try c.encode(cron, forKey: .cron)
       try c.encodeIfPresent(runAt, forKey: .runAt)
+      try c.encodeIfPresent(signal, forKey: .signal)
+      try c.encodeIfPresent(webhook, forKey: .webhook)
       try c.encode(timezone, forKey: .timezone)
       try c.encode(catchUp, forKey: .catchUp)
       try c.encode(repoRoots, forKey: .repoRoots)
@@ -2800,10 +2792,70 @@ extension ArgusProtocol {
     }
   }
 
+  public struct AutomationTriggerSignal: Codable, Sendable {
+    public var kind: String
+    public var on: [SignalEventKind]
+    public var labels: [String]
+    public var fire: SignalFireMode
+    public var maxRunsPerHour: Double
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case on = "on"
+      case labels = "labels"
+      case fire = "fire"
+      case maxRunsPerHour = "max_runs_per_hour"
+    }
+
+    public init(kind: String, on: [SignalEventKind], labels: [String], fire: SignalFireMode, maxRunsPerHour: Double) {
+      self.kind = kind
+      self.on = on
+      self.labels = labels
+      self.fire = fire
+      self.maxRunsPerHour = maxRunsPerHour
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(on, forKey: .on)
+      try c.encode(labels, forKey: .labels)
+      try c.encode(fire, forKey: .fire)
+      try c.encode(maxRunsPerHour, forKey: .maxRunsPerHour)
+    }
+  }
+
+  public struct AutomationTriggerWebhook: Codable, Sendable {
+    public var kind: String
+    public var fire: SignalFireMode
+    public var maxRunsPerHour: Double
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case fire = "fire"
+      case maxRunsPerHour = "max_runs_per_hour"
+    }
+
+    public init(kind: String, fire: SignalFireMode, maxRunsPerHour: Double) {
+      self.kind = kind
+      self.fire = fire
+      self.maxRunsPerHour = maxRunsPerHour
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(fire, forKey: .fire)
+      try c.encode(maxRunsPerHour, forKey: .maxRunsPerHour)
+    }
+  }
+
   public enum AutomationTrigger: Codable, Sendable {
     case schedule(AutomationTriggerSchedule)
     case once(AutomationTriggerOnce)
     case manual(AutomationTriggerManual)
+    case signal(AutomationTriggerSignal)
+    case webhook(AutomationTriggerWebhook)
     case unknown(JSONValue)
 
     private enum Tag: String, CodingKey { case tag = "kind" }
@@ -2814,6 +2866,8 @@ extension ArgusProtocol {
       case "schedule": self = .schedule(try AutomationTriggerSchedule(from: decoder))
       case "once": self = .once(try AutomationTriggerOnce(from: decoder))
       case "manual": self = .manual(try AutomationTriggerManual(from: decoder))
+      case "signal": self = .signal(try AutomationTriggerSignal(from: decoder))
+      case "webhook": self = .webhook(try AutomationTriggerWebhook(from: decoder))
       default: self = .unknown(try JSONValue(from: decoder))
       }
     }
@@ -2823,8 +2877,52 @@ extension ArgusProtocol {
       case .schedule(let value): try value.encode(to: encoder)
       case .once(let value): try value.encode(to: encoder)
       case .manual(let value): try value.encode(to: encoder)
+      case .signal(let value): try value.encode(to: encoder)
+      case .webhook(let value): try value.encode(to: encoder)
       case .unknown(let value): try value.encode(to: encoder)
       }
+    }
+  }
+
+  public struct AutomationWebhookInfo: Codable, Sendable {
+    public var url: String?
+    public var hasSecret: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case url = "url"
+      case hasSecret = "has_secret"
+    }
+
+    public init(url: String? = nil, hasSecret: Bool) {
+      self.url = url
+      self.hasSecret = hasSecret
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(url, forKey: .url)
+      try c.encode(hasSecret, forKey: .hasSecret)
+    }
+  }
+
+  public struct AutomationWebhookSecret: Codable, Sendable {
+    public var url: String?
+    public var secret: String
+
+    enum CodingKeys: String, CodingKey {
+      case url = "url"
+      case secret = "secret"
+    }
+
+    public init(url: String? = nil, secret: String) {
+      self.url = url
+      self.secret = secret
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(url, forKey: .url)
+      try c.encode(secret, forKey: .secret)
     }
   }
 
@@ -14081,22 +14179,6 @@ extension ArgusProtocol {
     }
   }
 
-  public struct RemoteAutomationTriggerKind: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let manual = RemoteAutomationTriggerKind(rawValue: "manual")
-    public static let once = RemoteAutomationTriggerKind(rawValue: "once")
-    public static let schedule = RemoteAutomationTriggerKind(rawValue: "schedule")
-  }
-
   public struct RemoteAutomationAutonomy: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -14179,22 +14261,6 @@ extension ArgusProtocol {
     }
   }
 
-  public struct RemoteAutomationDetailTriggerKind: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let manual = RemoteAutomationDetailTriggerKind(rawValue: "manual")
-    public static let once = RemoteAutomationDetailTriggerKind(rawValue: "once")
-    public static let schedule = RemoteAutomationDetailTriggerKind(rawValue: "schedule")
-  }
-
   public struct RemoteAutomationDetailAutonomy: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -14217,11 +14283,13 @@ extension ArgusProtocol {
     public var name: String
     public var description: String
     public var enabled: Bool
-    public var triggerKind: RemoteAutomationDetailTriggerKind
+    public var triggerKind: RemoteAutomationTriggerKind
     public var cron: String?
     public var runAt: String?
     public var timezone: String?
     public var catchUp: Bool
+    public var signal: RemoteSignalTrigger?
+    public var webhook: RemoteWebhookTrigger?
     public var repoRoots: [String]
     public var sourceIds: [String]
     public var playbook: String
@@ -14242,6 +14310,8 @@ extension ArgusProtocol {
       case runAt = "run_at"
       case timezone = "timezone"
       case catchUp = "catch_up"
+      case signal = "signal"
+      case webhook = "webhook"
       case repoRoots = "repo_roots"
       case sourceIds = "source_ids"
       case playbook = "playbook"
@@ -14253,7 +14323,7 @@ extension ArgusProtocol {
       case guardrails = "guardrails"
     }
 
-    public init(id: String, name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationDetailTriggerKind, cron: String? = nil, runAt: String? = nil, timezone: String? = nil, catchUp: Bool, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String, autonomy: RemoteAutomationDetailAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails) {
+    public init(id: String, name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationTriggerKind, cron: String? = nil, runAt: String? = nil, timezone: String? = nil, catchUp: Bool, signal: RemoteSignalTrigger? = nil, webhook: RemoteWebhookTrigger? = nil, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String, autonomy: RemoteAutomationDetailAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails) {
       self.id = id
       self.name = name
       self.description = description
@@ -14263,6 +14333,8 @@ extension ArgusProtocol {
       self.runAt = runAt
       self.timezone = timezone
       self.catchUp = catchUp
+      self.signal = signal
+      self.webhook = webhook
       self.repoRoots = repoRoots
       self.sourceIds = sourceIds
       self.playbook = playbook
@@ -14285,6 +14357,8 @@ extension ArgusProtocol {
       try c.encodeIfPresent(runAt, forKey: .runAt)
       try c.encode(timezone, forKey: .timezone)
       try c.encode(catchUp, forKey: .catchUp)
+      try c.encodeIfPresent(signal, forKey: .signal)
+      try c.encodeIfPresent(webhook, forKey: .webhook)
       try c.encode(repoRoots, forKey: .repoRoots)
       try c.encode(sourceIds, forKey: .sourceIds)
       try c.encode(playbook, forKey: .playbook)
@@ -14482,6 +14556,24 @@ extension ArgusProtocol {
     public static let running = RemoteAutomationRunStatus(rawValue: "running")
     public static let skipped = RemoteAutomationRunStatus(rawValue: "skipped")
     public static let succeeded = RemoteAutomationRunStatus(rawValue: "succeeded")
+  }
+
+  public struct RemoteAutomationTriggerKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let manual = RemoteAutomationTriggerKind(rawValue: "manual")
+    public static let once = RemoteAutomationTriggerKind(rawValue: "once")
+    public static let schedule = RemoteAutomationTriggerKind(rawValue: "schedule")
+    public static let signal = RemoteAutomationTriggerKind(rawValue: "signal")
+    public static let webhook = RemoteAutomationTriggerKind(rawValue: "webhook")
   }
 
   public struct RemoteBackgroundTaskStatus: RawRepresentable, Codable, Hashable, Sendable {
@@ -17066,6 +17158,25 @@ extension ArgusProtocol {
     }
   }
 
+  public struct RemoteSignalEventKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let assigned = RemoteSignalEventKind(rawValue: "assigned")
+    public static let ciFailed = RemoteSignalEventKind(rawValue: "ci_failed")
+    public static let mentioned = RemoteSignalEventKind(rawValue: "mentioned")
+    public static let newIssue = RemoteSignalEventKind(rawValue: "new_issue")
+    public static let newPr = RemoteSignalEventKind(rawValue: "new_pr")
+    public static let reviewRequested = RemoteSignalEventKind(rawValue: "review_requested")
+  }
+
   public struct RemoteSignalSourceMode: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -17107,6 +17218,50 @@ extension ArgusProtocol {
       try c.encode(label, forKey: .label)
       try c.encode(mode, forKey: .mode)
       try c.encode(available, forKey: .available)
+    }
+  }
+
+  public struct RemoteSignalTriggerFire: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let batch = RemoteSignalTriggerFire(rawValue: "batch")
+    public static let each = RemoteSignalTriggerFire(rawValue: "each")
+  }
+
+  public struct RemoteSignalTrigger: Codable, Sendable {
+    public var on: [RemoteSignalEventKind]
+    public var labels: [String]
+    public var fire: RemoteSignalTriggerFire
+    public var maxRunsPerHour: Double
+
+    enum CodingKeys: String, CodingKey {
+      case on = "on"
+      case labels = "labels"
+      case fire = "fire"
+      case maxRunsPerHour = "max_runs_per_hour"
+    }
+
+    public init(on: [RemoteSignalEventKind], labels: [String], fire: RemoteSignalTriggerFire, maxRunsPerHour: Double) {
+      self.on = on
+      self.labels = labels
+      self.fire = fire
+      self.maxRunsPerHour = maxRunsPerHour
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(on, forKey: .on)
+      try c.encode(labels, forKey: .labels)
+      try c.encode(fire, forKey: .fire)
+      try c.encode(maxRunsPerHour, forKey: .maxRunsPerHour)
     }
   }
 
@@ -17861,6 +18016,86 @@ extension ArgusProtocol {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(path, forKey: .path)
       try c.encode(state, forKey: .state)
+    }
+  }
+
+  public struct RemoteWebhookTriggerFire: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let batch = RemoteWebhookTriggerFire(rawValue: "batch")
+    public static let each = RemoteWebhookTriggerFire(rawValue: "each")
+  }
+
+  public struct RemoteWebhookTrigger: Codable, Sendable {
+    public var fire: RemoteWebhookTriggerFire
+    public var maxRunsPerHour: Double
+    public var url: String?
+    public var hasSecret: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case fire = "fire"
+      case maxRunsPerHour = "max_runs_per_hour"
+      case url = "url"
+      case hasSecret = "has_secret"
+    }
+
+    public init(fire: RemoteWebhookTriggerFire, maxRunsPerHour: Double, url: String? = nil, hasSecret: Bool) {
+      self.fire = fire
+      self.maxRunsPerHour = maxRunsPerHour
+      self.url = url
+      self.hasSecret = hasSecret
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(fire, forKey: .fire)
+      try c.encode(maxRunsPerHour, forKey: .maxRunsPerHour)
+      try c.encode(url, forKey: .url)
+      try c.encode(hasSecret, forKey: .hasSecret)
+    }
+  }
+
+  public struct RemoteWebhookTriggerInputFire: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let batch = RemoteWebhookTriggerInputFire(rawValue: "batch")
+    public static let each = RemoteWebhookTriggerInputFire(rawValue: "each")
+  }
+
+  public struct RemoteWebhookTriggerInput: Codable, Sendable {
+    public var fire: RemoteWebhookTriggerInputFire
+    public var maxRunsPerHour: Double
+
+    enum CodingKeys: String, CodingKey {
+      case fire = "fire"
+      case maxRunsPerHour = "max_runs_per_hour"
+    }
+
+    public init(fire: RemoteWebhookTriggerInputFire, maxRunsPerHour: Double) {
+      self.fire = fire
+      self.maxRunsPerHour = maxRunsPerHour
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(fire, forKey: .fire)
+      try c.encode(maxRunsPerHour, forKey: .maxRunsPerHour)
     }
   }
 
@@ -19222,6 +19457,40 @@ extension ArgusProtocol {
       try c.encode(ready, forKey: .ready)
       try c.encodeIfPresent(blocker, forKey: .blocker)
     }
+  }
+
+  public struct SignalEventKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let assigned = SignalEventKind(rawValue: "assigned")
+    public static let ciFailed = SignalEventKind(rawValue: "ci_failed")
+    public static let mentioned = SignalEventKind(rawValue: "mentioned")
+    public static let newIssue = SignalEventKind(rawValue: "new_issue")
+    public static let newPr = SignalEventKind(rawValue: "new_pr")
+    public static let reviewRequested = SignalEventKind(rawValue: "review_requested")
+  }
+
+  public struct SignalFireMode: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let batch = SignalFireMode(rawValue: "batch")
+    public static let each = SignalFireMode(rawValue: "each")
   }
 
   public struct SignalSourceInfoMode: RawRepresentable, Codable, Hashable, Sendable {

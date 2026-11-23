@@ -682,6 +682,17 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class AutomationsRotateWebhookParams(
+    @SerialName("automation_id") val automationId: String,
+  )
+
+  @Serializable
+  data class AutomationsRotateWebhookResult(
+    @SerialName("url") @EncodeDefault val url: String? = null,
+    @SerialName("secret") val secret: String,
+  )
+
+  @Serializable
   data class AutomationsRunParams(
     @SerialName("run_id") val runId: String,
   )
@@ -866,19 +877,6 @@ object MethodsTypes {
 
   @Serializable
   @JvmInline
-  value class AutomationsUpdateParamsPatchTriggerKind(val rawValue: String) {
-    override fun toString(): String = rawValue
-
-    companion object {
-      val manual = AutomationsUpdateParamsPatchTriggerKind("manual")
-      val once = AutomationsUpdateParamsPatchTriggerKind("once")
-      val schedule = AutomationsUpdateParamsPatchTriggerKind("schedule")
-      val entries: List<AutomationsUpdateParamsPatchTriggerKind> = listOf(manual, once, schedule)
-    }
-  }
-
-  @Serializable
-  @JvmInline
   value class AutomationsUpdateParamsPatchAutonomy(val rawValue: String) {
     override fun toString(): String = rawValue
 
@@ -896,9 +894,11 @@ object MethodsTypes {
     @SerialName("name") val name: String? = null,
     @SerialName("description") val description: String? = null,
     @SerialName("enabled") val enabled: Boolean? = null,
-    @SerialName("trigger_kind") val triggerKind: AutomationsUpdateParamsPatchTriggerKind? = null,
+    @SerialName("trigger_kind") val triggerKind: RemoteAutomationTriggerKind? = null,
     @SerialName("cron") val cron: String? = null,
     @SerialName("run_at") val runAt: String? = null,
+    @SerialName("signal") val signal: RemoteSignalTrigger? = null,
+    @SerialName("webhook") val webhook: RemoteWebhookTriggerInput? = null,
     @SerialName("timezone") val timezone: String? = null,
     @SerialName("catch_up") val catchUp: Boolean? = null,
     @SerialName("repo_roots") val repoRoots: List<String>? = null,
@@ -2940,6 +2940,8 @@ object Methods {
   object AutomationsMemories : RemoteCommand<MethodsTypes.AutomationsMemoriesParams, MethodsTypes.AutomationsMemoriesResult>("automations.memories", "control", serializer(), serializer())
 
   object AutomationsRevisePlaybook : RemoteCommand<MethodsTypes.AutomationsRevisePlaybookParams, MethodsTypes.AutomationsRevisePlaybookResult>("automations.revise_playbook", "control", serializer(), serializer())
+
+  object AutomationsRotateWebhook : RemoteCommand<MethodsTypes.AutomationsRotateWebhookParams, MethodsTypes.AutomationsRotateWebhookResult>("automations.rotate_webhook", "control", serializer(), serializer())
 
   object AutomationsRun : RemoteCommand<MethodsTypes.AutomationsRunParams, MethodsTypes.AutomationsRunResult>("automations.run", "control", serializer(), serializer())
 

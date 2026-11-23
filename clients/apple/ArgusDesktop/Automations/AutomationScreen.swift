@@ -48,7 +48,7 @@ private struct AutomationDetail: View {
       }
     }
     .navigationTitle(automation?.name ?? "Automation")
-    .navigationSubtitle(automation.map { "\(Labels.triggerLabel($0)) · next \(AutomationText.nextRun($0))" } ?? "")
+    .navigationSubtitle(automation.map(subtitle) ?? "")
     .toolbar { if let automation { toolbar(automation) } }
     .confirmationDialog("Delete this automation?", isPresented: $confirmingDelete) {
       Button("Delete Automation", role: .destructive) { delete() }
@@ -68,6 +68,16 @@ private struct AutomationDetail: View {
     }
   }
 
+  /// Event triggers have no next time; their "when" already says what they wait for.
+  private func subtitle(_ automation: RemoteAutomation) -> String {
+    let trigger = Labels.triggerLabel(automation)
+    let next = AutomationText.nextRun(automation)
+    switch automation.triggerKind {
+    case .signal, .webhook: return automation.enabled ? next : "\(trigger) · \(next)"
+    default: return "\(trigger) · next \(next)"
+    }
+  }
+
   private func form(_ automation: RemoteAutomation) -> some View {
     Form {
       if let error = store.error {
@@ -75,7 +85,15 @@ private struct AutomationDetail: View {
       }
       TrackRecordSection(calibration: store.calibrationById[automationId])
       if saved != nil {
-        AutomationEditorForm(draft: $draft)
+        AutomationEditorForm(draft: $draft) {
+          // The secret flag isn't an edit: keep Save dark when only it changed.
+          let made = await store.rotateWebhook(id: automationId)
+          if let made {
+            saved?.webhook?.hasSecret = true
+            saved?.webhook?.url = made.url
+          }
+          return made
+        }
       } else {
         Section("Configuration") { ProgressView() }
       }

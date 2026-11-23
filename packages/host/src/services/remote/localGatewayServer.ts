@@ -125,13 +125,21 @@ export interface OutsideHttpHandler {
   handle: (req: IncomingMessage, res: ServerResponse) => Promise<void>;
 }
 
-let outsideHttp: OutsideHttpHandler | null = null;
+const outsideHttp = new Map<string, OutsideHttpHandler>();
 
-/** Set at boot; injected rather than imported so remote never imports mcp. */
+/**
+ * Set at boot, one per name (`mcp`, `webhooks`); injected rather than imported
+ * so remote never imports the services behind them.
+ */
 export function setOutsideHttpHandler(
   handler: OutsideHttpHandler | null,
+  name = "mcp",
 ): void {
-  outsideHttp = handler;
+  if (handler) {
+    outsideHttp.set(name, handler);
+  } else {
+    outsideHttp.delete(name);
+  }
 }
 
 export function setPairingHandler(handler: PairingSocketHandler | null): void {
@@ -493,8 +501,9 @@ export function startLocalGateway(
   return new Promise((resolve, reject) => {
     const server = createServer((req, res) => {
       const route = (req.url ?? "").split("?")[0];
-      if (outsideHttp?.matches(route)) {
-        outsideHttp.handle(req, res).catch(() => {
+      const outside = [...outsideHttp.values()].find((h) => h.matches(route));
+      if (outside) {
+        outside.handle(req, res).catch(() => {
           if (!res.headersSent) {
             res.writeHead(500).end();
           }

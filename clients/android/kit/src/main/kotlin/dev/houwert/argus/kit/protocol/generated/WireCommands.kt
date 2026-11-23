@@ -250,6 +250,16 @@ object CommandsTypes {
   )
 
   @Serializable
+  data class AutomationWebhookInfoParams(
+    @SerialName("id") val id: String,
+  )
+
+  @Serializable
+  data class AutomationWebhookRotateParams(
+    @SerialName("id") val id: String,
+  )
+
+  @Serializable
   data class BlueprintCreateParams(
     @SerialName("input") val input: CreateBlueprintInput,
   )
@@ -3174,6 +3184,10 @@ object Commands {
   object AutomationSetEnabled : RemoteCommand<CommandsTypes.AutomationSetEnabledParams, Automation>("automation_set_enabled", "admin", serializer(), serializer())
 
   object AutomationUpdate : RemoteCommand<CommandsTypes.AutomationUpdateParams, Automation>("automation_update", "admin", serializer(), serializer())
+
+  object AutomationWebhookInfo : RemoteCommand<CommandsTypes.AutomationWebhookInfoParams, dev.houwert.argus.kit.protocol.generated.AutomationWebhookInfo>("automation_webhook_info", "admin", serializer(), serializer())
+
+  object AutomationWebhookRotate : RemoteCommand<CommandsTypes.AutomationWebhookRotateParams, AutomationWebhookSecret>("automation_webhook_rotate", "admin", serializer(), serializer())
 
   object AutomationsList : RemoteCommand<EmptyParams, List<Automation>>("automations_list", "admin", serializer(), serializer())
 

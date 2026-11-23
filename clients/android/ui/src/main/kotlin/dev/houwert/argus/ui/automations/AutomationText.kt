@@ -21,6 +21,8 @@ object AutomationText {
   fun nextRun(automation: RemoteAutomation): String {
     if (automation.triggerKind == RemoteAutomationTriggerKind.manual) return "Manual"
     if (!automation.enabled) return "Paused"
+    if (automation.triggerKind == RemoteAutomationTriggerKind.signal) return "When an event arrives"
+    if (automation.triggerKind == RemoteAutomationTriggerKind.webhook) return "When its webhook is called"
     val next = automation.nextRunAt ?: return "Not scheduled"
     return "${timestamp(next)} (${Labels.until(next) ?: "now"})"
   }

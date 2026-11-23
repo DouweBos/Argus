@@ -2158,6 +2158,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AutomationsRotateWebhookParams: Codable, Sendable {
+      public var automationId: String
+
+      enum CodingKeys: String, CodingKey {
+        case automationId = "automation_id"
+      }
+
+      public init(automationId: String) {
+        self.automationId = automationId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automationId, forKey: .automationId)
+      }
+    }
+
+    public struct AutomationsRotateWebhookResult: Codable, Sendable {
+      public var url: String?
+      public var secret: String
+
+      enum CodingKeys: String, CodingKey {
+        case url = "url"
+        case secret = "secret"
+      }
+
+      public init(url: String? = nil, secret: String) {
+        self.url = url
+        self.secret = secret
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(url, forKey: .url)
+        try c.encode(secret, forKey: .secret)
+      }
+    }
+
     public struct AutomationsRunParams: Codable, Sendable {
       public var runId: String
 
@@ -2700,22 +2738,6 @@ extension ArgusProtocol {
       }
     }
 
-    public struct AutomationsUpdateParamsPatchTriggerKind: RawRepresentable, Codable, Hashable, Sendable {
-      public var rawValue: String
-      public init(rawValue: String) { self.rawValue = rawValue }
-      public init(from decoder: Decoder) throws {
-        rawValue = try decoder.singleValueContainer().decode(String.self)
-      }
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.singleValueContainer()
-        try c.encode(rawValue)
-      }
-
-      public static let manual = AutomationsUpdateParamsPatchTriggerKind(rawValue: "manual")
-      public static let once = AutomationsUpdateParamsPatchTriggerKind(rawValue: "once")
-      public static let schedule = AutomationsUpdateParamsPatchTriggerKind(rawValue: "schedule")
-    }
-
     public struct AutomationsUpdateParamsPatchAutonomy: RawRepresentable, Codable, Hashable, Sendable {
       public var rawValue: String
       public init(rawValue: String) { self.rawValue = rawValue }
@@ -2737,9 +2759,11 @@ extension ArgusProtocol {
       public var name: String?
       public var description: String?
       public var enabled: Bool?
-      public var triggerKind: AutomationsUpdateParamsPatchTriggerKind?
+      public var triggerKind: RemoteAutomationTriggerKind?
       public var cron: String?
       public var runAt: String?
+      public var signal: RemoteSignalTrigger?
+      public var webhook: RemoteWebhookTriggerInput?
       public var timezone: String?
       public var catchUp: Bool?
       public var repoRoots: [String]?
@@ -2759,6 +2783,8 @@ extension ArgusProtocol {
         case triggerKind = "trigger_kind"
         case cron = "cron"
         case runAt = "run_at"
+        case signal = "signal"
+        case webhook = "webhook"
         case timezone = "timezone"
         case catchUp = "catch_up"
         case repoRoots = "repo_roots"
@@ -2772,13 +2798,15 @@ extension ArgusProtocol {
         case guardrails = "guardrails"
       }
 
-      public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, triggerKind: AutomationsUpdateParamsPatchTriggerKind? = nil, cron: String? = nil, runAt: String? = nil, timezone: String? = nil, catchUp: Bool? = nil, repoRoots: [String]? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutomationsUpdateParamsPatchAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails? = nil) {
+      public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, triggerKind: RemoteAutomationTriggerKind? = nil, cron: String? = nil, runAt: String? = nil, signal: RemoteSignalTrigger? = nil, webhook: RemoteWebhookTriggerInput? = nil, timezone: String? = nil, catchUp: Bool? = nil, repoRoots: [String]? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutomationsUpdateParamsPatchAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails? = nil) {
         self.name = name
         self.description = description
         self.enabled = enabled
         self.triggerKind = triggerKind
         self.cron = cron
         self.runAt = runAt
+        self.signal = signal
+        self.webhook = webhook
         self.timezone = timezone
         self.catchUp = catchUp
         self.repoRoots = repoRoots
@@ -2800,6 +2828,8 @@ extension ArgusProtocol {
         try c.encodeIfPresent(triggerKind, forKey: .triggerKind)
         try c.encodeIfPresent(cron, forKey: .cron)
         try c.encodeIfPresent(runAt, forKey: .runAt)
+        try c.encodeIfPresent(signal, forKey: .signal)
+        try c.encodeIfPresent(webhook, forKey: .webhook)
         try c.encodeIfPresent(timezone, forKey: .timezone)
         try c.encodeIfPresent(catchUp, forKey: .catchUp)
         try c.encodeIfPresent(repoRoots, forKey: .repoRoots)
@@ -9255,6 +9285,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AutomationsRevisePlaybookParams
       public typealias Result = ArgusProtocol.MethodsTypes.AutomationsRevisePlaybookResult
       public static let name = "automations.revise_playbook"
+    }
+
+    public enum AutomationsRotateWebhook: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsRotateWebhookParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsRotateWebhookResult
+      public static let name = "automations.rotate_webhook"
     }
 
     public enum AutomationsRun: RemoteCommand {

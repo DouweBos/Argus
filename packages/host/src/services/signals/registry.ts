@@ -7,7 +7,12 @@
  * `unavailable` — a signal layer that can fail a run defeats the purpose.
  */
 
-import type { SignalSource, WorkItem } from "./types";
+import type {
+  SignalEvent,
+  SignalEventKind,
+  SignalSource,
+  WorkItem,
+} from "./types";
 import { warn } from "@argus/host/logger";
 import {
   fenceUntrusted,
@@ -15,9 +20,29 @@ import {
   scanForInjection,
 } from "./injectionScan";
 import { githubSource } from "./sources/github";
+import { githubEvents } from "./sources/githubEvents";
 import { githubPrsSource } from "./sources/githubPrs";
 import { gitlabSource } from "./sources/gitlab";
+import { gitlabEvents } from "./sources/gitlabEvents";
 import { linearSource } from "./sources/linear";
+
+// Event feeds are attached here rather than in the source files, which they
+// import from.
+Object.assign(githubSource, {
+  events: ["new_issue", "new_pr", "assigned", "review_requested", "mentioned"],
+  fetchEvents: githubEvents,
+} satisfies Partial<SignalSource>);
+Object.assign(gitlabSource, {
+  events: [
+    "new_issue",
+    "new_pr",
+    "assigned",
+    "review_requested",
+    "ci_failed",
+    "mentioned",
+  ],
+  fetchEvents: gitlabEvents,
+} satisfies Partial<SignalSource>);
 
 const SOURCES: SignalSource[] = [
   githubSource,
@@ -119,6 +144,74 @@ export async function gatherSignals(opts: {
   }));
 
   return result;
+}
+
+export interface CollectedEvents {
+  events: SignalEvent[];
+  /** Sources that could have answered but didn't; their events are unknown. */
+  failed: string[];
+}
+
+/**
+ * What is true now for `kinds`, across every native source that can watch
+ * for any of them. Unavailable sources are skipped, not failed: a signal
+ * trigger watches whatever is connected.
+ */
+export async function collectSignalEvents(opts: {
+  kinds: SignalEventKind[];
+  repoRoots: string[];
+}): Promise<CollectedEvents> {
+  const result: CollectedEvents = { events: [], failed: [] };
+  await Promise.all(
+    SOURCES.map(async (source) => {
+      const kinds = opts.kinds.filter((k) => source.events?.includes(k));
+      if (kinds.length === 0 || source.mode !== "native") {
+        return;
+      }
+      try {
+        if (!(await source.isAvailable())) {
+          return;
+        }
+        const events =
+          (await source.fetchEvents?.({ kinds, repoRoots: opts.repoRoots })) ??
+          [];
+        result.events.push(...events.filter((e) => kinds.includes(e.kind)));
+      } catch (e) {
+        warn(`signal source ${source.id} events failed: ${String(e)}`);
+        result.failed.push(source.id);
+      }
+    }),
+  );
+
+  return result;
+}
+
+/** The expensive half of an event, fetched only for one about to fire. */
+export async function enrichSignalEvent(
+  event: SignalEvent,
+): Promise<SignalEvent> {
+  const source = getSignalSource(event.item.source_id);
+  try {
+    return (await source?.enrichEvent?.(event)) ?? event;
+  } catch {
+    return event;
+  }
+}
+
+/** Items from outside, screened before a run reads them. */
+export async function screenWorkItems(items: WorkItem[]): Promise<{
+  items: WorkItem[];
+  withheld: { external_id: string; reason: string }[];
+}> {
+  const findings = await scanForInjection(items);
+
+  return {
+    items: redactFlagged(items, findings),
+    withheld: findings.map((f) => ({
+      external_id: f.external_id,
+      reason: f.reason,
+    })),
+  };
 }
 
 /** The work items a run's agent sees, as the prompt renders them. */

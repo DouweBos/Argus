@@ -47,6 +47,18 @@ export const SCOPED_ISSUES: Record<LinearIssueScope, string> = {
   }`,
 };
 
+/** Open issues in the teams you are on, newest first: what a new-issue trigger watches. */
+export const TEAM_ISSUES = `query ArgusTeamIssues($first: Int!) {
+  issues(
+    first: $first
+    orderBy: createdAt
+    filter: {
+      team: { members: { isMe: { eq: true } } }
+      state: { type: { nin: ["completed", "canceled"] } }
+    }
+  ) { nodes { ${ISSUE_FIELDS} } }
+}`;
+
 export const SEARCH_ISSUES = `query ArgusSearchIssues($term: String!, $first: Int!) {
   searchIssues(term: $term, first: $first) { nodes { ${ISSUE_FIELDS} } }
 }`;

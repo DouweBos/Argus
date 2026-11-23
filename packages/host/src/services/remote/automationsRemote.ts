@@ -27,6 +27,8 @@ import type {
   RemoteRunFeedback,
   RemoteRunner,
   RemoteSignalSource,
+  RemoteSignalTrigger,
+  RemoteWebhookTrigger,
 } from "@argus/remote-protocol";
 import path from "node:path";
 import { lastKnownModels } from "../agent/startOptions";
@@ -52,6 +54,12 @@ import {
   saveScratchRunAsAutomation,
   startScratchRun,
 } from "../automation/scratch";
+import { DEFAULT_RUNS_PER_HOUR } from "../automation/signalTrigger";
+import {
+  hasWebhookSecret,
+  rotateWebhookSecret,
+  webhookUrl,
+} from "../automation/webhook";
 import { listRunners, runnerAvailability } from "../llm/registry";
 import { describeSignalSources } from "../signals/registry";
 
@@ -66,7 +74,7 @@ function toRemoteAutomation(automation: Automation): RemoteAutomation {
     name: automation.name,
     description: automation.description,
     enabled: automation.enabled,
-    ...wireTrigger(trigger),
+    ...wireTrigger(trigger, automation.id),
     autonomy: automation.autonomy,
     projects: automation.scope.repo_roots.map((root) => path.basename(root)),
     last_run_at: automation.last_run_at,
@@ -117,7 +125,7 @@ function toRemoteAutomationDetail(
     name: automation.name,
     description: automation.description,
     enabled: automation.enabled,
-    ...wireTrigger(trigger),
+    ...wireTrigger(trigger, automation.id),
     repo_roots: automation.scope.repo_roots,
     source_ids: automation.source_ids,
     playbook: automation.playbook,
@@ -131,19 +139,45 @@ function toRemoteAutomationDetail(
 }
 
 /** The union, flattened into the wire's trigger fields. */
-function wireTrigger(trigger: Automation["trigger"]): {
+function wireTrigger(
+  trigger: Automation["trigger"],
+  automationId: string,
+): {
   catch_up: boolean;
   cron: string | null;
   run_at: string | null;
+  signal: RemoteSignalTrigger | null;
   timezone: string | null;
   trigger_kind: Automation["trigger"]["kind"];
+  webhook: RemoteWebhookTrigger | null;
 } {
+  const clock =
+    trigger.kind === "schedule" || trigger.kind === "once" ? trigger : null;
+
   return {
     trigger_kind: trigger.kind,
     cron: trigger.kind === "schedule" ? trigger.cron : null,
     run_at: trigger.kind === "once" ? trigger.at : null,
-    timezone: trigger.kind === "manual" ? null : trigger.timezone,
-    catch_up: trigger.kind === "manual" ? true : trigger.catch_up,
+    timezone: clock?.timezone ?? null,
+    catch_up: clock?.catch_up ?? true,
+    signal:
+      trigger.kind === "signal"
+        ? {
+            on: trigger.on,
+            labels: trigger.labels,
+            fire: trigger.fire,
+            max_runs_per_hour: trigger.max_runs_per_hour,
+          }
+        : null,
+    webhook:
+      trigger.kind === "webhook"
+        ? {
+            fire: trigger.fire,
+            max_runs_per_hour: trigger.max_runs_per_hour,
+            url: webhookUrl(automationId),
+            has_secret: hasWebhookSecret(automationId),
+          }
+        : null,
   };
 }
 
@@ -170,6 +204,22 @@ function toTrigger(input: AutomationInput): Automation["trigger"] {
       };
     case "manual":
       return { kind: "manual" };
+    case "signal":
+      return {
+        kind: "signal",
+        on: input.signal?.on ?? [],
+        labels: input.signal?.labels ?? [],
+        fire: input.signal?.fire ?? "each",
+        max_runs_per_hour:
+          input.signal?.max_runs_per_hour ?? DEFAULT_RUNS_PER_HOUR,
+      };
+    case "webhook":
+      return {
+        kind: "webhook",
+        fire: input.webhook?.fire ?? "each",
+        max_runs_per_hour:
+          input.webhook?.max_runs_per_hour ?? DEFAULT_RUNS_PER_HOUR,
+      };
   }
 }
 
@@ -302,24 +352,37 @@ export function updateRemoteAutomation(
 
   // The trigger is four wire fields; rebuild it from the current one so a
   // partial patch can change the cron without restating the timezone.
-  const clock = current.trigger.kind === "manual" ? null : current.trigger;
+  const { trigger } = current;
+  const clock =
+    trigger.kind === "schedule" || trigger.kind === "once" ? trigger : null;
   const touchesTrigger =
     patch.trigger_kind !== undefined ||
     patch.cron !== undefined ||
     patch.run_at !== undefined ||
     patch.timezone !== undefined ||
-    patch.catch_up !== undefined;
+    patch.catch_up !== undefined ||
+    patch.signal !== undefined ||
+    patch.webhook !== undefined;
   if (touchesTrigger) {
     update.trigger = toTrigger({
-      trigger_kind: patch.trigger_kind ?? current.trigger.kind,
+      trigger_kind: patch.trigger_kind ?? trigger.kind,
       cron: patch.cron ?? (clock?.kind === "schedule" ? clock.cron : ""),
       run_at: patch.run_at ?? (clock?.kind === "once" ? clock.at : undefined),
       timezone: patch.timezone ?? clock?.timezone ?? "UTC",
       catch_up: patch.catch_up ?? clock?.catch_up ?? true,
+      signal: patch.signal ?? wireTrigger(trigger, id).signal ?? undefined,
+      webhook: patch.webhook ?? wireTrigger(trigger, id).webhook ?? undefined,
     } as AutomationInput);
   }
 
   return both(updateAutomation(id, update));
+}
+
+export function rotateRemoteWebhook(id: string): {
+  url: string | null;
+  secret: string;
+} {
+  return rotateWebhookSecret(id);
 }
 
 export function deleteRemoteAutomation(id: string): { accepted: boolean } {
@@ -470,7 +533,7 @@ export async function remoteAutomationDraft(
       name: input.name,
       description: input.description ?? "",
       enabled: input.enabled ?? false,
-      ...wireTrigger(trigger),
+      ...wireTrigger(trigger, ""),
       repo_roots: input.scope?.repo_roots ?? [],
       source_ids: input.source_ids ?? [],
       playbook: input.playbook,

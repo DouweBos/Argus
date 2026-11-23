@@ -43,6 +43,11 @@ import {
   saveScratchRunAsAutomation,
   startScratchRun,
 } from "../services/automation/scratch";
+import {
+  hasWebhookSecret,
+  rotateWebhookSecret,
+  webhookUrl,
+} from "../services/automation/webhook";
 import { defineTypedCommand } from "../services/command/registry";
 import { describeSignalSources } from "../services/signals/registry";
 
@@ -55,6 +60,13 @@ export function registerAutomationCommands(): void {
   defineTypedCommand("automation_delete", (p) => deleteAutomation(p.id));
   defineTypedCommand("automation_set_enabled", (p) =>
     setAutomationEnabled(p.id, p.enabled),
+  );
+  defineTypedCommand("automation_webhook_info", (p) => ({
+    url: webhookUrl(p.id),
+    has_secret: hasWebhookSecret(p.id),
+  }));
+  defineTypedCommand("automation_webhook_rotate", (p) =>
+    rotateWebhookSecret(p.id),
   );
   defineTypedCommand("automation_run_now", (p) =>
     startAutomationRun(p.id, "manual"),

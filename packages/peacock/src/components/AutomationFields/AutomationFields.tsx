@@ -35,6 +35,8 @@ export interface AutomationFieldsProps {
   accounts?: ClaudeAccountLike[];
   /** The account an unpinned run follows, named in the "Default account" hint. */
   activeAccountId?: string | null;
+  /** Makes a new webhook secret. Omit when this client may not, or before the first save. */
+  onRotateWebhookSecret?: () => Promise<{ url: string | null; secret: string }>;
   /** "Rewrite with Claude". Omit when this client may not spend. */
   onRevisePlaybook?: () => void;
   disabled?: boolean;
@@ -52,6 +54,7 @@ export function AutomationFields({
   draft,
   onChange,
   onRevisePlaybook,
+  onRotateWebhookSecret,
   projects,
   runners,
   sources,
@@ -95,7 +98,12 @@ export function AutomationFields({
 
       <section className={styles.group}>
         <h3 className={styles.heading}>Trigger</h3>
-        <TriggerFields disabled={disabled} draft={draft} onChange={patch} />
+        <TriggerFields
+          disabled={disabled}
+          draft={draft}
+          onChange={patch}
+          onRotateWebhookSecret={onRotateWebhookSecret}
+        />
       </section>
 
       <section className={styles.group}>

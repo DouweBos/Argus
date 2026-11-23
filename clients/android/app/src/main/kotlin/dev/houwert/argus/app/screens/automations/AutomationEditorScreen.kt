@@ -86,6 +86,7 @@ fun AutomationEditorScreen(id: String?, label: String) {
             accounts = hostAccounts ?: fetched?.first.orEmpty(),
             activeAccountId = if (hostAccounts != null) activeAccountId else fetched?.second,
             hasControl = access.hasControl,
+            rotateWebhook = id?.let { { store.rotateWebhook(it) } },
           ),
           reviseError = error,
           revise = { instruction -> store.revisePlaybook(draft.playbook, instruction, draft.name.ifBlank { null }) },

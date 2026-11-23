@@ -1,7 +1,7 @@
 package dev.houwert.argus.core.automations
 
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetail
-import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetailTriggerKind
+import dev.houwert.argus.kit.protocol.generated.RemoteAutomationTriggerKind
 import dev.houwert.argus.kit.util.Labels
 import dev.houwert.argus.kit.util.OnceTime
 import java.time.DayOfWeek
@@ -162,7 +162,7 @@ data class SchedulePreviewText(val headline: String?, val runs: List<String>, va
 
 /** Null for a non-schedule trigger; otherwise the schedule's next runs or why it's rejected. */
 fun RemoteAutomationDetail.schedulePreview(count: Int = 5, from: Instant = Instant.now()): Result<List<Instant>>? {
-  if (triggerKind != RemoteAutomationDetailTriggerKind.schedule) return null
+  if (triggerKind != RemoteAutomationTriggerKind.schedule) return null
   return CronSchedule.preview(cron ?: "", timezone ?: "", count, from)
 }
 
@@ -182,8 +182,12 @@ fun RemoteAutomationDetail.schedulePreviewText(from: Instant = Instant.now(), lo
 
 /** Why a run-once trigger can't be saved; null for other kinds or a good time. */
 val RemoteAutomationDetail.onceError: String?
-  get() = if (triggerKind != RemoteAutomationDetailTriggerKind.once) null else OnceTime.error(runAt, timezone, enabled)
+  get() = if (triggerKind != RemoteAutomationTriggerKind.once) null else OnceTime.error(runAt, timezone, enabled)
 
-/** Whether the trigger can be saved: manual, a schedule that fires, or a run-once time. */
+/** Why a signal trigger can't be saved; null for other kinds or one with events picked. */
+val RemoteAutomationDetail.signalError: String?
+  get() = if (triggerKind == RemoteAutomationTriggerKind.signal && signal?.on.isNullOrEmpty()) "Pick at least one event to react to." else null
+
+/** Whether the trigger can be saved: manual, a webhook, a schedule that fires, a run-once time, or a signal with events. */
 val RemoteAutomationDetail.hasValidTrigger: Boolean
-  get() = schedulePreview(count = 1)?.isFailure != true && onceError == null
+  get() = schedulePreview(count = 1)?.isFailure != true && onceError == null && signalError == null

@@ -16,10 +16,11 @@ import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.app.navigation.Route
 import dev.houwert.argus.core.automations.hasValidTrigger
 import dev.houwert.argus.core.automations.schedulePreviewText
+import dev.houwert.argus.core.automations.signalEventOptions
 import dev.houwert.argus.core.automations.withAutonomy
 import dev.houwert.argus.core.stores.draftOverGateway
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetail
-import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetailTriggerKind
+import dev.houwert.argus.kit.protocol.generated.RemoteAutomationTriggerKind
 import dev.houwert.argus.ui.automations.AutomationText
 import dev.houwert.argus.ui.components.Banner
 import dev.houwert.argus.ui.components.BodyText
@@ -110,13 +111,20 @@ private fun Review(draft: RemoteAutomationDetail, notes: List<String>, onChange:
     ThemedTextField(draft.name, { onChange(draft.copy(name = it)) }, "Name", input = TextInput.Name)
     ThemedTextField(draft.description, { onChange(draft.copy(description = it)) }, "Description", multiline = true)
     val cron = draft.cron
-    if (draft.triggerKind == RemoteAutomationDetailTriggerKind.schedule && cron != null) {
+    if (draft.triggerKind == RemoteAutomationTriggerKind.schedule && cron != null) {
       Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         draft.schedulePreviewText()?.headline?.let { BodyText(it) }
         MonoText("$cron · ${draft.timezone ?: TimeZone.getDefault().id}", color = ArgusTheme.colors.textMuted)
       }
     } else {
-      MutedText("Manual: runs only when someone presses Run now.")
+      MutedText(
+        when (draft.triggerKind) {
+          RemoteAutomationTriggerKind.signal -> "On events: " +
+            signalEventOptions.filter { it.first in draft.signal?.on.orEmpty() }.joinToString(", ") { it.second }
+          RemoteAutomationTriggerKind.webhook -> "On webhook: runs when its URL is called. Generate its secret once saved."
+          else -> "Manual: runs only when someone presses Run now."
+        }
+      )
     }
     ThemedTextField(draft.playbook, { onChange(draft.copy(playbook = it)) }, "Playbook", multiline = true, lines = 6..24, mono = true)
   }

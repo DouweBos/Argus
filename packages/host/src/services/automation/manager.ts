@@ -35,6 +35,11 @@ import {
   deleteProposalsForRun,
 } from "./proposals/manager";
 import {
+  assertValidEventTrigger,
+  normalizeSignalKinds,
+  normalizeSignalLabels,
+} from "./signalTrigger";
+import {
   applyRetention,
   loadAutomationRuns,
   loadAutomations,
@@ -116,7 +121,7 @@ function assertKnownAccount(accountId: string | null | undefined): void {
 function buildAutomation(input: CreateAutomationInput): Automation {
   assertKnownAccount(input.claude_account_id);
   const now = Date.now();
-  const trigger = input.trigger;
+  const trigger = normalizeTrigger(input.trigger);
   assertValidTrigger(trigger, input.enabled ?? false, now);
 
   const automation: Automation = {
@@ -160,6 +165,11 @@ function assertValidTrigger(
   if (trigger.kind === "schedule" && !isValidCron(trigger.cron)) {
     throw `Invalid cron expression: ${trigger.cron}`;
   }
+  if (trigger.kind === "signal" || trigger.kind === "webhook") {
+    assertValidEventTrigger(trigger);
+
+    return;
+  }
   if (trigger.kind !== "once") {
     return;
   }
@@ -172,12 +182,29 @@ function assertValidTrigger(
   }
 }
 
+function normalizeTrigger(trigger: AutomationTrigger): AutomationTrigger {
+  return trigger.kind === "signal"
+    ? {
+        ...trigger,
+        on: normalizeSignalKinds(trigger.on),
+        labels: normalizeSignalLabels(trigger.labels),
+      }
+    : trigger;
+}
+
 /** The next fire for an automation, or null when it has no clock. */
 export function nextRunFor(
   automation: Automation,
   from: number,
 ): number | null {
-  if (!automation.enabled || automation.trigger.kind === "manual") {
+  const { kind } = automation.trigger;
+  // Event triggers have no clock; their events decide when they fire.
+  if (
+    !automation.enabled ||
+    kind === "manual" ||
+    kind === "signal" ||
+    kind === "webhook"
+  ) {
     return null;
   }
   if (automation.trigger.kind === "once") {
@@ -332,6 +359,10 @@ export function createAutomation(input: CreateAutomationInput): Automation {
       has_instructions: true,
     });
   }
+  telemetryCapture("automation_trigger_changed", {
+    trigger_kind: automation.trigger.kind,
+    action: "set",
+  });
   info(`Created automation ${automation.id} (${automation.name})`);
 
   return { ...automation };
@@ -345,7 +376,7 @@ export function updateAutomation(
   if (patch.claude_account_id !== automation.claude_account_id) {
     assertKnownAccount(patch.claude_account_id);
   }
-  const trigger = patch.trigger ?? automation.trigger;
+  const trigger = normalizeTrigger(patch.trigger ?? automation.trigger);
   // Only an edit to the clock or the switch can arm a one-time trigger that
   // has already passed; anything else must still save.
   if (patch.trigger !== undefined || patch.enabled !== undefined) {
@@ -361,6 +392,7 @@ export function updateAutomation(
     patch.extra_instructions !== undefined &&
     patch.extra_instructions.trim() !== automation.extra_instructions.trim();
 
+  const previousKind = automation.trigger.kind;
   Object.assign(automation, patch, { trigger, updated_at: Date.now() });
   automation.guardrails = normalizeGuardrails(automation.guardrails);
   if (patch.next_run_at === undefined) {
@@ -368,6 +400,12 @@ export function updateAutomation(
     automation.next_run_at = nextRunFor(automation, Date.now());
   }
   persistAutomations();
+  if (trigger.kind !== previousKind) {
+    telemetryCapture("automation_trigger_changed", {
+      trigger_kind: trigger.kind,
+      action: "set",
+    });
+  }
   if (instructionsChanged) {
     const hasInstructions = automation.extra_instructions.trim() !== "";
     // An edit to existing text is not news; adding or clearing it is.

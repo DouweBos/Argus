@@ -300,6 +300,25 @@ export interface EventMap {
   automation_once_fired: {
     outcome: "caught_up" | "missed" | "overlap" | "ran";
   };
+  automation_trigger_changed: {
+    trigger_kind: "manual" | "once" | "schedule" | "signal" | "webhook";
+    /** `set`: a new kind was saved. `secret_rotated`: a webhook secret was made. */
+    action: "secret_rotated" | "set";
+  };
+  automation_event_fired: {
+    trigger_kind: "other" | "signal" | "webhook";
+    event_kind:
+      | "assigned"
+      | "ci_failed"
+      | "mentioned"
+      | "mixed"
+      | "new_issue"
+      | "new_pr"
+      | "other"
+      | "review_requested"
+      | "webhook";
+    outcome: "dropped" | "ran" | "rate_capped";
+  };
   automation_run_started: {
     /** `none` unpinned; otherwise whether the pinned account could run it. */
     account_pin: "missing" | "none" | "ok" | "reauth";

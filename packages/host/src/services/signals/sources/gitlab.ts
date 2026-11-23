@@ -29,7 +29,7 @@ export interface GitlabIssueRow {
   web_url?: string;
 }
 
-interface ReviewMrNode {
+export interface ReviewMrNode {
   assignees?: { nodes: { username: string }[] } | null;
   description?: string | null;
   iid: string;
@@ -40,7 +40,7 @@ interface ReviewMrNode {
   webUrl: string;
 }
 
-const REVIEW_QUERY = `query {
+export const REVIEW_QUERY = `query {
   currentUser {
     reviewRequestedMergeRequests(state: opened, first: 50) {
       nodes { iid title description webUrl updatedAt project { fullPath } labels { nodes { title } } assignees { nodes { username } } }
@@ -49,7 +49,7 @@ const REVIEW_QUERY = `query {
 }`;
 
 /** Each GitLab host's projects, path → checkout, from every project Argus knows. */
-async function projectIndex(
+export async function projectIndex(
   repoRoots: string[],
 ): Promise<Map<string, Map<string, string>>> {
   const roots = new Set(repoRoots);

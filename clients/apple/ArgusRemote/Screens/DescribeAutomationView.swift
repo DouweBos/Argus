@@ -78,6 +78,8 @@ struct DescribeAutomationView: View {
         if let headline = draft.schedulePreviewText()?.headline { BodyText(headline) }
         MutedText("\(cron) · \(draft.timezone ?? TimeZone.current.identifier)").monospaced()
       }
+    } else if draft.triggerKind == .signal || draft.triggerKind == .webhook {
+      MutedText("\(draft.triggerKind == .signal ? "On events" : "On webhook") — \(draft.triggerCaption)")
     } else {
       MutedText("Manual — runs only when someone presses Run now.")
     }

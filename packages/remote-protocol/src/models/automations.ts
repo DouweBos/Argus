@@ -3,6 +3,20 @@ import { ReportBlock } from "../report";
 
 export * from "./automations/proposals";
 
+/** Something that happened to an issue or PR, as a signal trigger reacts to it. */
+export const SignalEventKind = z.enum([
+  "assigned",
+  "ci_failed",
+  "mentioned",
+  "new_issue",
+  "new_pr",
+  "review_requested",
+]);
+export type SignalEventKind = z.infer<typeof SignalEventKind>;
+
+export const SignalFireMode = z.enum(["batch", "each"]);
+export type SignalFireMode = z.infer<typeof SignalFireMode>;
+
 /** What causes an automation to fire. */
 export const AutomationTrigger = z.discriminatedUnion("kind", [
   z.object({
@@ -27,6 +41,24 @@ export const AutomationTrigger = z.discriminatedUnion("kind", [
     catch_up: z.boolean(),
   }),
   z.object({ kind: z.literal("manual") }),
+  z.object({
+    /** Fires when something happens on GitHub, GitLab or Linear. */
+    kind: z.literal("signal"),
+    /** What to react to; at least one. */
+    on: z.array(SignalEventKind),
+    /** Optional any-of label filter on top of `on`; empty matches all. */
+    labels: z.array(z.string()),
+    /** `each`: one run per event. `batch`: one run for everything waiting. */
+    fire: SignalFireMode,
+    /** Cap on runs this trigger starts in any rolling hour. */
+    max_runs_per_hour: z.number(),
+  }),
+  z.object({
+    /** Fires on a signed POST to the automation's URL on the gateway. */
+    kind: z.literal("webhook"),
+    fire: SignalFireMode,
+    max_runs_per_hour: z.number(),
+  }),
 ]);
 export type AutomationTrigger = z.infer<typeof AutomationTrigger>;
 export type AutomationTriggerKind = AutomationTrigger["kind"];
@@ -318,3 +350,18 @@ export const SignalSourceInfo = z.object({
   available: z.boolean(),
 });
 export type SignalSourceInfo = z.infer<typeof SignalSourceInfo>;
+
+/** An automation's webhook address, and whether a secret has been made for it. */
+export const AutomationWebhookInfo = z.object({
+  /** Null while the managed tunnel isn't running. */
+  url: z.string().nullable(),
+  has_secret: z.boolean(),
+});
+export type AutomationWebhookInfo = z.infer<typeof AutomationWebhookInfo>;
+
+/** A freshly made secret — the only time it is ever shown. */
+export const AutomationWebhookSecret = z.object({
+  url: z.string().nullable(),
+  secret: z.string(),
+});
+export type AutomationWebhookSecret = z.infer<typeof AutomationWebhookSecret>;

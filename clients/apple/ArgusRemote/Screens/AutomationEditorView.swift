@@ -9,6 +9,7 @@ struct AutomationEditorView: View {
   @Environment(AppStore.self) private var app
   @Environment(Router.self) private var router
   @Environment(AutomationsStore.self) private var store
+  @Environment(HostStore.self) private var host
   @Environment(\.dismiss) private var dismiss
 
   /// Nil creates a new automation.
@@ -33,7 +34,8 @@ struct AutomationEditorView: View {
         Banner(text: error, tone: .danger)
       }
       if loaded {
-        AutomationFields(draft: $draft, sources: store.sources, runners: store.runners)
+        AutomationFields(
+          draft: $draft, sources: store.sources, runners: store.runners, rotateWebhook: rotateWebhook)
         if !isNew {
           Btn(label: "Delete automation", tone: .danger, small: true) {
             confirmingDelete = true
@@ -71,6 +73,12 @@ struct AutomationEditorView: View {
       draft = detail
     }
     loaded = true
+  }
+
+  /// A secret is made against the saved automation, so a new one has none to rotate.
+  private var rotateWebhook: (() async -> RemoteWebhookSecret?)? {
+    guard let automationId, host.hasControl else { return nil }
+    return { await store.rotateWebhook(id: automationId) }
   }
 
   private func save() {

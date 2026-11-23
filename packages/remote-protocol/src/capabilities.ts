@@ -334,6 +334,8 @@ export const REMOTE_METHODS = {
   "automations.save_memory": "control",
   "automations.delete_memory": "control",
   "automations.set_enabled": "control",
+  /** Hands out a credential that starts runs. */
+  "automations.rotate_webhook": "control",
   "automations.run_now": "control",
   /** An ad-hoc run is an agent on the host, same as any other run. */
   "automations.run_scratch": "control",

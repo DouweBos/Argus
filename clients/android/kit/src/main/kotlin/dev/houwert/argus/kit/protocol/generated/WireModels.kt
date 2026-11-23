@@ -858,19 +858,6 @@ data class AutomationGuardrails(
 
 @Serializable
 @JvmInline
-value class AutomationInputTriggerKind(val rawValue: String) {
-  override fun toString(): String = rawValue
-
-  companion object {
-    val manual = AutomationInputTriggerKind("manual")
-    val once = AutomationInputTriggerKind("once")
-    val schedule = AutomationInputTriggerKind("schedule")
-    val entries: List<AutomationInputTriggerKind> = listOf(manual, once, schedule)
-  }
-}
-
-@Serializable
-@JvmInline
 value class AutomationInputAutonomy(val rawValue: String) {
   override fun toString(): String = rawValue
 
@@ -888,9 +875,11 @@ data class AutomationInput(
   @SerialName("name") val name: String,
   @SerialName("description") val description: String,
   @SerialName("enabled") val enabled: Boolean,
-  @SerialName("trigger_kind") val triggerKind: AutomationInputTriggerKind,
+  @SerialName("trigger_kind") val triggerKind: RemoteAutomationTriggerKind,
   @SerialName("cron") val cron: String,
   @SerialName("run_at") val runAt: String? = null,
+  @SerialName("signal") val signal: RemoteSignalTrigger? = null,
+  @SerialName("webhook") val webhook: RemoteWebhookTriggerInput? = null,
   @SerialName("timezone") val timezone: String,
   @SerialName("catch_up") val catchUp: Boolean,
   @SerialName("repo_roots") val repoRoots: List<String>,
@@ -1012,11 +1001,29 @@ data class AutomationTriggerManual(
   @SerialName("kind") val kind: String,
 )
 
+@Serializable
+data class AutomationTriggerSignal(
+  @SerialName("kind") val kind: String,
+  @SerialName("on") val on: List<SignalEventKind>,
+  @SerialName("labels") val labels: List<String>,
+  @SerialName("fire") val fire: SignalFireMode,
+  @SerialName("max_runs_per_hour") val maxRunsPerHour: Double,
+)
+
+@Serializable
+data class AutomationTriggerWebhook(
+  @SerialName("kind") val kind: String,
+  @SerialName("fire") val fire: SignalFireMode,
+  @SerialName("max_runs_per_hour") val maxRunsPerHour: Double,
+)
+
 @Serializable(with = AutomationTrigger.Serializer::class)
 sealed interface AutomationTrigger {
   data class Schedule(val value: AutomationTriggerSchedule) : AutomationTrigger
   data class Once(val value: AutomationTriggerOnce) : AutomationTrigger
   data class Manual(val value: AutomationTriggerManual) : AutomationTrigger
+  data class Signal(val value: AutomationTriggerSignal) : AutomationTrigger
+  data class Webhook(val value: AutomationTriggerWebhook) : AutomationTrigger
   data class Unknown(val value: JsonElement) : AutomationTrigger
 
   object Serializer : TaggedUnionSerializer<AutomationTrigger>("AutomationTrigger", "kind") {
@@ -1024,6 +1031,8 @@ sealed interface AutomationTrigger {
       "schedule" -> Schedule(json.decodeFromJsonElement(element))
       "once" -> Once(json.decodeFromJsonElement(element))
       "manual" -> Manual(json.decodeFromJsonElement(element))
+      "signal" -> Signal(json.decodeFromJsonElement(element))
+      "webhook" -> Webhook(json.decodeFromJsonElement(element))
       else -> Unknown(element)
     }
 
@@ -1031,10 +1040,24 @@ sealed interface AutomationTrigger {
       is Schedule -> json.encodeToJsonElement(value.value)
       is Once -> json.encodeToJsonElement(value.value)
       is Manual -> json.encodeToJsonElement(value.value)
+      is Signal -> json.encodeToJsonElement(value.value)
+      is Webhook -> json.encodeToJsonElement(value.value)
       is Unknown -> value.value
     }
   }
 }
+
+@Serializable
+data class AutomationWebhookInfo(
+  @SerialName("url") @EncodeDefault val url: String? = null,
+  @SerialName("has_secret") val hasSecret: Boolean,
+)
+
+@Serializable
+data class AutomationWebhookSecret(
+  @SerialName("url") @EncodeDefault val url: String? = null,
+  @SerialName("secret") val secret: String,
+)
 
 @Serializable
 @JvmInline
@@ -5154,19 +5177,6 @@ data class RemoteAgentVitals(
 
 @Serializable
 @JvmInline
-value class RemoteAutomationTriggerKind(val rawValue: String) {
-  override fun toString(): String = rawValue
-
-  companion object {
-    val manual = RemoteAutomationTriggerKind("manual")
-    val once = RemoteAutomationTriggerKind("once")
-    val schedule = RemoteAutomationTriggerKind("schedule")
-    val entries: List<RemoteAutomationTriggerKind> = listOf(manual, once, schedule)
-  }
-}
-
-@Serializable
-@JvmInline
 value class RemoteAutomationAutonomy(val rawValue: String) {
   override fun toString(): String = rawValue
 
@@ -5198,19 +5208,6 @@ data class RemoteAutomation(
 
 @Serializable
 @JvmInline
-value class RemoteAutomationDetailTriggerKind(val rawValue: String) {
-  override fun toString(): String = rawValue
-
-  companion object {
-    val manual = RemoteAutomationDetailTriggerKind("manual")
-    val once = RemoteAutomationDetailTriggerKind("once")
-    val schedule = RemoteAutomationDetailTriggerKind("schedule")
-    val entries: List<RemoteAutomationDetailTriggerKind> = listOf(manual, once, schedule)
-  }
-}
-
-@Serializable
-@JvmInline
 value class RemoteAutomationDetailAutonomy(val rawValue: String) {
   override fun toString(): String = rawValue
 
@@ -5229,11 +5226,13 @@ data class RemoteAutomationDetail(
   @SerialName("name") val name: String,
   @SerialName("description") val description: String,
   @SerialName("enabled") val enabled: Boolean,
-  @SerialName("trigger_kind") val triggerKind: RemoteAutomationDetailTriggerKind,
+  @SerialName("trigger_kind") val triggerKind: RemoteAutomationTriggerKind,
   @SerialName("cron") @EncodeDefault val cron: String? = null,
   @SerialName("run_at") val runAt: String? = null,
   @SerialName("timezone") @EncodeDefault val timezone: String? = null,
   @SerialName("catch_up") val catchUp: Boolean,
+  @SerialName("signal") val signal: RemoteSignalTrigger? = null,
+  @SerialName("webhook") val webhook: RemoteWebhookTrigger? = null,
   @SerialName("repo_roots") val repoRoots: List<String>,
   @SerialName("source_ids") val sourceIds: List<String>,
   @SerialName("playbook") val playbook: String,
@@ -5312,6 +5311,21 @@ value class RemoteAutomationRunStatus(val rawValue: String) {
     val skipped = RemoteAutomationRunStatus("skipped")
     val succeeded = RemoteAutomationRunStatus("succeeded")
     val entries: List<RemoteAutomationRunStatus> = listOf(cancelled, failed, queued, running, skipped, succeeded)
+  }
+}
+
+@Serializable
+@JvmInline
+value class RemoteAutomationTriggerKind(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val manual = RemoteAutomationTriggerKind("manual")
+    val once = RemoteAutomationTriggerKind("once")
+    val schedule = RemoteAutomationTriggerKind("schedule")
+    val signal = RemoteAutomationTriggerKind("signal")
+    val webhook = RemoteAutomationTriggerKind("webhook")
+    val entries: List<RemoteAutomationTriggerKind> = listOf(manual, once, schedule, signal, webhook)
   }
 }
 
@@ -6261,6 +6275,22 @@ data class RemoteSessionTurn(
 
 @Serializable
 @JvmInline
+value class RemoteSignalEventKind(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val assigned = RemoteSignalEventKind("assigned")
+    val ciFailed = RemoteSignalEventKind("ci_failed")
+    val mentioned = RemoteSignalEventKind("mentioned")
+    val newIssue = RemoteSignalEventKind("new_issue")
+    val newPr = RemoteSignalEventKind("new_pr")
+    val reviewRequested = RemoteSignalEventKind("review_requested")
+    val entries: List<RemoteSignalEventKind> = listOf(assigned, ciFailed, mentioned, newIssue, newPr, reviewRequested)
+  }
+}
+
+@Serializable
+@JvmInline
 value class RemoteSignalSourceMode(val rawValue: String) {
   override fun toString(): String = rawValue
 
@@ -6277,6 +6307,26 @@ data class RemoteSignalSource(
   @SerialName("label") val label: String,
   @SerialName("mode") val mode: RemoteSignalSourceMode,
   @SerialName("available") val available: Boolean,
+)
+
+@Serializable
+@JvmInline
+value class RemoteSignalTriggerFire(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val batch = RemoteSignalTriggerFire("batch")
+    val each = RemoteSignalTriggerFire("each")
+    val entries: List<RemoteSignalTriggerFire> = listOf(batch, each)
+  }
+}
+
+@Serializable
+data class RemoteSignalTrigger(
+  @SerialName("on") val on: List<RemoteSignalEventKind>,
+  @SerialName("labels") val labels: List<String>,
+  @SerialName("fire") val fire: RemoteSignalTriggerFire,
+  @SerialName("max_runs_per_hour") val maxRunsPerHour: Double,
 )
 
 @Serializable
@@ -6561,6 +6611,44 @@ value class RemoteViewedFileState(val rawValue: String) {
 data class RemoteViewedFile(
   @SerialName("path") val path: String,
   @SerialName("state") val state: RemoteViewedFileState,
+)
+
+@Serializable
+@JvmInline
+value class RemoteWebhookTriggerFire(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val batch = RemoteWebhookTriggerFire("batch")
+    val each = RemoteWebhookTriggerFire("each")
+    val entries: List<RemoteWebhookTriggerFire> = listOf(batch, each)
+  }
+}
+
+@Serializable
+data class RemoteWebhookTrigger(
+  @SerialName("fire") val fire: RemoteWebhookTriggerFire,
+  @SerialName("max_runs_per_hour") val maxRunsPerHour: Double,
+  @SerialName("url") @EncodeDefault val url: String? = null,
+  @SerialName("has_secret") val hasSecret: Boolean,
+)
+
+@Serializable
+@JvmInline
+value class RemoteWebhookTriggerInputFire(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val batch = RemoteWebhookTriggerInputFire("batch")
+    val each = RemoteWebhookTriggerInputFire("each")
+    val entries: List<RemoteWebhookTriggerInputFire> = listOf(batch, each)
+  }
+}
+
+@Serializable
+data class RemoteWebhookTriggerInput(
+  @SerialName("fire") val fire: RemoteWebhookTriggerInputFire,
+  @SerialName("max_runs_per_hour") val maxRunsPerHour: Double,
 )
 
 typealias ReportBlock = JsonElement
@@ -7067,6 +7155,34 @@ data class ShareReadiness(
   @SerialName("ready") val ready: Boolean,
   @SerialName("blocker") val blocker: ShareErrorPayload? = null,
 )
+
+@Serializable
+@JvmInline
+value class SignalEventKind(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val assigned = SignalEventKind("assigned")
+    val ciFailed = SignalEventKind("ci_failed")
+    val mentioned = SignalEventKind("mentioned")
+    val newIssue = SignalEventKind("new_issue")
+    val newPr = SignalEventKind("new_pr")
+    val reviewRequested = SignalEventKind("review_requested")
+    val entries: List<SignalEventKind> = listOf(assigned, ciFailed, mentioned, newIssue, newPr, reviewRequested)
+  }
+}
+
+@Serializable
+@JvmInline
+value class SignalFireMode(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val batch = SignalFireMode("batch")
+    val each = SignalFireMode("each")
+    val entries: List<SignalFireMode> = listOf(batch, each)
+  }
+}
 
 @Serializable
 @JvmInline

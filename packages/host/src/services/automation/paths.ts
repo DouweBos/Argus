@@ -49,3 +49,18 @@ export function proposalsFilePath(): string {
 export function automationMemoryDir(automationId: string): string {
   return path.join(argusHomeDir(), "automation-memory", automationId);
 }
+
+/** What each signal trigger has already seen, so a restart doesn't refire. */
+export function signalWatchFilePath(): string {
+  return path.join(argusHomeDir(), "automation-signal-watch.json");
+}
+
+/** Events waiting for a run, per automation. */
+export function automationEventQueueFilePath(): string {
+  return path.join(argusHomeDir(), "automation-event-queue.json");
+}
+
+/** Webhook secrets, per automation. Owner-only. */
+export function automationWebhooksFilePath(): string {
+  return path.join(argusHomeDir(), "automation-webhooks.json");
+}

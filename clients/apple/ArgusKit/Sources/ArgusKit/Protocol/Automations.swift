@@ -35,7 +35,7 @@ public enum RemoteAutonomy: String, Codable, Sendable, CaseIterable {
 
 public struct RemoteAutomation: Codable, Hashable, Sendable, Identifiable {
   public enum TriggerKind: String, Codable, Sendable {
-    case manual, once, schedule
+    case manual, once, schedule, signal, webhook
 
     /// A kind this build doesn't know reads as manual rather than failing the whole list.
     public init(from decoder: Decoder) throws {
@@ -121,6 +121,126 @@ public struct RemoteAutomationGuardrails: Codable, Hashable, Sendable {
     case pathDenylist = "path_denylist"
     case requireCleanCi = "require_clean_ci"
     case retryOtherAccounts = "retry_other_accounts"
+  }
+}
+
+/// An event a signal trigger reacts to. A struct rather than an enum so a kind
+/// a newer computer adds survives a round trip through the editor.
+public struct RemoteSignalEvent: RawRepresentable, Codable, Hashable, Sendable {
+  public var rawValue: String
+  public init(rawValue: String) { self.rawValue = rawValue }
+
+  public static let newIssue = RemoteSignalEvent(rawValue: "new_issue")
+  public static let newPr = RemoteSignalEvent(rawValue: "new_pr")
+  public static let assigned = RemoteSignalEvent(rawValue: "assigned")
+  public static let reviewRequested = RemoteSignalEvent(rawValue: "review_requested")
+  public static let ciFailed = RemoteSignalEvent(rawValue: "ci_failed")
+  public static let mentioned = RemoteSignalEvent(rawValue: "mentioned")
+
+  /// The picker's order.
+  public static let all: [RemoteSignalEvent] = [
+    .newIssue, .newPr, .assigned, .reviewRequested, .ciFailed, .mentioned,
+  ]
+
+  public var label: String {
+    switch self {
+    case .newIssue: "New issue"
+    case .newPr: "New pull request"
+    case .assigned: "Assigned to me"
+    case .reviewRequested: "Review requested"
+    case .ciFailed: "My CI failed"
+    case .mentioned: "Mentioned"
+    default: rawValue.replacingOccurrences(of: "_", with: " ").capitalized
+    }
+  }
+}
+
+/// Whether an event-driven trigger starts a run per event or one for the lot.
+public enum RemoteSignalFire: String, Codable, Hashable, Sendable, CaseIterable {
+  case each, batch
+
+  public init(from decoder: Decoder) throws {
+    let raw = try decoder.singleValueContainer().decode(String.self)
+    self = RemoteSignalFire(rawValue: raw) ?? .each
+  }
+
+  public var label: String {
+    switch self {
+    case .each: "One per event"
+    case .batch: "One for everything new"
+    }
+  }
+}
+
+/// A trigger that reacts to GitHub, GitLab and Linear events.
+public struct RemoteAutomationSignal: Codable, Hashable, Sendable {
+  public static let defaultRunsPerHour: Double = 4
+  public static let runsPerHourRange: ClosedRange<Double> = 1...60
+
+  public var on: [RemoteSignalEvent]
+  /// Any-of; empty reacts to everything.
+  public var labels: [String]
+  public var fire: RemoteSignalFire
+  public var maxRunsPerHour: Double
+
+  public init(
+    on: [RemoteSignalEvent] = [.newIssue], labels: [String] = [], fire: RemoteSignalFire = .each,
+    maxRunsPerHour: Double = RemoteAutomationSignal.defaultRunsPerHour
+  ) {
+    self.on = on
+    self.labels = labels
+    self.fire = fire
+    self.maxRunsPerHour = maxRunsPerHour
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case on, labels, fire
+    case maxRunsPerHour = "max_runs_per_hour"
+  }
+}
+
+/// A trigger that runs when a signed POST reaches the automation's URL.
+public struct RemoteAutomationWebhook: Codable, Hashable, Sendable {
+  public var fire: RemoteSignalFire
+  public var maxRunsPerHour: Double
+  /// Nil while remote access is off: there is no public address to call.
+  public var url: String?
+  public var hasSecret: Bool
+
+  public init(
+    fire: RemoteSignalFire = .each, maxRunsPerHour: Double = RemoteAutomationSignal.defaultRunsPerHour,
+    url: String? = nil, hasSecret: Bool = false
+  ) {
+    self.fire = fire
+    self.maxRunsPerHour = maxRunsPerHour
+    self.url = url
+    self.hasSecret = hasSecret
+  }
+
+  public init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    fire = try c.decodeIfPresent(RemoteSignalFire.self, forKey: .fire) ?? .each
+    maxRunsPerHour =
+      try c.decodeIfPresent(Double.self, forKey: .maxRunsPerHour) ?? RemoteAutomationSignal.defaultRunsPerHour
+    url = try c.decodeIfPresent(String.self, forKey: .url)
+    hasSecret = try c.decodeIfPresent(Bool.self, forKey: .hasSecret) ?? false
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case fire, url
+    case maxRunsPerHour = "max_runs_per_hour"
+    case hasSecret = "has_secret"
+  }
+}
+
+/// A freshly made webhook secret: shown once, never readable again.
+public struct RemoteWebhookSecret: Codable, Hashable, Sendable {
+  public var url: String?
+  public var secret: String
+
+  public init(url: String?, secret: String) {
+    self.url = url
+    self.secret = secret
   }
 }
 
@@ -225,6 +345,10 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
   public var runAt: String?
   public var timezone: String?
   public var catchUp: Bool
+  /// Only for `.signal`.
+  public var signal: RemoteAutomationSignal?
+  /// Only for `.webhook`.
+  public var webhook: RemoteAutomationWebhook?
   /// Full repo paths: an editor has to write them back unchanged.
   public var repoRoots: [String]
   public var sourceIds: [String]
@@ -245,7 +369,9 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     id: String = "", name: String = "", description: String = "",
     enabled: Bool = true, triggerKind: RemoteAutomation.TriggerKind = .schedule,
     cron: String? = "0 9 * * 1-5", runAt: String? = nil,
-    timezone: String? = TimeZone.current.identifier, catchUp: Bool = true, repoRoots: [String] = [], sourceIds: [String] = [],
+    timezone: String? = TimeZone.current.identifier, catchUp: Bool = true,
+    signal: RemoteAutomationSignal? = nil, webhook: RemoteAutomationWebhook? = nil,
+    repoRoots: [String] = [], sourceIds: [String] = [],
     playbook: String = "", extraInstructions: String? = nil,
     autonomy: RemoteAutonomy? = nil, model: String? = nil,
     runner: String? = nil, claudeAccountId: String? = nil,
@@ -260,6 +386,8 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     self.runAt = runAt
     self.timezone = timezone
     self.catchUp = catchUp
+    self.signal = signal
+    self.webhook = webhook
     self.repoRoots = repoRoots
     self.sourceIds = sourceIds
     self.playbook = playbook
@@ -273,7 +401,7 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
 
   enum CodingKeys: String, CodingKey {
     case id, name, description, enabled, cron, timezone, playbook, autonomy, model, runner
-    case guardrails
+    case guardrails, signal, webhook
     case triggerKind = "trigger_kind"
     case runAt = "run_at"
     case catchUp = "catch_up"
@@ -296,6 +424,10 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
   public var runAt: String?
   public var timezone: String
   public var catchUp: Bool
+  /// Sent only for `.signal`.
+  public var signal: RemoteAutomationSignal?
+  /// Sent only for `.webhook`, without its url and secret flag.
+  public var webhook: RemoteAutomationWebhook?
   public var repoRoots: [String]
   public var sourceIds: [String]
   public var playbook: String
@@ -315,6 +447,8 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     runAt = detail.runAt
     timezone = detail.timezone ?? TimeZone.current.identifier
     catchUp = detail.catchUp
+    signal = detail.triggerKind == .signal ? detail.signal ?? RemoteAutomationSignal() : nil
+    webhook = detail.triggerKind == .webhook ? detail.webhook ?? RemoteAutomationWebhook() : nil
     repoRoots = detail.repoRoots
     sourceIds = detail.sourceIds
     playbook = detail.playbook
@@ -328,7 +462,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
 
   enum CodingKeys: String, CodingKey {
     case name, description, enabled, cron, timezone, playbook, autonomy, model, runner
-    case guardrails
+    case guardrails, signal, webhook
     case triggerKind = "trigger_kind"
     case runAt = "run_at"
     case catchUp = "catch_up"
@@ -348,6 +482,10 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     try c.encode(triggerKind, forKey: .triggerKind)
     try c.encode(cron, forKey: .cron)
     if triggerKind == .once { try c.encodeIfPresent(runAt, forKey: .runAt) }
+    if triggerKind == .signal { try c.encodeIfPresent(signal, forKey: .signal) }
+    if triggerKind == .webhook, let webhook {
+      try c.encode(WebhookInput(fire: webhook.fire, maxRunsPerHour: webhook.maxRunsPerHour), forKey: .webhook)
+    }
     try c.encode(timezone, forKey: .timezone)
     try c.encode(catchUp, forKey: .catchUp)
     try c.encode(repoRoots, forKey: .repoRoots)
@@ -359,6 +497,16 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     try c.encode(runner, forKey: .runner)
     try c.encode(claudeAccountId, forKey: .claudeAccountId)
     try c.encode(guardrails, forKey: .guardrails)
+  }
+
+  private struct WebhookInput: Encodable {
+    let fire: RemoteSignalFire
+    let maxRunsPerHour: Double
+
+    enum CodingKeys: String, CodingKey {
+      case fire
+      case maxRunsPerHour = "max_runs_per_hour"
+    }
   }
 }
 

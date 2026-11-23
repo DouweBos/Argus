@@ -100,6 +100,28 @@ export const linearSource: SignalSource = {
     return Promise.resolve(Boolean(linearApi()) || hasLinearMcpServer());
   },
 
+  events: ["new_issue", "assigned"],
+
+  async fetchEvents({ kinds }) {
+    const api = await freshLinearApi();
+    if (!api) {
+      return [];
+    }
+    const [created, assigned] = await Promise.all([
+      kinds.includes("new_issue") ? api.teamIssues(ASSIGNED_LIMIT) : [],
+      kinds.includes("assigned") ? api.myIssues(ASSIGNED_LIMIT) : [],
+    ]);
+    const events = (kind: "assigned" | "new_issue", issues: LinearIssue[]) =>
+      issues.map((issue) => ({
+        kind,
+        key: `${kind}:${issue.identifier}`,
+        item: issueToWorkItem(issue),
+        detail: {},
+      }));
+
+    return [...events("new_issue", created), ...events("assigned", assigned)];
+  },
+
   async fetchAssigned() {
     const api = await freshLinearApi();
 

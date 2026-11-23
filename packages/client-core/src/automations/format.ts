@@ -8,6 +8,7 @@ import type {
   RemoteAutomation,
   RemoteAutomationGuardrails,
   RemoteAutomationRunStatus,
+  RemoteSignalEventKind,
 } from "@argus/remote-protocol";
 import { formatDuration } from "../transcript/workLog";
 import { computeNextRun, isValidCron } from "./cron";
@@ -128,6 +129,12 @@ export function scheduleLabel(
   if (automation.trigger_kind === "manual") {
     return "Manual";
   }
+  if (automation.trigger_kind === "signal") {
+    return "On events";
+  }
+  if (automation.trigger_kind === "webhook") {
+    return "On webhook";
+  }
   if (automation.trigger_kind === "once") {
     const instant = automation.run_at
       ? onceInstant(automation.run_at, automation.timezone || localTimezone())
@@ -200,8 +207,34 @@ export function nextRunLabel(
   if (!automation.enabled) {
     return "Paused";
   }
+  if (automation.trigger_kind === "signal") {
+    return "When an event arrives";
+  }
+  if (automation.trigger_kind === "webhook") {
+    return "When its webhook is called";
+  }
 
   return automation.next_run_at === null
     ? "—"
     : `${formatTimestamp(automation.next_run_at)} (${formatRelative(automation.next_run_at, now)})`;
 }
+
+/** What each signal event is called in a picker. */
+export const SIGNAL_EVENT_LABELS: Record<RemoteSignalEventKind, string> = {
+  new_issue: "New issue",
+  new_pr: "New pull request",
+  assigned: "Assigned to me",
+  review_requested: "Review requested",
+  ci_failed: "My CI failed",
+  mentioned: "Mentioned",
+};
+
+/** The picker's order. */
+export const SIGNAL_EVENT_ORDER: RemoteSignalEventKind[] = [
+  "new_issue",
+  "new_pr",
+  "assigned",
+  "review_requested",
+  "ci_failed",
+  "mentioned",
+];

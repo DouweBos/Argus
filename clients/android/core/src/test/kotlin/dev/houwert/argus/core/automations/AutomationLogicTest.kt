@@ -7,10 +7,13 @@ import dev.houwert.argus.kit.protocol.generated.MethodsTypes
 import dev.houwert.argus.kit.protocol.generated.AutomationInput as GeneratedAutomationInput
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomation
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetail
-import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetailTriggerKind
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationTriggerKind
 import dev.houwert.argus.kit.protocol.generated.RemoteClaudeAccount
 import dev.houwert.argus.kit.protocol.generated.RemoteRunner
+import dev.houwert.argus.kit.protocol.generated.RemoteSignalEventKind
+import dev.houwert.argus.kit.protocol.generated.RemoteSignalTriggerFire
+import dev.houwert.argus.kit.protocol.generated.RemoteWebhookTrigger
+import dev.houwert.argus.kit.protocol.generated.RemoteWebhookTriggerFire
 import dev.houwert.argus.kit.util.OnceTime
 import java.time.Instant
 import kotlinx.serialization.builtins.ListSerializer
@@ -123,7 +126,7 @@ class AutomationInputTest {
 
   @Test
   fun aRunOnceTriggerSendsItsTime() {
-    val json = encode(newAutomationDetail(name = "A", triggerKind = RemoteAutomationDetailTriggerKind.once, runAt = "2026-11-10T09:00", playbook = "p"))
+    val json = encode(newAutomationDetail(name = "A", triggerKind = RemoteAutomationTriggerKind.once, runAt = "2026-11-10T09:00", playbook = "p"))
     assertEquals(JsonPrimitive("once"), json["trigger_kind"])
     assertEquals(JsonPrimitive("2026-11-10T09:00"), json["run_at"])
     assertEquals(Instant.ofEpochSecond(1_794_301_200), OnceTime.date("2026-11-10T09:00", "UTC"))
@@ -132,13 +135,58 @@ class AutomationInputTest {
   }
 
   @Test
+  fun aSignalTriggerSendsItsEventsAndNoWebhook() {
+    val draft = newAutomationDetail(name = "A", triggerKind = RemoteAutomationTriggerKind.signal, playbook = "p").copy(
+      signal = defaultSignalTrigger.copy(on = listOf(RemoteSignalEventKind.ciFailed), labels = listOf("bug"), fire = RemoteSignalTriggerFire.batch),
+    )
+    for (json in listOf(encode(draft), patch(draft))) {
+      assertEquals(JsonPrimitive("signal"), json["trigger_kind"])
+      val signal = json["signal"]!!.jsonObject
+      assertEquals("""["ci_failed"]""", signal["on"].toString())
+      assertEquals("""["bug"]""", signal["labels"].toString())
+      assertEquals(JsonPrimitive("batch"), signal["fire"])
+      assertNull(json["webhook"])
+    }
+    // A switch to signal without a config still sends the defaults.
+    val bare = encode(newAutomationDetail(name = "A", triggerKind = RemoteAutomationTriggerKind.signal, playbook = "p"))
+    assertEquals("""["new_issue"]""", bare["signal"]!!.jsonObject["on"].toString())
+  }
+
+  @Test
+  fun aWebhookTriggerSendsOnlyWhatTheEditorOwns() {
+    val draft = newAutomationDetail(name = "A", triggerKind = RemoteAutomationTriggerKind.webhook, playbook = "p").copy(
+      webhook = RemoteWebhookTrigger(RemoteWebhookTriggerFire.batch, 6.0, url = "https://x/hooks/a", hasSecret = true),
+    )
+    for (json in listOf(encode(draft), patch(draft))) {
+      val webhook = json["webhook"]!!.jsonObject
+      assertEquals(setOf("fire", "max_runs_per_hour"), webhook.keys)
+      assertEquals(JsonPrimitive("batch"), webhook["fire"])
+      assertNull(json["signal"])
+    }
+    // A schedule leaves both out, even with configs left over from switching kinds.
+    val schedule = encode(draft.copy(triggerKind = RemoteAutomationTriggerKind.schedule, signal = defaultSignalTrigger))
+    assertNull(schedule["signal"])
+    assertNull(schedule["webhook"])
+  }
+
+  @Test
+  fun aSignalTriggerNeedsAnEvent() {
+    val draft = newAutomationDetail(triggerKind = RemoteAutomationTriggerKind.signal, cron = null)
+      .copy(signal = defaultSignalTrigger.copy(on = emptyList()))
+    assertEquals("Pick at least one event to react to.", draft.signalError)
+    assertFalse(draft.hasValidTrigger)
+    assertTrue(draft.copy(signal = defaultSignalTrigger).hasValidTrigger)
+    assertTrue(newAutomationDetail(triggerKind = RemoteAutomationTriggerKind.webhook, cron = null).hasValidTrigger)
+  }
+
+  @Test
   fun anUnknownTriggerKindStillDecodes() {
-    val kinds = ProtocolJson.decode(ListSerializer(RemoteAutomationTriggerKind.serializer()), ProtocolJson.json.parseToJsonElement("""["once","webhook"]"""))
+    val kinds = ProtocolJson.decode(ListSerializer(RemoteAutomationTriggerKind.serializer()), ProtocolJson.json.parseToJsonElement("""["once","cron"]"""))
     assertEquals(RemoteAutomationTriggerKind.once, kinds[0])
-    assertEquals("webhook", kinds[1].rawValue)
+    assertEquals("cron", kinds[1].rawValue)
     val automation = decode(
       RemoteAutomation.serializer(),
-      """{"id":"a","name":"n","description":"","enabled":true,"trigger_kind":"webhook","projects":[],"running":false}""",
+      """{"id":"a","name":"n","description":"","enabled":true,"trigger_kind":"cron","projects":[],"running":false}""",
     )
     assertIs<RemoteAutomation>(automation)
   }

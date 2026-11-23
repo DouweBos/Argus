@@ -22,6 +22,15 @@
           "automations/detail", size: CGSize(width: 1000, height: 2400), chrome: true, fixtures: fixtures,
           setup: attachModel
         ) { AutomationScreen(automationId: GalleryFixtures.triageId, runId: nil) },
+        // The Mac edits an automation on its detail screen; same ids as the iOS editor's.
+        GalleryStory(
+          "automations/editor/signal", size: CGSize(width: 1000, height: 2000), chrome: true,
+          fixtures: GalleryFixtures.automations(detailId: GalleryFixtures.redCiId), setup: attachModel
+        ) { AutomationScreen(automationId: GalleryFixtures.redCiId, runId: nil) },
+        GalleryStory(
+          "automations/editor/webhook", size: CGSize(width: 1000, height: 1900), chrome: true,
+          fixtures: GalleryFixtures.automations(detailId: GalleryFixtures.deployHookId), setup: attachModel
+        ) { AutomationScreen(automationId: GalleryFixtures.deployHookId, runId: nil) },
         GalleryStory(
           "automations/run", size: screen, chrome: true, fixtures: fixtures, setup: attachModel
         ) { AutomationScreen(automationId: "deps", runId: "r-deps-1") },

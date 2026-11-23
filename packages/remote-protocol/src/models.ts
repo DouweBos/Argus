@@ -752,6 +752,56 @@ export type RemoteEndpoint = z.infer<typeof RemoteEndpoint>;
 
 // --- Automations -----------------------------------------------------------
 
+export const RemoteAutomationTriggerKind = z.enum([
+  "manual",
+  "once",
+  "schedule",
+  "signal",
+  "webhook",
+]);
+export type RemoteAutomationTriggerKind = z.infer<
+  typeof RemoteAutomationTriggerKind
+>;
+
+export const RemoteSignalEventKind = z.enum([
+  "assigned",
+  "ci_failed",
+  "mentioned",
+  "new_issue",
+  "new_pr",
+  "review_requested",
+]);
+export type RemoteSignalEventKind = z.infer<typeof RemoteSignalEventKind>;
+
+/** A signal trigger's events, filter and pacing — only for `signal`. */
+export const RemoteSignalTrigger = z.object({
+  /** What to react to; at least one. */
+  on: z.array(RemoteSignalEventKind),
+  /** Optional any-of label filter on top of `on`; empty matches every item. */
+  labels: z.array(z.string()),
+  /** `each`: one run per event. `batch`: one run for everything waiting. */
+  fire: z.enum(["batch", "each"]),
+  max_runs_per_hour: z.number(),
+});
+export type RemoteSignalTrigger = z.infer<typeof RemoteSignalTrigger>;
+
+/** A webhook trigger's pacing, sent when saving — only for `webhook`. */
+export const RemoteWebhookTriggerInput = z.object({
+  fire: z.enum(["batch", "each"]),
+  max_runs_per_hour: z.number(),
+});
+export type RemoteWebhookTriggerInput = z.infer<
+  typeof RemoteWebhookTriggerInput
+>;
+
+/** A webhook trigger as an editor shows it. The secret is never in here. */
+export const RemoteWebhookTrigger = RemoteWebhookTriggerInput.extend({
+  /** Null while the managed tunnel isn't running. */
+  url: z.string().nullable(),
+  has_secret: z.boolean(),
+});
+export type RemoteWebhookTrigger = z.infer<typeof RemoteWebhookTrigger>;
+
 /**
  * An automation, as a client that only views and fires them needs it.
  *
@@ -765,7 +815,7 @@ export const RemoteAutomation = z.object({
   name: z.string(),
   description: z.string(),
   enabled: z.boolean(),
-  trigger_kind: z.enum(["manual", "once", "schedule"]),
+  trigger_kind: RemoteAutomationTriggerKind,
   /** 5-field cron — only for `schedule`. */
   cron: z.string().nullable(),
   /** Local `YYYY-MM-DDTHH:mm` — only for `once`. Missing from older hosts. */
@@ -1046,12 +1096,16 @@ export const RemoteAutomationDetail = z.object({
   name: z.string(),
   description: z.string(),
   enabled: z.boolean(),
-  trigger_kind: z.enum(["manual", "once", "schedule"]),
+  trigger_kind: RemoteAutomationTriggerKind,
   cron: z.string().nullable(),
   /** Local `YYYY-MM-DDTHH:mm` — only for `once`. Missing from older hosts. */
   run_at: z.string().nullable().optional(),
   timezone: z.string().nullable(),
   catch_up: z.boolean(),
+  /** Only for `signal`. Missing from older hosts. */
+  signal: RemoteSignalTrigger.nullable().optional(),
+  /** Only for `webhook`. Missing from older hosts. */
+  webhook: RemoteWebhookTrigger.nullable().optional(),
   /** Full repo paths — an editor has to write them back unchanged. */
   repo_roots: z.array(z.string()),
   source_ids: z.array(z.string()),

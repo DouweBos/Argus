@@ -13,6 +13,7 @@ import {
   GITHUB_SOURCE_ID,
   LINEAR_SOURCE_ID,
 } from "../signals/sourceIds";
+import { EVENT_TEMPLATES } from "./eventTemplates";
 
 export const STANDUP_DIGEST_TEMPLATE_ID = "standup-digest";
 export const MORNING_TRIAGE_TEMPLATE_ID = "morning-triage";
@@ -579,4 +580,5 @@ export const BUILT_IN_TEMPLATES: Record<string, CreateAutomationInput> = {
     autonomy: "propose",
     template_id: DEPENDENCY_WATCH_TEMPLATE_ID,
   },
+  ...EVENT_TEMPLATES,
 };

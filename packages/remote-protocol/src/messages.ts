@@ -26,6 +26,9 @@ import {
   RemoteAutomationMemory,
   RemoteAutomationGuardrails,
   RemoteAutomationRun,
+  RemoteAutomationTriggerKind,
+  RemoteSignalTrigger,
+  RemoteWebhookTriggerInput,
   RemoteAgentVitals,
   RemoteMcpServerStatus,
   RemoteClaudeAccount,
@@ -139,10 +142,14 @@ export const AutomationInput = z.object({
   name: z.string(),
   description: z.string(),
   enabled: z.boolean(),
-  trigger_kind: z.enum(["manual", "once", "schedule"]),
+  trigger_kind: RemoteAutomationTriggerKind,
   cron: z.string(),
   /** Local `YYYY-MM-DDTHH:mm` for `once`; optional so older clients still save. */
   run_at: z.string().optional(),
+  /** Required for `signal`; optional so older clients still save. */
+  signal: RemoteSignalTrigger.optional(),
+  /** For `webhook`; the host defaults it when missing. */
+  webhook: RemoteWebhookTriggerInput.optional(),
   timezone: z.string(),
   catch_up: z.boolean(),
   repo_roots: z.array(z.string()),
@@ -855,6 +862,8 @@ export const MethodParams = {
     automation_id: z.string(),
     enabled: z.boolean(),
   }),
+  /** A new webhook secret, replacing the old one. */
+  "automations.rotate_webhook": z.object({ automation_id: z.string() }),
   "automations.run_now": z.object({ automation_id: z.string() }),
   /** Run a playbook once, with nothing saved behind it. */
   "automations.run_scratch": z.object({
@@ -1419,6 +1428,11 @@ export const MethodResult = {
   "automations.save_memory": z.object({ memory: RemoteAutomationMemory }),
   "automations.delete_memory": z.object({ accepted: z.boolean() }),
   "automations.set_enabled": z.object({ automation: RemoteAutomation }),
+  /** The only time the secret is shown. */
+  "automations.rotate_webhook": z.object({
+    url: z.string().nullable(),
+    secret: z.string(),
+  }),
   /** The run record as created — it is still queued when this returns. */
   "automations.run_now": z.object({ run: RemoteAutomationRun }),
   "automations.run_scratch": z.object({ run: RemoteAutomationRun }),

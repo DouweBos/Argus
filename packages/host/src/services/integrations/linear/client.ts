@@ -25,6 +25,7 @@ import {
   type RawIssueDetail,
   SCOPED_ISSUES,
   SEARCH_ISSUES,
+  TEAM_ISSUES,
   START_STATE,
   TEAM_STATES,
   TEAMS,
@@ -120,6 +121,15 @@ export class LinearApi {
       [];
 
     return nodes.map(toLinearIssue);
+  }
+
+  async teamIssues(limit: number): Promise<LinearIssue[]> {
+    const data = await this.query<{ issues: { nodes: RawIssue[] } }>(
+      TEAM_ISSUES,
+      { first: limit },
+    );
+
+    return data.issues.nodes.map(toLinearIssue);
   }
 
   async searchIssues(term: string, limit: number): Promise<LinearIssue[]> {

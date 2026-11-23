@@ -25,6 +25,11 @@ import { collectAllProjects } from "../mcp/projectDiscovery";
 import { describeSignalSources } from "../signals/registry";
 import { computeNextRun, isValidCron } from "./cron";
 import { autonomyRank, isAutonomyLevel } from "./guardrails";
+import {
+  DEFAULT_RUNS_PER_HOUR,
+  normalizeSignalKinds,
+  normalizeSignalLabels,
+} from "./signalTrigger";
 import { BUILT_IN_TEMPLATES } from "./templates";
 
 const MAX_DESCRIPTION_INPUT_CHARS = 2000;
@@ -206,9 +211,25 @@ export function sanitizeDraft(
     obj.trigger && typeof obj.trigger === "object"
       ? (obj.trigger as Record<string, unknown>)
       : {};
-  const wantsSchedule = triggerObj.kind !== "manual";
+  const signalOn = normalizeSignalKinds(stringList(triggerObj.on));
+  const wantsSignal = triggerObj.kind === "signal" && signalOn.length > 0;
+  const wantsSchedule =
+    triggerObj.kind !== "manual" && triggerObj.kind !== "signal";
   let trigger: AutomationTrigger = { kind: "manual" };
-  if (wantsSchedule) {
+  if (triggerObj.kind === "signal" && !wantsSignal) {
+    notes.push(
+      "The suggested signal trigger named no events — set it to manual.",
+    );
+  }
+  if (wantsSignal) {
+    trigger = {
+      kind: "signal",
+      on: signalOn,
+      labels: normalizeSignalLabels(stringList(triggerObj.labels)),
+      fire: triggerObj.fire === "batch" ? "batch" : "each",
+      max_runs_per_hour: DEFAULT_RUNS_PER_HOUR,
+    };
+  } else if (wantsSchedule) {
     let timezone = text(triggerObj.timezone, 64);
     if (timezone && !isValidTimezone(timezone)) {
       notes.push(
@@ -385,6 +406,11 @@ export function buildAuthoringPrompt(
     "Rules:",
     "- The cron is five fields, `min hour dom mon dow`. No seconds field, no `?`, no `@daily`.",
     '- Use `{ "kind": "manual" }` when the description implies no clock.',
+    '- Use `{ "kind": "signal", "on": ["new_issue"], "labels": [], "fire": "each" }` when it',
+    "  should react as things happen instead of on a clock. `on` takes new_issue, new_pr,",
+    "  assigned, review_requested, ci_failed (one of your PRs goes red) and mentioned.",
+    '  `labels` is an optional any-of filter; `fire` is `"batch"` for one run covering',
+    "  everything new.",
     "- Only ever name projects and source ids from the lists above; omit them otherwise.",
     "- The playbook is the important part: say what to read, how to decide, what to",
     "  emit with `emit_proposal`, and what the final report should contain. Write it",

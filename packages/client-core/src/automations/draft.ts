@@ -7,6 +7,8 @@ import type {
   AutomationInput,
   RemoteAutomationDetail,
   RemoteProject,
+  RemoteSignalTrigger,
+  RemoteWebhookTrigger,
 } from "@argus/remote-protocol";
 import { cronError, DEFAULT_GUARDRAILS, localTimezone } from "./format";
 import { onceError } from "./once";
@@ -18,6 +20,22 @@ export const NEW_PLAYBOOK = `# New automation
 Describe what this run should do, in markdown. The agent reads the projects in
 scope at their absolute paths and writes its findings as its final message.
 `;
+
+/** What a trigger switched to `signal` starts with: one run per new item. */
+export const DEFAULT_SIGNAL_TRIGGER: RemoteSignalTrigger = {
+  on: ["new_issue"],
+  labels: [],
+  fire: "each",
+  max_runs_per_hour: 4,
+};
+
+/** What a trigger switched to `webhook` starts with; no secret until one is made. */
+export const DEFAULT_WEBHOOK_TRIGGER: RemoteWebhookTrigger = {
+  fire: "each",
+  max_runs_per_hour: 4,
+  url: null,
+  has_secret: false,
+};
 
 /** A fresh automation: paused, on a weekday-morning schedule, nothing in scope. */
 export function newAutomationDraft(
@@ -54,6 +72,15 @@ export function draftToInput(draft: RemoteAutomationDetail): AutomationInput {
     trigger_kind: draft.trigger_kind,
     cron: (draft.cron ?? DEFAULT_CRON).trim(),
     ...(draft.trigger_kind === "once" && { run_at: draft.run_at ?? "" }),
+    ...(draft.trigger_kind === "signal" && {
+      signal: draft.signal ?? DEFAULT_SIGNAL_TRIGGER,
+    }),
+    ...(draft.trigger_kind === "webhook" && {
+      webhook: {
+        fire: draft.webhook?.fire ?? "each",
+        max_runs_per_hour: draft.webhook?.max_runs_per_hour ?? 4,
+      },
+    }),
     timezone: draft.timezone?.trim() || localTimezone(),
     catch_up: draft.catch_up,
     repo_roots: draft.repo_roots,
@@ -85,10 +112,11 @@ export function runnerTakesAccountPin(
  * run-once may keep a past time — it is only checked once it would arm.
  */
 export function draftScheduleError(
-  draft: Pick<
-    RemoteAutomationDetail,
-    "cron" | "enabled" | "run_at" | "timezone" | "trigger_kind"
-  >,
+  draft: Partial<Pick<RemoteAutomationDetail, "signal">> &
+    Pick<
+      RemoteAutomationDetail,
+      "cron" | "enabled" | "run_at" | "timezone" | "trigger_kind"
+    >,
   now: number = Date.now(),
 ): string | null {
   const timezone = draft.timezone || localTimezone();
@@ -100,7 +128,12 @@ export function draftScheduleError(
 
       return error && (draft.enabled || !draft.run_at) ? error : null;
     }
+    case "signal":
+      return (draft.signal?.on.length ?? 0) > 0
+        ? null
+        : "Pick at least one event to react to.";
     case "manual":
+    case "webhook":
       return null;
   }
 }

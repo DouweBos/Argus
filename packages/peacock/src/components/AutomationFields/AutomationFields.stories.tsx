@@ -31,6 +31,12 @@ function Live({ initial }: { initial: RemoteAutomationDetail }) {
       sources={FIXTURE_SOURCES}
       onChange={setDraft}
       onRevisePlaybook={() => undefined}
+      onRotateWebhookSecret={() =>
+        Promise.resolve({
+          url: draft.webhook?.url ?? null,
+          secret: "q4Jx2nV8bWm1cR7tLs0yPz3kE6hA9dFg5uTiOw",
+        })
+      }
     />
   );
 }
@@ -69,6 +75,46 @@ export const OncePassed: Story = {
         trigger_kind: "once",
         cron: null,
         run_at: "2020-01-01T09:00",
+      }}
+    />
+  ),
+};
+
+/** Runs when one of your pull requests goes red. */
+export const Signal: Story = {
+  render: () => (
+    <Live
+      initial={{
+        ...FIXTURE_DETAIL,
+        enabled: true,
+        trigger_kind: "signal",
+        cron: null,
+        signal: {
+          on: ["ci_failed", "mentioned"],
+          labels: [],
+          fire: "each",
+          max_runs_per_hour: 4,
+        },
+      }}
+    />
+  ),
+};
+
+/** Called from outside; the secret shows once after Generate. */
+export const Webhook: Story = {
+  render: () => (
+    <Live
+      initial={{
+        ...FIXTURE_DETAIL,
+        enabled: true,
+        trigger_kind: "webhook",
+        cron: null,
+        webhook: {
+          fire: "batch",
+          max_runs_per_hour: 6,
+          url: "https://studio-mac.example.dev/hooks/automations/a4",
+          has_secret: false,
+        },
       }}
     />
   ),

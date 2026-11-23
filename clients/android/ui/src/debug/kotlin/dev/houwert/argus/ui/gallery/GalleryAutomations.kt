@@ -17,6 +17,12 @@ import dev.houwert.argus.kit.protocol.generated.RemoteAutomationMemoryType
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationRun
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationRunStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationTriggerKind
+import dev.houwert.argus.kit.protocol.generated.MethodsTypes
+import dev.houwert.argus.kit.protocol.generated.RemoteSignalEventKind
+import dev.houwert.argus.kit.protocol.generated.RemoteSignalTrigger
+import dev.houwert.argus.kit.protocol.generated.RemoteSignalTriggerFire
+import dev.houwert.argus.kit.protocol.generated.RemoteWebhookTrigger
+import dev.houwert.argus.kit.protocol.generated.RemoteWebhookTriggerFire
 import dev.houwert.argus.kit.protocol.generated.RemoteClaudeAccount
 import dev.houwert.argus.kit.protocol.generated.RemoteClaudeAccountAccountType
 import dev.houwert.argus.kit.protocol.generated.RemoteProject
@@ -76,6 +82,29 @@ internal val galleryAutomations = listOf(
   automation("a10", "Crash report digest", cron = "30 7 * * *", nextIn = 14 * HOUR),
   automation("a11", "Docs link checker", enabled = false, cron = "0 3 * * 0"),
   automation("a12", "Unused feature flags", cron = "0 10 1 * *", nextIn = 300 * HOUR),
+  automation("a13", "Fix my red CI", kind = RemoteAutomationTriggerKind.signal, cron = null, nextIn = null),
+  automation("a14", "Review deploy previews", kind = RemoteAutomationTriggerKind.webhook, cron = null, nextIn = null),
+)
+
+private val signalDraft = newAutomationDetail(
+  name = "Fix my red CI", triggerKind = RemoteAutomationTriggerKind.signal, cron = null,
+  playbook = "# Fix my red CI\n\nRead the failing job's log, fix the cause on the PR's branch and push.",
+).copy(
+  id = "a13",
+  signal = RemoteSignalTrigger(
+    on = listOf(RemoteSignalEventKind.ciFailed), labels = emptyList(), fire = RemoteSignalTriggerFire.each, maxRunsPerHour = 4.0,
+  ),
+)
+
+private val webhookDraft = newAutomationDetail(
+  name = "Review deploy previews", triggerKind = RemoteAutomationTriggerKind.webhook, cron = null,
+  playbook = "# Review deploy previews\n\nOpen the preview URL from the payload and check the changed pages.",
+).copy(
+  id = "a14",
+  webhook = RemoteWebhookTrigger(
+    fire = RemoteWebhookTriggerFire.batch, maxRunsPerHour = 6.0,
+    url = "https://argus-7f3a.houwert.dev/hooks/automations/a14", hasSecret = true,
+  ),
 )
 
 private fun run(
@@ -188,6 +217,17 @@ internal fun AutomationsGalleryPage() {
   Story("Automation fields") {
     var draft by remember { mutableStateOf(newAutomationDetail(name = "Stale pull requests", playbook = "# Stale pull requests\n\nList open PRs with no review for 7 days.", claudeAccountId = "h")) }
     AutomationFields(draft, { draft = it }, fieldsContext, revise = { "$it\n\n(rewritten)" })
+  }
+  Story("Signal trigger fields") {
+    var draft by remember { mutableStateOf(signalDraft) }
+    AutomationFields(draft, { draft = it }, fieldsContext)
+  }
+  Story("Webhook trigger fields") {
+    var draft by remember { mutableStateOf(webhookDraft) }
+    AutomationFields(
+      draft, { draft = it },
+      fieldsContext.copy(rotateWebhook = { MethodsTypes.AutomationsRotateWebhookResult(webhookDraft.webhook?.url, "whsec_4f9c1e7b2a8d") }),
+    )
   }
   Story("Quick run fields") {
     var draft by remember { mutableStateOf(newAutomationDetail(name = "Rename the settings keys")) }

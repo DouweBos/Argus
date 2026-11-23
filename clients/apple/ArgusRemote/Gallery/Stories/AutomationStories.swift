@@ -16,6 +16,12 @@
         GalleryStory("automations/editor", fixtures: fixtures) {
           AutomationEditorView(automationId: GalleryFixtures.triageId)
         },
+        GalleryStory(
+          "automations/editor/signal", fixtures: GalleryFixtures.automations(detailId: GalleryFixtures.redCiId)
+        ) { AutomationEditorView(automationId: GalleryFixtures.redCiId) },
+        GalleryStory(
+          "automations/editor/webhook", fixtures: GalleryFixtures.automations(detailId: GalleryFixtures.deployHookId)
+        ) { AutomationEditorView(automationId: GalleryFixtures.deployHookId) },
         GalleryStory("automations/run", fixtures: fixtures, setup: loadSessions) {
           RunView(runId: "r-deps-1", label: "Weekly dependency digest")
         },

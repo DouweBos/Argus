@@ -7,6 +7,8 @@ import {
   AutomationMemory,
   AutomationMemoryListing,
   AutomationRun,
+  AutomationWebhookInfo,
+  AutomationWebhookSecret,
   CreateAutomationInput,
   GateLogEntry,
   Proposal,
@@ -48,6 +50,17 @@ export const AUTOMATION_COMMANDS = {
     tier: "admin",
     params: ById.extend({ enabled: z.boolean() }),
     result: Automation,
+  },
+  automation_webhook_info: {
+    tier: "admin",
+    params: ById,
+    result: AutomationWebhookInfo,
+  },
+  /** Replaces the webhook secret; the result is the only time it is shown. */
+  automation_webhook_rotate: {
+    tier: "admin",
+    params: ById,
+    result: AutomationWebhookSecret,
   },
   /** Fire now. Resolves once the run record exists, not when it ends. */
   automation_run_now: { tier: "admin", params: ById, result: AutomationRun },

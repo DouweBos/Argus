@@ -10,10 +10,13 @@
 
 import type {
   Automation,
+  AutomationEvent,
   AutomationGuardrails,
   AutomationRun,
   AutonomyLevel,
 } from "./models";
+import type { GatheredSignals } from "../signals/registry";
+import type { WorkItem } from "../signals/types";
 import { emitHostEvent } from "@argus/host/bus";
 import { error, info } from "@argus/host/logger";
 import { appState } from "../../state";
@@ -29,7 +32,7 @@ import {
 } from "../claudeAuth/accounts";
 import { ensureRepoRegistered } from "../mcp/projects";
 import { DEFAULT_RUNNER_ID, sessionRunnerId } from "../session/models";
-import { gatherSignals } from "../signals/registry";
+import { gatherSignals, screenWorkItems } from "../signals/registry";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import {
   accountPinError,
@@ -53,6 +56,19 @@ import {
 import { buildPrompt } from "./runPrompt";
 import { scopeAvailability, scopeAvailabilityBlock } from "./scopeAvailability";
 import { dailyBudgetBlock, runBudgetBlock, runSpendUsd } from "./spend";
+
+/** The event items, de-duplicated and screened like any fetched signal. */
+async function eventSignals(items: WorkItem[]): Promise<GatheredSignals> {
+  const unique = [...new Map(items.map((i) => [i.external_id, i])).values()];
+  const screened = await screenWorkItems(unique);
+
+  return {
+    items: screened.items,
+    instructions: [],
+    unavailable: [],
+    withheld: screened.withheld,
+  };
+}
 
 /** How often a run's spend is compared against its ceiling. */
 const COST_POLL_MS = 15 * 1000;
@@ -87,6 +103,7 @@ function permissionModeFor(autonomy: AutonomyLevel): "auto" | "plan" {
 export function startAutomationRun(
   automationId: string,
   triggerReason: string,
+  { events }: { events?: AutomationEvent[] } = {},
 ): AutomationRun {
   const automation = requireAutomation(automationId);
 
@@ -125,7 +142,7 @@ export function startAutomationRun(
 
   const run = createRun(automationId, "running", triggerReason);
   markAutomationFired(automationId, run.started_at);
-  executeRun({ ...automation }, run.id);
+  executeRun({ ...automation }, run.id, events);
 
   return run;
 }
@@ -135,8 +152,12 @@ export function startAutomationRun(
  * run and an ad-hoc one — an ad-hoc run differs only in that its `Automation`
  * is synthetic, never in how it is executed or what it is held to.
  */
-export function executeRun(automation: Automation, runId: string): void {
-  execute(automation, runId).catch((e: unknown) => {
+export function executeRun(
+  automation: Automation,
+  runId: string,
+  events?: AutomationEvent[],
+): void {
+  execute(automation, runId, events).catch((e: unknown) => {
     const message = typeof e === "string" ? e : String(e);
     // The run record shows the message; the log gets the stack, because a
     // crash here happens unattended and there is nothing else to go on.
@@ -147,7 +168,11 @@ export function executeRun(automation: Automation, runId: string): void {
   });
 }
 
-async function execute(automation: Automation, runId: string): Promise<void> {
+async function execute(
+  automation: Automation,
+  runId: string,
+  events?: AutomationEvent[],
+): Promise<void> {
   // A project whose drive is out is dropped from the run rather than failing
   // it: the other projects in scope are still worth looking at, and the agent
   // is told which ones it could not see.
@@ -166,12 +191,17 @@ async function execute(automation: Automation, runId: string): Promise<void> {
     }
   }
 
-  // Native sources are fetched here and serialized into the prompt; agent-mode
-  // sources hand the agent instructions and let it do the fetching itself.
-  const signals = await gatherSignals({
-    sourceIds: automation.source_ids,
-    repoRoots: scope.available,
-  });
+  // An event-started run is about the items that fired it, not the backlog;
+  // otherwise native sources are fetched here and agent-mode ones hand the
+  // agent instructions to fetch for itself.
+  const eventItems = events?.flatMap((e) => e.items) ?? [];
+  const signals =
+    eventItems.length > 0
+      ? await eventSignals(eventItems)
+      : await gatherSignals({
+          sourceIds: automation.source_ids,
+          repoRoots: scope.available,
+        });
 
   const session = createAutomationHostSession({
     automationId: automation.id,
@@ -201,7 +231,7 @@ async function execute(automation: Automation, runId: string): Promise<void> {
   const autonomy = resolveHostAutonomy(automation);
   const guardrails = normalizeGuardrails(automation.guardrails);
   const permissionMode = permissionModeFor(autonomy);
-  const prompt = buildPrompt(automation, signals, autonomy, scope);
+  const prompt = buildPrompt(automation, signals, autonomy, scope, events);
 
   // A spent plan limit on one Claude account says nothing about the others, so
   // an unpinned run moves on to the next one before giving up, unless opted out.

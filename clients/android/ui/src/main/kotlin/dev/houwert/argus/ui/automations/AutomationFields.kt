@@ -14,13 +14,15 @@ import androidx.compose.ui.unit.dp
 import dev.houwert.argus.core.automations.AutomationAccountPin
 import dev.houwert.argus.core.automations.Autonomy
 import dev.houwert.argus.core.automations.autonomyRung
+import dev.houwert.argus.core.automations.defaultSignalTrigger
+import dev.houwert.argus.core.automations.defaultWebhookTrigger
 import dev.houwert.argus.core.automations.isAvailable
 import dev.houwert.argus.core.automations.onceError
 import dev.houwert.argus.core.automations.pickerHint
 import dev.houwert.argus.core.automations.schedulePreviewText
 import dev.houwert.argus.core.automations.withAutonomy
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetail
-import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetailTriggerKind
+import dev.houwert.argus.kit.protocol.generated.RemoteAutomationTriggerKind
 import dev.houwert.argus.kit.protocol.generated.RemoteClaudeAccount
 import dev.houwert.argus.kit.protocol.generated.RemoteProject
 import dev.houwert.argus.kit.protocol.generated.RemoteRunner
@@ -55,6 +57,8 @@ data class AutomationFieldsContext(
   val accounts: List<RemoteClaudeAccount> = emptyList(),
   val activeAccountId: String? = null,
   val hasControl: Boolean = false,
+  /** Rotates the webhook secret of the automation being edited; null where there is none to rotate. */
+  val rotateWebhook: RotateWebhook? = null,
 )
 
 /**
@@ -75,7 +79,7 @@ fun AutomationFields(
 ) {
   Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(ArgusTheme.metrics.space)) {
     Basics(draft, onChange, showsSchedule)
-    if (showsSchedule) Trigger(draft, onChange)
+    if (showsSchedule) Trigger(draft, onChange, context)
     Scope(draft, onChange, context)
     Behaviour(draft, onChange, context, showsSchedule)
     Playbook(draft, onChange, context.hasControl, reviseError, revise)
@@ -102,21 +106,32 @@ private fun Basics(draft: RemoteAutomationDetail, onChange: (RemoteAutomationDet
 }
 
 object AutomationFieldsText {
-  fun triggerCaption(kind: RemoteAutomationDetailTriggerKind): String = when (kind) {
-    RemoteAutomationDetailTriggerKind.once -> "Runs once at this time, then pauses itself."
-    RemoteAutomationDetailTriggerKind.manual -> "Only runs when someone presses Run now."
+  fun triggerCaption(kind: RemoteAutomationTriggerKind): String = when (kind) {
+    RemoteAutomationTriggerKind.once -> "Runs once at this time, then pauses itself."
+    RemoteAutomationTriggerKind.manual -> "Only runs when someone presses Run now."
+    RemoteAutomationTriggerKind.signal -> EventTriggerText.SIGNAL_CAPTION
+    RemoteAutomationTriggerKind.webhook -> EventTriggerText.WEBHOOK_CAPTION
     else -> "5 fields: minute hour day-of-month month day-of-week."
   }
 
-  /** Picking "Once" without a time starts on the next whole hour. */
-  fun withTriggerKind(draft: RemoteAutomationDetail, kind: RemoteAutomationDetailTriggerKind): RemoteAutomationDetail {
+  /** Picking "Once" without a time starts on the next whole hour; a signal or webhook starts on its defaults. */
+  fun withTriggerKind(draft: RemoteAutomationDetail, kind: RemoteAutomationTriggerKind): RemoteAutomationDetail {
     val next = draft.copy(triggerKind = kind)
-    return if (kind == RemoteAutomationDetailTriggerKind.once && draft.runAt == null) {
-      next.copy(runAt = OnceTime.nextWholeHour(timezone = draft.timezone))
-    } else {
-      next
+    return when {
+      kind == RemoteAutomationTriggerKind.once && draft.runAt == null -> next.copy(runAt = OnceTime.nextWholeHour(timezone = draft.timezone))
+      kind == RemoteAutomationTriggerKind.signal && draft.signal == null -> next.copy(signal = defaultSignalTrigger)
+      kind == RemoteAutomationTriggerKind.webhook && draft.webhook == null -> next.copy(webhook = defaultWebhookTrigger)
+      else -> next
     }
   }
+
+  val triggerOptions = listOf(
+    RemoteAutomationTriggerKind.schedule to "Schedule",
+    RemoteAutomationTriggerKind.once to "Once",
+    RemoteAutomationTriggerKind.signal to "Signal",
+    RemoteAutomationTriggerKind.webhook to "Webhook",
+    RemoteAutomationTriggerKind.manual to "Manual",
+  )
 
   /** Model ids don't carry across runners, and a custom runner's own credentials drop the account pin. */
   fun withRunner(draft: RemoteAutomationDetail, id: String): RemoteAutomationDetail {
@@ -138,26 +153,23 @@ object AutomationFieldsText {
 }
 
 @Composable
-private fun Trigger(draft: RemoteAutomationDetail, onChange: (RemoteAutomationDetail) -> Unit) {
+private fun Trigger(draft: RemoteAutomationDetail, onChange: (RemoteAutomationDetail) -> Unit, context: AutomationFieldsContext) {
   val theme = ArgusTheme.colors
   Field("Trigger", caption = AutomationFieldsText.triggerCaption(draft.triggerKind)) {
-    SegmentedControl(
-      draft.triggerKind,
-      listOf(
-        RemoteAutomationDetailTriggerKind.schedule to "Schedule",
-        RemoteAutomationDetailTriggerKind.once to "Once",
-        RemoteAutomationDetailTriggerKind.manual to "Manual",
-      ),
-    ) { onChange(AutomationFieldsText.withTriggerKind(draft, it)) }
+    SegmentedControl(draft.triggerKind, AutomationFieldsText.triggerOptions) { onChange(AutomationFieldsText.withTriggerKind(draft, it)) }
 
-    if (draft.triggerKind == RemoteAutomationDetailTriggerKind.schedule) {
+    if (draft.triggerKind == RemoteAutomationTriggerKind.schedule) {
       ThemedTextField(draft.cron ?: "", { onChange(draft.copy(cron = it)) }, "0 9 * * 1-5", mono = true, input = TextInput.Code)
     }
-    if (draft.triggerKind == RemoteAutomationDetailTriggerKind.once) {
+    if (draft.triggerKind == RemoteAutomationTriggerKind.once) {
       OnceTimePicker(draft.runAt) { onChange(draft.copy(runAt = it)) }
       draft.onceError?.let { Text(it, color = theme.error, style = argusFont(13)) }
     }
-    if (draft.triggerKind != RemoteAutomationDetailTriggerKind.manual) {
+    if (draft.triggerKind == RemoteAutomationTriggerKind.signal) SignalTriggerFields(draft, onChange)
+    if (draft.triggerKind == RemoteAutomationTriggerKind.webhook) {
+      WebhookTriggerFields(draft, onChange, context.hasControl, context.rotateWebhook)
+    }
+    if (draft.triggerKind == RemoteAutomationTriggerKind.schedule || draft.triggerKind == RemoteAutomationTriggerKind.once) {
       ThemedTextField(draft.timezone ?: "", { onChange(draft.copy(timezone = it)) }, TimeZone.getDefault().id, input = TextInput.Code)
       draft.schedulePreviewText()?.let { preview ->
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -171,7 +183,7 @@ private fun Trigger(draft: RemoteAutomationDetail, onChange: (RemoteAutomationDe
         }
       }
       SwitchRow(
-        if (draft.triggerKind == RemoteAutomationDetailTriggerKind.once) "Still run if the computer was asleep at that time"
+        if (draft.triggerKind == RemoteAutomationTriggerKind.once) "Still run if the computer was asleep at that time"
         else "Catch up after the computer was asleep",
         draft.catchUp,
       ) { onChange(draft.copy(catchUp = it)) }

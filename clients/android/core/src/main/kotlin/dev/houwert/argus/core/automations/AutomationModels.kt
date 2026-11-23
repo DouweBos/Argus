@@ -2,14 +2,20 @@ package dev.houwert.argus.core.automations
 
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetail
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetailAutonomy
-import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetailTriggerKind
+import dev.houwert.argus.kit.protocol.generated.RemoteAutomationTriggerKind
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationGuardrails
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationRun
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationRunStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteRunner
 import dev.houwert.argus.kit.protocol.generated.RemoteRunnerSetup
+import dev.houwert.argus.kit.protocol.generated.RemoteSignalEventKind
+import dev.houwert.argus.kit.protocol.generated.RemoteSignalTrigger
+import dev.houwert.argus.kit.protocol.generated.RemoteSignalTriggerFire
+import dev.houwert.argus.kit.protocol.generated.RemoteWebhookTrigger
+import dev.houwert.argus.kit.protocol.generated.RemoteWebhookTriggerFire
+import dev.houwert.argus.kit.protocol.generated.RemoteWebhookTriggerInput
+import dev.houwert.argus.kit.protocol.generated.RemoteWebhookTriggerInputFire
 import dev.houwert.argus.kit.protocol.generated.AutomationInputAutonomy
-import dev.houwert.argus.kit.protocol.generated.AutomationInputTriggerKind
 import dev.houwert.argus.kit.protocol.generated.MethodsTypes
 import java.util.TimeZone
 import dev.houwert.argus.kit.protocol.generated.AutomationInput as GeneratedAutomationInput
@@ -45,6 +51,27 @@ val RemoteRunnerSetup.canInstall: Boolean get() = installCommand != null || inst
 
 val RemoteRunner.isAvailable: Boolean get() = available ?: true
 
+/** What a trigger switched to `signal` starts with: one run per new issue. */
+val defaultSignalTrigger = RemoteSignalTrigger(
+  on = listOf(RemoteSignalEventKind.newIssue),
+  labels = emptyList(),
+  fire = RemoteSignalTriggerFire.each,
+  maxRunsPerHour = 4.0,
+)
+
+/** What a trigger switched to `webhook` starts with; the computer fills in the URL and secret. */
+val defaultWebhookTrigger = RemoteWebhookTrigger(fire = RemoteWebhookTriggerFire.each, maxRunsPerHour = 4.0, hasSecret = false)
+
+/** The signal events in the order a picker lists them, with their labels. */
+val signalEventOptions: List<Pair<RemoteSignalEventKind, String>> = listOf(
+  RemoteSignalEventKind.newIssue to "New issue",
+  RemoteSignalEventKind.newPr to "New pull request",
+  RemoteSignalEventKind.assigned to "Assigned to me",
+  RemoteSignalEventKind.reviewRequested to "Review requested",
+  RemoteSignalEventKind.ciFailed to "My CI failed",
+  RemoteSignalEventKind.mentioned to "Mentioned",
+)
+
 /** The guardrails a new automation starts with, as the host's defaults. */
 val defaultGuardrails = RemoteAutomationGuardrails(
   confidenceThreshold = 0.8,
@@ -61,7 +88,7 @@ val defaultGuardrails = RemoteAutomationGuardrails(
 fun newAutomationDetail(
   name: String = "",
   enabled: Boolean = true,
-  triggerKind: RemoteAutomationDetailTriggerKind = RemoteAutomationDetailTriggerKind.schedule,
+  triggerKind: RemoteAutomationTriggerKind = RemoteAutomationTriggerKind.schedule,
   cron: String? = "0 9 * * 1-5",
   runAt: String? = null,
   timezone: String? = TimeZone.getDefault().id,
@@ -100,9 +127,11 @@ object AutomationInput {
     name = detail.name,
     description = detail.description,
     enabled = detail.enabled,
-    triggerKind = AutomationInputTriggerKind(detail.triggerKind.rawValue),
+    triggerKind = detail.triggerKind,
     cron = detail.cron ?: "",
     runAt = detail.onceRunAt,
+    signal = detail.signalInput,
+    webhook = detail.webhookInput,
     timezone = detail.timezone ?: TimeZone.getDefault().id,
     catchUp = detail.catchUp,
     repoRoots = detail.repoRoots,
@@ -120,9 +149,11 @@ object AutomationInput {
     name = detail.name,
     description = detail.description,
     enabled = detail.enabled,
-    triggerKind = MethodsTypes.AutomationsUpdateParamsPatchTriggerKind(detail.triggerKind.rawValue),
+    triggerKind = detail.triggerKind,
     cron = detail.cron ?: "",
     runAt = detail.onceRunAt,
+    signal = detail.signalInput,
+    webhook = detail.webhookInput,
     timezone = detail.timezone ?: TimeZone.getDefault().id,
     catchUp = detail.catchUp,
     repoRoots = detail.repoRoots,
@@ -137,5 +168,15 @@ object AutomationInput {
   )
 
   /** Sent only for a run-once trigger, so an older computer never sees it. */
-  private val RemoteAutomationDetail.onceRunAt get() = runAt.takeIf { triggerKind == RemoteAutomationDetailTriggerKind.once }
+  private val RemoteAutomationDetail.onceRunAt get() = runAt.takeIf { triggerKind == RemoteAutomationTriggerKind.once }
+
+  /** Sent only for their own kind; the URL and secret state are the computer's, never the editor's. */
+  private val RemoteAutomationDetail.signalInput
+    get() = if (triggerKind == RemoteAutomationTriggerKind.signal) signal ?: defaultSignalTrigger else null
+
+  private val RemoteAutomationDetail.webhookInput
+    get() = if (triggerKind != RemoteAutomationTriggerKind.webhook) null else RemoteWebhookTriggerInput(
+      fire = RemoteWebhookTriggerInputFire(webhook?.fire?.rawValue ?: "each"),
+      maxRunsPerHour = webhook?.maxRunsPerHour ?: 4.0,
+    )
 }

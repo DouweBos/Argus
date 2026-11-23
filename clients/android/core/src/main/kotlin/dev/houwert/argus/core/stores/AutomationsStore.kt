@@ -1,6 +1,7 @@
 package dev.houwert.argus.core.stores
 
 import dev.houwert.argus.core.automations.AutomationInput
+import dev.houwert.argus.core.automations.defaultWebhookTrigger
 import dev.houwert.argus.core.automations.newAutomationDetail
 import dev.houwert.argus.core.backend.requestWithNulls
 import dev.houwert.argus.kit.protocol.generated.AutomationCalibration
@@ -8,7 +9,7 @@ import dev.houwert.argus.kit.protocol.generated.Methods
 import dev.houwert.argus.kit.protocol.generated.MethodsTypes
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomation
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetail
-import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetailTriggerKind
+import dev.houwert.argus.kit.protocol.generated.RemoteAutomationTriggerKind
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationGuardrails
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationMemory
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationRun
@@ -168,6 +169,24 @@ class AutomationsStore(val host: HostStore) {
     }
   }
 
+  /** A fresh webhook secret, shown once; the old one stops working. Null means the computer refused. */
+  suspend fun rotateWebhook(automationId: String): MethodsTypes.AutomationsRotateWebhookResult? {
+    val backend = host.backend ?: return null
+    return try {
+      val result = backend.request(Methods.AutomationsRotateWebhook, MethodsTypes.AutomationsRotateWebhookParams(automationId))
+      _detailById.update { map ->
+        val detail = map[automationId] ?: return@update map
+        val webhook = (detail.webhook ?: defaultWebhookTrigger).copy(url = result.url, hasSecret = true)
+        map + (automationId to detail.copy(webhook = webhook))
+      }
+      _error.value = null
+      result
+    } catch (e: Exception) {
+      fail("Couldn't generate a webhook secret", e)
+      null
+    }
+  }
+
   suspend fun setEnabled(id: String, enabled: Boolean) {
     val backend = host.backend ?: return
     try {
@@ -315,7 +334,7 @@ class AutomationsStore(val host: HostStore) {
   ): String? {
     val backend = host.backend ?: return null
     val detail = newAutomationDetail(
-      name = name, enabled = true, triggerKind = RemoteAutomationDetailTriggerKind.once, cron = null, runAt = runAt,
+      name = name, enabled = true, triggerKind = RemoteAutomationTriggerKind.once, cron = null, runAt = runAt,
       timezone = timezone, catchUp = true, repoRoots = repoRoots, sourceIds = sourceIds, playbook = playbook,
     )
     return try {

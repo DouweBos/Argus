@@ -15,6 +15,8 @@ public struct AutomationFields: View {
   let sources: [RemoteSignalSource]
   /// Empty on a host too old to answer `automations.runners`.
   var runners: [RemoteRunner] = []
+  /// Makes a new webhook secret; nil when the viewer can't, or nothing is saved yet.
+  var rotateWebhook: (() async -> RemoteWebhookSecret?)?
 
   @State private var revising = false
 
@@ -22,12 +24,14 @@ public struct AutomationFields: View {
     draft: Binding<RemoteAutomationDetail>,
     showsSchedule: Bool = true,
     sources: [RemoteSignalSource],
-    runners: [RemoteRunner] = []
+    runners: [RemoteRunner] = [],
+    rotateWebhook: (() async -> RemoteWebhookSecret?)? = nil
   ) {
     self._draft = draft
     self.showsSchedule = showsSchedule
     self.sources = sources
     self.runners = runners
+    self.rotateWebhook = rotateWebhook
   }
 
   public var body: some View {
@@ -52,26 +56,24 @@ public struct AutomationFields: View {
     }
   }
 
-  private var triggerCaption: String {
-    switch draft.triggerKind {
-    case .schedule: "5 fields: minute hour day-of-month month day-of-week."
-    case .once: "Runs once at this time, then pauses itself."
-    case .manual: "Only runs when someone presses Run now."
-    }
-  }
-
   private var trigger: some View {
-    Field(label: "Trigger", caption: triggerCaption) {
+    Field(label: "Trigger", caption: draft.triggerCaption) {
       SegmentedControl(
-        value: Binding(
-          get: { draft.triggerKind },
-          set: { kind in
-            draft.triggerKind = kind
-            if kind == .once, draft.runAt == nil {
-              draft.runAt = OnceTime.nextWholeHour(timezone: draft.timezone)
-            }
-          }),
-        options: [(.schedule, "Schedule"), (.once, "Once"), (.manual, "Manual")])
+        value: Binding(get: { draft.triggerKind }, set: { draft.setTriggerKind($0) }),
+        options: RemoteAutomationDetail.triggerOptions)
+
+      if draft.triggerKind == .signal {
+        SignalTriggerFields(
+          signal: Binding(get: { draft.signal ?? .init() }, set: { draft.signal = $0 }))
+        if let error = draft.signalError {
+          Text(error).font(.scaled(size: 13)).foregroundStyle(theme.error)
+        }
+      }
+      if draft.triggerKind == .webhook {
+        WebhookTriggerFields(
+          webhook: Binding(get: { draft.webhook ?? .init() }, set: { draft.webhook = $0 }),
+          saved: !draft.id.isEmpty, rotate: rotateWebhook)
+      }
 
       if draft.triggerKind == .schedule {
         ThemedTextField(
@@ -87,7 +89,7 @@ public struct AutomationFields: View {
           Text(error).font(.scaled(size: 13)).foregroundStyle(theme.error)
         }
       }
-      if draft.triggerKind != .manual {
+      if draft.triggerKind == .schedule || draft.triggerKind == .once {
         ThemedTextField(
           placeholder: TimeZone.current.identifier,
           text: Binding(get: { draft.timezone ?? "" }, set: { draft.timezone = $0 }),

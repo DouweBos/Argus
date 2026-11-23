@@ -54,6 +54,69 @@ into a `skipped` run — and then the automation pauses itself, whatever
 happened. It keeps the time, so the history still says when it was for; pick a
 new time and enable it to use it again. A time already gone cannot be armed.
 
+**Signal** — no clock: it reacts as things happen. Every two minutes it asks
+your connected sources what's new and runs when one of the events you picked
+occurs:
+
+| Event                | GitHub | GitLab | Linear | Fires when                                                      |
+| -------------------- | ------ | ------ | ------ | --------------------------------------------------------------- |
+| **New issue**        | yes    | yes    | yes    | An issue is opened in one of the automation's projects¹         |
+| **New pull request** | yes    | yes    | —      | A pull or merge request is opened in one of its projects        |
+| **Assigned to me**   | yes    | yes    | yes    | An issue or PR is assigned to you                               |
+| **Review requested** | yes    | yes    | —      | A PR asks for your review                                       |
+| **My CI failed**     | yes    | yes    | —      | One of your PRs goes red (again after each new push that fails) |
+| **Mentioned**        | yes    | yes    | —      | You're @-mentioned in an issue or PR, or one of its comments    |
+
+¹ For Linear: opened in a team you're on. Linear is watched only while it is
+connected in [Settings → Integrations](./integrations.md); GitHub through the
+`gh` CLI and GitLab through `glab`, as for every other signal.
+
+**Labels** narrow it further: any of them, case-insensitive; leave it empty for
+every item. Items in a repo outside the automation's projects are ignored.
+
+The run is handed the event, not a backlog: the item, plus why it fired — the
+failing checks with the tail of each failing log for _My CI failed_, the
+comment for _Mentioned_. A "fix red CI" playbook starts from the broken line.
+
+**Webhook** — runs the moment something calls it. Each automation gets its own
+URL on your computer's gateway, `https://<your tunnel>/hooks/automations/<id>`,
+reachable from outside through its [managed tunnel](./accounts.md) while remote access is on.
+**Generate secret** in the editor shows the secret once; regenerate it any time,
+which stops the old one working. A request has to prove it knows the secret:
+
+- an `X-Hub-Signature-256: sha256=<HMAC-SHA256 of the body>` header, which is
+  what GitHub sends when you set the secret on a repository webhook, or
+- `Authorization: Bearer <secret>`, for senders that can't sign (a CI step, a
+  monitoring alert).
+
+The JSON body becomes the run's event, so the playbook reads the payload
+directly. A GitHub `ping` is answered without a run; a wrong secret and an
+unknown automation get the same `401`.
+
+Both event triggers keep the clock's rules:
+
+- **Turning one on fires on nothing that already happened.** A signal trigger
+  records what is true first; pausing forgets it, so turning it back on starts
+  fresh.
+- **Runs never overlap.** Events that arrive while a run is going wait for it.
+- **Runs** — _one per event_ takes the waiting events one at a time; _one for
+  everything new_ hands a single run all of them, so a burst coalesces.
+- **At most, per hour** (1–60) caps the runs it starts; past it, events wait
+  rather than being dropped. At most 50 wait per automation — past that, the
+  oldest go.
+- Autonomy, guardrails and the daily budget apply as to any run.
+
+### Adding an event source
+
+Everything that starts a run from an event goes through one function in the
+host, `fireAutomationFromEvent(automationId, event)`
+(`packages/host/src/services/automation/eventDispatch.ts`). An event is
+`{ origin, kind, summary, items, payload, received_at }`; the dispatcher queues
+it and applies the cap, the no-overlap rule and the fire mode, and the runner
+applies the rest. An automation accepts events when its trigger carries `fire`
+and `max_runs_per_hour`, so a new integration adds its trigger kind with those
+two fields and calls the function — it never starts runs itself.
+
 **Manual** — no clock at all. It only runs when you press **Run now**, which
 every automation supports regardless of its trigger.
 
@@ -424,7 +487,7 @@ that does not say what corrected it reads like the run simply changed its mind.
 
 ## Built-in templates
 
-Seven ship with Argus, seeded on first launch and then editable like anything
+Ten ship with Argus, seeded on first launch and then editable like anything
 else — the playbook is yours to rewrite.
 
 **Every one of them ships disabled.** An automation that spawns an agent
@@ -440,6 +503,9 @@ that holds even for the read-only ones.
 | **Regression sweep**   | `02:00`, nightly  | Draft    | Boots each project on a simulator, runs its run commands and a conductor smoke flow, reports failures with screenshots.           |
 | **Branch janitor**     | `03:00`, nightly  | Propose  | Proposes cleanup for merged worktrees, summarises stalled sessions. Never deletes anything itself.                                |
 | **Dependency watch**   | `09:00`, Mondays  | Propose  | What is behind, what actually changed in it, and which upgrades are worth a branch.                                               |
+| **Fix my red CI**      | My CI failed      | Draft    | Reads the failing log, then hands the fix to the session that wrote the branch, or proposes one.                                  |
+| **Review requested**   | Review requested  | Propose  | Drafts the review — verdict and comments with file and line — for you to read and post.                                           |
+| **Triage new issues**  | New issue         | Propose  | Kind, duplicates, likely files and suggested labels for each new issue; a proposal for the small clear bugs.                      |
 
 Schedules are seeded in your machine's timezone. Branch janitor and dependency
 watch are pinned at Propose on purpose: deleting a worktree or a branch with

@@ -798,6 +798,40 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AutomationWebhookInfoParams: Codable, Sendable {
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: String) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
+    public struct AutomationWebhookRotateParams: Codable, Sendable {
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: String) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
     public struct BlueprintCreateParams: Codable, Sendable {
       public var input: CreateBlueprintInput
 
@@ -10557,6 +10591,20 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.AutomationUpdateParams
       public typealias Result = ArgusProtocol.Automation
       public static let name = "automation_update"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationWebhookInfo: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.AutomationWebhookInfoParams
+      public typealias Result = ArgusProtocol.AutomationWebhookInfo
+      public static let name = "automation_webhook_info"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationWebhookRotate: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.AutomationWebhookRotateParams
+      public typealias Result = ArgusProtocol.AutomationWebhookSecret
+      public static let name = "automation_webhook_rotate"
       public static let tier = "admin"
     }
 

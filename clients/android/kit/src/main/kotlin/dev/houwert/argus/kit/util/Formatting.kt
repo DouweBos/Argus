@@ -165,6 +165,8 @@ object Labels {
   fun triggerLabel(automation: RemoteAutomation): String = when (automation.triggerKind) {
     RemoteAutomationTriggerKind.once -> automation.runAt?.let { onceLabel(it, automation.timezone) } ?: "Once"
     RemoteAutomationTriggerKind.schedule -> automation.cron?.let { cronLabel(it, automation.timezone) } ?: "Scheduled"
+    RemoteAutomationTriggerKind.signal -> "On events"
+    RemoteAutomationTriggerKind.webhook -> "On webhook"
     // An unknown kind reads as manual, as the iPhone decodes it.
     else -> "Manual"
   }

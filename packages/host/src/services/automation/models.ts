@@ -2,16 +2,23 @@
  * Data types for automations — persisted "when X, do Y" objects and the runs
  * they produce.
  *
- * P1 deliberately carries only the clock: a `schedule`, `once` or `manual` trigger, a
+ * P1 deliberately carried only the clock: a `schedule`, `once` or `manual` trigger, a
  * playbook, and a report. The autonomy ladder, guardrails, signal sources and
  * proposals arrive with later phases; leaving them out keeps a run's blast
  * radius at zero.
  */
 
+import type { SignalEventKind, WorkItem } from "../signals/types";
 import type { ReportBlock } from "@argus/remote-protocol";
 
 /** What causes an automation to fire. */
 export type AutomationTrigger =
+  | {
+      /** Fires on a signed POST to the automation's URL on the gateway. */
+      kind: "webhook";
+      fire: SignalFireMode;
+      max_runs_per_hour: number;
+    }
   | {
       /** Fires once, then the automation pauses itself. */
       kind: "once";
@@ -20,6 +27,17 @@ export type AutomationTrigger =
       timezone: string;
       /** Still run when the host was asleep at {@link at}. */
       catch_up: boolean;
+    }
+  | {
+      /** Fires when something happens on GitHub, GitLab or Linear. */
+      kind: "signal";
+      /** What to react to; at least one. */
+      on: SignalEventKind[];
+      /** Optional any-of label filter on top of `on`; empty matches all. */
+      labels: string[];
+      fire: SignalFireMode;
+      /** Cap on runs this trigger starts in any rolling hour. */
+      max_runs_per_hour: number;
     }
   | {
       kind: "schedule";
@@ -34,6 +52,28 @@ export type AutomationTrigger =
       catch_up: boolean;
     }
   | { kind: "manual" };
+
+/** `each`: one run per event. `batch`: one run for everything waiting. */
+export type SignalFireMode = "batch" | "each";
+
+/**
+ * Something that should start a run, from whatever noticed it: the signal
+ * watcher, a webhook, or an integration. Everything in it came from outside,
+ * so the run reads it fenced.
+ */
+export interface AutomationEvent {
+  /** Who noticed it: `signal`, `webhook`, or an integration's id. */
+  origin: string;
+  /** What happened, as a short enum: `ci_failed`, `webhook`. */
+  kind: string;
+  /** One line for the run history, e.g. `ci_failed acme/app#12`. */
+  summary: string;
+  /** Work items it is about; the run focuses on these. */
+  items: WorkItem[];
+  /** Why it fired: the event detail or the posted JSON. */
+  payload: unknown;
+  received_at: number;
+}
 
 export type AutomationTriggerKind = AutomationTrigger["kind"];
 

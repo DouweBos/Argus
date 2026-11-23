@@ -71,7 +71,7 @@ struct DescribeAutomationSheet: View {
       if let schedule {
         LabeledContent("Schedule", value: "\(schedule.cron) · \(schedule.timezone)")
       } else {
-        LabeledContent("Trigger", value: "Manual")
+        LabeledContent("Trigger", value: Self.triggerLabel(draft.input.trigger))
       }
       TextEditor(text: $playbook)
         .font(.system(.body, design: .monospaced))
@@ -91,6 +91,16 @@ struct DescribeAutomationSheet: View {
     let sources = draft.input.sourceIds?.count ?? 0
     return (projects == 0 ? "No projects" : AutomationText.plural(projects, "project")) + " · "
       + (sources == 0 ? "no signal sources" : AutomationText.plural(sources, "source"))
+  }
+
+  static func triggerLabel(_ trigger: ArgusProtocol.AutomationTrigger) -> String {
+    switch trigger {
+    case .signal(let signal):
+      "On events: " + signal.on.map { RemoteSignalEvent(rawValue: $0.rawValue).label }.joined(separator: ", ")
+    case .webhook: "On webhook"
+    case .once: "Once"
+    default: "Manual"
+    }
   }
 
   private func generate() {

@@ -8,7 +8,9 @@
  * - **No overlap.** A fire while the previous run is still going records a
  *   `skipped` run with the reason and moves the schedule on.
  *
- * A one-time trigger follows the same rules, then pauses its automation.
+ * A one-time trigger follows the same rules, then pauses its automation. A
+ * signal trigger has no clock: each tick polls it (`signalWatch.ts`) and drains
+ * whatever events are waiting (`eventDispatch.ts`).
  *
  * It touches no window and no renderer — state changes go out on the host bus
  * — so a headless mini runs it unchanged.
@@ -17,6 +19,7 @@
 import { info } from "@argus/host/logger";
 import { loadAppSettings } from "../appSettings/store";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
+import { drainAutomationEvents } from "./eventDispatch";
 import {
   createRun,
   hasActiveRun,
@@ -25,6 +28,7 @@ import {
   retireOnceAutomation,
 } from "./manager";
 import { startAutomationRun } from "./runner";
+import { pollSignalTriggers } from "./signalWatch";
 
 const TICK_MS = 30_000;
 
@@ -69,9 +73,18 @@ export function tickAutomations(now: number = Date.now()): void {
     return;
   }
 
+  // Resolves on its own schedule; failures are logged per automation.
+  pollSignalTriggers(now).catch(() => {});
+  drainAutomationEvents(now);
+
   for (const automation of listAutomations()) {
     const { trigger } = automation;
-    if (!automation.enabled || trigger.kind === "manual") {
+    if (
+      !automation.enabled ||
+      trigger.kind === "manual" ||
+      trigger.kind === "signal" ||
+      trigger.kind === "webhook"
+    ) {
       continue;
     }
 

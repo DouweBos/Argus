@@ -31,6 +31,7 @@ import {
   startAutomationScheduler,
   stopAutomationScheduler,
 } from "./services/automation/scheduler";
+import { handleWebhook, isWebhookRoute } from "./services/automation/webhook";
 import { initBlueprints } from "./services/blueprint/manager";
 import { stopAllScreencasts } from "./services/browser/cdpScreencast";
 import {
@@ -252,6 +253,10 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
     matches: isOutsideMcpRoute,
     handle: handleOutsideMcp,
   });
+  setOutsideHttpHandler(
+    { matches: isWebhookRoute, handle: handleWebhook },
+    "webhooks",
+  );
   try {
     writeCliShim();
   } catch (err) {

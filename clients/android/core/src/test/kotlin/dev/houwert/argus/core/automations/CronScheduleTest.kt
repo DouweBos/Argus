@@ -1,6 +1,6 @@
 package dev.houwert.argus.core.automations
 
-import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetailTriggerKind
+import dev.houwert.argus.kit.protocol.generated.RemoteAutomationTriggerKind
 import dev.houwert.argus.kit.util.OnceTime
 import java.time.Instant
 import java.time.ZoneId
@@ -71,7 +71,7 @@ class CronScheduleTest {
 class SchedulePreviewTextTest {
   @Test
   fun describesCommonShapesAndRejectsBadZones() {
-    var draft = newAutomationDetail(triggerKind = RemoteAutomationDetailTriggerKind.schedule, cron = "0 9 * * 1-5", timezone = "UTC")
+    var draft = newAutomationDetail(triggerKind = RemoteAutomationTriggerKind.schedule, cron = "0 9 * * 1-5", timezone = "UTC")
     val preview = assertNotNull(draft.schedulePreviewText())
     assertEquals("09:00 weekdays", preview.headline)
     assertEquals(5, preview.runs.size)
@@ -79,7 +79,7 @@ class SchedulePreviewTextTest {
     draft = draft.copy(timezone = "Nowhere/Land")
     assertNotNull(draft.schedulePreviewText()?.error)
     assertFalse(draft.hasValidTrigger)
-    draft = draft.copy(triggerKind = RemoteAutomationDetailTriggerKind.manual)
+    draft = draft.copy(triggerKind = RemoteAutomationTriggerKind.manual)
     assertNull(draft.schedulePreviewText())
     assertTrue(draft.hasValidTrigger)
   }
@@ -93,7 +93,7 @@ class OnceTriggerTest {
     assertEquals("2026-11-10T09:00", OnceTime.string(at, "Europe/Amsterdam"))
     assertNull(OnceTime.date("2026-02-30T09:00", "UTC"))
 
-    var draft = newAutomationDetail(enabled = false, triggerKind = RemoteAutomationDetailTriggerKind.once, cron = null, timezone = "UTC")
+    var draft = newAutomationDetail(enabled = false, triggerKind = RemoteAutomationTriggerKind.once, cron = null, timezone = "UTC")
     assertFalse(draft.hasValidTrigger)
     draft = draft.copy(runAt = "2001-01-01T09:00")
     assertTrue(draft.hasValidTrigger)

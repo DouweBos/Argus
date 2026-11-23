@@ -8,6 +8,8 @@ extension GalleryFixtures {
   private static var now: Double { Date().timeIntervalSince1970 * 1000 }
 
   public static let triageId = "triage"
+  public static let redCiId = "red-ci"
+  public static let deployHookId = "deploy-hook"
 
   private struct Automation {
     let id: String
@@ -47,6 +49,14 @@ extension GalleryFixtures {
       id: "branches", name: "Clean up merged branches", description: "Deletes local branches already on main.",
       trigger: "once", cron: nil, autonomy: "auto_merge", projects: GalleryJSON.someProjects),
     Automation(
+      id: redCiId, name: "Fix my red CI",
+      description: "Reads the failing job's log when one of my pull requests goes red and pushes a fix.",
+      trigger: "signal", cron: nil, autonomy: "pr", projects: ["Argus", "conductor"]),
+    Automation(
+      id: deployHookId, name: "Smoke-test every deploy",
+      description: "Called by the deploy pipeline; clicks through the staging site and reports what broke.",
+      trigger: "webhook", cron: nil, projects: ["web-tv-client"]),
+    Automation(
       id: "reviews", name: "PR review reminders", description: "Nudges pull requests idle for two days.",
       cron: "0 14 * * 1-5", projects: ["Argus", "Maestro", "luma"]),
     Automation(
@@ -63,7 +73,7 @@ extension GalleryFixtures {
     if let cron = a.cron { json["cron"] = cron }
     if a.trigger == "once" { json["run_at"] = "2026-11-12T09:00" }
     if let autonomy = a.autonomy { json["autonomy"] = autonomy }
-    if a.enabled, a.trigger != "manual" { json["next_run_at"] = now + 14 * 3_600_000 }
+    if a.enabled, a.trigger == "schedule" || a.trigger == "once" { json["next_run_at"] = now + 14 * 3_600_000 }
     return json
   }
 
@@ -274,6 +284,41 @@ extension GalleryFixtures {
     ]
   }
 
+  private static var redCiDetail: [String: Any] {
+    [
+      "id": redCiId, "name": "Fix my red CI",
+      "description": "Reads the failing job's log when one of my pull requests goes red and pushes a fix.",
+      "enabled": true, "trigger_kind": "signal", "catch_up": true,
+      "signal": ["on": ["ci_failed"], "labels": [], "fire": "each", "max_runs_per_hour": 4],
+      "repo_roots": [root("Argus"), root("conductor")], "source_ids": ["github"],
+      "playbook": "# Fix my red CI\n\nRead the failing job's log, find the cause and push a fix to the same branch.\n",
+      "extra_instructions": "", "autonomy": "pr", "runner": "claude-code", "guardrails": guardrailsJSON,
+    ]
+  }
+
+  private static var deployHookDetail: [String: Any] {
+    [
+      "id": deployHookId, "name": "Smoke-test every deploy",
+      "description": "Called by the deploy pipeline; clicks through the staging site and reports what broke.",
+      "enabled": true, "trigger_kind": "webhook", "catch_up": true,
+      "webhook": [
+        "fire": "batch", "max_runs_per_hour": 6, "has_secret": true,
+        "url": "https://studio-mac.tunnel.example.dev/hooks/automations/deploy-hook",
+      ],
+      "repo_roots": [root("web-tv-client")], "source_ids": [],
+      "playbook": "# Smoke-test every deploy\n\nOpen staging, sign in and walk the five main screens.\n",
+      "extra_instructions": "", "autonomy": "propose", "runner": "claude-code", "guardrails": guardrailsJSON,
+    ]
+  }
+
+  private static func detail(_ id: String) -> [String: Any] {
+    switch id {
+    case redCiId: redCiDetail
+    case deployHookId: deployHookDetail
+    default: triageDetail
+    }
+  }
+
   private static var calibration: [String: Any] {
     [
       "automation_id": triageId, "sample": 20, "accepted": 9, "auto_started": 2, "dismissed": 6,
@@ -379,7 +424,8 @@ extension GalleryFixtures {
 
   /// Everything the automation, run, quick-run and inbox screens read.
   /// `empty` answers every list with nothing.
-  public static func automations(empty: Bool = false) -> [String: String] {
+  /// `detailId` picks which automation `automations.get` answers with.
+  public static func automations(empty: Bool = false, detailId: String = triageId) -> [String: String] {
     let runs = empty ? [] : runRecords
     let proposals = empty ? [] : proposalRecords
     let automations = empty ? [] : automationRecords
@@ -392,7 +438,7 @@ extension GalleryFixtures {
         "runs": runs.filter(\.quick).map(gatewayRun)
       ]),
       RemoteMethod.automationsRun.rawValue: GalleryJSON.encode(runDetail),
-      RemoteMethod.automationsGet.rawValue: GalleryJSON.encode(["automation": triageDetail]),
+      RemoteMethod.automationsGet.rawValue: GalleryJSON.encode(["automation": detail(detailId)]),
       RemoteMethod.automationsSources.rawValue: GalleryJSON.encode(["sources": sources]),
       RemoteMethod.automationsMemories.rawValue: GalleryJSON.encode(["memories": empty ? [] : memories]),
       RemoteMethod.automationsCalibration.rawValue: GalleryJSON.encode(calibration),

@@ -157,6 +157,8 @@ public enum Labels {
       automation.runAt.flatMap { onceLabel($0, timezone: automation.timezone) } ?? "Once"
     case .schedule:
       automation.cron.map { cronLabel($0, timezone: automation.timezone) } ?? "Scheduled"
+    case .signal: "On events"
+    case .webhook: "On webhook"
     }
   }
 

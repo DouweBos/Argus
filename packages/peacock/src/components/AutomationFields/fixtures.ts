@@ -139,6 +139,20 @@ export const FIXTURE_AUTOMATIONS: RemoteAutomation[] = [
     next_run_at: Date.parse("2030-03-04T08:00:00Z"),
     running: false,
   },
+  {
+    id: "a4",
+    name: "Fix red CI",
+    description: "When one of my pull requests goes red.",
+    enabled: true,
+    trigger_kind: "signal",
+    cron: null,
+    timezone: null,
+    autonomy: "pr",
+    projects: ["Argus"],
+    last_run_at: NOW - 2 * HOUR,
+    next_run_at: null,
+    running: false,
+  },
 ];
 
 export function fixtureRun(

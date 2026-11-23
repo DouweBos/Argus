@@ -111,7 +111,7 @@ describe("automation extra instructions", () => {
 
   it("counts adding and clearing, not every edit", () => {
     const automation = make();
-    expect(capture).not.toHaveBeenCalled();
+    vi.mocked(capture).mockClear();
 
     updateAutomation(automation.id, { extra_instructions: "One." });
     updateAutomation(automation.id, { extra_instructions: "One, reworded." });

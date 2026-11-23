@@ -63,6 +63,10 @@ interface AutomationsState {
   /** A paused copy without memories or runs; returns its id, null on failure. */
   duplicate: (id: string) => Promise<string | null>;
   setEnabled: (id: string, enabled: boolean) => Promise<void>;
+  /** A new webhook secret — the only time it is shown. Throws on failure. */
+  rotateWebhook: (
+    id: string,
+  ) => Promise<{ url: string | null; secret: string }>;
   remove: (id: string) => Promise<boolean>;
   revisePlaybook: (
     playbook: string,
@@ -333,6 +337,29 @@ export const useAutomationsStore = create<AutomationsState>()((set, get) => {
       }
     },
 
+    rotateWebhook: async (id) => {
+      const result = await request(transport(), "automations.rotate_webhook", {
+        automation_id: id,
+      });
+      set((s) =>
+        s.detailById[id]?.webhook
+          ? {
+              detailById: {
+                ...s.detailById,
+                [id]: {
+                  ...s.detailById[id],
+                  webhook: {
+                    ...s.detailById[id].webhook,
+                    url: result.url,
+                    has_secret: true,
+                  },
+                },
+              },
+            }
+          : {},
+      );
+      return result;
+    },
     setEnabled: async (id, enabled) => {
       try {
         const { automation } = await request(

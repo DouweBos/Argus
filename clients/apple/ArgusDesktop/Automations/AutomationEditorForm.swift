@@ -8,6 +8,8 @@ struct AutomationEditorForm: View {
   @Environment(HostStore.self) private var host
   @Environment(AutomationsStore.self) private var store
   @Binding var draft: RemoteAutomationDetail
+  /// Makes a new webhook secret for the saved automation.
+  var rotateWebhook: () async -> RemoteWebhookSecret? = { nil }
   @State private var revising = false
 
   var body: some View {
@@ -34,12 +36,11 @@ struct AutomationEditorForm: View {
     if draft.extraInstructions != nil { extraInstructions }
   }
 
+  @ViewBuilder
   private var trigger: some View {
     Section {
-      Picker("Trigger", selection: triggerKind) {
-        Text("Schedule").tag(RemoteAutomation.TriggerKind.schedule)
-        Text("Once").tag(RemoteAutomation.TriggerKind.once)
-        Text("Manual").tag(RemoteAutomation.TriggerKind.manual)
+      Picker("Trigger", selection: Binding(get: { draft.triggerKind }, set: { draft.setTriggerKind($0) })) {
+        ForEach(RemoteAutomationDetail.triggerOptions, id: \.0) { Text($0.1).tag($0.0) }
       }
       .pickerStyle(.segmented)
       if draft.triggerKind == .schedule {
@@ -51,7 +52,7 @@ struct AutomationEditorForm: View {
           .environment(\.timeZone, draft.timezone.flatMap(TimeZone.init(identifier:)) ?? .current)
         if let error = draft.onceError { Text(error).foregroundStyle(.red) }
       }
-      if draft.triggerKind != .manual {
+      if draft.triggerKind == .schedule || draft.triggerKind == .once {
         TextField("Timezone", text: optional(\.timezone), prompt: Text(TimeZone.current.identifier))
         if let preview = draft.schedulePreviewText() { SchedulePreviewRow(preview: preview) }
         Toggle(
@@ -59,25 +60,30 @@ struct AutomationEditorForm: View {
             ? "Still run if the computer was asleep at that time" : "Catch up after the computer was asleep",
           isOn: $draft.catchUp)
       }
+      if draft.triggerKind == .signal {
+        SignalLabelsRow(labels: signal.labels)
+        FireRows(fire: signal.fire, maxRunsPerHour: signal.maxRunsPerHour)
+      }
+      if draft.triggerKind == .webhook {
+        WebhookRows(webhook: webhook, rotate: rotateWebhook)
+        FireRows(fire: webhook.fire, maxRunsPerHour: webhook.maxRunsPerHour)
+      }
     } header: {
       Text("Trigger")
     } footer: {
-      switch draft.triggerKind {
-      case .schedule: Text("Five fields: min hour dom mon dow.")
-      case .once: Text("Runs once at this time, then pauses itself.")
-      case .manual: Text("Only runs when someone presses Run now.")
-      }
+      if draft.triggerKind != .signal { Text(draft.triggerCaption) }
+    }
+    if draft.triggerKind == .signal {
+      SignalEventsSection(signal: signal, error: draft.signalError)
     }
   }
 
-  /// Switching to Once starts at the next whole hour rather than an empty time.
-  private var triggerKind: Binding<RemoteAutomation.TriggerKind> {
-    Binding(
-      get: { draft.triggerKind },
-      set: { kind in
-        draft.triggerKind = kind
-        if kind == .once, draft.runAt == nil { draft.runAt = OnceTime.nextWholeHour(timezone: draft.timezone) }
-      })
+  private var signal: Binding<RemoteAutomationSignal> {
+    Binding(get: { draft.signal ?? .init() }, set: { draft.signal = $0 })
+  }
+
+  private var webhook: Binding<RemoteAutomationWebhook> {
+    Binding(get: { draft.webhook ?? .init() }, set: { draft.webhook = $0 })
   }
 
   /// The picker edits an instant; the wire keeps the wall clock in the trigger's zone.

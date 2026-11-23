@@ -2,10 +2,14 @@ package dev.houwert.argus.ui
 
 import dev.houwert.argus.core.automations.newAutomationDetail
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomation
-import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetailTriggerKind
-import dev.houwert.argus.kit.protocol.generated.RemoteAutomationRunStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationTriggerKind
+import dev.houwert.argus.kit.protocol.generated.RemoteAutomationRunStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteProject
+import dev.houwert.argus.kit.protocol.generated.RemoteSignalEventKind
+import dev.houwert.argus.kit.protocol.generated.RemoteWebhookTriggerFire
+import dev.houwert.argus.kit.util.Labels
+import dev.houwert.argus.ui.automations.AutomationText
+import dev.houwert.argus.ui.automations.EventTriggerText
 import dev.houwert.argus.ui.automations.AutomationFieldsText
 import dev.houwert.argus.ui.automations.AutomationRowLogic
 import dev.houwert.argus.ui.automations.GuardrailText
@@ -52,9 +56,38 @@ class AutomationLogicTest {
 
   @Test
   fun pickingOnceStartsOnTheNextWholeHour() {
-    val once = AutomationFieldsText.withTriggerKind(newAutomationDetail(timezone = "UTC"), RemoteAutomationDetailTriggerKind.once)
+    val once = AutomationFieldsText.withTriggerKind(newAutomationDetail(timezone = "UTC"), RemoteAutomationTriggerKind.once)
     assertNotNull(OnceWallClock.parse(once.runAt))
     assertEquals(0, OnceWallClock.parse(once.runAt)!!.minute)
+  }
+
+  @Test
+  fun pickingSignalOrWebhookStartsOnTheDefaults() {
+    val signal = AutomationFieldsText.withTriggerKind(newAutomationDetail(), RemoteAutomationTriggerKind.signal).signal!!
+    assertEquals(listOf(RemoteSignalEventKind.newIssue), signal.on)
+    assertEquals(4.0, signal.maxRunsPerHour, 0.0)
+    val webhook = AutomationFieldsText.withTriggerKind(newAutomationDetail(), RemoteAutomationTriggerKind.webhook).webhook!!
+    assertEquals(RemoteWebhookTriggerFire.each, webhook.fire)
+    assertEquals(false, webhook.hasSecret)
+  }
+
+  @Test
+  fun eventTriggerInputsKeepThePickerOrderAndClampTheCap() {
+    assertEquals(listOf(RemoteSignalEventKind.newIssue, RemoteSignalEventKind.ciFailed), EventTriggerText.ordered(listOf("ci_failed", "x", "new_issue")))
+    assertEquals(listOf("bug", "p1"), EventTriggerText.labels(" bug, ,p1 "))
+    assertEquals(60.0, EventTriggerText.maxRuns("500"), 0.0)
+    assertEquals(1.0, EventTriggerText.maxRuns("0"), 0.0)
+    assertEquals(4.0, EventTriggerText.maxRuns("lots"), 0.0)
+  }
+
+  @Test
+  fun eventTriggersReadAsEventsInTheList() {
+    val signal = automation().copy(triggerKind = RemoteAutomationTriggerKind.signal)
+    assertEquals("When an event arrives", AutomationText.nextRun(signal))
+    assertEquals("When its webhook is called", AutomationText.nextRun(signal.copy(triggerKind = RemoteAutomationTriggerKind.webhook)))
+    assertEquals("Paused", AutomationText.nextRun(signal.copy(enabled = false)))
+    assertEquals("On events", Labels.triggerLabel(signal))
+    assertEquals("On webhook", Labels.triggerLabel(signal.copy(triggerKind = RemoteAutomationTriggerKind.webhook)))
   }
 
   @Test
