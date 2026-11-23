@@ -12,44 +12,27 @@ struct WorkingDiffView: View {
 
   private var vm: WorkingCopyViewModel { workspace.workingCopy }
 
+  /// The kit shows conflicts and the empty states itself; this is only ever asked for a picked file's diff.
   var body: some View {
-    if let entry = vm.selectedEntry, entry.isConflicted {
-      QuietEmptyState(
-        icon: "exclamationmark.triangle", title: "\(entry.fileName) has conflicts",
-        message: "Pick a side or edit the merged result in Conflicts."
-      ) {
-        Button("Resolve in Conflicts") { model.navigate(.sessionGit(id: workspace.sessionId, view: .conflicts)) }
-      }
-    } else if vm.selectedEntry == nil && !vm.isDiffLoading {
-      // The file list keeps only a quiet line; the diff pane says why it's empty.
-      if !vm.hasLoadedStatus {
-        ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
-      } else if vm.statusEntries.isEmpty {
-        QuietEmptyState(icon: "checkmark.seal", title: "Nothing to commit", message: "Your working tree is clean.")
-      } else {
-        QuietEmptyState(icon: "doc.text.magnifyingglass", title: "Select a file", message: "Choose a file to see its changes.")
-      }
-    } else {
-      DiffPane(
-        diff: vm.currentDiff,
-        path: vm.selectedEntry?.path,
-        isLoading: vm.isDiffLoading,
-        staging: staging,
-        sideSwitch: sideSwitch,
-        openLine: openLine,
-        review: vm.selectedEntry.map { entry in
-          DiffReviewContext.session(
-            workspace.sessionId, path: entry.path,
-            scope: vm.selectedSide == .staged ? "staged changes" : "uncommitted changes", store: model.store)
-        },
-        ignoreWhitespace: Binding(
-          get: { vm.ignoreWhitespace }, set: { on in Task { await vm.setIgnoreWhitespace(on) } }),
-        images: images,
-        accessory: accessory
-      )
-      // An edit to the shown file can turn its mark to changed.
-      .task(id: vm.currentDiff?.stats) { await viewed?.load() }
-    }
+    DiffPane(
+      diff: vm.currentDiff,
+      path: vm.selectedEntry?.path,
+      isLoading: vm.isDiffLoading,
+      staging: staging,
+      sideSwitch: sideSwitch,
+      openLine: openLine,
+      review: vm.selectedEntry.map { entry in
+        DiffReviewContext.session(
+          workspace.sessionId, path: entry.path,
+          scope: vm.selectedSide == .staged ? "staged changes" : "uncommitted changes", store: model.store)
+      },
+      ignoreWhitespace: Binding(
+        get: { vm.ignoreWhitespace }, set: { on in Task { await vm.setIgnoreWhitespace(on) } }),
+      images: images,
+      accessory: accessory
+    )
+    // An edit to the shown file can turn its mark to changed.
+    .task(id: vm.currentDiff?.stats) { await viewed?.load() }
   }
 
   private var accessory: AnyView? {
@@ -60,8 +43,11 @@ struct WorkingDiffView: View {
     guard let entry = vm.selectedEntry,
       (vm.selectedSide == .staged ? entry.indexStatus : entry.workdirStatus).supportsHunkActions
     else { return nil }
-    return GitDiffStaging(side: vm.selectedSide) { action, hunk, lines in
-      Task { await WorkingCopyActions(workspace: workspace).hunk(action, hunk, lines) }
+    return GitDiffStaging(side: vm.selectedSide) { [vm] action, hunk, lines in
+      Task {
+        vm.clearError()
+        await vm.performHunkAction(action, hunk: hunk, lines: lines)
+      }
     }
   }
 

@@ -61,10 +61,12 @@ struct GitFailureBanner: View {
       model.navigate(.sessionGit(id: id, view: .conflicts))
     case .continueOperation:
       dismiss()
-      await WorkingCopyActions(workspace: workspace).continueOperation()
+      workspace.workingCopy.clearError()
+      await workspace.workingCopy.continueOperation()
     case .abortOperation:
       dismiss()
-      await WorkingCopyActions(workspace: workspace).abortOperation()
+      workspace.workingCopy.clearError()
+      await workspace.workingCopy.abortOperation()
     case .installLFS:
       ExternalLinks.open("https://git-lfs.com")
     case .configureSigning:

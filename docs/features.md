@@ -114,8 +114,11 @@ A real git workflow lives inside Argus:
   renamed and repointed from the sidebar.
 - **Changes** — the commit composer over the changed files, beside the
   picked file's diff. Space stages the selection, ⌘A selects every file,
-  Shift-arrows extend it, Return or a double-click opens the file. Stash
-  only the files you pick, save their changes as a patch, or apply one.
+  Shift-arrows extend it, Return or a double-click opens the file, and the
+  filter narrows the list. Stash only the files you pick, save their changes
+  as a patch, or apply one. Narrower than two columns, and in the side
+  panel's Diff tab, the files sit over the diff with a gap to drag between
+  them; the Diff tab leaves the commit to the git view.
 - **Merge & rebase** — Argus runs them for you and surfaces conflicts
   where you commit: both versions side by side above the merged result,
   which you can edit and save as the resolution, or keep one side whole.

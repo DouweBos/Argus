@@ -26,13 +26,6 @@ struct GitWorkingCopyTests {
     #expect(old.changes(from: old).isEmpty)
   }
 
-  @Test func allFilesListsTrackedFilesInFinderOrderAndFilters() {
-    let items = ChangeItem.allFiles(tracked: ["src/b10.swift", "README.md", "src/b2.swift"], entries: [], filter: "")
-    #expect(items.map(\.id) == ["t:README.md", "t:src/b2.swift", "t:src/b10.swift"])
-    let filtered = ChangeItem.allFiles(tracked: ["src/b10.swift", "README.md"], entries: [], filter: " SRC ")
-    #expect(filtered.map(\.id) == ["t:src/b10.swift"])
-  }
-
   @Test func gitDefaultsFallBackToTheListAndKeepWhitespace() throws {
     let defaults = try #require(UserDefaults(suiteName: "argus-tests-\(UUID().uuidString)"))
     #expect(GitPreferences.fileViewMode(defaults) == .flatModified)

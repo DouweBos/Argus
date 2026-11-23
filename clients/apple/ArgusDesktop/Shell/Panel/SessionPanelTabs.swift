@@ -1,5 +1,6 @@
 import ArgusCore
 import ArgusUI
+import GroveKit
 import GroveUIKit
 import SwiftUI
 
@@ -31,19 +32,9 @@ struct SessionDiffTab: View {
   var body: some View {
     Group {
       if case .open(let workspace) = model.git.slots[session.id] {
-        let uncommitted = workspace.scopedDiff.scope == .uncommitted
-        VStack(spacing: 0) {
-          ResizableVSplit(key: "panel.diff", topMin: 100, bottomMin: 160, bottomIdeal: 360, showsBottom: true) {
-            if uncommitted { ChangesListView(workspace: workspace, viewed: viewed) } else { ScopedChangesList(workspace: workspace) }
-          } bottom: {
-            if uncommitted { WorkingDiffView(workspace: workspace, viewed: viewed) } else { ScopedDiffPane(workspace: workspace) }
-          }
-          // The git view shows the review bar itself.
-          if model.sessionPanel != .git { DiffReviewBar(sessionId: session.id) }
-        }
-        .modifier(DiffTabDialogs(workspace: workspace, shown: model.sessionPanel != .git))
-        .task(id: model.sessionPanel) { await workspace.start() }
-        .onDisappear { if !sharedOnScreen { workspace.pause() } }
+        SessionDiffPanel(workspace: workspace, session: session, viewed: viewed)
+          .task(id: model.sessionPanel) { await workspace.start() }
+          .onDisappear { if !sharedOnScreen { workspace.pause() } }
       } else if case .failed(let message) = model.git.slots[session.id] {
         EmptyState(icon: Icon.warning, title: "Couldn't open the repository", body: message)
       } else {
@@ -58,13 +49,42 @@ struct SessionDiffTab: View {
   }
 }
 
-/// Discard confirmations and the like, unless the git view on screen already presents them.
-private struct DiffTabDialogs: ViewModifier {
+/// GroveUIKit's compact working copy with Argus's diff scope, viewed marks and review, and no composer: the git view commits.
+struct SessionDiffPanel: View {
+  @Environment(DesktopModel.self) private var model
   let workspace: GitWorkspace
-  let shown: Bool
+  let session: RemoteSession
+  var viewed: ViewedFiles?
+  /// The bottom pane's height from before the kit, so a dragged split stays.
+  @AppStorage("split.panel.diff") private var diffHeight: Double = 360
 
-  func body(content: Content) -> some View {
-    if shown { content.gitWorkingCopyDialogs(workspace.workingCopy) } else { content }
+  private var vm: WorkingCopyViewModel { workspace.workingCopy }
+  /// The git view on screen shows the review bar, confirmations and patch sheets itself.
+  private var gitOnScreen: Bool { model.sessionPanel == .git }
+
+  var body: some View {
+    VStack(spacing: 0) {
+      if let error = viewed?.error {
+        GitErrorBanner(message: error) { viewed?.error = nil }
+      }
+      GitWorkingCopyView(
+        viewModel: vm, host: host, slots: .argus(workspace: workspace, viewed: viewed), layout: .compact(composer: false)
+      )
+      .padding(8)
+      if !gitOnScreen { DiffReviewBar(sessionId: session.id) }
+    }
+    .gitFeatures(workspace.features)
+    .task(id: vm.statusEntries) { await viewed?.load() }
+    .onChange(of: workspace.suppressLfsWarning, initial: true) { _, suppressed in
+      if suppressed { vm.dismissLFSWarning() }
+    }
+  }
+
+  private var host: GitWorkingCopyHost {
+    var host = GitWorkingCopyHost.argus(workspace: workspace, session: session, model: model)
+    host.compactDiffHeight = $diffHeight
+    host.presentsDialogs = !gitOnScreen
+    return host
   }
 }
 

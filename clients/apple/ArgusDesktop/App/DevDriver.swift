@@ -1,6 +1,7 @@
 #if DEBUG
   import AppKit
   import ArgusCore
+  import GroveKit
   import GroveUIKit
   import UserNotifications
 
@@ -536,17 +537,15 @@
         scan(window.contentView)
         return ["activities": found]
       case "changeMenu":
-        // A Changes row's Create Patch / LFS items: list them, or run one by title.
+        // A Changes row's Create Patch / LFS items, titled as the kit's menu: list them, or run one by title.
         guard let model = AppDelegate.current?.model, let id = command["session"] as? String,
           let workspace = model.git.workspace(id), let path = command["path"] as? String
         else { return ["error": "session, path?"] }
-        let section = ChangeSection(rawValue: command["section"] as? String ?? "Unstaged") ?? .unstaged
+        let side: DiffSide = command["section"] as? String == "Staged" ? .staged : .unstaged
         let vm = workspace.workingCopy
-        let pool = section == .staged ? vm.stagedFiles : vm.unstagedFiles
-        guard let entry = pool.first(where: { $0.path == path }) else { return ["error": "no \(section) \(path)"] }
-        let items = ChangeLFSAndPatchMenu.items(
-          workspace: workspace, entry: entry, section: section,
-          entries: vm.actionEntries(for: entry, side: section.side))
+        let pool = side == .staged ? vm.stagedFiles : vm.unstagedFiles
+        guard let entry = pool.first(where: { $0.path == path }) else { return ["error": "no \(side) \(path)"] }
+        let items = ChangeMenuItems.items(workspace: workspace, entry: entry, side: side)
         if let title = command["pick"] as? String {
           guard let item = items.first(where: { $0.title == title }) else { return ["error": "no item \(title)"] }
           item.run()

@@ -93,7 +93,10 @@ extension DesktopModel {
     case .merge: actions.chooseMerge()
     case .rebase: actions.chooseRebase()
     case .createPullRequest: actions.createPullRequest()
-    case .commit: await WorkingCopyActions(workspace: workspace).commit()
+    case .commit:
+      // A new failure shows on its own, not under the last one.
+      workspace.workingCopy.clearError()
+      await workspace.workingCopy.commit()
     case .stash: actions.stash()
     case .snapshot: actions.snapshot()
     case .undo: await workspace.undoLast(redo: false)

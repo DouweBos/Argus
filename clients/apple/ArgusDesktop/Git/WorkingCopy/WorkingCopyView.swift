@@ -39,18 +39,8 @@ struct WorkingCopyView: View {
   }
 
   private var slots: GitWorkingCopySlots {
-    var slots = GitWorkingCopySlots()
-    slots.filesHeader = AnyView(DiffScopeMenu(workspace: workspace))
-    slots.diff = { _ in AnyView(WorkingDiffView(workspace: workspace)) }
+    var slots = GitWorkingCopySlots.argus(workspace: workspace, onShowFileHistory: onShowFileHistory)
     slots.composerAccessory = AnyView(CommitDraftAndReview(workspace: workspace))
-    slots.rowMenu = { entry, entries in
-      AnyView(ChangeHistoryItems(workspace: workspace, entry: entry, entries: entries, onShowFileHistory: onShowFileHistory))
-    }
-    if workspace.scopedDiff.scope != .uncommitted {
-      slots.replacement = (
-        files: AnyView(ScopedChangesList(workspace: workspace)), detail: AnyView(ScopedDiffPane(workspace: workspace))
-      )
-    }
     return slots
   }
 }
@@ -106,24 +96,6 @@ private struct CommitDraftAndReview: View {
     Task {
       await workspace.draftCommitMessage()
       drafting = false
-    }
-  }
-}
-
-/// File History and Blame for a changed file git already knows.
-private struct ChangeHistoryItems: View {
-  @Environment(DesktopModel.self) private var model
-  let workspace: GitWorkspace
-  let entry: StatusEntry
-  let entries: [StatusEntry]
-  var onShowFileHistory: ((String) -> Void)?
-
-  var body: some View {
-    if entries.count == 1, entry.workdirStatus != .untracked, entry.indexStatus != .added {
-      if let onShowFileHistory {
-        Button("File History") { onShowFileHistory(entry.path) }
-      }
-      Button("Blame") { model.navigate(.sessionGit(id: workspace.sessionId, view: .blame(path: entry.path, ref: nil))) }
     }
   }
 }
