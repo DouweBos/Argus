@@ -60,7 +60,7 @@
 
     /// The git panel and the PR store read through the app's own `HostStore`.
     @MainActor
-    private static func attach(_ stage: GalleryStage) async {
+    static func attach(_ stage: GalleryStage) async {
       buildRepository()
       await stage.model.store.attach(stage.backend)
       await stage.host.loadSessions(repoRoot: GalleryGit.repoRoot)
