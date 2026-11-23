@@ -112,7 +112,7 @@
 
     var body: some View {
       if let session = host.session(id: sessionId) {
-        GitScreen(session: session, view: view)
+        GitScreen(session: session, view: view).argusGitUI()
       }
     }
   }
