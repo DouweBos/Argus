@@ -13,6 +13,7 @@ const {
 const { listMemories, saveMemory } = await import("../automation/memory/store");
 const { listAutomationMemories } = await import("../automation/memory/service");
 const { resolvePolicy } = await import("../automation/autonomy");
+const { enqueueAutomationEvents } = await import("../automation/eventDispatch");
 const {
   addDuty,
   createTeammate,
@@ -249,9 +250,7 @@ describe("teammates", () => {
     expect(updateTeammate(teammate.id, {}, ["autonomy"]).autonomy).toBeNull();
   });
 
-  it("keeps a teammate's duties from firing when teammates are off", async () => {
-    const { enqueueAutomationEvents } =
-      await import("../automation/eventDispatch");
+  it("keeps a teammate's duties from firing when teammates are off", () => {
     const teammate = createTeammate({ name: "Fixer" });
     const duty = addDuty(teammate.id, {
       name: "On events",
