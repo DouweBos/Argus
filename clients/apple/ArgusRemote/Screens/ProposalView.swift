@@ -88,8 +88,8 @@ struct DecidableProposalCard: View {
         cleanup: { Task { await act { await proposals.performCleanup(id: id) } } },
         openRun: inRun
           ? nil
-          : proposal.runId.map { runId in
-            { router.push(.run(id: runId, label: proposal.automationName)) }
+          : ProposalOrigin(automationId: proposal.automationId, runId: proposal.runId).map { origin in
+            { router.push(Route(origin, label: proposal.automationName)) }
           },
         openDetails: inRun ? { router.push(.proposal(id: id)) } : nil))
   }

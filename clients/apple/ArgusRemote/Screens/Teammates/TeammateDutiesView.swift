@@ -13,6 +13,7 @@ struct TeammateDutiesView: View {
 
   @State private var loaded = false
   @State private var removing: RemoteAutomation?
+  @State private var promoting = false
 
   private static let recentRuns = 5
 
@@ -20,6 +21,12 @@ struct TeammateDutiesView: View {
   private var duties: [RemoteAutomation] {
     (store.detailById[teammateId]?.duties ?? []).compactMap { duty in
       automations.automations.first { $0.id == duty.id } ?? RemoteAutomation(wire: duty)
+    }
+  }
+
+  private var standalone: [RemoteAutomation] {
+    automations.automations.filter { $0.teammateId == nil }.sorted {
+      $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
     }
   }
 
@@ -63,11 +70,18 @@ struct TeammateDutiesView: View {
     .emptyState(when: loaded && duties.isEmpty) {
       EmptyState(
         icon: Icon.automations, title: "No duties",
-        body: "It only works when you talk to it. Promote an automation on the Mac to give it one.")
+        body: host.hasControl
+          ? "It only works when you talk to it. Add an automation to give it a duty."
+          : "It only works when you talk to it.")
     }
     .overlay { if !loaded && duties.isEmpty { Loading(label: "Reading duties") } }
     .navigationTitle("Duties")
     .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+      if host.hasControl {
+        ToolbarItem(placement: .topBarTrailing) { addMenu }
+      }
+    }
     .confirmationDialog(
       "Remove \(removing?.name ?? "this duty") from the teammate?",
       isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
@@ -89,6 +103,34 @@ struct TeammateDutiesView: View {
       await automations.refresh()
     }
     .liveRefresh(enabled: host.connection == .ready) { await automations.refresh() }
+  }
+
+  /// A standalone automation becomes a duty; its memories move with it.
+  private var addMenu: some View {
+    Menu {
+      Section("Add automation") {
+        ForEach(standalone) { automation in
+          Button(automation.name) { promote(automation.id) }
+        }
+      }
+      if standalone.isEmpty {
+        Text("Every automation already belongs to a teammate")
+      }
+    } label: {
+      Label("Add automation", systemImage: Icon.plus)
+    }
+    .disabled(promoting || host.connection != .ready)
+  }
+
+  private func promote(_ automationId: String) {
+    promoting = true
+    Task {
+      if await store.promote(automationId: automationId, into: teammateId) != nil {
+        await store.loadDetail(id: teammateId)
+        await automations.refresh()
+      }
+      promoting = false
+    }
   }
 
   private func removeButton(_ duty: RemoteAutomation) -> some View {

@@ -127,8 +127,13 @@ struct TeammateView: View {
           } label: {
             if thread.id == currentThreadId {
               Label(ThreadRow.title(thread), systemImage: Icon.check)
+            } else if let icon = thread.surface.icon {
+              Label(ThreadRow.title(thread), systemImage: icon)
             } else {
               Text(ThreadRow.title(thread))
+            }
+            if let surface = thread.surface.label {
+              Text(surface)
             }
           }
         }
@@ -190,8 +195,14 @@ private struct ThreadRow: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 2) {
       Text(Self.title(thread)).lineLimit(1)
-      Text(Labels.timeAgo(thread.lastOpenedAt))
-        .font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
+      HStack(spacing: 4) {
+        if let icon = thread.surface.icon, let label = thread.surface.label {
+          Image(systemName: icon)
+          Text("\(label) ·")
+        }
+        Text(Labels.timeAgo(thread.lastOpenedAt))
+      }
+      .font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
     }
   }
 }

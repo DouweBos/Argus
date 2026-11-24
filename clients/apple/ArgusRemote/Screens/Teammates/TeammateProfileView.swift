@@ -16,6 +16,7 @@ struct TeammateProfileView: View {
   @State private var saved: TeammateDraft?
   @State private var saving = false
   @State private var confirmingDelete = false
+  @State private var revisingSoul = false
 
   private var canSave: Bool {
     guard let draft, host.hasControl else { return false }
@@ -84,6 +85,15 @@ struct TeammateProfileView: View {
       ThemedTextField(
         placeholder: "Who it is and how it works", text: draft.soul,
         multiline: true, lines: 8...30, mono: true)
+      if host.hasControl {
+        Btn(label: "Rewrite with Claude", tone: .secondary, small: true) { revisingSoul = true }
+          .disabled(draft.wrappedValue.soul.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+      }
+    }
+    .sheet(isPresented: $revisingSoul) {
+      ReviseSoulSheet(soul: draft.wrappedValue.soul, name: draft.wrappedValue.name) { rewritten in
+        draft.wrappedValue.soul = rewritten
+      }
     }
     Field(label: "Scope", caption: "Repos its duties and conversations may read, and what feeds it work.") {
       ToggleList(
@@ -110,9 +120,8 @@ struct TeammateProfileView: View {
     }
   }
 
-  /// Inherit is only offered while it inherits: the host keeps a rung once set.
   private var autonomyOptions: [MenuChip<String>.Option] {
-    (saved?.autonomy == nil ? [.init(value: "", label: "Inherit", hint: "Use the computer's default")] : [])
+    [.init(value: "", label: "Inherit", hint: "Use the computer's default")]
       + RemoteAutonomy.allRungs.map { .init(value: $0.rawValue, label: $0.label, hint: $0.caption) }
   }
 
@@ -138,7 +147,7 @@ struct TeammateProfileView: View {
       var identity = draft
       identity.soul = saved.soul
       if identity != saved {
-        ok = await store.update(teammateId, draft.patch)
+        ok = await store.update(teammateId, draft.patch, clear: draft.clearedFields)
       }
       if ok, draft.soul != saved.soul {
         ok = await store.saveSoul(teammateId, soul: draft.soul)

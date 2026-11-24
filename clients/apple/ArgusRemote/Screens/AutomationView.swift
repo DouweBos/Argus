@@ -12,6 +12,7 @@ struct AutomationView: View {
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
   @Environment(AutomationsStore.self) private var store
+  @Environment(TeammatesStore.self) private var teammates
 
   let automationId: String
   let label: String
@@ -19,6 +20,7 @@ struct AutomationView: View {
   /// The memory sheet: `.some(nil)` adds one, `nil` is closed.
   @State private var openMemory: MemorySelection?
   @State private var duplicating = false
+  @State private var moving = false
 
   private struct MemorySelection: Identifiable {
     let memory: RemoteAutomationMemory?
@@ -36,6 +38,7 @@ struct AutomationView: View {
       }
       if let automation {
         detail(automation)
+        teammate(automation)
         trackRecord
         memories
         runs(automation)
@@ -47,6 +50,9 @@ struct AutomationView: View {
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       if host.hasControl {
+        if let automation, automation.teammateId == nil {
+          ToolbarItem(placement: .topBarTrailing) { moveMenu }
+        }
         ToolbarItem(placement: .topBarTrailing) {
           Button {
             duplicate()
@@ -71,6 +77,63 @@ struct AutomationView: View {
     }
     .sheet(item: $openMemory) { selection in
       MemoryEditorSheet(automationId: automationId, memory: selection.memory)
+    }
+  }
+
+  /// A duty links to its teammate.
+  @ViewBuilder
+  private func teammate(_ automation: RemoteAutomation) -> some View {
+    if let teammateId = automation.teammateId {
+      let mate = teammates.teammate(teammateId)
+      NavigationLink(value: Route.teammate(id: teammateId, page: .duties)) {
+        Card {
+          HStack(spacing: 10) {
+            if let mate { TeammateAvatar(teammate: mate, size: 28) }
+            VStack(alignment: .leading, spacing: 2) {
+              MutedText("A duty of")
+              BodyText(mate?.name ?? "a teammate")
+            }
+            Spacer(minLength: 6)
+            Image(systemName: "chevron.right")
+              .font(.scaled(size: 12, weight: .semibold))
+              .foregroundStyle(theme.textMuted)
+          }
+        }
+        .contentShape(.rect)
+      }
+      .buttonStyle(.argusPlain)
+      .task { if mate == nil { await teammates.refresh() } }
+    }
+  }
+
+  /// A standalone automation becomes a teammate's duty.
+  private var moveMenu: some View {
+    Menu {
+      Button {
+        move(into: nil)
+      } label: {
+        Label("New teammate", systemImage: Icon.plus)
+      }
+      Section("Teammates") {
+        ForEach(teammates.summaries) { summary in
+          Button(summary.teammate.name) { move(into: summary.teammate.id) }
+        }
+      }
+    } label: {
+      Label("Move to teammate", systemImage: Icon.person)
+    }
+    .disabled(moving || host.connection != .ready)
+    .task { if !teammates.loaded { await teammates.refresh() } }
+  }
+
+  /// Its memories move with it; nil makes a teammate named after it.
+  private func move(into teammateId: String?) {
+    moving = true
+    Task {
+      if await teammates.promote(automationId: automationId, into: teammateId) != nil {
+        await store.refresh()
+      }
+      moving = false
     }
   }
 

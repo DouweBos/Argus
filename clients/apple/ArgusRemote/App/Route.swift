@@ -571,3 +571,14 @@ extension Route {
     }
   }
 }
+
+extension Route {
+  /// A proposal's "View run": the run, or the teammate conversation it came from.
+  init(_ origin: ProposalOrigin, label: String) {
+    switch origin {
+    case .run(_, let runId): self = .run(id: runId, label: label)
+    case .teammateThread(let teammateId, let threadId):
+      self = .teammate(id: teammateId, page: .chat(threadId: threadId))
+    }
+  }
+}

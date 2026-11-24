@@ -126,14 +126,17 @@ extension GalleryFixtures {
   private static var threads: [[String: Any]] {
     [
       thread("th1", "Why does the iOS job keep timing out on main?", minutes: 8),
-      thread("th2", "Remember that the e2e suite needs the staging token", minutes: 60 * 26),
+      thread("th2", "Remember that the e2e suite needs the staging token", minutes: 60 * 26, surface: "slack"),
+      thread("th4", "Take over the flaky upload test from the release shepherd", minutes: 60 * 50, surface: "handoff"),
       thread("th3", "", minutes: 60 * 24 * 6),
     ]
   }
 
-  private static func thread(_ id: String, _ title: String, minutes: Double) -> [String: Any] {
+  private static func thread(
+    _ id: String, _ title: String, minutes: Double, surface: String = "direct"
+  ) -> [String: Any] {
     [
-      "id": id, "teammate_id": ciFixerId, "surface": "direct", "title": title,
+      "id": id, "teammate_id": ciFixerId, "surface": surface, "title": title,
       "agent_id": "teammate-\(id)", "created_at": ago(minutes + 30), "last_opened_at": ago(minutes),
       "archived": false,
     ]

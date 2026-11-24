@@ -19,6 +19,9 @@
         GalleryStory("teammates/chat", fixtures: chat, setup: refresh) {
           TeammateView(teammateId: id, threadId: nil)
         },
+        GalleryStory("teammates/chat/monitor", fixtures: fixtures, setup: monitor) {
+          TeammateView(teammateId: id, threadId: nil)
+        },
         GalleryStory("teammates/profile", fixtures: fixtures) { TeammateProfileView(teammateId: id) },
         GalleryStory("teammates/duties", fixtures: fixtures, setup: loadRuns) { TeammateDutiesView(teammateId: id) },
         GalleryStory("teammates/memory", fixtures: fixtures) { TeammateMemoryView(teammateId: id) },
@@ -44,6 +47,13 @@
 
     @MainActor
     private static func refresh(_ stage: GalleryStage) async {
+      await stage.teammates.refresh()
+    }
+
+    /// A device without control gets the conversation list.
+    @MainActor
+    private static func monitor(_ stage: GalleryStage) async {
+      stage.host.capabilities = ["monitor"]
       await stage.teammates.refresh()
     }
 

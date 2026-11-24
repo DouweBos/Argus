@@ -65,6 +65,12 @@ public struct TeammateDraft: Equatable, Sendable {
       autonomy: autonomy.map { ArgusProtocol.AutonomyLevel(rawValue: $0.rawValue) },
       guardrails: WireRecode.convert(guardrails))
   }
+
+  /// What the patch can't say: an omitted field is untouched, so inheriting
+  /// is sent as `clear`.
+  public var clearedFields: [ArgusProtocol.TeammateClearableField] {
+    autonomy == nil ? [.autonomy] : []
+  }
 }
 
 /// Moves a value between a generated wire type and the hand-written one with

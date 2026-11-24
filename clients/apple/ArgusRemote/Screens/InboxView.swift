@@ -186,10 +186,10 @@ struct InboxView: View {
         resolve: { note in Task { await proposals.resolve(id: proposal.id, note: note) } },
         dismiss: { reason in Task { await proposals.dismiss(id: proposal.id, reason: reason) } },
         cleanup: { Task { await proposals.performCleanup(id: proposal.id) } },
-        openRun: proposal.runId.map { runId in
+        openRun: ProposalOrigin(automationId: proposal.automationId, runId: proposal.runId).map { origin in
           {
             Telemetry.capture(.proposalOpenedAsRun)
-            router.push(.run(id: runId, label: proposal.automationName))
+            router.push(Route(origin, label: proposal.automationName))
           }
         },
         openDetails: { router.push(.proposal(id: proposal.id)) }))
