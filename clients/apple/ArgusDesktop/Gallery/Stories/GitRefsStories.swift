@@ -66,7 +66,7 @@
       return fixtures
     }
 
-    @MainActor private static func build() -> String {
+    @MainActor static func build() -> String {
       let root = GitStories.directory.appendingPathComponent("refs")
       let app = root.appendingPathComponent("app").path
       guard !FileManager.default.fileExists(atPath: app) else { return app }
