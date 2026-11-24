@@ -107,7 +107,9 @@ export class ThreadBridge {
   async beginTurn(thread: SlackThread): Promise<void> {
     const message = statusMessage({
       activity: thread.agentId ? "thinking" : "starting",
-      project: thread.repoRoot ? projectName(thread.repoRoot) : "Argus",
+      project:
+        thread.teammate?.name ??
+        (thread.repoRoot ? projectName(thread.repoRoot) : "Argus"),
       links: thread.sessionId
         ? this.deps.links(thread.sessionId, thread.agentId)
         : null,
@@ -267,6 +269,10 @@ export class ThreadBridge {
         REPLY_LIMIT,
         links?.app ?? null,
       );
+    }
+    // A teammate speaks as itself; the bot posts for every one of them.
+    if (thread.teammate?.name) {
+      body = `*${thread.teammate.name}:* ${body}`;
     }
     try {
       await this.deps.api.postMessage({

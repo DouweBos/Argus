@@ -13,6 +13,8 @@ import { getPublicUrl, isRemoteActive } from "../remote/remoteService";
 import { startAgentWhenReady } from "../remote/startWhenReady";
 import { createSession } from "../session/manager";
 import { waitForSessionReady } from "../session/waitForReady";
+import { teammateCache } from "../teammate/registry";
+import { teammatesActive } from "../teammate/settings";
 import { capture } from "../telemetry/telemetry";
 import { loadSlackConfig, loadSlackIdentity, updateSlackConfig } from "./store";
 
@@ -47,6 +49,9 @@ async function continueSession(
   images: ImageAttachment[],
   author: string | null,
 ): Promise<{ agentId: string } | null> {
+  if (thread.teammate) {
+    return await continueTeammate(thread.teammate, text, images, author);
+  }
   const sessionId = thread.sessionId;
   if (!sessionId || !appState.sessions.has(sessionId)) {
     return null;
@@ -76,6 +81,51 @@ async function continueSession(
   });
 
   return { agentId };
+}
+
+/** A teammate's thread: its agent, woken or resumed under the teammate's prompt. */
+async function continueTeammate(
+  ref: { teammateId: string; threadId: string },
+  text: string,
+  images: ImageAttachment[],
+  author: string | null,
+): Promise<{ agentId: string } | null> {
+  const { openThread } = await import("../teammate/threads");
+  let agentId: string;
+  try {
+    agentId = (await openThread(ref.teammateId, { threadId: ref.threadId }))
+      .agent_id;
+  } catch {
+    return null;
+  }
+  const { submitAgentMessage } = await import("../agent/conversation/actions");
+  await submitAgentMessage(agentId, {
+    text,
+    author: author ?? undefined,
+    images: images.length ? images : undefined,
+  });
+
+  return { agentId };
+}
+
+function teammateByHandle(handle: string): { id: string; name: string } | null {
+  if (!teammatesActive()) {
+    return null;
+  }
+  const teammate = teammateCache().find((t) => t.handle === handle);
+
+  return teammate ? { id: teammate.id, name: teammate.name } : null;
+}
+
+async function startTeammate(teammateId: string) {
+  const { openThread } = await import("../teammate/threads");
+  const opened = await openThread(teammateId, { fresh: true });
+
+  return {
+    sessionId: opened.session_id,
+    agentId: opened.agent_id,
+    threadId: opened.thread.id,
+  };
 }
 
 export function hostDeps(
@@ -110,6 +160,8 @@ export function hostDeps(
       return { sessionId: session.id, agentReady };
     },
     continueSession,
+    teammateByHandle,
+    startTeammate,
     pendingPrompt: (agentId, toolUseId) => {
       const prompt = appState.agentPendingPermissions
         .get(agentId)

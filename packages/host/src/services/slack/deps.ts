@@ -63,6 +63,15 @@ export interface SlackBotDeps {
     images: ImageAttachment[],
     author: string | null,
   ) => Promise<{ agentId: string } | null>;
+  /**
+   * The teammate a handle names, when teammates may answer mentions; null
+   * otherwise, and the message goes to a project session as usual.
+   */
+  teammateByHandle?: (handle: string) => { id: string; name: string } | null;
+  /** A fresh conversation with the teammate, its agent ready for a message. */
+  startTeammate?: (
+    teammateId: string,
+  ) => Promise<{ sessionId: string; agentId: string; threadId: string }>;
   pendingPrompt: (agentId: string, toolUseId: string) => PendingPrompt | null;
   respondToPermission: (
     agentId: string,

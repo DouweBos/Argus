@@ -275,6 +275,17 @@ left off.
 - **Images** attached to a message are passed to the agent. Other files are
   named in the prompt but not passed on.
 
+### Talking to a teammate
+
+Start a message with a [teammate](./teammates.md)'s handle — `@Argus @ci-fixer
+why is main red?` or `@Argus ci-fixer: why is main red?` — and the thread
+becomes a conversation with that teammate instead of a project session. It
+answers in the thread under its own name, with its soul and memory, and
+replies in the thread keep talking to it. The same people who may drive Argus
+from Slack may talk to teammates; nobody else gets an answer. **Let teammates
+act on their own** off in Settings turns this off, and a handle that names no
+teammate is an ordinary request.
+
 ### On iPhone and Android
 
 The phones' Settings show whether Slack is connected, its workspace, owner

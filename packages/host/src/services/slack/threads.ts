@@ -34,6 +34,8 @@ export interface SlackThread {
   statusTs: string | null;
   /** Set while the thread waits for a project pick. */
   pending: PendingAsk | null;
+  /** A teammate's conversation instead of a project session. Missing on older records. */
+  teammate?: { teammateId: string; threadId: string; name?: string } | null;
   updatedAt: number;
 }
 

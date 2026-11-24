@@ -22,7 +22,7 @@ export function routeMessage(opts: {
   projects: string[];
 }): Route {
   const { config, channel, isDm, thread, projects } = opts;
-  if (thread?.sessionId) {
+  if (thread?.sessionId || thread?.teammate) {
     return { kind: "continue", thread };
   }
   if (thread?.pending) {
@@ -63,4 +63,22 @@ export function slackTextToPlain(text: string): string {
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&amp;/g, "&");
+}
+
+/**
+ * A message addressed to a teammate: `@ci-fixer why is main red?` or
+ * `ci-fixer: why is main red?`, first thing in the message. Returns the
+ * handle and the rest, or null.
+ */
+export function teammateMention(
+  text: string,
+): { handle: string; rest: string } | null {
+  const match = /^@?([a-z0-9][a-z0-9-]{0,31})(?::|,|\s)\s*([\s\S]*)$/.exec(
+    text.trim(),
+  );
+  if (!match) {
+    return null;
+  }
+
+  return { handle: match[1]!, rest: match[2]!.trim() };
 }

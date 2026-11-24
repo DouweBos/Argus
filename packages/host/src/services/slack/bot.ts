@@ -28,7 +28,12 @@ import {
 } from "./blocks";
 import { ThreadBridge } from "./bridge";
 import { parseEnvelope, type SlackAction, type SlackMessage } from "./events";
-import { routeMessage, slackTextToPlain, stripBotMention } from "./routing";
+import {
+  routeMessage,
+  slackTextToPlain,
+  stripBotMention,
+  teammateMention,
+} from "./routing";
 import { newClaimCode } from "./store";
 
 const IMAGE_TYPES = new Set([
@@ -175,6 +180,23 @@ export class SlackBot {
     }
 
     const thread = this.deps.threads.get(message.channel, root);
+    if (!thread?.sessionId && !thread?.teammate) {
+      const mention = teammateMention(text);
+      const teammate = mention
+        ? (this.deps.teammateByHandle?.(mention.handle) ?? null)
+        : null;
+      if (mention && teammate) {
+        await this.startTeammate(
+          where,
+          message,
+          teammate,
+          mention.rest || text,
+        );
+        track("started");
+
+        return;
+      }
+    }
     const route = routeMessage({
       config,
       channel: message.channel,
@@ -312,6 +334,40 @@ export class SlackBot {
         ).catch(() => undefined);
       }
     });
+  }
+
+  /** A fresh conversation with the teammate, bound to this Slack thread. */
+  private async startTeammate(
+    where: { channel: string; threadTs: string },
+    message: SlackMessage,
+    teammate: { id: string; name: string },
+    text: string,
+  ): Promise<void> {
+    let started;
+    try {
+      started = await this.deps.startTeammate!(teammate.id);
+    } catch (e) {
+      await this.reply(
+        where,
+        `${teammate.name} couldn't start: ${typeof e === "string" ? e : String(e)}`,
+      );
+
+      return;
+    }
+    const thread = this.deps.threads.put(where.channel, where.threadTs, {
+      kind: message.isDm ? "dm" : "channel",
+      repoRoot: null,
+      sessionId: started.sessionId,
+      agentId: started.agentId,
+      resumeRef: null,
+      pending: null,
+      teammate: {
+        teammateId: teammate.id,
+        threadId: started.threadId,
+        name: teammate.name,
+      },
+    });
+    await this.continueThread(thread, message, text);
   }
 
   private async continueThread(

@@ -55,6 +55,15 @@ them: read, edit, delete or add your own.
 
 ---
 
+## From Slack
+
+With [Slack connected](./integrations.md#slack), start a message to Argus
+with the teammate's handle — `@Argus @ci-fixer why is main red?` — and the
+Slack thread becomes a conversation with it. It answers in the thread under
+its name, and the conversation is also listed on its page here.
+
+---
+
 ## How far it may go
 
 A teammate's **autonomy** is a ceiling over everything it does. A duty runs at

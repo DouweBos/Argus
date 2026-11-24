@@ -45,6 +45,43 @@ describe("slackBot", () => {
       });
     });
 
+    it("hands a message addressed to a teammate to a conversation with it", async () => {
+      const slack = fakeSlack(vi.fn, { defaultProject: "/work/ios" });
+      slack.deps.teammateByHandle = (handle) =>
+        handle === "ci-fixer" ? { id: "t1", name: "CI Fixer" } : null;
+      vi.spyOn(slack.deps, 'startTeammate').mockImplementation(async () => ({
+        sessionId: "teammate-thread-th1",
+        agentId: "teammate-th1",
+        threadId: "th1",
+      }));
+      const bot = new SlackBot(slack.deps);
+
+      await bot.handleEnvelope(mention("@ci-fixer why is main red?"));
+      await bot.handleEnvelope(
+        mention("and the iOS job?", { thread_ts: "1.1", ts: "1.2" }),
+      );
+
+      expect(slack.started).toEqual([]);
+      expect(slack.deps.startTeammate).toHaveBeenCalledTimes(1);
+      expect(slack.continued.map((c) => c.text)).toEqual([
+        "why is main red?",
+        "and the iOS job?",
+      ]);
+      expect(slack.threads.get("CWEB", "1.1")?.teammate).toEqual({
+        teammateId: "t1",
+        threadId: "th1",
+        name: "CI Fixer",
+      });
+    });
+
+    it("treats an unknown handle as an ordinary request", async () => {
+      const slack = fakeSlack(vi.fn, { defaultProject: "/work/ios" });
+      slack.deps.teammateByHandle = () => null;
+      await new SlackBot(slack.deps).handleEnvelope(mention("@nobody fix it"));
+
+      expect(slack.started[0]?.prompt).toBe("@nobody fix it");
+    });
+
     it("uses the default project for an unmapped channel", async () => {
       const slack = fakeSlack(vi.fn, { defaultProject: "/work/ios" });
       await new SlackBot(slack.deps).handleEnvelope(
