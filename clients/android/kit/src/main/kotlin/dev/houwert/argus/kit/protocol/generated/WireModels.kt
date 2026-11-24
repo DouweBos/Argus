@@ -7671,10 +7671,24 @@ data class TeammateTemplate(
 )
 
 @Serializable
+@JvmInline
+value class TeammateThreadSurface(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val direct = TeammateThreadSurface("direct")
+    val handoff = TeammateThreadSurface("handoff")
+    val linear = TeammateThreadSurface("linear")
+    val slack = TeammateThreadSurface("slack")
+    val entries: List<TeammateThreadSurface> = listOf(direct, handoff, linear, slack)
+  }
+}
+
+@Serializable
 data class TeammateThread(
   @SerialName("id") val id: String,
   @SerialName("teammate_id") val teammateId: String,
-  @SerialName("surface") val surface: String,
+  @SerialName("surface") val surface: TeammateThreadSurface,
   @SerialName("title") val title: String,
   @SerialName("agent_id") val agentId: String,
   @SerialName("created_at") val createdAt: Double,

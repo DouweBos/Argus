@@ -78,6 +78,19 @@ reachable from the internet.
 
 ---
 
+## Asking each other
+
+A teammate knows the others by handle and can hand them something that is
+theirs: CI Fixer asking `@reviewer` to look over the fix it just drafted,
+say. The one asked answers in a conversation of its own, listed on its page,
+and the answer comes back to the one that asked.
+
+Hand-offs are bounded: at most three teammates deep, never back round to a
+teammate already in the chain, and not once the day's automation budget is
+spent. The one asked works at its own autonomy — asking never raises it.
+
+---
+
 ## How far it may go
 
 A teammate's **autonomy** is a ceiling over everything it does. A duty runs at

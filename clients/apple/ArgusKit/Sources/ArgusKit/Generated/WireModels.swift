@@ -20766,10 +20766,27 @@ extension ArgusProtocol {
     }
   }
 
+  public struct TeammateThreadSurface: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let direct = TeammateThreadSurface(rawValue: "direct")
+    public static let handoff = TeammateThreadSurface(rawValue: "handoff")
+    public static let linear = TeammateThreadSurface(rawValue: "linear")
+    public static let slack = TeammateThreadSurface(rawValue: "slack")
+  }
+
   public struct TeammateThread: Codable, Sendable {
     public var id: String
     public var teammateId: String
-    public var surface: String
+    public var surface: TeammateThreadSurface
     public var title: String
     public var agentId: String
     public var createdAt: Double
@@ -20787,7 +20804,7 @@ extension ArgusProtocol {
       case archived = "archived"
     }
 
-    public init(id: String, teammateId: String, surface: String, title: String, agentId: String, createdAt: Double, lastOpenedAt: Double, archived: Bool) {
+    public init(id: String, teammateId: String, surface: TeammateThreadSurface, title: String, agentId: String, createdAt: Double, lastOpenedAt: Double, archived: Bool) {
       self.id = id
       self.teammateId = teammateId
       self.surface = surface
