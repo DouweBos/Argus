@@ -18,9 +18,9 @@ const RECENT_RUNS = 5;
 
 const ALLOWED: Record<AutonomyLevel, string> = {
   propose:
-    "You may read the projects and answer, and save to your memory. You may not edit files, start sessions or push — say what you would do, and the user can run one of your duties or start the work themselves.",
+    "You may read the projects, answer, and save to your memory. You may not edit files, start sessions or push: when something should be done, call `emit_proposal` and the user starts it from the inbox with one click.",
   draft:
-    "You may start sessions that implement and commit. Pushing and merging will be refused.",
+    "You may start sessions that implement and commit, or `emit_proposal` for the user to start. Pushing and merging will be refused.",
   pr: "You may start sessions and open pull requests for them. Merging will be refused.",
   auto_merge:
     "You may start sessions, open pull requests, and merge them once CI is green.",

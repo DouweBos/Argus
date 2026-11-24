@@ -7,6 +7,20 @@ export function chatAutomationId(teammateId: string): string {
   return `teammate-chat:${teammateId}`;
 }
 
+/** The `run_id` a proposal raised in a conversation carries. */
+export function threadRunId(threadId: string): string {
+  return `thread:${threadId}`;
+}
+
+/** The teammate behind a chat automation id, or null for any other id. */
+export function teammateIdOfChat(automationId: string): string | null {
+  const prefix = chatAutomationId("");
+
+  return automationId.startsWith(prefix)
+    ? automationId.slice(prefix.length)
+    : null;
+}
+
 /**
  * What a conversation is held to, in the shape every guard already reads:
  * the teammate's own autonomy, guardrails and scope. Never persisted.

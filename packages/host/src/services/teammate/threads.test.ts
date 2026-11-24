@@ -163,4 +163,47 @@ describe("teammate conversations", () => {
     expect(listTeammates()).toEqual([]);
     expect(appState.agents.size).toBe(0);
   });
+
+  it("files a conversation's proposal under its teammate", async () => {
+    const { Client } =
+      await import("@modelcontextprotocol/sdk/client/index.js");
+    const { InMemoryTransport } =
+      await import("@modelcontextprotocol/sdk/inMemory.js");
+    const { McpServer } =
+      await import("@modelcontextprotocol/sdk/server/mcp.js");
+    const { registerAutomationTools } = await import("../mcp/automationTools");
+    const { listProposals, resetProposalCache } =
+      await import("../automation/proposals/manager");
+    const { getAutomation } = await import("../automation/manager");
+    resetProposalCache();
+    const teammate = createTeammate({ name: "Fixer", autonomy: "propose" });
+    const { agent_id, thread } = await openThread(teammate.id);
+
+    const server = new McpServer({ name: "t", version: "1" });
+    registerAutomationTools(server, agent_id);
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    await server.connect(b);
+    const client = new Client({ name: "c", version: "1" });
+    await client.connect(a);
+    const result = await client.callTool({
+      name: "emit_proposal",
+      arguments: {
+        title: "Fix the flaky login test",
+        summary: "It times out on cold caches.",
+        confidence: 0.9,
+        rationale: "Two red runs this week.",
+        recommended_action: "start_session",
+      },
+    });
+    await client.close();
+
+    expect(result.isError).toBeFalsy();
+    const [proposal] = listProposals({});
+    expect(proposal).toMatchObject({
+      automation_id: `teammate-chat:${teammate.id}`,
+      run_id: `thread:${thread.id}`,
+      status: "pending",
+    });
+    expect(getAutomation(proposal.automation_id)?.name).toBe("Fixer");
+  });
 });

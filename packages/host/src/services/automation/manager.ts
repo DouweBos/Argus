@@ -21,6 +21,7 @@ import fs from "node:fs";
 import { emitHostEvent } from "@argus/host/bus";
 import { info, warn } from "@argus/host/logger";
 import { getClaudeAccount } from "../claudeAuth/accounts";
+import { chatAutomationFor, teammateIdOfChat } from "../teammate/chatPolicy";
 import { findTeammate } from "../teammate/registry";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { computeNextRun, isValidCron, onceInstant } from "./cron";
@@ -312,8 +313,14 @@ export function getAutomation(id: string): Automation | null {
   const scratchRun = runCache().find(
     (r) => r.automation_id === id && r.scratch !== null,
   );
+  if (scratchRun) {
+    return scratchAutomationForRun(scratchRun);
+  }
 
-  return scratchRun ? scratchAutomationForRun(scratchRun) : null;
+  // A teammate's conversation raises proposals as its chat automation.
+  const teammateId = teammateIdOfChat(id);
+
+  return teammateId ? chatAutomationFor(teammateId) : null;
 }
 
 /** The synthetic, never-persisted automation an ad-hoc run runs as. */

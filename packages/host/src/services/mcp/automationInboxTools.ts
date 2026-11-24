@@ -15,7 +15,7 @@ import {
   outstandingProposals,
   proposalAge,
 } from "../automation/proposals/outstanding";
-import { automationRunForAgent } from "./automationCaller";
+import { proposalContextForAgent } from "./automationCaller";
 
 function textResult(text: string, isError = false) {
   return { content: [{ type: "text" as const, text }], isError };
@@ -34,7 +34,7 @@ export function registerAutomationInboxTools(
     "List this automation's proposals that are still waiting on the user. Read it before you propose anything: if one of these already covers what you found, supersede it from `emit_proposal` instead of proposing it again, and if the thing behind it is gone, withdraw it. Only this automation's proposals are visible.",
     {},
     async () => {
-      const context = automationRunForAgent(callerAgentId);
+      const context = proposalContextForAgent(callerAgentId);
       if (!context) {
         return textResult(
           "list_open_proposals is only available to automation runs.",
@@ -77,7 +77,7 @@ export function registerAutomationInboxTools(
         ),
     },
     async ({ proposal_id, reason }) => {
-      const context = automationRunForAgent(callerAgentId);
+      const context = proposalContextForAgent(callerAgentId);
       if (!context) {
         return textResult(
           "withdraw_proposal is only available to automation runs.",

@@ -13,6 +13,7 @@ import { getAutomation, listAutomationRuns } from "../automation/manager";
 import { memoryOwnerForAutomation } from "../automation/memory/owner";
 import { worktreesRoot } from "../session/git";
 import { isInsideRoot } from "../session/worktreeLocation";
+import { chatAutomationId, threadRunId } from "../teammate/chatPolicy";
 import { teammateThreadForSession } from "../teammate/threadSessions";
 
 /** The run an agent is the host of, or null if it is not an automation host. */
@@ -43,6 +44,24 @@ export function teammateThreadForAgent(
     : undefined;
 
   return teammateThreadForSession(sessionId);
+}
+
+/**
+ * Who raises a proposal: a run, or a teammate's conversation — which files
+ * it under the teammate's chat automation and the thread in place of a run.
+ */
+export function proposalContextForAgent(
+  callerAgentId: string | null,
+): { automationId: string; runId: string } | null {
+  const thread = teammateThreadForAgent(callerAgentId);
+  if (thread) {
+    return {
+      automationId: chatAutomationId(thread.teammateId),
+      runId: threadRunId(thread.threadId),
+    };
+  }
+
+  return automationRunForAgent(callerAgentId);
 }
 
 /** The memory an agent may write with `save_memory`, or null when it has none. */

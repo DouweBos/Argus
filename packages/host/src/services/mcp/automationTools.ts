@@ -19,7 +19,7 @@ import {
   supersedeProposals,
 } from "../automation/proposals/manager";
 import {
-  automationRunForAgent,
+  proposalContextForAgent,
   isAutomationHostAgent,
 } from "./automationCaller";
 import { registerAutomationGithubTools } from "./automationGithubTools";
@@ -155,13 +155,13 @@ export function registerAutomationTools(
       repo_root,
       supersedes,
     }) => {
-      const context = automationRunForAgent(callerAgentId);
+      const context = proposalContextForAgent(callerAgentId);
       if (!context) {
         return {
           content: [
             {
               type: "text" as const,
-              text: "emit_proposal is only available to automation runs.",
+              text: "emit_proposal is only available to automation runs and teammates.",
             },
           ],
           isError: true,
