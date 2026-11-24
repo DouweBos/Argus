@@ -49,11 +49,16 @@ describe("slackBot", () => {
       const slack = fakeSlack(vi.fn, { defaultProject: "/work/ios" });
       slack.deps.teammateByHandle = (handle) =>
         handle === "ci-fixer" ? { id: "t1", name: "CI Fixer" } : null;
-      vi.spyOn(slack.deps, 'startTeammate').mockImplementation(async () => ({
-        sessionId: "teammate-thread-th1",
-        agentId: "teammate-th1",
-        threadId: "th1",
-      }));
+      let starts = 0;
+      slack.deps.startTeammate = async () => {
+        starts++;
+
+        return {
+          sessionId: "teammate-thread-th1",
+          agentId: "teammate-th1",
+          threadId: "th1",
+        };
+      };
       const bot = new SlackBot(slack.deps);
 
       await bot.handleEnvelope(mention("@ci-fixer why is main red?"));
@@ -62,7 +67,7 @@ describe("slackBot", () => {
       );
 
       expect(slack.started).toEqual([]);
-      expect(slack.deps.startTeammate).toHaveBeenCalledTimes(1);
+      expect(starts).toBe(1);
       expect(slack.continued.map((c) => c.text)).toEqual([
         "why is main red?",
         "and the iOS job?",
