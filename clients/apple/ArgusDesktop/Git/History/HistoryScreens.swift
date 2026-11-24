@@ -16,8 +16,7 @@ struct HistoryScreen: View {
 
   var body: some View {
     GitHistoryView(viewModel: history, dialogs: workspace.dialogContext, host: host)
-      .padding([.horizontal, .bottom], 12)
-      .padding(.top, 10)
+      .gitPanelPadding()
       .gitFeatures(workspace.features)
       .gitUIHost(.argus(openLine: nil))
       .task {
@@ -64,7 +63,7 @@ struct CompareView: View {
       context: workspace.dialogContext,
       base: Binding(get: { left }, set: { navigate(.compare(left: $0, right: right)) }),
       compare: Binding(get: { right }, set: { navigate(.compare(left: left, right: $0)) }), host: host)
-      .padding(12)
+      .gitPanelPadding()
       .gitFeatures(workspace.features)
       .gitUIHost(.argus(openLine: nil))
   }
@@ -92,6 +91,7 @@ struct InteractiveRebaseView: View {
 
   var body: some View {
     GitInteractiveRebaseView(viewModel: workspace.history, from: from) { navigate(.history) }
+      .gitPanelPadding()
       .gitFeatures(workspace.features)
       .task { workspace.history.onRebaseStopped = { [model, workspace] in
         model.navigate(.sessionGit(id: workspace.sessionId, view: .conflicts))

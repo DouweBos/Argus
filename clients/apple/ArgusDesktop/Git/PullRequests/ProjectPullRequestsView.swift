@@ -1,5 +1,6 @@
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// The git panel's Pull Requests: the PRs of interest in this project only,
@@ -20,16 +21,16 @@ struct ProjectPullRequestsView: View {
   }
 
   var body: some View {
-    VStack(spacing: 0) {
-      GitToolHeader(title: "Pull Requests", caption: caption) {
-        Button { Task { await refresh() } } label: { Image(systemName: "arrow.clockwise") }
-          .help("Refresh")
-          .disabled(refreshing)
-        Button("New Pull Request") { creating = true }
-          .disabled(sessions.isEmpty)
-          .help(sessions.isEmpty ? "Create a session to open a pull request from its branch" : "")
-      }
-      Divider()
+    GitToolPanel(title: "Pull Requests", detail: detail, caption: "Authored, reviewing, or commented on by you.") {
+      if refreshing { ProgressView().controlSize(.small) }
+      Button { Task { await refresh() } } label: { Image(systemName: "arrow.clockwise") }
+        .buttonStyle(.argusBorderless)
+        .help("Refresh")
+        .disabled(refreshing)
+      Button("New Pull Request") { creating = true }
+        .disabled(sessions.isEmpty)
+        .help(sessions.isEmpty ? "Create a session to open a pull request from its branch" : "")
+    } content: {
       PullRequestList(
         pullRequests: mine, loaded: prs.loaded, error: prs.error, showsRepo: false,
         emptyTitle: "No open pull requests",
@@ -42,9 +43,8 @@ struct ProjectPullRequestsView: View {
     }
   }
 
-  private var caption: String? {
-    guard prs.loaded else { return nil }
-    return "\(mine.count) open · authored, reviewing, or commented\(refreshing ? " · refreshing" : "")"
+  private var detail: String? {
+    prs.loaded ? "\(mine.count) open" : nil
   }
 
   private func refresh() async {

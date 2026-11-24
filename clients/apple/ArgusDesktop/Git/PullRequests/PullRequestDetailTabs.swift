@@ -1,4 +1,5 @@
 import ArgusUI
+import GroveUIKit
 import SwiftUI
 
 /// Green, red, running or neither — as the phone's `RemotePullRequestCheck.tone`.
@@ -50,7 +51,7 @@ struct PullRequestConversation: View {
     VStack(alignment: .leading, spacing: 8) {
       HStack(spacing: 6) {
         Text(author ?? "someone").font(.scaled(size: 12, weight: .semibold))
-        if let badge { Badge(label: badge.label, tone: badge.tone) }
+        if let badge { GitToneBadge(label: badge.label, tone: badge.tone) }
         Text(PullRequestLabels.relative(date)).font(.scaled(size: 11)).foregroundStyle(.secondary)
       }
       if !body.isEmpty {
@@ -65,9 +66,8 @@ struct PullRequestConversation: View {
         }
       }
     }
-    .padding(12)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(theme.bgSecondary, in: .rect(cornerRadius: 8))
+    .gitCard(padding: 12)
   }
 
   private var composer: some View {
@@ -112,7 +112,7 @@ struct PullRequestCommits: View {
 
   var body: some View {
     if commits.isEmpty {
-      QuietEmptyState(icon: "circle.dashed", title: "No commits")
+      GitEmptyState(systemImage: "circle.dashed", title: "No commits")
     } else {
       List(commits, id: \.oid) { commit in
         HStack(spacing: 10) {
@@ -123,7 +123,7 @@ struct PullRequestCommits: View {
               .font(.scaled(size: 11)).foregroundStyle(.secondary)
           }
           Spacer()
-          if let rollup = commit.statusRollup { Badge(label: rollup.lowercased(), tone: tone(rollup)) }
+          if let rollup = commit.statusRollup { GitToneBadge(label: rollup.lowercased(), tone: tone(rollup)) }
         }
         .contextMenu {
           Button(PullRequestLabels.openOn(commit.url)) { open(commit.url) }
@@ -131,6 +131,7 @@ struct PullRequestCommits: View {
         }
       }
       .navigatorList()
+      .scrollContentBackground(.hidden)
     }
   }
 
@@ -151,7 +152,7 @@ struct PullRequestChecks: View {
 
   var body: some View {
     if checks.isEmpty {
-      QuietEmptyState(icon: "checkmark.seal", title: "No checks", message: "No CI reported on this pull request.")
+      GitEmptyState(systemImage: "checkmark.seal", title: "No checks", subtitle: "No CI reported on this pull request.")
     } else {
       List(Array(checks.enumerated()), id: \.offset) { _, check in
         HStack(spacing: 10) {
@@ -171,6 +172,7 @@ struct PullRequestChecks: View {
         }
       }
       .navigatorList()
+      .scrollContentBackground(.hidden)
     }
   }
 }

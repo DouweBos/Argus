@@ -1,5 +1,6 @@
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// Bisect, as Electron's `BisectView`: start from a good and a bad ref, mark
@@ -17,13 +18,11 @@ struct BisectView: View {
   @State private var badRef = "HEAD"
 
   var body: some View {
-    VStack(spacing: 0) {
-      GitToolHeader(title: "Bisect", caption: "Find the commit that introduced a bug by testing the ones git picks.") {
-        if status?.active == true || finished != nil {
-          Button("Reset Bisect") { reset() }.disabled(busy)
-        }
+    GitToolPanel(title: "Bisect", caption: "Find the commit that introduced a bug by testing the ones git picks.") {
+      if status?.active == true || finished != nil {
+        Button("Reset Bisect") { reset() }.disabled(busy)
       }
-      Divider()
+    } content: {
       ScrollView {
         VStack(alignment: .leading, spacing: 16) {
           if let loadError {
@@ -143,6 +142,7 @@ private struct BisectStartForm: View {
       }
     }
     .formStyle(.grouped)
+    .scrollContentBackground(.hidden)
     .scrollDisabled(true)
     .fixedSize(horizontal: false, vertical: true)
   }
@@ -197,9 +197,8 @@ private struct BisectStepCard: View {
       }
       .disabled(busy)
     }
-    .padding(14)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(theme.bgSecondary, in: .rect(cornerRadius: 8))
+    .gitCard(padding: 14)
   }
 }
 
@@ -223,9 +222,8 @@ private struct BisectFoundCard: View {
         Button("Reset Bisect", action: reset).disabled(busy)
       }
     }
-    .padding(14)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(theme.errorSoft, in: .rect(cornerRadius: 8))
+    .gitCard(padding: 14)
   }
 }
 
@@ -259,10 +257,10 @@ private struct BisectLogList: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
-      Text("Log").font(.scaled(.subheadline).weight(.semibold)).foregroundStyle(.secondary)
+      GitSectionLabel(title: "Log", count: entries.count)
       ForEach(entries) { entry in
         HStack(spacing: 8) {
-          Badge(label: entry.verdict, tone: tone(entry.verdict))
+          GitToneBadge(label: entry.verdict, tone: tone(entry.verdict))
           Text(String(entry.sha.prefix(8))).font(.scaled(size: 11, design: .monospaced)).foregroundStyle(.secondary)
           Text(entry.subject).lineLimit(1).truncationMode(.tail)
         }

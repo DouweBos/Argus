@@ -30,10 +30,3 @@ struct StashesView: View {
     }
   }
 }
-
-extension View {
-  /// The room the git panel's kit views keep from its edges.
-  func gitPanelPadding() -> some View {
-    padding([.horizontal, .bottom], 12).padding(.top, 10)
-  }
-}

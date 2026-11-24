@@ -14,8 +14,7 @@ struct BlameView: View {
 
   var body: some View {
     GitBlameView(viewModel: blame, host: host)
-      .padding([.horizontal, .bottom], 12)
-      .padding(.top, 10)
+      .gitPanelPadding()
       .gitFeatures(workspace.features)
       .gitUIHost(uiHost)
       .task(id: "\(path ?? "")@\(ref ?? "")") { await open() }

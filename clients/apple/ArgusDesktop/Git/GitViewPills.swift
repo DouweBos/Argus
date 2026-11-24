@@ -1,20 +1,22 @@
 import ArgusUI
+import GroveUIKit
 import SwiftUI
 
-/// The git panel's views as quiet tabs, with the rest in a More menu.
-struct GitTabBar: View {
+/// The git panel's views as GroveUIKit's pills, Grove's toolbar bar, with the rest in a More menu. Only navigates:
+/// the route says which pill is lit.
+struct GitViewPills: View {
   @Environment(DesktopModel.self) private var model
   @Environment(\.theme) private var theme
   let workspace: GitWorkspace
   let view: GitRoute
 
-  static let height: CGFloat = 34
+  static let height: CGFloat = 40
 
   private var isProject: Bool { workspace.isProjectRoot }
   private var current: GitTab { GitTab(route: view) }
 
   var body: some View {
-    // Titles while they fit, then icons only beside the selected tab's title.
+    // Titles while they fit, then icons beside the selected pill's title, as in Grove's narrow windows.
     ViewThatFits(in: .horizontal) {
       bar(iconsOnly: false)
       bar(iconsOnly: true)
@@ -24,38 +26,20 @@ struct GitTabBar: View {
   }
 
   private func bar(iconsOnly: Bool) -> some View {
-    HStack(spacing: 2) {
-      ForEach(tabs, id: \.self) { tab in
-        let selected = tab == current
-        Button {
-          pick(tab, via: .tabs)
-        } label: {
-          label(tab, titled: !iconsOnly || selected)
-        }
-        .buttonStyle(QuietTabButtonStyle(selected: selected))
-        .help(tab.title)
-        .accessibilityLabel(tab.title)
-        .accessibilityAddTraits(selected ? .isSelected : [])
+    HStack(spacing: 4) {
+      GitPillTabBar(tabs: tabs.map(pill), selection: current, compact: true, iconsOnly: iconsOnly) {
+        pick($0, via: .tabs)
       }
       moreMenu(iconsOnly: iconsOnly)
     }
     .fixedSize()
   }
 
-  private func label(_ tab: GitTab, titled: Bool) -> some View {
-    HStack(spacing: 5) {
-      Image(systemName: tab.symbol).font(.scaled(size: 11))
-      if titled { Text(tab.title) }
-      if tab == .conflicts && !workspace.workingCopy.conflictedFiles.isEmpty {
-        Circle().fill(theme.error).frame(width: 6, height: 6)
-          .accessibilityLabel("Needs attention")
-      }
-      if tab == .changes, workspace.workingCopy.changedCount > 0 {
-        Text(workspace.workingCopy.changedCount, format: .number)
-          .font(.scaled(size: 11).monospacedDigit())
-          .foregroundStyle(theme.textMuted)
-      }
-    }
+  private func pill(_ tab: GitTab) -> GitPillTab<GitTab> {
+    GitPillTab(
+      id: tab, title: tab.title, symbol: tab.symbol,
+      badge: tab == .changes ? workspace.workingCopy.changedCount : nil,
+      indicator: tab == .conflicts && !workspace.workingCopy.conflictedFiles.isEmpty)
   }
 
   /// The primary tabs, Conflicts while an operation needs it, and whichever other view is open.
@@ -74,13 +58,17 @@ struct GitTabBar: View {
         Button { pick(tab, via: .more) } label: { Label(tab.title, systemImage: tab.symbol) }
       }
     } label: {
-      HStack(spacing: 5) {
-        Image(systemName: "ellipsis.circle").font(.scaled(size: 11))
+      HStack(spacing: 6) {
+        Image(systemName: "ellipsis.circle")
         if !iconsOnly { Text("More") }
       }
+      .font(.scaled(size: 13, weight: .medium))
+      .foregroundStyle(theme.text)
+      .padding(.horizontal, 12)
+      .padding(.vertical, 5)
+      .contentShape(Capsule())
     }
-    .menuStyle(.button)
-    .buttonStyle(QuietTabButtonStyle())
+    .menuStyle(.borderlessButton)
     .menuIndicator(.hidden)
     .clickable()
     .fixedSize()

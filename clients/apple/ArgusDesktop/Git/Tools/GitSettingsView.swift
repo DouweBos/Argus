@@ -1,5 +1,6 @@
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// The project's git settings: repo-local config, remotes, and Argus's own
@@ -8,15 +9,19 @@ struct GitSettingsView: View {
   let workspace: GitWorkspace
 
   var body: some View {
-    Form {
-      GitConfigSection(workspace: workspace)
-      GitSigningSection(sessionId: workspace.sessionId, workspace: workspace)
-      GitRemotesSection(workspace: workspace)
-      GitArgusSettingsSection(workspace: workspace)
-      GitLfsSection(workspace: workspace)
+    // Grove's repository settings: one card, the form no wider than it reads well.
+    GitToolPanel(title: "Repository Settings", detail: ".git/config", maxWidth: 720) {
+      Form {
+        GitConfigSection(workspace: workspace)
+        GitSigningSection(sessionId: workspace.sessionId, workspace: workspace)
+        GitRemotesSection(workspace: workspace)
+        GitArgusSettingsSection(workspace: workspace)
+        GitLfsSection(workspace: workspace)
+      }
+      .formStyle(.grouped)
+      .scrollContentBackground(.hidden)
+      .toggleStyle(.argusSwitch)
     }
-    .formStyle(.grouped)
-    .toggleStyle(.argusSwitch)
   }
 }
 

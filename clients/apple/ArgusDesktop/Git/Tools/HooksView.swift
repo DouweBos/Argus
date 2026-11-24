@@ -1,5 +1,6 @@
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// The repository's installed hooks, and running one by hand with its last
@@ -14,13 +15,11 @@ struct HooksView: View {
   @State private var running: String?
 
   var body: some View {
-    VStack(spacing: 0) {
-      GitToolHeader(title: "Hooks", caption: "Executable files in .git/hooks, run by hand.") {
-        Button("Run") { if let selected { run(selected) } }
-          .disabled(selectedHook?.executable != true || running != nil)
-      }
-      Divider()
-      content.frame(maxWidth: .infinity, maxHeight: .infinity)
+    GitToolPanel(title: "Hooks", detail: ".git/hooks", caption: "Executable files in .git/hooks, run by hand.") {
+      Button("Run") { if let selected { run(selected) } }
+        .disabled(selectedHook?.executable != true || running != nil)
+    } content: {
+      content
     }
     .task(id: workspace.generation) { await load() }
   }
@@ -32,21 +31,22 @@ struct HooksView: View {
   @ViewBuilder
   private var content: some View {
     if let loadError {
-      QuietEmptyState(icon: "exclamationmark.triangle", title: "Couldn't list hooks", message: loadError) {
-        Button("Try Again") { Task { await load() } }
-      }
+      GitEmptyState(
+        systemImage: "exclamationmark.triangle", title: "Couldn't list hooks", subtitle: loadError,
+        actionTitle: "Try Again"
+      ) { Task { await load() } }
     } else if let hooks {
       if hooks.isEmpty {
-        QuietEmptyState(
-          icon: "link", title: "No hooks installed",
-          message: "Add an executable file under .git/hooks to run it from here."
-        )
+        GitEmptyState(
+          systemImage: "link", title: "No hooks installed",
+          subtitle: "Add an executable file under .git/hooks to run it from here.")
       } else {
         ResizableVSplit(key: "git.hooks", topMin: 120, bottomMin: 160, bottomIdeal: 240, showsBottom: true) {
           List(hooks, id: \.name, selection: $selected) { hook in
             HookRow(hook: hook, running: running == hook.name) { run(hook.name) }
           }
           .navigatorList()
+          .scrollContentBackground(.hidden)
         } bottom: {
           HookOutputPane(hook: selectedHook)
         }
@@ -97,7 +97,7 @@ private struct HookRow: View {
       }
       Spacer()
       if let output = hook.lastOutput {
-        Badge(label: "exit \(Int(output.exitCode))", tone: output.exitCode == 0 ? .success : .danger)
+        GitToneBadge(label: "exit \(Int(output.exitCode))", tone: output.exitCode == 0 ? .success : .danger)
       }
       if running {
         ProgressView().controlSize(.small)
@@ -136,13 +136,10 @@ private struct HookOutputPane: View {
   var body: some View {
     VStack(spacing: 0) {
       HStack {
-        HStack(spacing: 2) {
-          ForEach(Stream.allCases) { option in
-            Button(option.rawValue) { stream = option }
-              .buttonStyle(QuietTabButtonStyle(selected: stream == option))
-              .accessibilityAddTraits(stream == option ? .isSelected : [])
-          }
-        }
+        GitPillTabBar(
+          tabs: Stream.allCases.map { GitPillTab(id: $0, title: $0.rawValue, symbol: $0 == .stdout ? "text.alignleft" : "exclamationmark.bubble") },
+          selection: stream, compact: true
+        ) { stream = $0 }
         .fixedSize()
         Spacer()
         if let output = hook?.lastOutput {
@@ -150,7 +147,7 @@ private struct HookOutputPane: View {
         }
       }
       .padding(.horizontal, 10)
-      .frame(height: 34)
+      .frame(height: 40)
       Divider()
       if let output = hook?.lastOutput {
         ScrollView {
@@ -163,10 +160,9 @@ private struct HookOutputPane: View {
         }
         .background(theme.bgSecondary)
       } else {
-        QuietEmptyState(
-          icon: "terminal", title: "Not run yet",
-          message: hook == nil ? "Select a hook." : "Run it to see its output here."
-        )
+        GitEmptyState(
+          systemImage: "terminal", title: "Not run yet",
+          subtitle: hook == nil ? "Select a hook." : "Run it to see its output here.")
       }
     }
   }

@@ -9,33 +9,46 @@ Argus ships a full git client. It runs in two scopes:
   branch graph across all branches, remotes, tags, submodules, worktrees,
   reflog, bisect, hooks, interactive rebase, settings.
 
-Both scopes share the same layout: a left sidebar listing refs and
-sub-views, the active view in the centre, and a unified toolbar above it.
+Both scopes share Grove's layout: the refs sidebar on the left, a row of
+pills across the top that switches between the views, and each view in
+rounded cards below it. The session toolbar (refresh, pull, push, sync and
+the overflow menu) stays above, and the views Argus and Grove both have
+look and work the same in both apps.
 
 ---
 
-## Sub-views
+## Views
 
-The sidebar switches between views. Some views are project-only.
+The pills show the main views; **More** at the end of the row lists the
+rest, and a view opened from More, a menu or a link gets a pill of its own
+while it's open. Conflicts gets a pill, with a dot, while a merge, rebase or
+cherry-pick needs it. Picking History again on a branch's history shows all
+of it. When the row runs out of room the pills drop their titles, except the
+selected one.
 
-| View               | Scope            | What it does                                                                   |
-| ------------------ | ---------------- | ------------------------------------------------------------------------------ |
-| Working Copy       | session, project | Stage, unstage, discard, commit. Side-by-side or unified diff per file.        |
-| History            | session, project | Commit graph with lanes, refs, gravatars. Drag-and-drop reorder/squash/revert. |
-| Stashes            | session, project | List, apply, pop, drop. Save with message and options.                         |
-| Pull Requests      | project          | GitHub PRs for the repo, with status checks.                                   |
-| Branch             | session          | Single-branch summary view (the agent's branch).                               |
-| Branches Review    | project          | Per-branch ahead/behind, last activity, quick checkout.                        |
-| Conflicts          | session          | Only shown during an in-progress merge/rebase/cherry-pick.                     |
-| Reflog             | session, project | HEAD reflog with one-click restore.                                            |
-| Tags               | project          | Create, delete, push, checkout. Sorted by date.                                |
-| Remotes            | project          | Add, rename, remove, set URL, prune.                                           |
-| Submodules         | project          | Status, init, update, sync.                                                    |
-| Worktrees          | project          | List, add, remove, prune.                                                      |
-| Bisect             | project          | Start/good/bad/skip with current commit subject inline.                        |
-| Hooks              | project          | View and toggle hooks installed in `.git/hooks`.                               |
-| Interactive rebase | project          | Pick / reword / squash / fixup / drop / edit / reorder commits via drag.       |
-| Settings           | project          | Default branch, pull strategy, LFS, credential helper status.                  |
+| View               | Pill or More           | Scope            | What it does                                                                  |
+| ------------------ | ---------------------- | ---------------- | ----------------------------------------------------------------------------- |
+| Changes            | pill, with a count     | session, project | Stage, unstage, discard, commit; conflicts resolved beside the files.         |
+| Branch             | pill                   | session          | The session branch's own commits against its base.                            |
+| Timeline           | pill (session), More   | session, project | The agents' turns, each one's diff, and restoring to a turn.                  |
+| Guide              | pill                   | session          | An agent-written tour of the branch's changes.                                |
+| History            | pill                   | project          | Commit graph with day headers beside the selected commit's changes.           |
+| Stashes            | pill                   | session, project | A stash's files over its diff; apply, pop, drop, branch from a stash.         |
+| Pull Requests      | pill                   | project          | This project's pull requests that involve you; open a new one.                |
+| Branches Review    | pill                   | project          | Merged, stale and active branches, to clean them up.                          |
+| Conflicts          | pill while needed      | session, project | Both versions above an editable result, then continue or abort.               |
+| Reflog             | More                   | session, project | Where HEAD has been, with each entry's changed files.                         |
+| Blame              | More                   | session, project | The file list beside the annotated file, at any revision.                     |
+| Bisect             | More                   | project          | Start with a good and a bad ref, mark each commit, land on the first bad one. |
+| Hooks              | More                   | project          | The hooks in `.git/hooks`, run by hand with their last output.                |
+| Submodules         | More                   | project          | Status, init, update and deinit.                                              |
+| Settings           | More                   | project          | Repository config, signing, remotes, Argus's git options and Git LFS.         |
+| Compare            | from a ref or a commit | session, project | Two refs' commits and changes; merge or rebase them from the project root.    |
+| Interactive rebase | from a commit          | project          | Pick, reword, squash, fixup, drop and reorder commits.                        |
+
+Branches, tags, remotes, worktrees and submodules are in the sidebar.
+Bisect, Hooks, Submodules, Settings and Pull Requests share one look: a
+card with the view's title and actions at the top.
 
 ---
 
@@ -45,8 +58,13 @@ The working-copy view is the entry point for every commit.
 
 - **Staged / unstaged / untracked** files are shown together with a
   tri-state per file. **Space** toggles staged ↔ unstaged on the focused
-  file.
+  file; **Return** or a double-click opens it. Selected files can be
+  stashed on their own.
 - **Hunk staging**: stage, unstage or discard a selection.
+- Diffs highlight syntax and changed words, wrap long lines, and show
+  image and Git LFS changes. Drag along a line to copy part of it.
+- When the window is too narrow for two columns, the files sit over the
+  diff.
 - Argus watches the repo and refreshes the working copy automatically.
 - **Diff search** in the toolbar narrows the file list.
 - **LFS warning** appears on files that aren't tracked by LFS but should
@@ -82,7 +100,14 @@ The composer sits below the file list.
 ## History
 
 A graph of the commits reachable from each ref, with lane compaction so
-long-lived branches stay visible.
+long-lived branches stay visible, grouped under day headers. The selected
+commit's changed files sit beside it and open into their diffs; when
+History opens, the selected commit is in view with its day's header.
+
+- **Return** or a double-click checks out a commit after asking; **⌘C**
+  copies the selected SHAs.
+- A file's history offers **Open Blame at This Revision** wherever Blame
+  can open.
 
 - **Drag-and-drop**: reorder, squash, fixup, revert, cherry-pick. Drop a
   commit onto another to squash, drop onto the working copy to apply,
@@ -214,10 +239,10 @@ as upstream in one step.
 ## Conflicts
 
 When a merge, rebase, or cherry-pick stops on conflicts, the Conflicts
-view appears automatically. Each
-conflicting file shows ours / theirs / merged side-by-side; resolve in
-the editor, mark as resolved, and continue or abort the operation from
-the toolbar.
+pill appears with a dot. Each conflicting file shows both versions above
+an editable result, right beside your files; resolve it, mark it resolved,
+and continue or abort the operation. On a paired computer saving is off
+while the file can't be read, so it can never be emptied.
 
 Merging a session into its base checks for conflicts first. If any file
 would conflict, Argus lists them and offers **Rebase with an Agent**: an

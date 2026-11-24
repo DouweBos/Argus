@@ -1,5 +1,6 @@
 import ArgusCore
 import ArgusUI
+import GroveUIKit
 import SwiftUI
 
 /// A session's version timeline: its agent turns newest first, beside the picked
@@ -65,11 +66,11 @@ struct TimelineScreen: View {
     .navigatorList()
     .overlay {
       if let error = vm.loadError, !vm.loaded {
-        QuietEmptyState(icon: "exclamationmark.triangle", title: "Couldn't load the timeline", message: error)
+        GitEmptyState(systemImage: "exclamationmark.triangle", title: "Couldn't load the timeline", subtitle: error)
       } else if vm.loaded && vm.timeline.turns.isEmpty {
-        QuietEmptyState(
-          icon: Icon.timeline, title: "No turns yet",
-          message: "Every prompt an agent runs here gets a version you can look back at and restore.")
+        GitEmptyState(
+          systemImage: Icon.timeline, title: "No turns yet",
+          subtitle: "Every prompt an agent runs here gets a version you can look back at and restore.")
       }
     }
   }
@@ -97,7 +98,7 @@ struct TimelineScreen: View {
         }
       }
     } else if vm.loaded {
-      QuietEmptyState(icon: Icon.timeline, title: "Select a turn")
+      GitEmptyState(systemImage: Icon.timeline, title: "Select a turn")
     }
   }
 

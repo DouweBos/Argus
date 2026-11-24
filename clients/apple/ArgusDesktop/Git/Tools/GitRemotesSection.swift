@@ -1,4 +1,5 @@
 import ArgusUI
+import GroveUIKit
 import SwiftUI
 
 /// The repository's remotes: add, rename, change URLs, remove.
@@ -112,7 +113,7 @@ private struct RemoteRow: View {
       VStack(alignment: .leading, spacing: 2) {
         HStack(spacing: 6) {
           Text(remote.name).font(.scaled(size: 13, weight: .medium))
-          if !remote.host.isEmpty, !remote.fetchUrl.hasPrefix(remote.host) { Badge(label: remote.host, tone: .muted) }
+          if !remote.host.isEmpty, !remote.fetchUrl.hasPrefix(remote.host) { GitToneBadge(label: remote.host, tone: .muted, symbol: "server.rack") }
         }
         Text(remote.fetchUrl).font(.scaled(size: 11, design: .monospaced)).foregroundStyle(.secondary)
           .lineLimit(1).truncationMode(.middle).textSelection(.enabled)

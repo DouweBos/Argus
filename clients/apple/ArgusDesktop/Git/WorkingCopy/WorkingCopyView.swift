@@ -21,8 +21,7 @@ struct WorkingCopyView: View {
     VStack(spacing: 0) {
       WorkingCopyErrorBanner(workspace: workspace)
       GitWorkingCopyView(viewModel: vm, host: host, slots: slots)
-        .padding([.horizontal, .bottom], 12)
-        .padding(.top, 10)
+        .gitPanelPadding()
     }
     .gitFeatures(workspace.features)
     .sheet(isPresented: $managingTemplates) { CommitTemplatesSheet(store: CommitPreferences.templates) }

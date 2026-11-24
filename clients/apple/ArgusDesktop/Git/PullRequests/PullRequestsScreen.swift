@@ -1,5 +1,6 @@
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// `/pull-requests`: the PRs you're authoring, reviewing or mentioned on
@@ -21,6 +22,8 @@ struct PullRequestsScreen: View {
         ? "Open a project to see PRs from that repo here."
         : "When you're authoring, reviewing, or mentioned on a PR in one of your open projects, it'll appear here.",
       retry: refresh)
+    .gitPanel()
+    .gitPanelPadding()
     .navigationTitle("Pull Requests")
     .navigationSubtitle(subtitle)
     .searchable(text: $search, placement: .toolbar, prompt: "Filter pull requests")
@@ -94,14 +97,11 @@ struct PullRequestList: View {
     case .loading:
       ProgressView("Loading pull requests").controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
     case .failed(let error):
-      QuietEmptyState(
-        icon: "exclamationmark.triangle", title: "Couldn't fetch pull requests",
-        message: PullRequestLabels.explain(error)
-      ) {
-        Button("Try Again", action: retry)
-      }
+      GitEmptyState(
+        systemImage: "exclamationmark.triangle", title: "Couldn't fetch pull requests",
+        subtitle: PullRequestLabels.explain(error), actionTitle: "Try Again", action: retry)
     case .empty:
-      QuietEmptyState(icon: "arrow.triangle.pull", title: emptyTitle, message: emptyText)
+      GitEmptyState(systemImage: "arrow.triangle.pull", title: emptyTitle, subtitle: emptyText)
     case .content:
       list
     }
@@ -131,11 +131,12 @@ struct PullRequestList: View {
             .tag(pr.id)
           }
         } header: {
-          Text("\(group.bucket.title) · \(group.prs.count)")
+          GitSectionLabel(title: group.bucket.title, count: group.prs.count)
         }
       }
     }
     .navigatorList()
+    .scrollContentBackground(.hidden)
     .contextMenu(forSelectionType: String.self) { ids in
       if let pr = pullRequests.first(where: { ids.contains($0.id) }) {
         PullRequestMenu(sessionId: actions.session(for: pr), url: pr.url) { actions.perform($0, pr, starting: $starting) }

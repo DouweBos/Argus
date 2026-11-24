@@ -2,7 +2,7 @@ import ArgusCore
 import ArgusUI
 import Foundation
 
-/// A git panel view as its tab bar shows it, Grove's `RepositoryTab`. Each
+/// A git panel view as its pill bar shows it, Grove's `RepositoryTab`. Each
 /// maps onto a `GitRoute`; the bar only navigates.
 enum GitTab: Hashable {
   case changes, branch, history, stashes, pullRequests, branchesReview, conflicts

@@ -15,8 +15,7 @@ struct ConflictsView: View {
       GitConflictsView(viewModel: workspace.workingCopy, host: .argus(workspace: workspace, session: session, model: model)) {
         model.navigate(.sessionGit(id: workspace.sessionId, view: .working))
       }
-      .padding([.horizontal, .bottom], 12)
-      .padding(.top, 10)
+      .gitPanelPadding()
     }
     .gitFeatures(workspace.features)
   }

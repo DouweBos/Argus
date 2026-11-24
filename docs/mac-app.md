@@ -61,7 +61,10 @@ developed, and an existing install updates into Argus for Mac by itself (see
   first time.
 - The Devices screen: every simulator and emulator, with boot, shut down, a
   live grid, and each device's details with a live picture.
-- **Git** for each session (the Git tab): the working copy with file, hunk
+- **Git** for each session (the Git tab), laid out as in Grove: the refs
+  sidebar, a row of pills for the views with the rest under **More**, and each
+  view in cards. The views come from Grove's own (GroveUIKit), so Argus and
+  Grove look and work the same. It has the working copy with file, hunk
   and line staging, discard and commit (with amend); the history as a commit
   graph, with each commit's changes and actions (cherry-pick, revert, reset,
   reword, squash, drop, interactive rebase); branches, tags, remotes and

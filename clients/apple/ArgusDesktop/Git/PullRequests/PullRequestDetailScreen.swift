@@ -1,5 +1,6 @@
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// One pull request: what it is, its conversation, commits, checks and files,
@@ -66,19 +67,25 @@ private struct PullRequestDetailContent: View {
               .padding(.top, 8)
           }
           tabs(detail)
-          Divider()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
           tabContent(detail)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .gitPanel()
+            .gitPanelPadding()
         }
         .modifier(PullRequestWindowChrome(detail: detail, embedded: embedded) { actions(detail) })
       } else if let error = model.loadError {
-        QuietEmptyState(
-          icon: "exclamationmark.triangle", title: "Couldn't load pull request",
-          message: PullRequestLabels.explain(error)
-        ) {
-          Button("Try Again") { Task { await model.load() } }
+        VStack(spacing: 0) {
+          GitEmptyState(
+            systemImage: "exclamationmark.triangle", title: "Couldn't load pull request",
+            subtitle: PullRequestLabels.explain(error), actionTitle: "Try Again"
+          ) { Task { await model.load() } }
+          .fixedSize(horizontal: false, vertical: true)
           Button("Back to Pull Requests") { desktop.navigate(.pullRequests) }
+            .buttonStyle(.argusBorderless)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
       } else {
         ProgressView("Loading pull request").controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
       }
@@ -98,22 +105,19 @@ private struct PullRequestDetailContent: View {
 
   private func tabs(_ detail: ArgusProtocol.PullRequestDetail) -> some View {
     let passed = detail.checks.filter { PullRequestCheckTone($0) == .success }.count
-    let items: [(PullRequestDetailTab, String)] = [
-      (.conversation, "Conversation (\(detail.comments.count))"),
-      (.guide, "Guide"),
-      (.commits, "Commits (\(Int(detail.commits)))"),
-      (.checks, detail.checks.isEmpty ? "Checks" : "Checks (\(passed)/\(detail.checks.count))"),
-      (.files, "Files (\(Int(detail.changedFiles)))"),
+    let failing = detail.checks.contains { PullRequestCheckTone($0) == .danger }
+    let tabs = [
+      GitPillTab(id: PullRequestDetailTab.conversation, title: "Conversation", symbol: "bubble.left.and.bubble.right",
+                 badge: detail.comments.count),
+      GitPillTab(id: .guide, title: "Guide", symbol: Icon.guide),
+      GitPillTab(id: .commits, title: "Commits", symbol: "smallcircle.filled.circle", badge: Int(detail.commits)),
+      GitPillTab(id: .checks, title: detail.checks.isEmpty ? "Checks" : "Checks \(passed)/\(detail.checks.count)",
+                 symbol: "checkmark.seal", indicator: failing),
+      GitPillTab(id: .files, title: "Files", symbol: "doc.on.doc", badge: Int(detail.changedFiles)),
     ]
-    return HStack(spacing: 2) {
-      ForEach(items, id: \.0) { item, title in
-        Button(title) { select(item) }
-          .buttonStyle(QuietTabButtonStyle(selected: shown == item))
-          .accessibilityAddTraits(shown == item ? .isSelected : [])
-      }
-    }
-    .fixedSize()
-    .padding(.vertical, 6)
+    return GitPillTabBar(tabs: tabs, selection: shown, compact: true) { select($0) }
+      .fixedSize()
+      .padding(.vertical, 8)
   }
 
   @ViewBuilder
@@ -140,10 +144,10 @@ private struct PullRequestDetailContent: View {
         viewed: model.viewed)
       .overlay {
         if model.diffLoaded, let error = model.diffError {
-          QuietEmptyState(icon: "exclamationmark.triangle", title: "Couldn't load diff", message: error)
+          GitEmptyState(systemImage: "exclamationmark.triangle", title: "Couldn't load diff", subtitle: error)
             .background(.background)
         } else if model.diffLoaded, model.files.isEmpty {
-          QuietEmptyState(icon: "doc.text", title: "No textual diff").background(.background)
+          GitEmptyState(systemImage: "doc.text", title: "No textual diff").background(.background)
         }
       }
       .task { await model.loadDiffIfNeeded() }
@@ -216,7 +220,7 @@ private struct PullRequestHeader: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       HStack(alignment: .firstTextBaseline, spacing: 8) {
-        Badge(label: state.label, tone: state.tone)
+        GitToneBadge(label: state.label, tone: state.tone, symbol: state.symbol)
         Text(detail.title).font(.scaled(.title3).weight(.semibold)).textSelection(.enabled)
       }
       HStack(spacing: 8) {
@@ -231,7 +235,7 @@ private struct PullRequestHeader: View {
         DiffStatsLabel(stats: DiffStats(additions: Int(detail.additions), deletions: Int(detail.deletions)))
         Text("\(Int(detail.changedFiles)) files · \(Int(detail.commits)) commits").font(.scaled(size: 11))
           .foregroundStyle(.secondary)
-        ForEach(detail.labels, id: \.self) { Badge(label: $0, tone: .muted) }
+        ForEach(detail.labels, id: \.self) { GitToneBadge(label: $0, tone: .muted, symbol: "tag") }
         if detail.mergeable == "CONFLICTING", !detail.merged {
           Label("Conflicts with \(detail.baseRefName)", systemImage: "exclamationmark.triangle")
             .font(.scaled(size: 11)).foregroundStyle(theme.warning)
@@ -244,18 +248,13 @@ private struct PullRequestHeader: View {
   }
 
   private func branch(_ name: String) -> some View {
-    Text(name)
-      .font(.scaled(size: 11, design: .monospaced))
-      .padding(.horizontal, 6)
-      .padding(.vertical, 2)
-      .background(theme.bgTertiary, in: .rect(cornerRadius: 4))
-      .textSelection(.enabled)
+    GitBranchLabel(name: name, kind: .remoteBranch, maxNameWidth: 260).help(name)
   }
 
-  private var state: (label: String, tone: Tone) {
-    if detail.merged { return ("Merged", .accent) }
-    if detail.state == "CLOSED" { return ("Closed", .danger) }
-    return detail.isDraft ? ("Draft", .muted) : ("Open", .success)
+  private var state: (label: String, tone: Tone, symbol: String) {
+    if detail.merged { return ("Merged", .accent, "arrow.triangle.merge") }
+    if detail.state == "CLOSED" { return ("Closed", .danger, "xmark.circle.fill") }
+    return detail.isDraft ? ("Draft", .muted, "pencil") : ("Open", .success, "arrow.triangle.pull")
   }
 }
 

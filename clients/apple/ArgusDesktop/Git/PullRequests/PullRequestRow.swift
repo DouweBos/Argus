@@ -1,4 +1,5 @@
 import ArgusUI
+import GroveUIKit
 import SwiftUI
 
 /// One PR in a list: title, state, who and where, why you're seeing it, and
@@ -22,15 +23,15 @@ struct PullRequestRow: View {
       VStack(alignment: .leading, spacing: 4) {
         HStack(spacing: 6) {
           Text(pullRequest.title).font(.scaled(size: 13, weight: .medium)).lineLimit(2)
-          if pullRequest.isDraft { Badge(label: "Draft", tone: .muted) }
+          if pullRequest.isDraft { GitToneBadge(label: "Draft", tone: .muted, symbol: "pencil") }
           if let decision = pullRequest.reviewDecision, let review = PullRequestLabels.review(decision) {
-            Badge(label: review.label, tone: review.tone)
+            GitToneBadge(label: review.label, tone: review.tone)
           }
         }
         Text(meta).font(.scaled(size: 11)).foregroundStyle(.secondary).lineLimit(1)
         HStack(spacing: 4) {
           ForEach(pullRequest.reasons, id: \.self) { reason in
-            Badge(label: PullRequestLabels.reason(reason), tone: PullRequestLabels.reasonTone(reason))
+            GitToneBadge(label: PullRequestLabels.reason(reason), tone: PullRequestLabels.reasonTone(reason), symbol: "person")
           }
           Label(pullRequest.headRef, systemImage: "arrow.triangle.branch")
             .font(.scaled(size: 11, design: .monospaced))

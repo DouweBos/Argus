@@ -1,5 +1,6 @@
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
 /// The project's submodules with their status, and init / update / deinit, as
@@ -13,17 +14,15 @@ struct SubmodulesView: View {
   @State private var deinitTarget: ArgusProtocol.GitSubmodule?
 
   var body: some View {
-    VStack(spacing: 0) {
-      GitToolHeader(title: "Submodules", caption: caption) {
-        Button("Init All") { run("Initializing submodules", ArgusProtocol.Commands.GitSubmoduleInit.self, .init(id: id)) }
-          .disabled(!hasUninitialized || workspace.hostBusy != nil)
-        Button("Update All") {
-          run("Updating submodules", ArgusProtocol.Commands.GitSubmoduleUpdate.self, .init(id: id))
-        }
-        .disabled(submodules?.isEmpty ?? true || workspace.hostBusy != nil)
+    GitToolPanel(title: "Submodules", detail: caption) {
+      Button("Init All") { run("Initializing submodules", ArgusProtocol.Commands.GitSubmoduleInit.self, .init(id: id)) }
+        .disabled(!hasUninitialized || workspace.hostBusy != nil)
+      Button("Update All") {
+        run("Updating submodules", ArgusProtocol.Commands.GitSubmoduleUpdate.self, .init(id: id))
       }
-      Divider()
-      content.frame(maxWidth: .infinity, maxHeight: .infinity)
+      .disabled(submodules?.isEmpty ?? true || workspace.hostBusy != nil)
+    } content: {
+      content
     }
     .task(id: workspace.generation) { await load() }
     .confirmationDialog(
@@ -52,12 +51,13 @@ struct SubmodulesView: View {
   @ViewBuilder
   private var content: some View {
     if let loadError {
-      QuietEmptyState(icon: "exclamationmark.triangle", title: "Couldn't list submodules", message: loadError) {
-        Button("Try Again") { Task { await load() } }
-      }
+      GitEmptyState(
+        systemImage: "exclamationmark.triangle", title: "Couldn't list submodules", subtitle: loadError,
+        actionTitle: "Try Again"
+      ) { Task { await load() } }
     } else if let submodules {
       if submodules.isEmpty {
-        QuietEmptyState(icon: "shippingbox", title: "No submodules", message: "This repository doesn't use git submodules.")
+        GitEmptyState(systemImage: "shippingbox", title: "No submodules", subtitle: "This repository doesn't use git submodules.")
       } else {
         List(submodules, id: \.path) { submodule in
           SubmoduleRow(submodule: submodule, busy: workspace.hostBusy != nil) { action in
@@ -65,6 +65,7 @@ struct SubmodulesView: View {
           }
         }
         .navigatorList()
+        .scrollContentBackground(.hidden)
       }
     } else {
       ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -144,7 +145,7 @@ private struct SubmoduleRow: View {
           .foregroundStyle(.secondary)
           .textSelection(.enabled)
       }
-      Badge(label: submodule.status.rawValue, tone: tone)
+      GitToneBadge(label: submodule.status.rawValue, tone: tone)
       actions
     }
     .padding(.vertical, 4)
