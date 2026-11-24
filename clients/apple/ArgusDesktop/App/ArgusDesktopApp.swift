@@ -14,31 +14,10 @@ struct ArgusDesktopApp: App {
     _ = AppPreferences.shared
   }
 
+  // On every scene at once: each scene merges its default menu groups in order, so a
+  // later WindowGroup's File ▸ Close group would drop items a single scene put there.
   var body: some Scene {
-    Window("Argus", id: "main") {
-      RootView()
-        .modifier(AccountJoinPrompt())
-        .environment(delegate.model)
-        .environment(delegate.model.store)
-        .environment(delegate.model.terminals)
-        .environment(delegate.model.pullRequests)
-        .environment(delegate.model.runtime)
-        .environment(delegate.model.automations)
-        .environment(delegate.model.blueprints)
-        .environment(delegate.model.proposals)
-        .environment(delegate.model.hosts)
-        .environment(delegate.model.account)
-        .frame(minWidth: MainWindow.minWindowWidth, minHeight: 600)
-        // Only Release builds claim `argus://` (Debug gets `argus-mac-dev`), so a dev
-        // build never takes links from the installed app.
-        .onOpenURL { url in
-          delegate.model.open(deepLink: url)
-        }
-    }
-    // Room for the sidebar, the git panel's three columns and the runtime.
-    .defaultSize(width: 1560, height: 960)
-    .defaultLaunchBehavior(GalleryMode.active ? .suppressed : .automatic)
-    .commands {
+    scenes.commands {
       CommandGroup(after: .appInfo) {
         CheckForUpdatesCommand(model: delegate.model)
       }
@@ -52,7 +31,8 @@ struct ArgusDesktopApp: App {
       CommandGroup(after: .newItem) {
         ProjectCommands(model: delegate.model)
       }
-      CommandGroup(replacing: .saveItem) {
+      // After, not replacing: the device popouts keep File ▸ Close for ⌘W.
+      CommandGroup(after: .saveItem) {
         CodeSaveCommands(model: delegate.model)
       }
       CommandGroup(after: .sidebar) {
@@ -79,6 +59,32 @@ struct ArgusDesktopApp: App {
         GitMenuCommands(model: delegate.model)
       }
     }
+  }
+
+  @SceneBuilder private var scenes: some Scene {
+    Window("Argus", id: "main") {
+      RootView()
+        .modifier(AccountJoinPrompt())
+        .environment(delegate.model)
+        .environment(delegate.model.store)
+        .environment(delegate.model.terminals)
+        .environment(delegate.model.pullRequests)
+        .environment(delegate.model.runtime)
+        .environment(delegate.model.automations)
+        .environment(delegate.model.blueprints)
+        .environment(delegate.model.proposals)
+        .environment(delegate.model.hosts)
+        .environment(delegate.model.account)
+        .frame(minWidth: MainWindow.minWindowWidth, minHeight: 600)
+        // Only Release builds claim `argus://` (Debug gets `argus-mac-dev`), so a dev
+        // build never takes links from the installed app.
+        .onOpenURL { url in
+          delegate.model.open(deepLink: url)
+        }
+    }
+    // Room for the sidebar, the git panel's three columns and the runtime.
+    .defaultSize(width: 1560, height: 960)
+    .defaultLaunchBehavior(GalleryMode.active ? .suppressed : .automatic)
 
     Settings {
       // Themed from outside: the window reads `\.theme` for its own background.

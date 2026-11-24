@@ -1,6 +1,7 @@
 #if DEBUG
   import AppKit
   import ArgusCore
+  import ArgusEditor
   import GroveKit
   import GroveUIKit
   import UserNotifications
@@ -12,7 +13,7 @@
   ///
   /// `ARGUS_DEV_DRIVER=<dir>`: each `cmd-<n>.json` is run once and answered in
   /// `out-<n>.json`. Ops: `tree`, `press` / `click` (by accessibility label or
-  /// title, optional `index`), `key` (`key`, `mods`, `viaQueue`), `type` (`text`), `menu`
+  /// title, optional `index`), `key` (`key`, `mods`, `viaQueue`), `type` (`text`), `codeInsert` (`text`), `menu`
   /// (`title`), `mainMenu` (`title`: a menu bar menu's items and shortcuts),
   /// `mouseButton` (`button`: 3 back, 4 forward).
   @MainActor
@@ -154,6 +155,12 @@
         guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
         model.togglePanelTab(.device, via: .shortcut)
         return ["panel": model.sidePanelVisible]
+      case "codeInsert":
+        // Types `text` at the start of the code view's buffer; its editor isn't an NSTextView.
+        guard let document = AppDelegate.current?.model.activeCodeDocument else { return ["error": "no document"] }
+        let start = EditorPosition(line: 0, utf16Column: 0)
+        document.apply(edits: [(EditorRange(start: start, end: start), command["text"] as? String ?? "")])
+        return ["dirty": document.isDirty, "text": document.text]
       case "shortcuts":
         // What the last key did: the notice, the palette and the code view's panes.
         guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
@@ -715,9 +722,11 @@
         window.setFrame(NSRect(x: window.frame.minX, y: window.frame.maxY - height, width: width, height: height), display: true)
         return ["ok": true]
       case "menu":
-        guard let title = command["title"] as? String, let item = menuItem(title, in: NSApp.mainMenu)
+        guard let title = command["title"] as? String, let found = menuItem(title, in: NSApp.mainMenu)
         else { return ["error": "no menu item"] }
-        // Validation normally runs when the menu opens; nothing opened it here.
+        // SwiftUI refreshes a menu's items (and their actions) when it opens; nothing opened it here.
+        if let menu = found.menu { menu.delegate?.menuNeedsUpdate?(menu) }
+        guard let item = menuItem(title, in: NSApp.mainMenu) else { return ["error": "no menu item"] }
         item.menu?.update()
         guard item.isEnabled, let action = item.action else { return ["error": "disabled"] }
         return ["ok": NSApp.sendAction(action, to: item.target, from: item)]
