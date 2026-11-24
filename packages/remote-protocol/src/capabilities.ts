@@ -347,6 +347,10 @@ export const REMOTE_METHODS = {
   "teammates.remove_duty": "control",
   "teammates.save_memory": "control",
   "teammates.delete_memory": "control",
+  "teammates.threads": "monitor",
+  /** Starts or wakes the conversation's agent, which spends. */
+  "teammates.open_thread": "control",
+  "teammates.archive_thread": "control",
   "automations.delete_memory": "control",
   "automations.set_enabled": "control",
   /** Hands out a credential that starts runs. */

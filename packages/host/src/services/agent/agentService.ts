@@ -82,6 +82,10 @@ import { loadArgusConfig } from "../session/argusConfig";
 import { incrementCommandMetric } from "../session/commandMetrics";
 import { sessionRunnerId } from "../session/models";
 import { simulatorPool } from "../simulator/pool";
+import {
+  noteThreadMessage,
+  teammateThreadForSession,
+} from "../teammate/threadSessions";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { noteUsageRateLimitLine } from "../usage/limits";
 import { recordTurnUsage } from "../usage/turns";
@@ -240,6 +244,10 @@ This is an unattended automation run. If Claude Code says plan mode is active, i
 - \`emit_report\`, \`emit_proposal\`, \`withdraw_proposal\`, \`save_memory\` and \`delete_memory\` are reporting tools, not edits. Call them as the run's instructions say; Argus allows them.
 - Do not write a plan file and do not call \`ExitPlanMode\`. Nobody is there to approve a plan; the report is the deliverable.
 - Everything else in plan mode still holds: no edits, no commits, no commands that change anything.`;
+
+const TEAMMATE_PROMPT = `## Plan mode in a teammate conversation
+
+If Claude Code says plan mode is active, it is on only to stop writes to files and repos at your autonomy. \`save_memory\` and \`delete_memory\` are not edits; call them when there is something worth keeping. Do not write a plan file and do not call \`ExitPlanMode\` — answer the user directly.`;
 
 const SCRATCH_PAD_PROMPT = `## Scratch pad
 
@@ -793,7 +801,9 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     .filter(Boolean)
     .join("\n\n");
 
-  const systemPrompt = getSystemPromptForKind(argusSession.kind);
+  const systemPrompt = teammateThreadForSession(argusSession.id)
+    ? TEAMMATE_PROMPT
+    : getSystemPromptForKind(argusSession.kind);
   const projectContext = `## Current Project\n\nYou are working in **${argusSession.repo_root}**. When using MCP tools that accept a \`project_path\` parameter, always pass \`${argusSession.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.\n\nYour own agent ID is \`${agentId}\`. The Argus MCP already knows who you are, so you normally don't need to pass it — \`parent_agent_id\` on \`spawn_agent\`/\`create_session\`/\`send_agent_message\` defaults to you automatically.`;
   const combinedPrompt = [
     systemPrompt,
@@ -1951,6 +1961,7 @@ export function sendAgentMessage(
   if (agentEntry.status === "stopped" || agentEntry.status === "error") {
     throw `Agent is not running: ${agentId}`;
   }
+  noteThreadMessage(agentEntry.sessionId, message);
   cancelLimitResume(agentId);
   const transition = transitionOf(agentId);
   // The old child is being killed; stdin written now would be lost.

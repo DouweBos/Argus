@@ -240,11 +240,12 @@ initial attempt from a `continue` after the user resolved conflicts.
 
 ## Teammates
 
-| Event                   | Source | When                        | Extra props                                                                                                                                                          |
-| ----------------------- | ------ | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `teammate_created`      | host   | A teammate was created      | `source: "blank" \| "template" \| "promoted"` — from scratch, from the gallery, or from an automation; `template_id` — the gallery template's built-in id, or `none` |
-| `teammate_deleted`      | host   | A teammate was deleted      | `kept_duties` — its automations were kept as standalone ones; `duty_count_bucket: "0" \| "1" \| "2-5" \| "6+"`                                                       |
-| `teammate_soul_changed` | host   | A teammate's soul was saved | `via: "edit" \| "revise"` — typed by hand, or rewritten with Claude                                                                                                  |
+| Event                    | Source | When                                                            | Extra props                                                                                                                                                          |
+| ------------------------ | ------ | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `teammate_created`       | host   | A teammate was created                                          | `source: "blank" \| "template" \| "promoted"` — from scratch, from the gallery, or from an automation; `template_id` — the gallery template's built-in id, or `none` |
+| `teammate_deleted`       | host   | A teammate was deleted                                          | `kept_duties` — its automations were kept as standalone ones; `duty_count_bucket: "0" \| "1" \| "2-5" \| "6+"`                                                       |
+| `teammate_soul_changed`  | host   | A teammate's soul was saved                                     | `via: "edit" \| "revise"` — typed by hand, or rewritten with Claude                                                                                                  |
+| `teammate_thread_opened` | host   | A conversation with a teammate was opened and its agent started | `new_thread` — a new conversation rather than an earlier one; `resumed` — the earlier conversation was picked back up from disk                                      |
 
 ## Blueprints
 

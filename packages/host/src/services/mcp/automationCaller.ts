@@ -13,6 +13,7 @@ import { getAutomation, listAutomationRuns } from "../automation/manager";
 import { memoryOwnerForAutomation } from "../automation/memory/owner";
 import { worktreesRoot } from "../session/git";
 import { isInsideRoot } from "../session/worktreeLocation";
+import { teammateThreadForSession } from "../teammate/threadSessions";
 
 /** The run an agent is the host of, or null if it is not an automation host. */
 export function automationRunForAgent(
@@ -33,10 +34,25 @@ export function automationRunForAgent(
   return run ? { automationId: run.automation_id, runId: run.id } : null;
 }
 
+/** The teammate conversation an agent is having, if it is having one. */
+export function teammateThreadForAgent(
+  callerAgentId: string | null,
+): { teammateId: string; threadId: string } | null {
+  const sessionId = callerAgentId
+    ? appState.agents.get(callerAgentId)?.sessionId
+    : undefined;
+
+  return teammateThreadForSession(sessionId);
+}
+
 /** The memory an agent may write with `save_memory`, or null when it has none. */
 export function memoryOwnerForAgent(
   callerAgentId: string | null,
 ): MemoryOwner | null {
+  const thread = teammateThreadForAgent(callerAgentId);
+  if (thread) {
+    return { kind: "teammate", id: thread.teammateId };
+  }
   const run = automationRunForAgent(callerAgentId);
   const automation = run ? getAutomation(run.automationId) : null;
 
@@ -44,7 +60,10 @@ export function memoryOwnerForAgent(
 }
 
 export function isAutomationHostAgent(callerAgentId: string | null): boolean {
-  return automationRunForAgent(callerAgentId) !== null;
+  return (
+    automationRunForAgent(callerAgentId) !== null ||
+    teammateThreadForAgent(callerAgentId) !== null
+  );
 }
 
 /**

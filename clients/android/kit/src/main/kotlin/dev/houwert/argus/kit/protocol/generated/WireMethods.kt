@@ -2766,6 +2766,16 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class TeammatesArchiveThreadParams(
+    @SerialName("thread_id") val threadId: String,
+  )
+
+  @Serializable
+  data class TeammatesArchiveThreadResult(
+    @SerialName("accepted") val accepted: Boolean,
+  )
+
+  @Serializable
   data class TeammatesCreateParams(
     @SerialName("input") val input: CreateTeammateInput,
   )
@@ -2840,6 +2850,13 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class TeammatesOpenThreadParams(
+    @SerialName("teammate_id") val teammateId: String,
+    @SerialName("thread_id") val threadId: String? = null,
+    @SerialName("fresh") val fresh: Boolean? = null,
+  )
+
+  @Serializable
   data class TeammatesPromoteParams(
     @SerialName("automation_id") val automationId: String,
     @SerialName("teammate_id") @EncodeDefault val teammateId: String? = null,
@@ -2911,6 +2928,16 @@ object MethodsTypes {
   @Serializable
   data class TeammatesTemplatesResult(
     @SerialName("templates") val templates: List<RemoteTeammateTemplate>,
+  )
+
+  @Serializable
+  data class TeammatesThreadsParams(
+    @SerialName("teammate_id") val teammateId: String,
+  )
+
+  @Serializable
+  data class TeammatesThreadsResult(
+    @SerialName("threads") val threads: List<TeammateThread>,
   )
 
   @Serializable
@@ -3437,6 +3464,8 @@ object Methods {
 
   object TeammatesAddDuty : RemoteCommand<MethodsTypes.TeammatesAddDutyParams, MethodsTypes.TeammatesAddDutyResult>("teammates.add_duty", "control", serializer(), serializer())
 
+  object TeammatesArchiveThread : RemoteCommand<MethodsTypes.TeammatesArchiveThreadParams, MethodsTypes.TeammatesArchiveThreadResult>("teammates.archive_thread", "control", serializer(), serializer())
+
   object TeammatesCreate : RemoteCommand<MethodsTypes.TeammatesCreateParams, MethodsTypes.TeammatesCreateResult>("teammates.create", "control", serializer(), serializer())
 
   object TeammatesCreateFromTemplate : RemoteCommand<MethodsTypes.TeammatesCreateFromTemplateParams, MethodsTypes.TeammatesCreateFromTemplateResult>("teammates.create_from_template", "control", serializer(), serializer())
@@ -3451,6 +3480,8 @@ object Methods {
 
   object TeammatesMemories : RemoteCommand<MethodsTypes.TeammatesMemoriesParams, MethodsTypes.TeammatesMemoriesResult>("teammates.memories", "control", serializer(), serializer())
 
+  object TeammatesOpenThread : RemoteCommand<MethodsTypes.TeammatesOpenThreadParams, OpenedTeammateThread>("teammates.open_thread", "control", serializer(), serializer())
+
   object TeammatesPromote : RemoteCommand<MethodsTypes.TeammatesPromoteParams, MethodsTypes.TeammatesPromoteResult>("teammates.promote", "control", serializer(), serializer())
 
   object TeammatesRemoveDuty : RemoteCommand<MethodsTypes.TeammatesRemoveDutyParams, MethodsTypes.TeammatesRemoveDutyResult>("teammates.remove_duty", "control", serializer(), serializer())
@@ -3460,6 +3491,8 @@ object Methods {
   object TeammatesSaveSoul : RemoteCommand<MethodsTypes.TeammatesSaveSoulParams, MethodsTypes.TeammatesSaveSoulResult>("teammates.save_soul", "control", serializer(), serializer())
 
   object TeammatesTemplates : RemoteCommand<MethodsTypes.TeammatesTemplatesParams, MethodsTypes.TeammatesTemplatesResult>("teammates.templates", "control", serializer(), serializer())
+
+  object TeammatesThreads : RemoteCommand<MethodsTypes.TeammatesThreadsParams, MethodsTypes.TeammatesThreadsResult>("teammates.threads", "control", serializer(), serializer())
 
   object TeammatesUpdate : RemoteCommand<MethodsTypes.TeammatesUpdateParams, MethodsTypes.TeammatesUpdateResult>("teammates.update", "control", serializer(), serializer())
 

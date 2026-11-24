@@ -16,3 +16,7 @@ export function teammateSoulPath(teammateId: string): string {
 export function teammateHomeDir(teammateId: string): string {
   return path.join(teammateDir(teammateId), "home");
 }
+
+export function teammateThreadsFilePath(): string {
+  return path.join(argusHomeDir(), "teammate-threads.json");
+}

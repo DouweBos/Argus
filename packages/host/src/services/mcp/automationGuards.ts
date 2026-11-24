@@ -20,18 +20,29 @@ import {
 } from "../automation/ownedSessions";
 import { listProposals } from "../automation/proposals/manager";
 import { branchChecksClean } from "../codeHost/pullRequests";
-import { automationRunForAgent } from "./automationCaller";
+import { chatAutomationFor } from "../teammate/chatPolicy";
+import {
+  automationRunForAgent,
+  teammateThreadForAgent,
+} from "./automationCaller";
+
+/** A run's automation, or the synthetic one a teammate's conversation runs as. */
+function callerAutomation(callerAgentId: string | null) {
+  const thread = teammateThreadForAgent(callerAgentId);
+  if (thread) {
+    return chatAutomationFor(thread.teammateId);
+  }
+  const context = automationRunForAgent(callerAgentId);
+
+  return context ? getAutomation(context.automationId) : null;
+}
 
 /** The automation behind a caller, with its policy resolved for `repoRoot`. */
 export function callerPolicy(
   callerAgentId: string | null,
   repoRoot: string | null,
 ) {
-  const context = automationRunForAgent(callerAgentId);
-  if (!context) {
-    return null;
-  }
-  const automation = getAutomation(context.automationId);
+  const automation = callerAutomation(callerAgentId);
   if (!automation) {
     return null;
   }

@@ -258,7 +258,6 @@ import { remoteSlackStatus } from "../slack/status";
 import {
   createBlankTeammate,
   createTeammateFromTemplate,
-  deleteTeammate,
   deleteTeammateMemory,
   getTeammate,
   listTeammateMemories,
@@ -268,6 +267,12 @@ import {
   teammateSummaries,
   updateTeammate,
 } from "../teammate/manager";
+import {
+  archiveThread,
+  deleteTeammateWithThreads,
+  listThreads,
+  openThread,
+} from "../teammate/threads";
 import {
   listTerminals,
   readTerminalOutput,
@@ -2707,8 +2712,32 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "teammates.delete": async (params) => {
     const { teammate_id, keep_duties } = parse("teammates.delete", params);
 
-    return await control(() => {
-      deleteTeammate(teammate_id, keep_duties);
+    return await control(async () => {
+      await deleteTeammateWithThreads(teammate_id, keep_duties);
+
+      return { accepted: true };
+    });
+  },
+  "teammates.threads": async (params) => {
+    const { teammate_id } = parse("teammates.threads", params);
+
+    return { threads: listThreads(teammate_id) };
+  },
+  "teammates.open_thread": async (params) => {
+    const { teammate_id, thread_id, fresh } = parse(
+      "teammates.open_thread",
+      params,
+    );
+
+    return await control(() =>
+      openThread(teammate_id, { threadId: thread_id, fresh }),
+    );
+  },
+  "teammates.archive_thread": async (params) => {
+    const { thread_id } = parse("teammates.archive_thread", params);
+
+    return await control(async () => {
+      await archiveThread(thread_id);
 
       return { accepted: true };
     });

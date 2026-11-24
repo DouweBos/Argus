@@ -8763,6 +8763,40 @@ extension ArgusProtocol {
       }
     }
 
+    public struct TeammatesArchiveThreadParams: Codable, Sendable {
+      public var threadId: String
+
+      enum CodingKeys: String, CodingKey {
+        case threadId = "thread_id"
+      }
+
+      public init(threadId: String) {
+        self.threadId = threadId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(threadId, forKey: .threadId)
+      }
+    }
+
+    public struct TeammatesArchiveThreadResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
     public struct TeammatesCreateParams: Codable, Sendable {
       public var input: CreateTeammateInput
 
@@ -9018,6 +9052,31 @@ extension ArgusProtocol {
       }
     }
 
+    public struct TeammatesOpenThreadParams: Codable, Sendable {
+      public var teammateId: String
+      public var threadId: String?
+      public var fresh: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case teammateId = "teammate_id"
+        case threadId = "thread_id"
+        case fresh = "fresh"
+      }
+
+      public init(teammateId: String, threadId: String? = nil, fresh: Bool? = nil) {
+        self.teammateId = teammateId
+        self.threadId = threadId
+        self.fresh = fresh
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammateId, forKey: .teammateId)
+        try c.encodeIfPresent(threadId, forKey: .threadId)
+        try c.encodeIfPresent(fresh, forKey: .fresh)
+      }
+    }
+
     public struct TeammatesPromoteParams: Codable, Sendable {
       public var automationId: String
       public var teammateId: String?
@@ -9240,6 +9299,40 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(templates, forKey: .templates)
+      }
+    }
+
+    public struct TeammatesThreadsParams: Codable, Sendable {
+      public var teammateId: String
+
+      enum CodingKeys: String, CodingKey {
+        case teammateId = "teammate_id"
+      }
+
+      public init(teammateId: String) {
+        self.teammateId = teammateId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammateId, forKey: .teammateId)
+      }
+    }
+
+    public struct TeammatesThreadsResult: Codable, Sendable {
+      public var threads: [TeammateThread]
+
+      enum CodingKeys: String, CodingKey {
+        case threads = "threads"
+      }
+
+      public init(threads: [TeammateThread]) {
+        self.threads = threads
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(threads, forKey: .threads)
       }
     }
 
@@ -10828,6 +10921,12 @@ extension ArgusProtocol {
       public static let name = "teammates.add_duty"
     }
 
+    public enum TeammatesArchiveThread: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesArchiveThreadParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesArchiveThreadResult
+      public static let name = "teammates.archive_thread"
+    }
+
     public enum TeammatesCreate: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.TeammatesCreateParams
       public typealias Result = ArgusProtocol.MethodsTypes.TeammatesCreateResult
@@ -10870,6 +10969,12 @@ extension ArgusProtocol {
       public static let name = "teammates.memories"
     }
 
+    public enum TeammatesOpenThread: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesOpenThreadParams
+      public typealias Result = ArgusProtocol.OpenedTeammateThread
+      public static let name = "teammates.open_thread"
+    }
+
     public enum TeammatesPromote: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.TeammatesPromoteParams
       public typealias Result = ArgusProtocol.MethodsTypes.TeammatesPromoteResult
@@ -10898,6 +11003,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.TeammatesTemplatesParams
       public typealias Result = ArgusProtocol.MethodsTypes.TeammatesTemplatesResult
       public static let name = "teammates.templates"
+    }
+
+    public enum TeammatesThreads: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesThreadsParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesThreadsResult
+      public static let name = "teammates.threads"
     }
 
     public enum TeammatesUpdate: RemoteCommand {

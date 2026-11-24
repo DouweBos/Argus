@@ -12492,6 +12492,31 @@ extension ArgusProtocol {
     public static let projects = OnboardingStep(rawValue: "projects")
   }
 
+  public struct OpenedTeammateThread: Codable, Sendable {
+    public var thread: TeammateThread
+    public var agentId: String
+    public var sessionId: String
+
+    enum CodingKeys: String, CodingKey {
+      case thread = "thread"
+      case agentId = "agent_id"
+      case sessionId = "session_id"
+    }
+
+    public init(thread: TeammateThread, agentId: String, sessionId: String) {
+      self.thread = thread
+      self.agentId = agentId
+      self.sessionId = sessionId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(thread, forKey: .thread)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(sessionId, forKey: .sessionId)
+    }
+  }
+
   public struct PairedDeviceCapabilitiesItem: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -20713,6 +20738,51 @@ extension ArgusProtocol {
       try c.encode(sourceIds, forKey: .sourceIds)
       try c.encode(requires, forKey: .requires)
       try c.encode(duties, forKey: .duties)
+    }
+  }
+
+  public struct TeammateThread: Codable, Sendable {
+    public var id: String
+    public var teammateId: String
+    public var surface: String
+    public var title: String
+    public var agentId: String
+    public var createdAt: Double
+    public var lastOpenedAt: Double
+    public var archived: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case teammateId = "teammate_id"
+      case surface = "surface"
+      case title = "title"
+      case agentId = "agent_id"
+      case createdAt = "created_at"
+      case lastOpenedAt = "last_opened_at"
+      case archived = "archived"
+    }
+
+    public init(id: String, teammateId: String, surface: String, title: String, agentId: String, createdAt: Double, lastOpenedAt: Double, archived: Bool) {
+      self.id = id
+      self.teammateId = teammateId
+      self.surface = surface
+      self.title = title
+      self.agentId = agentId
+      self.createdAt = createdAt
+      self.lastOpenedAt = lastOpenedAt
+      self.archived = archived
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(teammateId, forKey: .teammateId)
+      try c.encode(surface, forKey: .surface)
+      try c.encode(title, forKey: .title)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(createdAt, forKey: .createdAt)
+      try c.encode(lastOpenedAt, forKey: .lastOpenedAt)
+      try c.encode(archived, forKey: .archived)
     }
   }
 

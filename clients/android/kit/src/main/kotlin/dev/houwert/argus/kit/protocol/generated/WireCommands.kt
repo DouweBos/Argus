@@ -3001,6 +3001,23 @@ object CommandsTypes {
   )
 
   @Serializable
+  data class TeammateThreadArchiveParams(
+    @SerialName("threadId") val threadId: String,
+  )
+
+  @Serializable
+  data class TeammateThreadOpenParams(
+    @SerialName("id") val id: String,
+    @SerialName("threadId") val threadId: String? = null,
+    @SerialName("fresh") val fresh: Boolean? = null,
+  )
+
+  @Serializable
+  data class TeammateThreadsListParams(
+    @SerialName("id") val id: String,
+  )
+
+  @Serializable
   data class TeammateUpdateParams(
     @SerialName("id") val id: String,
     @SerialName("patch") val patch: UpdateTeammateInput,
@@ -4199,6 +4216,12 @@ object Commands {
   object TeammateSoulSave : RemoteCommand<CommandsTypes.TeammateSoulSaveParams, IgnoredResult>("teammate_soul_save", "admin", serializer(), serializer())
 
   object TeammateTemplatesList : RemoteCommand<EmptyParams, List<TeammateTemplate>>("teammate_templates_list", "admin", serializer(), serializer())
+
+  object TeammateThreadArchive : RemoteCommand<CommandsTypes.TeammateThreadArchiveParams, IgnoredResult>("teammate_thread_archive", "admin", serializer(), serializer())
+
+  object TeammateThreadOpen : RemoteCommand<CommandsTypes.TeammateThreadOpenParams, OpenedTeammateThread>("teammate_thread_open", "admin", serializer(), serializer())
+
+  object TeammateThreadsList : RemoteCommand<CommandsTypes.TeammateThreadsListParams, List<TeammateThread>>("teammate_threads_list", "admin", serializer(), serializer())
 
   object TeammateUpdate : RemoteCommand<CommandsTypes.TeammateUpdateParams, Teammate>("teammate_update", "admin", serializer(), serializer())
 

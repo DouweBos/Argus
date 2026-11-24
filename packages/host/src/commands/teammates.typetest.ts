@@ -9,12 +9,14 @@ import type {
   TeammateTemplate as HostTeammateTemplate,
   UpdateTeammateInput as HostUpdateTeammateInput,
 } from "../services/teammate/models";
+import type { TeammateThread as HostTeammateThread } from "../services/teammate/threads";
 import type {
   CreateTeammateInput,
   Teammate,
   TeammateDetail,
   TeammateSummary,
   TeammateTemplate,
+  TeammateThread,
   UpdateTeammateInput,
 } from "@argus/remote-protocol";
 
@@ -25,4 +27,5 @@ export type TeammateModelChecks = [
   Expect<Equal<TeammateTemplate, HostTeammateTemplate>>,
   Expect<Equal<TeammateSummary[], ReturnType<typeof teammateSummaries>>>,
   Expect<Equal<TeammateDetail, ReturnType<typeof teammateDetail>>>,
+  Expect<Equal<TeammateThread, HostTeammateThread>>,
 ];

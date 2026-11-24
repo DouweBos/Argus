@@ -3,7 +3,6 @@ import {
   addDuty,
   createBlankTeammate,
   createTeammateFromTemplate,
-  deleteTeammate,
   promoteAutomation,
   removeDuty,
   saveTeammateSoul,
@@ -12,6 +11,12 @@ import {
   updateTeammate,
 } from "../services/teammate/manager";
 import { TEAMMATE_TEMPLATES } from "../services/teammate/templates";
+import {
+  archiveThread,
+  deleteTeammateWithThreads,
+  listThreads,
+  openThread,
+} from "../services/teammate/threads";
 
 export function registerTeammateCommands(): void {
   defineTypedCommand("teammates_list", () => teammateSummaries());
@@ -19,7 +24,7 @@ export function registerTeammateCommands(): void {
   defineTypedCommand("teammate_create", (p) => createBlankTeammate(p.input));
   defineTypedCommand("teammate_update", (p) => updateTeammate(p.id, p.patch));
   defineTypedCommand("teammate_delete", (p) =>
-    deleteTeammate(p.id, p.keepDuties),
+    deleteTeammateWithThreads(p.id, p.keepDuties),
   );
   defineTypedCommand("teammate_soul_save", (p) =>
     saveTeammateSoul(p.id, p.soul),
@@ -33,4 +38,11 @@ export function registerTeammateCommands(): void {
   );
   defineTypedCommand("teammate_add_duty", (p) => addDuty(p.id, p.input));
   defineTypedCommand("teammate_remove_duty", (p) => removeDuty(p.automationId));
+  defineTypedCommand("teammate_threads_list", (p) => listThreads(p.id));
+  defineTypedCommand("teammate_thread_open", (p) =>
+    openThread(p.id, { threadId: p.threadId, fresh: p.fresh }),
+  );
+  defineTypedCommand("teammate_thread_archive", (p) =>
+    archiveThread(p.threadId),
+  );
 }

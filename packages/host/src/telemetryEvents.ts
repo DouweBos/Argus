@@ -452,6 +452,8 @@ export interface EventMap {
     duty_count_bucket: "0" | "1" | "2-5" | "6+";
   };
   teammate_soul_changed: { via: "edit" | "revise" };
+  /** `resumed`: an earlier conversation was picked back up from disk. */
+  teammate_thread_opened: { new_thread: boolean; resumed: boolean };
   slack_connected: { success: boolean };
   /** `rejected`: Slack stopped accepting the saved app-level token. */
   slack_disconnected: { reason: "rejected" | "user" };

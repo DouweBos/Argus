@@ -25,6 +25,8 @@ import type { Automation, AutonomyLevel } from "./models";
 import type { PermissionPreHook } from "../llm/runners/types";
 import { appState } from "../../state";
 import { loadAppSettings } from "../appSettings/store";
+import { chatAutomationFor } from "../teammate/chatPolicy";
+import { teammateThreadForSession } from "../teammate/threadSessions";
 import { resolveHostAutonomy, resolvePolicy } from "./autonomy";
 import { recordGateRefusal } from "./gateLog";
 import { atLeastAutonomy } from "./guardrails";
@@ -228,6 +230,16 @@ export interface SessionAutonomy {
 export function automationSessionAutonomy(
   sessionId: string,
 ): SessionAutonomy | null {
+  // A teammate's conversation answers to the teammate's own ceiling.
+  const thread = teammateThreadForSession(sessionId);
+  if (thread) {
+    const automation = chatAutomationFor(thread.teammateId);
+
+    return automation
+      ? { automation, autonomy: resolveHostAutonomy(automation) }
+      : null;
+  }
+
   const hostRun = listAutomationRuns().find(
     (run) => run.host_session_id === sessionId,
   );

@@ -2,10 +2,12 @@ import { z } from "zod";
 import { Automation, CreateAutomationInput } from "../models/automations";
 import {
   CreateTeammateInput,
+  OpenedTeammateThread,
   Teammate,
   TeammateDetail,
   TeammateSummary,
   TeammateTemplate,
+  TeammateThread,
   UpdateTeammateInput,
 } from "../models/teammates";
 import { type CommandSpec, NoParams, Void } from "./spec";
@@ -72,5 +74,24 @@ export const TEAMMATE_COMMANDS = {
     tier: "admin",
     params: z.object({ automationId: z.string() }),
     result: Automation,
+  },
+  teammate_threads_list: {
+    tier: "admin",
+    params: ById,
+    result: z.array(TeammateThread),
+  },
+  /** No `threadId`: the newest thread, or a new one with `fresh`. */
+  teammate_thread_open: {
+    tier: "admin",
+    params: ById.extend({
+      threadId: z.string().nullish(),
+      fresh: z.boolean().optional(),
+    }),
+    result: OpenedTeammateThread,
+  },
+  teammate_thread_archive: {
+    tier: "admin",
+    params: z.object({ threadId: z.string() }),
+    result: Void,
   },
 } as const satisfies Record<string, CommandSpec>;

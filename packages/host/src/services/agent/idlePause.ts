@@ -11,6 +11,7 @@ import { loadAppSettings } from "../appSettings/store";
 import { isClaudeBased } from "../llm/runners/claudeCode/family";
 import { findClaudeTranscript } from "../llm/runners/claudeCode/transcriptFork";
 import { hasOpenMcpCall } from "../mcp/openCalls";
+import { teammateThreadForSession } from "../teammate/threadSessions";
 import { isInflight } from "./conversation/folded";
 import { pauseAgent } from "./lifecycle";
 import { hasHeldSends, transitionOf } from "./lifecycleState";
@@ -97,7 +98,12 @@ export function pauseBlocker(
     return "transition";
   }
   const session = checks.session(agent.sessionId);
-  if (session?.kind === "automation_host") {
+  // A run's agent is stopped when the run ends; a teammate's conversation
+  // is long-lived, so it pauses like any other.
+  if (
+    session?.kind === "automation_host" &&
+    !teammateThreadForSession(session.id)
+  ) {
     return "automation_host";
   }
   if (

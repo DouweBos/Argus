@@ -127,3 +127,25 @@ export const TeammateTemplate = z.object({
   duties: z.array(CreateAutomationInput),
 });
 export type TeammateTemplate = z.infer<typeof TeammateTemplate>;
+
+/** One conversation with a teammate. */
+export const TeammateThread = z.object({
+  id: z.string(),
+  teammate_id: z.string(),
+  surface: z.literal("direct"),
+  /** The first thing said in it, trimmed. */
+  title: z.string(),
+  /** Stable across restarts; open the thread before talking to it. */
+  agent_id: z.string(),
+  created_at: z.number(),
+  last_opened_at: z.number(),
+  archived: z.boolean(),
+});
+export type TeammateThread = z.infer<typeof TeammateThread>;
+
+export const OpenedTeammateThread = z.object({
+  thread: TeammateThread,
+  agent_id: z.string(),
+  session_id: z.string(),
+});
+export type OpenedTeammateThread = z.infer<typeof OpenedTeammateThread>;

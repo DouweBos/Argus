@@ -110,9 +110,11 @@ import {
 } from "./models/slack";
 import {
   CreateTeammateInput,
+  OpenedTeammateThread,
   Teammate,
   TeammateSummary,
   TeammateTemplate,
+  TeammateThread,
   UpdateTeammateInput,
 } from "./models/teammates";
 import {
@@ -924,6 +926,15 @@ export const MethodParams = {
     teammate_id: z.string(),
     name: z.string(),
   }),
+  "teammates.threads": z.object({ teammate_id: z.string() }),
+  /** No `thread_id`: the newest thread, or a new one with `fresh`. Starts or
+   *  wakes its agent, so it is control. */
+  "teammates.open_thread": z.object({
+    teammate_id: z.string(),
+    thread_id: z.string().nullish(),
+    fresh: z.boolean().optional(),
+  }),
+  "teammates.archive_thread": z.object({ thread_id: z.string() }),
   "automations.set_enabled": z.object({
     automation_id: z.string(),
     enabled: z.boolean(),
@@ -1518,6 +1529,9 @@ export const MethodResult = {
   "teammates.remove_duty": z.object({ automation: RemoteAutomation }),
   "teammates.save_memory": z.object({ memory: RemoteAutomationMemory }),
   "teammates.delete_memory": z.object({ accepted: z.boolean() }),
+  "teammates.threads": z.object({ threads: z.array(TeammateThread) }),
+  "teammates.open_thread": OpenedTeammateThread,
+  "teammates.archive_thread": z.object({ accepted: z.boolean() }),
   "automations.set_enabled": z.object({ automation: RemoteAutomation }),
   /** The only time the secret is shown. */
   "automations.rotate_webhook": z.object({

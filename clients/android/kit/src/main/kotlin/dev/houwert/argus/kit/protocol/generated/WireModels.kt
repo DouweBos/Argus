@@ -4488,6 +4488,13 @@ value class OnboardingStep(val rawValue: String) {
 }
 
 @Serializable
+data class OpenedTeammateThread(
+  @SerialName("thread") val thread: TeammateThread,
+  @SerialName("agent_id") val agentId: String,
+  @SerialName("session_id") val sessionId: String,
+)
+
+@Serializable
 @JvmInline
 value class PairedDeviceCapabilitiesItem(val rawValue: String) {
   override fun toString(): String = rawValue
@@ -7645,6 +7652,18 @@ data class TeammateTemplate(
   @SerialName("source_ids") val sourceIds: List<String>,
   @SerialName("requires") val requires: List<TeammateTemplateRequiresItem>,
   @SerialName("duties") val duties: List<CreateAutomationInput>,
+)
+
+@Serializable
+data class TeammateThread(
+  @SerialName("id") val id: String,
+  @SerialName("teammate_id") val teammateId: String,
+  @SerialName("surface") val surface: String,
+  @SerialName("title") val title: String,
+  @SerialName("agent_id") val agentId: String,
+  @SerialName("created_at") val createdAt: Double,
+  @SerialName("last_opened_at") val lastOpenedAt: Double,
+  @SerialName("archived") val archived: Boolean,
 )
 
 @Serializable
