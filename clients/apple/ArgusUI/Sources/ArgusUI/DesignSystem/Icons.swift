@@ -126,6 +126,7 @@ public enum Icon {
   public static let inbox = "tray"
   public static let agents = "sparkles"
   public static let automations = "clock.arrow.circlepath"
+  public static let teammates = "person.2"
   public static let blueprint = "pencil.and.ruler"
   public static let devices = "iphone.gen3"
   public static let runtimes = "play.rectangle"

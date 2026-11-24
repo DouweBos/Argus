@@ -64,7 +64,7 @@
       ]
     }
 
-    private static var fixtures: [String: String] { GalleryFixtures.automations() }
+    private static var fixtures: [String: String] { GalleryFixtures.teammates() }
     private static var empty: [String: String] { GalleryFixtures.automations(empty: true) }
 
     /// The inbox's "on it" group only lists work whose session still exists.

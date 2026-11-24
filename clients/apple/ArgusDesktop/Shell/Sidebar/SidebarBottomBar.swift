@@ -28,6 +28,12 @@ struct SidebarDestination {
       default: false
       }
     },
+    .init(title: "Teammates", symbol: Icon.teammates, shortcut: nil, route: .teammates) {
+      switch $0 {
+      case .teammates, .teammateGallery, .teammate: true
+      default: false
+      }
+    },
   ]
 
   /// The occasional ones, as icons along the sidebar's foot.

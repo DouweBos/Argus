@@ -126,6 +126,12 @@
 		5ABE00000000000000000010 /* ArgusKit in Frameworks */ = {isa = PBXBuildFile; productRef = 5ABE00000000000000000020 /* ArgusKit */; };
 		5ABE00000000000000000011 /* ArgusCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5ABE00000000000000000021 /* ArgusCore */; };
 		5ABE00000000000000000012 /* ArgusUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5ABE00000000000000000022 /* ArgusUI */; };
+		7EA3A7E5000000000000F002 /* TeammatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA3A7E5000000000000F001 /* TeammatesView.swift */; };
+		7EA3A7E5000000000000F004 /* TeammateGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA3A7E5000000000000F003 /* TeammateGalleryView.swift */; };
+		7EA3A7E5000000000000F006 /* TeammateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA3A7E5000000000000F005 /* TeammateView.swift */; };
+		7EA3A7E5000000000000F008 /* TeammateProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA3A7E5000000000000F007 /* TeammateProfileView.swift */; };
+		7EA3A7E5000000000000F010 /* TeammateDutiesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA3A7E5000000000000F009 /* TeammateDutiesView.swift */; };
+		7EA3A7E5000000000000F012 /* TeammateMemoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA3A7E5000000000000F011 /* TeammateMemoryView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -293,6 +299,12 @@
 		A9D6E7000000000000000035 /* AnswerPromptIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AnswerPromptIntent.swift; path = ArgusWidgets/AnswerPromptIntent.swift; sourceTree = SOURCE_ROOT; };
 		A9D6E7000000000000000021 /* WidgetSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSync.swift; sourceTree = "<group>"; };
 		5ABE00000000000000000002 /* ArgusShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ArgusShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7EA3A7E5000000000000F001 /* TeammatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeammatesView.swift; sourceTree = "<group>"; };
+		7EA3A7E5000000000000F003 /* TeammateGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeammateGalleryView.swift; sourceTree = "<group>"; };
+		7EA3A7E5000000000000F005 /* TeammateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeammateView.swift; sourceTree = "<group>"; };
+		7EA3A7E5000000000000F007 /* TeammateProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeammateProfileView.swift; sourceTree = "<group>"; };
+		7EA3A7E5000000000000F009 /* TeammateDutiesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeammateDutiesView.swift; sourceTree = "<group>"; };
+		7EA3A7E5000000000000F011 /* TeammateMemoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeammateMemoryView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -500,6 +512,7 @@
 				B35E55100000000000000002 /* SessionView.swift */,
 				D1A5DE0000000000000000A2 /* SessionSidePanel.swift */,
 				B35E55100000000000000004 /* SessionDetailsView.swift */,
+				7EA3A7E5000000000000F000 /* Teammates */,
 				4510F50B6943CA7B6707AABE /* AutomationsView.swift */,
 				21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */,
 				D15E7D98AC7167AE4C6BCF68 /* AutomationEditorView.swift */,
@@ -662,6 +675,19 @@
 				FEED000100000000000000B2 /* TelemetryEvent.swift */,
 			);
 			path = Telemetry;
+			sourceTree = "<group>";
+		};
+		7EA3A7E5000000000000F000 /* Teammates */ = {
+			isa = PBXGroup;
+			children = (
+				7EA3A7E5000000000000F001 /* TeammatesView.swift */,
+				7EA3A7E5000000000000F003 /* TeammateGalleryView.swift */,
+				7EA3A7E5000000000000F005 /* TeammateView.swift */,
+				7EA3A7E5000000000000F007 /* TeammateProfileView.swift */,
+				7EA3A7E5000000000000F009 /* TeammateDutiesView.swift */,
+				7EA3A7E5000000000000F011 /* TeammateMemoryView.swift */,
+			);
+			path = Teammates;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1103,6 +1129,12 @@
 				AA1000000000000000000001 /* ClaudeAccountsView.swift in Sources */,
 				AA1000000000000000000101 /* RunnerAccountsSection.swift in Sources */,
 				0C2CEA8B85053A238EB47BA7 /* AutomationsView.swift in Sources */,
+				7EA3A7E5000000000000F002 /* TeammatesView.swift in Sources */,
+				7EA3A7E5000000000000F004 /* TeammateGalleryView.swift in Sources */,
+				7EA3A7E5000000000000F006 /* TeammateView.swift in Sources */,
+				7EA3A7E5000000000000F008 /* TeammateProfileView.swift in Sources */,
+				7EA3A7E5000000000000F010 /* TeammateDutiesView.swift in Sources */,
+				7EA3A7E5000000000000F012 /* TeammateMemoryView.swift in Sources */,
 				8B82B5637BDFB9252A8D9AD0 /* BranchesView.swift in Sources */,
 				B77C1EA73DE9EF93E59424EF /* BranchCompareView.swift in Sources */,
 				B7241A133F6BBFBAFFDDBDE2 /* CommitView.swift in Sources */,

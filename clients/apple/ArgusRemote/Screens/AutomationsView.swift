@@ -10,6 +10,7 @@ struct AutomationsView: View {
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
   @Environment(AutomationsStore.self) private var store
+  @Environment(TeammatesStore.self) private var teammates
 
   /// Folded so the runs don't push the automations themselves off screen.
   private static let recentRuns = 3
@@ -17,9 +18,14 @@ struct AutomationsView: View {
 
   var body: some View {
     List {
-      if store.phase.showsContent {
+      if phase.showsContent {
         if let error = store.error {
           Banner(text: error, tone: .danger).listRowBackground(Color.clear)
+        }
+        if showsTeammates {
+          Section {
+            NavigationLink(value: Route.teammates) { TeammatesEntryRow(summaries: teammates.summaries) }
+          }
         }
         if !store.automations.isEmpty {
           Section {
@@ -64,7 +70,7 @@ struct AutomationsView: View {
       }
     }
     .loadPhase(
-      store.phase, loading: "Reading automations", failedTitle: "Automations unavailable",
+      phase, loading: "Reading automations", failedTitle: "Automations unavailable",
       retry: { await store.refresh() }
     ) {
       EmptyState(
@@ -86,13 +92,80 @@ struct AutomationsView: View {
             NavigationLink(value: Route.describeAutomation) {
               Label("Describe it", systemImage: Icon.agent)
             }
+            if teammates.error == nil || !teammates.summaries.isEmpty {
+              NavigationLink(value: Route.teammateGallery) {
+                Label("New Teammate", systemImage: Icon.person)
+              }
+            }
           } label: {
             Label("New", systemImage: Icon.plus)
           }
         }
       }
     }
-    .refreshable { await store.refresh() }
-    .liveRefresh(enabled: host.connection == .ready) { await store.refresh() }
+    .refreshable {
+      await store.refresh()
+      await teammates.refresh()
+    }
+    .liveRefresh(enabled: host.connection == .ready) {
+      await store.refresh()
+      await teammates.refresh()
+    }
+  }
+
+  /// A computer too old to answer `teammates.list` gets no entry.
+  private var showsTeammates: Bool {
+    teammates.loaded && (teammates.error == nil || !teammates.summaries.isEmpty)
+  }
+
+  /// The teammates entry counts as content, so it stays reachable with no automations.
+  private var phase: LoadPhase {
+    store.phase == .empty && showsTeammates ? .content : store.phase
+  }
+}
+
+/// The way into Teammates from the Automations tab: who is on the team, at a glance.
+private struct TeammatesEntryRow: View {
+  @Environment(\.theme) private var theme
+  let summaries: [TeammatesStore.Summary]
+
+  var body: some View {
+    HStack(spacing: 10) {
+      faces
+      VStack(alignment: .leading, spacing: 2) {
+        Text("Teammates").lineLimit(1)
+        Text(subtitle).font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
+      }
+      Spacer(minLength: 6)
+      if summaries.contains(where: \.hasUnreadReport) {
+        StatusDot(tone: .accent, accessibilityLabel: "New report")
+      }
+    }
+  }
+
+  @ViewBuilder
+  private var faces: some View {
+    let shown = summaries.filter(\.teammate.enabled).prefix(3)
+    if shown.isEmpty {
+      Image(systemName: Icon.person)
+        .font(.scaled(size: 14, weight: .semibold))
+        .foregroundStyle(theme.accent)
+        .frame(width: 30, height: 30)
+        .background(theme.accent.opacity(0.15), in: .circle)
+    } else {
+      HStack(spacing: -10) {
+        ForEach(Array(shown)) { summary in
+          TeammateAvatar(teammate: summary.teammate, size: 30)
+            .background(Circle().fill(theme.bgSecondary).padding(-2))
+        }
+      }
+    }
+  }
+
+  private var subtitle: String {
+    guard !summaries.isEmpty else { return "Named agents with their own memory and duties" }
+    let active = summaries.filter(\.teammate.enabled).count
+    let count = summaries.count == 1 ? "1 teammate" : "\(summaries.count) teammates"
+    return active == summaries.count ? count : "\(count) · \(summaries.count - active) paused"
   }
 }

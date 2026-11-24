@@ -75,9 +75,12 @@ public struct RemoteAutomation: Codable, Hashable, Sendable, Identifiable {
   public var lastRunAt: Double?
   public var nextRunAt: Double?
   public var running: Bool
+  /// The teammate this is a duty of. Missing from older hosts.
+  public var teammateId: String? = nil
 
   enum CodingKeys: String, CodingKey {
     case id, name, description, enabled, cron, timezone, autonomy, projects, running
+    case teammateId = "teammate_id"
     case triggerKind = "trigger_kind"
     case slackChannel = "slack_channel"
     case runAt = "run_at"

@@ -42,6 +42,12 @@ public enum ArgusRoute: Hashable, Sendable {
   case describeAutomation
   /// `/automations/:automationId`, or one of its runs.
   case automation(id: String, runId: String?)
+  /// `/teammates`: the named agents on this host.
+  case teammates
+  /// `/teammates/gallery`: starting teammates to pick from.
+  case teammateGallery
+  /// `/teammates/:teammateId[/threads/:threadId|/profile|/duties|/memory]`.
+  case teammate(id: String, page: TeammatePage = .chat(threadId: nil))
   /// `/blueprints`: this computer's recipes for new projects.
   case blueprints
   /// `/blueprints/:blueprintId`, or `/blueprints/new` for a new one (prefilled
@@ -146,6 +152,9 @@ public enum ArgusRoute: Hashable, Sendable {
     case .describeAutomation: "/automations/describe"
     case .automation(_, let runId):
       runId == nil ? "/automations/:automationId" : "/automations/:automationId/runs/:runId"
+    case .teammates: "/teammates"
+    case .teammateGallery: "/teammates/gallery"
+    case .teammate(_, let page): "/teammates/:teammateId" + page.patternSuffix
     case .blueprints: "/blueprints"
     case .blueprint(let id): id == nil ? "/blueprints/new" : "/blueprints/:blueprintId"
     case .generateBlueprint: "/blueprints/generate"
@@ -157,6 +166,24 @@ public enum ArgusRoute: Hashable, Sendable {
     case .usageModel(let tab, _, _, _): "/usage/\(tab.rawValue)/models/:runner/:model"
     case .usagePrices: "/usage/prices"
     case .usageModels: "/usage/models"
+    }
+  }
+}
+
+/// Which of a teammate's pages is showing. Each is a route of its own.
+public enum TeammatePage: Hashable, Sendable {
+  /// The newest conversation, or one in particular.
+  case chat(threadId: String?)
+  case profile
+  case duties
+  case memory
+
+  var patternSuffix: String {
+    switch self {
+    case .chat(let threadId): threadId == nil ? "" : "/threads/:threadId"
+    case .profile: "/profile"
+    case .duties: "/duties"
+    case .memory: "/memory"
     }
   }
 }

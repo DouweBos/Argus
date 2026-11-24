@@ -4,12 +4,56 @@ import SwiftUI
 /// One automation memory: read it, or with control, edit or delete it.
 /// `memory == nil` adds a new one.
 public struct MemoryEditorSheet: View {
-  @Environment(HostStore.self) private var host
   @Environment(AutomationsStore.self) private var store
-  @Environment(\.dismiss) private var dismiss
-
   let automationId: String
   let memory: RemoteAutomationMemory?
+
+  public init(automationId: String, memory: RemoteAutomationMemory? = nil) {
+    self.automationId = automationId
+    self.memory = memory
+  }
+
+  public var body: some View {
+    MemoryEditor(
+      memory: memory, error: store.error, readerNote: "Future runs won't see it.",
+      onSave: { draft, previous in
+        await store.saveMemory(automationId: automationId, memory: draft, previousName: previous)
+      },
+      onDelete: { name in await store.deleteMemory(automationId: automationId, name: name) })
+  }
+}
+
+/// One teammate memory — the one every duty and conversation of it shares.
+public struct TeammateMemoryEditorSheet: View {
+  @Environment(TeammatesStore.self) private var store
+  let teammateId: String
+  let memory: RemoteAutomationMemory?
+
+  public init(teammateId: String, memory: RemoteAutomationMemory? = nil) {
+    self.teammateId = teammateId
+    self.memory = memory
+  }
+
+  public var body: some View {
+    MemoryEditor(
+      memory: memory, error: store.error, readerNote: "Its duties and conversations won't see it.",
+      onSave: { draft, previous in
+        await store.saveMemory(teammateId: teammateId, memory: draft, previousName: previous)
+      },
+      onDelete: { name in await store.deleteMemory(teammateId: teammateId, name: name) })
+  }
+}
+
+/// Read a memory, or with control edit or delete it, whoever owns it.
+struct MemoryEditor: View {
+  @Environment(HostStore.self) private var host
+  @Environment(\.dismiss) private var dismiss
+
+  let memory: RemoteAutomationMemory?
+  let error: String?
+  let readerNote: String
+  let onSave: (RemoteAutomationMemory, String?) async -> Bool
+  let onDelete: (String) async -> Bool
 
   @State private var draft = RemoteAutomationMemory()
   @State private var editing = false
@@ -22,15 +66,10 @@ public struct MemoryEditorSheet: View {
     } && !saving
   }
 
-  public init(automationId: String, memory: RemoteAutomationMemory? = nil) {
-    self.automationId = automationId
-    self.memory = memory
-  }
-
-  public var body: some View {
+  var body: some View {
     NavigationStack {
       Screen {
-        if let error = store.error {
+        if let error {
           Banner(text: error, tone: .danger)
         }
         if editing {
@@ -44,9 +83,9 @@ public struct MemoryEditorSheet: View {
       .toolbar { toolbar }
       .alert("Delete this memory?", isPresented: $confirmingDelete) {
         Button("Cancel", role: .cancel) {}
-        Button("Delete", role: .destructive) { delete() }
+        Button("Delete", role: .destructive) { remove() }
       } message: {
-        Text("Future runs won't see it.")
+        Text(readerNote)
       }
       .onAppear {
         draft = memory ?? RemoteAutomationMemory()
@@ -116,17 +155,16 @@ public struct MemoryEditorSheet: View {
   private func save() {
     saving = true
     Task {
-      let saved = await store.saveMemory(
-        automationId: automationId, memory: draft, previousName: memory?.name)
+      let saved = await onSave(draft, memory?.name)
       saving = false
       if saved { dismiss() }
     }
   }
 
-  private func delete() {
+  private func remove() {
     guard let memory else { return }
     Task {
-      if await store.deleteMemory(automationId: automationId, name: memory.name) {
+      if await onDelete(memory.name) {
         dismiss()
       }
     }

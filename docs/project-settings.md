@@ -591,7 +591,7 @@ it is shared with the team.
 ```jsonc
 "automations": {
   "autonomy_ceiling": "draft",          // this repo never goes past draft
-  "disabled": ["regression-sweep"],     // automation ids or template ids
+  "disabled": ["regression-sweep"],     // automation ids, template ids or teammate handles
   "path_denylist": ["infra/**", "**/migrations/**"]
 }
 ```
@@ -603,7 +603,7 @@ it is shared with the team.
   field can only ever tighten. Omit it for no repo-level cap.
 - **`disabled`** — automations that must not act on this repo at all. Match
   either the automation's id or the built-in template id (e.g.
-  `morning-triage`, `take-the-easy-ones`).
+  `morning-triage`, `take-the-easy-ones`). A [teammate](./teammates.md)'s handle (e.g. `ci-fixer`) disables every one of its duties here.
 - **`path_denylist`** — globs no automation-started branch may touch. Checked
   against the branch's actual changes immediately before it is pushed, and
   added to whatever the automation already forbids.

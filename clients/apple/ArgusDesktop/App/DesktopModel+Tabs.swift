@@ -95,6 +95,8 @@ extension DesktopModel {
     case .issues: screen = "Issues"
     case .design: screen = "Design"
     case .automations, .automation, .quickRun, .describeAutomation: screen = "Automations"
+    case .teammates, .teammateGallery: screen = "Teammates"
+    case .teammate(let id, _): screen = teammates.teammate(id)?.name ?? "Teammate"
     case .blueprints, .blueprint, .generateBlueprint, .newProject: screen = "Blueprints"
     case .inbox, .proposal: screen = "Inbox"
     case .notifications: screen = "Notifications"

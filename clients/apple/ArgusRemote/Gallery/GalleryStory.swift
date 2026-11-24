@@ -48,6 +48,7 @@
     let app = AppStore()
     let router = Router()
     let automations: AutomationsStore
+    let teammates: TeammatesStore
     let blueprints: BlueprintsStore
     let proposals: ProposalsStore
     let pullRequests: PullRequestsStore
@@ -58,6 +59,7 @@
     init(story: GalleryStory) async {
       backend = GalleryBackend(story.fixtures)
       automations = AutomationsStore(host: app.host)
+      teammates = TeammatesStore(host: app.host)
       blueprints = BlueprintsStore(host: app.host)
       proposals = ProposalsStore(host: app.host)
       pullRequests = PullRequestsStore(host: app.host)
@@ -79,6 +81,7 @@
       .environment(app.host)
       .environment(router)
       .environment(automations)
+      .environment(teammates)
       .environment(blueprints)
       .environment(proposals)
       .environment(pullRequests)
@@ -91,6 +94,7 @@
   enum GalleryStories {
     static var all: [GalleryStory] {
       ComposerStories.all + SettingsStories.all + DeviceStories.all + FileStories.all + HomeStories.all + AutomationStories.all
+        + TeammateStories.all
         + BlueprintStories.all + GitStories.all + TranscriptStories.all + ShareStories.all + LiveActivityStories.all + CompareStories.all
     }
   }

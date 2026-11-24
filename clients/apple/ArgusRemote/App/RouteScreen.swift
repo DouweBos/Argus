@@ -226,6 +226,19 @@ struct RouteScreen: View {
       DescribeAutomationView()
     case .run(let id, let label):
       RunView(runId: id, label: label)
+    case .teammates:
+      TeammatesView()
+    case .teammateGallery:
+      TeammateGalleryView()
+    case .teammate(let id, .chat(let threadId)):
+      // Keyed so switching conversations starts the new one's agent afresh.
+      TeammateView(teammateId: id, threadId: threadId).id(route)
+    case .teammate(let id, .profile):
+      TeammateProfileView(teammateId: id).id(id)
+    case .teammate(let id, .duties):
+      TeammateDutiesView(teammateId: id)
+    case .teammate(let id, .memory):
+      TeammateMemoryView(teammateId: id)
     case .blueprints:
       BlueprintsView()
     case .blueprint(let id):

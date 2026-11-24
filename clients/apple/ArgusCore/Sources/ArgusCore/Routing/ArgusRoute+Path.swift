@@ -58,6 +58,14 @@ extension ArgusRoute {
     case ("blueprints", 2) where parts[1] == "new-project":
       self = .newProject(blueprintId: query["blueprint"].flatMap(\.nonEmpty))
     case ("blueprints", 2): self = .blueprint(id: parts[1])
+    case ("teammates", 1): self = .teammates
+    case ("teammates", 2) where parts[1] == "gallery": self = .teammateGallery
+    case ("teammates", 2): self = .teammate(id: parts[1])
+    case ("teammates", 3) where parts[2] == "profile": self = .teammate(id: parts[1], page: .profile)
+    case ("teammates", 3) where parts[2] == "duties": self = .teammate(id: parts[1], page: .duties)
+    case ("teammates", 3) where parts[2] == "memory": self = .teammate(id: parts[1], page: .memory)
+    case ("teammates", 4) where parts[2] == "threads":
+      self = .teammate(id: parts[1], page: .chat(threadId: parts[3]))
     case ("automations", 1): self = .automations
     case ("automations", 2) where parts[1] == "quick": self = .quickRun(runId: nil)
     case ("automations", 2) where parts[1] == "describe": self = .describeAutomation
@@ -120,6 +128,9 @@ extension ArgusRoute {
     case .blueprint(let id): "/blueprints/" + (id.map(Self.encode) ?? "new")
     case .generateBlueprint: "/blueprints/generate"
     case .newProject(let blueprintId): "/blueprints/new-project" + Self.query([("blueprint", blueprintId)])
+    case .teammates: "/teammates"
+    case .teammateGallery: "/teammates/gallery"
+    case .teammate(let id, let page): "/teammates/\(Self.encode(id))" + Self.teammateSuffix(page)
     case .automations: "/automations"
     case .quickRun(let runId): runId.map { "/automations/quick/runs/\(Self.encode($0))" } ?? "/automations/quick"
     case .describeAutomation: "/automations/describe"
@@ -146,6 +157,15 @@ extension ArgusRoute {
     var components = URLComponents()
     components.queryItems = items.compactMap { name, value in value.map { URLQueryItem(name: name, value: $0) } }
     return components.percentEncodedQuery.map { $0.isEmpty ? "" : "?\($0)" } ?? ""
+  }
+
+  static func teammateSuffix(_ page: TeammatePage) -> String {
+    switch page {
+    case .chat(let threadId): threadId.map { "/threads/\(encode($0))" } ?? ""
+    case .profile: "/profile"
+    case .duties: "/duties"
+    case .memory: "/memory"
+    }
   }
 
   public static func encode(_ segment: String) -> String {

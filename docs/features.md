@@ -310,6 +310,17 @@ See [Automations](/argus/docs/automations) for the full story.
 
 ---
 
+## Teammates
+
+Named agents that stay around: each has a persona you write, one memory
+everything it does shares, automations as its duties, and conversations you
+can come back to from the Mac or the phone. Start one from the
+gallery, or move an automation you already have into one.
+
+See [Teammates](/argus/docs/teammates).
+
+---
+
 ## Blueprints
 
 Your own recipes for new projects. Pick a blueprint, type a name and a

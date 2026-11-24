@@ -71,6 +71,7 @@ struct ArgusDesktopApp: App {
         .environment(delegate.model.pullRequests)
         .environment(delegate.model.runtime)
         .environment(delegate.model.automations)
+        .environment(delegate.model.teammates)
         .environment(delegate.model.blueprints)
         .environment(delegate.model.proposals)
         .environment(delegate.model.hosts)
@@ -93,6 +94,7 @@ struct ArgusDesktopApp: App {
         .environment(delegate.model)
         .environment(delegate.model.store)
         .environment(delegate.model.automations)
+        .environment(delegate.model.teammates)
         .environment(delegate.model.hosts)
         .environment(delegate.model.account)
     }

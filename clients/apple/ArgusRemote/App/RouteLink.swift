@@ -59,6 +59,9 @@ extension PhoneDestination {
       return PhoneDestination(section: .automations, route: .run(id: runId, label: "Run"))
     case .automation(let id, nil):
       return PhoneDestination(section: .automations, route: .automation(id: id, label: "Automation"))
+    case .teammates: return PhoneDestination(section: .automations, route: .teammates)
+    case .teammateGallery: return PhoneDestination(section: .automations, route: .teammateGallery)
+    case .teammate(let id, let page): return PhoneDestination(section: .automations, route: .teammate(id: id, page: page))
     case .blueprints: return PhoneDestination(section: .blueprints)
     case .blueprint(let id): return PhoneDestination(section: .blueprints, route: .blueprint(id: id))
     case .generateBlueprint: return PhoneDestination(section: .blueprints, route: .generateBlueprint)

@@ -43,6 +43,12 @@
           "summary": "Work Argus starts on its own: triggers, signal sources, the autonomy ladder, guardrails, the inbox, and the built-in templates."
         },
         {
+          "slug": "teammates",
+          "file": "teammates.md",
+          "title": "Teammates",
+          "summary": "Named agents that stay: a persona you write, one shared memory, automations as their duties, and conversations you can come back to."
+        },
+        {
           "slug": "blueprints",
           "file": "blueprints.md",
           "title": "Blueprints",

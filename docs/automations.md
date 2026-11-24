@@ -722,6 +722,17 @@ without a schedule, into the editor.
 
 ---
 
+## Teammates
+
+An automation can belong to a [teammate](./teammates.md): a named agent that
+owns several automations as its duties. A duty runs exactly like any other
+automation, with two differences — it reads and writes its teammate's memory
+instead of its own, and it never goes further than its teammate's autonomy.
+**Move to Teammate** on an automation's screen makes it one; its memories move
+with it.
+
+---
+
 ## Turning it all off
 
 **App settings → Agents → Automations enabled** is the master switch for the

@@ -143,6 +143,7 @@ private struct AutomationDetail: View {
       Button("Duplicate") { duplicate() }
         .disabled(duplicating)
         .help("Make a paused copy to adapt, e.g. for another project")
+      TeammateOwnershipButton(automation: automation)
       Button("Delete") { confirmingDelete = true }
       Button(saving ? "Saving" : saved == draft ? "Saved" : "Save Changes") { save() }
         .keyboardShortcut("s", modifiers: .command)

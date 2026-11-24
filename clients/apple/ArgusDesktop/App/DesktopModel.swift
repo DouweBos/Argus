@@ -22,6 +22,7 @@ final class DesktopModel {
   /// Each session's repository, opened when its git panel first shows.
   let git: GitWorkspaces
   let automations: AutomationsStore
+  let teammates: TeammatesStore
   let blueprints: BlueprintsStore
   let proposals: ProposalsStore
   /// The inbox in full, from the host's catalog — the Mac's inbox and proposal screens.
@@ -191,6 +192,7 @@ final class DesktopModel {
     code = CodeStore(host: store)
     languages = LanguageSupport.install(on: code)
     automations = AutomationsStore(host: store)
+    teammates = TeammatesStore(host: store)
     blueprints = BlueprintsStore(host: store)
     proposals = ProposalsStore(host: store)
     inbox = InboxStore(host: store)

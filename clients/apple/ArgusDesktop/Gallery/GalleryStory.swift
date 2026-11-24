@@ -39,6 +39,7 @@
     /// The model's own store, so views reading `model.store` (inbox, automations, hosts) see the fixtures too.
     var host: HostStore { model.store }
     let automations: AutomationsStore
+    let teammates: TeammatesStore
     let blueprints: BlueprintsStore
     let backend: GalleryBackend
 
@@ -47,6 +48,7 @@
       backend = GalleryBackend(story.fixtures)
       model.store.reset()
       automations = AutomationsStore(host: model.store)
+      teammates = TeammatesStore(host: model.store)
       blueprints = BlueprintsStore(host: model.store)
       host.capabilities = ["monitor", "control", "admin"]
       await host.attach(backend)
@@ -65,6 +67,7 @@
       .environment(model)
       .environment(host)
       .environment(automations)
+      .environment(teammates)
       .environment(blueprints)
       .environment(model.terminals)
       .environment(model.pullRequests)
@@ -78,7 +81,7 @@
 
   enum GalleryStories {
     static var all: [GalleryStory] {
-      AutomationStories.all + ComposerStories.all + SessionStories.all + DiffReviewStories.all + DiffStories.all + ReviewGuideStories.all
+      AutomationStories.all + TeammateStories.all + ComposerStories.all + SessionStories.all + DiffReviewStories.all + DiffStories.all + ReviewGuideStories.all
         + SettingsStories.all + DeviceStories.all + FileStories.all + HomeStories.all + RuntimeStories.all + GitStories.all + GitDialogStories.all + GitWorkingCopyStories.all + GitCompactStories.all + GitHistoryStories.all + GitBlameStories.all + GitRefsStories.all + GitShellStories.all
         + TranscriptStories.all + CompareStories.all + BlueprintStories.all
     }
