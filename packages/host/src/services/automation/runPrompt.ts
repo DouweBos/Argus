@@ -3,15 +3,25 @@
  * this run may touch, may do and was handed.
  */
 
-import type { Automation, AutomationEvent, AutonomyLevel } from "./models";
+import type {
+  Automation,
+  AutomationEvent,
+  AutonomyLevel,
+  MemoryOwner,
+} from "./models";
 import type { ScopeAvailability } from "./scopeAvailability";
 import type { GatheredSignals } from "../signals/registry";
 import { fenceUntrusted } from "../signals/injectionScan";
 import { serializeWorkItems } from "../signals/registry";
 import { normalizeGuardrails } from "./guardrails";
-import { readMemoryIndex } from "./memory/store";
+import { memoryOwnerForAutomation } from "./memory/owner";
+import {
+  MAX_MEMORIES,
+  MAX_MEMORY_INDEX_CHARS,
+  readMemoryIndex,
+} from "./memory/store";
 import { calibrationBlock } from "./outcomes";
-import { automationMemoryDir } from "./paths";
+import { memoryDirFor } from "./paths";
 import { outstandingBlock } from "./proposals/outstanding";
 
 export function buildPrompt(
@@ -53,7 +63,7 @@ export function buildPrompt(
             )}. Note this in the report; do not treat it as "there is no work" in those projects.`,
         ]
       : []),
-    ...memorySection(automation.id),
+    ...memorySection(memoryOwnerForAutomation(automation)),
     ...autonomySection(automation, autonomy),
     ...eventSection(events),
     ...signalSections(automation, signals),
@@ -90,21 +100,43 @@ function extraInstructionsSection(automation: Automation): string[] {
 
 /**
  * What earlier runs learned, so this one doesn't re-explore the same code.
- * Only the index is inlined; the run opens the files it needs.
+ * Only the index is inlined, capped; the run opens the files it needs.
  */
-export function memorySection(automationId: string): string[] {
-  const index = readMemoryIndex(automationId);
+export function memorySection(owner: MemoryOwner): string[] {
+  const index = readMemoryIndex(owner);
+  const count = index ? index.split("\n").length : 0;
+  const keeper =
+    owner.kind === "teammate"
+      ? "You keep a memory across runs and conversations"
+      : "This automation keeps a memory across runs";
 
   return [
     "",
     "## Memory",
     "",
-    `This automation keeps a memory across runs in \`${automationMemoryDir(automationId)}\`: \`MEMORY.md\` indexes one file per memory. Read the ones that bear on this run with \`Read\` before you explore — they exist so you don't re-learn the same code every day.`,
+    `${keeper} in \`${memoryDirFor(owner)}\`: \`MEMORY.md\` indexes one file per memory. Read the ones that bear on this run with \`Read\` before you explore — they exist so you don't re-learn the same code every day.`,
     "",
-    index ? `Current \`MEMORY.md\`:\n\n${index}` : "No memories yet.",
+    index ? `Current \`MEMORY.md\`:\n\n${capIndex(index)}` : "No memories yet.",
+    ...(count >= MAX_MEMORIES * 0.9
+      ? [
+          "",
+          `Memory is nearly full (${count} of ${MAX_MEMORIES}). Merge near-duplicates and delete what no longer holds before adding anything.`,
+        ]
+      : []),
     "",
     "Save with `save_memory` whatever took real exploration to find and will hold next run: where things are implemented, how the projects are laid out, quirks of the sources, what the user wants. Update an existing memory instead of adding a near-duplicate; `delete_memory` one that turned out wrong. A memory reflects when it was written — verify a file or function still exists before relying on it. Don't save this run's findings; those belong in the report.",
   ];
+}
+
+/** Cut an oversized index at a line, and say so, rather than flood the prompt. */
+export function capIndex(index: string): string {
+  if (index.length <= MAX_MEMORY_INDEX_CHARS) {
+    return index;
+  }
+  const cut = index.slice(0, MAX_MEMORY_INDEX_CHARS);
+  const kept = cut.slice(0, Math.max(0, cut.lastIndexOf("\n")));
+
+  return `${kept}\n\n(The index is cut off here — it is too long. Consolidate memories so it fits.)`;
 }
 
 /**

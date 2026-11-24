@@ -290,6 +290,14 @@ export const MEMORY_TYPES = [
 ] as const;
 export type MemoryType = (typeof MEMORY_TYPES)[number];
 
+/**
+ * Whose memory directory this is. An automation that belongs to a teammate
+ * reads and writes its teammate's, so every duty and the chat share one.
+ */
+export type MemoryOwner =
+  | { kind: "automation"; id: string }
+  | { kind: "teammate"; id: string };
+
 /** One file in an automation's memory directory, carried across runs. */
 export interface AutomationMemory {
   /** Kebab-case slug; also the file name without `.md`. */

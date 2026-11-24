@@ -9,6 +9,7 @@ import { appState } from "../../state";
 
 vi.mock("../automation/manager", () => ({
   listAutomationRuns: vi.fn(() => []),
+  getAutomation: vi.fn((id: string) => ({ id })),
 }));
 
 vi.mock("../automation/memory/store", () => ({
@@ -84,13 +85,19 @@ describe("automation memory tools", () => {
       arguments: ARGS,
     });
     expect(saved.isError).toBeFalsy();
-    expect(saveMemory).toHaveBeenCalledWith("auto-1", ARGS);
+    expect(saveMemory).toHaveBeenCalledWith(
+      { kind: "automation", id: "auto-1" },
+      ARGS,
+    );
 
     await client.callTool({
       name: "delete_memory",
       arguments: { name: "merge-flow" },
     });
-    expect(deleteMemory).toHaveBeenCalledWith("auto-1", "merge-flow");
+    expect(deleteMemory).toHaveBeenCalledWith(
+      { kind: "automation", id: "auto-1" },
+      "merge-flow",
+    );
     await client.close();
   });
 

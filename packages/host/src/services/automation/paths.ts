@@ -4,6 +4,7 @@
  * on the same machine.
  */
 
+import type { MemoryOwner } from "./models";
 import path from "node:path";
 import { argusHomeDir } from "../../lib/argusHome";
 
@@ -48,6 +49,17 @@ export function proposalsFilePath(): string {
 /** One automation's memory: `MEMORY.md` plus a file per memory. */
 export function automationMemoryDir(automationId: string): string {
   return path.join(argusHomeDir(), "automation-memory", automationId);
+}
+
+/** One teammate's home: its soul, its memory and its conversation folder. */
+export function teammateDir(teammateId: string): string {
+  return path.join(argusHomeDir(), "teammates", teammateId);
+}
+
+export function memoryDirFor(owner: MemoryOwner): string {
+  return owner.kind === "teammate"
+    ? path.join(teammateDir(owner.id), "memory")
+    : automationMemoryDir(owner.id);
 }
 
 /** What each signal trigger has already seen, so a restart doesn't refire. */

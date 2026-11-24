@@ -6,9 +6,11 @@
  * that was a cycle in both directions.
  */
 
+import type { MemoryOwner } from "../automation/models";
 import type { WorktreePurpose } from "../session/worktreeLocationCore";
 import { appState } from "../../state";
-import { listAutomationRuns } from "../automation/manager";
+import { getAutomation, listAutomationRuns } from "../automation/manager";
+import { memoryOwnerForAutomation } from "../automation/memory/owner";
 import { worktreesRoot } from "../session/git";
 import { isInsideRoot } from "../session/worktreeLocation";
 
@@ -29,6 +31,16 @@ export function automationRunForAgent(
   const run = listAutomationRuns().find((r) => r.host_session_id === sessionId);
 
   return run ? { automationId: run.automation_id, runId: run.id } : null;
+}
+
+/** The memory an agent may write with `save_memory`, or null when it has none. */
+export function memoryOwnerForAgent(
+  callerAgentId: string | null,
+): MemoryOwner | null {
+  const run = automationRunForAgent(callerAgentId);
+  const automation = run ? getAutomation(run.automationId) : null;
+
+  return automation ? memoryOwnerForAutomation(automation) : null;
 }
 
 export function isAutomationHostAgent(callerAgentId: string | null): boolean {

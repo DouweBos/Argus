@@ -445,7 +445,7 @@ export function deleteAutomation(id: string): void {
   runs = runCache().filter((r) => r.automation_id !== id);
   saveAutomationRuns(runs);
   deleteProposalsForAutomation(id);
-  deleteAllMemories(id);
+  deleteAllMemories({ kind: "automation", id });
 
   try {
     fs.rmSync(automationRunsDir(id), { force: true, recursive: true });

@@ -9,7 +9,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { deleteMemory, saveMemory } from "../automation/memory/store";
 import { MEMORY_TYPES } from "../automation/models";
-import { automationRunForAgent } from "./automationCaller";
+import { memoryOwnerForAgent } from "./automationCaller";
 
 function textResult(text: string, isError = false) {
   return { content: [{ type: "text" as const, text }], isError };
@@ -49,15 +49,15 @@ export function registerAutomationMemoryTools(
         ),
     },
     async ({ name, description, type, body }) => {
-      const context = automationRunForAgent(callerAgentId);
-      if (!context) {
+      const owner = memoryOwnerForAgent(callerAgentId);
+      if (!owner) {
         return textResult(
-          "save_memory is only available to automation runs.",
+          "save_memory is only available to automation runs and teammates.",
           true,
         );
       }
       try {
-        saveMemory(context.automationId, { name, description, type, body });
+        saveMemory(owner, { name, description, type, body });
 
         return textResult(`Saved memory "${name}".`);
       } catch (e) {
@@ -73,15 +73,15 @@ export function registerAutomationMemoryTools(
       name: z.string().describe("The memory's name, as listed in MEMORY.md."),
     },
     async ({ name }) => {
-      const context = automationRunForAgent(callerAgentId);
-      if (!context) {
+      const owner = memoryOwnerForAgent(callerAgentId);
+      if (!owner) {
         return textResult(
-          "delete_memory is only available to automation runs.",
+          "delete_memory is only available to automation runs and teammates.",
           true,
         );
       }
       try {
-        deleteMemory(context.automationId, name);
+        deleteMemory(owner, name);
 
         return textResult(`Deleted memory "${name}".`);
       } catch (e) {
