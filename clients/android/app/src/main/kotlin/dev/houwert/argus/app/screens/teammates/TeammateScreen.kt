@@ -27,8 +27,10 @@ import dev.houwert.argus.app.screens.automations.rememberHostAccess
 import dev.houwert.argus.app.screens.session.AgentView
 import dev.houwert.argus.core.stores.loadThreads
 import dev.houwert.argus.core.stores.openThread
+import dev.houwert.argus.core.teammates.TeammateText
 import dev.houwert.argus.kit.protocol.generated.OpenedTeammateThread
 import dev.houwert.argus.kit.protocol.generated.TeammateThread
+import dev.houwert.argus.kit.protocol.generated.TeammateThreadSurface
 import dev.houwert.argus.kit.util.Labels
 import dev.houwert.argus.ui.components.Btn
 import dev.houwert.argus.ui.components.ButtonTone
@@ -147,7 +149,11 @@ private fun ThreadList(id: String, name: String, threads: List<TeammateThread>) 
   Screen {
     ListSection(footer = READ_ONLY_NOTE) {
       for (thread in threads) {
-        ListRow(threadTitle(thread), subtitle = Labels.timeAgo(thread.lastOpenedAt), onClick = { router.push(Route.Teammate(id, name, thread.id)) })
+        val subtitle = listOfNotNull(TeammateText.surfaceLabel(thread.surface), Labels.timeAgo(thread.lastOpenedAt)).joinToString(" · ")
+        ListRow(
+          threadTitle(thread), subtitle = subtitle, icon = surfaceIcon(thread.surface),
+          onClick = { router.push(Route.Teammate(id, name, thread.id)) },
+        )
       }
     }
   }
@@ -173,10 +179,16 @@ private fun ConversationsMenu(
         if (threads.isNotEmpty()) HorizontalDivider()
       }
       for (thread in threads) {
-        MenuItem(threadTitle(thread), if (thread.id == currentThreadId) Icon.check else null) {
-          open = false
-          pick(thread.id)
-        }
+        val surface = TeammateText.surfaceLabel(thread.surface)
+        DropdownMenuItem(
+          text = { Text(threadTitle(thread)) },
+          leadingIcon = if (thread.id == currentThreadId) ({ Icon(Icon.check, null) }) else null,
+          trailingIcon = surfaceIcon(thread.surface)?.let { icon -> { Icon(icon, surface, tint = ArgusTheme.colors.textSecondary) } },
+          onClick = {
+            open = false
+            pick(thread.id)
+          },
+        )
       }
     }
   }
@@ -204,6 +216,14 @@ private fun PagesMenu(id: String, name: String) {
 @Composable
 private fun MenuItem(label: String, icon: ImageVector?, onClick: () -> Unit) {
   DropdownMenuItem(text = { Text(label) }, leadingIcon = icon?.let { { Icon(it, null) } }, onClick = onClick)
+}
+
+/** Where an outside conversation came from; none for one started in Argus. */
+private fun surfaceIcon(surface: TeammateThreadSurface): ImageVector? = when (surface) {
+  TeammateThreadSurface.slack -> Icon.chat
+  TeammateThreadSurface.linear -> Icon.issue
+  TeammateThreadSurface.handoff -> Icon.person
+  else -> null
 }
 
 private fun threadTitle(thread: TeammateThread): String = thread.title.trim().ifEmpty { "New conversation" }

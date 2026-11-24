@@ -5,6 +5,7 @@ import dev.houwert.argus.kit.protocol.generated.TeammateAvatarInitials
 import dev.houwert.argus.kit.protocol.generated.TeammateAvatarSymbol
 import dev.houwert.argus.kit.protocol.generated.TeammateSummary
 import dev.houwert.argus.kit.protocol.generated.TeammateSymbol
+import dev.houwert.argus.kit.protocol.generated.TeammateThreadSurface
 
 // The computed members the teammate screens read, on the generated types.
 
@@ -32,6 +33,14 @@ object TeammateText {
   }
 
   fun handle(handle: String): String = "@$handle"
+
+  /** Where a conversation came from; null for one started in Argus. */
+  fun surfaceLabel(surface: TeammateThreadSurface): String? = when (surface) {
+    TeammateThreadSurface.slack -> "Slack"
+    TeammateThreadSurface.linear -> "Linear"
+    TeammateThreadSurface.handoff -> "From a teammate"
+    else -> null
+  }
 }
 
 /** The symbol an avatar draws; null draws initials. */

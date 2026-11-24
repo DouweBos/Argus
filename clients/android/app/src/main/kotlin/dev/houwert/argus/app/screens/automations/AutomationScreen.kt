@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.app.navigation.Route
+import dev.houwert.argus.app.screens.teammates.AutomationTeammateSection
 import dev.houwert.argus.core.automations.Autonomy
 import dev.houwert.argus.core.automations.isActive
 import dev.houwert.argus.core.stores.loadCalibrationOverGateway
@@ -100,6 +101,7 @@ fun AutomationScreen(id: String, label: String) {
         Loading("Reading the automation")
       } else {
         Detail(automation, access)
+        AutomationTeammateSection(automation, access.hasControl, access.ready)
         TrackRecord(id)
         Memories(id, access.hasControl) { memory ->
           openMemory = memory

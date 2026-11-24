@@ -119,3 +119,31 @@ suspend fun TeammatesStore.deleteMemory(teammateId: String, name: String): Boole
     false
   }
 }
+
+/** A rewritten soul for the editor; nothing is saved. Null means the computer refused. */
+suspend fun TeammatesStore.reviseSoul(name: String, soul: String, instruction: String): String? {
+  val backend = host.backend ?: return null
+  return try {
+    val revised = backend.request(Methods.TeammatesReviseSoul, MethodsTypes.TeammatesReviseSoulParams(name, soul, instruction)).soul
+    _error.value = null
+    revised
+  } catch (e: Exception) {
+    fail("Couldn't rewrite the soul", e)
+    null
+  }
+}
+
+/** Make a standalone automation one of [teammateId]'s duties; null makes a new teammate named after it. */
+suspend fun TeammatesStore.promote(automationId: String, teammateId: String?): Teammate? {
+  val backend = host.backend ?: return null
+  return try {
+    val teammate = backend.request(Methods.TeammatesPromote, MethodsTypes.TeammatesPromoteParams(automationId, teammateId)).teammate
+    _error.value = null
+    refresh()
+    if (teammate.id in _detailById.value) loadDetail(teammate.id)
+    teammate
+  } catch (e: Exception) {
+    fail("Couldn't give that automation to a teammate", e)
+    null
+  }
+}

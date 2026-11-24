@@ -32,6 +32,12 @@ data class ReviseTextCopy(
       explanation = "The whole playbook is rewritten around this; the rest is kept.",
       resultLabel = "Revised playbook",
     )
+    val soul = ReviseTextCopy(
+      title = "Rewrite the Soul",
+      placeholder = "Be terser in pull request reviews.",
+      explanation = "The whole soul is rewritten around this; the rest is kept.",
+      resultLabel = "Revised soul",
+    )
   }
 }
 

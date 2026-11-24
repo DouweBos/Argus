@@ -132,6 +132,8 @@ class ProposalCardActions(
   val openRun: (() -> Unit)? = null,
   /** The proposal's own page; null when the card already is it. */
   val openDetails: (() -> Unit)? = null,
+  /** What [openRun] opens: a run, or the teammate conversation that raised it. */
+  val openRunLabel: String = "View run",
 )
 
 /** The note a decision can carry, asked for in place of the card's footer. */
@@ -195,7 +197,7 @@ fun ProposalCard(
     } else {
       Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (deciding) Decisions(content, startFailure, actions, onCompose = { compose = it }, onCleanup = { confirmingCleanup = true })
-        Links(content, actions.openRun)
+        Links(content, actions.openRun, actions.openRunLabel)
       }
     }
   }
@@ -309,11 +311,11 @@ private fun Decisions(
 }
 
 @Composable
-private fun Links(content: ProposalCardContent, openRun: (() -> Unit)?) {
+private fun Links(content: ProposalCardContent, openRun: (() -> Unit)?, openRunLabel: String) {
   val uri = LocalUriHandler.current
   if (openRun == null && content.source == null) return
   Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-    if (openRun != null) AccentLink("View run", onClick = openRun)
+    if (openRun != null) AccentLink(openRunLabel, onClick = openRun)
     content.source?.let { source -> AccentLink(source.label) { uri.openUri(source.url) } }
   }
 }

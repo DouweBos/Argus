@@ -12,6 +12,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -24,6 +25,7 @@ import dev.houwert.argus.app.screens.automations.BarTextAction
 import dev.houwert.argus.app.screens.automations.rememberHostAccess
 import dev.houwert.argus.core.automations.Autonomy
 import dev.houwert.argus.core.stores.TeammatesStore
+import dev.houwert.argus.core.stores.reviseSoul
 import dev.houwert.argus.core.teammates.TeammateText
 import dev.houwert.argus.core.teammates.symbol
 import dev.houwert.argus.core.teammates.teammateAvatar
@@ -35,6 +37,8 @@ import dev.houwert.argus.kit.protocol.generated.UpdateTeammateInput
 import dev.houwert.argus.kit.protocol.generated.UpdateTeammateInputScope
 import dev.houwert.argus.ui.automations.AutomationFieldsText
 import dev.houwert.argus.ui.automations.ReportMarkdown
+import dev.houwert.argus.ui.automations.ReviseTextCopy
+import dev.houwert.argus.ui.automations.ReviseTextSheet
 import dev.houwert.argus.ui.automations.SwitchRow
 import dev.houwert.argus.ui.components.Badge
 import dev.houwert.argus.ui.components.Banner
@@ -42,6 +46,7 @@ import dev.houwert.argus.ui.components.Btn
 import dev.houwert.argus.ui.components.ButtonTone
 import dev.houwert.argus.ui.components.Card
 import dev.houwert.argus.ui.components.Field
+import dev.houwert.argus.ui.icons.Icon
 import dev.houwert.argus.ui.components.Loading
 import dev.houwert.argus.ui.components.MenuChip
 import dev.houwert.argus.ui.components.MutedText
@@ -129,7 +134,7 @@ fun TeammateProfileScreen(id: String, label: String) {
         current == null || detail == null -> Loading("Reading ${label.ifBlank { "the teammate" }}")
         !access.hasControl -> ReadOnlyProfile(current)
         else -> {
-          ProfileFields(current) { draft = it }
+          ProfileFields(current, reviseError = error, revise = { store.reviseSoul(current.name, current.soul, it) }) { draft = it }
           Btn("Delete teammate", tone = ButtonTone.Danger, small = true) { confirmingDelete = true }
         }
       }
@@ -154,7 +159,13 @@ fun TeammateProfileScreen(id: String, label: String) {
 
 /** Identity first, then the soul, then what it may touch. */
 @Composable
-private fun ProfileFields(draft: ProfileDraft, onChange: (ProfileDraft) -> Unit) {
+private fun ProfileFields(
+  draft: ProfileDraft,
+  reviseError: String?,
+  revise: suspend (instruction: String) -> String?,
+  onChange: (ProfileDraft) -> Unit,
+) {
+  var revising by rememberSaveable { mutableStateOf(false) }
   Field("Identity") {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
       TeammateAvatar(draft.name, draft.color, teammateAvatar(draft.symbol), size = 48.dp)
@@ -170,6 +181,13 @@ private fun ProfileFields(draft: ProfileDraft, onChange: (ProfileDraft) -> Unit)
   Field("Symbol") { TeammateSymbolPicker(draft.name, draft.color, draft.symbol, { onChange(draft.copy(symbol = it)) }) }
   Field("Soul", caption = "Its persona and standing instructions, in Markdown. Every duty and conversation reads it.") {
     ThemedTextField(draft.soul, { onChange(draft.copy(soul = it)) }, "Markdown", multiline = true, lines = 8..30, mono = true)
+    Btn("Rewrite with Claude", tone = ButtonTone.Secondary, small = true, hugs = true, icon = Icon.draft, enabled = draft.soul.isNotBlank()) {
+      revising = true
+    }
+  }
+  if (revising) {
+    // The rewrite lands in the draft; nothing is saved until Save.
+    ReviseTextSheet(ReviseTextCopy.soul, reviseError, revise, onApply = { onChange(draft.copy(soul = it)) }, onDismiss = { revising = false })
   }
   Field(
     "Autonomy",

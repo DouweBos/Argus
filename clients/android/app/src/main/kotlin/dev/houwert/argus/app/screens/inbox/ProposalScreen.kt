@@ -93,6 +93,7 @@ fun DecidableProposalCard(proposal: RemoteProposal, modifier: Modifier = Modifie
   proposals.requesting.collectAsState().value
   proposals.starting.collectAsState().value
   val id = proposal.id
+  val origin = ProposalOriginLink.of(proposal)
   fun act(action: suspend () -> Unit) {
     scope.launch {
       action()
@@ -119,8 +120,9 @@ fun DecidableProposalCard(proposal: RemoteProposal, modifier: Modifier = Modifie
       resolve = { note -> act { proposals.resolve(id, note) } },
       dismiss = { reason -> act { proposals.dismiss(id, reason) } },
       cleanup = { act { proposals.performCleanup(id) } },
-      openRun = if (inRun) null else proposal.runId?.let { runId -> { router.push(Route.Run(runId, proposal.automationName)) } },
+      openRun = if (inRun) null else origin?.let { link -> { router.push(link.route) } },
       openDetails = if (inRun) ({ router.push(Route.Proposal(id)) }) else null,
+      openRunLabel = origin?.label ?: "View run",
     ),
   )
 }

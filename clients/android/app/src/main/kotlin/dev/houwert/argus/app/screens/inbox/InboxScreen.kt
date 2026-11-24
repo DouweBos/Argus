@@ -184,6 +184,7 @@ fun InboxScreen() {
             )
           }
           items(items.pending, key = { it.id }) { proposal ->
+            val origin = ProposalOriginLink.of(proposal)
             ProposalCard(
               ProposalCardContent.from(proposal, projects.firstOrNull { it.name == proposal.project }?.repoRoot),
               busy = proposal.id in busy,
@@ -199,8 +200,9 @@ fun InboxScreen() {
                 resolve = { note -> scope.launch { proposals.resolve(proposal.id, note) } },
                 dismiss = { reason -> scope.launch { proposals.dismiss(proposal.id, reason) } },
                 cleanup = { scope.launch { proposals.performCleanup(proposal.id) } },
-                openRun = proposal.runId?.let { runId -> { router.push(Route.Run(runId, proposal.automationName)) } },
+                openRun = origin?.let { link -> { router.push(link.route) } },
                 openDetails = { router.push(Route.Proposal(proposal.id)) },
+                openRunLabel = origin?.label ?: "View run",
               ),
             )
           }

@@ -18,6 +18,7 @@ import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.app.navigation.Route
 import dev.houwert.argus.app.screens.AppScreen
 import dev.houwert.argus.app.screens.automations.rememberHostAccess
+import dev.houwert.argus.core.stores.promote
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomation
 import dev.houwert.argus.ui.automations.AutomationRow
 import dev.houwert.argus.ui.automations.ConfirmDialog
@@ -50,6 +51,7 @@ fun TeammateDutiesScreen(id: String, label: String) {
   val detailById by store.detailById.collectAsState()
   val error by store.error.collectAsState()
   val runs by app.automations.runs.collectAsState()
+  val automations by app.automations.automations.collectAsState()
   var removing by remember { mutableStateOf<RemoteAutomation?>(null) }
   val detail = detailById[id]
   val name = detail?.teammate?.name ?: label
@@ -59,13 +61,28 @@ fun TeammateDutiesScreen(id: String, label: String) {
     app.automations.refresh()
   }
 
-  AppScreen("Duties") {
+  AppScreen(
+    "Duties",
+    actions = {
+      if (access.hasControl) {
+        AddDutyMenu(automations.filter { it.teammateId == null }, enabled = access.ready && detail != null) { automation ->
+          scope.launch {
+            if (store.promote(automation.id, id) != null) {
+              store.loadDetail(id)
+              app.automations.refresh()
+            }
+          }
+        }
+      }
+    },
+  ) {
     Screen {
       error?.let { Banner(it, tone = Tone.Danger, onDismiss = store::clearError) }
       when {
         detail == null -> Loading("Reading $name")
         detail.duties.isEmpty() -> EmptyState(
-          Icon.automations, "No duties", body = "Give $name an automation from Argus on the Mac, and it shows here.",
+          Icon.automations, "No duties",
+          body = if (access.hasControl) "Add an automation for $name to run." else "Give $name an automation from a device with control, and it shows here.",
         )
         else -> {
           ListSection(header = "Duties") {
@@ -116,6 +133,30 @@ private fun DutyMenu(duty: RemoteAutomation, remove: () -> Unit) {
           remove()
         },
       )
+    }
+  }
+}
+
+/** Standalone automations that can become one of this teammate's duties. */
+@Composable
+private fun AddDutyMenu(standalone: List<RemoteAutomation>, enabled: Boolean, add: (RemoteAutomation) -> Unit) {
+  var open by remember { mutableStateOf(false) }
+  Box {
+    IconButton({ open = true }, enabled = enabled) { Icon(Icon.plus, "Add automation") }
+    DropdownMenu(open, { open = false }, containerColor = ArgusTheme.colors.surface) {
+      if (standalone.isEmpty()) {
+        DropdownMenuItem(text = { Text("No automations without a teammate") }, onClick = {}, enabled = false)
+      }
+      for (automation in standalone) {
+        DropdownMenuItem(
+          text = { Text(automation.name) },
+          leadingIcon = { Icon(Icon.automations, null) },
+          onClick = {
+            open = false
+            add(automation)
+          },
+        )
+      }
     }
   }
 }
