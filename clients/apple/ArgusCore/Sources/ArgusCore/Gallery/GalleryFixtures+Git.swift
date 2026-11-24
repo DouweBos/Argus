@@ -74,8 +74,9 @@ extension GalleryFixtures {
       ArgusProtocol.Commands.GitListArchivedBranches.name: "[]",
       ArgusProtocol.Commands.GitListPinnedBranches.name: GalleryJSON.encode(["chore/node-24"]),
       ArgusProtocol.Commands.ReadArgusConfig.name: GalleryJSON.encode([
-        "setup": ["copy": [], "symlink": [], "commands": []], "terminals": [], "workspaceEnv": [], "run": [],
-        "browserPresets": [], "protectedBranches": ["main"], "releaseNotePatterns": [], "simulatorDeeplinks": [],
+        // The wire's snake_case keys: camelCase ones don't decode, and nothing would be protected.
+        "setup": ["copy": [], "symlink": [], "commands": []], "terminals": [], "workspace_env": [], "run": [],
+        "browser_presets": [], "protected_branches": ["main"], "release_note_patterns": [], "simulator_deeplinks": [],
       ]),
     ]
   }
