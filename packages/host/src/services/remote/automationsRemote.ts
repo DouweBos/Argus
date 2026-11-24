@@ -69,7 +69,7 @@ import { describeSignalSources } from "../signals/registry";
 /** How many runs a client gets when it doesn't say. */
 const DEFAULT_RUN_LIMIT = 30;
 
-function toRemoteAutomation(automation: Automation): RemoteAutomation {
+export function toRemoteAutomation(automation: Automation): RemoteAutomation {
   const { trigger } = automation;
 
   return {
@@ -83,6 +83,7 @@ function toRemoteAutomation(automation: Automation): RemoteAutomation {
     last_run_at: automation.last_run_at,
     next_run_at: automation.next_run_at,
     running: hasActiveRun(automation.id),
+    teammate_id: automation.teammate_id,
   };
 }
 
@@ -327,7 +328,13 @@ export function createRemoteAutomation(input: AutomationInput): {
   automation: RemoteAutomation;
   detail: RemoteAutomationDetail;
 } {
-  const create: CreateAutomationInput = {
+  return both(createAutomation(toCreateAutomationInput(input)));
+}
+
+export function toCreateAutomationInput(
+  input: AutomationInput,
+): CreateAutomationInput {
+  return {
     name: input.name,
     description: input.description,
     enabled: input.enabled,
@@ -343,8 +350,6 @@ export function createRemoteAutomation(input: AutomationInput): {
     claude_account_id: input.claude_account_id ?? null,
     report_slack_channel: input.report_slack_channel ?? null,
   };
-
-  return both(createAutomation(create));
 }
 
 /**

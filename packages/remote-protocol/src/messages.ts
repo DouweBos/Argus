@@ -109,6 +109,13 @@ import {
   SlackTriggerMatch,
 } from "./models/slack";
 import {
+  CreateTeammateInput,
+  Teammate,
+  TeammateSummary,
+  TeammateTemplate,
+  UpdateTeammateInput,
+} from "./models/teammates";
+import {
   ClaudeAccountLimits,
   ClaudeUsageLimits,
   ClaudeUsageSummary,
@@ -176,6 +183,12 @@ export const AutomationInput = z.object({
   guardrails: RemoteAutomationGuardrails,
 });
 export type AutomationInput = z.infer<typeof AutomationInput>;
+
+/** A gallery template as a phone shows it: its duties by name only. */
+export const RemoteTeammateTemplate = TeammateTemplate.omit({
+  duties: true,
+}).extend({ duty_names: z.array(z.string()) });
+export type RemoteTeammateTemplate = z.infer<typeof RemoteTeammateTemplate>;
 
 // --- Request params per method ---------------------------------------------
 
@@ -868,6 +881,49 @@ export const MethodParams = {
     automation_id: z.string(),
     name: z.string(),
   }),
+  "teammates.list": z.object({}),
+  "teammates.get": z.object({ teammate_id: z.string() }),
+  "teammates.templates": z.object({}),
+  "teammates.memories": z.object({ teammate_id: z.string() }),
+  "teammates.create": z.object({ input: CreateTeammateInput }),
+  /** Only the fields sent are touched. */
+  "teammates.update": z.object({
+    teammate_id: z.string(),
+    patch: UpdateTeammateInput,
+  }),
+  /** `keep_duties` leaves its automations behind, paused and standalone. */
+  "teammates.delete": z.object({
+    teammate_id: z.string(),
+    keep_duties: z.boolean(),
+  }),
+  "teammates.save_soul": z.object({
+    teammate_id: z.string(),
+    soul: z.string(),
+  }),
+  "teammates.create_from_template": z.object({
+    template_id: z.string(),
+    repo_roots: z.array(z.string()),
+  }),
+  /** Null `teammate_id` makes a new teammate named after the automation. */
+  "teammates.promote": z.object({
+    automation_id: z.string(),
+    teammate_id: z.string().nullable(),
+  }),
+  "teammates.add_duty": z.object({
+    teammate_id: z.string(),
+    input: AutomationInput,
+  }),
+  "teammates.remove_duty": z.object({ automation_id: z.string() }),
+  "teammates.save_memory": z.object({
+    teammate_id: z.string(),
+    memory: RemoteAutomationMemory.omit({ updated_at: true }).extend({
+      previous_name: z.string().nullable().optional(),
+    }),
+  }),
+  "teammates.delete_memory": z.object({
+    teammate_id: z.string(),
+    name: z.string(),
+  }),
   "automations.set_enabled": z.object({
     automation_id: z.string(),
     enabled: z.boolean(),
@@ -1438,6 +1494,30 @@ export const MethodResult = {
   }),
   "automations.save_memory": z.object({ memory: RemoteAutomationMemory }),
   "automations.delete_memory": z.object({ accepted: z.boolean() }),
+  "teammates.list": z.object({ teammates: z.array(TeammateSummary) }),
+  "teammates.get": z.object({
+    teammate: Teammate,
+    /** `SOUL.md` as it is on disk. */
+    soul: z.string(),
+    duties: z.array(RemoteAutomation),
+    memory_count: z.number(),
+  }),
+  "teammates.templates": z.object({
+    templates: z.array(RemoteTeammateTemplate),
+  }),
+  "teammates.memories": z.object({
+    memories: z.array(RemoteAutomationMemory),
+  }),
+  "teammates.create": z.object({ teammate: Teammate }),
+  "teammates.update": z.object({ teammate: Teammate }),
+  "teammates.delete": z.object({ accepted: z.boolean() }),
+  "teammates.save_soul": z.object({ accepted: z.boolean() }),
+  "teammates.create_from_template": z.object({ teammate: Teammate }),
+  "teammates.promote": z.object({ teammate: Teammate }),
+  "teammates.add_duty": z.object({ automation: RemoteAutomation }),
+  "teammates.remove_duty": z.object({ automation: RemoteAutomation }),
+  "teammates.save_memory": z.object({ memory: RemoteAutomationMemory }),
+  "teammates.delete_memory": z.object({ accepted: z.boolean() }),
   "automations.set_enabled": z.object({ automation: RemoteAutomation }),
   /** The only time the secret is shown. */
   "automations.rotate_webhook": z.object({

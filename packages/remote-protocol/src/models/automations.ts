@@ -136,6 +136,8 @@ export const Automation = z.object({
   claude_account_id: z.string().nullable(),
   /** Built-in template this was seeded from, for upgrade-on-release. */
   template_id: z.string().nullable(),
+  /** The teammate this is a duty of; null for a standalone automation. */
+  teammate_id: z.string().nullable(),
   /**
    * Hash of the playbook as seeded. Still matching means nobody edited it, so
    * a new release may replace it. Null on user-made automations.
@@ -243,6 +245,7 @@ export const CreateAutomationInput = z.object({
   claude_account_id: z.string().nullish(),
   template_id: z.string().nullish(),
   report_slack_channel: SlackChannelRef.nullish(),
+  teammate_id: z.string().nullish(),
 });
 export type CreateAutomationInput = z.infer<typeof CreateAutomationInput>;
 
@@ -254,6 +257,7 @@ export const UpdateAutomationInput = Automation.omit({
   created_at: true,
   id: true,
   seeded_playbook_hash: true,
+  teammate_id: true,
   updated_at: true,
 }).partial();
 export type UpdateAutomationInput = z.infer<typeof UpdateAutomationInput>;

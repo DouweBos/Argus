@@ -2755,6 +2755,176 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class TeammatesAddDutyParams(
+    @SerialName("teammate_id") val teammateId: String,
+    @SerialName("input") val input: AutomationInput,
+  )
+
+  @Serializable
+  data class TeammatesAddDutyResult(
+    @SerialName("automation") val automation: RemoteAutomation,
+  )
+
+  @Serializable
+  data class TeammatesCreateParams(
+    @SerialName("input") val input: CreateTeammateInput,
+  )
+
+  @Serializable
+  data class TeammatesCreateResult(
+    @SerialName("teammate") val teammate: Teammate,
+  )
+
+  @Serializable
+  data class TeammatesCreateFromTemplateParams(
+    @SerialName("template_id") val templateId: String,
+    @SerialName("repo_roots") val repoRoots: List<String>,
+  )
+
+  @Serializable
+  data class TeammatesCreateFromTemplateResult(
+    @SerialName("teammate") val teammate: Teammate,
+  )
+
+  @Serializable
+  data class TeammatesDeleteParams(
+    @SerialName("teammate_id") val teammateId: String,
+    @SerialName("keep_duties") val keepDuties: Boolean,
+  )
+
+  @Serializable
+  data class TeammatesDeleteResult(
+    @SerialName("accepted") val accepted: Boolean,
+  )
+
+  @Serializable
+  data class TeammatesDeleteMemoryParams(
+    @SerialName("teammate_id") val teammateId: String,
+    @SerialName("name") val name: String,
+  )
+
+  @Serializable
+  data class TeammatesDeleteMemoryResult(
+    @SerialName("accepted") val accepted: Boolean,
+  )
+
+  @Serializable
+  data class TeammatesGetParams(
+    @SerialName("teammate_id") val teammateId: String,
+  )
+
+  @Serializable
+  data class TeammatesGetResult(
+    @SerialName("teammate") val teammate: Teammate,
+    @SerialName("soul") val soul: String,
+    @SerialName("duties") val duties: List<RemoteAutomation>,
+    @SerialName("memory_count") val memoryCount: Double,
+  )
+
+  @Serializable
+  class TeammatesListParams
+
+  @Serializable
+  data class TeammatesListResult(
+    @SerialName("teammates") val teammates: List<TeammateSummary>,
+  )
+
+  @Serializable
+  data class TeammatesMemoriesParams(
+    @SerialName("teammate_id") val teammateId: String,
+  )
+
+  @Serializable
+  data class TeammatesMemoriesResult(
+    @SerialName("memories") val memories: List<RemoteAutomationMemory>,
+  )
+
+  @Serializable
+  data class TeammatesPromoteParams(
+    @SerialName("automation_id") val automationId: String,
+    @SerialName("teammate_id") @EncodeDefault val teammateId: String? = null,
+  )
+
+  @Serializable
+  data class TeammatesPromoteResult(
+    @SerialName("teammate") val teammate: Teammate,
+  )
+
+  @Serializable
+  data class TeammatesRemoveDutyParams(
+    @SerialName("automation_id") val automationId: String,
+  )
+
+  @Serializable
+  data class TeammatesRemoveDutyResult(
+    @SerialName("automation") val automation: RemoteAutomation,
+  )
+
+  @Serializable
+  @JvmInline
+  value class TeammatesSaveMemoryParamsMemoryType(val rawValue: String) {
+    override fun toString(): String = rawValue
+
+    companion object {
+      val user = TeammatesSaveMemoryParamsMemoryType("user")
+      val feedback = TeammatesSaveMemoryParamsMemoryType("feedback")
+      val project = TeammatesSaveMemoryParamsMemoryType("project")
+      val reference = TeammatesSaveMemoryParamsMemoryType("reference")
+      val entries: List<TeammatesSaveMemoryParamsMemoryType> = listOf(user, feedback, project, reference)
+    }
+  }
+
+  @Serializable
+  data class TeammatesSaveMemoryParamsMemory(
+    @SerialName("name") val name: String,
+    @SerialName("description") val description: String,
+    @SerialName("type") val type: TeammatesSaveMemoryParamsMemoryType,
+    @SerialName("body") val body: String,
+    @SerialName("previous_name") val previousName: String? = null,
+  )
+
+  @Serializable
+  data class TeammatesSaveMemoryParams(
+    @SerialName("teammate_id") val teammateId: String,
+    @SerialName("memory") val memory: TeammatesSaveMemoryParamsMemory,
+  )
+
+  @Serializable
+  data class TeammatesSaveMemoryResult(
+    @SerialName("memory") val memory: RemoteAutomationMemory,
+  )
+
+  @Serializable
+  data class TeammatesSaveSoulParams(
+    @SerialName("teammate_id") val teammateId: String,
+    @SerialName("soul") val soul: String,
+  )
+
+  @Serializable
+  data class TeammatesSaveSoulResult(
+    @SerialName("accepted") val accepted: Boolean,
+  )
+
+  @Serializable
+  class TeammatesTemplatesParams
+
+  @Serializable
+  data class TeammatesTemplatesResult(
+    @SerialName("templates") val templates: List<RemoteTeammateTemplate>,
+  )
+
+  @Serializable
+  data class TeammatesUpdateParams(
+    @SerialName("teammate_id") val teammateId: String,
+    @SerialName("patch") val patch: UpdateTeammateInput,
+  )
+
+  @Serializable
+  data class TeammatesUpdateResult(
+    @SerialName("teammate") val teammate: Teammate,
+  )
+
+  @Serializable
   data class TerminalsListParams(
     @SerialName("session_id") val sessionId: String,
   )
@@ -3264,6 +3434,34 @@ object Methods {
   object SessionsWatchPullRequest : RemoteCommand<MethodsTypes.SessionsWatchPullRequestParams, MethodsTypes.SessionsWatchPullRequestResult>("sessions.watch_pull_request", "control", serializer(), serializer())
 
   object SlackStatus : RemoteCommand<MethodsTypes.SlackStatusParams, MethodsTypes.SlackStatusResult>("slack.status", "control", serializer(), serializer())
+
+  object TeammatesAddDuty : RemoteCommand<MethodsTypes.TeammatesAddDutyParams, MethodsTypes.TeammatesAddDutyResult>("teammates.add_duty", "control", serializer(), serializer())
+
+  object TeammatesCreate : RemoteCommand<MethodsTypes.TeammatesCreateParams, MethodsTypes.TeammatesCreateResult>("teammates.create", "control", serializer(), serializer())
+
+  object TeammatesCreateFromTemplate : RemoteCommand<MethodsTypes.TeammatesCreateFromTemplateParams, MethodsTypes.TeammatesCreateFromTemplateResult>("teammates.create_from_template", "control", serializer(), serializer())
+
+  object TeammatesDelete : RemoteCommand<MethodsTypes.TeammatesDeleteParams, MethodsTypes.TeammatesDeleteResult>("teammates.delete", "control", serializer(), serializer())
+
+  object TeammatesDeleteMemory : RemoteCommand<MethodsTypes.TeammatesDeleteMemoryParams, MethodsTypes.TeammatesDeleteMemoryResult>("teammates.delete_memory", "control", serializer(), serializer())
+
+  object TeammatesGet : RemoteCommand<MethodsTypes.TeammatesGetParams, MethodsTypes.TeammatesGetResult>("teammates.get", "control", serializer(), serializer())
+
+  object TeammatesList : RemoteCommand<MethodsTypes.TeammatesListParams, MethodsTypes.TeammatesListResult>("teammates.list", "control", serializer(), serializer())
+
+  object TeammatesMemories : RemoteCommand<MethodsTypes.TeammatesMemoriesParams, MethodsTypes.TeammatesMemoriesResult>("teammates.memories", "control", serializer(), serializer())
+
+  object TeammatesPromote : RemoteCommand<MethodsTypes.TeammatesPromoteParams, MethodsTypes.TeammatesPromoteResult>("teammates.promote", "control", serializer(), serializer())
+
+  object TeammatesRemoveDuty : RemoteCommand<MethodsTypes.TeammatesRemoveDutyParams, MethodsTypes.TeammatesRemoveDutyResult>("teammates.remove_duty", "control", serializer(), serializer())
+
+  object TeammatesSaveMemory : RemoteCommand<MethodsTypes.TeammatesSaveMemoryParams, MethodsTypes.TeammatesSaveMemoryResult>("teammates.save_memory", "control", serializer(), serializer())
+
+  object TeammatesSaveSoul : RemoteCommand<MethodsTypes.TeammatesSaveSoulParams, MethodsTypes.TeammatesSaveSoulResult>("teammates.save_soul", "control", serializer(), serializer())
+
+  object TeammatesTemplates : RemoteCommand<MethodsTypes.TeammatesTemplatesParams, MethodsTypes.TeammatesTemplatesResult>("teammates.templates", "control", serializer(), serializer())
+
+  object TeammatesUpdate : RemoteCommand<MethodsTypes.TeammatesUpdateParams, MethodsTypes.TeammatesUpdateResult>("teammates.update", "control", serializer(), serializer())
 
   object TerminalsList : RemoteCommand<MethodsTypes.TerminalsListParams, MethodsTypes.TerminalsListResult>("terminals.list", "control", serializer(), serializer())
 

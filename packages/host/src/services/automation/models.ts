@@ -157,6 +157,11 @@ export interface Automation {
   /** Built-in template this was seeded from, for upgrade-on-release. */
   template_id: string | null;
   /**
+   * The teammate this is a duty of, or null for a standalone automation. A
+   * duty shares its teammate's memory and runs under its autonomy ceiling.
+   */
+  teammate_id: string | null;
+  /**
    * Hash of the playbook as seeded. Still matching means nobody edited it, so
    * a new release may replace it. Null on user-made automations.
    */
@@ -270,6 +275,8 @@ export interface CreateAutomationInput {
   claude_account_id?: string | null;
   template_id?: string | null;
   report_slack_channel?: SlackChannelRef | null;
+  /** Set by the teammate service only; ownership moves memory with it. */
+  teammate_id?: string | null;
 }
 
 /**
@@ -278,7 +285,10 @@ export interface CreateAutomationInput {
  * playbook pass itself off as stock and be overwritten by the next release.
  */
 export type UpdateAutomationInput = Partial<
-  Omit<Automation, "created_at" | "id" | "seeded_playbook_hash" | "updated_at">
+  Omit<
+    Automation,
+    "created_at" | "id" | "seeded_playbook_hash" | "teammate_id" | "updated_at"
+  >
 >;
 
 /** Same kinds Claude Code's own memory uses. */

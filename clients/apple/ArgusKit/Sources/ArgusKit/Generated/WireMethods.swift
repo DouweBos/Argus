@@ -8725,6 +8725,562 @@ extension ArgusProtocol {
       }
     }
 
+    public struct TeammatesAddDutyParams: Codable, Sendable {
+      public var teammateId: String
+      public var input: AutomationInput
+
+      enum CodingKeys: String, CodingKey {
+        case teammateId = "teammate_id"
+        case input = "input"
+      }
+
+      public init(teammateId: String, input: AutomationInput) {
+        self.teammateId = teammateId
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammateId, forKey: .teammateId)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
+    public struct TeammatesAddDutyResult: Codable, Sendable {
+      public var automation: RemoteAutomation
+
+      enum CodingKeys: String, CodingKey {
+        case automation = "automation"
+      }
+
+      public init(automation: RemoteAutomation) {
+        self.automation = automation
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automation, forKey: .automation)
+      }
+    }
+
+    public struct TeammatesCreateParams: Codable, Sendable {
+      public var input: CreateTeammateInput
+
+      enum CodingKeys: String, CodingKey {
+        case input = "input"
+      }
+
+      public init(input: CreateTeammateInput) {
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
+    public struct TeammatesCreateResult: Codable, Sendable {
+      public var teammate: Teammate
+
+      enum CodingKeys: String, CodingKey {
+        case teammate = "teammate"
+      }
+
+      public init(teammate: Teammate) {
+        self.teammate = teammate
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammate, forKey: .teammate)
+      }
+    }
+
+    public struct TeammatesCreateFromTemplateParams: Codable, Sendable {
+      public var templateId: String
+      public var repoRoots: [String]
+
+      enum CodingKeys: String, CodingKey {
+        case templateId = "template_id"
+        case repoRoots = "repo_roots"
+      }
+
+      public init(templateId: String, repoRoots: [String]) {
+        self.templateId = templateId
+        self.repoRoots = repoRoots
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(templateId, forKey: .templateId)
+        try c.encode(repoRoots, forKey: .repoRoots)
+      }
+    }
+
+    public struct TeammatesCreateFromTemplateResult: Codable, Sendable {
+      public var teammate: Teammate
+
+      enum CodingKeys: String, CodingKey {
+        case teammate = "teammate"
+      }
+
+      public init(teammate: Teammate) {
+        self.teammate = teammate
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammate, forKey: .teammate)
+      }
+    }
+
+    public struct TeammatesDeleteParams: Codable, Sendable {
+      public var teammateId: String
+      public var keepDuties: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case teammateId = "teammate_id"
+        case keepDuties = "keep_duties"
+      }
+
+      public init(teammateId: String, keepDuties: Bool) {
+        self.teammateId = teammateId
+        self.keepDuties = keepDuties
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammateId, forKey: .teammateId)
+        try c.encode(keepDuties, forKey: .keepDuties)
+      }
+    }
+
+    public struct TeammatesDeleteResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct TeammatesDeleteMemoryParams: Codable, Sendable {
+      public var teammateId: String
+      public var name: String
+
+      enum CodingKeys: String, CodingKey {
+        case teammateId = "teammate_id"
+        case name = "name"
+      }
+
+      public init(teammateId: String, name: String) {
+        self.teammateId = teammateId
+        self.name = name
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammateId, forKey: .teammateId)
+        try c.encode(name, forKey: .name)
+      }
+    }
+
+    public struct TeammatesDeleteMemoryResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct TeammatesGetParams: Codable, Sendable {
+      public var teammateId: String
+
+      enum CodingKeys: String, CodingKey {
+        case teammateId = "teammate_id"
+      }
+
+      public init(teammateId: String) {
+        self.teammateId = teammateId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammateId, forKey: .teammateId)
+      }
+    }
+
+    public struct TeammatesGetResult: Codable, Sendable {
+      public var teammate: Teammate
+      public var soul: String
+      public var duties: [RemoteAutomation]
+      public var memoryCount: Double
+
+      enum CodingKeys: String, CodingKey {
+        case teammate = "teammate"
+        case soul = "soul"
+        case duties = "duties"
+        case memoryCount = "memory_count"
+      }
+
+      public init(teammate: Teammate, soul: String, duties: [RemoteAutomation], memoryCount: Double) {
+        self.teammate = teammate
+        self.soul = soul
+        self.duties = duties
+        self.memoryCount = memoryCount
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammate, forKey: .teammate)
+        try c.encode(soul, forKey: .soul)
+        try c.encode(duties, forKey: .duties)
+        try c.encode(memoryCount, forKey: .memoryCount)
+      }
+    }
+
+    public struct TeammatesListParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct TeammatesListResult: Codable, Sendable {
+      public var teammates: [TeammateSummary]
+
+      enum CodingKeys: String, CodingKey {
+        case teammates = "teammates"
+      }
+
+      public init(teammates: [TeammateSummary]) {
+        self.teammates = teammates
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammates, forKey: .teammates)
+      }
+    }
+
+    public struct TeammatesMemoriesParams: Codable, Sendable {
+      public var teammateId: String
+
+      enum CodingKeys: String, CodingKey {
+        case teammateId = "teammate_id"
+      }
+
+      public init(teammateId: String) {
+        self.teammateId = teammateId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammateId, forKey: .teammateId)
+      }
+    }
+
+    public struct TeammatesMemoriesResult: Codable, Sendable {
+      public var memories: [RemoteAutomationMemory]
+
+      enum CodingKeys: String, CodingKey {
+        case memories = "memories"
+      }
+
+      public init(memories: [RemoteAutomationMemory]) {
+        self.memories = memories
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(memories, forKey: .memories)
+      }
+    }
+
+    public struct TeammatesPromoteParams: Codable, Sendable {
+      public var automationId: String
+      public var teammateId: String?
+
+      enum CodingKeys: String, CodingKey {
+        case automationId = "automation_id"
+        case teammateId = "teammate_id"
+      }
+
+      public init(automationId: String, teammateId: String? = nil) {
+        self.automationId = automationId
+        self.teammateId = teammateId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automationId, forKey: .automationId)
+        try c.encode(teammateId, forKey: .teammateId)
+      }
+    }
+
+    public struct TeammatesPromoteResult: Codable, Sendable {
+      public var teammate: Teammate
+
+      enum CodingKeys: String, CodingKey {
+        case teammate = "teammate"
+      }
+
+      public init(teammate: Teammate) {
+        self.teammate = teammate
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammate, forKey: .teammate)
+      }
+    }
+
+    public struct TeammatesRemoveDutyParams: Codable, Sendable {
+      public var automationId: String
+
+      enum CodingKeys: String, CodingKey {
+        case automationId = "automation_id"
+      }
+
+      public init(automationId: String) {
+        self.automationId = automationId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automationId, forKey: .automationId)
+      }
+    }
+
+    public struct TeammatesRemoveDutyResult: Codable, Sendable {
+      public var automation: RemoteAutomation
+
+      enum CodingKeys: String, CodingKey {
+        case automation = "automation"
+      }
+
+      public init(automation: RemoteAutomation) {
+        self.automation = automation
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automation, forKey: .automation)
+      }
+    }
+
+    public struct TeammatesSaveMemoryParamsMemoryType: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let user = TeammatesSaveMemoryParamsMemoryType(rawValue: "user")
+      public static let feedback = TeammatesSaveMemoryParamsMemoryType(rawValue: "feedback")
+      public static let project = TeammatesSaveMemoryParamsMemoryType(rawValue: "project")
+      public static let reference = TeammatesSaveMemoryParamsMemoryType(rawValue: "reference")
+    }
+
+    public struct TeammatesSaveMemoryParamsMemory: Codable, Sendable {
+      public var name: String
+      public var description: String
+      public var type: TeammatesSaveMemoryParamsMemoryType
+      public var body: String
+      public var previousName: String?
+
+      enum CodingKeys: String, CodingKey {
+        case name = "name"
+        case description = "description"
+        case type = "type"
+        case body = "body"
+        case previousName = "previous_name"
+      }
+
+      public init(name: String, description: String, type: TeammatesSaveMemoryParamsMemoryType, body: String, previousName: String? = nil) {
+        self.name = name
+        self.description = description
+        self.type = type
+        self.body = body
+        self.previousName = previousName
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(name, forKey: .name)
+        try c.encode(description, forKey: .description)
+        try c.encode(type, forKey: .type)
+        try c.encode(body, forKey: .body)
+        try c.encodeIfPresent(previousName, forKey: .previousName)
+      }
+    }
+
+    public struct TeammatesSaveMemoryParams: Codable, Sendable {
+      public var teammateId: String
+      public var memory: TeammatesSaveMemoryParamsMemory
+
+      enum CodingKeys: String, CodingKey {
+        case teammateId = "teammate_id"
+        case memory = "memory"
+      }
+
+      public init(teammateId: String, memory: TeammatesSaveMemoryParamsMemory) {
+        self.teammateId = teammateId
+        self.memory = memory
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammateId, forKey: .teammateId)
+        try c.encode(memory, forKey: .memory)
+      }
+    }
+
+    public struct TeammatesSaveMemoryResult: Codable, Sendable {
+      public var memory: RemoteAutomationMemory
+
+      enum CodingKeys: String, CodingKey {
+        case memory = "memory"
+      }
+
+      public init(memory: RemoteAutomationMemory) {
+        self.memory = memory
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(memory, forKey: .memory)
+      }
+    }
+
+    public struct TeammatesSaveSoulParams: Codable, Sendable {
+      public var teammateId: String
+      public var soul: String
+
+      enum CodingKeys: String, CodingKey {
+        case teammateId = "teammate_id"
+        case soul = "soul"
+      }
+
+      public init(teammateId: String, soul: String) {
+        self.teammateId = teammateId
+        self.soul = soul
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammateId, forKey: .teammateId)
+        try c.encode(soul, forKey: .soul)
+      }
+    }
+
+    public struct TeammatesSaveSoulResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct TeammatesTemplatesParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct TeammatesTemplatesResult: Codable, Sendable {
+      public var templates: [RemoteTeammateTemplate]
+
+      enum CodingKeys: String, CodingKey {
+        case templates = "templates"
+      }
+
+      public init(templates: [RemoteTeammateTemplate]) {
+        self.templates = templates
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(templates, forKey: .templates)
+      }
+    }
+
+    public struct TeammatesUpdateParams: Codable, Sendable {
+      public var teammateId: String
+      public var patch: UpdateTeammateInput
+
+      enum CodingKeys: String, CodingKey {
+        case teammateId = "teammate_id"
+        case patch = "patch"
+      }
+
+      public init(teammateId: String, patch: UpdateTeammateInput) {
+        self.teammateId = teammateId
+        self.patch = patch
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammateId, forKey: .teammateId)
+        try c.encode(patch, forKey: .patch)
+      }
+    }
+
+    public struct TeammatesUpdateResult: Codable, Sendable {
+      public var teammate: Teammate
+
+      enum CodingKeys: String, CodingKey {
+        case teammate = "teammate"
+      }
+
+      public init(teammate: Teammate) {
+        self.teammate = teammate
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teammate, forKey: .teammate)
+      }
+    }
+
     public struct TerminalsListParams: Codable, Sendable {
       public var sessionId: String
 
@@ -10264,6 +10820,90 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SlackStatusParams
       public typealias Result = ArgusProtocol.MethodsTypes.SlackStatusResult
       public static let name = "slack.status"
+    }
+
+    public enum TeammatesAddDuty: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesAddDutyParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesAddDutyResult
+      public static let name = "teammates.add_duty"
+    }
+
+    public enum TeammatesCreate: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesCreateParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesCreateResult
+      public static let name = "teammates.create"
+    }
+
+    public enum TeammatesCreateFromTemplate: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesCreateFromTemplateParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesCreateFromTemplateResult
+      public static let name = "teammates.create_from_template"
+    }
+
+    public enum TeammatesDelete: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesDeleteParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesDeleteResult
+      public static let name = "teammates.delete"
+    }
+
+    public enum TeammatesDeleteMemory: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesDeleteMemoryParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesDeleteMemoryResult
+      public static let name = "teammates.delete_memory"
+    }
+
+    public enum TeammatesGet: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesGetParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesGetResult
+      public static let name = "teammates.get"
+    }
+
+    public enum TeammatesList: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesListParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesListResult
+      public static let name = "teammates.list"
+    }
+
+    public enum TeammatesMemories: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesMemoriesParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesMemoriesResult
+      public static let name = "teammates.memories"
+    }
+
+    public enum TeammatesPromote: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesPromoteParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesPromoteResult
+      public static let name = "teammates.promote"
+    }
+
+    public enum TeammatesRemoveDuty: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesRemoveDutyParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesRemoveDutyResult
+      public static let name = "teammates.remove_duty"
+    }
+
+    public enum TeammatesSaveMemory: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesSaveMemoryParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesSaveMemoryResult
+      public static let name = "teammates.save_memory"
+    }
+
+    public enum TeammatesSaveSoul: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesSaveSoulParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesSaveSoulResult
+      public static let name = "teammates.save_soul"
+    }
+
+    public enum TeammatesTemplates: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesTemplatesParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesTemplatesResult
+      public static let name = "teammates.templates"
+    }
+
+    public enum TeammatesUpdate: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TeammatesUpdateParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TeammatesUpdateResult
+      public static let name = "teammates.update"
     }
 
     public enum TerminalsList: RemoteCommand {

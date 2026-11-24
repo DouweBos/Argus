@@ -800,6 +800,7 @@ data class Automation(
   @SerialName("runner") @EncodeDefault val runner: String? = null,
   @SerialName("claude_account_id") @EncodeDefault val claudeAccountId: String? = null,
   @SerialName("template_id") @EncodeDefault val templateId: String? = null,
+  @SerialName("teammate_id") @EncodeDefault val teammateId: String? = null,
   @SerialName("seeded_playbook_hash") @EncodeDefault val seededPlaybookHash: String? = null,
   @SerialName("created_at") val createdAt: Double,
   @SerialName("updated_at") val updatedAt: Double,
@@ -2228,6 +2229,7 @@ data class CreateAutomationInput(
   @SerialName("claude_account_id") val claudeAccountId: String? = null,
   @SerialName("template_id") val templateId: String? = null,
   @SerialName("report_slack_channel") val reportSlackChannel: SlackChannelRef? = null,
+  @SerialName("teammate_id") val teammateId: String? = null,
 )
 
 @Serializable
@@ -2256,6 +2258,41 @@ data class CreateProjectFromBlueprintInput(
   @SerialName("name") val name: String,
   @SerialName("description") val description: String,
   @SerialName("overrides") val overrides: BlueprintOverrides? = null,
+)
+
+@Serializable
+data class CreateTeammateInputScope(
+  @SerialName("repo_roots") val repoRoots: List<String>,
+)
+
+@Serializable
+data class CreateTeammateInputGuardrails(
+  @SerialName("confidence_threshold") val confidenceThreshold: Double? = null,
+  @SerialName("max_concurrent_sessions") val maxConcurrentSessions: Double? = null,
+  @SerialName("max_files_changed") val maxFilesChanged: Double? = null,
+  @SerialName("max_cost_usd_per_run") val maxCostUsdPerRun: Double? = null,
+  @SerialName("max_run_minutes") val maxRunMinutes: Double? = null,
+  @SerialName("path_denylist") val pathDenylist: List<String>? = null,
+  @SerialName("require_clean_ci") val requireCleanCi: Boolean? = null,
+  @SerialName("retry_other_accounts") val retryOtherAccounts: Boolean? = null,
+)
+
+@Serializable
+data class CreateTeammateInput(
+  @SerialName("name") val name: String,
+  @SerialName("handle") val handle: String? = null,
+  @SerialName("tagline") val tagline: String? = null,
+  @SerialName("color") val color: TeammateColor? = null,
+  @SerialName("avatar") val avatar: TeammateAvatar? = null,
+  @SerialName("enabled") val enabled: Boolean? = null,
+  @SerialName("scope") val scope: CreateTeammateInputScope? = null,
+  @SerialName("source_ids") val sourceIds: List<String>? = null,
+  @SerialName("autonomy") val autonomy: AutonomyLevel? = null,
+  @SerialName("guardrails") val guardrails: CreateTeammateInputGuardrails? = null,
+  @SerialName("runner") val runner: String? = null,
+  @SerialName("model") val model: String? = null,
+  @SerialName("claude_account_id") val claudeAccountId: String? = null,
+  @SerialName("soul") val soul: String? = null,
 )
 
 @Serializable
@@ -5236,6 +5273,7 @@ data class RemoteAutomation(
   @SerialName("last_run_at") @EncodeDefault val lastRunAt: Double? = null,
   @SerialName("next_run_at") @EncodeDefault val nextRunAt: Double? = null,
   @SerialName("running") val running: Boolean,
+  @SerialName("teammate_id") val teammateId: String? = null,
 )
 
 @Serializable
@@ -6456,6 +6494,35 @@ data class RemoteTask(
 )
 
 @Serializable
+@JvmInline
+value class RemoteTeammateTemplateRequiresItem(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val github = RemoteTeammateTemplateRequiresItem("github")
+    val gitlab = RemoteTeammateTemplateRequiresItem("gitlab")
+    val linear = RemoteTeammateTemplateRequiresItem("linear")
+    val slack = RemoteTeammateTemplateRequiresItem("slack")
+    val entries: List<RemoteTeammateTemplateRequiresItem> = listOf(github, gitlab, linear, slack)
+  }
+}
+
+@Serializable
+data class RemoteTeammateTemplate(
+  @SerialName("id") val id: String,
+  @SerialName("name") val name: String,
+  @SerialName("handle") val handle: String,
+  @SerialName("tagline") val tagline: String,
+  @SerialName("color") val color: TeammateColor,
+  @SerialName("avatar") val avatar: TeammateAvatar,
+  @SerialName("soul") val soul: String,
+  @SerialName("autonomy") val autonomy: AutonomyLevel,
+  @SerialName("source_ids") val sourceIds: List<String>,
+  @SerialName("requires") val requires: List<RemoteTeammateTemplateRequiresItem>,
+  @SerialName("duty_names") val dutyNames: List<String>,
+)
+
+@Serializable
 data class RemoteTerminal(
   @SerialName("id") val id: String,
   @SerialName("title") @EncodeDefault val title: String? = null,
@@ -7437,6 +7504,150 @@ data class SubscribeEnvelope(
 )
 
 @Serializable
+data class TeammateScope(
+  @SerialName("repo_roots") val repoRoots: List<String>,
+)
+
+@Serializable
+data class Teammate(
+  @SerialName("id") val id: String,
+  @SerialName("name") val name: String,
+  @SerialName("handle") val handle: String,
+  @SerialName("tagline") val tagline: String,
+  @SerialName("color") val color: TeammateColor,
+  @SerialName("avatar") val avatar: TeammateAvatar,
+  @SerialName("enabled") val enabled: Boolean,
+  @SerialName("scope") val scope: TeammateScope,
+  @SerialName("source_ids") val sourceIds: List<String>,
+  @SerialName("autonomy") @EncodeDefault val autonomy: AutonomyLevel? = null,
+  @SerialName("guardrails") val guardrails: AutomationGuardrails,
+  @SerialName("runner") @EncodeDefault val runner: String? = null,
+  @SerialName("model") @EncodeDefault val model: String? = null,
+  @SerialName("claude_account_id") @EncodeDefault val claudeAccountId: String? = null,
+  @SerialName("template_id") @EncodeDefault val templateId: String? = null,
+  @SerialName("seeded_soul_hash") @EncodeDefault val seededSoulHash: String? = null,
+  @SerialName("created_at") val createdAt: Double,
+  @SerialName("updated_at") val updatedAt: Double,
+)
+
+@Serializable
+data class TeammateAvatarInitials(
+  @SerialName("kind") val kind: String,
+)
+
+@Serializable
+data class TeammateAvatarSymbol(
+  @SerialName("kind") val kind: String,
+  @SerialName("symbol") val symbol: TeammateSymbol,
+)
+
+@Serializable(with = TeammateAvatar.Serializer::class)
+sealed interface TeammateAvatar {
+  data class Initials(val value: TeammateAvatarInitials) : TeammateAvatar
+  data class Symbol(val value: TeammateAvatarSymbol) : TeammateAvatar
+  data class Unknown(val value: JsonElement) : TeammateAvatar
+
+  object Serializer : TaggedUnionSerializer<TeammateAvatar>("TeammateAvatar", "kind") {
+    override fun decode(json: Json, tag: String?, element: JsonElement): TeammateAvatar = when (tag) {
+      "initials" -> Initials(json.decodeFromJsonElement(element))
+      "symbol" -> Symbol(json.decodeFromJsonElement(element))
+      else -> Unknown(element)
+    }
+
+    override fun encode(json: Json, value: TeammateAvatar): JsonElement = when (value) {
+      is Initials -> json.encodeToJsonElement(value.value)
+      is Symbol -> json.encodeToJsonElement(value.value)
+      is Unknown -> value.value
+    }
+  }
+}
+
+@Serializable
+@JvmInline
+value class TeammateColor(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val blue = TeammateColor("blue")
+    val green = TeammateColor("green")
+    val orange = TeammateColor("orange")
+    val pink = TeammateColor("pink")
+    val purple = TeammateColor("purple")
+    val red = TeammateColor("red")
+    val teal = TeammateColor("teal")
+    val yellow = TeammateColor("yellow")
+    val entries: List<TeammateColor> = listOf(blue, green, orange, pink, purple, red, teal, yellow)
+  }
+}
+
+@Serializable
+data class TeammateDetail(
+  @SerialName("teammate") val teammate: Teammate,
+  @SerialName("soul") val soul: String,
+  @SerialName("duties") val duties: List<Automation>,
+  @SerialName("memory_count") val memoryCount: Double,
+)
+
+@Serializable
+data class TeammateSummary(
+  @SerialName("teammate") val teammate: Teammate,
+  @SerialName("duty_count") val dutyCount: Double,
+  @SerialName("last_run_at") @EncodeDefault val lastRunAt: Double? = null,
+  @SerialName("has_unread_report") val hasUnreadReport: Boolean,
+)
+
+@Serializable
+@JvmInline
+value class TeammateSymbol(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val wrench = TeammateSymbol("wrench")
+    val eye = TeammateSymbol("eye")
+    val tray = TeammateSymbol("tray")
+    val shippingbox = TeammateSymbol("shippingbox")
+    val doc = TeammateSymbol("doc")
+    val ant = TeammateSymbol("ant")
+    val calendar = TeammateSymbol("calendar")
+    val leaf = TeammateSymbol("leaf")
+    val sparkles = TeammateSymbol("sparkles")
+    val bolt = TeammateSymbol("bolt")
+    val magnifyingglass = TeammateSymbol("magnifyingglass")
+    val person = TeammateSymbol("person")
+    val entries: List<TeammateSymbol> = listOf(wrench, eye, tray, shippingbox, doc, ant, calendar, leaf, sparkles, bolt, magnifyingglass, person)
+  }
+}
+
+@Serializable
+@JvmInline
+value class TeammateTemplateRequiresItem(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val github = TeammateTemplateRequiresItem("github")
+    val gitlab = TeammateTemplateRequiresItem("gitlab")
+    val linear = TeammateTemplateRequiresItem("linear")
+    val slack = TeammateTemplateRequiresItem("slack")
+    val entries: List<TeammateTemplateRequiresItem> = listOf(github, gitlab, linear, slack)
+  }
+}
+
+@Serializable
+data class TeammateTemplate(
+  @SerialName("id") val id: String,
+  @SerialName("name") val name: String,
+  @SerialName("handle") val handle: String,
+  @SerialName("tagline") val tagline: String,
+  @SerialName("color") val color: TeammateColor,
+  @SerialName("avatar") val avatar: TeammateAvatar,
+  @SerialName("soul") val soul: String,
+  @SerialName("autonomy") val autonomy: AutonomyLevel,
+  @SerialName("source_ids") val sourceIds: List<String>,
+  @SerialName("requires") val requires: List<TeammateTemplateRequiresItem>,
+  @SerialName("duties") val duties: List<CreateAutomationInput>,
+)
+
+@Serializable
 data class TeardownConfig(
   @SerialName("commands") val commands: List<String>,
 )
@@ -7548,6 +7759,28 @@ data class UpdateBlueprintInput(
   @SerialName("copy_project_settings_from") val copyProjectSettingsFrom: String? = null,
   @SerialName("instructions") val instructions: String? = null,
   @SerialName("agent") val agent: BlueprintAgent? = null,
+)
+
+@Serializable
+data class UpdateTeammateInputScope(
+  @SerialName("repo_roots") val repoRoots: List<String>,
+)
+
+@Serializable
+data class UpdateTeammateInput(
+  @SerialName("name") val name: String? = null,
+  @SerialName("handle") val handle: String? = null,
+  @SerialName("tagline") val tagline: String? = null,
+  @SerialName("color") val color: TeammateColor? = null,
+  @SerialName("avatar") val avatar: TeammateAvatar? = null,
+  @SerialName("enabled") val enabled: Boolean? = null,
+  @SerialName("scope") val scope: UpdateTeammateInputScope? = null,
+  @SerialName("source_ids") val sourceIds: List<String>? = null,
+  @SerialName("autonomy") val autonomy: AutonomyLevel? = null,
+  @SerialName("guardrails") val guardrails: AutomationGuardrails? = null,
+  @SerialName("runner") val runner: String? = null,
+  @SerialName("model") val model: String? = null,
+  @SerialName("claude_account_id") val claudeAccountId: String? = null,
 )
 
 @Serializable

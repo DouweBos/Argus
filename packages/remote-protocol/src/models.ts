@@ -834,6 +834,8 @@ export const RemoteAutomation = z.object({
   next_run_at: z.number().nullable(),
   /** Whether a run of this automation is in flight right now. */
   running: z.boolean(),
+  /** The teammate this is a duty of. Missing from older hosts. */
+  teammate_id: z.string().nullish(),
 });
 export type RemoteAutomation = z.infer<typeof RemoteAutomation>;
 

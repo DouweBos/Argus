@@ -2107,6 +2107,7 @@ extension ArgusProtocol {
     public var runner: String?
     public var claudeAccountId: String?
     public var templateId: String?
+    public var teammateId: String?
     public var seededPlaybookHash: String?
     public var createdAt: Double
     public var updatedAt: Double
@@ -2130,6 +2131,7 @@ extension ArgusProtocol {
       case runner = "runner"
       case claudeAccountId = "claude_account_id"
       case templateId = "template_id"
+      case teammateId = "teammate_id"
       case seededPlaybookHash = "seeded_playbook_hash"
       case createdAt = "created_at"
       case updatedAt = "updated_at"
@@ -2138,7 +2140,7 @@ extension ArgusProtocol {
       case reportSlackChannel = "report_slack_channel"
     }
 
-    public init(id: String, name: String, description: String, enabled: Bool, trigger: AutomationTrigger, scope: AutomationScope, sourceIds: [String], playbook: String, extraInstructions: String, autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, seededPlaybookHash: String? = nil, createdAt: Double, updatedAt: Double, lastRunAt: Double? = nil, nextRunAt: Double? = nil, reportSlackChannel: SlackChannelRef? = nil) {
+    public init(id: String, name: String, description: String, enabled: Bool, trigger: AutomationTrigger, scope: AutomationScope, sourceIds: [String], playbook: String, extraInstructions: String, autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, teammateId: String? = nil, seededPlaybookHash: String? = nil, createdAt: Double, updatedAt: Double, lastRunAt: Double? = nil, nextRunAt: Double? = nil, reportSlackChannel: SlackChannelRef? = nil) {
       self.id = id
       self.name = name
       self.description = description
@@ -2154,6 +2156,7 @@ extension ArgusProtocol {
       self.runner = runner
       self.claudeAccountId = claudeAccountId
       self.templateId = templateId
+      self.teammateId = teammateId
       self.seededPlaybookHash = seededPlaybookHash
       self.createdAt = createdAt
       self.updatedAt = updatedAt
@@ -2179,6 +2182,7 @@ extension ArgusProtocol {
       try c.encode(runner, forKey: .runner)
       try c.encode(claudeAccountId, forKey: .claudeAccountId)
       try c.encode(templateId, forKey: .templateId)
+      try c.encode(teammateId, forKey: .teammateId)
       try c.encode(seededPlaybookHash, forKey: .seededPlaybookHash)
       try c.encode(createdAt, forKey: .createdAt)
       try c.encode(updatedAt, forKey: .updatedAt)
@@ -5889,6 +5893,7 @@ extension ArgusProtocol {
     public var claudeAccountId: String?
     public var templateId: String?
     public var reportSlackChannel: SlackChannelRef?
+    public var teammateId: String?
 
     enum CodingKeys: String, CodingKey {
       case name = "name"
@@ -5906,9 +5911,10 @@ extension ArgusProtocol {
       case claudeAccountId = "claude_account_id"
       case templateId = "template_id"
       case reportSlackChannel = "report_slack_channel"
+      case teammateId = "teammate_id"
     }
 
-    public init(name: String, description: String? = nil, enabled: Bool? = nil, trigger: AutomationTrigger, scope: CreateAutomationInputScope? = nil, sourceIds: [String]? = nil, playbook: String, extraInstructions: String? = nil, autonomy: AutonomyLevel? = nil, guardrails: CreateAutomationInputGuardrails? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, reportSlackChannel: SlackChannelRef? = nil) {
+    public init(name: String, description: String? = nil, enabled: Bool? = nil, trigger: AutomationTrigger, scope: CreateAutomationInputScope? = nil, sourceIds: [String]? = nil, playbook: String, extraInstructions: String? = nil, autonomy: AutonomyLevel? = nil, guardrails: CreateAutomationInputGuardrails? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, reportSlackChannel: SlackChannelRef? = nil, teammateId: String? = nil) {
       self.name = name
       self.description = description
       self.enabled = enabled
@@ -5924,6 +5930,7 @@ extension ArgusProtocol {
       self.claudeAccountId = claudeAccountId
       self.templateId = templateId
       self.reportSlackChannel = reportSlackChannel
+      self.teammateId = teammateId
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -5943,6 +5950,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(claudeAccountId, forKey: .claudeAccountId)
       try c.encodeIfPresent(templateId, forKey: .templateId)
       try c.encodeIfPresent(reportSlackChannel, forKey: .reportSlackChannel)
+      try c.encodeIfPresent(teammateId, forKey: .teammateId)
     }
   }
 
@@ -6046,6 +6054,137 @@ extension ArgusProtocol {
       try c.encode(name, forKey: .name)
       try c.encode(description, forKey: .description)
       try c.encodeIfPresent(overrides, forKey: .overrides)
+    }
+  }
+
+  public struct CreateTeammateInputScope: Codable, Sendable {
+    public var repoRoots: [String]
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoots = "repo_roots"
+    }
+
+    public init(repoRoots: [String]) {
+      self.repoRoots = repoRoots
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoots, forKey: .repoRoots)
+    }
+  }
+
+  public struct CreateTeammateInputGuardrails: Codable, Sendable {
+    public var confidenceThreshold: Double?
+    public var maxConcurrentSessions: Double?
+    public var maxFilesChanged: Double?
+    public var maxCostUsdPerRun: Double?
+    public var maxRunMinutes: Double?
+    public var pathDenylist: [String]?
+    public var requireCleanCi: Bool?
+    public var retryOtherAccounts: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case confidenceThreshold = "confidence_threshold"
+      case maxConcurrentSessions = "max_concurrent_sessions"
+      case maxFilesChanged = "max_files_changed"
+      case maxCostUsdPerRun = "max_cost_usd_per_run"
+      case maxRunMinutes = "max_run_minutes"
+      case pathDenylist = "path_denylist"
+      case requireCleanCi = "require_clean_ci"
+      case retryOtherAccounts = "retry_other_accounts"
+    }
+
+    public init(confidenceThreshold: Double? = nil, maxConcurrentSessions: Double? = nil, maxFilesChanged: Double? = nil, maxCostUsdPerRun: Double? = nil, maxRunMinutes: Double? = nil, pathDenylist: [String]? = nil, requireCleanCi: Bool? = nil, retryOtherAccounts: Bool? = nil) {
+      self.confidenceThreshold = confidenceThreshold
+      self.maxConcurrentSessions = maxConcurrentSessions
+      self.maxFilesChanged = maxFilesChanged
+      self.maxCostUsdPerRun = maxCostUsdPerRun
+      self.maxRunMinutes = maxRunMinutes
+      self.pathDenylist = pathDenylist
+      self.requireCleanCi = requireCleanCi
+      self.retryOtherAccounts = retryOtherAccounts
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(confidenceThreshold, forKey: .confidenceThreshold)
+      try c.encodeIfPresent(maxConcurrentSessions, forKey: .maxConcurrentSessions)
+      try c.encodeIfPresent(maxFilesChanged, forKey: .maxFilesChanged)
+      try c.encodeIfPresent(maxCostUsdPerRun, forKey: .maxCostUsdPerRun)
+      try c.encodeIfPresent(maxRunMinutes, forKey: .maxRunMinutes)
+      try c.encodeIfPresent(pathDenylist, forKey: .pathDenylist)
+      try c.encodeIfPresent(requireCleanCi, forKey: .requireCleanCi)
+      try c.encodeIfPresent(retryOtherAccounts, forKey: .retryOtherAccounts)
+    }
+  }
+
+  public struct CreateTeammateInput: Codable, Sendable {
+    public var name: String
+    public var handle: String?
+    public var tagline: String?
+    public var color: TeammateColor?
+    public var avatar: TeammateAvatar?
+    public var enabled: Bool?
+    public var scope: CreateTeammateInputScope?
+    public var sourceIds: [String]?
+    public var autonomy: AutonomyLevel?
+    public var guardrails: CreateTeammateInputGuardrails?
+    public var runner: String?
+    public var model: String?
+    public var claudeAccountId: String?
+    public var soul: String?
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case handle = "handle"
+      case tagline = "tagline"
+      case color = "color"
+      case avatar = "avatar"
+      case enabled = "enabled"
+      case scope = "scope"
+      case sourceIds = "source_ids"
+      case autonomy = "autonomy"
+      case guardrails = "guardrails"
+      case runner = "runner"
+      case model = "model"
+      case claudeAccountId = "claude_account_id"
+      case soul = "soul"
+    }
+
+    public init(name: String, handle: String? = nil, tagline: String? = nil, color: TeammateColor? = nil, avatar: TeammateAvatar? = nil, enabled: Bool? = nil, scope: CreateTeammateInputScope? = nil, sourceIds: [String]? = nil, autonomy: AutonomyLevel? = nil, guardrails: CreateTeammateInputGuardrails? = nil, runner: String? = nil, model: String? = nil, claudeAccountId: String? = nil, soul: String? = nil) {
+      self.name = name
+      self.handle = handle
+      self.tagline = tagline
+      self.color = color
+      self.avatar = avatar
+      self.enabled = enabled
+      self.scope = scope
+      self.sourceIds = sourceIds
+      self.autonomy = autonomy
+      self.guardrails = guardrails
+      self.runner = runner
+      self.model = model
+      self.claudeAccountId = claudeAccountId
+      self.soul = soul
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encodeIfPresent(handle, forKey: .handle)
+      try c.encodeIfPresent(tagline, forKey: .tagline)
+      try c.encodeIfPresent(color, forKey: .color)
+      try c.encodeIfPresent(avatar, forKey: .avatar)
+      try c.encodeIfPresent(enabled, forKey: .enabled)
+      try c.encodeIfPresent(scope, forKey: .scope)
+      try c.encodeIfPresent(sourceIds, forKey: .sourceIds)
+      try c.encodeIfPresent(autonomy, forKey: .autonomy)
+      try c.encodeIfPresent(guardrails, forKey: .guardrails)
+      try c.encodeIfPresent(runner, forKey: .runner)
+      try c.encodeIfPresent(model, forKey: .model)
+      try c.encodeIfPresent(claudeAccountId, forKey: .claudeAccountId)
+      try c.encodeIfPresent(soul, forKey: .soul)
     }
   }
 
@@ -14290,6 +14429,7 @@ extension ArgusProtocol {
     public var lastRunAt: Double?
     public var nextRunAt: Double?
     public var running: Bool
+    public var teammateId: String?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -14306,9 +14446,10 @@ extension ArgusProtocol {
       case lastRunAt = "last_run_at"
       case nextRunAt = "next_run_at"
       case running = "running"
+      case teammateId = "teammate_id"
     }
 
-    public init(id: String, name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationTriggerKind, slackChannel: SlackChannelRef? = nil, cron: String? = nil, runAt: String? = nil, timezone: String? = nil, autonomy: RemoteAutomationAutonomy? = nil, projects: [String], lastRunAt: Double? = nil, nextRunAt: Double? = nil, running: Bool) {
+    public init(id: String, name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationTriggerKind, slackChannel: SlackChannelRef? = nil, cron: String? = nil, runAt: String? = nil, timezone: String? = nil, autonomy: RemoteAutomationAutonomy? = nil, projects: [String], lastRunAt: Double? = nil, nextRunAt: Double? = nil, running: Bool, teammateId: String? = nil) {
       self.id = id
       self.name = name
       self.description = description
@@ -14323,6 +14464,7 @@ extension ArgusProtocol {
       self.lastRunAt = lastRunAt
       self.nextRunAt = nextRunAt
       self.running = running
+      self.teammateId = teammateId
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -14341,6 +14483,7 @@ extension ArgusProtocol {
       try c.encode(lastRunAt, forKey: .lastRunAt)
       try c.encode(nextRunAt, forKey: .nextRunAt)
       try c.encode(running, forKey: .running)
+      try c.encodeIfPresent(teammateId, forKey: .teammateId)
     }
   }
 
@@ -17640,6 +17783,80 @@ extension ArgusProtocol {
     }
   }
 
+  public struct RemoteTeammateTemplateRequiresItem: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let github = RemoteTeammateTemplateRequiresItem(rawValue: "github")
+    public static let gitlab = RemoteTeammateTemplateRequiresItem(rawValue: "gitlab")
+    public static let linear = RemoteTeammateTemplateRequiresItem(rawValue: "linear")
+    public static let slack = RemoteTeammateTemplateRequiresItem(rawValue: "slack")
+  }
+
+  public struct RemoteTeammateTemplate: Codable, Sendable {
+    public var id: String
+    public var name: String
+    public var handle: String
+    public var tagline: String
+    public var color: TeammateColor
+    public var avatar: TeammateAvatar
+    public var soul: String
+    public var autonomy: AutonomyLevel
+    public var sourceIds: [String]
+    public var requires: [RemoteTeammateTemplateRequiresItem]
+    public var dutyNames: [String]
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+      case handle = "handle"
+      case tagline = "tagline"
+      case color = "color"
+      case avatar = "avatar"
+      case soul = "soul"
+      case autonomy = "autonomy"
+      case sourceIds = "source_ids"
+      case requires = "requires"
+      case dutyNames = "duty_names"
+    }
+
+    public init(id: String, name: String, handle: String, tagline: String, color: TeammateColor, avatar: TeammateAvatar, soul: String, autonomy: AutonomyLevel, sourceIds: [String], requires: [RemoteTeammateTemplateRequiresItem], dutyNames: [String]) {
+      self.id = id
+      self.name = name
+      self.handle = handle
+      self.tagline = tagline
+      self.color = color
+      self.avatar = avatar
+      self.soul = soul
+      self.autonomy = autonomy
+      self.sourceIds = sourceIds
+      self.requires = requires
+      self.dutyNames = dutyNames
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+      try c.encode(handle, forKey: .handle)
+      try c.encode(tagline, forKey: .tagline)
+      try c.encode(color, forKey: .color)
+      try c.encode(avatar, forKey: .avatar)
+      try c.encode(soul, forKey: .soul)
+      try c.encode(autonomy, forKey: .autonomy)
+      try c.encode(sourceIds, forKey: .sourceIds)
+      try c.encode(requires, forKey: .requires)
+      try c.encode(dutyNames, forKey: .dutyNames)
+    }
+  }
+
   public struct RemoteTerminal: Codable, Sendable {
     public var id: String
     public var title: String?
@@ -20156,6 +20373,349 @@ extension ArgusProtocol {
     }
   }
 
+  public struct TeammateScope: Codable, Sendable {
+    public var repoRoots: [String]
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoots = "repo_roots"
+    }
+
+    public init(repoRoots: [String]) {
+      self.repoRoots = repoRoots
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoots, forKey: .repoRoots)
+    }
+  }
+
+  public struct Teammate: Codable, Sendable {
+    public var id: String
+    public var name: String
+    public var handle: String
+    public var tagline: String
+    public var color: TeammateColor
+    public var avatar: TeammateAvatar
+    public var enabled: Bool
+    public var scope: TeammateScope
+    public var sourceIds: [String]
+    public var autonomy: AutonomyLevel?
+    public var guardrails: AutomationGuardrails
+    public var runner: String?
+    public var model: String?
+    public var claudeAccountId: String?
+    public var templateId: String?
+    public var seededSoulHash: String?
+    public var createdAt: Double
+    public var updatedAt: Double
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+      case handle = "handle"
+      case tagline = "tagline"
+      case color = "color"
+      case avatar = "avatar"
+      case enabled = "enabled"
+      case scope = "scope"
+      case sourceIds = "source_ids"
+      case autonomy = "autonomy"
+      case guardrails = "guardrails"
+      case runner = "runner"
+      case model = "model"
+      case claudeAccountId = "claude_account_id"
+      case templateId = "template_id"
+      case seededSoulHash = "seeded_soul_hash"
+      case createdAt = "created_at"
+      case updatedAt = "updated_at"
+    }
+
+    public init(id: String, name: String, handle: String, tagline: String, color: TeammateColor, avatar: TeammateAvatar, enabled: Bool, scope: TeammateScope, sourceIds: [String], autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails, runner: String? = nil, model: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, seededSoulHash: String? = nil, createdAt: Double, updatedAt: Double) {
+      self.id = id
+      self.name = name
+      self.handle = handle
+      self.tagline = tagline
+      self.color = color
+      self.avatar = avatar
+      self.enabled = enabled
+      self.scope = scope
+      self.sourceIds = sourceIds
+      self.autonomy = autonomy
+      self.guardrails = guardrails
+      self.runner = runner
+      self.model = model
+      self.claudeAccountId = claudeAccountId
+      self.templateId = templateId
+      self.seededSoulHash = seededSoulHash
+      self.createdAt = createdAt
+      self.updatedAt = updatedAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+      try c.encode(handle, forKey: .handle)
+      try c.encode(tagline, forKey: .tagline)
+      try c.encode(color, forKey: .color)
+      try c.encode(avatar, forKey: .avatar)
+      try c.encode(enabled, forKey: .enabled)
+      try c.encode(scope, forKey: .scope)
+      try c.encode(sourceIds, forKey: .sourceIds)
+      try c.encode(autonomy, forKey: .autonomy)
+      try c.encode(guardrails, forKey: .guardrails)
+      try c.encode(runner, forKey: .runner)
+      try c.encode(model, forKey: .model)
+      try c.encode(claudeAccountId, forKey: .claudeAccountId)
+      try c.encode(templateId, forKey: .templateId)
+      try c.encode(seededSoulHash, forKey: .seededSoulHash)
+      try c.encode(createdAt, forKey: .createdAt)
+      try c.encode(updatedAt, forKey: .updatedAt)
+    }
+  }
+
+  public struct TeammateAvatarInitials: Codable, Sendable {
+    public var kind: String
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+    }
+
+    public init(kind: String) {
+      self.kind = kind
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+    }
+  }
+
+  public struct TeammateAvatarSymbol: Codable, Sendable {
+    public var kind: String
+    public var symbol: TeammateSymbol
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case symbol = "symbol"
+    }
+
+    public init(kind: String, symbol: TeammateSymbol) {
+      self.kind = kind
+      self.symbol = symbol
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(symbol, forKey: .symbol)
+    }
+  }
+
+  public enum TeammateAvatar: Codable, Sendable {
+    case initials(TeammateAvatarInitials)
+    case symbol(TeammateAvatarSymbol)
+    case unknown(JSONValue)
+
+    private enum Tag: String, CodingKey { case tag = "kind" }
+
+    public init(from decoder: Decoder) throws {
+      let tag = try decoder.container(keyedBy: Tag.self).decodeIfPresent(String.self, forKey: .tag)
+      switch tag {
+      case "initials": self = .initials(try TeammateAvatarInitials(from: decoder))
+      case "symbol": self = .symbol(try TeammateAvatarSymbol(from: decoder))
+      default: self = .unknown(try JSONValue(from: decoder))
+      }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      switch self {
+      case .initials(let value): try value.encode(to: encoder)
+      case .symbol(let value): try value.encode(to: encoder)
+      case .unknown(let value): try value.encode(to: encoder)
+      }
+    }
+  }
+
+  public struct TeammateColor: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let blue = TeammateColor(rawValue: "blue")
+    public static let green = TeammateColor(rawValue: "green")
+    public static let orange = TeammateColor(rawValue: "orange")
+    public static let pink = TeammateColor(rawValue: "pink")
+    public static let purple = TeammateColor(rawValue: "purple")
+    public static let red = TeammateColor(rawValue: "red")
+    public static let teal = TeammateColor(rawValue: "teal")
+    public static let yellow = TeammateColor(rawValue: "yellow")
+  }
+
+  public struct TeammateDetail: Codable, Sendable {
+    public var teammate: Teammate
+    public var soul: String
+    public var duties: [Automation]
+    public var memoryCount: Double
+
+    enum CodingKeys: String, CodingKey {
+      case teammate = "teammate"
+      case soul = "soul"
+      case duties = "duties"
+      case memoryCount = "memory_count"
+    }
+
+    public init(teammate: Teammate, soul: String, duties: [Automation], memoryCount: Double) {
+      self.teammate = teammate
+      self.soul = soul
+      self.duties = duties
+      self.memoryCount = memoryCount
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(teammate, forKey: .teammate)
+      try c.encode(soul, forKey: .soul)
+      try c.encode(duties, forKey: .duties)
+      try c.encode(memoryCount, forKey: .memoryCount)
+    }
+  }
+
+  public struct TeammateSummary: Codable, Sendable {
+    public var teammate: Teammate
+    public var dutyCount: Double
+    public var lastRunAt: Double?
+    public var hasUnreadReport: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case teammate = "teammate"
+      case dutyCount = "duty_count"
+      case lastRunAt = "last_run_at"
+      case hasUnreadReport = "has_unread_report"
+    }
+
+    public init(teammate: Teammate, dutyCount: Double, lastRunAt: Double? = nil, hasUnreadReport: Bool) {
+      self.teammate = teammate
+      self.dutyCount = dutyCount
+      self.lastRunAt = lastRunAt
+      self.hasUnreadReport = hasUnreadReport
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(teammate, forKey: .teammate)
+      try c.encode(dutyCount, forKey: .dutyCount)
+      try c.encode(lastRunAt, forKey: .lastRunAt)
+      try c.encode(hasUnreadReport, forKey: .hasUnreadReport)
+    }
+  }
+
+  public struct TeammateSymbol: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let wrench = TeammateSymbol(rawValue: "wrench")
+    public static let eye = TeammateSymbol(rawValue: "eye")
+    public static let tray = TeammateSymbol(rawValue: "tray")
+    public static let shippingbox = TeammateSymbol(rawValue: "shippingbox")
+    public static let doc = TeammateSymbol(rawValue: "doc")
+    public static let ant = TeammateSymbol(rawValue: "ant")
+    public static let calendar = TeammateSymbol(rawValue: "calendar")
+    public static let leaf = TeammateSymbol(rawValue: "leaf")
+    public static let sparkles = TeammateSymbol(rawValue: "sparkles")
+    public static let bolt = TeammateSymbol(rawValue: "bolt")
+    public static let magnifyingglass = TeammateSymbol(rawValue: "magnifyingglass")
+    public static let person = TeammateSymbol(rawValue: "person")
+  }
+
+  public struct TeammateTemplateRequiresItem: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let github = TeammateTemplateRequiresItem(rawValue: "github")
+    public static let gitlab = TeammateTemplateRequiresItem(rawValue: "gitlab")
+    public static let linear = TeammateTemplateRequiresItem(rawValue: "linear")
+    public static let slack = TeammateTemplateRequiresItem(rawValue: "slack")
+  }
+
+  public struct TeammateTemplate: Codable, Sendable {
+    public var id: String
+    public var name: String
+    public var handle: String
+    public var tagline: String
+    public var color: TeammateColor
+    public var avatar: TeammateAvatar
+    public var soul: String
+    public var autonomy: AutonomyLevel
+    public var sourceIds: [String]
+    public var requires: [TeammateTemplateRequiresItem]
+    public var duties: [CreateAutomationInput]
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+      case handle = "handle"
+      case tagline = "tagline"
+      case color = "color"
+      case avatar = "avatar"
+      case soul = "soul"
+      case autonomy = "autonomy"
+      case sourceIds = "source_ids"
+      case requires = "requires"
+      case duties = "duties"
+    }
+
+    public init(id: String, name: String, handle: String, tagline: String, color: TeammateColor, avatar: TeammateAvatar, soul: String, autonomy: AutonomyLevel, sourceIds: [String], requires: [TeammateTemplateRequiresItem], duties: [CreateAutomationInput]) {
+      self.id = id
+      self.name = name
+      self.handle = handle
+      self.tagline = tagline
+      self.color = color
+      self.avatar = avatar
+      self.soul = soul
+      self.autonomy = autonomy
+      self.sourceIds = sourceIds
+      self.requires = requires
+      self.duties = duties
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+      try c.encode(handle, forKey: .handle)
+      try c.encode(tagline, forKey: .tagline)
+      try c.encode(color, forKey: .color)
+      try c.encode(avatar, forKey: .avatar)
+      try c.encode(soul, forKey: .soul)
+      try c.encode(autonomy, forKey: .autonomy)
+      try c.encode(sourceIds, forKey: .sourceIds)
+      try c.encode(requires, forKey: .requires)
+      try c.encode(duties, forKey: .duties)
+    }
+  }
+
   public struct TeardownConfig: Codable, Sendable {
     public var commands: [String]
 
@@ -20546,6 +21106,88 @@ extension ArgusProtocol {
       try c.encodeIfPresent(copyProjectSettingsFrom, forKey: .copyProjectSettingsFrom)
       try c.encodeIfPresent(instructions, forKey: .instructions)
       try c.encodeIfPresent(agent, forKey: .agent)
+    }
+  }
+
+  public struct UpdateTeammateInputScope: Codable, Sendable {
+    public var repoRoots: [String]
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoots = "repo_roots"
+    }
+
+    public init(repoRoots: [String]) {
+      self.repoRoots = repoRoots
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoots, forKey: .repoRoots)
+    }
+  }
+
+  public struct UpdateTeammateInput: Codable, Sendable {
+    public var name: String?
+    public var handle: String?
+    public var tagline: String?
+    public var color: TeammateColor?
+    public var avatar: TeammateAvatar?
+    public var enabled: Bool?
+    public var scope: UpdateTeammateInputScope?
+    public var sourceIds: [String]?
+    public var autonomy: AutonomyLevel?
+    public var guardrails: AutomationGuardrails?
+    public var runner: String?
+    public var model: String?
+    public var claudeAccountId: String?
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case handle = "handle"
+      case tagline = "tagline"
+      case color = "color"
+      case avatar = "avatar"
+      case enabled = "enabled"
+      case scope = "scope"
+      case sourceIds = "source_ids"
+      case autonomy = "autonomy"
+      case guardrails = "guardrails"
+      case runner = "runner"
+      case model = "model"
+      case claudeAccountId = "claude_account_id"
+    }
+
+    public init(name: String? = nil, handle: String? = nil, tagline: String? = nil, color: TeammateColor? = nil, avatar: TeammateAvatar? = nil, enabled: Bool? = nil, scope: UpdateTeammateInputScope? = nil, sourceIds: [String]? = nil, autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails? = nil, runner: String? = nil, model: String? = nil, claudeAccountId: String? = nil) {
+      self.name = name
+      self.handle = handle
+      self.tagline = tagline
+      self.color = color
+      self.avatar = avatar
+      self.enabled = enabled
+      self.scope = scope
+      self.sourceIds = sourceIds
+      self.autonomy = autonomy
+      self.guardrails = guardrails
+      self.runner = runner
+      self.model = model
+      self.claudeAccountId = claudeAccountId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(name, forKey: .name)
+      try c.encodeIfPresent(handle, forKey: .handle)
+      try c.encodeIfPresent(tagline, forKey: .tagline)
+      try c.encodeIfPresent(color, forKey: .color)
+      try c.encodeIfPresent(avatar, forKey: .avatar)
+      try c.encodeIfPresent(enabled, forKey: .enabled)
+      try c.encodeIfPresent(scope, forKey: .scope)
+      try c.encodeIfPresent(sourceIds, forKey: .sourceIds)
+      try c.encodeIfPresent(autonomy, forKey: .autonomy)
+      try c.encodeIfPresent(guardrails, forKey: .guardrails)
+      try c.encodeIfPresent(runner, forKey: .runner)
+      try c.encodeIfPresent(model, forKey: .model)
+      try c.encodeIfPresent(claudeAccountId, forKey: .claudeAccountId)
     }
   }
 

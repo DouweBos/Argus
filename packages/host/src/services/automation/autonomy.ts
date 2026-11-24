@@ -2,8 +2,8 @@
  * Resolving the gate's inputs from live state: how far this automation may go
  * in this repo, and how many sessions it already has running.
  *
- * Effective autonomy is `min(app default, automation.autonomy, project
- * ceiling)`, ignoring whichever of those is unset. A repo can always cap
+ * Effective autonomy is `min(app default, teammate.autonomy,
+ * automation.autonomy, project ceiling)`, ignoring whichever of those is unset. A repo can always cap
  * itself lower than the app; never higher. Nothing set anywhere falls back to
  * `propose`.
  */
@@ -12,6 +12,7 @@ import type { Automation, AutomationGuardrails, AutonomyLevel } from "./models";
 import { loadAppSettings } from "../appSettings/store";
 import { loadArgusConfig } from "../session/argusConfig";
 import { isOnMissingVolume } from "../session/volumeAvailability";
+import { findTeammate } from "../teammate/registry";
 import {
   isAutonomyLevel,
   minAutonomy,
@@ -95,14 +96,21 @@ export function resolvePolicy(
     ];
   }
 
+  // A duty answers to its teammate too: its ceiling, and its handle in a
+  // repo's disabled list.
+  const teammate = findTeammate(automation.teammate_id);
   const disabledByProject = (project?.disabled ?? []).some(
-    (id) => id === automation.id || id === automation.template_id,
+    (id) =>
+      id === automation.id ||
+      id === automation.template_id ||
+      (teammate !== null && id === teammate.handle),
   );
 
   const autonomy = disabledByProject
     ? "propose"
     : minAutonomy(
         appDefaultAutonomy(),
+        teammate?.autonomy,
         automation.autonomy,
         project?.autonomy_ceiling,
       );

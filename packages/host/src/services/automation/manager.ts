@@ -21,6 +21,7 @@ import fs from "node:fs";
 import { emitHostEvent } from "@argus/host/bus";
 import { info, warn } from "@argus/host/logger";
 import { getClaudeAccount } from "../claudeAuth/accounts";
+import { findTeammate } from "../teammate/registry";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { computeNextRun, isValidCron, onceInstant } from "./cron";
 import { migrateSpendCeiling, normalizeGuardrails } from "./guardrails";
@@ -67,6 +68,7 @@ function automationCache(): Automation[] {
       automation.seeded_playbook_hash ??= null;
       automation.extra_instructions ??= "";
       automation.claude_account_id ??= null;
+      automation.teammate_id ??= null;
     }
     seedBuiltIns(automations, migrated);
   }
@@ -119,8 +121,15 @@ function assertKnownAccount(accountId: string | null | undefined): void {
   }
 }
 
+function assertKnownTeammate(teammateId: string | null | undefined): void {
+  if (teammateId && !findTeammate(teammateId)) {
+    throw `Teammate not found: ${teammateId}`;
+  }
+}
+
 function buildAutomation(input: CreateAutomationInput): Automation {
   assertKnownAccount(input.claude_account_id);
+  assertKnownTeammate(input.teammate_id);
   const now = Date.now();
   const trigger = normalizeTrigger(input.trigger);
   assertValidTrigger(trigger, input.enabled ?? false, now);
@@ -141,6 +150,7 @@ function buildAutomation(input: CreateAutomationInput): Automation {
     runner: input.runner ?? null,
     claude_account_id: input.claude_account_id ?? null,
     template_id: input.template_id ?? null,
+    teammate_id: input.teammate_id ?? null,
     report_slack_channel: input.report_slack_channel ?? null,
     // Only a built-in has a fingerprint to compare a future release against.
     seeded_playbook_hash: input.template_id
@@ -332,6 +342,7 @@ export function scratchAutomationForRun(run: AutomationRun): Automation | null {
     runner: null,
     claude_account_id: null,
     template_id: null,
+    teammate_id: null,
     seeded_playbook_hash: null,
     created_at: run.started_at,
     updated_at: run.started_at,
@@ -377,8 +388,14 @@ export function createAutomation(input: CreateAutomationInput): Automation {
 export function updateAutomation(
   id: string,
   patch: UpdateAutomationInput,
+  /** Ownership, which only the teammate service changes. */
+  owner?: { teammate_id: string | null },
 ): Automation {
   const automation = requireAutomation(id);
+  if (owner) {
+    assertKnownTeammate(owner.teammate_id);
+    automation.teammate_id = owner.teammate_id;
+  }
   if (patch.claude_account_id !== automation.claude_account_id) {
     assertKnownAccount(patch.claude_account_id);
   }
@@ -399,7 +416,12 @@ export function updateAutomation(
     patch.extra_instructions.trim() !== automation.extra_instructions.trim();
 
   const previousKind = automation.trigger.kind;
-  Object.assign(automation, patch, { trigger, updated_at: Date.now() });
+  // Ownership moves memory with it, so only `owner` may change it.
+  const { teammate_id: _ignored, ...fields } =
+    patch as UpdateAutomationInput & {
+      teammate_id?: unknown;
+    };
+  Object.assign(automation, fields, { trigger, updated_at: Date.now() });
   automation.guardrails = normalizeGuardrails(automation.guardrails);
   if (patch.next_run_at === undefined) {
     // The clock changed, or the switch did — either way the old fire is stale.

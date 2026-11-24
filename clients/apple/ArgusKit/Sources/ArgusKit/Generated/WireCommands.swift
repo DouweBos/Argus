@@ -9793,6 +9793,183 @@ extension ArgusProtocol {
       }
     }
 
+    public struct TeammateAddDutyParams: Codable, Sendable {
+      public var id: String
+      public var input: CreateAutomationInput
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case input = "input"
+      }
+
+      public init(id: String, input: CreateAutomationInput) {
+        self.id = id
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
+    public struct TeammateCreateParams: Codable, Sendable {
+      public var input: CreateTeammateInput
+
+      enum CodingKeys: String, CodingKey {
+        case input = "input"
+      }
+
+      public init(input: CreateTeammateInput) {
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
+    public struct TeammateCreateFromTemplateParams: Codable, Sendable {
+      public var templateId: String
+      public var repoRoots: [String]
+
+      enum CodingKeys: String, CodingKey {
+        case templateId = "templateId"
+        case repoRoots = "repoRoots"
+      }
+
+      public init(templateId: String, repoRoots: [String]) {
+        self.templateId = templateId
+        self.repoRoots = repoRoots
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(templateId, forKey: .templateId)
+        try c.encode(repoRoots, forKey: .repoRoots)
+      }
+    }
+
+    public struct TeammateDeleteParams: Codable, Sendable {
+      public var id: String
+      public var keepDuties: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case keepDuties = "keepDuties"
+      }
+
+      public init(id: String, keepDuties: Bool) {
+        self.id = id
+        self.keepDuties = keepDuties
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(keepDuties, forKey: .keepDuties)
+      }
+    }
+
+    public struct TeammateGetParams: Codable, Sendable {
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: String) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
+    public struct TeammatePromoteAutomationParams: Codable, Sendable {
+      public var automationId: String
+      public var teammateId: String?
+
+      enum CodingKeys: String, CodingKey {
+        case automationId = "automationId"
+        case teammateId = "teammateId"
+      }
+
+      public init(automationId: String, teammateId: String? = nil) {
+        self.automationId = automationId
+        self.teammateId = teammateId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automationId, forKey: .automationId)
+        try c.encode(teammateId, forKey: .teammateId)
+      }
+    }
+
+    public struct TeammateRemoveDutyParams: Codable, Sendable {
+      public var automationId: String
+
+      enum CodingKeys: String, CodingKey {
+        case automationId = "automationId"
+      }
+
+      public init(automationId: String) {
+        self.automationId = automationId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automationId, forKey: .automationId)
+      }
+    }
+
+    public struct TeammateSoulSaveParams: Codable, Sendable {
+      public var id: String
+      public var soul: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case soul = "soul"
+      }
+
+      public init(id: String, soul: String) {
+        self.id = id
+        self.soul = soul
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(soul, forKey: .soul)
+      }
+    }
+
+    public struct TeammateUpdateParams: Codable, Sendable {
+      public var id: String
+      public var patch: UpdateTeammateInput
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case patch = "patch"
+      }
+
+      public init(id: String, patch: UpdateTeammateInput) {
+        self.id = id
+        self.patch = patch
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(patch, forKey: .patch)
+      }
+    }
+
     public struct TelemetryCaptureParams: Codable, Sendable {
       public var event: String
       public var props: [String: JSONValue]?
@@ -13901,6 +14078,83 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.SubmitAgentMessageParams
       public typealias Result = ArgusProtocol.CommandsTypes.SubmitAgentMessageResult
       public static let name = "submit_agent_message"
+      public static let tier = "admin"
+    }
+
+    public enum TeammateAddDuty: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.TeammateAddDutyParams
+      public typealias Result = ArgusProtocol.Automation
+      public static let name = "teammate_add_duty"
+      public static let tier = "admin"
+    }
+
+    public enum TeammateCreate: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.TeammateCreateParams
+      public typealias Result = ArgusProtocol.Teammate
+      public static let name = "teammate_create"
+      public static let tier = "admin"
+    }
+
+    public enum TeammateCreateFromTemplate: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.TeammateCreateFromTemplateParams
+      public typealias Result = ArgusProtocol.Teammate
+      public static let name = "teammate_create_from_template"
+      public static let tier = "admin"
+    }
+
+    public enum TeammateDelete: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.TeammateDeleteParams
+      public typealias Result = IgnoredResult
+      public static let name = "teammate_delete"
+      public static let tier = "admin"
+    }
+
+    public enum TeammateGet: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.TeammateGetParams
+      public typealias Result = ArgusProtocol.TeammateDetail
+      public static let name = "teammate_get"
+      public static let tier = "admin"
+    }
+
+    public enum TeammatePromoteAutomation: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.TeammatePromoteAutomationParams
+      public typealias Result = ArgusProtocol.Teammate
+      public static let name = "teammate_promote_automation"
+      public static let tier = "admin"
+    }
+
+    public enum TeammateRemoveDuty: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.TeammateRemoveDutyParams
+      public typealias Result = ArgusProtocol.Automation
+      public static let name = "teammate_remove_duty"
+      public static let tier = "admin"
+    }
+
+    public enum TeammateSoulSave: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.TeammateSoulSaveParams
+      public typealias Result = IgnoredResult
+      public static let name = "teammate_soul_save"
+      public static let tier = "admin"
+    }
+
+    public enum TeammateTemplatesList: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.TeammateTemplate]
+      public static let name = "teammate_templates_list"
+      public static let tier = "admin"
+    }
+
+    public enum TeammateUpdate: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.TeammateUpdateParams
+      public typealias Result = ArgusProtocol.Teammate
+      public static let name = "teammate_update"
+      public static let tier = "admin"
+    }
+
+    public enum TeammatesList: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.TeammateSummary]
+      public static let name = "teammates_list"
       public static let tier = "admin"
     }
 

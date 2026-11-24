@@ -2956,6 +2956,57 @@ object CommandsTypes {
   )
 
   @Serializable
+  data class TeammateAddDutyParams(
+    @SerialName("id") val id: String,
+    @SerialName("input") val input: CreateAutomationInput,
+  )
+
+  @Serializable
+  data class TeammateCreateParams(
+    @SerialName("input") val input: CreateTeammateInput,
+  )
+
+  @Serializable
+  data class TeammateCreateFromTemplateParams(
+    @SerialName("templateId") val templateId: String,
+    @SerialName("repoRoots") val repoRoots: List<String>,
+  )
+
+  @Serializable
+  data class TeammateDeleteParams(
+    @SerialName("id") val id: String,
+    @SerialName("keepDuties") val keepDuties: Boolean,
+  )
+
+  @Serializable
+  data class TeammateGetParams(
+    @SerialName("id") val id: String,
+  )
+
+  @Serializable
+  data class TeammatePromoteAutomationParams(
+    @SerialName("automationId") val automationId: String,
+    @SerialName("teammateId") @EncodeDefault val teammateId: String? = null,
+  )
+
+  @Serializable
+  data class TeammateRemoveDutyParams(
+    @SerialName("automationId") val automationId: String,
+  )
+
+  @Serializable
+  data class TeammateSoulSaveParams(
+    @SerialName("id") val id: String,
+    @SerialName("soul") val soul: String,
+  )
+
+  @Serializable
+  data class TeammateUpdateParams(
+    @SerialName("id") val id: String,
+    @SerialName("patch") val patch: UpdateTeammateInput,
+  )
+
+  @Serializable
   data class TelemetryCaptureParams(
     @SerialName("event") val event: String,
     @SerialName("props") val props: Map<String, JsonElement>? = null,
@@ -4130,6 +4181,28 @@ object Commands {
   object StopTerminal : RemoteCommand<CommandsTypes.StopTerminalParams, IgnoredResult>("stop_terminal", "admin", serializer(), serializer())
 
   object SubmitAgentMessage : RemoteCommand<CommandsTypes.SubmitAgentMessageParams, CommandsTypes.SubmitAgentMessageResult>("submit_agent_message", "admin", serializer(), serializer())
+
+  object TeammateAddDuty : RemoteCommand<CommandsTypes.TeammateAddDutyParams, Automation>("teammate_add_duty", "admin", serializer(), serializer())
+
+  object TeammateCreate : RemoteCommand<CommandsTypes.TeammateCreateParams, Teammate>("teammate_create", "admin", serializer(), serializer())
+
+  object TeammateCreateFromTemplate : RemoteCommand<CommandsTypes.TeammateCreateFromTemplateParams, Teammate>("teammate_create_from_template", "admin", serializer(), serializer())
+
+  object TeammateDelete : RemoteCommand<CommandsTypes.TeammateDeleteParams, IgnoredResult>("teammate_delete", "admin", serializer(), serializer())
+
+  object TeammateGet : RemoteCommand<CommandsTypes.TeammateGetParams, TeammateDetail>("teammate_get", "admin", serializer(), serializer())
+
+  object TeammatePromoteAutomation : RemoteCommand<CommandsTypes.TeammatePromoteAutomationParams, Teammate>("teammate_promote_automation", "admin", serializer(), serializer())
+
+  object TeammateRemoveDuty : RemoteCommand<CommandsTypes.TeammateRemoveDutyParams, Automation>("teammate_remove_duty", "admin", serializer(), serializer())
+
+  object TeammateSoulSave : RemoteCommand<CommandsTypes.TeammateSoulSaveParams, IgnoredResult>("teammate_soul_save", "admin", serializer(), serializer())
+
+  object TeammateTemplatesList : RemoteCommand<EmptyParams, List<TeammateTemplate>>("teammate_templates_list", "admin", serializer(), serializer())
+
+  object TeammateUpdate : RemoteCommand<CommandsTypes.TeammateUpdateParams, Teammate>("teammate_update", "admin", serializer(), serializer())
+
+  object TeammatesList : RemoteCommand<EmptyParams, List<TeammateSummary>>("teammates_list", "admin", serializer(), serializer())
 
   object TelemetryCapture : RemoteCommand<CommandsTypes.TelemetryCaptureParams, IgnoredResult>("telemetry_capture", "admin", serializer(), serializer())
 

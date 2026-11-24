@@ -42,6 +42,7 @@ function automation(overrides: Partial<Automation> = {}): Automation {
     runner: null,
     claude_account_id: null,
     template_id: "standup-digest",
+    teammate_id: null,
     seeded_playbook_hash: null,
     created_at: 1,
     updated_at: 1,

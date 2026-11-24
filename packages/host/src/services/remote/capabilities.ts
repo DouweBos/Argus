@@ -256,6 +256,19 @@ import { devicePng } from "../simulator/screenshot";
 import { getVideoDims } from "../simulator/videoForward";
 import { remoteSlackStatus } from "../slack/status";
 import {
+  createBlankTeammate,
+  createTeammateFromTemplate,
+  deleteTeammate,
+  deleteTeammateMemory,
+  getTeammate,
+  listTeammateMemories,
+  promoteAutomation,
+  saveTeammateMemory,
+  saveTeammateSoul,
+  teammateSummaries,
+  updateTeammate,
+} from "../teammate/manager";
+import {
   listTerminals,
   readTerminalOutput,
   terminalScrollback,
@@ -362,6 +375,12 @@ import {
 } from "./push/liveActivity/dispatch";
 import { ShareError } from "./shareError";
 import { startAgentWhenReady } from "./startWhenReady";
+import {
+  addRemoteDuty,
+  remoteTeammate,
+  remoteTeammateTemplates,
+  removeRemoteDuty,
+} from "./teammatesRemote";
 import {
   findImage,
   type RawConversation,
@@ -2647,6 +2666,103 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
 
     return await control(() => {
       deleteAutomationMemory(automation_id, name);
+
+      return { accepted: true };
+    });
+  },
+  "teammates.list": async () => ({ teammates: teammateSummaries() }),
+  "teammates.get": async (params) => {
+    const { teammate_id } = parse("teammates.get", params);
+    if (!getTeammate(teammate_id)) {
+      throw new GatewayError("not_found", `no teammate ${teammate_id}`);
+    }
+
+    return remoteTeammate(teammate_id);
+  },
+  "teammates.templates": async () => remoteTeammateTemplates(),
+  "teammates.memories": async (params) => {
+    const { teammate_id } = parse("teammates.memories", params);
+    if (!getTeammate(teammate_id)) {
+      throw new GatewayError("not_found", `no teammate ${teammate_id}`);
+    }
+
+    return { memories: listTeammateMemories(teammate_id) };
+  },
+  "teammates.create": async (params) => {
+    const { input } = parse("teammates.create", params);
+    requireKnownRepoRoots(input.scope?.repo_roots ?? []);
+    requireKnownRunner(input.runner ?? undefined);
+
+    return await control(() => ({ teammate: createBlankTeammate(input) }));
+  },
+  "teammates.update": async (params) => {
+    const { teammate_id, patch } = parse("teammates.update", params);
+    requireKnownRepoRoots(patch.scope?.repo_roots ?? []);
+    requireKnownRunner(patch.runner ?? undefined);
+
+    return await control(() => ({
+      teammate: updateTeammate(teammate_id, patch),
+    }));
+  },
+  "teammates.delete": async (params) => {
+    const { teammate_id, keep_duties } = parse("teammates.delete", params);
+
+    return await control(() => {
+      deleteTeammate(teammate_id, keep_duties);
+
+      return { accepted: true };
+    });
+  },
+  "teammates.save_soul": async (params) => {
+    const { teammate_id, soul } = parse("teammates.save_soul", params);
+
+    return await control(() => {
+      saveTeammateSoul(teammate_id, soul);
+
+      return { accepted: true };
+    });
+  },
+  "teammates.create_from_template": async (params) => {
+    const { template_id, repo_roots } = parse(
+      "teammates.create_from_template",
+      params,
+    );
+    requireKnownRepoRoots(repo_roots);
+
+    return await control(() => ({
+      teammate: createTeammateFromTemplate(template_id, repo_roots),
+    }));
+  },
+  "teammates.promote": async (params) => {
+    const { automation_id, teammate_id } = parse("teammates.promote", params);
+
+    return await control(() => ({
+      teammate: promoteAutomation(automation_id, teammate_id),
+    }));
+  },
+  "teammates.add_duty": async (params) => {
+    const { teammate_id, input } = parse("teammates.add_duty", params);
+    requireKnownRepoRoots(input.repo_roots);
+
+    return await control(() => addRemoteDuty(teammate_id, input));
+  },
+  "teammates.remove_duty": async (params) => {
+    const { automation_id } = parse("teammates.remove_duty", params);
+
+    return await control(() => removeRemoteDuty(automation_id));
+  },
+  "teammates.save_memory": async (params) => {
+    const { teammate_id, memory } = parse("teammates.save_memory", params);
+
+    return await control(() => ({
+      memory: saveTeammateMemory(teammate_id, memory),
+    }));
+  },
+  "teammates.delete_memory": async (params) => {
+    const { teammate_id, name } = parse("teammates.delete_memory", params);
+
+    return await control(() => {
+      deleteTeammateMemory(teammate_id, name);
 
       return { accepted: true };
     });

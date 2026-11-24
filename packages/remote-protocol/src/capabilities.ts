@@ -332,6 +332,21 @@ export const REMOTE_METHODS = {
   /** What runs carry forward. Editing one steers every future run, like a playbook. */
   "automations.memories": "monitor",
   "automations.save_memory": "control",
+  "teammates.list": "monitor",
+  "teammates.get": "monitor",
+  "teammates.templates": "monitor",
+  "teammates.memories": "monitor",
+  /** A teammate's duties are playbooks that run unattended, like automations. */
+  "teammates.create": "control",
+  "teammates.update": "control",
+  "teammates.delete": "control",
+  "teammates.save_soul": "control",
+  "teammates.create_from_template": "control",
+  "teammates.promote": "control",
+  "teammates.add_duty": "control",
+  "teammates.remove_duty": "control",
+  "teammates.save_memory": "control",
+  "teammates.delete_memory": "control",
   "automations.delete_memory": "control",
   "automations.set_enabled": "control",
   /** Hands out a credential that starts runs. */

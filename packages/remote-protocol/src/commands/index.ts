@@ -24,6 +24,7 @@ import { REMOTE_COMMANDS } from "./remote";
 import { SESSION_COMMANDS } from "./sessions";
 import { SETTINGS_COMMANDS } from "./settings";
 import { SLACK_COMMANDS } from "./slack";
+import { TEAMMATE_COMMANDS } from "./teammates";
 import { TERMINAL_COMMANDS } from "./terminals";
 import { USAGE_COMMANDS } from "./usage";
 
@@ -51,6 +52,7 @@ export * from "../models/usage";
 export * from "../models/account";
 export * from "../models/integrations";
 export * from "../models/slack";
+export * from "../models/teammates";
 
 /** Each domain's entries, kept apart so a test can prove no name repeats. */
 export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
@@ -76,6 +78,7 @@ export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
   account: ACCOUNT_COMMANDS,
   integrations: INTEGRATION_COMMANDS,
   slack: SLACK_COMMANDS,
+  teammates: TEAMMATE_COMMANDS,
 };
 
 export const COMMANDS = {
@@ -101,6 +104,7 @@ export const COMMANDS = {
   ...ACCOUNT_COMMANDS,
   ...INTEGRATION_COMMANDS,
   ...SLACK_COMMANDS,
+  ...TEAMMATE_COMMANDS,
 } as const;
 
 export type Commands = typeof COMMANDS;

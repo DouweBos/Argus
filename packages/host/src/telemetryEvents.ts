@@ -442,6 +442,16 @@ export interface EventMap {
     success: boolean;
   };
   integration_reauth_needed: { service: "figma" | "linear" };
+  /** `template_id`: a built-in gallery id, or `none`. */
+  teammate_created: {
+    source: "blank" | "promoted" | "template";
+    template_id: string;
+  };
+  teammate_deleted: {
+    kept_duties: boolean;
+    duty_count_bucket: "0" | "1" | "2-5" | "6+";
+  };
+  teammate_soul_changed: { via: "edit" | "revise" };
   slack_connected: { success: boolean };
   /** `rejected`: Slack stopped accepting the saved app-level token. */
   slack_disconnected: { reason: "rejected" | "user" };
