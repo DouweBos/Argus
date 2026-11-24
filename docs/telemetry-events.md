@@ -247,6 +247,7 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `teammate_soul_changed`     | host   | A teammate's soul was saved                                     | `via: "edit" \| "revise"` — typed by hand, or rewritten with Claude                                                                                                  |
 | `teammate_thread_opened`    | host   | A conversation with a teammate was opened and its agent started | `new_thread` — a new conversation rather than an earlier one; `resumed` — the earlier conversation was picked back up from disk                                      |
 | `teammate_mention_answered` | host   | A teammate mentioned in one of your Linear comments was asked   | `surface: "linear"`; `answered` — a reply was posted back on the comment                                                                                             |
+| `teammate_handoff`          | host   | A teammate asked another with `ask_teammate`                    | `depth` — teammates already in the chain; `outcome: "delivered" \| "refused_depth" \| "refused_loop"`                                                                |
 
 ## Blueprints
 

@@ -455,6 +455,11 @@ export interface EventMap {
   /** `resumed`: an earlier conversation was picked back up from disk. */
   teammate_thread_opened: { new_thread: boolean; resumed: boolean };
   /** `answered`: a reply was posted back. */
+  /** `depth`: teammates already in the chain when this one was asked. */
+  teammate_handoff: {
+    depth: number;
+    outcome: "delivered" | "refused_depth" | "refused_loop";
+  };
   teammate_mention_answered: { surface: "linear"; answered: boolean };
   slack_connected: { success: boolean };
   /** `rejected`: Slack stopped accepting the saved app-level token. */

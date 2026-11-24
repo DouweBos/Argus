@@ -27,6 +27,7 @@ import { registerAutomationInboxTools } from "./automationInboxTools";
 import { registerAutomationMemoryTools } from "./automationMemoryTools";
 import { registerAutomationPrTool } from "./automationPrTool";
 import { registerAutomationReportTool } from "./automationReportTool";
+import { registerTeammateTools } from "./teammateTools";
 
 export function registerAutomationTools(
   server: McpServer,
@@ -40,6 +41,7 @@ export function registerAutomationTools(
   registerAutomationReportTool(server, callerAgentId);
   registerAutomationInboxTools(server, callerAgentId);
   registerAutomationMemoryTools(server, callerAgentId);
+  registerTeammateTools(server, callerAgentId);
   registerAutomationGithubTools(server, callerAgentId);
 
   server.tool(

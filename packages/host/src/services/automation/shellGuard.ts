@@ -998,6 +998,7 @@ const RUN_REPORTING_TOOLS = new Set([
   "mcp__argus__delete_memory",
   "mcp__argus__emit_proposal",
   "mcp__argus__emit_report",
+  "mcp__argus__ask_teammate",
   "mcp__argus__save_memory",
   "mcp__argus__withdraw_proposal",
 ]);

@@ -12,6 +12,7 @@ import { listAutomationRuns } from "../automation/manager";
 import { reportPreview } from "../automation/reportPreview";
 import { memorySection } from "../automation/runPrompt";
 import { teammateChatAutomation } from "./chatPolicy";
+import { teammateCache } from "./registry";
 import { soulForPrompt } from "./soul";
 
 const RECENT_RUNS = 5;
@@ -66,7 +67,27 @@ export function buildTeammatePrompt(
       ),
     ),
     ...recentActivity(dutyIds),
+    ...otherTeammates(teammate.id),
   ].join("\n");
+}
+
+/** Who else to hand work to with `ask_teammate`. */
+function otherTeammates(selfId: string): string[] {
+  const others = teammateCache().filter((t) => t.id !== selfId);
+  if (others.length === 0) {
+    return [];
+  }
+
+  return [
+    "",
+    "## Your teammates",
+    "",
+    "When something is another teammate's job, ask them with `ask_teammate` rather than doing it yourself:",
+    "",
+    ...others.map(
+      (t) => `- @${t.handle} — ${t.name}${t.tagline ? `: ${t.tagline}` : ""}`,
+    ),
+  ];
 }
 
 /** One line per recent duty run, so "what did you find this morning?" works. */

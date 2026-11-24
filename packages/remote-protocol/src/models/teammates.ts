@@ -141,7 +141,8 @@ export type TeammateTemplate = z.infer<typeof TeammateTemplate>;
 export const TeammateThread = z.object({
   id: z.string(),
   teammate_id: z.string(),
-  surface: z.literal("direct"),
+  /** Where it started: the app, Slack, a Linear comment, or another teammate. */
+  surface: z.enum(["direct", "handoff", "linear", "slack"]),
   /** The first thing said in it, trimmed. */
   title: z.string(),
   /** Stable across restarts; open the thread before talking to it. */

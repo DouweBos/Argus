@@ -38,10 +38,13 @@ const SCHEMA_VERSION = 1;
 /** Threads kept per teammate; the oldest archived ones go first. */
 export const MAX_THREADS_PER_TEAMMATE = 200;
 
+export type ThreadSurface = "direct" | "handoff" | "linear" | "slack";
+
 export interface TeammateThread {
   id: string;
   teammate_id: string;
-  surface: "direct";
+  /** Where it started: the app, Slack, a Linear comment, or another teammate. */
+  surface: ThreadSurface;
   /** The first thing the user said, trimmed. Shown in the thread list only. */
   title: string;
   /** Stable across restarts; the live agent, when one runs, has this id. */
@@ -166,7 +169,11 @@ export interface OpenedThread {
  */
 export async function openThread(
   teammateId: string,
-  options: { threadId?: string | null; fresh?: boolean } = {},
+  options: {
+    threadId?: string | null;
+    fresh?: boolean;
+    surface?: ThreadSurface;
+  } = {},
 ): Promise<OpenedThread> {
   const teammate = requireTeammate(teammateId);
   let thread: TeammateThread | undefined;
@@ -194,7 +201,7 @@ export async function openThread(
     thread = {
       id,
       teammate_id: teammateId,
-      surface: "direct",
+      surface: options.surface ?? "direct",
       title: "",
       agent_id: `teammate-${id}`,
       created_at: Date.now(),
@@ -314,4 +321,65 @@ export async function deleteTeammateWithThreads(
   cache = threads().filter((t) => t.teammate_id !== teammateId);
   persist();
   deleteTeammate(teammateId, keepDuties);
+}
+
+const ANSWER_TIMEOUT_MS = 20 * 60_000;
+
+/**
+ * Say something in a thread — a new one when `threadId` is null — and wait
+ * for the answer to that turn. For surfaces that need a reply in hand: a
+ * Linear comment, another teammate.
+ */
+export async function askTeammate(
+  teammateId: string,
+  ask: {
+    threadId: string | null;
+    surface: ThreadSurface;
+    text: string;
+    author: string;
+    timeoutMs?: number;
+  },
+): Promise<{ threadId: string; agentId: string; answer: string | null }> {
+  const opened = await openThread(teammateId, {
+    threadId: ask.threadId,
+    fresh: ask.threadId === null,
+    surface: ask.surface,
+  });
+  const before = appState.agents.get(opened.agent_id)?.turnsCompleted ?? 0;
+  const { submitAgentMessage } = await import("../agent/conversation/actions");
+  await submitAgentMessage(opened.agent_id, {
+    text: ask.text,
+    author: ask.author,
+  });
+
+  return {
+    threadId: opened.thread.id,
+    agentId: opened.agent_id,
+    answer: await nextAnswer(
+      opened.agent_id,
+      before,
+      ask.timeoutMs ?? ANSWER_TIMEOUT_MS,
+    ),
+  };
+}
+
+/** The result of the first turn after `before`, or null on timeout. */
+async function nextAnswer(
+  agentId: string,
+  before: number,
+  timeoutMs: number,
+): Promise<string | null> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const agent = appState.agents.get(agentId);
+    if (!agent) {
+      return null;
+    }
+    if (agent.turnsCompleted > before && agent.status !== "running") {
+      return agent.resultSummary?.result ?? null;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2_000));
+  }
+
+  return null;
 }

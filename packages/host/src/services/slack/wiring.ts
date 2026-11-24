@@ -119,7 +119,10 @@ function teammateByHandle(handle: string): { id: string; name: string } | null {
 
 async function startTeammate(teammateId: string) {
   const { openThread } = await import("../teammate/threads");
-  const opened = await openThread(teammateId, { fresh: true });
+  const opened = await openThread(teammateId, {
+    fresh: true,
+    surface: "slack",
+  });
 
   return {
     sessionId: opened.session_id,

@@ -22,7 +22,6 @@ import { teammatesActive } from "../settings";
 export const POLL_MS = 2 * 60_000;
 /** On first look, only this far back — never the whole history. */
 const FIRST_LOOK_MS = 10 * 60_000;
-const ANSWER_TIMEOUT_MS = 20 * 60_000;
 /** Ends every reply, so a reply never triggers another. */
 export const REPLY_SIGNATURE = "via Argus";
 
@@ -158,49 +157,18 @@ export function hostLinearMentionDeps(): LinearMentionDeps {
       await commentOnLinearIssueById(issueId, body, parentId);
     },
     ask: async (teammateId, threadId, prompt) => {
-      const { openThread } = await import("../threads");
-      const { submitAgentMessage } =
-        await import("../../agent/conversation/actions");
-      const { appState } = await import("../../../state");
-      const opened = await openThread(teammateId, {
+      const { askTeammate } = await import("../threads");
+      const asked = await askTeammate(teammateId, {
         threadId,
-        fresh: threadId === null,
-      });
-      const agent = appState.agents.get(opened.agent_id);
-      const before = agent?.turnsCompleted ?? 0;
-      await submitAgentMessage(opened.agent_id, {
+        surface: "linear",
         text: prompt,
         author: "Linear",
       });
 
-      return {
-        threadId: opened.thread.id,
-        answer: await nextAnswer(opened.agent_id, before),
-      };
+      return { threadId: asked.threadId, answer: asked.answer };
     },
     now: () => Date.now(),
   };
-}
-
-/** The result of the turn after `before`, or null on timeout. */
-async function nextAnswer(
-  agentId: string,
-  before: number,
-): Promise<string | null> {
-  const { appState } = await import("../../../state");
-  const deadline = Date.now() + ANSWER_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    const agent = appState.agents.get(agentId);
-    if (!agent) {
-      return null;
-    }
-    if (agent.turnsCompleted > before && agent.status !== "running") {
-      return agent.resultSummary?.result ?? null;
-    }
-    await new Promise((r) => setTimeout(r, 2_000));
-  }
-
-  return null;
 }
 
 let timer: ReturnType<typeof setInterval> | null = null;
