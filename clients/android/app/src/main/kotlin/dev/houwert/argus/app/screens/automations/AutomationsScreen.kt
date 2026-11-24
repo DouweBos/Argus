@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.app.navigation.Route
+import dev.houwert.argus.app.screens.teammates.TeammatesEntryRow
 import dev.houwert.argus.core.automations.isActive
 import dev.houwert.argus.ui.automations.AutomationRow
 import dev.houwert.argus.ui.automations.RunRow
@@ -64,12 +65,21 @@ fun AutomationsScreen() {
   val loaded by store.loaded.collectAsState()
   val error by store.error.collectAsState()
   val triggering by store.triggering.collectAsState()
+  val teammatesStore = LocalAppStore.current.teammates
+  val teammates by teammatesStore.teammates.collectAsState()
+  val teammatesLoaded by teammatesStore.loaded.collectAsState()
+  val teammatesError by teammatesStore.error.collectAsState()
   var showingAllRuns by rememberSaveable { mutableStateOf(false) }
   var refreshing by rememberSaveable { mutableStateOf(false) }
+  // A computer too old to answer `teammates.list` gets no entry.
+  val showsTeammates = teammatesLoaded && (teammatesError == null || teammates.isNotEmpty())
 
-  LiveRefresh(enabled = access.ready) { store.refresh() }
+  LiveRefresh(enabled = access.ready) {
+    store.refresh()
+    teammatesStore.refresh()
+  }
 
-  AutomationsScaffold("Automations", actions = { if (access.hasControl) NewMenu() }) {
+  AutomationsScaffold("Automations", actions = { if (access.hasControl) NewMenu(offersTeammates = showsTeammates) }) {
     PullToRefreshBox(
       refreshing,
       onRefresh = {
@@ -82,7 +92,8 @@ fun AutomationsScreen() {
       Modifier.fillMaxSize(),
     ) {
       LoadPhaseBox(
-        loaded, error, automations.isEmpty() && runs.isEmpty(), Modifier.fillMaxSize(),
+        // The teammates entry counts as content, so it stays reachable with no automations.
+        loaded, error, automations.isEmpty() && runs.isEmpty() && !showsTeammates, Modifier.fillMaxSize(),
         loadingLabel = "Reading automations", failedTitle = "Automations unavailable",
         onRetry = { scope.launch { store.refresh() } },
         empty = { EmptyState(Icon.automations, "No automations", body = "Use + to run a playbook once, or to set one on a schedule.") },
@@ -94,6 +105,13 @@ fun AutomationsScreen() {
           horizontalAlignment = Alignment.CenterHorizontally,
         ) {
           error?.let { message -> item { Banner(message, Modifier.widthIn(max = ArgusMetrics.maxReadingWidth), tone = Tone.Danger, onDismiss = store::clearError) } }
+          if (showsTeammates) {
+            item(key = "teammates") {
+              ListSection(Modifier.widthIn(max = ArgusMetrics.maxReadingWidth)) {
+                TeammatesEntryRow(teammates) { router.push(Route.Teammates) }
+              }
+            }
+          }
           if (automations.isNotEmpty()) {
             item(key = "automations") {
               // Alone on the screen a header would only repeat the title.
@@ -138,7 +156,7 @@ fun AutomationsScreen() {
 
 /** Quick Run, a new automation, or one described in a sentence. */
 @Composable
-private fun NewMenu() {
+private fun NewMenu(offersTeammates: Boolean) {
   val router = LocalRouter.current
   var open by rememberSaveable { mutableStateOf(false) }
   Box {
@@ -152,6 +170,7 @@ private fun NewMenu() {
       MenuItem("Quick Run", Icon.play) { pick(Route.QuickRun) }
       MenuItem("New Automation", Icon.clock) { pick(Route.AutomationEditor(null, "New Automation")) }
       MenuItem("Describe it", Icon.agent) { pick(Route.DescribeAutomation) }
+      if (offersTeammates) MenuItem("New Teammate", Icon.person) { pick(Route.TeammateGallery) }
     }
   }
 }

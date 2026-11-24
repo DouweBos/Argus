@@ -2,6 +2,7 @@ package dev.houwert.argus.app.navigation
 
 import dev.houwert.argus.core.routing.ArgusRoute
 import dev.houwert.argus.core.routing.GitRoute
+import dev.houwert.argus.core.routing.TeammatePage
 import dev.houwert.argus.core.sessions.SessionActivity
 import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.adoptSession
@@ -41,6 +42,9 @@ object RouteLink {
       PhoneDestination(AppSection.Automations, route.runId?.let { Route.Run(it, "Run") } ?: Route.QuickRun)
     is ArgusRoute.Automation ->
       PhoneDestination(AppSection.Automations, route.runId?.let { Route.Run(it, "Run") } ?: Route.Automation(route.id, "Automation"))
+    ArgusRoute.Teammates -> PhoneDestination(AppSection.Automations, Route.Teammates)
+    ArgusRoute.TeammateGallery -> PhoneDestination(AppSection.Automations, Route.TeammateGallery)
+    is ArgusRoute.Teammate -> PhoneDestination(AppSection.Automations, teammateScreen(route))
     ArgusRoute.Blueprints -> PhoneDestination(AppSection.Blueprints)
     is ArgusRoute.Blueprint -> PhoneDestination(AppSection.Blueprints, Route.Blueprint(route.id))
     ArgusRoute.GenerateBlueprint -> PhoneDestination(AppSection.Blueprints, Route.GenerateBlueprint)
@@ -66,6 +70,17 @@ object RouteLink {
     is ArgusRoute.SessionCode ->
       session(route.id, host)?.let { PhoneDestination(AppSection.Home, Route.QuickOpen(it.id, SessionActivity.title(it)), isFallback = route.filePath != null) }
         ?: sessionHome(route.id, host, hints)
+  }
+
+  /** A teammate's page; each screen titles itself once the teammate loads. */
+  private fun teammateScreen(route: ArgusRoute.Teammate): Route {
+    val label = "Teammate"
+    return when (val page = route.page) {
+      is TeammatePage.Chat -> Route.Teammate(route.id, label, page.threadId)
+      TeammatePage.Profile -> Route.TeammateProfile(route.id, label)
+      TeammatePage.Duties -> Route.TeammateDuties(route.id, label)
+      TeammatePage.Memory -> Route.TeammateMemory(route.id, label)
+    }
   }
 
   /** A git sub-view the phone has, or the working copy beneath every one it doesn't. */

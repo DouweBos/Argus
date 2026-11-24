@@ -54,6 +54,12 @@ sealed interface ArgusRoute {
   data object DescribeAutomation : ArgusRoute
   /** `/automations/:automationId`, or one of its runs. */
   data class Automation(val id: String, val runId: String? = null) : ArgusRoute
+  /** `/teammates`: the named agents on this host. */
+  data object Teammates : ArgusRoute
+  /** `/teammates/gallery`: starting teammates to pick from. */
+  data object TeammateGallery : ArgusRoute
+  /** `/teammates/:teammateId[/threads/:threadId|/profile|/duties|/memory]`. */
+  data class Teammate(val id: String, val page: TeammatePage = TeammatePage.Chat(null)) : ArgusRoute
   /** `/blueprints`: this computer's recipes for new projects. */
   data object Blueprints : ArgusRoute
   /** `/blueprints/:blueprintId`, or `/blueprints/new` when [id] is null. */
@@ -134,6 +140,9 @@ sealed interface ArgusRoute {
       is QuickRun -> if (runId == null) "/automations/quick" else "/automations/quick/runs/:runId"
       DescribeAutomation -> "/automations/describe"
       is Automation -> if (runId == null) "/automations/:automationId" else "/automations/:automationId/runs/:runId"
+      Teammates -> "/teammates"
+      TeammateGallery -> "/teammates/gallery"
+      is Teammate -> "/teammates/:teammateId" + page.patternSuffix
       Blueprints -> "/blueprints"
       is Blueprint -> if (id == null) "/blueprints/new" else "/blueprints/:blueprintId"
       GenerateBlueprint -> "/blueprints/generate"
@@ -179,6 +188,23 @@ sealed interface ArgusRoute {
     /** The path and its query items; a malformed query reads as none. */
     fun split(raw: String): Pair<String, Map<String, String>> = splitPath(raw)
   }
+}
+
+/** Which of a teammate's pages is showing. Each is a route of its own. */
+sealed interface TeammatePage {
+  /** The newest conversation, or one in particular. */
+  data class Chat(val threadId: String? = null) : TeammatePage
+  data object Profile : TeammatePage
+  data object Duties : TeammatePage
+  data object Memory : TeammatePage
+
+  val patternSuffix: String
+    get() = when (this) {
+      is Chat -> if (threadId == null) "" else "/threads/:threadId"
+      Profile -> "/profile"
+      Duties -> "/duties"
+      Memory -> "/memory"
+    }
 }
 
 /** A route plus the machine it reads from: `?host=<id>` on any path. Null host is this one. */

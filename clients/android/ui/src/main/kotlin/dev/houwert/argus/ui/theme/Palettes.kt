@@ -2,6 +2,7 @@ package dev.houwert.argus.ui.theme
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
+import dev.houwert.argus.kit.protocol.generated.TeammateColor
 
 /** Syntax colours, one per capture; twins of `Theme+Syntax.swift`. */
 @Immutable
@@ -74,4 +75,28 @@ object GitGraphPalette {
 
   /** A lane's colour; indices wrap around the palette. */
   fun lane(index: Int): Color = lanes[((index % lanes.size) + lanes.size) % lanes.size]
+}
+
+/** A teammate's colour, a twin of ArgusUI's `TeammateColor` tokens; the same in both schemes. */
+object TeammatePalette {
+  val blue = hex(0x4D9FFF)
+  val green = hex(0x22C55E)
+  val orange = hex(0xFF7A59)
+  val pink = hex(0xE879F9)
+  val purple = hex(0x7C5CFC)
+  val red = hex(0xFF4466)
+  val teal = hex(0x00D4AA)
+  val yellow = hex(0xF5A623)
+
+  /** An unknown colour from a newer host reads as blue. */
+  fun color(color: TeammateColor): Color = when (color) {
+    TeammateColor.green -> green
+    TeammateColor.orange -> orange
+    TeammateColor.pink -> pink
+    TeammateColor.purple -> purple
+    TeammateColor.red -> red
+    TeammateColor.teal -> teal
+    TeammateColor.yellow -> yellow
+    else -> blue
+  }
 }

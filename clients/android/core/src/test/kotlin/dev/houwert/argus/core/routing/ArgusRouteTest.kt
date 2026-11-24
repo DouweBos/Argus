@@ -14,6 +14,7 @@ import dev.houwert.argus.core.routing.ArgusRoute.QuickRun
 import dev.houwert.argus.core.routing.ArgusRoute.Session
 import dev.houwert.argus.core.routing.ArgusRoute.SessionCode
 import dev.houwert.argus.core.routing.ArgusRoute.SessionGit
+import dev.houwert.argus.core.routing.ArgusRoute.Teammate
 import dev.houwert.argus.core.routing.ArgusRoute.Usage
 import dev.houwert.argus.core.routing.ArgusRoute.UsageModel
 import dev.houwert.argus.kit.protocol.generated.LinearIssueScope
@@ -83,6 +84,13 @@ class ArgusRouteTest {
       "/automations/quick/runs/r1" to QuickRun("r1"),
       "/automations/a1" to Automation("a1"),
       "/automations/a1/runs/r1" to Automation("a1", "r1"),
+      "/teammates" to ArgusRoute.Teammates,
+      "/teammates/gallery" to ArgusRoute.TeammateGallery,
+      "/teammates/t1" to Teammate("t1"),
+      "/teammates/t1/threads/th1" to Teammate("t1", TeammatePage.Chat("th1")),
+      "/teammates/t1/profile" to Teammate("t1", TeammatePage.Profile),
+      "/teammates/t1/duties" to Teammate("t1", TeammatePage.Duties),
+      "/teammates/t1/memory" to Teammate("t1", TeammatePage.Memory),
       // The session home is gone; old links open the session's agents.
       "/sessions/s1" to Session("s1"),
       "/sessions/s1/home" to Session("s1"),
@@ -133,6 +141,7 @@ class ArgusRouteTest {
     val paths = listOf(
       "/nope", "/sessions", "/sessions/s1/git/nope", "/devices/ios", "/devices/ios/a/b", "/pull-requests/a/b/notanumber",
       "/agents/extra", "/issues/created/ENG-1/extra", "/design", "/design?url=", "/design/extra?url=x",
+      "/teammates/t1/nope", "/teammates/t1/threads", "/teammates/t1/nope/x", "/teammates/t1/threads/a/b",
     )
     for (path in paths) assertNull(ArgusRoute.parse(path), path)
   }
@@ -154,6 +163,8 @@ class ArgusRouteTest {
       NewProject(null), NewProject("b&1"),
       ArgusRoute.Automations, QuickRun(null), ArgusRoute.DescribeAutomation,
       QuickRun("r"), Automation("a"), Automation("a", "r"),
+      ArgusRoute.Teammates, ArgusRoute.TeammateGallery, Teammate("t 1"), Teammate("t", TeammatePage.Chat("th/1")),
+      Teammate("t", TeammatePage.Profile), Teammate("t", TeammatePage.Duties), Teammate("t", TeammatePage.Memory),
       Session("s"), Session("s", "a"), Session("s/1", "a#2"),
       SessionCode("s"), SessionCode("s", "dir/f ü.kt", 3), SessionCode("s", "a.kt"),
       SessionGit("s", GitRoute.Working), SessionGit("s", GitRoute.Branches(null)),
@@ -166,6 +177,14 @@ class ArgusRouteTest {
       SessionGit("s", GitRoute.Timeline(null)), SessionGit("s", GitRoute.Timeline("cp 1")),
     )
     for (route in routes) assertEquals(route, ArgusRoute.parse(route.path), route.path)
+  }
+
+  @Test
+  fun teammatePatternsLeaveTheIdsOut() {
+    assertEquals("/teammates/:teammateId", Teammate("t").pattern)
+    assertEquals("/teammates/:teammateId/threads/:threadId", Teammate("t", TeammatePage.Chat("x")).pattern)
+    assertEquals("/teammates/:teammateId/memory", Teammate("t", TeammatePage.Memory).pattern)
+    assertEquals("/teammates/gallery", ArgusRoute.TeammateGallery.pattern)
   }
 
   @Test

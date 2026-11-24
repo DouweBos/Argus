@@ -10,6 +10,7 @@ import dev.houwert.argus.core.offline.Outbox
 import dev.houwert.argus.core.offline.SavedAnswers
 import dev.houwert.argus.core.pullrequests.PullRequestsStore
 import dev.houwert.argus.core.stores.AutomationsStore
+import dev.houwert.argus.core.stores.TeammatesStore
 import dev.houwert.argus.core.stores.BackgroundRefresh
 import dev.houwert.argus.core.stores.BlueprintsStore
 import dev.houwert.argus.core.stores.HostStore
@@ -77,6 +78,7 @@ class AppStore(
   var platform: AppPlatform = AppPlatform.None
   // Per-computer stores beside [host]; cleared when the active computer changes (see the init block at the end).
   val automations = AutomationsStore(host)
+  val teammates = TeammatesStore(host)
   val blueprints = BlueprintsStore(host)
   val proposals = ProposalsStore(host)
   /** The Argus account: sign-in, and the computers on it. Wired in [AppStoreAccount]. */
@@ -331,6 +333,7 @@ class AppStore(
     scope.launch {
       activeHostId.drop(1).collect {
         automations.clear()
+        teammates.clear()
         blueprints.clear()
         proposals.clear()
         pullRequests.clear()

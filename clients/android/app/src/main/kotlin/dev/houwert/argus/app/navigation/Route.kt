@@ -67,6 +67,15 @@ sealed interface Route {
   @Serializable data class AutomationEditor(val id: String? = null, val label: String) : Route
   @Serializable data object DescribeAutomation : Route
   @Serializable data class Run(val id: String, val label: String) : Route
+  /** The named agents on this computer; under the Automations tab. */
+  @Serializable data object Teammates : Route
+  /** Starting teammates to pick from. */
+  @Serializable data object TeammateGallery : Route
+  /** Talking to a teammate; a null [threadId] is its newest conversation. */
+  @Serializable data class Teammate(val id: String, val label: String, val threadId: String? = null) : Route
+  @Serializable data class TeammateProfile(val id: String, val label: String) : Route
+  @Serializable data class TeammateDuties(val id: String, val label: String) : Route
+  @Serializable data class TeammateMemory(val id: String, val label: String) : Route
   @Serializable data object Blueprints : Route
   @Serializable data class Blueprint(val id: String? = null) : Route
   @Serializable data object GenerateBlueprint : Route

@@ -52,10 +52,17 @@ private data class MessageSheet(val message: RemoteMessage, val fork: Boolean)
 
 /**
  * One agent's transcript and the input that drives it: the body of a session
- * screen's tab. The screen around it owns the title and top bar.
+ * screen's tab. The screen around it owns the title and top bar. [stoppedFooter]
+ * replaces the resume offer once the agent is gone.
  */
 @Composable
-fun AgentView(agentId: String, label: String, modifier: Modifier = Modifier, open: (RemoteAgentStatus, String) -> Unit) {
+fun AgentView(
+  agentId: String,
+  label: String,
+  modifier: Modifier = Modifier,
+  stoppedFooter: (@Composable () -> Unit)? = null,
+  open: (RemoteAgentStatus, String) -> Unit,
+) {
   val host = LocalAppStore.current.host
   val router = LocalRouter.current
   val theme = ArgusTheme.colors
@@ -112,6 +119,7 @@ fun AgentView(agentId: String, label: String, modifier: Modifier = Modifier, ope
       openFileLink = sessionId?.takeIf { hasControl }?.let { sid -> { ref -> router.push(Route.File(sid, ref.path, ref.line, "chat_link")) } },
     )
     when {
+      isGone && stoppedFooter != null -> stoppedFooter()
       isGone -> StoppedFooter(agentId, hasControl) { open(it, label) }
       hasControl -> ChatInputView(
         host, agentId, sessionId,

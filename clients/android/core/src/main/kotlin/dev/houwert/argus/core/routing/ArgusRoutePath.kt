@@ -50,6 +50,7 @@ internal fun parseRoute(raw: String): ArgusRoute? {
       parts[1] == "new-project" -> ArgusRoute.NewProject(query["blueprint"].nonEmpty())
       else -> ArgusRoute.Blueprint(parts[1])
     }
+    "teammates" -> parseTeammate(parts)
     "automations" -> when {
       count == 1 -> ArgusRoute.Automations
       count == 2 && parts[1] == "quick" -> ArgusRoute.QuickRun(null)
@@ -62,6 +63,19 @@ internal fun parseRoute(raw: String): ArgusRoute? {
     "sessions" -> parseSession(parts, query)
     else -> null
   }
+}
+
+private fun parseTeammate(parts: List<String>): ArgusRoute? = when (parts.size) {
+  1 -> ArgusRoute.Teammates
+  2 -> if (parts[1] == "gallery") ArgusRoute.TeammateGallery else ArgusRoute.Teammate(parts[1])
+  3 -> when (parts[2]) {
+    "profile" -> ArgusRoute.Teammate(parts[1], TeammatePage.Profile)
+    "duties" -> ArgusRoute.Teammate(parts[1], TeammatePage.Duties)
+    "memory" -> ArgusRoute.Teammate(parts[1], TeammatePage.Memory)
+    else -> null
+  }
+  4 -> if (parts[2] == "threads") ArgusRoute.Teammate(parts[1], TeammatePage.Chat(parts[3])) else null
+  else -> null
 }
 
 private fun parseUsage(parts: List<String>, query: Map<String, String>): ArgusRoute? = when (parts.size) {
@@ -199,6 +213,12 @@ internal fun routePath(route: ArgusRoute): String {
     is ArgusRoute.Blueprint -> "/blueprints/" + (route.id?.let(e) ?: "new")
     ArgusRoute.GenerateBlueprint -> "/blueprints/generate"
     is ArgusRoute.NewProject -> "/blueprints/new-project" + q("blueprint" to route.blueprintId)
+    ArgusRoute.Teammates -> "/teammates"
+    ArgusRoute.TeammateGallery -> "/teammates/gallery"
+    is ArgusRoute.Teammate -> "/teammates/${e(route.id)}" + when (val page = route.page) {
+      is TeammatePage.Chat -> page.threadId?.let { "/threads/${e(it)}" } ?: ""
+      else -> page.patternSuffix
+    }
     ArgusRoute.Automations -> "/automations"
     is ArgusRoute.QuickRun -> route.runId?.let { "/automations/quick/runs/${e(it)}" } ?: "/automations/quick"
     ArgusRoute.DescribeAutomation -> "/automations/describe"

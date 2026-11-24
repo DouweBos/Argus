@@ -51,6 +51,12 @@ import dev.houwert.argus.app.screens.pair.PairScreen
 import dev.houwert.argus.app.screens.session.SessionScreen
 import dev.houwert.argus.app.screens.session.SessionTimelineScreen
 import dev.houwert.argus.app.screens.session.StoppedAgentScreen
+import dev.houwert.argus.app.screens.teammates.TeammateDutiesScreen
+import dev.houwert.argus.app.screens.teammates.TeammateGalleryScreen
+import dev.houwert.argus.app.screens.teammates.TeammateMemoryScreen
+import dev.houwert.argus.app.screens.teammates.TeammateProfileScreen
+import dev.houwert.argus.app.screens.teammates.TeammateScreen
+import dev.houwert.argus.app.screens.teammates.TeammatesScreen
 import dev.houwert.argus.app.screens.terminals.TerminalScreen
 import dev.houwert.argus.app.screens.terminals.TerminalsScreen
 import dev.houwert.argus.app.screens.usage.UsageModelScreen
@@ -100,6 +106,12 @@ fun RouteScreen(route: Route) {
     is Route.AutomationEditor -> AutomationEditorScreen(route.id, route.label)
     Route.DescribeAutomation -> DescribeAutomationScreen()
     is Route.Run -> RunScreen(route.id, route.label)
+    Route.Teammates -> TeammatesScreen()
+    Route.TeammateGallery -> TeammateGalleryScreen()
+    is Route.Teammate -> TeammateScreen(route.id, route.label, route.threadId)
+    is Route.TeammateProfile -> TeammateProfileScreen(route.id, route.label)
+    is Route.TeammateDuties -> TeammateDutiesScreen(route.id, route.label)
+    is Route.TeammateMemory -> TeammateMemoryScreen(route.id, route.label)
     Route.Inbox -> InboxScreen()
     is Route.Proposal -> ProposalScreen(route.id)
     Route.Blueprints -> BlueprintsScreen()
