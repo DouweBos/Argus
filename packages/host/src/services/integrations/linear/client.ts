@@ -328,7 +328,12 @@ export class LinearApi {
           body: string;
           createdAt: string;
           parent: { id: string } | null;
-          issue: { id: string; identifier: string; title: string; url: string } | null;
+          issue: {
+            id: string;
+            identifier: string;
+            title: string;
+            url: string;
+          } | null;
         }[];
       };
     }>(MY_RECENT_COMMENTS, { since });
