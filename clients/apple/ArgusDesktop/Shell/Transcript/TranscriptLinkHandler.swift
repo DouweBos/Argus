@@ -163,28 +163,11 @@ final class TranscriptLinkHandler {
   }
 
   private func item(_ title: String, enabled: Bool = true, action: @escaping () -> Void) -> NSMenuItem {
-    let item = ClosureMenuItem(title: title, action: action)
+    let item = ActionMenuItem(title, handler: action)
     // Menus auto-enable by action, so a disabled item simply has none.
     if !enabled { item.action = nil }
     return item
   }
-}
-
-/// A menu item that runs a closure, so context menus needn't route through
-/// the responder chain.
-private final class ClosureMenuItem: NSMenuItem {
-  private let handler: () -> Void
-
-  init(title: String, action: @escaping () -> Void) {
-    handler = action
-    super.init(title: title, action: #selector(run), keyEquivalent: "")
-    target = self
-  }
-
-  @available(*, unavailable)
-  required init(coder: NSCoder) { fatalError() }
-
-  @objc private func run() { handler() }
 }
 
 extension EnvironmentValues {

@@ -69,7 +69,7 @@ struct InspectionOverlay: View {
     menu.addItem(withTitle: "\(stack.count) elements under cursor", action: nil, keyEquivalent: "")
       .isEnabled = false
     for node in stack.reversed() {
-      let item = ClosureMenuItem(title: node.pickLabel) { [model] in model.select(node.id) }
+      let item = ActionMenuItem(node.pickLabel) { [model] in model.select(node.id) }
       item.state = model.selectedId == node.id ? .on : .off
       menu.addItem(item)
     }
@@ -90,21 +90,6 @@ struct InspectionOverlay: View {
   private func tooltip(_ node: Inspection.Node) -> String {
     node.hint(maxLength: .max).map { "\(node.className)  \($0)" } ?? node.className
   }
-}
-
-/// A menu item that runs a closure; `NSMenu` only knows target/action.
-private final class ClosureMenuItem: NSMenuItem {
-  private let run: () -> Void
-
-  init(title: String, run: @escaping () -> Void) {
-    self.run = run
-    super.init(title: title, action: #selector(fire), keyEquivalent: "")
-    target = self
-  }
-
-  required init(coder: NSCoder) { fatalError("init(coder:) is unused") }
-
-  @objc private func fire() { run() }
 }
 
 /// The boxes alone, in one `Canvas`: thousands of nodes stay cheap.

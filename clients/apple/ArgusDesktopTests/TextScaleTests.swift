@@ -22,13 +22,12 @@ struct TextScaleTests {
 
   @Test func appKitMetricsAndTablesFollowTheScale() {
     defer { TextScale.shared.factor = 1 }
-    var tracker = TextScaleTracker()
-    let unchanged = tracker.changed()
+    // The kit's tables restyle when the style changes; Blame's own sizes are checked in GroveUIKit's zoomScalesTheBlame.
+    let unchanged = GitUIStyle.argus(.dark, scale: TextScale.shared.factor)
     TextScale.shared.factor = 17 / 13
-    let first = tracker.changed()
-    let second = tracker.changed()
-    #expect(!unchanged && first && !second)
-    #expect(BlameMetrics.font.pointSize > 11.5)
-    #expect(GitUIStyle.argus(.dark, scale: TextScale.shared.factor).fontScale == CGFloat(17) / 13)
+    let zoomed = GitUIStyle.argus(.dark, scale: TextScale.shared.factor)
+    #expect(unchanged != zoomed)
+    #expect(zoomed == GitUIStyle.argus(.dark, scale: TextScale.shared.factor))
+    #expect(zoomed.fontScale == CGFloat(17) / 13)
   }
 }

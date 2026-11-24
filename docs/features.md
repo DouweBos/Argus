@@ -128,6 +128,13 @@ A real git workflow lives inside Argus:
   its base already has are dimmed. Compare takes any two branches, tags or
   commits, says whether merging would conflict, and opens each changed
   file into its diff, where you can leave review comments.
+- **Blame** — who last changed each line of a file and in which commit,
+  fast for files of any length, with newer changes tinted more strongly.
+  The file list sits beside the file (one at a time when narrow). Click a
+  change's commit to see the file before it, step back and forward through
+  its revisions, ⌥-click a line to open it in the code view, ⌘C copies the
+  selected lines, and a line's menu shows its commit in History. File
+  History and Compare open Blame at any revision.
 - **Merge & rebase** — Argus runs them for you and surfaces conflicts
   where you commit: both versions side by side above the merged result,
   which you can edit and save as the resolution, or keep one side whole.
