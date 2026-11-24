@@ -22,6 +22,14 @@ enum AutomationActions {
 
   /// A quick run has no automation to hang off, so it opens under quick runs.
   static func openRun(_ model: DesktopModel, automationId: String, runId: String) {
+    // A teammate's conversation raises proposals as `teammate-chat:<id>`, with the thread for a run.
+    if automationId.hasPrefix("teammate-chat:"), runId.hasPrefix("thread:") {
+      model.navigate(
+        .teammate(
+          id: String(automationId.dropFirst("teammate-chat:".count)),
+          page: .chat(threadId: String(runId.dropFirst("thread:".count)))))
+      return
+    }
     let quick = model.inbox.runs.contains { $0.id == runId && $0.scratch != nil }
       || model.automations.runs.contains { $0.id == runId && $0.isQuick }
     model.navigate(quick ? .quickRun(runId: runId) : .automation(id: automationId, runId: runId))

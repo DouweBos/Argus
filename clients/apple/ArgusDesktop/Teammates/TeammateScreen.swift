@@ -122,7 +122,7 @@ private struct TeammateConversation: View {
           ForEach(list) { thread in
             SettingsNavItem(
               thread.title.isEmpty ? "New conversation" : thread.title,
-              systemImage: "bubble.left",
+              systemImage: Self.icon(for: thread.surface),
               selected: thread.id == opened?.thread.id
             ) {
               model.navigate(.teammate(id: teammate.id, page: .chat(threadId: thread.id)))
@@ -136,6 +136,16 @@ private struct TeammateConversation: View {
         }
         .padding(.horizontal, 8)
       }
+    }
+  }
+
+  /// Where a thread started: the app, Slack, a Linear comment, or another teammate.
+  static func icon(for surface: ArgusProtocol.TeammateThreadSurface) -> String {
+    switch surface.rawValue {
+    case "slack": "number"
+    case "linear": "text.bubble"
+    case "handoff": Icon.teammates
+    default: "bubble.left"
     }
   }
 

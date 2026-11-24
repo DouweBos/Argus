@@ -128,6 +128,7 @@ struct TeammateProfileForm: View {
   @State private var saved: TeammateDraft?
   @State private var saving = false
   @State private var confirmingDelete = false
+  @State private var revising = false
 
   var body: some View {
     Group {
@@ -191,7 +192,11 @@ struct TeammateProfileForm: View {
           .font(.system(.body, design: .monospaced))
           .frame(minHeight: 180)
       } header: {
-        Text("Soul")
+        HStack {
+          Text("Soul")
+          Spacer()
+          Button("Rewrite with Claude") { revising = true }.controlSize(.small)
+        }
       } footer: {
         Text("Who it is and how it works, in markdown. Every duty and conversation starts from it.")
       }
@@ -199,13 +204,21 @@ struct TeammateProfileForm: View {
       AutonomySection(autonomy: draft.autonomy, guardrails: draft.guardrails)
     }
     .formStyle(.grouped)
+    .sheet(isPresented: $revising) {
+      SoulRewriteSheet(name: draft.wrappedValue.name, soul: draft.wrappedValue.soul) { draft.wrappedValue.soul = $0 }
+    }
+  }
+
+  /// Back to inheriting what was set; the wire's patch can't carry a null.
+  private func cleared(_ draft: TeammateDraft) -> [ArgusProtocol.TeammateClearableField] {
+    saved?.autonomy != nil && draft.autonomy == nil ? [.autonomy] : []
   }
 
   private func save() {
     guard let draft else { return }
     saving = true
     Task {
-      var ok = await store.update(teammateId, draft.patch)
+      var ok = await store.update(teammateId, draft.patch, clear: cleared(draft))
       if ok, draft.soul != saved?.soul { ok = await store.saveSoul(teammateId, soul: draft.soul) }
       saving = false
       if ok { saved = draft }
@@ -215,6 +228,68 @@ struct TeammateProfileForm: View {
   private func delete(keepDuties: Bool) {
     Task {
       if await store.delete(teammateId, keepDuties: keepDuties) { model.navigate(.teammates) }
+    }
+  }
+}
+
+/// An instruction in, a rewritten soul shown beside it; Apply puts it in the editor.
+private struct SoulRewriteSheet: View {
+  @Environment(TeammatesStore.self) private var store
+  @Environment(\.dismiss) private var dismiss
+  let name: String
+  let soul: String
+  let apply: (String) -> Void
+
+  @State private var instruction = ""
+  @State private var rewritten: String?
+  @State private var working = false
+
+  var body: some View {
+    NavigationStack {
+      Form {
+        Section {
+          TextField(
+            "Instruction", text: $instruction,
+            prompt: Text("Be blunter, and always quote the failing line"), axis: .vertical
+          )
+          .lineLimit(2...5)
+        } footer: {
+          Text("Claude rewrites the soul around this, keeping the rest. Nothing is saved until you save the profile.")
+        }
+        if let rewritten {
+          Section("Rewritten") {
+            Text(rewritten).font(.system(.body, design: .monospaced)).textSelection(.enabled)
+          }
+        }
+        if let error = store.error {
+          Text(error).foregroundStyle(.secondary)
+        }
+      }
+      .formStyle(.grouped)
+      .navigationTitle("Rewrite \(name)'s Soul")
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+        ToolbarItem(placement: .confirmationAction) {
+          if let rewritten {
+            Button("Apply") {
+              apply(rewritten)
+              dismiss()
+            }
+          } else {
+            Button(working ? "Rewriting" : "Rewrite") { rewrite() }
+              .disabled(working || instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+          }
+        }
+      }
+    }
+    .frame(minWidth: 560, minHeight: 420)
+  }
+
+  private func rewrite() {
+    working = true
+    Task {
+      rewritten = await store.reviseSoul(name: name, soul: soul, instruction: instruction)
+      working = false
     }
   }
 }

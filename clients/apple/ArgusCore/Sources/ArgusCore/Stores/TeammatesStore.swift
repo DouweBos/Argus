@@ -166,11 +166,15 @@ public final class TeammatesStore {
   }
 
   @discardableResult
-  public func update(_ id: String, _ patch: ArgusProtocol.UpdateTeammateInput) async -> Bool {
+  public func update(
+    _ id: String, _ patch: ArgusProtocol.UpdateTeammateInput,
+    clear: [ArgusProtocol.TeammateClearableField] = []
+  ) async -> Bool {
     guard let backend = host.backend else { return false }
     do {
       let teammate = try await backend.request(
-        ArgusProtocol.Methods.TeammatesUpdate.self, .init(teammateId: id, patch: patch)
+        ArgusProtocol.Methods.TeammatesUpdate.self,
+        .init(teammateId: id, patch: patch, clear: clear.isEmpty ? nil : clear)
       ).teammate
       detailById[id]?.teammate = teammate
       if let index = summaries.firstIndex(where: { $0.teammate.id == id }) {
@@ -200,6 +204,20 @@ public final class TeammatesStore {
     } catch {
       fail("Couldn't save the soul", error)
       return false
+    }
+  }
+
+  /// A rewritten soul for the editor; nothing is saved. Nil on failure.
+  public func reviseSoul(name: String, soul: String, instruction: String) async -> String? {
+    guard let backend = host.backend else { return nil }
+    do {
+      return try await backend.request(
+        ArgusProtocol.Methods.TeammatesReviseSoul.self,
+        .init(name: name, soul: soul, instruction: instruction)
+      ).soul
+    } catch {
+      fail("Couldn't rewrite the soul", error)
+      return nil
     }
   }
 
