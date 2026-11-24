@@ -214,6 +214,7 @@ type TelemetryEventKind =
   | "new_pr"
   | "other"
   | "review_requested"
+  | "slack_message"
   | "webhook";
 
 const KNOWN_KINDS: TelemetryEventKind[] = [
@@ -223,6 +224,7 @@ const KNOWN_KINDS: TelemetryEventKind[] = [
   "new_issue",
   "new_pr",
   "review_requested",
+  "slack_message",
   "webhook",
 ];
 
@@ -238,8 +240,10 @@ function telemetryEventKind(events: AutomationEvent[]): TelemetryEventKind {
 
 function telemetryTriggerKind(
   automation: Automation,
-): "other" | "signal" | "webhook" {
+): "other" | "signal" | "slack" | "webhook" {
   const { kind } = automation.trigger;
 
-  return kind === "signal" || kind === "webhook" ? kind : "other";
+  return kind === "signal" || kind === "slack" || kind === "webhook"
+    ? kind
+    : "other";
 }

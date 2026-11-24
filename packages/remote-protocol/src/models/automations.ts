@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ReportBlock } from "../report";
+import { SlackChannelRef, SlackTriggerMatch } from "./slack";
 
 export * from "./automations/proposals";
 
@@ -57,6 +58,18 @@ export const AutomationTrigger = z.discriminatedUnion("kind", [
     /** Fires on a signed POST to the automation's URL on the gateway. */
     kind: z.literal("webhook"),
     fire: SignalFireMode,
+    max_runs_per_hour: z.number(),
+  }),
+  z.object({
+    /** Fires on a message in a Slack channel the bot is in. */
+    kind: z.literal("slack"),
+    channel: SlackChannelRef,
+    match: SlackTriggerMatch,
+    /** The keyword or prefix; ignored for `any`. Case-insensitive. */
+    text: z.string(),
+    /** `each`: one run per message. `batch`: one run for everything waiting. */
+    fire: z.enum(["batch", "each"]),
+    /** Cap on runs this trigger starts in any rolling hour. */
     max_runs_per_hour: z.number(),
   }),
 ]);
@@ -133,6 +146,8 @@ export const Automation = z.object({
   last_run_at: z.number().nullable(),
   /** Next scheduled fire, epoch ms. Null for manual triggers. */
   next_run_at: z.number().nullable(),
+  /** Also post each finished run's report to this Slack channel. */
+  report_slack_channel: SlackChannelRef.nullish(),
 });
 export type Automation = z.infer<typeof Automation>;
 
@@ -227,6 +242,7 @@ export const CreateAutomationInput = z.object({
   runner: z.string().nullish(),
   claude_account_id: z.string().nullish(),
   template_id: z.string().nullish(),
+  report_slack_channel: SlackChannelRef.nullish(),
 });
 export type CreateAutomationInput = z.infer<typeof CreateAutomationInput>;
 

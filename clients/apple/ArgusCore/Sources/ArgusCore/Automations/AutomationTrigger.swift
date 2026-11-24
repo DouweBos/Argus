@@ -16,6 +16,7 @@ extension RemoteAutomationDetail {
     case .once where runAt == nil: runAt = OnceTime.nextWholeHour(timezone: timezone)
     case .signal where signal == nil: signal = RemoteAutomationSignal()
     case .webhook where webhook == nil: webhook = RemoteAutomationWebhook()
+    case .slack where slackMatch == nil: slackMatch = .any
     default: break
     }
   }
@@ -34,6 +35,8 @@ extension RemoteAutomationDetail {
     case .manual: "Only runs when someone presses Run now."
     case .signal: AutomationTriggerText.signalCaption
     case .webhook: AutomationTriggerText.webhookCaption
+    case .slack:
+      "Runs when a matching message lands in the channel, from a member allowed to use Argus in Slack."
     }
   }
 }

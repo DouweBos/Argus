@@ -51,7 +51,7 @@ vi.mock("../browser/cdpScreencast", () => ({
 }));
 vi.mock("../telemetry/telemetry", () => ({ capture: vi.fn() }));
 vi.mock("./startWhenReady", () => ({
-  startAgentWhenReady: vi.fn(async () => undefined),
+  startAgentWhenReady: vi.fn(async () => null),
 }));
 vi.mock("./githubRemote", () => ({
   createRemotePullRequest: vi.fn(async () => ({

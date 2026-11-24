@@ -27,6 +27,7 @@ import dev.houwert.argus.core.automations.isActive
 import dev.houwert.argus.core.stores.loadCalibrationOverGateway
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomation
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationMemory
+import dev.houwert.argus.kit.protocol.generated.RemoteAutomationTriggerKind
 import dev.houwert.argus.kit.util.Labels
 import dev.houwert.argus.ui.automations.CalibrationStats
 import dev.houwert.argus.ui.automations.MemoryEditorSheet
@@ -131,7 +132,8 @@ private fun Detail(automation: RemoteAutomation, access: HostAccess) {
   val triggering by store.triggering.collectAsState()
   Card {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-      Icon(Icon.clock, null, Modifier.size(15.dp), tint = theme.textSecondary)
+      val triggerIcon = if (automation.triggerKind == RemoteAutomationTriggerKind.slack) Icon.chat else Icon.clock
+      Icon(triggerIcon, null, Modifier.size(15.dp), tint = theme.textSecondary)
       BodyText(Labels.triggerLabel(automation), Modifier.weight(1f))
       if (access.hasControl) {
         // The one dial worth flipping without opening the editor.

@@ -54,7 +54,7 @@ function automationMeta(automation: RemoteAutomation): string {
       ? "Runs when its webhook is called"
       : `${schedule} · paused`;
   }
-  if (automation.trigger_kind === "once") {
+  if (automation.trigger_kind === "once" || automation.trigger_kind === "slack") {
     return automation.enabled ? schedule : `${schedule} · paused`;
   }
 

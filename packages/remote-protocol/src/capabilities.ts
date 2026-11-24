@@ -372,6 +372,9 @@ export const REMOTE_METHODS = {
   /** Which integrations the computer has connected, and as whom. Connecting
    *  one takes a secret, which stays on the computer: no method sets it. */
   "integrations.list": "monitor",
+  /** Read-only: the Slack tokens and who may drive agents from Slack are set
+   *  on the computer only, like the Control grant. */
+  "slack.status": "monitor",
   /** Reads Linear as the computer's connected user. */
   "linear.issues": "monitor",
   "linear.issue": "monitor",

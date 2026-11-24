@@ -455,6 +455,21 @@ Linear and Figma connections for this machine, in Settings → Integrations. See
 | **Move to In Progress** | on      | Moves an issue to its team's first started state when an agent starts from it.                                                                        |
 | **Report back**         | `pr`    | When to comment on the session's issue with its changes and simulator screenshots: `off`, `pr` (when a pull request is opened from Argus) or `merge`. |
 
+### Slack
+
+Settings → Integrations → **Slack** connects a Slack app you create yourself
+(setup steps in [Integrations](./integrations.md#slack)). Its settings live in
+`~/.argus/slack.json`, never in `app-settings.json`, and only the Mac can
+change them.
+
+| Setting             | Default | Description                                                                                                                                                 |
+| ------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tokens**          | none    | The bot token (`xoxb-…`) and app-level token (`xapp-…`), encrypted with this machine's secure storage. Disconnect deletes them.                             |
+| **Owner**           | none    | The Slack member who claimed the bot by sending it the code Settings shows. Until someone claims it, the bot refuses everyone. **Reset** forgets the owner. |
+| **Allowed members** | empty   | Other Slack member IDs that may drive agents. Empty means only the owner. Everyone else gets a polite refusal.                                              |
+| **Default project** | none    | Where a DM or a mention in a channel with no project goes. None asks in the thread which project to use.                                                    |
+| **Channels**        | none    | A project per channel: mentions in that channel start agents there.                                                                                         |
+
 ## MCP servers
 
 | Setting         | Default | Description                                                         |
@@ -1178,6 +1193,8 @@ Argus keeps everything under `~/.argus/`:
   viewed-files.json           ← Files ticked as viewed in session diffs (pull requests keep theirs on GitHub)
   device-hosts.json           ← Other Macs whose simulators Argus streams over SSH
   usage-prices.json           ← Model prices and mappings set by hand on the Usage screen
+  slack.json                  ← Slack tokens (encrypted), owner, allowed members, channel projects
+  slack-threads.json          ← Which Slack thread belongs to which session
   telemetry-id                ← Anonymous install id
 ```
 

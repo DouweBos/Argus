@@ -299,6 +299,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "blueprints.revise": DENIED,
   // The host owner's Linear account; a guest has no claim on it.
   "integrations.list": DENIED,
+  "slack.status": DENIED,
   "linear.issues": DENIED,
   "linear.issue": DENIED,
   "linear.update_issue": DENIED,

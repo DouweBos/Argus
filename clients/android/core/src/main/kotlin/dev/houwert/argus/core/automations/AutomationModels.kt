@@ -128,6 +128,10 @@ object AutomationInput {
     description = detail.description,
     enabled = detail.enabled,
     triggerKind = detail.triggerKind,
+    slackChannel = detail.slackChannel,
+    slackMatch = detail.slackMatch,
+    slackText = detail.slackText,
+    reportSlackChannel = detail.reportSlackChannel,
     cron = detail.cron ?: "",
     runAt = detail.onceRunAt,
     signal = detail.signalInput,
@@ -149,13 +153,13 @@ object AutomationInput {
     name = detail.name,
     description = detail.description,
     enabled = detail.enabled,
-    triggerKind = detail.triggerKind,
-    cron = detail.cron ?: "",
+    triggerKind = detail.clockTrigger,
+    cron = detail.clockTrigger?.let { detail.cron ?: "" },
     runAt = detail.onceRunAt,
     signal = detail.signalInput,
     webhook = detail.webhookInput,
-    timezone = detail.timezone ?: TimeZone.getDefault().id,
-    catchUp = detail.catchUp,
+    timezone = detail.clockTrigger?.let { detail.timezone ?: TimeZone.getDefault().id },
+    catchUp = detail.clockTrigger?.let { detail.catchUp },
     repoRoots = detail.repoRoots,
     sourceIds = detail.sourceIds,
     playbook = detail.playbook,
@@ -166,6 +170,12 @@ object AutomationInput {
     claudeAccountId = detail.claudeAccountId,
     guardrails = detail.guardrails,
   )
+
+  /**
+   * Null for a Slack trigger: the phone can't edit one, and any trigger field in a patch makes the
+   * computer rebuild the trigger.
+   */
+  private val RemoteAutomationDetail.clockTrigger get() = triggerKind.takeIf { it != RemoteAutomationTriggerKind.slack }
 
   /** Sent only for a run-once trigger, so an older computer never sees it. */
   private val RemoteAutomationDetail.onceRunAt get() = runAt.takeIf { triggerKind == RemoteAutomationTriggerKind.once }

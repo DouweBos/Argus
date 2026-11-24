@@ -28,12 +28,29 @@ type TriggerDraft = Pick<
   | "enabled"
   | "run_at"
   | "signal"
+  | "slack_channel"
+  | "slack_match"
+  | "slack_text"
   | "timezone"
   | "trigger_kind"
   | "webhook"
 >;
 
-/** When an automation fires: a cron, one date and time, new signals, or only by hand. */
+/** "Messages starting with “deploy failed” in #deploys". */
+function slackTriggerLabel(draft: TriggerDraft): string {
+  const where = draft.slack_channel ? ` in #${draft.slack_channel.name}` : "";
+  const text = draft.slack_text?.trim();
+  if (draft.slack_match === "prefix" && text) {
+    return `Messages starting with “${text}”${where}`;
+  }
+  if (draft.slack_match === "keyword" && text) {
+    return `Messages mentioning “${text}”${where}`;
+  }
+
+  return `Every message${where}`;
+}
+
+/** When an automation fires: a cron, one date and time, new signals, a Slack message, or only by hand. */
 export function TriggerFields({
   disabled,
   draft,
@@ -68,6 +85,15 @@ export function TriggerFields({
       />
     </FormField>
   );
+
+  // Picking a channel takes the bot's token, which only the Mac holds.
+  if (draft.trigger_kind === "slack") {
+    return (
+      <p className={styles.caption}>
+        {slackTriggerLabel(draft)}. Change the Slack trigger in Argus for Mac.
+      </p>
+    );
+  }
 
   return (
     <>

@@ -2824,6 +2824,34 @@ object CommandsTypes {
   )
 
   @Serializable
+  data class SlackAddAllowedUserParams(
+    @SerialName("userId") val userId: String,
+  )
+
+  @Serializable
+  data class SlackConnectParams(
+    @SerialName("botToken") val botToken: String,
+    @SerialName("appToken") val appToken: String,
+  )
+
+  @Serializable
+  data class SlackRemoveAllowedUserParams(
+    @SerialName("userId") val userId: String,
+  )
+
+  @Serializable
+  data class SlackSetChannelProjectParams(
+    @SerialName("channelId") val channelId: String,
+    @SerialName("channelName") val channelName: String,
+    @SerialName("repoRoot") @EncodeDefault val repoRoot: String? = null,
+  )
+
+  @Serializable
+  data class SlackSetDefaultProjectParams(
+    @SerialName("repoRoot") @EncodeDefault val repoRoot: String? = null,
+  )
+
+  @Serializable
   data class StageAllParams(
     @SerialName("id") val id: String,
   )
@@ -4050,6 +4078,26 @@ object Commands {
   object SimulatorSetOrientation : RemoteCommand<CommandsTypes.SimulatorSetOrientationParams, dev.houwert.argus.kit.protocol.generated.SimulatorDeviceState>("simulator_set_orientation", "admin", serializer(), serializer())
 
   object SimulatorTouch : RemoteCommand<CommandsTypes.SimulatorTouchParams, IgnoredResult>("simulator_touch", "admin", serializer(), serializer())
+
+  object SlackAddAllowedUser : RemoteCommand<CommandsTypes.SlackAddAllowedUserParams, dev.houwert.argus.kit.protocol.generated.SlackStatus>("slack_add_allowed_user", "admin", serializer(), serializer())
+
+  object SlackConnect : RemoteCommand<CommandsTypes.SlackConnectParams, dev.houwert.argus.kit.protocol.generated.SlackStatus>("slack_connect", "admin", serializer(), serializer())
+
+  object SlackDisconnect : RemoteCommand<EmptyParams, dev.houwert.argus.kit.protocol.generated.SlackStatus>("slack_disconnect", "admin", serializer(), serializer())
+
+  object SlackListChannels : RemoteCommand<EmptyParams, List<SlackChannel>>("slack_list_channels", "admin", serializer(), serializer())
+
+  object SlackManifest : RemoteCommand<EmptyParams, String>("slack_manifest", "admin", serializer(), serializer())
+
+  object SlackRemoveAllowedUser : RemoteCommand<CommandsTypes.SlackRemoveAllowedUserParams, dev.houwert.argus.kit.protocol.generated.SlackStatus>("slack_remove_allowed_user", "admin", serializer(), serializer())
+
+  object SlackResetOwner : RemoteCommand<EmptyParams, dev.houwert.argus.kit.protocol.generated.SlackStatus>("slack_reset_owner", "admin", serializer(), serializer())
+
+  object SlackSetChannelProject : RemoteCommand<CommandsTypes.SlackSetChannelProjectParams, dev.houwert.argus.kit.protocol.generated.SlackStatus>("slack_set_channel_project", "admin", serializer(), serializer())
+
+  object SlackSetDefaultProject : RemoteCommand<CommandsTypes.SlackSetDefaultProjectParams, dev.houwert.argus.kit.protocol.generated.SlackStatus>("slack_set_default_project", "admin", serializer(), serializer())
+
+  object SlackStatus : RemoteCommand<EmptyParams, dev.houwert.argus.kit.protocol.generated.SlackStatus>("slack_status", "admin", serializer(), serializer())
 
   object StageAll : RemoteCommand<CommandsTypes.StageAllParams, IgnoredResult>("stage_all", "admin", serializer(), serializer())
 

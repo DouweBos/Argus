@@ -29,6 +29,8 @@ import type {
   RemoteSignalSource,
   RemoteSignalTrigger,
   RemoteWebhookTrigger,
+  SlackChannelRef,
+  SlackTriggerMatch,
 } from "@argus/remote-protocol";
 import path from "node:path";
 import { lastKnownModels } from "../agent/startOptions";
@@ -55,6 +57,7 @@ import {
   startScratchRun,
 } from "../automation/scratch";
 import { DEFAULT_RUNS_PER_HOUR } from "../automation/signalTrigger";
+import { slackTrigger } from "../automation/slackTrigger";
 import {
   hasWebhookSecret,
   rotateWebhookSecret,
@@ -134,6 +137,7 @@ function toRemoteAutomationDetail(
     model: automation.model,
     runner: automation.runner ?? null,
     claude_account_id: automation.claude_account_id ?? null,
+    report_slack_channel: automation.report_slack_channel ?? null,
     guardrails: automation.guardrails,
   };
 }
@@ -150,9 +154,13 @@ function wireTrigger(
   timezone: string | null;
   trigger_kind: Automation["trigger"]["kind"];
   webhook: RemoteWebhookTrigger | null;
+  slack_channel: SlackChannelRef | null;
+  slack_match: SlackTriggerMatch | null;
+  slack_text: string | null;
 } {
   const clock =
     trigger.kind === "schedule" || trigger.kind === "once" ? trigger : null;
+  const slack = trigger.kind === "slack" ? trigger : null;
 
   return {
     trigger_kind: trigger.kind,
@@ -178,11 +186,17 @@ function wireTrigger(
             has_secret: hasWebhookSecret(automationId),
           }
         : null,
+    slack_channel: slack?.channel ?? null,
+    slack_match: slack?.match ?? null,
+    slack_text: slack?.text ?? null,
   };
 }
 
 /** The wire shape carries the trigger flat; the host keeps it as a union. */
-function toTrigger(input: AutomationInput): Automation["trigger"] {
+function toTrigger(
+  input: AutomationInput,
+  current?: Automation["trigger"],
+): Automation["trigger"] {
   switch (input.trigger_kind) {
     case "schedule":
       return {
@@ -220,6 +234,21 @@ function toTrigger(input: AutomationInput): Automation["trigger"] {
         max_runs_per_hour:
           input.webhook?.max_runs_per_hour ?? DEFAULT_RUNS_PER_HOUR,
       };
+    case "slack":
+      if (!input.slack_channel) {
+        throw "A Slack trigger needs a channel.";
+      }
+
+      // The wire has no fire mode or cap; keep what the Mac set.
+      return slackTrigger({
+        channel: input.slack_channel,
+        match: input.slack_match ?? "any",
+        text: input.slack_text ?? "",
+        ...(current?.kind === "slack" && {
+          fire: current.fire,
+          max_runs_per_hour: current.max_runs_per_hour,
+        }),
+      });
   }
 }
 
@@ -312,6 +341,7 @@ export function createRemoteAutomation(input: AutomationInput): {
     model: input.model,
     runner: input.runner ?? null,
     claude_account_id: input.claude_account_id ?? null,
+    report_slack_channel: input.report_slack_channel ?? null,
   };
 
   return both(createAutomation(create));
@@ -348,13 +378,17 @@ export function updateRemoteAutomation(
     ...(patch.guardrails !== undefined && {
       guardrails: { ...current.guardrails, ...patch.guardrails },
     }),
+    ...(patch.report_slack_channel !== undefined && {
+      report_slack_channel: patch.report_slack_channel ?? null,
+    }),
   };
 
-  // The trigger is four wire fields; rebuild it from the current one so a
+  // The trigger is several wire fields; rebuild it from the current one so a
   // partial patch can change the cron without restating the timezone.
   const { trigger } = current;
   const clock =
     trigger.kind === "schedule" || trigger.kind === "once" ? trigger : null;
+  const slack = trigger.kind === "slack" ? trigger : null;
   const touchesTrigger =
     patch.trigger_kind !== undefined ||
     patch.cron !== undefined ||
@@ -362,17 +396,26 @@ export function updateRemoteAutomation(
     patch.timezone !== undefined ||
     patch.catch_up !== undefined ||
     patch.signal !== undefined ||
-    patch.webhook !== undefined;
+    patch.webhook !== undefined ||
+    patch.slack_channel !== undefined ||
+    patch.slack_match !== undefined ||
+    patch.slack_text !== undefined;
   if (touchesTrigger) {
-    update.trigger = toTrigger({
-      trigger_kind: patch.trigger_kind ?? trigger.kind,
-      cron: patch.cron ?? (clock?.kind === "schedule" ? clock.cron : ""),
-      run_at: patch.run_at ?? (clock?.kind === "once" ? clock.at : undefined),
-      timezone: patch.timezone ?? clock?.timezone ?? "UTC",
-      catch_up: patch.catch_up ?? clock?.catch_up ?? true,
-      signal: patch.signal ?? wireTrigger(trigger, id).signal ?? undefined,
-      webhook: patch.webhook ?? wireTrigger(trigger, id).webhook ?? undefined,
-    } as AutomationInput);
+    update.trigger = toTrigger(
+      {
+        trigger_kind: patch.trigger_kind ?? trigger.kind,
+        cron: patch.cron ?? (clock?.kind === "schedule" ? clock.cron : ""),
+        run_at: patch.run_at ?? (clock?.kind === "once" ? clock.at : undefined),
+        timezone: patch.timezone ?? clock?.timezone ?? "UTC",
+        catch_up: patch.catch_up ?? clock?.catch_up ?? true,
+        signal: patch.signal ?? wireTrigger(trigger, id).signal ?? undefined,
+        webhook: patch.webhook ?? wireTrigger(trigger, id).webhook ?? undefined,
+        slack_channel: patch.slack_channel ?? slack?.channel ?? null,
+        slack_match: patch.slack_match ?? slack?.match ?? null,
+        slack_text: patch.slack_text ?? slack?.text ?? null,
+      } as AutomationInput,
+      trigger,
+    );
   }
 
   return both(updateAutomation(id, update));

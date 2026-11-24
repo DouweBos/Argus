@@ -27,6 +27,8 @@ import dev.houwert.argus.kit.protocol.generated.RemoteClaudeAccount
 import dev.houwert.argus.kit.protocol.generated.RemoteProject
 import dev.houwert.argus.kit.protocol.generated.RemoteRunner
 import dev.houwert.argus.kit.protocol.generated.RemoteSignalSource
+import dev.houwert.argus.kit.protocol.generated.SlackChannelRef
+import dev.houwert.argus.kit.util.Labels
 import dev.houwert.argus.kit.util.OnceTime
 import dev.houwert.argus.ui.components.BodyText
 import dev.houwert.argus.ui.components.ButtonTone
@@ -80,6 +82,7 @@ fun AutomationFields(
   Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(ArgusTheme.metrics.space)) {
     Basics(draft, onChange, showsSchedule)
     if (showsSchedule) Trigger(draft, onChange, context)
+    if (showsSchedule) draft.reportSlackChannel?.let { ReportChannel(it) }
     Scope(draft, onChange, context)
     Behaviour(draft, onChange, context, showsSchedule)
     Playbook(draft, onChange, context.hasControl, reviseError, revise)
@@ -111,6 +114,7 @@ object AutomationFieldsText {
     RemoteAutomationTriggerKind.manual -> "Only runs when someone presses Run now."
     RemoteAutomationTriggerKind.signal -> EventTriggerText.SIGNAL_CAPTION
     RemoteAutomationTriggerKind.webhook -> EventTriggerText.WEBHOOK_CAPTION
+    RemoteAutomationTriggerKind.slack -> "Change the channel or the match in Argus on the computer."
     else -> "5 fields: minute hour day-of-month month day-of-week."
   }
 
@@ -154,8 +158,20 @@ object AutomationFieldsText {
 
 @Composable
 private fun Trigger(draft: RemoteAutomationDetail, onChange: (RemoteAutomationDetail) -> Unit, context: AutomationFieldsContext) {
-  val theme = ArgusTheme.colors
   Field("Trigger", caption = AutomationFieldsText.triggerCaption(draft.triggerKind)) {
+    // The phone can't pick a Slack channel, so a Slack trigger stays as the computer set it.
+    if (draft.triggerKind == RemoteAutomationTriggerKind.slack) {
+      BodyText(Labels.slackTriggerLabel(draft.slackChannel, draft.slackMatch, draft.slackText))
+    } else {
+      ClockTrigger(draft, onChange, context)
+    }
+  }
+}
+
+@Composable
+private fun ClockTrigger(draft: RemoteAutomationDetail, onChange: (RemoteAutomationDetail) -> Unit, context: AutomationFieldsContext) {
+  val theme = ArgusTheme.colors
+  Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
     SegmentedControl(draft.triggerKind, AutomationFieldsText.triggerOptions) { onChange(AutomationFieldsText.withTriggerKind(draft, it)) }
 
     if (draft.triggerKind == RemoteAutomationTriggerKind.schedule) {
@@ -188,6 +204,13 @@ private fun Trigger(draft: RemoteAutomationDetail, onChange: (RemoteAutomationDe
         draft.catchUp,
       ) { onChange(draft.copy(catchUp = it)) }
     }
+  }
+}
+
+@Composable
+private fun ReportChannel(channel: SlackChannelRef) {
+  Field("Report", caption = "Each run's report is posted there too. Change it in Argus on the computer.") {
+    BodyText("Posts to ${Labels.slackChannel(channel.name)}")
   }
 }
 

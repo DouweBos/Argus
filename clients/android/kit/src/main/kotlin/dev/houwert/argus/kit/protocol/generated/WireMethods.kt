@@ -895,6 +895,10 @@ object MethodsTypes {
     @SerialName("description") val description: String? = null,
     @SerialName("enabled") val enabled: Boolean? = null,
     @SerialName("trigger_kind") val triggerKind: RemoteAutomationTriggerKind? = null,
+    @SerialName("slack_channel") val slackChannel: SlackChannelRef? = null,
+    @SerialName("slack_match") val slackMatch: SlackTriggerMatch? = null,
+    @SerialName("slack_text") val slackText: String? = null,
+    @SerialName("report_slack_channel") val reportSlackChannel: SlackChannelRef? = null,
     @SerialName("cron") val cron: String? = null,
     @SerialName("run_at") val runAt: String? = null,
     @SerialName("signal") val signal: RemoteSignalTrigger? = null,
@@ -2743,6 +2747,14 @@ object MethodsTypes {
   )
 
   @Serializable
+  class SlackStatusParams
+
+  @Serializable
+  data class SlackStatusResult(
+    @SerialName("status") val status: SlackStatus,
+  )
+
+  @Serializable
   data class TerminalsListParams(
     @SerialName("session_id") val sessionId: String,
   )
@@ -3250,6 +3262,8 @@ object Methods {
   object SessionsViewing : RemoteCommand<MethodsTypes.SessionsViewingParams, MethodsTypes.SessionsViewingResult>("sessions.viewing", "control", serializer(), serializer())
 
   object SessionsWatchPullRequest : RemoteCommand<MethodsTypes.SessionsWatchPullRequestParams, MethodsTypes.SessionsWatchPullRequestResult>("sessions.watch_pull_request", "control", serializer(), serializer())
+
+  object SlackStatus : RemoteCommand<MethodsTypes.SlackStatusParams, MethodsTypes.SlackStatusResult>("slack.status", "control", serializer(), serializer())
 
   object TerminalsList : RemoteCommand<MethodsTypes.TerminalsListParams, MethodsTypes.TerminalsListResult>("terminals.list", "control", serializer(), serializer())
 

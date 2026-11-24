@@ -40,6 +40,9 @@
           "removed", GalleryAccount(phase: .signedOut, selfKind: "mac", error: "This device was removed from your account.", removed: true)),
         account("sign-in-needed", GalleryAccount(selfKind: "mac", signInNeeded: .reset)),
         account("awaiting-approval", GalleryAccount(phase: .awaitingApproval, selfKind: "mac")),
+        slack("connected", GalleryFixtures.slackConnected),
+        slack("claim", GalleryFixtures.slackClaimPending),
+        slack("not-connected", GalleryFixtures.slackNotConnected),
         customRunner("acp-agent", acpDraft),
         customRunner("gateway", gatewayDraft),
         GalleryStory("settings/remote/mcp-clients", size: CGSize(width: 760, height: 560)) {
@@ -127,6 +130,23 @@
     }
 
     private static let page = CGSize(width: 760, height: 900)
+
+    /// Settings → Integrations with Slack in one of its states.
+    private static func slack(_ state: String, _ fixtures: [String: String]) -> GalleryStory {
+      GalleryStory("settings/integrations/slack/\(state)", size: CGSize(width: 760, height: 1250), fixtures: fixtures) {
+        IntegrationsStage()
+      }
+    }
+
+    private struct IntegrationsStage: View {
+      @State private var host = HostSettingsModel()
+
+      var body: some View {
+        IntegrationsSettingsTab()
+          .environment(host)
+          .onAppear { host.galleryFill(ArgusProtocol.AppSettings()) }
+      }
+    }
 
     /// One sign-in waiting, a connected supervised client, two idle ones.
     private static var mcpStatus: ArgusProtocol.RemoteStatus {

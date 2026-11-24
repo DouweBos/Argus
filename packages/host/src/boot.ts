@@ -103,6 +103,7 @@ import {
   startVolumeWatcher,
   stopVolumeWatcher,
 } from "./services/session/volumeWatcher";
+import { startSlack, stopSlack } from "./services/slack/service";
 import {
   startHeapSampling,
   stopHeapSampling,
@@ -277,6 +278,8 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   startLimitAutoSwitch();
   // Pinned chats come back idle once the MCP server is listening.
   startPinnedChats();
+  // Outbound only (Socket Mode); a no-op until Slack is connected.
+  startSlack();
 
   setWebClientDir(options.webClientDir ?? null);
   const remoteReady = (
@@ -332,6 +335,7 @@ export function stopHostServices(): void {
   stopWarmPolicy();
   stopIdlePause();
   stopLimitAutoSwitch();
+  stopSlack();
   stopMcpServer();
   stopRemote();
   stopAccount();

@@ -14,6 +14,8 @@ import dev.houwert.argus.kit.protocol.generated.RemoteSignalEventKind
 import dev.houwert.argus.kit.protocol.generated.RemoteSignalTriggerFire
 import dev.houwert.argus.kit.protocol.generated.RemoteWebhookTrigger
 import dev.houwert.argus.kit.protocol.generated.RemoteWebhookTriggerFire
+import dev.houwert.argus.kit.protocol.generated.SlackChannelRef
+import dev.houwert.argus.kit.protocol.generated.SlackTriggerMatch
 import dev.houwert.argus.kit.util.OnceTime
 import java.time.Instant
 import kotlinx.serialization.builtins.ListSerializer
@@ -177,6 +179,27 @@ class AutomationInputTest {
     assertFalse(draft.hasValidTrigger)
     assertTrue(draft.copy(signal = defaultSignalTrigger).hasValidTrigger)
     assertTrue(newAutomationDetail(triggerKind = RemoteAutomationTriggerKind.webhook, cron = null).hasValidTrigger)
+  }
+
+  @Test
+  fun aSlackTriggerIsLeftAloneOnSave() {
+    val slack = newAutomationDetail(name = "A", triggerKind = RemoteAutomationTriggerKind.slack, cron = null, playbook = "p").copy(
+      slackChannel = SlackChannelRef("C1", "deploys"), slackMatch = SlackTriggerMatch.prefix, slackText = "deploy failed",
+      reportSlackChannel = SlackChannelRef("C2", "ops"),
+    )
+    val json = patch(slack)
+    for (key in listOf("trigger_kind", "cron", "run_at", "timezone", "catch_up", "slack_channel", "slack_match", "slack_text")) {
+      assertNull(json[key], key)
+    }
+    assertEquals(JsonPrimitive("A"), json["name"])
+    // A schedule still sends its trigger.
+    assertEquals(JsonPrimitive("schedule"), patch(newAutomationDetail(name = "A"))["trigger_kind"])
+
+    // A copy keeps the whole trigger and where it reports.
+    val created = encode(slack)
+    assertEquals(JsonPrimitive("slack"), created["trigger_kind"])
+    assertEquals(JsonPrimitive("deploy failed"), created["slack_text"])
+    assertEquals(JsonPrimitive("ops"), created["report_slack_channel"]!!.jsonObject["name"])
   }
 
   @Test

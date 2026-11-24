@@ -51,6 +51,22 @@ export const Manual: Story = {
   ),
 };
 
+/** Fires on Slack messages; edited on the Mac, shown here. */
+export const SlackTrigger: Story = {
+  render: () => (
+    <Live
+      initial={{
+        ...FIXTURE_DETAIL,
+        trigger_kind: "slack",
+        cron: null,
+        slack_channel: { id: "C1", name: "deploys" },
+        slack_match: "prefix",
+        slack_text: "deploy failed",
+      }}
+    />
+  ),
+};
+
 /** Fires once at a date and time, then pauses itself. */
 export const Once: Story = {
   render: () => (

@@ -10,11 +10,22 @@ public enum AutomationText {
   /// What the list shows under "next run".
   public static func nextRun(_ automation: RemoteAutomation) -> String {
     guard automation.triggerKind != .manual else { return "Manual" }
+    guard automation.triggerKind != .slack else { return automation.enabled ? "On a message" : "Paused" }
     guard automation.enabled else { return "Paused" }
     if automation.triggerKind == .signal { return "When an event arrives" }
     if automation.triggerKind == .webhook { return "When its webhook is called" }
     guard let next = automation.nextRunAt else { return "—" }
     return "\(timestamp(next)) (\(Labels.until(next) ?? "now"))"
+  }
+
+  /// Which messages fire a Slack trigger, as the editors word it.
+  public static func slackMatch(_ match: ArgusProtocol.SlackTriggerMatch?, text: String?) -> String {
+    let quoted = "“\(text ?? "")”"
+    switch match {
+    case .prefix?: return "Messages starting with \(quoted)"
+    case .keyword?: return "Messages mentioning \(quoted)"
+    default: return "Any message"
+    }
   }
 
   public static func plural(_ count: Int, _ noun: String) -> String {

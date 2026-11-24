@@ -805,6 +805,7 @@ data class Automation(
   @SerialName("updated_at") val updatedAt: Double,
   @SerialName("last_run_at") @EncodeDefault val lastRunAt: Double? = null,
   @SerialName("next_run_at") @EncodeDefault val nextRunAt: Double? = null,
+  @SerialName("report_slack_channel") val reportSlackChannel: SlackChannelRef? = null,
 )
 
 @Serializable
@@ -876,6 +877,10 @@ data class AutomationInput(
   @SerialName("description") val description: String,
   @SerialName("enabled") val enabled: Boolean,
   @SerialName("trigger_kind") val triggerKind: RemoteAutomationTriggerKind,
+  @SerialName("slack_channel") val slackChannel: SlackChannelRef? = null,
+  @SerialName("slack_match") val slackMatch: SlackTriggerMatch? = null,
+  @SerialName("slack_text") val slackText: String? = null,
+  @SerialName("report_slack_channel") val reportSlackChannel: SlackChannelRef? = null,
   @SerialName("cron") val cron: String,
   @SerialName("run_at") val runAt: String? = null,
   @SerialName("signal") val signal: RemoteSignalTrigger? = null,
@@ -1017,6 +1022,28 @@ data class AutomationTriggerWebhook(
   @SerialName("max_runs_per_hour") val maxRunsPerHour: Double,
 )
 
+@Serializable
+@JvmInline
+value class AutomationTriggerSlackFire(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val batch = AutomationTriggerSlackFire("batch")
+    val each = AutomationTriggerSlackFire("each")
+    val entries: List<AutomationTriggerSlackFire> = listOf(batch, each)
+  }
+}
+
+@Serializable
+data class AutomationTriggerSlack(
+  @SerialName("kind") val kind: String,
+  @SerialName("channel") val channel: SlackChannelRef,
+  @SerialName("match") val match: SlackTriggerMatch,
+  @SerialName("text") val text: String,
+  @SerialName("fire") val fire: AutomationTriggerSlackFire,
+  @SerialName("max_runs_per_hour") val maxRunsPerHour: Double,
+)
+
 @Serializable(with = AutomationTrigger.Serializer::class)
 sealed interface AutomationTrigger {
   data class Schedule(val value: AutomationTriggerSchedule) : AutomationTrigger
@@ -1024,6 +1051,7 @@ sealed interface AutomationTrigger {
   data class Manual(val value: AutomationTriggerManual) : AutomationTrigger
   data class Signal(val value: AutomationTriggerSignal) : AutomationTrigger
   data class Webhook(val value: AutomationTriggerWebhook) : AutomationTrigger
+  data class Slack(val value: AutomationTriggerSlack) : AutomationTrigger
   data class Unknown(val value: JsonElement) : AutomationTrigger
 
   object Serializer : TaggedUnionSerializer<AutomationTrigger>("AutomationTrigger", "kind") {
@@ -1033,6 +1061,7 @@ sealed interface AutomationTrigger {
       "manual" -> Manual(json.decodeFromJsonElement(element))
       "signal" -> Signal(json.decodeFromJsonElement(element))
       "webhook" -> Webhook(json.decodeFromJsonElement(element))
+      "slack" -> Slack(json.decodeFromJsonElement(element))
       else -> Unknown(element)
     }
 
@@ -1042,6 +1071,7 @@ sealed interface AutomationTrigger {
       is Manual -> json.encodeToJsonElement(value.value)
       is Signal -> json.encodeToJsonElement(value.value)
       is Webhook -> json.encodeToJsonElement(value.value)
+      is Slack -> json.encodeToJsonElement(value.value)
       is Unknown -> value.value
     }
   }
@@ -2197,6 +2227,7 @@ data class CreateAutomationInput(
   @SerialName("runner") val runner: String? = null,
   @SerialName("claude_account_id") val claudeAccountId: String? = null,
   @SerialName("template_id") val templateId: String? = null,
+  @SerialName("report_slack_channel") val reportSlackChannel: SlackChannelRef? = null,
 )
 
 @Serializable
@@ -5196,6 +5227,7 @@ data class RemoteAutomation(
   @SerialName("description") val description: String,
   @SerialName("enabled") val enabled: Boolean,
   @SerialName("trigger_kind") val triggerKind: RemoteAutomationTriggerKind,
+  @SerialName("slack_channel") val slackChannel: SlackChannelRef? = null,
   @SerialName("cron") @EncodeDefault val cron: String? = null,
   @SerialName("run_at") val runAt: String? = null,
   @SerialName("timezone") @EncodeDefault val timezone: String? = null,
@@ -5227,6 +5259,10 @@ data class RemoteAutomationDetail(
   @SerialName("description") val description: String,
   @SerialName("enabled") val enabled: Boolean,
   @SerialName("trigger_kind") val triggerKind: RemoteAutomationTriggerKind,
+  @SerialName("slack_channel") val slackChannel: SlackChannelRef? = null,
+  @SerialName("slack_match") val slackMatch: SlackTriggerMatch? = null,
+  @SerialName("slack_text") val slackText: String? = null,
+  @SerialName("report_slack_channel") val reportSlackChannel: SlackChannelRef? = null,
   @SerialName("cron") @EncodeDefault val cron: String? = null,
   @SerialName("run_at") val runAt: String? = null,
   @SerialName("timezone") @EncodeDefault val timezone: String? = null,
@@ -5325,7 +5361,8 @@ value class RemoteAutomationTriggerKind(val rawValue: String) {
     val schedule = RemoteAutomationTriggerKind("schedule")
     val signal = RemoteAutomationTriggerKind("signal")
     val webhook = RemoteAutomationTriggerKind("webhook")
-    val entries: List<RemoteAutomationTriggerKind> = listOf(manual, once, schedule, signal, webhook)
+    val slack = RemoteAutomationTriggerKind("slack")
+    val entries: List<RemoteAutomationTriggerKind> = listOf(manual, once, schedule, signal, webhook, slack)
   }
 }
 
@@ -7249,6 +7286,75 @@ value class SimulatorProblemKind(val rawValue: String) {
 }
 
 @Serializable
+data class SlackChannel(
+  @SerialName("id") val id: String,
+  @SerialName("name") val name: String,
+  @SerialName("is_private") val isPrivate: Boolean,
+  @SerialName("is_member") val isMember: Boolean,
+)
+
+@Serializable
+data class SlackChannelMapping(
+  @SerialName("channel_id") val channelId: String,
+  @SerialName("channel_name") val channelName: String,
+  @SerialName("repo_root") val repoRoot: String,
+)
+
+@Serializable
+data class SlackChannelRef(
+  @SerialName("id") val id: String,
+  @SerialName("name") val name: String,
+)
+
+@Serializable
+@JvmInline
+value class SlackConnectionState(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val off = SlackConnectionState("off")
+    val connecting = SlackConnectionState("connecting")
+    val connected = SlackConnectionState("connected")
+    val error = SlackConnectionState("error")
+    val entries: List<SlackConnectionState> = listOf(off, connecting, connected, error)
+  }
+}
+
+@Serializable
+data class SlackStatus(
+  @SerialName("configured") val configured: Boolean,
+  @SerialName("state") val state: SlackConnectionState,
+  @SerialName("error") @EncodeDefault val error: String? = null,
+  @SerialName("workspace") @EncodeDefault val workspace: String? = null,
+  @SerialName("bot_name") @EncodeDefault val botName: String? = null,
+  @SerialName("owner") @EncodeDefault val owner: SlackUser? = null,
+  @SerialName("claim_code") @EncodeDefault val claimCode: String? = null,
+  @SerialName("default_project") @EncodeDefault val defaultProject: String? = null,
+  @SerialName("mappings") val mappings: List<SlackChannelMapping>,
+  @SerialName("allowed_users") val allowedUsers: List<SlackUser>,
+  @SerialName("thread_count") val threadCount: Double,
+)
+
+@Serializable
+@JvmInline
+value class SlackTriggerMatch(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val any = SlackTriggerMatch("any")
+    val keyword = SlackTriggerMatch("keyword")
+    val prefix = SlackTriggerMatch("prefix")
+    val entries: List<SlackTriggerMatch> = listOf(any, keyword, prefix)
+  }
+}
+
+@Serializable
+data class SlackUser(
+  @SerialName("user_id") val userId: String,
+  @SerialName("name") @EncodeDefault val name: String? = null,
+)
+
+@Serializable
 data class SshKey(
   @SerialName("name") val name: String,
   @SerialName("type") val type: SshKeyType,
@@ -7428,6 +7534,7 @@ data class UpdateAutomationInput(
   @SerialName("template_id") val templateId: String? = null,
   @SerialName("last_run_at") val lastRunAt: Double? = null,
   @SerialName("next_run_at") val nextRunAt: Double? = null,
+  @SerialName("report_slack_channel") val reportSlackChannel: SlackChannelRef? = null,
 )
 
 @Serializable

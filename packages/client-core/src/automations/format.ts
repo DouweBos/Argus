@@ -119,11 +119,11 @@ export function cronError(cron: string, timezone: string): string | null {
   return null;
 }
 
-/** One line for a list row: the schedule in words, or "Manual". */
+/** One line for a list row: the schedule in words, "Manual", or the Slack channel. */
 export function scheduleLabel(
   automation: Pick<
     RemoteAutomation,
-    "cron" | "run_at" | "timezone" | "trigger_kind"
+    "cron" | "run_at" | "slack_channel" | "timezone" | "trigger_kind"
   >,
 ): string {
   if (automation.trigger_kind === "manual") {
@@ -134,6 +134,11 @@ export function scheduleLabel(
   }
   if (automation.trigger_kind === "webhook") {
     return "On webhook";
+  }
+  if (automation.trigger_kind === "slack") {
+    return automation.slack_channel
+      ? `Slack messages in #${automation.slack_channel.name}`
+      : "Slack messages";
   }
   if (automation.trigger_kind === "once") {
     const instant = automation.run_at
@@ -212,6 +217,9 @@ export function nextRunLabel(
   }
   if (automation.trigger_kind === "webhook") {
     return "When its webhook is called";
+  }
+  if (automation.trigger_kind === "slack") {
+    return "On the next matching message";
   }
 
   return automation.next_run_at === null

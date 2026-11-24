@@ -33,9 +33,20 @@ public enum RemoteAutonomy: String, Codable, Sendable, CaseIterable {
   }
 }
 
+/// A Slack channel an automation names: where its trigger listens or its report goes.
+public struct RemoteSlackChannel: Codable, Hashable, Sendable {
+  public var id: String
+  public var name: String
+
+  public init(id: String, name: String) {
+    self.id = id
+    self.name = name
+  }
+}
+
 public struct RemoteAutomation: Codable, Hashable, Sendable, Identifiable {
   public enum TriggerKind: String, Codable, Sendable {
-    case manual, once, schedule, signal, webhook
+    case manual, once, schedule, signal, slack, webhook
 
     /// A kind this build doesn't know reads as manual rather than failing the whole list.
     public init(from decoder: Decoder) throws {
@@ -55,6 +66,8 @@ public struct RemoteAutomation: Codable, Hashable, Sendable, Identifiable {
   public var runAt: String?
   /// IANA zone `cron` or `runAt` is read in.
   public var timezone: String?
+  /// The channel a `.slack` trigger listens in. Nil from older computers.
+  public var slackChannel: RemoteSlackChannel?
   /// Null means it inherits the computer's default rung.
   public var autonomy: RemoteAutonomy?
   /// Project names, not paths — a path means nothing on a phone.
@@ -66,6 +79,7 @@ public struct RemoteAutomation: Codable, Hashable, Sendable, Identifiable {
   enum CodingKeys: String, CodingKey {
     case id, name, description, enabled, cron, timezone, autonomy, projects, running
     case triggerKind = "trigger_kind"
+    case slackChannel = "slack_channel"
     case runAt = "run_at"
     case lastRunAt = "last_run_at"
     case nextRunAt = "next_run_at"
@@ -349,6 +363,12 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
   public var signal: RemoteAutomationSignal?
   /// Only for `.webhook`.
   public var webhook: RemoteAutomationWebhook?
+  /// Only for `.slack`; nil from older computers.
+  public var slackChannel: RemoteSlackChannel?
+  public var slackMatch: ArgusProtocol.SlackTriggerMatch?
+  public var slackText: String?
+  /// Also post each finished run's report to this channel.
+  public var reportSlackChannel: RemoteSlackChannel?
   /// Full repo paths: an editor has to write them back unchanged.
   public var repoRoots: [String]
   public var sourceIds: [String]
@@ -375,8 +395,14 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     playbook: String = "", extraInstructions: String? = nil,
     autonomy: RemoteAutonomy? = nil, model: String? = nil,
     runner: String? = nil, claudeAccountId: String? = nil,
-    guardrails: RemoteAutomationGuardrails = .init()
+    guardrails: RemoteAutomationGuardrails = .init(),
+    slackChannel: RemoteSlackChannel? = nil, slackMatch: ArgusProtocol.SlackTriggerMatch? = nil,
+    slackText: String? = nil, reportSlackChannel: RemoteSlackChannel? = nil
   ) {
+    self.slackChannel = slackChannel
+    self.slackMatch = slackMatch
+    self.slackText = slackText
+    self.reportSlackChannel = reportSlackChannel
     self.id = id
     self.name = name
     self.description = description
@@ -409,6 +435,10 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     case sourceIds = "source_ids"
     case extraInstructions = "extra_instructions"
     case claudeAccountId = "claude_account_id"
+    case slackChannel = "slack_channel"
+    case slackMatch = "slack_match"
+    case slackText = "slack_text"
+    case reportSlackChannel = "report_slack_channel"
   }
 }
 
@@ -428,6 +458,10 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
   public var signal: RemoteAutomationSignal?
   /// Sent only for `.webhook`, without its url and secret flag.
   public var webhook: RemoteAutomationWebhook?
+  public var slackChannel: RemoteSlackChannel?
+  public var slackMatch: ArgusProtocol.SlackTriggerMatch?
+  public var slackText: String?
+  public var reportSlackChannel: RemoteSlackChannel?
   public var repoRoots: [String]
   public var sourceIds: [String]
   public var playbook: String
@@ -437,6 +471,9 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
   public var runner: String?
   public var claudeAccountId: String?
   public var guardrails: RemoteAutomationGuardrails
+  /// False leaves the saved trigger alone: rebuilding a Slack trigger from the
+  /// flat wire fields would reset the settings only the Mac's host keeps.
+  public var sendsTrigger = true
 
   public init(_ detail: RemoteAutomationDetail) {
     name = detail.name
@@ -449,6 +486,10 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     catchUp = detail.catchUp
     signal = detail.triggerKind == .signal ? detail.signal ?? RemoteAutomationSignal() : nil
     webhook = detail.triggerKind == .webhook ? detail.webhook ?? RemoteAutomationWebhook() : nil
+    slackChannel = detail.slackChannel
+    slackMatch = detail.slackMatch
+    slackText = detail.slackText
+    reportSlackChannel = detail.reportSlackChannel
     repoRoots = detail.repoRoots
     sourceIds = detail.sourceIds
     playbook = detail.playbook
@@ -470,6 +511,19 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     case sourceIds = "source_ids"
     case extraInstructions = "extra_instructions"
     case claudeAccountId = "claude_account_id"
+    case slackChannel = "slack_channel"
+    case slackMatch = "slack_match"
+    case slackText = "slack_text"
+    case reportSlackChannel = "report_slack_channel"
+  }
+
+  /// The trigger fields match what `detail` already has saved.
+  public func keepsTrigger(of detail: RemoteAutomationDetail) -> Bool {
+    let saved = RemoteAutomationInput(detail)
+    return triggerKind == saved.triggerKind && cron == saved.cron && runAt == saved.runAt
+      && timezone == saved.timezone && catchUp == saved.catchUp && slackChannel == saved.slackChannel
+      && slackMatch == saved.slackMatch && slackText == saved.slackText
+      && signal == saved.signal && webhook == saved.webhook
   }
 
   // `autonomy` and `model` go out as null rather than missing: null is
@@ -479,15 +533,23 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     try c.encode(name, forKey: .name)
     try c.encode(description, forKey: .description)
     try c.encode(enabled, forKey: .enabled)
-    try c.encode(triggerKind, forKey: .triggerKind)
-    try c.encode(cron, forKey: .cron)
-    if triggerKind == .once { try c.encodeIfPresent(runAt, forKey: .runAt) }
-    if triggerKind == .signal { try c.encodeIfPresent(signal, forKey: .signal) }
-    if triggerKind == .webhook, let webhook {
-      try c.encode(WebhookInput(fire: webhook.fire, maxRunsPerHour: webhook.maxRunsPerHour), forKey: .webhook)
+    if sendsTrigger {
+      try c.encode(triggerKind, forKey: .triggerKind)
+      try c.encode(cron, forKey: .cron)
+      if triggerKind == .once { try c.encodeIfPresent(runAt, forKey: .runAt) }
+      if triggerKind == .signal { try c.encodeIfPresent(signal, forKey: .signal) }
+      if triggerKind == .webhook, let webhook {
+        try c.encode(WebhookInput(fire: webhook.fire, maxRunsPerHour: webhook.maxRunsPerHour), forKey: .webhook)
+      }
+      try c.encode(timezone, forKey: .timezone)
+      try c.encode(catchUp, forKey: .catchUp)
+      if triggerKind == .slack {
+        try c.encodeIfPresent(slackChannel, forKey: .slackChannel)
+        try c.encodeIfPresent(slackMatch, forKey: .slackMatch)
+        try c.encodeIfPresent(slackText, forKey: .slackText)
+      }
     }
-    try c.encode(timezone, forKey: .timezone)
-    try c.encode(catchUp, forKey: .catchUp)
+    try c.encode(reportSlackChannel, forKey: .reportSlackChannel)
     try c.encode(repoRoots, forKey: .repoRoots)
     try c.encode(sourceIds, forKey: .sourceIds)
     try c.encode(playbook, forKey: .playbook)

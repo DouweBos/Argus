@@ -301,12 +301,18 @@ export interface EventMap {
     outcome: "caught_up" | "missed" | "overlap" | "ran";
   };
   automation_trigger_changed: {
-    trigger_kind: "manual" | "once" | "schedule" | "signal" | "webhook";
+    trigger_kind:
+      | "manual"
+      | "once"
+      | "schedule"
+      | "signal"
+      | "slack"
+      | "webhook";
     /** `set`: a new kind was saved. `secret_rotated`: a webhook secret was made. */
     action: "secret_rotated" | "set";
   };
   automation_event_fired: {
-    trigger_kind: "other" | "signal" | "webhook";
+    trigger_kind: "other" | "signal" | "slack" | "webhook";
     event_kind:
       | "assigned"
       | "ci_failed"
@@ -316,6 +322,7 @@ export interface EventMap {
       | "new_pr"
       | "other"
       | "review_requested"
+      | "slack_message"
       | "webhook";
     outcome: "dropped" | "ran" | "rate_capped";
   };
@@ -435,6 +442,18 @@ export interface EventMap {
     success: boolean;
   };
   integration_reauth_needed: { service: "figma" | "linear" };
+  slack_connected: { success: boolean };
+  /** `rejected`: Slack stopped accepting the saved app-level token. */
+  slack_disconnected: { reason: "rejected" | "user" };
+  slack_message_handled: {
+    kind: "dm" | "mention" | "thread_reply";
+    outcome: "asked_project" | "claimed" | "continued" | "refused" | "started";
+    has_images: boolean;
+  };
+  slack_permission_answered: { decision: "allow" | "deny" };
+  /** `count`: automations one channel message fired. */
+  slack_automation_fired: { count: number };
+  slack_report_posted: { success: boolean };
   issue_designs_resolved: { frames: number; named: number };
   issue_filed_from_device: { has_screenshot: boolean };
   issue_report_posted: { has_screenshots: boolean; trigger: "merge" | "pr" };

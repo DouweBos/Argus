@@ -83,7 +83,8 @@ export function tickAutomations(now: number = Date.now()): void {
       !automation.enabled ||
       trigger.kind === "manual" ||
       trigger.kind === "signal" ||
-      trigger.kind === "webhook"
+      trigger.kind === "webhook" ||
+      trigger.kind === "slack"
     ) {
       continue;
     }

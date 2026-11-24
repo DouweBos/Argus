@@ -56,8 +56,31 @@ public struct AutomationFields: View {
     }
   }
 
+  /// The phone can't pick a Slack channel, so it only shows a Slack trigger.
+  private var triggerCaption: String {
+    draft.triggerKind == .slack ? "Change a Slack trigger in Argus on the Mac." : draft.triggerCaption
+  }
+
+  @ViewBuilder
   private var trigger: some View {
-    Field(label: "Trigger", caption: draft.triggerCaption) {
+    if draft.triggerKind == .slack {
+      Field(label: "Trigger", caption: triggerCaption) {
+        BodyText(draft.slackChannel.map { "Slack messages in #\($0.name)" } ?? "Slack messages")
+        MutedText(AutomationText.slackMatch(draft.slackMatch, text: draft.slackText))
+        reportChannel
+      }
+    } else {
+      clockTrigger
+    }
+  }
+
+  @ViewBuilder
+  private var reportChannel: some View {
+    if let channel = draft.reportSlackChannel { MutedText("Reports also go to #\(channel.name)") }
+  }
+
+  private var clockTrigger: some View {
+    Field(label: "Trigger", caption: triggerCaption) {
       SegmentedControl(
         value: Binding(get: { draft.triggerKind }, set: { draft.setTriggerKind($0) }),
         options: RemoteAutomationDetail.triggerOptions)
@@ -104,6 +127,7 @@ public struct AutomationFields: View {
         .font(.scaled(size: 14))
         .toggleStyle(.argusSwitch)
       }
+      reportChannel
     }
   }
 

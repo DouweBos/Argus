@@ -30,6 +30,10 @@ import dev.houwert.argus.app.stores.presence
 import dev.houwert.argus.core.account.AccountStore
 import dev.houwert.argus.core.account.refreshDirectory
 import dev.houwert.argus.core.account.remove
+import dev.houwert.argus.core.stores.integrations
+import dev.houwert.argus.core.stores.loadIntegrations
+import dev.houwert.argus.core.stores.loadSlackStatus
+import dev.houwert.argus.core.stores.slackStatus
 import dev.houwert.argus.ui.components.LiveRefresh
 import kotlin.time.Duration.Companion.milliseconds
 import dev.houwert.argus.kit.net.Transport
@@ -46,6 +50,8 @@ import dev.houwert.argus.ui.components.SettingsRow
 import dev.houwert.argus.ui.components.StatusDot
 import dev.houwert.argus.ui.components.TextInput
 import dev.houwert.argus.ui.components.ThemedTextField
+import dev.houwert.argus.ui.integrations.IntegrationStatusRows
+import dev.houwert.argus.ui.integrations.SlackStatusRows
 import dev.houwert.argus.ui.components.label
 import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.ui.theme.Tone
@@ -118,6 +124,8 @@ private fun ComputerContent(computer: DeviceIdentity) {
       )
     }
   }
+
+  if (active) IntegrationGroups(ready)
 
   if (!computer.isAccountHost) NameGroup(computer)
 
@@ -204,6 +212,33 @@ private fun ComputerContent(computer: DeviceIdentity) {
       },
       dismissButton = { TextButton({ confirmingUnpair = false }) { Text("Cancel") } },
     )
+  }
+}
+
+/** What the connected computer has hooked up, read-only: the phone never holds those keys or tokens. */
+@Composable
+private fun IntegrationGroups(ready: Boolean) {
+  val host = LocalAppStore.current.host
+  val integrations by host.integrations.collectAsState()
+  val slack by host.slackStatus.collectAsState()
+  LaunchedEffect(ready) {
+    if (!ready) return@LaunchedEffect
+    host.loadIntegrations()
+    host.loadSlackStatus()
+  }
+  if (integrations.isNotEmpty()) {
+    SettingsGroup(title = "Integrations", footer = "Connect or disconnect them in Argus on the computer; their keys never leave it.") {
+      IntegrationStatusRows(integrations)
+    }
+  }
+  slack?.let { status ->
+    SettingsGroup(
+      title = "Slack",
+      footer = "Connect Slack and choose who may use it on the Mac: the tokens and the allowlist decide who can run agents on " +
+        "this computer, so they never leave it.",
+    ) {
+      SlackStatusRows(status)
+    }
   }
 }
 

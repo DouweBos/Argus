@@ -159,6 +159,8 @@ public enum Labels {
       automation.cron.map { cronLabel($0, timezone: automation.timezone) } ?? "Scheduled"
     case .signal: "On events"
     case .webhook: "On webhook"
+    case .slack:
+      automation.slackChannel.map { "Slack messages in #\($0.name)" } ?? "Slack messages"
     }
   }
 

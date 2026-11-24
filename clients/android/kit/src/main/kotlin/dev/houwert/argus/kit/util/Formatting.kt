@@ -6,6 +6,8 @@ import dev.houwert.argus.kit.protocol.generated.RemoteAgentStatusStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomation
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationRun
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationTriggerKind
+import dev.houwert.argus.kit.protocol.generated.SlackChannelRef
+import dev.houwert.argus.kit.protocol.generated.SlackTriggerMatch
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -167,9 +169,23 @@ object Labels {
     RemoteAutomationTriggerKind.schedule -> automation.cron?.let { cronLabel(it, automation.timezone) } ?: "Scheduled"
     RemoteAutomationTriggerKind.signal -> "On events"
     RemoteAutomationTriggerKind.webhook -> "On webhook"
+    RemoteAutomationTriggerKind.slack -> automation.slackChannel?.let { "Slack messages in ${slackChannel(it.name)}" } ?: "Slack messages"
     // An unknown kind reads as manual, as the iPhone decodes it.
     else -> "Manual"
   }
+
+  /** "Messages starting with “deploy failed” in #deploys": a Slack trigger in full. */
+  fun slackTriggerLabel(channel: SlackChannelRef?, match: SlackTriggerMatch?, text: String?): String {
+    val where = channel?.let { " in ${slackChannel(it.name)}" } ?: ""
+    val wanted = text?.trim().orEmpty()
+    return when {
+      wanted.isEmpty() || match == null || match == SlackTriggerMatch.any -> "Every message$where"
+      match == SlackTriggerMatch.prefix -> "Messages starting with “$wanted”$where"
+      else -> "Messages mentioning “$wanted”$where"
+    }
+  }
+
+  fun slackChannel(name: String): String = "#${name.removePrefix("#")}"
 
   /** "Once, Nov 10, 2026, 9:00 AM": the wall-clock time read in the trigger's zone, shown in the viewer's. */
   fun onceLabel(

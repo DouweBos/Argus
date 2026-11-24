@@ -2760,6 +2760,10 @@ extension ArgusProtocol {
       public var description: String?
       public var enabled: Bool?
       public var triggerKind: RemoteAutomationTriggerKind?
+      public var slackChannel: SlackChannelRef?
+      public var slackMatch: SlackTriggerMatch?
+      public var slackText: String?
+      public var reportSlackChannel: SlackChannelRef?
       public var cron: String?
       public var runAt: String?
       public var signal: RemoteSignalTrigger?
@@ -2781,6 +2785,10 @@ extension ArgusProtocol {
         case description = "description"
         case enabled = "enabled"
         case triggerKind = "trigger_kind"
+        case slackChannel = "slack_channel"
+        case slackMatch = "slack_match"
+        case slackText = "slack_text"
+        case reportSlackChannel = "report_slack_channel"
         case cron = "cron"
         case runAt = "run_at"
         case signal = "signal"
@@ -2798,11 +2806,15 @@ extension ArgusProtocol {
         case guardrails = "guardrails"
       }
 
-      public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, triggerKind: RemoteAutomationTriggerKind? = nil, cron: String? = nil, runAt: String? = nil, signal: RemoteSignalTrigger? = nil, webhook: RemoteWebhookTriggerInput? = nil, timezone: String? = nil, catchUp: Bool? = nil, repoRoots: [String]? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutomationsUpdateParamsPatchAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails? = nil) {
+      public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, triggerKind: RemoteAutomationTriggerKind? = nil, slackChannel: SlackChannelRef? = nil, slackMatch: SlackTriggerMatch? = nil, slackText: String? = nil, reportSlackChannel: SlackChannelRef? = nil, cron: String? = nil, runAt: String? = nil, signal: RemoteSignalTrigger? = nil, webhook: RemoteWebhookTriggerInput? = nil, timezone: String? = nil, catchUp: Bool? = nil, repoRoots: [String]? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutomationsUpdateParamsPatchAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails? = nil) {
         self.name = name
         self.description = description
         self.enabled = enabled
         self.triggerKind = triggerKind
+        self.slackChannel = slackChannel
+        self.slackMatch = slackMatch
+        self.slackText = slackText
+        self.reportSlackChannel = reportSlackChannel
         self.cron = cron
         self.runAt = runAt
         self.signal = signal
@@ -2826,6 +2838,10 @@ extension ArgusProtocol {
         try c.encodeIfPresent(description, forKey: .description)
         try c.encodeIfPresent(enabled, forKey: .enabled)
         try c.encodeIfPresent(triggerKind, forKey: .triggerKind)
+        try c.encodeIfPresent(slackChannel, forKey: .slackChannel)
+        try c.encodeIfPresent(slackMatch, forKey: .slackMatch)
+        try c.encodeIfPresent(slackText, forKey: .slackText)
+        try c.encodeIfPresent(reportSlackChannel, forKey: .reportSlackChannel)
         try c.encodeIfPresent(cron, forKey: .cron)
         try c.encodeIfPresent(runAt, forKey: .runAt)
         try c.encodeIfPresent(signal, forKey: .signal)
@@ -8682,6 +8698,33 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SlackStatusParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct SlackStatusResult: Codable, Sendable {
+      public var status: SlackStatus
+
+      enum CodingKeys: String, CodingKey {
+        case status = "status"
+      }
+
+      public init(status: SlackStatus) {
+        self.status = status
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(status, forKey: .status)
+      }
+    }
+
     public struct TerminalsListParams: Codable, Sendable {
       public var sessionId: String
 
@@ -10215,6 +10258,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsWatchPullRequestParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsWatchPullRequestResult
       public static let name = "sessions.watch_pull_request"
+    }
+
+    public enum SlackStatus: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SlackStatusParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SlackStatusResult
+      public static let name = "slack.status"
     }
 
     public enum TerminalsList: RemoteCommand {

@@ -83,6 +83,12 @@ export function draftToInput(draft: RemoteAutomationDetail): AutomationInput {
     }),
     timezone: draft.timezone?.trim() || localTimezone(),
     catch_up: draft.catch_up,
+    ...(draft.trigger_kind === "slack" && {
+      slack_channel: draft.slack_channel ?? null,
+      slack_match: draft.slack_match ?? "any",
+      slack_text: draft.slack_text?.trim() ?? "",
+    }),
+    report_slack_channel: draft.report_slack_channel ?? null,
     repo_roots: draft.repo_roots,
     source_ids: draft.source_ids,
     playbook: draft.playbook,
@@ -115,7 +121,14 @@ export function draftScheduleError(
   draft: Partial<Pick<RemoteAutomationDetail, "signal">> &
     Pick<
       RemoteAutomationDetail,
-      "cron" | "enabled" | "run_at" | "timezone" | "trigger_kind"
+      | "cron"
+      | "enabled"
+      | "run_at"
+      | "slack_channel"
+      | "slack_match"
+      | "slack_text"
+      | "timezone"
+      | "trigger_kind"
     >,
   now: number = Date.now(),
 ): string | null {
@@ -135,6 +148,16 @@ export function draftScheduleError(
     case "manual":
     case "webhook":
       return null;
+    case "slack":
+      if (!draft.slack_channel) {
+        return "Pick the Slack channel to listen in.";
+      }
+
+      return draft.slack_match &&
+        draft.slack_match !== "any" &&
+        !draft.slack_text?.trim()
+        ? "Type the keyword or prefix to listen for."
+        : null;
   }
 }
 

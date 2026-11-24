@@ -120,6 +120,15 @@ two fields and calls the function — it never starts runs itself.
 **Manual** — no clock at all. It only runs when you press **Run now**, which
 every automation supports regardless of its trigger.
 
+**Slack message** — runs when a message lands in a Slack channel: any
+message, one that starts with a prefix (`deploy failed`), or one that
+mentions a keyword (`rollback`), case-insensitive. Needs
+[Slack connected](./integrations.md#slack), with the bot invited to the
+channel. Only the members allowed to drive agents from Slack can fire it;
+anyone else's message is ignored. Like the other event triggers, matches
+queue, fire one run each or one for the batch, and stop at a per-hour cap. Set it up in Argus for Mac; the phones and the
+web client show it but can't change the channel.
+
 **No automation at all** — see [Quick runs](#quick-runs-one-off-without-saving).
 
 ---
@@ -456,6 +465,11 @@ every quick run — because a run is the one thing in Argus that happens while
 nobody is looking. A report you have not opened is flagged there and listed
 first; opening it clears the flag, and so does a newer report from the same
 automation, so only the latest one ever chases you.
+
+With Slack connected, an automation can also post each finished report to a
+Slack channel (**Post report to Slack** in its editor): the report as Slack
+formatting, cut at a paragraph when it's long, with a link to the run in
+Argus. A failed run posts why it failed.
 
 Home also carries a **Needs you** section: the pending proposals and the runs
 that failed, with the same Start and Dismiss buttons the Inbox has.

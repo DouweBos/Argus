@@ -122,7 +122,9 @@ public final class AutomationsStore {
   /// Create when `id` is nil, otherwise patch. Returns the saved automation's
   /// id so a new one can be opened straight after.
   public func save(id: String?, input: RemoteAutomationInput) async -> String? {
-    await persist(id: id, input: input, action: id == nil ? .create : .save)
+    var input = input
+    if let id, let saved = detailById[id], input.keepsTrigger(of: saved) { input.sendsTrigger = false }
+    return await persist(id: id, input: input, action: id == nil ? .create : .save)
   }
 
   /// A paused copy — same playbook, trigger and projects, no memories or runs —

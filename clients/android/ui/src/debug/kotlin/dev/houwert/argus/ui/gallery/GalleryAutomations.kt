@@ -23,6 +23,7 @@ import dev.houwert.argus.kit.protocol.generated.RemoteSignalTrigger
 import dev.houwert.argus.kit.protocol.generated.RemoteSignalTriggerFire
 import dev.houwert.argus.kit.protocol.generated.RemoteWebhookTrigger
 import dev.houwert.argus.kit.protocol.generated.RemoteWebhookTriggerFire
+import dev.houwert.argus.kit.protocol.generated.SlackChannelRef
 import dev.houwert.argus.kit.protocol.generated.RemoteClaudeAccount
 import dev.houwert.argus.kit.protocol.generated.RemoteClaudeAccountAccountType
 import dev.houwert.argus.kit.protocol.generated.RemoteProject
@@ -63,8 +64,9 @@ private fun automation(
   running: Boolean = false,
   nextIn: Double? = 3 * HOUR,
   runAt: String? = null,
+  slackChannel: SlackChannelRef? = null,
 ) = RemoteAutomation(
-  id = id, name = name, description = "", enabled = enabled, triggerKind = kind, cron = cron, runAt = runAt,
+  id = id, name = name, description = "", enabled = enabled, triggerKind = kind, slackChannel = slackChannel, cron = cron, runAt = runAt,
   timezone = "Europe/Amsterdam", autonomy = RemoteAutomationAutonomy.propose, projects = listOf("argus"),
   nextRunAt = nextIn?.let { now + it }, running = running,
 )
@@ -79,7 +81,10 @@ internal val galleryAutomations = listOf(
   automation("a7", "Accessibility sweep", enabled = false),
   automation("a8", "Bundle size watch", cron = "0 */6 * * *", nextIn = 2 * HOUR),
   automation("a9", "Onboarding copy review", kind = RemoteAutomationTriggerKind.once, cron = null, runAt = "2026-12-01T09:00"),
-  automation("a10", "Crash report digest", cron = "30 7 * * *", nextIn = 14 * HOUR),
+  automation(
+    "a10", "Deploy failure triage", kind = RemoteAutomationTriggerKind.slack, cron = null, nextIn = null,
+    slackChannel = SlackChannelRef("C1", "deploys"),
+  ),
   automation("a11", "Docs link checker", enabled = false, cron = "0 3 * * 0"),
   automation("a12", "Unused feature flags", cron = "0 10 1 * *", nextIn = 300 * HOUR),
   automation("a13", "Fix my red CI", kind = RemoteAutomationTriggerKind.signal, cron = null, nextIn = null),

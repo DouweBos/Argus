@@ -46,6 +46,8 @@ public final class HostStore {
   public internal(set) var runners: [RemoteRunner] = []
   /// Linear and Figma as this computer has them connected; empty until loaded.
   public internal(set) var integrations: [ArgusProtocol.IntegrationStatus] = []
+  /// The computer's Slack connection; nil until loaded or on a computer without it.
+  public internal(set) var slackStatus: ArgusProtocol.SlackStatus?
   public internal(set) var stoppedByRepo: [String: [RemoteStoppedAgent]] = [:]
   /// Stopped agents a link already resumed, so opening it again doesn't resume a second copy.
   var resumedAs: [String: String] = [:]
@@ -273,6 +275,7 @@ public final class HostStore {
     scratchPads = []
     adoptedSessions = [:]
     integrations = []
+    slackStatus = nil
     stoppedByRepo = [:]
     messagesByAgent = [:]
     optimisticByAgent = [:]

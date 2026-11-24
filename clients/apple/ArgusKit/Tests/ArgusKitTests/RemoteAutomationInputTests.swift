@@ -80,4 +80,25 @@ struct RemoteAutomationInputTests {
     #expect(detail.on == [.newPr, RemoteSignalEvent(rawValue: "deploy_failed")])
     #expect(detail.on.map(\.label) == ["New pull request", "Deploy Failed"])
   }
+
+  @Test("an unchanged Slack trigger stays off the wire, and the report channel can be cleared")
+  func slackTrigger() throws {
+    let saved = RemoteAutomationDetail(
+      name: "A", triggerKind: .slack, playbook: "p", slackChannel: .init(id: "C1", name: "deploys"),
+      slackMatch: .keyword, slackText: "rollback")
+    var input = RemoteAutomationInput(saved)
+    #expect(input.keepsTrigger(of: saved))
+    input.sendsTrigger = false
+    var json = try JSONSerialization.jsonObject(with: ProtocolCodec.encoder.encode(input)) as? [String: Any]
+    #expect(json?["trigger_kind"] == nil)
+    #expect(json?["slack_channel"] == nil)
+    #expect(json?["report_slack_channel"] is NSNull)
+
+    input.sendsTrigger = true
+    input.slackText = "revert"
+    #expect(!input.keepsTrigger(of: saved))
+    json = try JSONSerialization.jsonObject(with: ProtocolCodec.encoder.encode(input)) as? [String: Any]
+    #expect(json?["trigger_kind"] as? String == "slack")
+    #expect(json?["slack_match"] as? String == "keyword")
+  }
 }

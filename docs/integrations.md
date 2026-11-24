@@ -1,7 +1,7 @@
 # Integrations
 
-Argus connects to Linear and Figma itself, with its own sign-in kept on this
-machine. Nothing depends on an MCP server staying signed in.
+Argus connects to Linear, Figma and Slack itself, with its own sign-in kept
+on this machine. Nothing depends on an MCP server staying signed in.
 
 ## Connecting Linear
 
@@ -195,6 +195,93 @@ Linear**. Pick a team, write a title and a description, then:
 - **File & start agent** creates it the same way and opens the project's
   start composer with the issue attached, ready to hand to an agent in a new
   worktree.
+
+## Slack
+
+Mention the Argus bot in a channel or message it directly, and an agent
+starts on your request in the right project. Its progress, final reply and
+permission prompts come back in that Slack thread; reply in the thread to
+steer it.
+
+Slack reaches Argus over **Socket Mode**: Argus opens an outbound connection
+to Slack with an app-level token. There is no cloud relay and no open port,
+so it works from a laptop behind a router, and nothing but Slack itself sits
+between your workspace and this machine. You create the Slack app yourself,
+in your own workspace.
+
+### Setting it up
+
+1. In Argus, open **Settings → Integrations → Slack** and click **Copy
+   manifest**.
+2. Go to [api.slack.com/apps](https://api.slack.com/apps), click **Create New
+   App → From a manifest**, pick your workspace, paste the manifest and
+   create the app. It asks for these bot scopes: `app_mentions:read`,
+   `channels:history`, `channels:read`, `chat:write`, `files:read`,
+   `groups:history`, `groups:read`, `im:history`, `im:read`, `im:write`,
+   `users:read`; subscribes to `app_mention`, `message.channels`,
+   `message.groups` and `message.im`; and turns on Socket Mode and
+   interactivity.
+3. Under **Basic Information → App-Level Tokens**, click **Generate Token and
+   Scopes**, add the `connections:write` scope and generate it. Copy the
+   token (`xapp-…`).
+4. Under **Install App**, install the app to your workspace and copy the
+   **Bot User OAuth Token** (`xoxb-…`).
+5. Back in Argus, paste both tokens and click **Connect**. Argus checks them
+   with Slack, then encrypts them with this machine's secure storage in
+   `~/.argus/slack.json`. They never leave the host and are never logged.
+6. Settings now shows a six-digit code. Send it to the bot in a direct
+   message (find **Argus** under Apps in Slack). That makes you the bot's
+   owner. Until someone claims it, the bot answers nobody.
+7. Invite the bot to the channels it should listen in (`/invite @Argus`).
+
+### Who can use it
+
+Agents run on your computer with your accounts, so who may drive them from
+Slack is treated like the Control grant on a paired phone. By default only
+the owner can. Add other people under **Allowed members** by their Slack
+member ID (in their profile → ⋯ → **Copy member ID**). Anyone else who
+mentions the bot gets a polite refusal, and clicking Approve or Deny on
+someone else's prompt does nothing.
+
+### Which project
+
+- **Channels**: map a channel to a project and every mention there starts in
+  that project.
+- **Default project**: used for direct messages and for channels with no
+  project of their own.
+- With neither (or when only one project is in Argus, it's used directly),
+  the bot asks in the thread which project to work in, with a button per
+  project.
+
+One Slack thread is one Argus session with its own worktree and agent.
+Argus remembers which thread belongs to which session in
+`~/.argus/slack-threads.json`, so a reply in the thread reaches the same
+session even after Argus restarted: it resumes the conversation where it
+left off.
+
+### In the thread
+
+- A **Working on it** message links to the session (`argus://` for the Mac
+  and iPhone apps, and the web client's address when remote access is on).
+  It's edited as the agent works (thinking, reading files, editing files,
+  running tests) instead of posting a message per step.
+- The **final reply** is posted as Slack formatting converted from the
+  agent's Markdown. A long reply is cut at a paragraph with a link to the
+  rest in Argus.
+- **Permission prompts** come with **Approve** and **Deny** buttons. They
+  answer the same prompt the Mac and the phone show: answer it anywhere and
+  the others clear. A question or plan from the agent links back to Argus,
+  where it can be answered properly.
+- **Images** attached to a message are passed to the agent. Other files are
+  named in the prompt but not passed on.
+
+### On iPhone and Android
+
+The phones' Settings show whether Slack is connected, its workspace, owner
+and channel projects. Connecting Slack and changing who may use it are only
+possible on the Mac: the tokens and the allowlist decide who can run agents
+on your computer, so they stay off the paired-device protocol, just like
+granting Control.
 
 ## On iPhone and the Mac app
 

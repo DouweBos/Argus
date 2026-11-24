@@ -28,6 +28,9 @@
         },
         GalleryStory("settings/accounts", fixtures: GalleryFixtures.runnerAccounts) { ClaudeAccountsView() },
         GalleryStory("settings/computer", fixtures: computerFixtures, setup: connect) { ComputerStory() },
+        slack("connected", GalleryFixtures.slackConnected),
+        slack("claim", GalleryFixtures.slackClaimPending),
+        slack("not-connected", GalleryFixtures.slackNotConnected),
         account("signed-in", GalleryAccount(selfKind: "ios")),
         account("signed-out", GalleryAccount(phase: .signedOut, selfKind: "ios")),
         account(
@@ -56,6 +59,14 @@
           ]
         ])
       ]) { $1 }
+    }
+
+    /// The computer's page with its Slack in one of its states; the Mac's ids.
+    private static func slack(_ state: String, _ fixtures: [String: String]) -> GalleryStory {
+      GalleryStory(
+        "settings/integrations/slack/\(state)", fixtures: GalleryFixtures.deviceHosts.merging(fixtures) { $1 },
+        setup: connect
+      ) { ComputerStory() }
     }
 
     private static func account(_ state: String, _ fixture: GalleryAccount) -> GalleryStory {

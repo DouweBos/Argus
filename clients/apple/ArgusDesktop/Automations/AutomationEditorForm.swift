@@ -18,6 +18,7 @@ struct AutomationEditorForm: View {
       TextField("Description", text: $draft.description, prompt: Text("Shown in the automations list."))
     }
     trigger
+    SlackReportSection(channel: $draft.reportSlackChannel)
     scope
     Section {
       RunnerModelRows(runner: $draft.runner, model: $draft.model, runners: store.runners) {
@@ -41,8 +42,15 @@ struct AutomationEditorForm: View {
     Section {
       Picker("Trigger", selection: Binding(get: { draft.triggerKind }, set: { draft.setTriggerKind($0) })) {
         ForEach(RemoteAutomationDetail.triggerOptions, id: \.0) { Text($0.1).tag($0.0) }
+        if host.slackConfigured || draft.triggerKind == .slack {
+          Text("Slack").tag(RemoteAutomation.TriggerKind.slack)
+        }
       }
       .pickerStyle(.segmented)
+      .task { if host.slackStatus == nil { await host.loadSlackStatus() } }
+      if draft.triggerKind == .slack {
+        SlackTriggerRows(channel: $draft.slackChannel, match: $draft.slackMatch, text: optional(\.slackText))
+      }
       if draft.triggerKind == .schedule {
         TextField("Cron", text: optional(\.cron), prompt: Text("0 9 * * 1-5"))
           .font(.system(.body, design: .monospaced))

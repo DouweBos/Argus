@@ -192,9 +192,13 @@ extension RemoteAutomationDetail {
     return OnceTime.error(runAt, timezone: timezone, enabled: enabled)
   }
 
-  /// Whether the trigger can be saved: manual, a schedule that fires, a
-  /// run-once time, or a signal with at least one event.
+  /// Whether the trigger can be saved: manual, a schedule that fires, a run-once
+  /// time, a signal with at least one event, or a Slack channel with the text its match needs.
   public var hasValidTrigger: Bool {
+    if triggerKind == .slack {
+      let needsText = (slackMatch ?? .any) != .any
+      return slackChannel != nil && (!needsText || !(slackText ?? "").trimmingCharacters(in: .whitespaces).isEmpty)
+    }
     if case .failure = schedulePreview(count: 1) { return false }
     return onceError == nil && signalError == nil
   }

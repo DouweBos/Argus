@@ -254,6 +254,7 @@ import {
 } from "../simulator/ios";
 import { devicePng } from "../simulator/screenshot";
 import { getVideoDims } from "../simulator/videoForward";
+import { remoteSlackStatus } from "../slack/status";
 import {
   listTerminals,
   readTerminalOutput,
@@ -2757,6 +2758,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return cleanupPolicy();
   },
   "integrations.list": async () => ({ integrations: listIntegrations() }),
+  "slack.status": async () => ({ status: remoteSlackStatus() }),
 
   "linear.issues": async (params) => {
     const { query, scope, limit } = parse("linear.issues", params);

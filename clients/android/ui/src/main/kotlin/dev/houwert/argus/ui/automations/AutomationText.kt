@@ -23,6 +23,7 @@ object AutomationText {
     if (!automation.enabled) return "Paused"
     if (automation.triggerKind == RemoteAutomationTriggerKind.signal) return "When an event arrives"
     if (automation.triggerKind == RemoteAutomationTriggerKind.webhook) return "When its webhook is called"
+    if (automation.triggerKind == RemoteAutomationTriggerKind.slack) return "On the next matching message"
     val next = automation.nextRunAt ?: return "Not scheduled"
     return "${timestamp(next)} (${Labels.until(next) ?: "now"})"
   }

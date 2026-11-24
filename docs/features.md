@@ -262,6 +262,17 @@ alongside you until you end the huddle.
 
 ---
 
+## Slack
+
+Mention the Argus bot in a channel or message it, and an agent starts in
+the right project. Its progress, final reply and Approve / Deny prompts come
+back in the Slack thread, and replying there steers it. One thread is one
+session. Only the people you allow can use it.
+
+See [Integrations](/argus/docs/integrations#slack) for setup.
+
+---
+
 ## Argus Server — the headless host
 
 Argus Server is Argus with no window: the whole service layer —
@@ -291,6 +302,9 @@ autonomy ladder that decides how far a run may go unsupervised.
 Signal sources today are GitHub issues and pull requests and GitLab issues
 and merge requests natively, plus
 anything an agent can reach over MCP (e.g. Linear).
+
+Automations can also run on a Slack message and post their reports to a
+Slack channel.
 
 See [Automations](/argus/docs/automations) for the full story.
 
@@ -550,4 +564,6 @@ and beta builds can break your install).
 - **No cloud in the path.** Remote access, huddles and the server app
   are your own machines talking to each other, end-to-end encrypted. An
   [Argus account](/argus/docs/accounts) is optional: it only helps your
-  machines find each other.
+  machines find each other. The [Slack integration](/argus/docs/integrations#slack)
+  is your own Slack app, reached over an outbound connection from your
+  machine: no relay, no open port.

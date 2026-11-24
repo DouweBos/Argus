@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { DesignRef, LinkedIssue } from "./models/integrations";
 import { SessionCompareGroup, SessionPullRequest } from "./models/sessions";
+import { SlackChannelRef, SlackTriggerMatch } from "./models/slack";
 
 export const RemoteProject = z.object({
   repo_root: z.string(),
@@ -758,6 +759,7 @@ export const RemoteAutomationTriggerKind = z.enum([
   "schedule",
   "signal",
   "webhook",
+  "slack",
 ]);
 export type RemoteAutomationTriggerKind = z.infer<
   typeof RemoteAutomationTriggerKind
@@ -816,6 +818,8 @@ export const RemoteAutomation = z.object({
   description: z.string(),
   enabled: z.boolean(),
   trigger_kind: RemoteAutomationTriggerKind,
+  /** The channel a `slack` trigger listens in. Missing from older hosts. */
+  slack_channel: SlackChannelRef.nullish(),
   /** 5-field cron — only for `schedule`. */
   cron: z.string().nullable(),
   /** Local `YYYY-MM-DDTHH:mm` — only for `once`. Missing from older hosts. */
@@ -1097,6 +1101,12 @@ export const RemoteAutomationDetail = z.object({
   description: z.string(),
   enabled: z.boolean(),
   trigger_kind: RemoteAutomationTriggerKind,
+  /** Only for `slack`; missing from older hosts. */
+  slack_channel: SlackChannelRef.nullish(),
+  slack_match: SlackTriggerMatch.nullish(),
+  slack_text: z.string().nullish(),
+  /** Also post each finished run's report to this Slack channel. */
+  report_slack_channel: SlackChannelRef.nullish(),
   cron: z.string().nullable(),
   /** Local `YYYY-MM-DDTHH:mm` — only for `once`. Missing from older hosts. */
   run_at: z.string().nullable().optional(),

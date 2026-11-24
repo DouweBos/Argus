@@ -8,6 +8,7 @@ import { capture } from "../telemetry/telemetry";
  * Start an agent in a session that was just created and hand it `prompt`
  * once setup finishes. Runs on the host so the client that asked can go away
  * — a backgrounded phone or a reloaded window must not strand the prompt.
+ * Resolves with the agent's id, or null when it couldn't start.
  */
 export async function startAgentWhenReady(
   sessionId: string,
@@ -20,7 +21,7 @@ export async function startAgentWhenReady(
     /** Set before the prompt goes out, so the first turn already runs at it. */
     effort?: string;
   } = {},
-): Promise<void> {
+): Promise<string | null> {
   try {
     await waitForSessionReady(sessionId);
     // Lazy: agentService reaches back to the gateway through notifications.
@@ -65,8 +66,12 @@ export async function startAgentWhenReady(
     });
     logInfo(`Started agent ${agent.agent_id} with its prompt in ${sessionId}`);
     capture("session_prompt_dispatched", { success: true });
+
+    return agent.agent_id;
   } catch (e) {
     logError(`Couldn't start the prompted agent in ${sessionId}: ${String(e)}`);
     capture("session_prompt_dispatched", { success: false });
+
+    return null;
   }
 }

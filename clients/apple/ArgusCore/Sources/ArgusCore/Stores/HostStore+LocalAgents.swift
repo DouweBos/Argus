@@ -33,6 +33,10 @@ extension HostStore {
       Task { await refreshGitStatus(sessionId: id) }
       return
     }
+    if ipc.channel == "slack_status_changed" {
+      if let status = try? ProtocolCodec.convert(arg, to: ArgusProtocol.SlackStatus.self) { slackStatus = status }
+      return
+    }
     guard followsAllAgents else { return }
     switch ipc.channel {
     case "agent:started":

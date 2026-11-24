@@ -21,6 +21,7 @@ import dev.houwert.argus.core.automations.withAutonomy
 import dev.houwert.argus.core.stores.draftOverGateway
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetail
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationTriggerKind
+import dev.houwert.argus.kit.util.Labels
 import dev.houwert.argus.ui.automations.AutomationText
 import dev.houwert.argus.ui.components.Banner
 import dev.houwert.argus.ui.components.BodyText
@@ -116,6 +117,8 @@ private fun Review(draft: RemoteAutomationDetail, notes: List<String>, onChange:
         draft.schedulePreviewText()?.headline?.let { BodyText(it) }
         MonoText("$cron · ${draft.timezone ?: TimeZone.getDefault().id}", color = ArgusTheme.colors.textMuted)
       }
+    } else if (draft.triggerKind == RemoteAutomationTriggerKind.slack) {
+      BodyText(Labels.slackTriggerLabel(draft.slackChannel, draft.slackMatch, draft.slackText))
     } else {
       MutedText(
         when (draft.triggerKind) {

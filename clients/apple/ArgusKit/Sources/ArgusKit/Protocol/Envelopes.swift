@@ -124,6 +124,7 @@ public enum RemoteMethod: String, Codable, Sendable {
   case linearComment = "linear.comment"
   case figmaFrameDetails = "figma.frame_details"
   case designCompare = "design.compare"
+  case slackStatus = "slack.status"
 
   case githubPullRequests = "github.pull_requests"
   case githubPullRequest = "github.pull_request"

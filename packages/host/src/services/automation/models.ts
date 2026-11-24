@@ -9,10 +9,26 @@
  */
 
 import type { SignalEventKind, WorkItem } from "../signals/types";
-import type { ReportBlock } from "@argus/remote-protocol";
+import type {
+  ReportBlock,
+  SlackChannelRef,
+  SlackTriggerMatch,
+} from "@argus/remote-protocol";
 
 /** What causes an automation to fire. */
 export type AutomationTrigger =
+  | {
+      /** Fires on a message in a Slack channel the bot is in. */
+      kind: "slack";
+      channel: SlackChannelRef;
+      match: SlackTriggerMatch;
+      /** The keyword or prefix; ignored for `any`. Case-insensitive. */
+      text: string;
+      /** `each`: one run per message. `batch`: one run for everything waiting. */
+      fire: "batch" | "each";
+      /** Cap on runs this trigger starts in any rolling hour. */
+      max_runs_per_hour: number;
+    }
   | {
       /** Fires on a signed POST to the automation's URL on the gateway. */
       kind: "webhook";
@@ -150,6 +166,8 @@ export interface Automation {
   last_run_at: number | null;
   /** Next scheduled fire, epoch ms. Null for manual triggers and paused ones. */
   next_run_at: number | null;
+  /** Also post each finished run's report to this Slack channel. */
+  report_slack_channel?: SlackChannelRef | null;
 }
 
 /**
@@ -251,6 +269,7 @@ export interface CreateAutomationInput {
   runner?: string | null;
   claude_account_id?: string | null;
   template_id?: string | null;
+  report_slack_channel?: SlackChannelRef | null;
 }
 
 /**

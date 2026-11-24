@@ -104,6 +104,11 @@ import {
   WorktreeCleanupSweep,
 } from "./models/sessions";
 import {
+  SlackChannelRef,
+  SlackStatus,
+  SlackTriggerMatch,
+} from "./models/slack";
+import {
   ClaudeAccountLimits,
   ClaudeUsageLimits,
   ClaudeUsageSummary,
@@ -143,6 +148,11 @@ export const AutomationInput = z.object({
   description: z.string(),
   enabled: z.boolean(),
   trigger_kind: RemoteAutomationTriggerKind,
+  /** Only for `slack`; optional so older clients still save. */
+  slack_channel: SlackChannelRef.nullish(),
+  slack_match: SlackTriggerMatch.nullish(),
+  slack_text: z.string().nullish(),
+  report_slack_channel: SlackChannelRef.nullish(),
   cron: z.string(),
   /** Local `YYYY-MM-DDTHH:mm` for `once`; optional so older clients still save. */
   run_at: z.string().optional(),
@@ -921,6 +931,7 @@ export const MethodParams = {
   /** Instructions rewritten to a note, for the editor. Nothing is saved. */
   "blueprints.revise": z.object({ input: ReviseBlueprintInput }),
   "integrations.list": z.object({}),
+  "slack.status": z.object({}),
   /** No query: the connected user's open issues in `scope`, newest first. */
   "linear.issues": z.object({
     query: z.string().max(500).optional(),
@@ -1468,6 +1479,8 @@ export const MethodResult = {
   "blueprints.draft": z.object({ draft: BlueprintDraft }),
   "blueprints.revise": z.object({ instructions: z.string() }),
   "integrations.list": z.object({ integrations: z.array(IntegrationStatus) }),
+  /** `claim_code` is always null here; claiming the bot is the Mac's to show. */
+  "slack.status": z.object({ status: SlackStatus }),
   "linear.issues": z.object({ issues: z.array(LinearIssue) }),
   /** Null when Linear has no such issue; `states` is its team's workflow, for
    *  the status picker. */

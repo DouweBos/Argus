@@ -2112,6 +2112,7 @@ extension ArgusProtocol {
     public var updatedAt: Double
     public var lastRunAt: Double?
     public var nextRunAt: Double?
+    public var reportSlackChannel: SlackChannelRef?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -2134,9 +2135,10 @@ extension ArgusProtocol {
       case updatedAt = "updated_at"
       case lastRunAt = "last_run_at"
       case nextRunAt = "next_run_at"
+      case reportSlackChannel = "report_slack_channel"
     }
 
-    public init(id: String, name: String, description: String, enabled: Bool, trigger: AutomationTrigger, scope: AutomationScope, sourceIds: [String], playbook: String, extraInstructions: String, autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, seededPlaybookHash: String? = nil, createdAt: Double, updatedAt: Double, lastRunAt: Double? = nil, nextRunAt: Double? = nil) {
+    public init(id: String, name: String, description: String, enabled: Bool, trigger: AutomationTrigger, scope: AutomationScope, sourceIds: [String], playbook: String, extraInstructions: String, autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, seededPlaybookHash: String? = nil, createdAt: Double, updatedAt: Double, lastRunAt: Double? = nil, nextRunAt: Double? = nil, reportSlackChannel: SlackChannelRef? = nil) {
       self.id = id
       self.name = name
       self.description = description
@@ -2157,6 +2159,7 @@ extension ArgusProtocol {
       self.updatedAt = updatedAt
       self.lastRunAt = lastRunAt
       self.nextRunAt = nextRunAt
+      self.reportSlackChannel = reportSlackChannel
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -2181,6 +2184,7 @@ extension ArgusProtocol {
       try c.encode(updatedAt, forKey: .updatedAt)
       try c.encode(lastRunAt, forKey: .lastRunAt)
       try c.encode(nextRunAt, forKey: .nextRunAt)
+      try c.encodeIfPresent(reportSlackChannel, forKey: .reportSlackChannel)
     }
   }
 
@@ -2387,6 +2391,10 @@ extension ArgusProtocol {
     public var description: String
     public var enabled: Bool
     public var triggerKind: RemoteAutomationTriggerKind
+    public var slackChannel: SlackChannelRef?
+    public var slackMatch: SlackTriggerMatch?
+    public var slackText: String?
+    public var reportSlackChannel: SlackChannelRef?
     public var cron: String
     public var runAt: String?
     public var signal: RemoteSignalTrigger?
@@ -2408,6 +2416,10 @@ extension ArgusProtocol {
       case description = "description"
       case enabled = "enabled"
       case triggerKind = "trigger_kind"
+      case slackChannel = "slack_channel"
+      case slackMatch = "slack_match"
+      case slackText = "slack_text"
+      case reportSlackChannel = "report_slack_channel"
       case cron = "cron"
       case runAt = "run_at"
       case signal = "signal"
@@ -2425,11 +2437,15 @@ extension ArgusProtocol {
       case guardrails = "guardrails"
     }
 
-    public init(name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationTriggerKind, cron: String, runAt: String? = nil, signal: RemoteSignalTrigger? = nil, webhook: RemoteWebhookTriggerInput? = nil, timezone: String, catchUp: Bool, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String? = nil, autonomy: AutomationInputAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails) {
+    public init(name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationTriggerKind, slackChannel: SlackChannelRef? = nil, slackMatch: SlackTriggerMatch? = nil, slackText: String? = nil, reportSlackChannel: SlackChannelRef? = nil, cron: String, runAt: String? = nil, signal: RemoteSignalTrigger? = nil, webhook: RemoteWebhookTriggerInput? = nil, timezone: String, catchUp: Bool, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String? = nil, autonomy: AutomationInputAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails) {
       self.name = name
       self.description = description
       self.enabled = enabled
       self.triggerKind = triggerKind
+      self.slackChannel = slackChannel
+      self.slackMatch = slackMatch
+      self.slackText = slackText
+      self.reportSlackChannel = reportSlackChannel
       self.cron = cron
       self.runAt = runAt
       self.signal = signal
@@ -2453,6 +2469,10 @@ extension ArgusProtocol {
       try c.encode(description, forKey: .description)
       try c.encode(enabled, forKey: .enabled)
       try c.encode(triggerKind, forKey: .triggerKind)
+      try c.encodeIfPresent(slackChannel, forKey: .slackChannel)
+      try c.encodeIfPresent(slackMatch, forKey: .slackMatch)
+      try c.encodeIfPresent(slackText, forKey: .slackText)
+      try c.encodeIfPresent(reportSlackChannel, forKey: .reportSlackChannel)
       try c.encode(cron, forKey: .cron)
       try c.encodeIfPresent(runAt, forKey: .runAt)
       try c.encodeIfPresent(signal, forKey: .signal)
@@ -2850,12 +2870,65 @@ extension ArgusProtocol {
     }
   }
 
+  public struct AutomationTriggerSlackFire: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let batch = AutomationTriggerSlackFire(rawValue: "batch")
+    public static let each = AutomationTriggerSlackFire(rawValue: "each")
+  }
+
+  public struct AutomationTriggerSlack: Codable, Sendable {
+    public var kind: String
+    public var channel: SlackChannelRef
+    public var match: SlackTriggerMatch
+    public var text: String
+    public var fire: AutomationTriggerSlackFire
+    public var maxRunsPerHour: Double
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case channel = "channel"
+      case match = "match"
+      case text = "text"
+      case fire = "fire"
+      case maxRunsPerHour = "max_runs_per_hour"
+    }
+
+    public init(kind: String, channel: SlackChannelRef, match: SlackTriggerMatch, text: String, fire: AutomationTriggerSlackFire, maxRunsPerHour: Double) {
+      self.kind = kind
+      self.channel = channel
+      self.match = match
+      self.text = text
+      self.fire = fire
+      self.maxRunsPerHour = maxRunsPerHour
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(channel, forKey: .channel)
+      try c.encode(match, forKey: .match)
+      try c.encode(text, forKey: .text)
+      try c.encode(fire, forKey: .fire)
+      try c.encode(maxRunsPerHour, forKey: .maxRunsPerHour)
+    }
+  }
+
   public enum AutomationTrigger: Codable, Sendable {
     case schedule(AutomationTriggerSchedule)
     case once(AutomationTriggerOnce)
     case manual(AutomationTriggerManual)
     case signal(AutomationTriggerSignal)
     case webhook(AutomationTriggerWebhook)
+    case slack(AutomationTriggerSlack)
     case unknown(JSONValue)
 
     private enum Tag: String, CodingKey { case tag = "kind" }
@@ -2868,6 +2941,7 @@ extension ArgusProtocol {
       case "manual": self = .manual(try AutomationTriggerManual(from: decoder))
       case "signal": self = .signal(try AutomationTriggerSignal(from: decoder))
       case "webhook": self = .webhook(try AutomationTriggerWebhook(from: decoder))
+      case "slack": self = .slack(try AutomationTriggerSlack(from: decoder))
       default: self = .unknown(try JSONValue(from: decoder))
       }
     }
@@ -2879,6 +2953,7 @@ extension ArgusProtocol {
       case .manual(let value): try value.encode(to: encoder)
       case .signal(let value): try value.encode(to: encoder)
       case .webhook(let value): try value.encode(to: encoder)
+      case .slack(let value): try value.encode(to: encoder)
       case .unknown(let value): try value.encode(to: encoder)
       }
     }
@@ -5813,6 +5888,7 @@ extension ArgusProtocol {
     public var runner: String?
     public var claudeAccountId: String?
     public var templateId: String?
+    public var reportSlackChannel: SlackChannelRef?
 
     enum CodingKeys: String, CodingKey {
       case name = "name"
@@ -5829,9 +5905,10 @@ extension ArgusProtocol {
       case runner = "runner"
       case claudeAccountId = "claude_account_id"
       case templateId = "template_id"
+      case reportSlackChannel = "report_slack_channel"
     }
 
-    public init(name: String, description: String? = nil, enabled: Bool? = nil, trigger: AutomationTrigger, scope: CreateAutomationInputScope? = nil, sourceIds: [String]? = nil, playbook: String, extraInstructions: String? = nil, autonomy: AutonomyLevel? = nil, guardrails: CreateAutomationInputGuardrails? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil) {
+    public init(name: String, description: String? = nil, enabled: Bool? = nil, trigger: AutomationTrigger, scope: CreateAutomationInputScope? = nil, sourceIds: [String]? = nil, playbook: String, extraInstructions: String? = nil, autonomy: AutonomyLevel? = nil, guardrails: CreateAutomationInputGuardrails? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, reportSlackChannel: SlackChannelRef? = nil) {
       self.name = name
       self.description = description
       self.enabled = enabled
@@ -5846,6 +5923,7 @@ extension ArgusProtocol {
       self.runner = runner
       self.claudeAccountId = claudeAccountId
       self.templateId = templateId
+      self.reportSlackChannel = reportSlackChannel
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -5864,6 +5942,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(runner, forKey: .runner)
       try c.encodeIfPresent(claudeAccountId, forKey: .claudeAccountId)
       try c.encodeIfPresent(templateId, forKey: .templateId)
+      try c.encodeIfPresent(reportSlackChannel, forKey: .reportSlackChannel)
     }
   }
 
@@ -14202,6 +14281,7 @@ extension ArgusProtocol {
     public var description: String
     public var enabled: Bool
     public var triggerKind: RemoteAutomationTriggerKind
+    public var slackChannel: SlackChannelRef?
     public var cron: String?
     public var runAt: String?
     public var timezone: String?
@@ -14217,6 +14297,7 @@ extension ArgusProtocol {
       case description = "description"
       case enabled = "enabled"
       case triggerKind = "trigger_kind"
+      case slackChannel = "slack_channel"
       case cron = "cron"
       case runAt = "run_at"
       case timezone = "timezone"
@@ -14227,12 +14308,13 @@ extension ArgusProtocol {
       case running = "running"
     }
 
-    public init(id: String, name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationTriggerKind, cron: String? = nil, runAt: String? = nil, timezone: String? = nil, autonomy: RemoteAutomationAutonomy? = nil, projects: [String], lastRunAt: Double? = nil, nextRunAt: Double? = nil, running: Bool) {
+    public init(id: String, name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationTriggerKind, slackChannel: SlackChannelRef? = nil, cron: String? = nil, runAt: String? = nil, timezone: String? = nil, autonomy: RemoteAutomationAutonomy? = nil, projects: [String], lastRunAt: Double? = nil, nextRunAt: Double? = nil, running: Bool) {
       self.id = id
       self.name = name
       self.description = description
       self.enabled = enabled
       self.triggerKind = triggerKind
+      self.slackChannel = slackChannel
       self.cron = cron
       self.runAt = runAt
       self.timezone = timezone
@@ -14250,6 +14332,7 @@ extension ArgusProtocol {
       try c.encode(description, forKey: .description)
       try c.encode(enabled, forKey: .enabled)
       try c.encode(triggerKind, forKey: .triggerKind)
+      try c.encodeIfPresent(slackChannel, forKey: .slackChannel)
       try c.encode(cron, forKey: .cron)
       try c.encodeIfPresent(runAt, forKey: .runAt)
       try c.encode(timezone, forKey: .timezone)
@@ -14284,6 +14367,10 @@ extension ArgusProtocol {
     public var description: String
     public var enabled: Bool
     public var triggerKind: RemoteAutomationTriggerKind
+    public var slackChannel: SlackChannelRef?
+    public var slackMatch: SlackTriggerMatch?
+    public var slackText: String?
+    public var reportSlackChannel: SlackChannelRef?
     public var cron: String?
     public var runAt: String?
     public var timezone: String?
@@ -14306,6 +14393,10 @@ extension ArgusProtocol {
       case description = "description"
       case enabled = "enabled"
       case triggerKind = "trigger_kind"
+      case slackChannel = "slack_channel"
+      case slackMatch = "slack_match"
+      case slackText = "slack_text"
+      case reportSlackChannel = "report_slack_channel"
       case cron = "cron"
       case runAt = "run_at"
       case timezone = "timezone"
@@ -14323,12 +14414,16 @@ extension ArgusProtocol {
       case guardrails = "guardrails"
     }
 
-    public init(id: String, name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationTriggerKind, cron: String? = nil, runAt: String? = nil, timezone: String? = nil, catchUp: Bool, signal: RemoteSignalTrigger? = nil, webhook: RemoteWebhookTrigger? = nil, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String, autonomy: RemoteAutomationDetailAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails) {
+    public init(id: String, name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationTriggerKind, slackChannel: SlackChannelRef? = nil, slackMatch: SlackTriggerMatch? = nil, slackText: String? = nil, reportSlackChannel: SlackChannelRef? = nil, cron: String? = nil, runAt: String? = nil, timezone: String? = nil, catchUp: Bool, signal: RemoteSignalTrigger? = nil, webhook: RemoteWebhookTrigger? = nil, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String, autonomy: RemoteAutomationDetailAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails) {
       self.id = id
       self.name = name
       self.description = description
       self.enabled = enabled
       self.triggerKind = triggerKind
+      self.slackChannel = slackChannel
+      self.slackMatch = slackMatch
+      self.slackText = slackText
+      self.reportSlackChannel = reportSlackChannel
       self.cron = cron
       self.runAt = runAt
       self.timezone = timezone
@@ -14353,6 +14448,10 @@ extension ArgusProtocol {
       try c.encode(description, forKey: .description)
       try c.encode(enabled, forKey: .enabled)
       try c.encode(triggerKind, forKey: .triggerKind)
+      try c.encodeIfPresent(slackChannel, forKey: .slackChannel)
+      try c.encodeIfPresent(slackMatch, forKey: .slackMatch)
+      try c.encodeIfPresent(slackText, forKey: .slackText)
+      try c.encodeIfPresent(reportSlackChannel, forKey: .reportSlackChannel)
       try c.encode(cron, forKey: .cron)
       try c.encodeIfPresent(runAt, forKey: .runAt)
       try c.encode(timezone, forKey: .timezone)
@@ -14574,6 +14673,7 @@ extension ArgusProtocol {
     public static let schedule = RemoteAutomationTriggerKind(rawValue: "schedule")
     public static let signal = RemoteAutomationTriggerKind(rawValue: "signal")
     public static let webhook = RemoteAutomationTriggerKind(rawValue: "webhook")
+    public static let slack = RemoteAutomationTriggerKind(rawValue: "slack")
   }
 
   public struct RemoteBackgroundTaskStatus: RawRepresentable, Codable, Hashable, Sendable {
@@ -19668,6 +19768,192 @@ extension ArgusProtocol {
     public static let unavailable = SimulatorProblemKind(rawValue: "unavailable")
   }
 
+  public struct SlackChannel: Codable, Sendable {
+    public var id: String
+    public var name: String
+    public var isPrivate: Bool
+    public var isMember: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+      case isPrivate = "is_private"
+      case isMember = "is_member"
+    }
+
+    public init(id: String, name: String, isPrivate: Bool, isMember: Bool) {
+      self.id = id
+      self.name = name
+      self.isPrivate = isPrivate
+      self.isMember = isMember
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+      try c.encode(isPrivate, forKey: .isPrivate)
+      try c.encode(isMember, forKey: .isMember)
+    }
+  }
+
+  public struct SlackChannelMapping: Codable, Sendable {
+    public var channelId: String
+    public var channelName: String
+    public var repoRoot: String
+
+    enum CodingKeys: String, CodingKey {
+      case channelId = "channel_id"
+      case channelName = "channel_name"
+      case repoRoot = "repo_root"
+    }
+
+    public init(channelId: String, channelName: String, repoRoot: String) {
+      self.channelId = channelId
+      self.channelName = channelName
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(channelId, forKey: .channelId)
+      try c.encode(channelName, forKey: .channelName)
+      try c.encode(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct SlackChannelRef: Codable, Sendable {
+    public var id: String
+    public var name: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+    }
+
+    public init(id: String, name: String) {
+      self.id = id
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+    }
+  }
+
+  public struct SlackConnectionState: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let off = SlackConnectionState(rawValue: "off")
+    public static let connecting = SlackConnectionState(rawValue: "connecting")
+    public static let connected = SlackConnectionState(rawValue: "connected")
+    public static let error = SlackConnectionState(rawValue: "error")
+  }
+
+  public struct SlackStatus: Codable, Sendable {
+    public var configured: Bool
+    public var state: SlackConnectionState
+    public var error: String?
+    public var workspace: String?
+    public var botName: String?
+    public var owner: SlackUser?
+    public var claimCode: String?
+    public var defaultProject: String?
+    public var mappings: [SlackChannelMapping]
+    public var allowedUsers: [SlackUser]
+    public var threadCount: Double
+
+    enum CodingKeys: String, CodingKey {
+      case configured = "configured"
+      case state = "state"
+      case error = "error"
+      case workspace = "workspace"
+      case botName = "bot_name"
+      case owner = "owner"
+      case claimCode = "claim_code"
+      case defaultProject = "default_project"
+      case mappings = "mappings"
+      case allowedUsers = "allowed_users"
+      case threadCount = "thread_count"
+    }
+
+    public init(configured: Bool, state: SlackConnectionState, error: String? = nil, workspace: String? = nil, botName: String? = nil, owner: SlackUser? = nil, claimCode: String? = nil, defaultProject: String? = nil, mappings: [SlackChannelMapping], allowedUsers: [SlackUser], threadCount: Double) {
+      self.configured = configured
+      self.state = state
+      self.error = error
+      self.workspace = workspace
+      self.botName = botName
+      self.owner = owner
+      self.claimCode = claimCode
+      self.defaultProject = defaultProject
+      self.mappings = mappings
+      self.allowedUsers = allowedUsers
+      self.threadCount = threadCount
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(configured, forKey: .configured)
+      try c.encode(state, forKey: .state)
+      try c.encode(error, forKey: .error)
+      try c.encode(workspace, forKey: .workspace)
+      try c.encode(botName, forKey: .botName)
+      try c.encode(owner, forKey: .owner)
+      try c.encode(claimCode, forKey: .claimCode)
+      try c.encode(defaultProject, forKey: .defaultProject)
+      try c.encode(mappings, forKey: .mappings)
+      try c.encode(allowedUsers, forKey: .allowedUsers)
+      try c.encode(threadCount, forKey: .threadCount)
+    }
+  }
+
+  public struct SlackTriggerMatch: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let any = SlackTriggerMatch(rawValue: "any")
+    public static let keyword = SlackTriggerMatch(rawValue: "keyword")
+    public static let prefix = SlackTriggerMatch(rawValue: "prefix")
+  }
+
+  public struct SlackUser: Codable, Sendable {
+    public var userId: String
+    public var name: String?
+
+    enum CodingKeys: String, CodingKey {
+      case userId = "user_id"
+      case name = "name"
+    }
+
+    public init(userId: String, name: String? = nil) {
+      self.userId = userId
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(userId, forKey: .userId)
+      try c.encode(name, forKey: .name)
+    }
+  }
+
   public struct SshKey: Codable, Sendable {
     public var name: String
     public var type: SshKeyType
@@ -20150,6 +20436,7 @@ extension ArgusProtocol {
     public var templateId: String?
     public var lastRunAt: Double?
     public var nextRunAt: Double?
+    public var reportSlackChannel: SlackChannelRef?
 
     enum CodingKeys: String, CodingKey {
       case name = "name"
@@ -20168,9 +20455,10 @@ extension ArgusProtocol {
       case templateId = "template_id"
       case lastRunAt = "last_run_at"
       case nextRunAt = "next_run_at"
+      case reportSlackChannel = "report_slack_channel"
     }
 
-    public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, trigger: AutomationTrigger? = nil, scope: UpdateAutomationInputScope? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, lastRunAt: Double? = nil, nextRunAt: Double? = nil) {
+    public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, trigger: AutomationTrigger? = nil, scope: UpdateAutomationInputScope? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, lastRunAt: Double? = nil, nextRunAt: Double? = nil, reportSlackChannel: SlackChannelRef? = nil) {
       self.name = name
       self.description = description
       self.enabled = enabled
@@ -20187,6 +20475,7 @@ extension ArgusProtocol {
       self.templateId = templateId
       self.lastRunAt = lastRunAt
       self.nextRunAt = nextRunAt
+      self.reportSlackChannel = reportSlackChannel
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -20207,6 +20496,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(templateId, forKey: .templateId)
       try c.encodeIfPresent(lastRunAt, forKey: .lastRunAt)
       try c.encodeIfPresent(nextRunAt, forKey: .nextRunAt)
+      try c.encodeIfPresent(reportSlackChannel, forKey: .reportSlackChannel)
     }
   }
 

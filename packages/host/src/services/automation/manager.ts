@@ -39,6 +39,7 @@ import {
   normalizeSignalKinds,
   normalizeSignalLabels,
 } from "./signalTrigger";
+import { assertValidSlackTrigger } from "./slackTrigger";
 import {
   applyRetention,
   loadAutomationRuns,
@@ -140,6 +141,7 @@ function buildAutomation(input: CreateAutomationInput): Automation {
     runner: input.runner ?? null,
     claude_account_id: input.claude_account_id ?? null,
     template_id: input.template_id ?? null,
+    report_slack_channel: input.report_slack_channel ?? null,
     // Only a built-in has a fingerprint to compare a future release against.
     seeded_playbook_hash: input.template_id
       ? playbookHash(input.playbook)
@@ -169,6 +171,9 @@ function assertValidTrigger(
     assertValidEventTrigger(trigger);
 
     return;
+  }
+  if (trigger.kind === "slack") {
+    assertValidSlackTrigger(trigger);
   }
   if (trigger.kind !== "once") {
     return;
@@ -203,7 +208,8 @@ export function nextRunFor(
     !automation.enabled ||
     kind === "manual" ||
     kind === "signal" ||
-    kind === "webhook"
+    kind === "webhook" ||
+    kind === "slack"
   ) {
     return null;
   }

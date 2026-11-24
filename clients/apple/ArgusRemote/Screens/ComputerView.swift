@@ -37,6 +37,7 @@ struct ComputerView: View {
     .task(id: host.connection == .ready) {
       if computer?.deviceId == app.activeHostId, host.connection == .ready {
         await host.loadIntegrations()
+        await host.loadSlackStatus()
       }
     }
     // Presence moves while the list is open: a host going quiet or coming back.
@@ -90,6 +91,16 @@ struct ComputerView: View {
         footer: "Connect or disconnect them in Argus on the computer; their keys never leave it."
       ) {
         IntegrationStatusRows(integrations: host.integrations)
+      }
+    }
+
+    if active, let slack = host.slackStatus {
+      SettingsGroup(
+        "Slack",
+        footer:
+          "Connect Slack and choose who may use it on the Mac: the tokens and the allowlist decide who can run agents on this computer, so they never leave it."
+      ) {
+        SlackStatusRows(status: slack) { host.projectName(repoRoot: $0) }
       }
     }
 

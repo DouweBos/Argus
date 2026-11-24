@@ -3,7 +3,7 @@ import ArgusUI
 import SwiftUI
 
 /// Settings → Integrations: connect Linear and Figma with a personal API key,
-/// as the desktop's Integrations section. The key goes straight to the host,
+/// as the desktop's Integrations section, and Slack with its own app's tokens. The key goes straight to the host,
 /// which checks it with the service before keeping it in its secret store.
 struct IntegrationsSettingsTab: View {
   @Environment(HostSettingsModel.self) private var host
@@ -14,10 +14,14 @@ struct IntegrationsSettingsTab: View {
       ForEach([ArgusProtocol.IntegrationId.linear, .figma], id: \.rawValue) { id in
         IntegrationGroup(id: id)
       }
+      SlackSettingsSection()
       if store.linearConnected { LinearOptionsGroup() }
       SettingsError(text: host.error)
     }
-    .task { await store.loadIntegrations() }
+    .task {
+      await store.loadIntegrations()
+      await store.loadSlackStatus()
+    }
   }
 }
 
