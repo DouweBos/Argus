@@ -3744,6 +3744,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct DeviceSetNotificationsResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
     public struct DeviceUnregisterPushParams: Codable, Sendable {
 
       public init() {
@@ -9460,6 +9477,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.DeviceRenameParams
       public typealias Result = ArgusProtocol.MethodsTypes.DeviceRenameResult
       public static let name = "device.rename"
+    }
+
+    public enum DeviceSetNotifications: RemoteCommand {
+      public typealias Params = ArgusProtocol.NotificationPrefs
+      public typealias Result = ArgusProtocol.MethodsTypes.DeviceSetNotificationsResult
+      public static let name = "device.set_notifications"
     }
 
     public enum DeviceUnregisterPush: RemoteCommand {

@@ -71,9 +71,24 @@ struct RemoteDeviceRow: View {
         Text("·")
         Text("push via \(RemoteAccessLabels.push(push.service))")
       }
+      if let alerts = alertsLabel {
+        Text("·")
+        Text(alerts)
+      }
     }
     .font(.scaled(.caption))
     .foregroundStyle(theme.textSecondary)
+  }
+
+  /// The device's own alert choice, shown only once it has turned something off.
+  private var alertsLabel: String? {
+    guard let prefs = device.notifications else { return nil }
+    switch (prefs.needsYou, prefs.finished) {
+    case (true, true): return nil
+    case (true, false): return "alerts: needs you only"
+    case (false, true): return "alerts: finished only"
+    case (false, false): return "alerts off"
+    }
   }
 
   /// Admin implies control; dropping admin keeps control as it was.

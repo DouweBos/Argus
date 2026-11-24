@@ -45,6 +45,7 @@ class AndroidPlatform(val context: Context, private val app: AppStore, secrets: 
 
   override suspend fun connected(backend: GatewayBackend) {
     push.register(backend)
+    push.syncAlerts(backend)
     push.flushPendingDecisions(backend)
   }
 

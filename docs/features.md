@@ -194,6 +194,10 @@ ciphertext.
   commit, push, merge, open a pull request, author an automation.
 - **Background push** — wakes paired phones and browsers with a real
   notification when they aren't connected.
+- **Alerts per device** — each device chooses whether it's alerted when an
+  agent **needs you** (a prompt, question, plan or error) and when it
+  **finishes**: say, the Mac gets both and the phone only what needs you.
+  The computer never sends a phone a category it turned off.
 - **Live Activity** — the iPhone shows working agents on the Lock Screen and
   in the Dynamic Island, with Approve and Deny for permission prompts.
 - **Android app** — pair an Android phone with your computer to follow

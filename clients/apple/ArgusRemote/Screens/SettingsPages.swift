@@ -138,7 +138,7 @@ struct AlertsSettingsPage: View {
 
   var body: some View {
     SettingsPage {
-      SettingsGroup(footer: "Get alerted when an agent finishes or needs approval.") {
+      SettingsGroup(footer: "Get alerted when an agent needs you or finishes.") {
         SettingsRow("Notifications", description: statusLabel) {
           if status == .denied {
             // Only iOS can undo a denial, so send them there rather than
@@ -156,6 +156,21 @@ struct AlertsSettingsPage: View {
           isOn: Binding(
             get: { app.pushEnabled },
             set: { enabled in Task { await app.setPushEnabled(enabled) } }))
+      }
+      SettingsGroup(
+        "Alert me when",
+        footer: "Each computer you're paired with stops sending what you turn off. Needs you and the widgets still list everything."
+      ) {
+        SettingsToggleRow(
+          "Agent needs you", description: "A permission prompt, a question, a plan to approve, or an error.",
+          isOn: Binding(
+            get: { app.alertNeedsYou },
+            set: { on in Task { await app.setAlert(needsYou: on) } }))
+        SettingsToggleRow(
+          "Agent finished", description: "An agent completed its turn.",
+          isOn: Binding(
+            get: { app.alertFinished },
+            set: { on in Task { await app.setAlert(finished: on) } }))
       }
       SettingsGroup(footer: "Approve and Deny ask for Face ID first.") {
         SettingsToggleRow(

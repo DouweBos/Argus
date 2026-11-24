@@ -160,6 +160,10 @@ export interface AppSettings {
    * are already watching on screen.
    */
   remote_notify_when_focused?: boolean;
+  /** Banners on this computer when an agent needs you. On by default. */
+  notify_needs_you?: boolean;
+  /** Banners on this computer when an agent finishes. On by default. */
+  notify_finished?: boolean;
   /**
    * Serve the web client to browsers that connect straight over the local
    * network. Off by default: that page travels as plain http, so anyone on the

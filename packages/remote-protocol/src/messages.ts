@@ -93,6 +93,7 @@ import {
 } from "./models/integrations";
 import { RemoteLiveActivitySnapshot } from "./models/liveActivity";
 import { RunnerAccount } from "./models/llm";
+import { NotificationPrefs } from "./models/remote";
 import { LandStackResult, RestackResult } from "./models/sessions";
 import {
   WorktreeCleanupPolicy,
@@ -284,6 +285,8 @@ export const MethodParams = {
   "device.rename": z.object({ name: z.string().trim().min(1).max(60) }),
   "device.capabilities": z.object({}),
   "device.push_info": z.object({}),
+  /** This device's alert categories; the host never sends it one turned off. */
+  "device.set_notifications": NotificationPrefs,
   "device.register_push": z.object({
     /** Which push service issued the registration. */
     service: z.enum(["apns", "fcm", "webpush"]),
@@ -1183,6 +1186,7 @@ export const MethodResult = {
     configured: z.boolean(),
   }),
   "device.unregister_push": z.object({ accepted: z.boolean() }),
+  "device.set_notifications": z.object({ accepted: z.boolean() }),
   "live_activity.snapshot": z.object({ snapshot: RemoteLiveActivitySnapshot }),
   "live_activity.register": z.object({
     accepted: z.boolean(),

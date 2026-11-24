@@ -10,6 +10,7 @@ import dev.houwert.argus.core.backend.HostBackend
 import dev.houwert.argus.core.stores.liveBackend
 import dev.houwert.argus.kit.protocol.generated.Methods
 import dev.houwert.argus.kit.protocol.generated.MethodsTypes
+import dev.houwert.argus.kit.protocol.generated.NotificationPrefs
 import dev.houwert.argus.kit.storage.PreferenceKey
 import dev.houwert.argus.kit.storage.SecretStore
 import kotlinx.coroutines.delay
@@ -39,6 +40,23 @@ class PushController(private val context: Context, private val app: AppStore, pr
       runCatching { backend.request(Methods.DeviceUnregisterPush, MethodsTypes.DeviceUnregisterPushParams()) }
       _state.value = PushState.Off
     }
+  }
+
+  /** Alert categories this phone wants; both on until turned off. */
+  val alertNeedsYou: Boolean get() = app.preferences.string(PreferenceKey.ALERT_NEEDS_YOU) != "off"
+  val alertFinished: Boolean get() = app.preferences.string(PreferenceKey.ALERT_FINISHED) != "off"
+
+  /** The computer filters by these before sending, so a muted category never reaches this phone. */
+  suspend fun setAlert(needsYou: Boolean? = null, finished: Boolean? = null) {
+    needsYou?.let { app.preferences.set(if (it) "on" else "off", PreferenceKey.ALERT_NEEDS_YOU) }
+    finished?.let { app.preferences.set(if (it) "on" else "off", PreferenceKey.ALERT_FINISHED) }
+    app.host.liveBackend?.let { syncAlerts(it) }
+  }
+
+  /** Tell the connected computer this phone's choice; other computers hear it when the phone next connects. */
+  suspend fun syncAlerts(backend: HostBackend) {
+    // An older computer doesn't know the method and sends everything.
+    runCatching { backend.request(Methods.DeviceSetNotifications, NotificationPrefs(alertNeedsYou, alertFinished)) }
   }
 
   /** FCM rotated the token: tell the connected computer now rather than on the next connection. */

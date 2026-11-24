@@ -196,6 +196,13 @@ export interface EventMap {
     runner: TelemetryRunner;
     success: boolean;
   };
+  /** A device or this computer turned an alert category on or off. */
+  notification_category_changed: {
+    category: "finished" | "needs_you";
+    on: boolean;
+    /** This computer's own banners, or a paired device's alerts. */
+    surface: "desktop" | "device";
+  };
   agent_started: {
     has_model: boolean;
     has_parent: boolean;

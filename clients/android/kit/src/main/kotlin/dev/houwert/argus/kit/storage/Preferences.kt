@@ -10,6 +10,9 @@ object PreferenceKey {
   const val THEME = "argus.theme"
   const val COLOR_THEME = "argus.colorTheme"
   const val PUSH_ENABLED = "push.enabled"
+  /** Which alert categories this phone wants; each computer honours them when it sends. */
+  const val ALERT_NEEDS_YOU = "alerts.needsYou"
+  const val ALERT_FINISHED = "alerts.finished"
   const val AUTO_EXPAND_IMAGE_READS = "transcript.autoExpandImageReads"
   const val DEFAULT_PERMISSION_MODE = "agent.defaultPermissionMode"
   /** The project the last Linear issue was started in. */

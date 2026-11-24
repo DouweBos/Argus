@@ -39,6 +39,23 @@ struct GeneralSettingsTab: View {
           isOn: MenuBarVisibility.binding(AppPreferences.shared, via: .settings))
       }
 
+      SettingsGroup("Notifications") {
+        SettingsToggleRow(
+          "Agent needs you",
+          description: "A banner on this Mac when an agent asks for approval, has a question or plan for you, "
+            + "or stops on an error.",
+          isOn: notify(.notifyNeedsYou, get: \.notifyNeedsYou) { $0.notifyNeedsYou = $1 }
+        )
+        .disabled(!host.loaded)
+        SettingsToggleRow(
+          "Agent finished",
+          description: "A banner on this Mac when an agent finishes a turn. Each phone chooses its own "
+            + "under Settings → Alerts.",
+          isOn: notify(.notifyFinished, get: \.notifyFinished) { $0.notifyFinished = $1 }
+        )
+        .disabled(!host.loaded)
+      }
+
       CustomEditorsSection()
 
       SettingsGroup("Privacy") {
@@ -66,6 +83,18 @@ struct GeneralSettingsTab: View {
             $0.launchRoute = next
           }
         }
+      })
+  }
+
+  /// Both categories default on, so only an explicit `false` turns one off.
+  private func notify(
+    _ field: SettingsField, get: KeyPath<ArgusProtocol.AppSettings, Bool?>,
+    set: @escaping (inout ArgusProtocol.AppSettings, Bool) -> Void
+  ) -> Binding<Bool> {
+    Binding(
+      get: { host.settings?[keyPath: get] != false },
+      set: { next in
+        Task { await host.save(field, [field.rawValue: .bool(next)]) { set(&$0, next) } }
       })
   }
 

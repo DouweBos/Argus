@@ -510,6 +510,32 @@ this computer.
 
 ---
 
+## Notifications
+
+Each device picks which agent alerts it gets, in two categories:
+
+- **Needs you** — a permission prompt, a question, a plan waiting for approval,
+  a turn that ended in an error, or an agent asking for your attention.
+- **Finished** — an agent completed a turn or run.
+
+A common setup is this Mac getting both and the phone only **Needs you**.
+
+| Setting             | Default | Description                                                     |
+| ------------------- | ------- | --------------------------------------------------------------- |
+| **Agent needs you** | On      | Show a banner on this computer when an agent is waiting on you. |
+| **Agent finished**  | On      | Show a banner on this computer when an agent finishes.          |
+
+On Argus for Mac they are under **Settings → General → Notifications**. Each
+phone and browser chooses for itself under **Settings → Alerts**. The choice
+goes to each computer the device connects to, which from then on never sends it
+a category it turned off, whether it's connected or woken by a background push.
+A computer the device hasn't connected to since sends everything. The paired
+list under **Settings → Remote** shows a device that turned something off
+(_alerts: needs you only_). The in-app "Needs you" lists, widgets and Live
+Activity still show everything.
+
+---
+
 ## Privacy
 
 | Setting       | Default    | Description                                                                                                                                                                                                                                                  |
@@ -840,7 +866,9 @@ on the computer as well.
 ### Phone settings
 
 The phone app's own **Settings** screen holds preferences that stay on that
-phone. Under **Transcript**, **Expand image reads** (off by default) opens every
+phone. Under **Alerts**, **Agent needs you** and **Agent finished** (both on)
+choose which notifications this phone gets; see
+[Notifications](#notifications). Under **Transcript**, **Expand image reads** (off by default) opens every
 Read tool call that returned an image, so screenshots an agent looks at show in
 the chat without a tap. You can still collapse any of them.
 

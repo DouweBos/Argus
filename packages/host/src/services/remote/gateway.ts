@@ -11,6 +11,7 @@
 import type { PairedDevice } from "./deviceStore";
 import type { NoiseSession } from "./noise";
 import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
+import type { RemoteNotificationPayload } from "../notifications/broadcast";
 import type { SimulatorDeviceState } from "../simulator/deviceState";
 import type { H264Config } from "../simulator/h264-parser";
 import type {
@@ -43,6 +44,7 @@ import { log } from "@argus/host/logger";
 import { appState } from "../../state";
 import { liveMeta } from "../agent/conversation/live";
 import { onBrowserFrame } from "../browser/frameForward";
+import { wantsNotification } from "../notifications/categories";
 import {
   forceStopAndroidCapture,
   isAndroidCapturing,
@@ -910,11 +912,17 @@ export class DeviceConnection implements DeviceMediaController {
     // User-facing notifications go to every connected device, regardless of
     // which agent it happens to be subscribed to — that's the whole point.
     if (channel === "remote:notification") {
-      const p = args[0] as { agent_id?: string | null } | undefined;
+      const p = args[0] as
+        | Pick<RemoteNotificationPayload, "agent_id" | "kind">
+        | undefined;
       const agentId = p?.agent_id ?? null;
       // "Every device" stops at the scope: a guest is told about its own
       // agent, not about everything else happening on the host.
       if (this.scope && (!agentId || !isAgentInScope(this.scope, agentId))) {
+        return;
+      }
+      // A category the device muted is never sent, not merely hidden there.
+      if (p && !wantsNotification(this.device.notifications, p.kind)) {
         return;
       }
       this.pushEvent("notification", agentId, p);

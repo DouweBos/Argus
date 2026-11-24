@@ -82,6 +82,26 @@ extension AppStore {
     }
   }
 
+  /// The computer filters by these before sending, so a muted category never reaches this phone.
+  func setAlert(needsYou: Bool? = nil, finished: Bool? = nil) async {
+    if let needsYou {
+      alertNeedsYou = needsYou
+      preferences.set(needsYou ? "on" : "off", for: PreferenceKey.alertNeedsYou)
+    }
+    if let finished {
+      alertFinished = finished
+      preferences.set(finished ? "on" : "off", for: PreferenceKey.alertFinished)
+    }
+    if let backend = host.liveBackend { await syncAlertCategories(backend) }
+  }
+
+  /// Tell the connected computer this phone's choice; other computers hear it when the phone next connects.
+  func syncAlertCategories(_ backend: any HostBackend) async {
+    _ = try? await backend.request(
+      .deviceSetNotifications, ArgusProtocol.NotificationPrefs(needsYou: alertNeedsYou, finished: alertFinished),
+      as: IgnoredResult.self)
+  }
+
   func setLiveActivitiesEnabled(_ enabled: Bool) async {
     liveActivitiesEnabled = enabled
     preferences.set(enabled ? "on" : "off", for: PreferenceKey.liveActivities)

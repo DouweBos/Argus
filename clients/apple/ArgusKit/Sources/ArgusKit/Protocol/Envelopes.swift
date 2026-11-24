@@ -149,6 +149,7 @@ public enum RemoteMethod: String, Codable, Sendable {
   case devicePushInfo = "device.push_info"
   case deviceRegisterPush = "device.register_push"
   case deviceUnregisterPush = "device.unregister_push"
+  case deviceSetNotifications = "device.set_notifications"
   case liveActivitySnapshot = "live_activity.snapshot"
   case liveActivityRegister = "live_activity.register"
   case liveActivityUnregister = "live_activity.unregister"

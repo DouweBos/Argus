@@ -57,6 +57,9 @@ final class AppStore {
   var pushEnabled = true
   /// Running agents on the Lock Screen and in the Dynamic Island.
   var liveActivitiesEnabled = true
+  /// Alert categories this phone wants; both on until turned off.
+  var alertNeedsYou = true
+  var alertFinished = true
 
   /// The connected computer's data and actions.
   let host = HostStore()
@@ -137,6 +140,8 @@ final class AppStore {
     telemetryMode = Telemetry.currentMode
     pushEnabled = preferences.string(PreferenceKey.pushEnabled) != "off"
     liveActivitiesEnabled = preferences.string(PreferenceKey.liveActivities) != "off"
+    alertNeedsYou = preferences.string(PreferenceKey.alertNeedsYou) != "off"
+    alertFinished = preferences.string(PreferenceKey.alertFinished) != "off"
     deviceName = UIDeviceName.stored(preferences)
     themePreference =
       ThemePreference(rawValue: preferences.string(PreferenceKey.theme) ?? "") ?? .system
@@ -330,6 +335,7 @@ final class AppStore {
     }
 
     await registerPush(backend)
+    await syncAlertCategories(backend)
     await flushPendingDecisions(backend)
     await AgentActivities.shared.sync(self, connected: true)
     await account.sync(over: .backend(backend))

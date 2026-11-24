@@ -13,6 +13,10 @@
         GalleryStory("settings/appearance") { AppearanceSettingsPage() },
         GalleryStory("settings/name") { NameSettingsPage() },
         GalleryStory("settings/alerts") { AlertsSettingsPage() },
+        // The common split: the Mac gets everything, this phone only what waits on you.
+        GalleryStory("settings/alerts/needs-you-only", setup: { stage in stage.app.alertFinished = false }) {
+          AlertsSettingsPage()
+        },
         GalleryStory("settings/privacy") { PrivacySettingsPage() },
         GalleryStory("settings/connection", fixtures: GalleryFixtures.deviceHosts, setup: connect) { ConnectionSettingsPage() },
         GalleryStory("settings/agents") { AgentsSettingsPage() },

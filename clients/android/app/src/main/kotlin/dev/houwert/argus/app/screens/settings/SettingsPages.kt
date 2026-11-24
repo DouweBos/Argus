@@ -29,6 +29,7 @@ import dev.houwert.argus.app.telemetry.TelemetryMode
 import dev.houwert.argus.app.ArgusApplication
 import dev.houwert.argus.app.stores.setDeviceName
 import dev.houwert.argus.app.stores.validatedDeviceName
+import dev.houwert.argus.ui.components.AlertCategoriesGroup
 import dev.houwert.argus.ui.components.Btn
 import dev.houwert.argus.ui.components.ButtonTone
 import dev.houwert.argus.ui.components.ColorSchemeCards
@@ -120,9 +121,11 @@ fun AlertsSettingsPage() {
   val push = (context.applicationContext as ArgusApplication).platform.push
   val pushState by push.state.collectAsState()
   var pushEnabled by remember { mutableStateOf(push.enabled) }
+  var needsYou by remember { mutableStateOf(push.alertNeedsYou) }
+  var finished by remember { mutableStateOf(push.alertFinished) }
   val scope = rememberCoroutineScope()
   SettingsPage {
-    SettingsGroup(footer = "Get alerted when an agent finishes or needs approval.") {
+    SettingsGroup(footer = "Get alerted when an agent needs you or finishes.") {
       SettingsRow("Notifications", description = if (enabled) "On" else if (canAsk) "Not enabled" else "Off in Android settings") {
         when {
           enabled -> Unit
@@ -140,6 +143,12 @@ fun AlertsSettingsPage() {
         scope.launch { push.setEnabled(on) }
       }, description = pushState.explanation)
     }
+    AlertCategoriesGroup(
+      needsYou = needsYou,
+      finished = finished,
+      onNeedsYou = { on -> needsYou = on; scope.launch { push.setAlert(needsYou = on) } },
+      onFinished = { on -> finished = on; scope.launch { push.setAlert(finished = on) } },
+    )
   }
 }
 

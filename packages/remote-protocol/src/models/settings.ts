@@ -124,6 +124,10 @@ export const AppSettings = z.object({
    * focused. Off by default.
    */
   remote_notify_when_focused: z.boolean().optional(),
+  /** Banners on this computer when an agent needs you (prompts, questions, plans, failures). On by default. */
+  notify_needs_you: z.boolean().optional(),
+  /** Banners on this computer when an agent finishes. On by default. */
+  notify_finished: z.boolean().optional(),
   /** Serve the web client to direct local-network browsers. Off by default. */
   remote_lan_web_client: z.boolean().optional(),
   /** Keep the Mac from sleeping on power while remote access is on. On by default. */

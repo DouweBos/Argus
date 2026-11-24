@@ -66,7 +66,12 @@ import {
   connectionForgotten,
   connectionReady,
 } from "../telemetry/connectionEvents";
-import { pushWentOffline, registerPushOn, unregisterPush } from "./push";
+import {
+  pushWentOffline,
+  registerPushOn,
+  syncAlertsOn,
+  unregisterPush,
+} from "./push";
 import {
   receiveDelta,
   refreshUnlessFollowing,
@@ -77,7 +82,9 @@ import {
 type Handler = (event: EventEnvelope) => void;
 
 /** Payloads are trusted as typed: the client validates nothing at runtime. */
-function payload<E extends RemoteEventType>(event: EventEnvelope): PayloadOf<E> {
+function payload<E extends RemoteEventType>(
+  event: EventEnvelope,
+): PayloadOf<E> {
   return event.payload as PayloadOf<E>;
 }
 
@@ -204,6 +211,7 @@ export function installHostSync(): void {
       if (!identity.account) {
         registerPushOn(transport);
       }
+      syncAlertsOn(transport);
       flushPendingDecisions(transport).catch(() => {});
       resyncAfterReconnect();
       connectionReady();

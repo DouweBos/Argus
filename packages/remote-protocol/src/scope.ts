@@ -159,6 +159,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "device.push_info": OPEN,
   "device.register_push": OPEN,
   "device.unregister_push": OPEN,
+  "device.set_notifications": OPEN,
   // Every agent on the host, so a guest gets none of it.
   "live_activity.snapshot": DENIED,
   "live_activity.register": DENIED,

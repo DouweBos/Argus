@@ -11,6 +11,10 @@ import {
 } from "../services/conductor/override";
 import { listConductorVersions } from "../services/conductor/registry";
 import { checkDependencies } from "../services/dependencies/check";
+import {
+  captureCategoryChanges,
+  desktopNotificationPrefs,
+} from "../services/notifications/categories";
 import { findLegacySecretStores } from "../services/secrets/legacyStores";
 import {
   listEditors,
@@ -43,6 +47,12 @@ export function registerSettingsCommands(): void {
     if (nextTheme && nextTheme !== loadAppSettings().color_theme) {
       capture("color_theme_changed", { theme: nextTheme });
     }
+    const settings = loadAppSettings();
+    captureCategoryChanges(
+      "desktop",
+      desktopNotificationPrefs(settings),
+      desktopNotificationPrefs({ ...settings, ...p.settings }),
+    );
 
     return saveAppSettings(p.settings);
   });

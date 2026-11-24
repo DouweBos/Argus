@@ -19,6 +19,7 @@ import type { PushOutcome } from "./types";
 import type { AccountPushTarget } from "../../account/push";
 import { log, warn } from "@argus/host/logger";
 import { accountPushTargets, sendAccountPush } from "../../account/push";
+import { wantsNotification } from "../../notifications/categories";
 import {
   clearDevicePush,
   getPushConfig,
@@ -218,6 +219,31 @@ async function pushToDevice(
 }
 
 /**
+ * Who a notification of `kind` is pushed to: offline devices with a
+ * registration, and account devices nothing here covers, minus any that
+ * turned that category off.
+ */
+export function pushTargets(
+  kind: RemoteNotificationPayload["kind"],
+  devices: PairedDevice[],
+  accountTargets: AccountPushTarget[],
+  connected: Set<string>,
+): { targets: PairedDevice[]; viaAccount: AccountPushTarget[] } {
+  const prefs = new Map(devices.map((d) => [d.device_id, d.notifications]));
+  const wants = (deviceId: string) =>
+    wantsNotification(prefs.get(deviceId), kind);
+
+  return {
+    targets: devices.filter(
+      (d) => d.push && !connected.has(d.device_id) && wants(d.device_id),
+    ),
+    viaAccount: accountTargetsToPush(accountTargets, devices, connected).filter(
+      (t) => wants(t.device_id),
+    ),
+  };
+}
+
+/**
  * Deliver a notification to every registered-but-offline device. Fire and
  * forget — notification delivery must never block or fail the caller.
  */
@@ -227,15 +253,11 @@ export function dispatchRemotePush(n: RemoteNotificationPayload): void {
     if (!config.enabled) {
       return;
     }
-    const connected = new Set(getConnectedDeviceIds());
-    const devices = await listDevices();
-    const targets = devices.filter(
-      (d) => d.push && !connected.has(d.device_id),
-    );
-    const viaAccount = accountTargetsToPush(
+    const { targets, viaAccount } = pushTargets(
+      n.kind,
+      await listDevices(),
       await accountPushTargets().catch(() => []),
-      devices,
-      connected,
+      new Set(getConnectedDeviceIds()),
     );
     await Promise.all([
       ...targets.map((d) => pushToDevice(d, config, n)),

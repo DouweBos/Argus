@@ -14,6 +14,7 @@ import { hostPlatform } from "@argus/host/platform";
 import { respondToPermission } from "../agent/agentService";
 import { loadAppSettings } from "../appSettings/store";
 import { broadcastRemoteNotification, permissionActions } from "./broadcast";
+import { desktopNotificationPrefs, wantsNotification } from "./categories";
 
 /** What a caller describes; the quick actions are derived from it here. */
 export interface AgentNotificationInput {
@@ -110,7 +111,14 @@ export function showAgentNotification(
     broadcastRemoteNotification(payload);
   }
 
-  if (!options.showLocal || !hostPlatform().notificationsSupported()) {
+  if (
+    !options.showLocal ||
+    !hostPlatform().notificationsSupported() ||
+    !wantsNotification(
+      desktopNotificationPrefs(loadAppSettings()),
+      payload.kind,
+    )
+  ) {
     return false;
   }
 

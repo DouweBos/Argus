@@ -24,6 +24,7 @@ import dev.houwert.argus.kit.protocol.generated.WorktreeCleanupPreview
 import dev.houwert.argus.kit.protocol.generated.WorktreeCleanupReason
 import dev.houwert.argus.kit.protocol.generated.WorktreeCleanupSweep
 import dev.houwert.argus.kit.protocol.generated.WorktreeCleanupSweepTrigger
+import dev.houwert.argus.ui.components.AlertCategoriesGroup
 import dev.houwert.argus.ui.components.AccountAvatar
 import dev.houwert.argus.ui.components.TopBarScreen
 import dev.houwert.argus.ui.settings.WorktreeCleanupSettings
@@ -73,6 +74,10 @@ internal fun SettingsGalleryPage() {
     }
     SettingsItem { MutedText("No custom apps yet.") }
   }
+  // The common split: the Mac gets everything, this phone only what waits on you.
+  var alertNeedsYou by remember { mutableStateOf(true) }
+  var alertFinished by remember { mutableStateOf(false) }
+  AlertCategoriesGroup(alertNeedsYou, alertFinished, { alertNeedsYou = it }, { alertFinished = it })
   Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
     SettingsGroupTitle("Appearance")
     ColorSchemeCards(scheme, preset, { scheme = it })

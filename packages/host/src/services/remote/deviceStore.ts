@@ -12,7 +12,7 @@
  */
 
 import type { AccountRecord } from "../account/store";
-import type { Capability } from "@argus/remote-protocol";
+import type { Capability, NotificationPrefs } from "@argus/remote-protocol";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
@@ -59,6 +59,8 @@ export interface PairedDevice {
    * accounts), or materialized from the account log on first handshake.
    */
   source?: "account" | "pairing";
+  /** Which notification categories the device wants; absent means both. */
+  notifications?: NotificationPrefs;
 }
 
 /**
@@ -368,6 +370,24 @@ export async function updateLastSeen(
     return;
   }
   device.last_seen = when;
+  await writeState(state);
+}
+
+/** Store which notification categories a device wants. */
+export async function setDeviceNotifications(
+  deviceId: string,
+  prefs: NotificationPrefs,
+): Promise<void> {
+  const state = await ensureState();
+  const device = state.devices[deviceId];
+  if (
+    !device ||
+    (device.notifications?.needs_you === prefs.needs_you &&
+      device.notifications.finished === prefs.finished)
+  ) {
+    return;
+  }
+  device.notifications = { ...prefs };
   await writeState(state);
 }
 

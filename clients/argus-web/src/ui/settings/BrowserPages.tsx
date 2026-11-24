@@ -158,6 +158,8 @@ export function AlertsPage() {
   const pushEnabled = usePushStore((s) => s.pushEnabled);
   const pushState = usePushStore((s) => s.pushState);
   const setPushEnabled = usePushStore((s) => s.setPushEnabled);
+  const alerts = usePushStore((s) => s.alerts);
+  const setAlert = usePushStore((s) => s.setAlert);
   const account = useConnectionStore((s) => s.identity?.account);
   const [status, setStatus] = useState(notificationStatusLabel());
   const enable = () => {
@@ -187,7 +189,7 @@ export function AlertsPage() {
           </Button>
             </>
           }
-          description="Get alerted when an agent finishes or needs approval, even when you're on another screen."
+          description="Get alerted when an agent needs you or finishes, even when you're on another screen."
           title="Notifications"
         />
 
@@ -215,9 +217,43 @@ export function AlertsPage() {
           </SettingsRow>
         )}
       </SettingsGroup>
+      <SettingsGroup title="Alert me when">
+        {ALERT_CATEGORIES.map(({ key, title, description }) => (
+          <SettingsRow
+            key={key}
+            control={
+              <SegmentedControl<"off" | "on">
+                aria-label={title}
+                value={alerts[key] ? "on" : "off"}
+                options={PUSH_OPTIONS}
+                onChange={(v) => {
+                  setAlert(key, v === "on").catch(() => {});
+                }}
+              />
+            }
+            description={description}
+            title={title}
+          />
+        ))}
+      </SettingsGroup>
     </SettingsPageColumn>
   );
 }
+
+const ALERT_CATEGORIES = [
+  {
+    key: "needs_you",
+    title: "Agent needs you",
+    description:
+      "A permission prompt, a question, a plan to approve, or an error.",
+  },
+  {
+    key: "finished",
+    title: "Agent finished",
+    description:
+      "An agent completed its turn. Your computer stops sending what you turn off.",
+  },
+] as const;
 
 export function PrivacyPage() {
   return (

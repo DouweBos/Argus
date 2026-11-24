@@ -14,6 +14,7 @@
           SettingsWindow()
         },
         GalleryStory("settings/appearance", size: page) { AppearanceSettingsTab() },
+        GalleryStory("settings/general", size: CGSize(width: 760, height: 900)) { GeneralStage() },
         GalleryStory("settings/worktrees", size: CGSize(width: 760, height: 1100), fixtures: GalleryFixtures.worktreeCleanup) {
           WorktreesSettingsTab().environment(HostSettingsModel())
         },
@@ -150,6 +151,17 @@
     }
 
     /// Settings → Agents as a host answers it, the idle timeout set.
+    /// Notifications with "finished" banners off, as someone watching the Mac's own windows might set it.
+    private struct GeneralStage: View {
+      @State private var host = HostSettingsModel()
+
+      var body: some View {
+        GeneralSettingsTab()
+          .environment(host)
+          .onAppear { host.galleryFill(.init(notifyNeedsYou: true, notifyFinished: false)) }
+      }
+    }
+
     private struct AgentsStage: View {
       @State private var host = HostSettingsModel()
 

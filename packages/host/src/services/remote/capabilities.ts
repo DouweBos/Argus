@@ -168,6 +168,7 @@ import {
 import { getRunnerById } from "../llm/registry";
 import { listRunnerAccounts } from "../llm/runnerAccounts";
 import { collectAllProjects } from "../mcp/projectDiscovery";
+import { captureCategoryChanges } from "../notifications/categories";
 import {
   askAboutStop,
   generateReviewGuide,
@@ -302,6 +303,7 @@ import {
 import {
   clearDevicePush,
   renameDevice,
+  setDeviceNotifications,
   setDevicePush,
   type PairedDevice,
 } from "./deviceStore";
@@ -1316,6 +1318,16 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "device.unregister_push": async (_params, ctx) => {
     await clearDevicePush(ctx.device.device_id);
     ctx.device.push = null;
+
+    return { accepted: true };
+  },
+
+  "device.set_notifications": async (params, ctx) => {
+    const prefs = parse("device.set_notifications", params);
+    const before = ctx.device.notifications;
+    await setDeviceNotifications(ctx.device.device_id, prefs);
+    ctx.device.notifications = prefs;
+    captureCategoryChanges("device", before, prefs);
 
     return { accepted: true };
   },

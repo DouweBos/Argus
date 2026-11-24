@@ -25,6 +25,15 @@ export const DevicePushToken = z.object({
 });
 export type DevicePushToken = z.infer<typeof DevicePushToken>;
 
+/** Which agent notifications a device wants. Absent means both. */
+export const NotificationPrefs = z.object({
+  /** Permission prompts, questions, plan approvals, failures and agent nudges. */
+  needs_you: z.boolean(),
+  /** An agent finished a turn or run. */
+  finished: z.boolean(),
+});
+export type NotificationPrefs = z.infer<typeof NotificationPrefs>;
+
 /**
  * One entry in the host's paired-device list. Distinct from the wire's
  * `RemoteDevice` (a simulator/emulator a client can drive).
@@ -41,6 +50,8 @@ export const PairedDevice = z.object({
   push: DevicePushToken.nullish(),
   /** QR pairing (absent on older records), or materialized from the account log. */
   source: z.enum(["account", "pairing"]).optional(),
+  /** Set by the device itself; the host never sends it a muted category. */
+  notifications: NotificationPrefs.optional(),
 });
 export type PairedDevice = z.infer<typeof PairedDevice>;
 

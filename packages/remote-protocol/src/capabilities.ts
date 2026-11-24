@@ -130,6 +130,8 @@ export const REMOTE_METHODS = {
   "device.register_push": "monitor",
   /** Forget this device's push token (user turned notifications off). */
   "device.unregister_push": "monitor",
+  /** Choose which alert categories (needs you, finished) this device gets. */
+  "device.set_notifications": "monitor",
   /** The agents a Live Activity shows, for its first frame. */
   "live_activity.snapshot": "monitor",
   /** Have this host push agent progress to the phone's Live Activity. */

@@ -1207,6 +1207,11 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class DeviceSetNotificationsResult(
+    @SerialName("accepted") val accepted: Boolean,
+  )
+
+  @Serializable
   class DeviceUnregisterPushParams
 
   @Serializable
@@ -3009,6 +3014,8 @@ object Methods {
   object DeviceRegisterPush : RemoteCommand<MethodsTypes.DeviceRegisterPushParams, MethodsTypes.DeviceRegisterPushResult>("device.register_push", "control", serializer(), serializer())
 
   object DeviceRename : RemoteCommand<MethodsTypes.DeviceRenameParams, MethodsTypes.DeviceRenameResult>("device.rename", "control", serializer(), serializer())
+
+  object DeviceSetNotifications : RemoteCommand<NotificationPrefs, MethodsTypes.DeviceSetNotificationsResult>("device.set_notifications", "control", serializer(), serializer())
 
   object DeviceUnregisterPush : RemoteCommand<MethodsTypes.DeviceUnregisterPushParams, MethodsTypes.DeviceUnregisterPushResult>("device.unregister_push", "control", serializer(), serializer())
 

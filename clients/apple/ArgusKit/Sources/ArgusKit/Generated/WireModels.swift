@@ -1657,6 +1657,8 @@ extension ArgusProtocol {
     public var remoteTunnelToken: String?
     public var remotePublicUrl: String?
     public var remoteNotifyWhenFocused: Bool?
+    public var notifyNeedsYou: Bool?
+    public var notifyFinished: Bool?
     public var remoteLanWebClient: Bool?
     public var remoteKeepAwake: Bool?
     public var remoteMcpEnabled: Bool?
@@ -1708,6 +1710,8 @@ extension ArgusProtocol {
       case remoteTunnelToken = "remote_tunnel_token"
       case remotePublicUrl = "remote_public_url"
       case remoteNotifyWhenFocused = "remote_notify_when_focused"
+      case notifyNeedsYou = "notify_needs_you"
+      case notifyFinished = "notify_finished"
       case remoteLanWebClient = "remote_lan_web_client"
       case remoteKeepAwake = "remote_keep_awake"
       case remoteMcpEnabled = "remote_mcp_enabled"
@@ -1725,7 +1729,7 @@ extension ArgusProtocol {
       case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, worktreeCleanupEnabled: Bool? = nil, worktreeCleanupLandedDays: Int? = nil, worktreeCleanupIdleDays: Int? = nil, worktreeCleanupMaxGb: Double? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, claudeArtifacts: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, agentIdleTimeoutMinutes: Int? = nil, usageModelFilter: UsageModelFilter? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, remoteLanWebClient: Bool? = nil, remoteKeepAwake: Bool? = nil, remoteMcpEnabled: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, worktreeCleanupEnabled: Bool? = nil, worktreeCleanupLandedDays: Int? = nil, worktreeCleanupIdleDays: Int? = nil, worktreeCleanupMaxGb: Double? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, claudeArtifacts: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, agentIdleTimeoutMinutes: Int? = nil, usageModelFilter: UsageModelFilter? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, notifyNeedsYou: Bool? = nil, notifyFinished: Bool? = nil, remoteLanWebClient: Bool? = nil, remoteKeepAwake: Bool? = nil, remoteMcpEnabled: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
       self.worktreeCleanupEnabled = worktreeCleanupEnabled
@@ -1760,6 +1764,8 @@ extension ArgusProtocol {
       self.remoteTunnelToken = remoteTunnelToken
       self.remotePublicUrl = remotePublicUrl
       self.remoteNotifyWhenFocused = remoteNotifyWhenFocused
+      self.notifyNeedsYou = notifyNeedsYou
+      self.notifyFinished = notifyFinished
       self.remoteLanWebClient = remoteLanWebClient
       self.remoteKeepAwake = remoteKeepAwake
       self.remoteMcpEnabled = remoteMcpEnabled
@@ -1813,6 +1819,8 @@ extension ArgusProtocol {
       try c.encodeIfPresent(remoteTunnelToken, forKey: .remoteTunnelToken)
       try c.encodeIfPresent(remotePublicUrl, forKey: .remotePublicUrl)
       try c.encodeIfPresent(remoteNotifyWhenFocused, forKey: .remoteNotifyWhenFocused)
+      try c.encodeIfPresent(notifyNeedsYou, forKey: .notifyNeedsYou)
+      try c.encodeIfPresent(notifyFinished, forKey: .notifyFinished)
       try c.encodeIfPresent(remoteLanWebClient, forKey: .remoteLanWebClient)
       try c.encodeIfPresent(remoteKeepAwake, forKey: .remoteKeepAwake)
       try c.encodeIfPresent(remoteMcpEnabled, forKey: .remoteMcpEnabled)
@@ -12056,6 +12064,27 @@ extension ArgusProtocol {
     }
   }
 
+  public struct NotificationPrefs: Codable, Sendable {
+    public var needsYou: Bool
+    public var finished: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case needsYou = "needs_you"
+      case finished = "finished"
+    }
+
+    public init(needsYou: Bool, finished: Bool) {
+      self.needsYou = needsYou
+      self.finished = finished
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(needsYou, forKey: .needsYou)
+      try c.encode(finished, forKey: .finished)
+    }
+  }
+
   public struct OkOrError: Codable, Sendable {
     public var ok: Bool
     public var error: String?
@@ -12187,6 +12216,7 @@ extension ArgusProtocol {
     public var lastSeen: Double?
     public var push: DevicePushToken?
     public var source: PairedDeviceSource?
+    public var notifications: NotificationPrefs?
 
     enum CodingKeys: String, CodingKey {
       case deviceId = "device_id"
@@ -12197,9 +12227,10 @@ extension ArgusProtocol {
       case lastSeen = "last_seen"
       case push = "push"
       case source = "source"
+      case notifications = "notifications"
     }
 
-    public init(deviceId: String, label: String, devStaticPub: String, capabilities: [PairedDeviceCapabilitiesItem], createdAt: Double, lastSeen: Double? = nil, push: DevicePushToken? = nil, source: PairedDeviceSource? = nil) {
+    public init(deviceId: String, label: String, devStaticPub: String, capabilities: [PairedDeviceCapabilitiesItem], createdAt: Double, lastSeen: Double? = nil, push: DevicePushToken? = nil, source: PairedDeviceSource? = nil, notifications: NotificationPrefs? = nil) {
       self.deviceId = deviceId
       self.label = label
       self.devStaticPub = devStaticPub
@@ -12208,6 +12239,7 @@ extension ArgusProtocol {
       self.lastSeen = lastSeen
       self.push = push
       self.source = source
+      self.notifications = notifications
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -12220,6 +12252,7 @@ extension ArgusProtocol {
       try c.encode(lastSeen, forKey: .lastSeen)
       try c.encodeIfPresent(push, forKey: .push)
       try c.encodeIfPresent(source, forKey: .source)
+      try c.encodeIfPresent(notifications, forKey: .notifications)
     }
   }
 

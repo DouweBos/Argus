@@ -695,6 +695,8 @@ data class AppSettings(
   @SerialName("remote_tunnel_token") val remoteTunnelToken: String? = null,
   @SerialName("remote_public_url") val remotePublicUrl: String? = null,
   @SerialName("remote_notify_when_focused") val remoteNotifyWhenFocused: Boolean? = null,
+  @SerialName("notify_needs_you") val notifyNeedsYou: Boolean? = null,
+  @SerialName("notify_finished") val notifyFinished: Boolean? = null,
   @SerialName("remote_lan_web_client") val remoteLanWebClient: Boolean? = null,
   @SerialName("remote_keep_awake") val remoteKeepAwake: Boolean? = null,
   @SerialName("remote_mcp_enabled") val remoteMcpEnabled: Boolean? = null,
@@ -4355,6 +4357,12 @@ data class NodeProps(
 )
 
 @Serializable
+data class NotificationPrefs(
+  @SerialName("needs_you") val needsYou: Boolean,
+  @SerialName("finished") val finished: Boolean,
+)
+
+@Serializable
 data class OkOrError(
   @SerialName("ok") val ok: Boolean,
   @SerialName("error") val error: String? = null,
@@ -4423,6 +4431,7 @@ data class PairedDevice(
   @SerialName("last_seen") @EncodeDefault val lastSeen: Double? = null,
   @SerialName("push") val push: DevicePushToken? = null,
   @SerialName("source") val source: PairedDeviceSource? = null,
+  @SerialName("notifications") val notifications: NotificationPrefs? = null,
 )
 
 @Serializable

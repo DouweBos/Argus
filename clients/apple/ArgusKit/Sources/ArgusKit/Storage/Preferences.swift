@@ -8,6 +8,9 @@ public enum PreferenceKey {
   public static let colorTheme = "argus.colorTheme"
   public static let pushEnabled = "push.enabled"
   public static let liveActivities = "liveActivities.enabled"
+  /// Which alert categories this phone wants; each computer honours them when it sends.
+  public static let alertNeedsYou = "alerts.needsYou"
+  public static let alertFinished = "alerts.finished"
   public static let autoExpandImageReads = "transcript.autoExpandImageReads"
   public static let defaultPermissionMode = "agent.defaultPermissionMode"
   /// The project the last Linear issue was started in.
