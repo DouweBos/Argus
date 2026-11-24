@@ -1,5 +1,12 @@
 # @argus/peacock
 
+## 0.33.0
+
+### Minor Changes
+
+- 4750928: The message field has a ⋮ menu, and choosing the Claude account a chat runs on now lives in its Account submenu. <!-- platforms: mac, ios, android -->
+- b95d5fd: Agents you haven't used for an hour pause to free memory and show a snooze icon; your next message picks the same conversation back up. Change the timeout in Settings → Agents. <!-- platforms: mac, ios, android -->
+
 ## 0.32.0
 
 ### Minor Changes

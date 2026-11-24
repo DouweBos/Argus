@@ -1,5 +1,69 @@
 # argus
 
+## 0.81.0
+
+### Minor Changes
+
+- 048daf0: Each device now chooses whether it's alerted when an agent needs you and when it finishes — say, the Mac gets both and your phone only what needs you. Set it under Settings → General → Notifications on the Mac and Settings → Alerts on the phones and in the browser; your computer stops sending a phone anything it turned off.
+- de79fd7: Argus comes to Android: pair your phone with your computer to follow and steer agents, approve permission prompts right from the notification, and keep an eye on working agents from home-screen widgets.
+- 157a8f5: Android phones on your Argus account show as Android phones, and a device type an older app doesn't recognize shows as a plain device instead of breaking the account.
+- 157a8f5: An Android phone joins your Argus account as an Android phone instead of an iPhone.
+- de79fd7: The Android app asks once how much anonymous usage data to share, the same choice as on the Mac and iPhone, and sends crash reports only when you opt in.
+- e40b29c: Projects can switch Claude accounts automatically when one reaches its usage limit: the agent moves to your signed-in account with the most usage left and keeps going.
+- cd28222: Automations can now start from events: a new issue or pull request, an assignment, a review request, a red CI run on your pull request, or a mention on GitHub, GitLab or Linear, or a signed webhook from any other service. The run gets the event itself, such as the failing log or the comment, and three new templates use these triggers: Fix my red CI, Review requested and Triage new issues.
+- 881e472: Update the bundled conductor CLI to v0.34.6.
+- 60acc0b: The side panel's Diff tab now looks and works like the git view's Changes: a filter, Grove's file rows with stage checkboxes, conflicts resolved in place, and a much faster list for thousands of changed files. The git view shows its files over the diff when the window is too narrow for two columns.
+- 4750928: The message field has a ⋮ menu, and choosing the Claude account a chat runs on now lives in its Account submenu.
+- 5ee0ed7: Git shortcuts work: push, pull, fetch, new branch, merge, rebase, stash, commit, snapshot and undo run from their keys, and say why when they can't.
+- c3f6d92: The git view takes Grove's layout: its views switch with a row of pills, with the rest under More, and every view sits in cards, including Settings, Hooks, Submodules, Bisect and Pull Requests. History keeps the selected commit's date in view when it opens.
+- 093f682: Continuing a chat on another account after a usage limit now offers to continue its spawned agents that ran out too, on the same account.
+- 1105431: Capture cards and cameras connected to your Mac are back in the device picker, under Video Inputs, to watch live. They're only offered for sessions on this Mac.
+- b95d5fd: Agents you haven't used for an hour pause to free memory and show a snooze icon; your next message picks the same conversation back up. Change the timeout in Settings → Agents.
+- c20e088: Runtimes shows the ports and other workspace environment variables Argus gave each run command.
+- 6b38451: Blame shows the file list beside the file in Grove's style, with each change's author and newer changes tinted more strongly, a banner when a file has no earlier revision, and ⌘C to copy the selected lines.
+- a3c9857: Diffs highlight syntax and changed words, wrap long lines, and show image and Git LFS changes. Drag along a line to copy part of it.
+- 813863b: The git panel's dialogs are new: Push picks its tags and remote branch with suggestions, Pull suggests the session's base branch, New Branch can track, pin and record a parent, Delete Branch warns about unmerged commits and can delete the remote branch too, and Set Upstream lists the remote branches. Remotes are renamed and repointed in one dialog.
+- 011aa56: History shows the commit graph beside the selected commit with day headers, and its changed files open into their diffs. Return or a double-click checks out a commit after asking, ⌘C copies the selected SHAs, and Compare can merge or rebase the two branches from the project root.
+- 21c8df1: The git sidebar, Stashes, Reflog and Branches Review take Grove's look: branches in folders with a filter and drag and drop to merge, rebase, pull and push, the sidebar in worktree sessions too, a stash's files over its diff, and the reflog entry's changed files.
+- 7d0481e: The git panel's Changes view is new: conflicts are resolved right beside your files with both versions above an editable result, Return or a double-click opens a file, selected files can be stashed on their own, and Claude's draft and Review sit beside the commit options.
+- 7484412: The computer screen shows its integrations, including whether Slack is connected and which channel goes to which project. Automations triggered by Slack messages show their channel.
+- 7484412: Automations can run on a Slack message in a channel, matching any message, a prefix or a keyword, and can post their reports to a Slack channel.
+- 7484412: Start and steer agents from Slack: mention the Argus bot or message it, and the agent's progress, reply and approval prompts come back in the thread. Connect your own Slack app in Settings → Integrations.
+- 7484412: The computer page shows whether Slack is connected, who owns the bot and which channel goes to which project. Automations triggered by Slack messages show their channel.
+- 7484412: Settings → Integrations → Slack connects your Slack app and sets who may use it, a default project and a project per channel. The automation editor can trigger on Slack messages and post reports to a channel.
+- 57d9631: Teammates can ask each other for help by handle, and the answer comes back to the one that asked.
+- 6ee5733: Mention a teammate in one of your Linear comments and it answers as a reply on that comment.
+- 689f57b: Start a Slack message to Argus with a teammate's handle to talk to that teammate in the thread; it answers under its own name.
+- 57d9631: The web client lists your teammates: talk to them, add one from the gallery, and edit its profile, duties and memory from the browser.
+- 6e9d3f1: Teammates: named, long-lived agents with their own persona, one memory and several automations as their duties. Start one from the gallery, or promote an automation you already have.
+
+### Patch Changes
+
+- 32f1c73: Agents running under an extra Claude account no longer pick up another account's organization policy, which could stop plugins from loading at startup.
+- fbd4db0: The account screen keeps showing your name and email after the sign-in session expires.
+- 68a56d6: Plugins no longer reinstall themselves, and sometimes go missing, when agents and Claude Code in the terminal run under different Claude accounts.
+- 959d9dc: A chat you cleared stays cleared when it resumes or comes back as a pinned chat.
+- e24b8ef: Resolving a conflict on a paired computer edits that computer's file, and saving is off when the file can't be read, so it can no longer be emptied. Actions that need the files on this Mac are off for paired computers.
+- 0e71b7b: Chat costs no longer count earlier turns again, so automation budgets don't stop runs early.
+- 69ceb6a: Messages and settings changes sent to an agent whose process has ended report an error instead of hanging or disappearing.
+- c93fc45: Diffs no longer end with an empty extra line.
+- de413f2: A new, empty chat shows the start title again with the composer at the bottom, and no longer sits on its loading state on iPhone.
+- f310bb4: An agent whose restart fails after an account switch or rewind says so, instead of looking ready.
+- 74b628b: Fetch, pull and push in the git view recover from another fetch racing them and from remotes that stop responding, and offer Retry when they can't.
+- dccfdc3: The iPhone app no longer offers starting a prompt on several runners to compare them; compare runs started on the Mac still open on the phone.
+- 3b31eed: Chat replies no longer cut off the edge of letters at the start of a line.
+- 223c4f2: A project with no sessions no longer folds on Home: its name opens the main checkout and shows what its agent is doing.
+- 451a054: Stopping an agent can no longer force-quit another process that took over its process id.
+- fca7abe: Fix the chat input and agent tabs going off screen when a chat hits its usage limit.
+- be0c954: Resuming, rewinding and forking chats in a folder with a very long path use the chat's own history again instead of an old copy.
+- f7e78ea: File ▸ Save and Save All are back in the menu, so ⌘S saves the file open in the code view again.
+- f21c3d6: The toolbar no longer turns grey with a line under it when Argus is in fullscreen.
+- ff1e1a4: Linked projects and other chips on a message now show below it instead of above.
+- f0b029d: Leftover output and permission prompts from before an agent restarted no longer show up in it.
+- 1d5f005: Switching the account of a pinned or resumed chat before you send to it keeps its history.
+- a5a1ae9: After rewinding a chat without resending, the agent is ready again: your next message is sent instead of waiting in the queue.
+- c1e0a2d: In a worktree session, Reflog and Branches Review no longer create or delete branches, which only the project root may do.
+
 ## 0.80.0
 
 ### Minor Changes
