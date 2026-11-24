@@ -3,171 +3,20 @@ import GroveKit
 import GroveUIKit
 import SwiftUI
 
-/// Where HEAD has been: each move with its commit and changes; reset back to
-/// one, or branch from it.
+/// The reflog from GroveUIKit; New Branch at an entry runs through the host like the toolbar's.
 struct ReflogView: View {
   @Environment(DesktopModel.self) private var model
-  @Environment(\.theme) private var theme
   let workspace: GitWorkspace
-  @State private var diffs: [FileDiff] = []
-  @State private var loadingDiffs = false
-
-  private var reflog: ReflogViewModel { workspace.reflog }
+  let session: RemoteSession
 
   var body: some View {
-    VStack(spacing: 0) {
-      if let error = reflog.errorMessage {
-        GitErrorBanner(message: error) { reflog.dismissError() }
-      }
-      ResizableHSplit(key: "git.reflog", leadingMin: 220, leadingIdeal: 360, leadingMax: 520, trailingMin: 320) {
-        list.frame(maxHeight: .infinity)
-      } trailing: {
-        detail.frame(maxHeight: .infinity)
-      }
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    .alert(
-      reflog.pendingReset.map { "Reset (\($0.mode.rawValue)) to \($0.entry.newSHA.prefix(7))?" } ?? "",
-      isPresented: Binding(get: { reflog.pendingReset != nil }, set: { if !$0 { reflog.cancelReset() } }),
-      presenting: reflog.pendingReset
-    ) { pending in
-      Button("Reset", role: pending.mode == .hard ? .destructive : nil) {
-        Task {
-          reflog.dismissError()
-          await reflog.confirmReset(pending)
-        }
-      }
-      Button("Cancel", role: .cancel) { reflog.cancelReset() }
-    } message: { pending in
-      Text(resetExplanation(pending.mode))
-    }
-    .task(id: reflog.selectedEntry?.newSHA) { await loadDiffs() }
-  }
-
-  private var list: some View {
-    List(
-      reflog.entries,
-      selection: Binding(
-        get: { reflog.selectedEntry?.id },
-        set: { id in
-          guard let entry = reflog.entries.first(where: { $0.id == id }) else { return }
-          Task { await reflog.select(entry) }
-        })
-    ) { entry in
-      let type = reflog.actionType(for: entry)
-      HStack(spacing: 8) {
-        Image(systemName: type.systemImage)
-          .foregroundStyle(theme.textSecondary)
-          .frame(width: 16)
-          .help(type.displayName)
-        VStack(alignment: .leading, spacing: 2) {
-          Text(entry.message).lineLimit(1).truncationMode(.tail)
-          HStack(spacing: 6) {
-            Text(entry.newSHA.prefix(7)).font(.scaled(size: 10, design: .monospaced))
-            Spacer(minLength: 4)
-            Text(entry.date, format: .relative(presentation: .named))
-          }
-          .font(.scaled(size: 11))
-          .foregroundStyle(theme.textSecondary)
-        }
-      }
-      .tag(entry.id)
-      .contextMenu { menu(entry) }
-    }
-    .navigatorList()
-    .overlay {
-      if reflog.entries.isEmpty && reflog.isLoading { ProgressView().controlSize(.small) }
-    }
-  }
-
-  @ViewBuilder
-  private var detail: some View {
-    if let entry = reflog.selectedEntry {
-      VStack(spacing: 0) {
-        ReflogEntryDetail(entry: entry, commit: reflog.selectedCommit, isLoading: reflog.isLoadingDetail) {
-          menu(entry)
-        }
-        Divider()
-        FileDiffsView(files: diffs, isLoading: loadingDiffs, images: .commit(entry.newSHA, in: workspace.repository))
-      }
-    } else {
-      QuietEmptyState(icon: "clock.arrow.circlepath", title: "Select an entry")
-    }
-  }
-
-  @ViewBuilder
-  private func menu(_ entry: ReflogEntry) -> some View {
-    Button("Soft Reset to Here") { reflog.requestReset(to: entry, mode: .soft) }
-    Button("Mixed Reset to Here") { reflog.requestReset(to: entry, mode: .mixed) }
-    Button("Hard Reset to Here", role: .destructive) { reflog.requestReset(to: entry, mode: .hard) }
-    Divider()
-    Button("New Branch Here") { createBranch(from: entry) }
-      .disabled(!workspace.features.contains(.createBranch))
-      .help(workspace.features.unavailableReason(.createBranch) ?? "")
-    Button("Copy SHA") { Clipboard.copy(entry.newSHA) }
-  }
-
-  /// The kit's New Branch at the entry's commit, so it can track, pin and be undone like any other.
-  private func createBranch(from entry: ReflogEntry) {
-    guard let session = model.session(workspace.sessionId) else { return }
-    RefActions(workspace: workspace, session: session, model: model).newBranch(from: entry.newSHA)
-  }
-
-  private func loadDiffs() async {
-    guard let sha = reflog.selectedEntry?.newSHA else { return diffs = [] }
-    loadingDiffs = true
-    defer { loadingDiffs = false }
-    // A commit gone after gc has no diff; the entry still shows.
-    diffs = (try? await workspace.repository.diffForCommit(sha)) ?? []
-  }
-}
-
-/// The selected entry's move and commit.
-private struct ReflogEntryDetail<Actions: View>: View {
-  @Environment(\.theme) private var theme
-  let entry: ReflogEntry
-  let commit: CommitInfo?
-  let isLoading: Bool
-  @ViewBuilder let actions: Actions
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      HStack(alignment: .firstTextBaseline) {
-        Text(commit?.summary ?? entry.message).font(.scaled(.headline)).lineLimit(2).textSelection(.enabled)
-        Spacer()
-        Menu { actions } label: { Image(systemName: "ellipsis.circle") }
-          .menuIndicator(.hidden)
-          .clickable()
-          .fixedSize()
-          .accessibilityLabel("Entry Actions")
-      }
-      Text(entry.message).foregroundStyle(theme.textSecondary).lineLimit(2)
-      HStack(spacing: 10) {
-        Text("\(entry.oldSHA.prefix(7)) → \(entry.newSHA.prefix(7))").font(.scaled(size: 11, design: .monospaced))
-        if let commit {
-          Text(commit.authorName)
-          Text(commit.authorDate, format: .dateTime)
-        } else if isLoading {
-          ProgressView().controlSize(.mini)
-        } else {
-          Text("Commit no longer exists")
-        }
-      }
-      .font(.scaled(size: 11))
-      .foregroundStyle(theme.textSecondary)
-      if let body = commit?.body, !body.isEmpty {
-        Text(body).font(.scaled(size: 12)).lineLimit(6).textSelection(.enabled)
-      }
-    }
-    .padding(12)
-    .frame(maxWidth: .infinity, alignment: .leading)
-  }
-}
-
-private func resetExplanation(_ mode: ResetMode) -> String {
-  switch mode {
-  case .soft: "HEAD moves; your index and working copy are kept."
-  case .mixed: "HEAD moves and the index resets; working copy changes are kept."
-  case .hard: "HEAD, the index and the working copy all reset. Uncommitted changes are lost and this can't be undone."
+    GitReflogView(
+      viewModel: workspace.reflog,
+      dialogs: RefActions(workspace: workspace, session: session, model: model).dialogContext,
+      presenter: model.gitDialogs, options: DiffViewSettings.shared.options
+    )
+    .gitPanelPadding()
+    .gitFeatures(workspace.features)
+    .gitUIHost(.argus(openLine: nil))
   }
 }

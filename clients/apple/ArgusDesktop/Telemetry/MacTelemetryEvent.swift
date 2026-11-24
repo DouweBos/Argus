@@ -364,6 +364,8 @@ enum MacTelemetryEvent {
   case gitRecoveryUsed(kind: String, action: String)
   /// A git dialog closed; `dialog` is GroveUIKit's kind, `submitted` whether it ran.
   case gitDialogClosed(dialog: String, submitted: Bool)
+  /// The git sidebar's filter was typed into, once per filtering; `matched` is whether any branch matched.
+  case gitSidebarFiltered(matched: Bool)
   /// A git view was picked from the panel's pill bar or its More menu; `view` is the route segment.
   case gitViewPicked(view: String, via: GitViewSource)
   /// Diffs switched between unified and split, from a diff's header or Settings.
@@ -510,6 +512,7 @@ enum MacTelemetryEvent {
     case .gitUsed: "mac_git_used"
     case .gitRecoveryUsed: "mac_git_recovery_used"
     case .gitDialogClosed: "mac_git_dialog_closed"
+    case .gitSidebarFiltered: "mac_git_sidebar_filtered"
     case .gitViewPicked: "mac_git_view_picked"
     case .diffLayoutChanged: "mac_diff_layout_changed"
     case .diffOptionChanged: "mac_diff_option_changed"
@@ -700,6 +703,8 @@ enum MacTelemetryEvent {
       ["kind": kind, "action": action]
     case .gitDialogClosed(let dialog, let submitted):
       ["dialog": dialog, "submitted": submitted]
+    case .gitSidebarFiltered(let matched):
+      ["matched": matched]
     case .gitViewPicked(let view, let via):
       ["view": view, "via": via.rawValue]
     case .diffLayoutChanged(let layout, let via):

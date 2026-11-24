@@ -92,7 +92,7 @@ struct GitWorkspaceView: View {
         workspace: workspace, history: workspace.visibleHistory ?? workspace.history, ref: view.historyRef,
         baseBranch: view == .branch ? session.baseBranch : nil)
     case .stashes:
-      StashesView(workspace: workspace)
+      StashesView(workspace: workspace, session: session)
     default:
       single
     }
@@ -110,7 +110,7 @@ struct GitWorkspaceView: View {
     case .interactiveRebase(let from):
       InteractiveRebaseView(workspace: workspace, from: from)
     case .reflog:
-      ReflogView(workspace: workspace)
+      ReflogView(workspace: workspace, session: session)
     case .branchesReview:
       BranchesReviewView(workspace: workspace)
     case .submodules:

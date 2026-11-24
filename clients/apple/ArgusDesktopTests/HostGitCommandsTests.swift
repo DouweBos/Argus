@@ -75,6 +75,8 @@ struct HostGitCommandsTests {
     (.stashAndCheckout("main"), "git_stash_and_checkout"),
     (.discardAndCheckout("main"), "git_discard_and_checkout"),
     (.saveConflictResolution(path: "dir/a.txt", contents: "both\n"), "git_write_conflict_merged"),
+    (.initSubmodule(path: "vendor/lib"), "git_submodule_init"),
+    (.updateSubmodule(path: "vendor/lib", toRemote: true), "git_submodule_update"),
   ]
 
   private func commands(
@@ -200,6 +202,8 @@ struct HostGitCommandsTests {
       (.deleteRemoteBranch(name: "a", remote: "origin"), .branchDelete), (.applyStash(index: 0, drop: true), .stashPop),
       (.applyStash(index: 0, drop: false), .stashApply), (.dropStash(index: 0), .stashDrop),
       (.snapshot(message: "wip", includeUntracked: true), .snapshot),
+      (.fastForward(branch: "main", remote: "origin", remoteBranch: "main"), .pull),
+      (.fetchSubmodule(path: "vendor/lib"), .submodule), (.removeSubmodule(path: "vendor/lib"), .submodule),
     ]
     for (command, action) in local {
       let spy = SpyHost()

@@ -1,17 +1,20 @@
 import ArgusUI
 import GroveKit
+import GroveUIKit
 import SwiftUI
 
-/// The git panel's own sidebar: a summary of the repository, then its refs.
-/// Flat on the canvas like the code navigator, so it stays below the toolbar
-/// rather than drawing a source-list material up under it.
+/// The git panel's own sidebar: a summary of the repository, then GroveUIKit's refs. Flat on the canvas like the
+/// code navigator, so it stays below the toolbar rather than drawing a source-list material up under it.
+/// A worktree session lists its refs too; what it can't run there is off, with the reason.
 struct GitSidebar: View {
+  @Environment(DesktopModel.self) private var model
   @Environment(\.theme) private var theme
   let workspace: GitWorkspace
   let session: RemoteSession
   let view: GitRoute
 
   var body: some View {
+    let actions = RefActions(workspace: workspace, session: session, model: model)
     // The header stays put so the list starts below it: a list touching the
     // window's top scrolls up under the transparent toolbar.
     VStack(spacing: 0) {
@@ -20,82 +23,76 @@ struct GitSidebar: View {
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
       Rectangle().fill(theme.border).frame(height: 1)
-      List {
-        if workspace.features.contains(.checkout) {
-          GitRefSections(workspace: workspace, session: session, view: view)
-            .listRowSeparator(.hidden)
-            .listSectionSeparator(.hidden)
-        }
-      }
-      .navigatorList()
+      GitRefsSidebar(
+        model: workspace.refsModel, dialogs: actions.dialogContext, presenter: model.gitDialogs,
+        selection: Binding(get: { selection }, set: select), host: host(actions)
+      )
+      .scrollContentBackground(.hidden)
+      .gitFeatures(workspace.features)
+      .gitUIHost(.argus(openLine: nil))
     }
-    .environment(\.gitSidebarContext, GitSidebarContext(sessionId: session.id, view: view))
+    .task(id: workspace.generation) {
+      await actions.marks.load(repoRoot: session.repoRoot, backend: model.store.backend)
+    }
+    .onChange(of: workspace.refsModel.filter) { old, new in
+      if new.isEmpty, !old.isEmpty { reportFilter(old) }
+    }
+    .onDisappear {
+      if !workspace.refsModel.filter.isEmpty { reportFilter(workspace.refsModel.filter) }
+    }
   }
-}
 
-/// Which session's git view the sidebar rows select into, and what's showing.
-struct GitSidebarContext: Equatable {
-  let sessionId: String
-  let view: GitRoute
+  /// Whether a filtering found anything, never what was typed.
+  private func reportFilter(_ query: String) {
+    let query = query.trimmingCharacters(in: .whitespaces)
+    let refs = workspace.refs
+    let names =
+      refs.localBranches.map(\.name) + refs.remoteBranches.map(\.name) + refs.tags.map(\.name)
+      + refs.worktrees.compactMap(\.branch) + refs.submodules.map(\.path)
+    MacTelemetry.capture(.gitSidebarFiltered(matched: names.contains { $0.localizedStandardContains(query) }))
+  }
 
-  /// Branch and tag rows select their history; submodule rows the submodules view.
-  var selected: GitSidebarTag? {
+  /// Branch and tag rows show their history; a submodule the submodules view.
+  private var selection: GitRefItem? {
     switch view {
-    case .branches(let name?): .branch(name)
+    case .branches(let name?):
+      workspace.refs.localBranches.contains { $0.name == name } ? .branch(name) : .remoteBranch(name)
     case .tags(let name): .tag(name)
-    case .submodules: .view(view.segment)
     default: nil
     }
   }
 
-  func route(for tag: GitSidebarTag) -> GitRoute? {
-    switch tag {
-    case .view(let segment): GitRoute(devString: segment)
-    case .branch(let name): .branches(name)
-    case .tag(let name): .tags(name)
+  private func select(_ item: GitRefItem?) {
+    let route: GitRoute? =
+      switch item {
+      case .branch(let name), .remoteBranch(let name): .branches(name)
+      case .tag(let name): .tags(name)
+      case .submodule: .submodules
+      default: nil
+      }
+    guard let route, route != view else { return }
+    model.navigate(.sessionGit(id: session.id, view: route))
+  }
+
+  /// Pins and archives on the host, protected branches and the base from `.argus.json`, and routes for the rest.
+  private func host(_ actions: RefActions) -> GitRefsHost {
+    let marks = actions.marks
+    var host = GitRefsHost()
+    host.marks = GitBranchMarks(
+      pinned: Set(marks.pinned), archived: Set(marks.archived), protected: Set(marks.protected),
+      base: marks.defaultBase ?? session.baseBranch)
+    host.setPinned = { name, pinned in Task { await actions.setPinned(name, pinned) } }
+    host.setArchived = { name, archived in Task { await actions.setArchived(name, archived) } }
+    // The banner shows what failed, with its fixes.
+    host.showsFailures = false
+    host.compare = { base, compare in actions.compare(base, with: compare) }
+    host.createPullRequest = { _ in actions.createPullRequest() }
+    host.revealInHistory = { [model, workspace, session] sha, _ in
+      model.navigate(.sessionGit(id: session.id, view: .history))
+      Task { await workspace.history.reveal(sha) }
     }
+    return host
   }
-}
-
-extension EnvironmentValues {
-  @Entry var gitSidebarContext: GitSidebarContext?
-}
-
-/// A git sidebar row that selects `tag` on click, with the navigator's quiet highlight.
-private struct GitSidebarRow: ViewModifier {
-  @Environment(DesktopModel.self) private var model
-  @Environment(\.gitSidebarContext) private var context
-  let tag: GitSidebarTag
-
-  private var selected: Bool { context?.selected == tag }
-
-  func body(content: Content) -> some View {
-    content
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .contentShape(.rect)
-      .onTapGesture(perform: select)
-      .modifier(NavigatorRowHighlight(selected: selected))
-      .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
-      .accessibilityAction { select() }
-  }
-
-  private func select() {
-    guard let context, let route = context.route(for: tag), route != context.view else { return }
-    model.navigate(.sessionGit(id: context.sessionId, view: route))
-  }
-}
-
-extension View {
-  func gitSidebarRow(_ tag: GitSidebarTag) -> some View {
-    modifier(GitSidebarRow(tag: tag))
-  }
-}
-
-/// What a git sidebar row selects: a sub-view, or a branch's or tag's history.
-enum GitSidebarTag: Hashable {
-  case view(String)
-  case branch(String)
-  case tag(String)
 }
 
 /// Repository name, the checked-out branch against its upstream, and how it stands.

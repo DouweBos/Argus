@@ -87,26 +87,9 @@ struct RefActions {
     present(.createBranch(from: start))
   }
 
-  func rename(_ branch: String) {
-    present(.renameBranch(branch))
-  }
-
   /// The session's own branch: the host renames it and updates the session.
   func renameSessionBranch() {
     present(.renameCurrentBranch)
-  }
-
-  /// Warns about commits HEAD lacks and offers the remote branch and a forced delete.
-  func delete(_ branch: BranchInfo) {
-    present(.deleteBranch(branch))
-  }
-
-  func merge(_ branch: String, squash: Bool = false) async {
-    await run(.merge(branch, squash: squash))
-  }
-
-  func rebaseCurrent(onto branch: String) async {
-    await run(.rebase(onto: branch))
   }
 
   /// The Git menu's Merge and Rebase: pick the other branch first.
@@ -116,10 +99,6 @@ struct RefActions {
 
   func chooseRebase() {
     present(.rebase)
-  }
-
-  func setUpstream(_ branch: BranchInfo) {
-    present(.trackRemoteBranch(branch))
   }
 
   func setPinned(_ branch: String, _ pinned: Bool) async {
@@ -143,8 +122,8 @@ struct RefActions {
     if let list { marks.archived = list }
   }
 
-  func compareWithCurrent(_ ref: String) {
-    model.navigate(.sessionGit(id: id, view: .compare(left: currentName, right: ref)))
+  func compare(_ base: String, with ref: String) {
+    model.navigate(.sessionGit(id: id, view: .compare(left: base, right: ref)))
   }
 
   /// Pull requests are their own view; open it for the branch's project.
@@ -183,16 +162,11 @@ struct RefActions {
     present(.createTag(at: target))
   }
 
-  func pushTag(_ tag: String) async {
-    await run(.pushTag(tag, remote: remoteNames.first))
-  }
-
-  func deleteTag(_ tag: String) async {
-    guard
-      await GitDialogs.confirm(
-        "Delete tag \(tag)?", message: "The tag is removed locally; remotes keep their copy.", action: "Delete",
-        destructive: true)
-    else { return }
-    await run(.deleteTag(tag))
+  /// Grove's Sync: fetch, then pull what's behind and push what's ahead, through
+  /// the host so its branch rules apply. An unpublished branch opens Publish instead.
+  func sync() async {
+    guard let branch = currentBranch else { return }
+    guard branch.upstream != nil else { return push(branch) }
+    await run(.sync(remote: nil, strategy: await workspace.repository.defaultPullStrategy()))
   }
 }

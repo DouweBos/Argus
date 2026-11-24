@@ -112,6 +112,19 @@ A real git workflow lives inside Argus:
   pinned and record a parent for pulls; Delete Branch warns about commits
   only it has and can delete its remote branch too. Remotes are added,
   renamed and repointed from the sidebar.
+- **Git sidebar** — branches in folders, with protected, pinned and the
+  base branch first; worktrees, archived branches (also ones that are gone),
+  remotes, tags and submodules, and a filter for all of them. Long lists show
+  Show More. Drag a branch onto another to merge it (⌥ rebases), a remote
+  branch onto a branch to pull, a branch onto a remote to push; each asks
+  first. Double-click checks out, and when changes block it Argus offers to
+  stash or discard them. A worktree session lists its refs too, with what it
+  can't do there switched off.
+- **Stashes, Reflog and Branches Review** — a stash's files over the
+  picked file's diff, with apply, pop, drop and a new branch from it; where
+  HEAD has been, with each entry's commit and changed files, reset to it or
+  branch from it; local branches sorted into merged, stale and active, to
+  delete in bulk.
 - **Changes** — the commit composer over the changed files, beside the
   picked file's diff. Space stages the selection, ⌘A selects every file,
   Shift-arrows extend it, Return or a double-click opens the file, and the

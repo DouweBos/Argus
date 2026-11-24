@@ -2,6 +2,7 @@ import ArgusCore
 import ArgusKit
 import Foundation
 import GroveKit
+import GroveUIKit
 import Observation
 
 /// One session's repository: GroveKit's engine and view models on its worktree,
@@ -29,6 +30,9 @@ final class GitWorkspace: GitHostSending {
   let reflog: ReflogViewModel
   let branchesReview: BranchesReviewViewModel
   let blame: BlameViewModel
+  /// The sidebar's refs: its actions run through the host like the toolbar's, failures in the banner.
+  let refActions: RefActionsViewModel
+  let refsModel: GitRefsModel
   /// The working copy's diff scoped to an agent turn or the whole branch.
   let scopedDiff: ScopedDiffModel
   /// The timeline's turns, and the turn diff it shows apart from the Changes tab's scope.
@@ -59,8 +63,6 @@ final class GitWorkspace: GitHostSending {
   }
   /// A host-run command is in flight (fetch, pull, push, checkout, …).
   private(set) var hostBusy: String?
-  /// The sidebar's Tags section, collapsed by default as on the desktop.
-  var tagsExpanded = false
   /// The repository's "Hide LFS banners", from `user-project-settings.json`.
   var suppressLfsWarning = false
   /// Bumped by every refresh, so a view can key work on it.
@@ -96,6 +98,8 @@ final class GitWorkspace: GitHostSending {
     reflog = ReflogViewModel(repository: repository)
     branchesReview = BranchesReviewViewModel(repository: repository, refs: refs)
     blame = BlameViewModel(repository: repository)
+    refActions = RefActionsViewModel(repository: repository, refs: refs)
+    refsModel = GitRefsModel(actions: refActions)
     scopedDiff = ScopedDiffModel(sessionId: session.id, repository: repository, host: host)
     timeline = TimelineModel(sessionId: session.id, host: host)
     timelineDiff = ScopedDiffModel(sessionId: session.id, repository: repository, host: host)
@@ -126,6 +130,10 @@ final class GitWorkspace: GitHostSending {
     history.commands = commands
     reflog.commands = commands
     branchesReview.commands = commands
+    // The banner's commands report telemetry and show failures, so the view model reports neither again.
+    refActions.commands = self.commands
+    refActions.onRepositoryChanged = refresh
+    refActions.undoManager = undo
   }
 
   // MARK: Lifecycle

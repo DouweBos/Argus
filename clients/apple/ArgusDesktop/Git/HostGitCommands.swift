@@ -147,14 +147,20 @@ struct HostGitCommands: GitCommandPerforming {
       try await host.runLocally(label: Self.localLabel(command), track: Self.localAction(command)) {
         try await RepositoryCommands(repository: repository, features: features).perform(command, progress: progress)
       }
-    case .fetch, .setUpstream, .deleteRemoteBranch, .applyStash, .dropStash, .snapshot:
-      // One remote, unsetting an upstream and the stash list: the host has no command for these.
+    case .initSubmodule(let path):
+      _ = try await host.send(
+        Host.GitSubmoduleInit.self, .init(id: id, path: path), label: "Cloning \(path)", track: .submodule)
+    case .updateSubmodule(let path, let toRemote):
+      _ = try await host.send(
+        Host.GitSubmoduleUpdate.self, .init(id: id, path: path, remote: toRemote), label: "Updating \(path)",
+        track: .submodule)
+    case .fetch, .setUpstream, .deleteRemoteBranch, .applyStash, .dropStash, .snapshot, .fastForward, .fetchSubmodule,
+      .removeSubmodule:
+      // One remote, unsetting an upstream, the stash list, moving a branch that isn't checked out, and fetching or
+      // removing one submodule: the host has no command for these.
       try await host.runLocally(label: Self.localLabel(command), track: Self.localAction(command)) {
         try await RepositoryCommands(repository: repository, features: features).perform(command, progress: progress)
       }
-    default:
-      // Not sent to the host yet; the views that run these still call the repository.
-      try await RepositoryCommands(repository: repository, features: features).perform(command, progress: progress)
     }
   }
 
@@ -203,6 +209,9 @@ struct HostGitCommands: GitCommandPerforming {
     case .fetch(let remote?): "Fetching \(remote)"
     case .deleteRemoteBranch(let name, _): "Deleting \(name)"
     case .snapshot: "Saving a snapshot"
+    case .fastForward(let branch, _, _): "Fast-forwarding \(branch)"
+    case .fetchSubmodule(let path): "Fetching \(path)"
+    case .removeSubmodule(let path): "Removing \(path)"
     case .setUpstream: "Untracking"
     case .cherryPick: "Cherry-picking"
     case .revert: "Reverting"
@@ -223,6 +232,8 @@ struct HostGitCommands: GitCommandPerforming {
     case .applyStash(_, let drop): drop ? .stashPop : .stashApply
     case .dropStash: .stashDrop
     case .snapshot: .snapshot
+    case .fastForward: .pull
+    case .fetchSubmodule, .removeSubmodule: .submodule
     case .cherryPick: .cherryPick
     case .revert: .revert
     case .reset: .reset
