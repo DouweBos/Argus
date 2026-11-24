@@ -64,6 +64,20 @@ its name, and the conversation is also listed on its page here.
 
 ---
 
+## From Linear
+
+With [Linear connected](./integrations.md#connecting-linear), mention a
+teammate in one of your own comments — `@ci-fixer why does login fail?` — and
+within a couple of minutes it answers as a reply on that comment. Replies in
+the same comment thread continue the same conversation, which is also listed
+on its page here.
+
+Only comments you wrote count: someone else's comment never instructs your
+teammates. Argus polls rather than receiving webhooks, so nothing needs to be
+reachable from the internet.
+
+---
+
 ## How far it may go
 
 A teammate's **autonomy** is a ceiling over everything it does. A duty runs at

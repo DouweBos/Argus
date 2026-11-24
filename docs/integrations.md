@@ -175,6 +175,13 @@ side, or as a heatmap. The runtime panel's **Design** mode shows the same
 comparison, with **Open in viewer**. The session's issue chip opens the issue
 over the Issues board; **Open in Linear** is in there.
 
+## Teammates
+
+Mention a [teammate](./teammates.md) in one of your own Linear comments —
+`@ci-fixer why does login fail?` — and it answers as a reply on that comment
+within a couple of minutes. Argus looks at your new comments every two
+minutes; other people's comments are never acted on.
+
 ## Automations
 
 An automation that watches Linear fetches your assigned open issues through

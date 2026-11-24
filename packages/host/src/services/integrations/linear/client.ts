@@ -17,6 +17,7 @@ import {
 } from "@linear/sdk";
 import {
   COMMENT,
+  MY_RECENT_COMMENTS,
   CREATE_ISSUE,
   FILE_UPLOAD,
   ISSUE_DETAIL,
@@ -53,6 +54,14 @@ const IMAGE_TYPES = new Set([
   "image/png",
   "image/webp",
 ]);
+
+export interface LinearComment {
+  id: string;
+  body: string;
+  createdAt: number;
+  parentId: string | null;
+  issue: { id: string; identifier: string; title: string; url: string };
+}
 
 export class LinearApi {
   private readonly sdk: LinearClient;
@@ -308,6 +317,32 @@ export class LinearApi {
     }
 
     return toLinearIssue(data.issueUpdate.issue);
+  }
+
+  /** The connected user's comments since `since` (ISO), oldest first. */
+  async myRecentComments(since: string): Promise<LinearComment[]> {
+    const data = await this.query<{
+      comments: {
+        nodes: {
+          id: string;
+          body: string;
+          createdAt: string;
+          parent: { id: string } | null;
+          issue: { id: string; identifier: string; title: string; url: string } | null;
+        }[];
+      };
+    }>(MY_RECENT_COMMENTS, { since });
+
+    return data.comments.nodes
+      .filter((c) => c.issue)
+      .map((c) => ({
+        id: c.id,
+        body: c.body,
+        createdAt: Date.parse(c.createdAt),
+        parentId: c.parent?.id ?? null,
+        issue: c.issue!,
+      }))
+      .sort((a, b) => a.createdAt - b.createdAt);
   }
 
   async comment(

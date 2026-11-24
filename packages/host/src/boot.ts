@@ -105,6 +105,10 @@ import {
 } from "./services/session/volumeWatcher";
 import { startSlack, stopSlack } from "./services/slack/service";
 import {
+  startLinearMentions,
+  stopLinearMentions,
+} from "./services/teammate/surfaces/linearMentions";
+import {
   startHeapSampling,
   stopHeapSampling,
 } from "./services/telemetry/heapSample";
@@ -206,6 +210,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   initAutomationOutcomes();
   initIssueReports();
   startAutomationScheduler();
+  startLinearMentions();
 
   // Chats run with the plain CLI join each project's history.
   startCliChatImport();
@@ -334,6 +339,7 @@ export function stopHostServices(): void {
   stopLiveActivities();
   stopWarmPolicy();
   stopIdlePause();
+  stopLinearMentions();
   stopLimitAutoSwitch();
   stopSlack();
   stopMcpServer();

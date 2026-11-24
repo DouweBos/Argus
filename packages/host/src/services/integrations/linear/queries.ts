@@ -123,6 +123,13 @@ export const COMMENT = `mutation ArgusComment($issueId: String!, $body: String!,
   commentCreate(input: { issueId: $issueId, body: $body, parentId: $parentId }) { success }
 }`;
 
+/** Your own recent comments, for teammates you @-mention in them. */
+export const MY_RECENT_COMMENTS = `query ArgusMyRecentComments($since: DateTimeOrDuration!) {
+  comments(first: 50, orderBy: createdAt, filter: { createdAt: { gt: $since }, user: { isMe: { eq: true } } }) {
+    nodes { id body createdAt parent { id } issue { id identifier title url } }
+  }
+}`;
+
 export const FILE_UPLOAD = `mutation ArgusFileUpload($contentType: String!, $filename: String!, $size: Int!) {
   fileUpload(contentType: $contentType, filename: $filename, size: $size) {
     uploadFile { uploadUrl assetUrl headers { key value } }
