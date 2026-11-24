@@ -121,6 +121,8 @@ The Android leg needs these once:
 3. **A Play service account.** In Google Cloud, create a service account with a
    JSON key, then invite its email in Play Console → Users and permissions with
    release rights for the app. The JSON key is `PLAY_SERVICE_ACCOUNT_JSON`.
+   Without it the workflow skips the Play upload and only attaches the APK to
+   the GitHub release.
 4. **Firebase, for push.** Create a Firebase project, add the Android app
    `dev.houwert.argus` and commit its `google-services.json` to
    `clients/android/app/`. Without the file the app builds with push off.

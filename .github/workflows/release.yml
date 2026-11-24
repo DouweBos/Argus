@@ -226,7 +226,13 @@ jobs:
           FASTLANE_HIDE_CHANGELOG: "1"
           CI: "true"
         run: |
-          bundle exec fastlane android release
+          # Until the Play service account exists, ship the APK on the GitHub release only.
+          if [ -n "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            bundle exec fastlane android release
+          else
+            echo "::warning::PLAY_SERVICE_ACCOUNT_JSON is not set: skipping the Google Play upload"
+            bundle exec fastlane android release upload:false
+          fi
           mkdir -p release-dist
           while IFS= read -r asset; do [ -n "$asset" ] && cp "$asset" release-dist/; done < release-assets.txt
 
