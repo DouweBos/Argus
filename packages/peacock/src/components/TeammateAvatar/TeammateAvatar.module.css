@@ -1,0 +1,46 @@
+.avatar {
+  --tint: var(--teammate-blue);
+
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--tint) 18%, transparent);
+  color: var(--tint);
+  font-weight: 600;
+  line-height: 1;
+  user-select: none;
+}
+
+.blue {
+  --tint: var(--teammate-blue);
+}
+
+.green {
+  --tint: var(--teammate-green);
+}
+
+.orange {
+  --tint: var(--teammate-orange);
+}
+
+.pink {
+  --tint: var(--teammate-pink);
+}
+
+.purple {
+  --tint: var(--teammate-purple);
+}
+
+.red {
+  --tint: var(--teammate-red);
+}
+
+.teal {
+  --tint: var(--teammate-teal);
+}
+
+.yellow {
+  --tint: var(--teammate-yellow);
+}

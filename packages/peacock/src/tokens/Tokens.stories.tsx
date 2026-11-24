@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import type { CSSProperties, ReactNode } from "react";
+import { TEAMMATE_COLORS } from "../components/TeammateAvatar/TeammateAvatar";
 import { COLOR_THEME_IDS } from "../lib/colorThemes";
 
 const meta: Meta = {
@@ -129,6 +130,22 @@ export const Colors: Story = {
                   )}
                 />
               }
+            />
+          ))}
+        </div>
+      </section>
+      <section>
+        <h3 className="eyebrow">Teammate palette</h3>
+        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
+          A teammate's colour: the project-accent hues, deepened in light.
+        </p>
+        <div style={row}>
+          {TEAMMATE_COLORS.map((color) => (
+            <Token
+              key={color}
+              name={`--teammate-${color}`}
+              value={color}
+              preview={<div style={swatch(`var(--teammate-${color})`)} />}
             />
           ))}
         </div>

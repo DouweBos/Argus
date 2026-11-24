@@ -19,7 +19,7 @@ let lastMaster: Screen = HOME;
 
 const sessionOf = sessionOfScreen;
 
-/** The list an inbox or automations screen opened from: where Back goes. */
+/** The list an inbox, automations or teammates screen opened from: where Back goes. */
 function listOf(screen: Screen): Screen | null {
   switch (screen.name) {
     case "proposal":
@@ -30,6 +30,9 @@ function listOf(screen: Screen): Screen | null {
     case "quickRunDetail":
     case "describe":
       return { name: "automations" };
+    case "teammateGallery":
+    case "teammate":
+      return { name: "teammates" };
     default:
       return null;
   }

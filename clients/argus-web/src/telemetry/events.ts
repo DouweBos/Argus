@@ -75,6 +75,15 @@ export type AutomationAction =
   | "revise_playbook"
   | "save";
 
+/** What was done to a teammate; creating, deleting and its soul are the computer's. */
+export type TeammateAction =
+  | "add_duty"
+  | "archive_thread"
+  | "disable"
+  | "enable"
+  | "remove_duty"
+  | "save";
+
 export type ClaudeAccountAction =
   | "add"
   | "reauth"
@@ -145,6 +154,7 @@ export interface EventMap {
   web_run_acted: { action: RunAction };
   web_automation_edited: { action: AutomationAction };
   web_memory_edited: { action: "delete" | "save" };
+  web_teammate_edited: { action: TeammateAction };
   web_app_error: { scope: string; message: string };
   web_host_feature_unsupported: { method: string };
   web_notifications_opened: { count: number };

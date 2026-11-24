@@ -47,6 +47,7 @@ import {
 } from "../telemetry/links";
 import { capture, captureScreen } from "../telemetry/telemetry";
 import { AgentActions, AgentDock, ScreenBody } from "./MonitorPanes";
+import { useTeammateChatAgent } from "./teammates/TeammateConversation";
 import { QuickOpenPalette, SessionToolActions } from "./SessionToolActions";
 import { parentOf } from "./panes";
 import { SessionHeader } from "./shell/SessionHeader";
@@ -208,6 +209,8 @@ export function Monitor() {
     setPanelOpen(!panelShown);
   };
   const agentId = screen.name === "agent" ? screen.agentId : null;
+  const teammateAgentId = useTeammateChatAgent(screen);
+  const dockedAgentId = agentId ?? teammateAgentId;
 
   return (
     <div className="aw-window">
@@ -253,7 +256,9 @@ export function Monitor() {
         {offlineBanner && <div className="aw-window-banner">{offlineBanner}</div>}
         {toolSession && <SessionHeader screen={screen} sessionId={toolSession} />}
         <ScreenFrame screen={screen} />
-        {agentId && <AgentDock agentId={agentId} />}
+        {dockedAgentId && (
+          <AgentDock agentId={dockedAgentId} key={dockedAgentId} />
+        )}
       </AppShell>
       {palette}
       <TelemetryConsent />
@@ -270,7 +275,10 @@ export function Monitor() {
 /** The centre's scrolling body; it remembers where each screen was scrolled to. */
 function ScreenFrame({ screen }: { screen: Screen }) {
   const mainRef = useRef<HTMLDivElement>(null);
-  useScrollRestore(mainRef, pathForScreen(screen), screen.name !== "agent");
+  const transcript =
+    screen.name === "agent" ||
+    (screen.name === "teammate" && screen.page === "chat");
+  useScrollRestore(mainRef, pathForScreen(screen), !transcript);
 
   return (
     <div

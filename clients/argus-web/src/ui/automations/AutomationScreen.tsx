@@ -35,6 +35,7 @@ import { useClaudeAccountsStore } from "../../stores/claudeAccounts";
 import { useConnectionStore } from "../../stores/connection";
 import { useProjectsStore } from "../../stores/projects";
 import { useLiveRefresh } from "../useLiveRefresh";
+import { TeammateOwnershipButton } from "../teammates/TeammateOwnershipButton";
 import { RunControl } from "./AutomationsScreen";
 import { INBOX_REFRESH_MS } from "./useInbox";
 
@@ -173,9 +174,10 @@ export function AutomationScreen({ automationId }: { automationId: string }) {
     <div className="aw-automations">
       <AutomationDetailView
         actions={
-          hasControl &&
-          automation && (
+          automation &&
+          (hasControl ? (
             <>
+              <TeammateOwnershipButton automation={automation} />
               <Toggle
                 checked={automation.enabled}
                 onChange={(enabled) =>
@@ -201,7 +203,9 @@ export function AutomationScreen({ automationId }: { automationId: string }) {
                 Delete
               </Button>
             </>
-          )
+          ) : (
+            <TeammateOwnershipButton automation={automation} />
+          ))
         }
         configuration={
           draft && (

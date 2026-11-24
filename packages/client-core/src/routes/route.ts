@@ -36,6 +36,7 @@ export type AppView =
   | "pull-requests"
   | "runtimes"
   | "session"
+  | "teammates"
   | "usage";
 
 export type SessionPanel = "agents" | "git" | "home";
@@ -97,6 +98,9 @@ export interface UsageModelRef {
   model: string;
 }
 
+/** A teammate's pages: `/teammates/:id[/threads/:threadId|/profile|/duties|/memory]`. */
+export type TeammatePage = "chat" | "duties" | "memory" | "profile";
+
 export interface PullRequestRef {
   number: number;
   owner: string;
@@ -149,6 +153,14 @@ export interface ParsedRoute extends DesignRouteFields {
   /** Which proposal is open. Only meaningful when view === "inbox". */
   proposalId: string | null;
   sessionId: string | null;
+  /** `/teammates/gallery`: the starting teammates. */
+  teammateGallery: boolean;
+  /** Which teammate is open. Only meaningful when view === "teammates". */
+  teammateId: string | null;
+  /** Its page; null on the list and the gallery. */
+  teammatePage: TeammatePage | null;
+  /** The conversation `/threads/:threadId` names; null opens the newest. */
+  teammateThreadId: string | null;
   /** The model open on the cost or tokens tab, if any. */
   usageModel: UsageModelRef | null;
   /** `/usage/prices`: the model price editor. */
@@ -263,6 +275,10 @@ function parsePathname(pathname: string): Omit<ParsedRoute, NonPathFields> {
     };
   }
 
+  if (segments[0] === "teammates") {
+    return { ...emptyRoute("teammates"), ...teammateRouteFields(segments) };
+  }
+
   if (segments[0] === "inbox") {
     const proposalId =
       segments[1] === "proposals" && segments[2]
@@ -317,23 +333,15 @@ function parsePathname(pathname: string): Omit<ParsedRoute, NonPathFields> {
     }
 
     return {
-      view: "session",
+      ...emptyRoute("session"),
       agentId:
         validPanel === "agents" && segments[3]
           ? decodeSegment(segments[3])
           : null,
-      automationId: null,
-      automationQuick: false,
-      automationRunId: null,
       sessionId: segments[1],
       panel: validPanel,
       gitView,
       gitRefName,
-      proposalId: null,
-      pr: null,
-      usageModel: null,
-      usagePrices: false,
-      usageTab: null,
     };
   }
 
@@ -347,24 +355,12 @@ function parsePathname(pathname: string): Omit<ParsedRoute, NonPathFields> {
     const number = Number.parseInt(segments[3], 10);
     if (Number.isFinite(number)) {
       return {
-        view: "pull-request-detail",
-        agentId: null,
-        automationId: null,
-        automationQuick: false,
-        automationRunId: null,
-        sessionId: null,
-        panel: "agents",
-        gitView: null,
-        gitRefName: null,
-        proposalId: null,
+        ...emptyRoute("pull-request-detail"),
         pr: {
           owner: decodeURIComponent(segments[1]),
           repo: decodeURIComponent(segments[2]),
           number,
         },
-        usageModel: null,
-        usagePrices: false,
-        usageTab: null,
       };
     }
   }
@@ -405,9 +401,42 @@ function emptyRoute(view: AppView): Omit<ParsedRoute, NonPathFields> {
     gitRefName: null,
     proposalId: null,
     pr: null,
+    teammateGallery: false,
+    teammateId: null,
+    teammatePage: null,
+    teammateThreadId: null,
     usageModel: null,
     usagePrices: false,
     usageTab: null,
+  };
+}
+
+const TEAMMATE_PAGES: TeammatePage[] = ["duties", "memory", "profile"];
+
+/** An unknown page opens the teammate's conversation, its nearest parent. */
+function teammateRouteFields(
+  segments: string[],
+): Pick<
+  ParsedRoute,
+  "teammateGallery" | "teammateId" | "teammatePage" | "teammateThreadId"
+> {
+  const [, id, page, threadId] = segments;
+  if (!id || id === "gallery") {
+    return {
+      teammateGallery: id === "gallery",
+      teammateId: null,
+      teammatePage: null,
+      teammateThreadId: null,
+    };
+  }
+  const named = TEAMMATE_PAGES.find((p) => p === page);
+
+  return {
+    teammateGallery: false,
+    teammateId: decodeSegment(id),
+    teammatePage: named ?? "chat",
+    teammateThreadId:
+      page === "threads" && threadId ? decodeSegment(threadId) : null,
   };
 }
 
@@ -436,6 +465,8 @@ export function routePattern(pathname: string): string {
       return route.automationId ? "/automations/:automationId" : "/automations";
     case "inbox":
       return route.proposalId ? "/inbox/proposals/:proposalId" : "/inbox";
+    case "teammates":
+      return teammatePattern(route);
     case "usage":
       if (route.usagePrices) {
         return "/usage/prices";
@@ -466,6 +497,22 @@ export function routePattern(pathname: string): string {
     case "pull-request-detail":
       return "/pull-requests/:owner/:repo/:number";
   }
+}
+
+function teammatePattern(route: ParsedRoute): string {
+  if (route.teammateGallery) {
+    return "/teammates/gallery";
+  }
+  if (!route.teammateId) {
+    return "/teammates";
+  }
+  if (route.teammatePage && route.teammatePage !== "chat") {
+    return `/teammates/:teammateId/${route.teammatePage}`;
+  }
+
+  return route.teammateThreadId
+    ? "/teammates/:teammateId/threads/:threadId"
+    : "/teammates/:teammateId";
 }
 
 /**
@@ -525,6 +572,9 @@ function routePathname(route: Partial<ParsedRoute>): string {
 
     return `/pull-requests/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${number}`;
   }
+  if (route.view === "teammates") {
+    return teammatePathname(route);
+  }
   if (route.view === "inbox") {
     return route.proposalId
       ? `/inbox/proposals/${encodeURIComponent(route.proposalId)}`
@@ -574,6 +624,23 @@ function routePathname(route: Partial<ParsedRoute>): string {
   }
 
   return "/";
+}
+
+function teammatePathname(route: Partial<ParsedRoute>): string {
+  if (route.teammateGallery) {
+    return "/teammates/gallery";
+  }
+  if (!route.teammateId) {
+    return "/teammates";
+  }
+  const base = `/teammates/${encodeURIComponent(route.teammateId)}`;
+  if (route.teammatePage && route.teammatePage !== "chat") {
+    return `${base}/${route.teammatePage}`;
+  }
+
+  return route.teammateThreadId
+    ? `${base}/threads/${encodeURIComponent(route.teammateThreadId)}`
+    : base;
 }
 
 /** The default tab keeps the bare `/usage` URL; the rest get a segment. */

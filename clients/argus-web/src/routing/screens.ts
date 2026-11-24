@@ -15,6 +15,7 @@ import {
   type DesignTab,
   type IssueScope,
   parseRoute,
+  type TeammatePage,
   routePattern,
   routeToPath,
   type UsageRange,
@@ -91,6 +92,15 @@ export type Screen =
   | { name: "quickRunDetail"; runId: string }
   /** Web and iOS only: on the Mac this is Automations with a sheet. */
   | { name: "describe" }
+  | { name: "teammates" }
+  | { name: "teammateGallery" }
+  /** `threadId` only on `chat`; null opens the newest conversation. */
+  | {
+      name: "teammate";
+      teammateId: string;
+      page: TeammatePage;
+      threadId: string | null;
+    }
   | { name: "settingsPage"; page: SettingsPage }
   /** Plan limits, or cost or tokens over `range`: `/usage[/:tab]?range=`. */
   | { name: "usage"; tab: UsageTab; range: UsageRange }
@@ -318,6 +328,19 @@ export function screenFromPath(path: string): Screen {
       };
     case "notifications":
       return { name: "notifications" };
+    case "teammates":
+      if (route.teammateGallery) {
+        return { name: "teammateGallery" };
+      }
+
+      return route.teammateId
+        ? {
+            name: "teammate",
+            teammateId: route.teammateId,
+            page: route.teammatePage ?? "chat",
+            threadId: route.teammateThreadId,
+          }
+        : { name: "teammates" };
     case "issues":
       return {
         name: "issues",
@@ -466,7 +489,29 @@ export function pathForScreen(screen: Screen): string {
       return `/automations/quick/runs/${encodeURIComponent(screen.runId)}`;
     case "describe":
       return "/automations/describe";
+    case "teammates":
+    case "teammateGallery":
+    case "teammate":
+      return teammatePath(screen);
   }
+}
+
+function teammatePath(
+  screen: Extract<
+    Screen,
+    { name: "teammate" | "teammateGallery" | "teammates" }
+  >,
+): string {
+  return routeToPath(
+    screen.name === "teammate"
+      ? {
+          view: "teammates",
+          teammateId: screen.teammateId,
+          teammatePage: screen.page,
+          teammateThreadId: screen.page === "chat" ? screen.threadId : null,
+        }
+      : { view: "teammates", teammateGallery: screen.name === "teammateGallery" },
+  );
 }
 
 /**
@@ -539,6 +584,9 @@ export function screenPattern(screen: Screen): string {
       return "/automations/quick/runs/:runId";
     case "describe":
       return "/automations/describe";
+    case "teammates":
+    case "teammateGallery":
+    case "teammate":
     case "issues":
       return routePattern(pathForScreen(screen).split("?")[0]);
   }

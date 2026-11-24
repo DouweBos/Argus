@@ -5,12 +5,14 @@
  */
 
 import { useEffect } from "react";
+import { teammateThreadOrigin } from "@argus/client-core";
 import { ProposalDetailView } from "@argus/peacock";
 import { openAgent } from "../../routing/open";
 import { appNavigate, navigateBack } from "../../routing/router";
 import { useConnectionStore } from "../../stores/connection";
 import { useProposalsStore } from "../../stores/proposals";
 import { ProposalCardFor } from "./ProposalCardFor";
+import { proposalRunScreen, proposalSourceScreen } from "./runRoute";
 
 export function ProposalScreen({ proposalId }: { proposalId: string }) {
   const ready = useConnectionStore((s) => s.connection === "ready");
@@ -51,21 +53,21 @@ export function ProposalScreen({ proposalId }: { proposalId: string }) {
               {
                 label: `${proposal.automation_name} — this run`,
                 onClick: () =>
-                  appNavigate({
-                    name: "automationRun",
-                    automationId: proposal.automation_id,
-                    runId: proposal.run_id as string,
-                  }),
+                  appNavigate(
+                    proposalRunScreen({
+                      automation_id: proposal.automation_id,
+                      run_id: proposal.run_id as string,
+                    }),
+                  ),
               },
             ]
           : []),
         {
-          label: "The automation",
+          label: teammateThreadOrigin(proposal.automation_id, null)
+            ? "The teammate"
+            : "The automation",
           onClick: () =>
-            appNavigate({
-              name: "automation",
-              automationId: proposal.automation_id,
-            }),
+            appNavigate(proposalSourceScreen(proposal.automation_id)),
         },
         ...(proposal.superseded_by
           ? [

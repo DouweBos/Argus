@@ -15,6 +15,7 @@ import { useDesignStore } from "../stores/design";
 import { useDevicesStore } from "../stores/devices";
 import { useProjectsStore } from "../stores/projects";
 import { useProposalsStore } from "../stores/proposals";
+import { useTeammatesStore } from "../stores/teammates";
 
 export function agentLabel(
   agentId: string,
@@ -42,6 +43,12 @@ export function useScreenTitle(screen: Screen): string {
   };
   const automations = useAutomationsStore((s) => s.automations);
   const runs = useAutomationsStore((s) => s.runs);
+  const teammateName = useTeammatesStore((s) =>
+    screen.name === "teammate"
+      ? (s.summaries.find((t) => t.teammate.id === screen.teammateId)?.teammate
+          .name ?? s.detailById[screen.teammateId]?.teammate.name)
+      : undefined,
+  );
   const proposal = useProposalsStore((s) =>
     screen.name === "proposal" ? s.detailById[screen.proposalId] : undefined,
   );
@@ -135,6 +142,12 @@ export function useScreenTitle(screen: Screen): string {
       return "Quick Run";
     case "describe":
       return "Describe an Automation";
+    case "teammates":
+      return "Teammates";
+    case "teammateGallery":
+      return "New Teammate";
+    case "teammate":
+      return teammateName ?? "Teammate";
     case "branches":
       return withSession("Branches", screen.sessionId);
     case "branch":

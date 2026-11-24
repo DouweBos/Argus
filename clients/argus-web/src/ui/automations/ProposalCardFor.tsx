@@ -16,6 +16,7 @@ import { appNavigate } from "../../routing/router";
 import { useConnectionStore } from "../../stores/connection";
 import { useProposalsStore } from "../../stores/proposals";
 import { capture } from "../../telemetry/telemetry";
+import { proposalRunScreen } from "./runRoute";
 
 function openExternal(url: string): void {
   window.open(url, "_blank", "noopener,noreferrer");
@@ -118,11 +119,12 @@ export function ProposalCardFor({
         proposal.run_id
           ? () => {
               capture("web_proposal_opened");
-              appNavigate({
-                name: "automationRun",
-                automationId: proposal.automation_id,
-                runId: proposal.run_id as string,
-              });
+              appNavigate(
+                proposalRunScreen({
+                  automation_id: proposal.automation_id,
+                  run_id: proposal.run_id as string,
+                }),
+              );
             }
           : undefined
       }

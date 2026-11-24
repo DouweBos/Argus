@@ -104,6 +104,17 @@ html[data-theme="dark"] {
   --brand-purple-overlay-md: rgba(124, 92, 252, 0.12);
   --brand-purple-overlay-lg: rgba(124, 92, 252, 0.2);
 
+  /* ─── Teammate palette ─── a teammate's colour, the project-accent hues.
+     Identity, so the hue holds; the light block only deepens it for contrast. */
+  --teammate-blue: #4d9fff;
+  --teammate-green: #22c55e;
+  --teammate-orange: #ff7a59;
+  --teammate-pink: #e879f9;
+  --teammate-purple: #7c5cfc;
+  --teammate-red: #ff4466;
+  --teammate-teal: #00d4aa;
+  --teammate-yellow: #f5a623;
+
   /* ─── Pull request states ─── GitHub's own hues, so a PR reads at a glance */
   --pr-open: #3fb950;
   --pr-draft: #9198a1;
@@ -347,6 +358,16 @@ html[data-theme="light"] {
   --brand-purple-overlay-sm: rgba(90, 61, 212, 0.08);
   --brand-purple-overlay-md: rgba(90, 61, 212, 0.14);
   --brand-purple-overlay-lg: rgba(90, 61, 212, 0.22);
+
+  /* Teammate palette — the same hues deepened for white backgrounds */
+  --teammate-blue: #2f7fe0;
+  --teammate-green: #16a34a;
+  --teammate-orange: #e5603d;
+  --teammate-pink: #c24fd6;
+  --teammate-purple: #6346e0;
+  --teammate-red: #e02e50;
+  --teammate-teal: #00a888;
+  --teammate-yellow: #c7861f;
 
   /* Pull request states — GitHub's light-mode hues */
   --pr-open: #1a7f37;

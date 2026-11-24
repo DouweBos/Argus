@@ -2199,3 +2199,68 @@ export function ArgusMark({ size = 32, className, ...rest }: IconProps) {
     </svg>
   );
 }
+
+/** A teammate that fixes things. */
+export function WrenchIcon(props: IconProps) {
+  return (
+    <StrokeIcon {...props}>
+      <path d="M10.2 2.4a3.25 3.25 0 0 0-3.9 4.2L2.7 10.2a1.45 1.45 0 0 0 2.05 2.05l3.6-3.6a3.25 3.25 0 0 0 4.2-3.9l-1.95 1.95-1.6-.4-.4-1.6Z" />
+    </StrokeIcon>
+  );
+}
+
+export function EyeIcon(props: IconProps) {
+  return (
+    <StrokeIcon {...props}>
+      <path d="M1.75 8S4 3.75 8 3.75 14.25 8 14.25 8 12 12.25 8 12.25 1.75 8 1.75 8Z" />
+      <circle cx="8" cy="8" r="2" />
+    </StrokeIcon>
+  );
+}
+
+/** A shipping box: packages, dependencies, releases. */
+export function PackageIcon(props: IconProps) {
+  return (
+    <StrokeIcon {...props}>
+      <path d="M8 1.75 13.75 4.5v7L8 14.25 2.25 11.5v-7Z" />
+      <path d="M2.25 4.5 8 7.25l5.75-2.75M8 7.25v7" />
+      <path d="M5.1 3.1l5.75 2.75" />
+    </StrokeIcon>
+  );
+}
+
+export function CalendarIcon(props: IconProps) {
+  return (
+    <StrokeIcon {...props}>
+      <rect height="10.5" rx="1.5" width="11.5" x="2.25" y="3.25" />
+      <path d="M2.25 6.5h11.5M5.25 1.75v3M10.75 1.75v3" />
+    </StrokeIcon>
+  );
+}
+
+export function LeafIcon(props: IconProps) {
+  return (
+    <StrokeIcon {...props}>
+      <path d="M3.25 12.75C3 7 6.5 3.25 13.25 2.75c.25 6.5-3.5 10.25-10 10Z" />
+      <path d="M2.25 13.75 9 7" />
+    </StrokeIcon>
+  );
+}
+
+export function BoltIcon(props: IconProps) {
+  return (
+    <StrokeIcon {...props}>
+      <path d="M9 1.75 3.25 9.25H8l-1 5 5.75-7.5H8l1-5Z" />
+    </StrokeIcon>
+  );
+}
+
+/** One person; `GuestsIcon` is several. */
+export function PersonIcon(props: IconProps) {
+  return (
+    <StrokeIcon {...props}>
+      <circle cx="8" cy="5.25" r="2.5" />
+      <path d="M3.25 13.75c0-2.55 2.1-4.25 4.75-4.25s4.75 1.7 4.75 4.25" />
+    </StrokeIcon>
+  );
+}

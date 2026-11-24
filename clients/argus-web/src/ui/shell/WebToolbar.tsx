@@ -19,6 +19,7 @@ import {
   sessionOfScreen,
 } from "../../routing/screens";
 import { useAutomationsStore } from "../../stores/automations";
+import { useTeammatesStore } from "../../stores/teammates";
 import { useProjectsStore } from "../../stores/projects";
 import { useInboxBadge } from "../automations/useInbox";
 import { parentOf } from "../panes";
@@ -105,6 +106,12 @@ function SessionCrumbs({
 function useSubtitle(screen: Screen): string | undefined {
   const waiting = useInboxBadge();
   const automations = useAutomationsStore((s) => s.automations.length);
+  const teammates = useTeammatesStore((s) => s.summaries.length);
+  const teammate = useTeammatesStore((s) =>
+    screen.name === "teammate"
+      ? s.summaries.find((t) => t.teammate.id === screen.teammateId)?.teammate
+      : undefined,
+  );
   switch (screen.name) {
     case "inbox":
       return waiting > 0
@@ -113,6 +120,16 @@ function useSubtitle(screen: Screen): string | undefined {
     case "automations":
       return automations > 0
         ? `${automations} automation${automations === 1 ? "" : "s"}`
+        : undefined;
+    case "teammates":
+      return teammates > 0
+        ? `${teammates} teammate${teammates === 1 ? "" : "s"}`
+        : undefined;
+    case "teammateGallery":
+      return "Each one starts paused; turn it on once you've read its duties";
+    case "teammate":
+      return teammate
+        ? `@${teammate.handle}${teammate.enabled ? "" : " · paused"}`
         : undefined;
     default:
       return undefined;

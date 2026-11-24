@@ -167,3 +167,52 @@ describe("routePattern", () => {
     expect(routePattern("/agents?host=h1")).toBe("/agents");
   });
 });
+
+describe("teammate routes", () => {
+  it("reads the list, the gallery and a teammate's pages", () => {
+    expect(parseRoute("/teammates")).toMatchObject({
+      view: "teammates",
+      teammateId: null,
+      teammateGallery: false,
+      teammatePage: null,
+    });
+    expect(parseRoute("/teammates/gallery")).toMatchObject({
+      teammateGallery: true,
+      teammateId: null,
+    });
+    expect(parseRoute("/teammates/t1")).toMatchObject({
+      teammateId: "t1",
+      teammatePage: "chat",
+      teammateThreadId: null,
+    });
+    expect(parseRoute("/teammates/t1/threads/th1")).toMatchObject({
+      teammatePage: "chat",
+      teammateThreadId: "th1",
+    });
+    expect(parseRoute("/teammates/t1/duties").teammatePage).toBe("duties");
+    expect(parseRoute("/teammates/t1/nowhere").teammatePage).toBe("chat");
+  });
+
+  it.each([
+    "/teammates",
+    "/teammates/gallery",
+    "/teammates/t1",
+    "/teammates/t%2F1/threads/th1",
+    "/teammates/t1/profile",
+    "/teammates/t1/duties",
+    "/teammates/t1/memory",
+  ])("round-trips %s", (path) => {
+    expect(routeToPath(parseRoute(path))).toBe(path);
+  });
+
+  it("keeps ids out of the pattern", () => {
+    expect(routePattern("/teammates/t1")).toBe("/teammates/:teammateId");
+    expect(routePattern("/teammates/t1/threads/th1")).toBe(
+      "/teammates/:teammateId/threads/:threadId",
+    );
+    expect(routePattern("/teammates/t1/memory")).toBe(
+      "/teammates/:teammateId/memory",
+    );
+    expect(routePattern("/teammates/gallery")).toBe("/teammates/gallery");
+  });
+});

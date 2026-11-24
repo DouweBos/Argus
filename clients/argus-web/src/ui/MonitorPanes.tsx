@@ -37,6 +37,9 @@ import { UsagePricesView } from "./UsagePricesView";
 import { UsageView } from "./UsageView";
 import { SavedChat } from "./start/SavedChat";
 import { SessionHome } from "./start/SessionHome";
+import { TeammateGalleryScreen } from "./teammates/TeammateGalleryScreen";
+import { TeammateScreen } from "./teammates/TeammateScreen";
+import { TeammatesScreen } from "./teammates/TeammatesScreen";
 
 export function ScreenBody({ screen }: { screen: Screen }) {
   switch (screen.name) {
@@ -147,6 +150,19 @@ export function ScreenBody({ screen }: { screen: Screen }) {
       return <RunScreen parent={{ name: "quickRun" }} runId={screen.runId} />;
     case "describe":
       return <DescribeScreen />;
+    case "teammates":
+      return <TeammatesScreen />;
+    case "teammateGallery":
+      return <TeammateGalleryScreen />;
+    case "teammate":
+      return (
+        <TeammateScreen
+          key={screen.teammateId}
+          page={screen.page}
+          teammateId={screen.teammateId}
+          threadId={screen.threadId}
+        />
+      );
     case "browser":
       return <LazyBrowserScreen sessionId={screen.sessionId} />;
     case "branches":

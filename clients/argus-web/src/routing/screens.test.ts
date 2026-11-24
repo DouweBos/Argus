@@ -54,6 +54,20 @@ describe("screenFromPath", () => {
     ["/automations/quick", { name: "quickRun" }],
     ["/automations/quick/runs/r1", { name: "quickRunDetail", runId: "r1" }],
     ["/automations/describe", { name: "describe" }],
+    ["/teammates", { name: "teammates" }],
+    ["/teammates/gallery", { name: "teammateGallery" }],
+    [
+      "/teammates/t1",
+      { name: "teammate", teammateId: "t1", page: "chat", threadId: null },
+    ],
+    [
+      "/teammates/t1/threads/th1",
+      { name: "teammate", teammateId: "t1", page: "chat", threadId: "th1" },
+    ],
+    [
+      "/teammates/t1/memory",
+      { name: "teammate", teammateId: "t1", page: "memory", threadId: null },
+    ],
   ])("reads %s", (path, screen) => {
     expect(screenFromPath(path)).toEqual(screen);
   });
@@ -159,6 +173,13 @@ describe("pathForScreen", () => {
     "/automations/quick",
     "/automations/quick/runs/r1",
     "/automations/describe",
+    "/teammates",
+    "/teammates/gallery",
+    "/teammates/t1",
+    "/teammates/t1/threads/th1",
+    "/teammates/t1/profile",
+    "/teammates/t1/duties",
+    "/teammates/t1/memory",
   ])("round-trips %s", (path) => {
     expect(pathForScreen(screenFromPath(path))).toBe(path);
   });
@@ -193,6 +214,25 @@ describe("session tool screens", () => {
     ],
   ])("reads %s", (path, screen) => {
     expect(screenFromPath(path)).toEqual(screen);
+  });
+
+  it("names teammate patterns without ids", () => {
+    expect(
+      screenPattern({
+        name: "teammate",
+        teammateId: "t1",
+        page: "chat",
+        threadId: "th1",
+      }),
+    ).toBe("/teammates/:teammateId/threads/:threadId");
+    expect(
+      screenPattern({
+        name: "teammate",
+        teammateId: "t1",
+        page: "duties",
+        threadId: null,
+      }),
+    ).toBe("/teammates/:teammateId/duties");
   });
 
   it("names patterns, never paths or ids", () => {

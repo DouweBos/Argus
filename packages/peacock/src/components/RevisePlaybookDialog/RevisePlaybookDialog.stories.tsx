@@ -27,3 +27,11 @@ export const Failed: Story = {
     onRevise: () => Promise.reject(new Error("Claude is rate limited.")),
   },
 };
+
+export const TeammateSoul: Story = {
+  args: {
+    subject: "soul",
+    onRevise: (instruction) =>
+      Promise.resolve(`# CI Fixer\n\nYou keep main green.\n\n${instruction}\n`),
+  },
+};

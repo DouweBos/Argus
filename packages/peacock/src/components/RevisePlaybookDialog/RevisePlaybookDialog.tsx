@@ -11,14 +11,33 @@ import styles from "./RevisePlaybookDialog.module.css";
 
 const TITLE_ID = "revise-playbook-title";
 
-const PLACEHOLDER =
-  "Before calling a branch unshipped, check whether a merged PR already covers it.";
+/** What is rewritten: an automation's playbook or a teammate's soul. */
+export type RevisedText = "playbook" | "soul";
+
+const COPY: Record<
+  RevisedText,
+  { owner: string; placeholder: string; title: string }
+> = {
+  playbook: {
+    owner: "automation",
+    placeholder:
+      "Before calling a branch unshipped, check whether a merged PR already covers it.",
+    title: "Rewrite the playbook",
+  },
+  soul: {
+    owner: "teammate",
+    placeholder:
+      "Be terser in reviews, and always say which check failed first.",
+    title: "Rewrite the soul",
+  },
+};
 
 export interface RevisePlaybookDialogProps {
   onApply: (playbook: string) => void;
   onClose: () => void;
   /** Rewrites the playbook to the instruction; rejects with the computer's reason. */
   onRevise: (instruction: string) => Promise<string>;
+  subject?: RevisedText;
 }
 
 /**
@@ -31,7 +50,9 @@ export function RevisePlaybookDialog({
   onApply,
   onClose,
   onRevise,
+  subject = "playbook",
 }: RevisePlaybookDialogProps) {
+  const copy = COPY[subject];
   const [instruction, setInstruction] = useState("");
   const [revising, setRevising] = useState(false);
   const [revised, setRevised] = useState<string | null>(null);
@@ -52,19 +73,19 @@ export function RevisePlaybookDialog({
   return (
     <Dialog
       size="medium"
-      title="Rewrite the playbook"
+      title={copy.title}
       titleId={TITLE_ID}
       onClose={onClose}
     >
       <DialogBody>
         <FormField
-          helper="Claude rewrites the whole playbook and keeps the rest as it is."
+          helper={`Claude rewrites the whole ${subject} and keeps the rest as it is.`}
           label="What should change?"
         >
           <TextArea
             autoFocus
             className={styles.instruction}
-            placeholder={PLACEHOLDER}
+            placeholder={copy.placeholder}
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
           />
@@ -74,8 +95,8 @@ export function RevisePlaybookDialog({
           {revising && <Spinner size="sm" />}
           <span className={styles.hint}>
             {revising
-              ? "Rewriting the playbook"
-              : "Nothing is saved until you save the automation."}
+              ? `Rewriting the ${subject}`
+              : `Nothing is saved until you save the ${copy.owner}.`}
           </span>
           <span className={styles.spacer} />
           <Button
@@ -92,8 +113,8 @@ export function RevisePlaybookDialog({
 
         {revised !== null && (
           <FormField
-            helper="Edit it here if you want; applying replaces the playbook in the editor."
-            label="Revised playbook"
+            helper={`Edit it here if you want; applying replaces the ${subject} in the editor.`}
+            label={`Revised ${subject}`}
           >
             <TextArea
               mono

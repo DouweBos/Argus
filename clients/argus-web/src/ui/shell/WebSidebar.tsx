@@ -91,6 +91,12 @@ const PRIMARY: Destination[] = [
       "describe",
     ),
   },
+  {
+    label: "Teammates",
+    icon: <Icons.PersonIcon size={14} />,
+    to: { name: "teammates" },
+    isOn: is("teammates", "teammateGallery", "teammate"),
+  },
 ];
 
 const ISSUES: Destination = {

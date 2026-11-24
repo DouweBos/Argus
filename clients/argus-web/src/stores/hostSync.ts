@@ -28,6 +28,7 @@ import { resetIssues } from "./issues";
 import { resetBranches } from "./branches";
 import { resetGit } from "./git";
 import { resetPullRequests } from "./pullRequests";
+import { resetTeammates } from "./teammates";
 import {
   receiveTerminalData,
   receiveTerminalExit,
@@ -171,6 +172,7 @@ export function resetHostStores(): void {
   resetDevices();
   resetProposals();
   resetAutomations();
+  resetTeammates();
   resetUsage();
   resetClaudeAccounts();
   resetSettings();

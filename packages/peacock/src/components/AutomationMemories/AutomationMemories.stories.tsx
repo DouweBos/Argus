@@ -19,6 +19,15 @@ export const Default: Story = { args: { memories: FIXTURE_MEMORIES } };
 
 export const Empty: Story = { args: { memories: [] } };
 
+export const TeammateEmpty: Story = {
+  args: {
+    memories: [],
+    emptyText:
+      "Nothing yet. Tell it to remember something, or let its duties save what they learn.",
+    footer: "Plain markdown files on this computer; up to 100.",
+  },
+};
+
 export const Loading: Story = { args: { memories: null } };
 
 export const ReadOnly: Story = {

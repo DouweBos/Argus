@@ -18,6 +18,10 @@ export interface AutomationMemoriesProps {
   onDelete?: (name: string) => void;
   /** Desktop linkifies file paths; the default is Peacock's Markdown. */
   renderMarkdown?: (text: string, className: string) => ReactNode;
+  /** What an empty list says; a teammate's memory is fed by more than runs. */
+  emptyText?: string;
+  /** Under the list, e.g. the cap. */
+  footer?: ReactNode;
 }
 
 function MemoryRow({
@@ -75,7 +79,9 @@ function MemoryRow({
 
 /** What runs carried forward. Runs write these; the user curates them. */
 export function AutomationMemories({
+  emptyText = "Nothing yet. Runs save what they learn here so the next one does not start from scratch.",
   error,
+  footer,
   memories,
   onDelete,
   onSave,
@@ -108,12 +114,7 @@ export function AutomationMemories({
       title="Memories"
     >
       {error && <p className={styles.error}>{error}</p>}
-      {memories?.length === 0 && (
-        <p className={styles.empty}>
-          Nothing yet. Runs save what they learn here so the next one does not
-          start from scratch.
-        </p>
-      )}
+      {memories?.length === 0 && <p className={styles.empty}>{emptyText}</p>}
       {memories && memories.length > 0 && (
         <div className={styles.list}>
           {memories.map((memory) => (
@@ -127,6 +128,7 @@ export function AutomationMemories({
           ))}
         </div>
       )}
+      {footer && <p className={styles.empty}>{footer}</p>}
       {editing !== undefined && onSave && (
         <MemoryEditDialog
           memory={editing}
