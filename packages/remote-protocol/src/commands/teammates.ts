@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Automation, CreateAutomationInput } from "../models/automations";
 import {
   CreateTeammateInput,
+  TeammateClearableField,
   OpenedTeammateThread,
   Teammate,
   TeammateDetail,
@@ -29,7 +30,11 @@ export const TEAMMATE_COMMANDS = {
   },
   teammate_update: {
     tier: "admin",
-    params: ById.extend({ patch: UpdateTeammateInput }),
+    params: ById.extend({
+      patch: UpdateTeammateInput,
+      /** Back to inheriting; a client that omits nulls says so here. */
+      clear: z.array(TeammateClearableField).optional(),
+    }),
     result: Teammate,
   },
   /** `keepDuties` leaves its automations behind, paused and standalone. */
@@ -37,6 +42,16 @@ export const TEAMMATE_COMMANDS = {
     tier: "admin",
     params: ById.extend({ keepDuties: z.boolean() }),
     result: Void,
+  },
+  /** A rewritten soul for the editor. Nothing is saved. */
+  teammate_soul_revise: {
+    tier: "admin",
+    params: z.object({
+      name: z.string(),
+      soul: z.string(),
+      instruction: z.string(),
+    }),
+    result: z.object({ soul: z.string() }),
   },
   teammate_soul_save: {
     tier: "admin",

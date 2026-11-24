@@ -2878,6 +2878,18 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class TeammatesReviseSoulParams(
+    @SerialName("name") val name: String,
+    @SerialName("soul") val soul: String,
+    @SerialName("instruction") val instruction: String,
+  )
+
+  @Serializable
+  data class TeammatesReviseSoulResult(
+    @SerialName("soul") val soul: String,
+  )
+
+  @Serializable
   @JvmInline
   value class TeammatesSaveMemoryParamsMemoryType(val rawValue: String) {
     override fun toString(): String = rawValue
@@ -2944,6 +2956,7 @@ object MethodsTypes {
   data class TeammatesUpdateParams(
     @SerialName("teammate_id") val teammateId: String,
     @SerialName("patch") val patch: UpdateTeammateInput,
+    @SerialName("clear") val clear: List<TeammateClearableField>? = null,
   )
 
   @Serializable
@@ -3485,6 +3498,8 @@ object Methods {
   object TeammatesPromote : RemoteCommand<MethodsTypes.TeammatesPromoteParams, MethodsTypes.TeammatesPromoteResult>("teammates.promote", "control", serializer(), serializer())
 
   object TeammatesRemoveDuty : RemoteCommand<MethodsTypes.TeammatesRemoveDutyParams, MethodsTypes.TeammatesRemoveDutyResult>("teammates.remove_duty", "control", serializer(), serializer())
+
+  object TeammatesReviseSoul : RemoteCommand<MethodsTypes.TeammatesReviseSoulParams, MethodsTypes.TeammatesReviseSoulResult>("teammates.revise_soul", "control", serializer(), serializer())
 
   object TeammatesSaveMemory : RemoteCommand<MethodsTypes.TeammatesSaveMemoryParams, MethodsTypes.TeammatesSaveMemoryResult>("teammates.save_memory", "control", serializer(), serializer())
 

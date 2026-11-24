@@ -67,6 +67,17 @@ export interface AppSettings {
    */
   automations_enabled?: boolean;
   /**
+   * Master switch for teammates acting on their own: their duties' triggers and
+   * their Slack and Linear mentions. Talking to one in the app always works.
+   * Defaults to true.
+   */
+  teammates_enabled?: boolean;
+  /**
+   * Turns after which opening a teammate starts a fresh conversation instead
+   * of piling onto the newest one. Defaults to 200.
+   */
+  teammate_thread_rollover_turns?: number;
+  /**
    * Suggest replies after an agent's turn ends, from its last message, using
    * a small model. Defaults to true.
    */

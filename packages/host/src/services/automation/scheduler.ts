@@ -18,6 +18,7 @@
 
 import { info } from "@argus/host/logger";
 import { loadAppSettings } from "../appSettings/store";
+import { teammatesActive } from "../teammate/settings";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { drainAutomationEvents } from "./eventDispatch";
 import {
@@ -81,6 +82,7 @@ export function tickAutomations(now: number = Date.now()): void {
     const { trigger } = automation;
     if (
       !automation.enabled ||
+      (automation.teammate_id !== null && !teammatesActive()) ||
       trigger.kind === "manual" ||
       trigger.kind === "signal" ||
       trigger.kind === "webhook" ||

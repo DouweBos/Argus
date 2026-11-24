@@ -280,6 +280,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "teammates.update": DENIED,
   "teammates.delete": DENIED,
   "teammates.save_soul": DENIED,
+  "teammates.revise_soul": DENIED,
   "teammates.create_from_template": DENIED,
   "teammates.promote": DENIED,
   "teammates.add_duty": DENIED,

@@ -341,6 +341,8 @@ export const REMOTE_METHODS = {
   "teammates.update": "control",
   "teammates.delete": "control",
   "teammates.save_soul": "control",
+  /** Spends the host's LLM, like `automations.revise_playbook`. */
+  "teammates.revise_soul": "control",
   "teammates.create_from_template": "control",
   "teammates.promote": "control",
   "teammates.add_duty": "control",

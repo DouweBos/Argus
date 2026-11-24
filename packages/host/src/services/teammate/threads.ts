@@ -26,6 +26,7 @@ import { teammateChatAutomation } from "./chatPolicy";
 import { deleteTeammate, dutiesOf, requireTeammate } from "./manager";
 import { teammateDir, teammateThreadsFilePath } from "./paths";
 import { buildTeammatePrompt } from "./prompt";
+import { threadRolloverTurns } from "./settings";
 import {
   forgetThreadSession,
   onThreadMessage,
@@ -178,6 +179,13 @@ export async function openThread(
     }
   } else if (!options.fresh) {
     thread = threads().find((t) => t.id === listThreads(teammateId)[0]?.id);
+    // A long conversation is left for a fresh one; what mattered is in memory.
+    const turns = thread
+      ? appState.agents.get(thread.agent_id)?.turnsCompleted
+      : 0;
+    if (turns !== undefined && turns >= threadRolloverTurns()) {
+      thread = undefined;
+    }
   }
 
   const isNew = !thread;

@@ -2995,6 +2995,18 @@ object CommandsTypes {
   )
 
   @Serializable
+  data class TeammateSoulReviseParams(
+    @SerialName("name") val name: String,
+    @SerialName("soul") val soul: String,
+    @SerialName("instruction") val instruction: String,
+  )
+
+  @Serializable
+  data class TeammateSoulReviseResult(
+    @SerialName("soul") val soul: String,
+  )
+
+  @Serializable
   data class TeammateSoulSaveParams(
     @SerialName("id") val id: String,
     @SerialName("soul") val soul: String,
@@ -3021,6 +3033,7 @@ object CommandsTypes {
   data class TeammateUpdateParams(
     @SerialName("id") val id: String,
     @SerialName("patch") val patch: UpdateTeammateInput,
+    @SerialName("clear") val clear: List<TeammateClearableField>? = null,
   )
 
   @Serializable
@@ -4212,6 +4225,8 @@ object Commands {
   object TeammatePromoteAutomation : RemoteCommand<CommandsTypes.TeammatePromoteAutomationParams, Teammate>("teammate_promote_automation", "admin", serializer(), serializer())
 
   object TeammateRemoveDuty : RemoteCommand<CommandsTypes.TeammateRemoveDutyParams, Automation>("teammate_remove_duty", "admin", serializer(), serializer())
+
+  object TeammateSoulRevise : RemoteCommand<CommandsTypes.TeammateSoulReviseParams, CommandsTypes.TeammateSoulReviseResult>("teammate_soul_revise", "admin", serializer(), serializer())
 
   object TeammateSoulSave : RemoteCommand<CommandsTypes.TeammateSoulSaveParams, IgnoredResult>("teammate_soul_save", "admin", serializer(), serializer())
 

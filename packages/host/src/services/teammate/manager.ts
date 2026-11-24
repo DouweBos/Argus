@@ -187,8 +187,12 @@ export function createTeammate(
 export function updateTeammate(
   id: string,
   patch: UpdateTeammateInput,
+  clear: ("autonomy" | "claude_account_id" | "model" | "runner")[] = [],
 ): Teammate {
   const teammate = requireTeammate(id);
+  if (clear.length > 0) {
+    patch = { ...patch, ...Object.fromEntries(clear.map((f) => [f, null])) };
+  }
   if (patch.name !== undefined && !patch.name.trim()) {
     throw "A teammate needs a name.";
   }

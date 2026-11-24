@@ -10,6 +10,7 @@ import {
   teammateSummaries,
   updateTeammate,
 } from "../services/teammate/manager";
+import { reviseSoul } from "../services/teammate/revise";
 import { TEAMMATE_TEMPLATES } from "../services/teammate/templates";
 import {
   archiveThread,
@@ -22,7 +23,10 @@ export function registerTeammateCommands(): void {
   defineTypedCommand("teammates_list", () => teammateSummaries());
   defineTypedCommand("teammate_get", (p) => teammateDetail(p.id));
   defineTypedCommand("teammate_create", (p) => createBlankTeammate(p.input));
-  defineTypedCommand("teammate_update", (p) => updateTeammate(p.id, p.patch));
+  defineTypedCommand("teammate_update", (p) =>
+    updateTeammate(p.id, p.patch, p.clear),
+  );
+  defineTypedCommand("teammate_soul_revise", (p) => reviseSoul(p));
   defineTypedCommand("teammate_delete", (p) =>
     deleteTeammateWithThreads(p.id, p.keepDuties),
   );

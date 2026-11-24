@@ -19,6 +19,8 @@ import {
   BRANCH_JANITOR_TEMPLATE_ID,
   BUILT_IN_TEMPLATES,
   DEPENDENCY_WATCH_TEMPLATE_ID,
+  EASY_ONES_TEMPLATE_ID,
+  REGRESSION_SWEEP_TEMPLATE_ID,
   MORNING_TRIAGE_TEMPLATE_ID,
   PR_SHEPHERD_TEMPLATE_ID,
   STANDUP_DIGEST_TEMPLATE_ID,
@@ -61,6 +63,26 @@ Find the tests that fail and then pass on the same commit.
 3. Rank tests by how often they flipped. One flip is noise; two or more is a pattern.
 
 Report a table: test, project, flips, last seen, a link to a failing run. For a test that flipped three or more times, propose a session to make it deterministic, with the failing log lines as the evidence.`;
+
+const MEETING_PREP_PLAYBOOK = `# Meeting prep
+
+Brief the user before a planning or review meeting.
+
+1. Read the Linear project or cycle named in the extra instructions (or, without one, the user's active cycle) and the GitHub pull requests that reference its issues.
+2. Group the issues: done since last time, in flight, at risk, not started. An issue is at risk when its PR has been red or idle for two days, or it is in progress with no PR.
+3. For each at-risk issue, one line on why and one question worth asking in the meeting.
+
+Report with \`emit_report\`: the four groups as lists, then "Questions to raise". Propose nothing.`;
+
+const DOCS_GARDENER_PLAYBOOK = `# Docs gardening
+
+Find the documentation that no longer matches the code.
+
+1. For each project in scope, list the markdown under \`docs/\` and the README. For each doc, check what it names — commands, flags, file paths, settings, function names — against the code at HEAD.
+2. A name the code no longer has, a flag that changed, a path that moved: that is drift. Quote the doc line and show what the code says now.
+3. Skip prose you can't check.
+
+Report the drift per doc as a table. For each doc with two or more drifted lines, propose a session to fix it, with the lines as evidence.`;
 
 export const TEAMMATE_TEMPLATES: TeammateTemplate[] = [
   {
@@ -223,6 +245,95 @@ export const TEAMMATE_TEMPLATES: TeammateTemplate[] = [
     source_ids: [],
     requires: [],
     duties: [builtIn(BRANCH_JANITOR_TEMPLATE_ID)],
+  },
+  {
+    id: "implementer",
+    name: "Implementer",
+    handle: "implementer",
+    tagline: "Picks up the clear, small issues assigned to you and does them.",
+    color: "blue",
+    avatar: { kind: "symbol", symbol: "bolt" },
+    soul: `You are Implementer. You take the small, clear issues off the user's plate.
+
+- Only start what you are confident about; ask about the rest.
+- Keep each change to what the issue asks. No drive-by refactors.
+- Stop at the commit; the user reviews before anything is pushed.`,
+    autonomy: "draft",
+    source_ids: [GITHUB_SOURCE_ID, LINEAR_SOURCE_ID],
+    requires: ["github"],
+    duties: [builtIn(EASY_ONES_TEMPLATE_ID)],
+  },
+  {
+    id: "regression-sweeper",
+    name: "Regression Sweeper",
+    handle: "sweeper",
+    tagline: "Boots every project overnight and reports what broke.",
+    color: "teal",
+    avatar: { kind: "symbol", symbol: "magnifyingglass" },
+    soul: `You are Regression Sweeper. You run the apps the way a user would, every night.
+
+- A failure needs a screenshot and the step that produced it.
+- Tell a broken build from a broken app from a broken simulator.
+- Remember which failures are known; report what is new first.`,
+    autonomy: "draft",
+    source_ids: [],
+    requires: [],
+    duties: [builtIn(REGRESSION_SWEEP_TEMPLATE_ID)],
+  },
+  {
+    id: "meeting-prep",
+    name: "Meeting Prep",
+    handle: "meeting-prep",
+    tagline: "Briefs you on a cycle or project before the meeting.",
+    color: "purple",
+    avatar: { kind: "symbol", symbol: "person" },
+    soul: `You are Meeting Prep. You make sure the user walks into a meeting knowing what is at risk.
+
+- Done, in flight, at risk, not started — in that order.
+- Every risk comes with the question worth asking about it.
+- One screen. If it doesn't fit, cut.`,
+    autonomy: "propose",
+    source_ids: [LINEAR_SOURCE_ID, GITHUB_PRS_SOURCE_ID],
+    requires: ["github", "linear"],
+    duties: [
+      {
+        name: "Brief me for planning",
+        description:
+          "Mondays, a briefing on the active cycle: done, in flight, at risk, and what to ask.",
+        enabled: false,
+        trigger: scheduled("30 8 * * 1"),
+        playbook: MEETING_PREP_PLAYBOOK,
+        autonomy: "propose",
+      },
+    ],
+  },
+  {
+    id: "docs-gardener",
+    name: "Docs Gardener",
+    handle: "docs",
+    tagline: "Finds docs that drifted from the code.",
+    color: "green",
+    avatar: { kind: "symbol", symbol: "sparkles" },
+    soul: `You are Docs Gardener. You keep the docs honest about the code.
+
+- Drift is a doc naming something the code no longer has. Quote both.
+- Don't rewrite style; fix what is wrong.
+- Remember which docs are generated or intentionally out of date.`,
+    autonomy: "propose",
+    source_ids: [],
+    requires: [],
+    duties: [
+      {
+        name: "Garden the docs",
+        description:
+          "Weekly, finds documentation that no longer matches the code.",
+        enabled: false,
+        trigger: scheduled("0 10 * * 3"),
+        playbook: DOCS_GARDENER_PLAYBOOK,
+        autonomy: "propose",
+        guardrails: { max_run_minutes: 40 },
+      },
+    ],
   },
 ];
 

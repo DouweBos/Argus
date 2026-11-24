@@ -9928,6 +9928,48 @@ extension ArgusProtocol {
       }
     }
 
+    public struct TeammateSoulReviseParams: Codable, Sendable {
+      public var name: String
+      public var soul: String
+      public var instruction: String
+
+      enum CodingKeys: String, CodingKey {
+        case name = "name"
+        case soul = "soul"
+        case instruction = "instruction"
+      }
+
+      public init(name: String, soul: String, instruction: String) {
+        self.name = name
+        self.soul = soul
+        self.instruction = instruction
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(name, forKey: .name)
+        try c.encode(soul, forKey: .soul)
+        try c.encode(instruction, forKey: .instruction)
+      }
+    }
+
+    public struct TeammateSoulReviseResult: Codable, Sendable {
+      public var soul: String
+
+      enum CodingKeys: String, CodingKey {
+        case soul = "soul"
+      }
+
+      public init(soul: String) {
+        self.soul = soul
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(soul, forKey: .soul)
+      }
+    }
+
     public struct TeammateSoulSaveParams: Codable, Sendable {
       public var id: String
       public var soul: String
@@ -10011,21 +10053,25 @@ extension ArgusProtocol {
     public struct TeammateUpdateParams: Codable, Sendable {
       public var id: String
       public var patch: UpdateTeammateInput
+      public var clear: [TeammateClearableField]?
 
       enum CodingKeys: String, CodingKey {
         case id = "id"
         case patch = "patch"
+        case clear = "clear"
       }
 
-      public init(id: String, patch: UpdateTeammateInput) {
+      public init(id: String, patch: UpdateTeammateInput, clear: [TeammateClearableField]? = nil) {
         self.id = id
         self.patch = patch
+        self.clear = clear
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(id, forKey: .id)
         try c.encode(patch, forKey: .patch)
+        try c.encodeIfPresent(clear, forKey: .clear)
       }
     }
 
@@ -14186,6 +14232,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.TeammateRemoveDutyParams
       public typealias Result = ArgusProtocol.Automation
       public static let name = "teammate_remove_duty"
+      public static let tier = "admin"
+    }
+
+    public enum TeammateSoulRevise: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.TeammateSoulReviseParams
+      public typealias Result = ArgusProtocol.CommandsTypes.TeammateSoulReviseResult
+      public static let name = "teammate_soul_revise"
       public static let tier = "admin"
     }
 

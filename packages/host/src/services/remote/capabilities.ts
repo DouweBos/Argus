@@ -267,6 +267,7 @@ import {
   teammateSummaries,
   updateTeammate,
 } from "../teammate/manager";
+import { reviseSoul } from "../teammate/revise";
 import {
   archiveThread,
   deleteTeammateWithThreads,
@@ -2701,13 +2702,18 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return await control(() => ({ teammate: createBlankTeammate(input) }));
   },
   "teammates.update": async (params) => {
-    const { teammate_id, patch } = parse("teammates.update", params);
+    const { teammate_id, patch, clear } = parse("teammates.update", params);
     requireKnownRepoRoots(patch.scope?.repo_roots ?? []);
     requireKnownRunner(patch.runner ?? undefined);
 
     return await control(() => ({
-      teammate: updateTeammate(teammate_id, patch),
+      teammate: updateTeammate(teammate_id, patch, clear),
     }));
+  },
+  "teammates.revise_soul": async (params) => {
+    const { name, soul, instruction } = parse("teammates.revise_soul", params);
+
+    return await control(() => reviseSoul({ name, soul, instruction }));
   },
   "teammates.delete": async (params) => {
     const { teammate_id, keep_duties } = parse("teammates.delete", params);

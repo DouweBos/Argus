@@ -242,4 +242,39 @@ describe("teammates", () => {
       listAutomations().length,
     );
   });
+
+  it("clears a field back to inheriting", () => {
+    const teammate = createTeammate({ name: "Fixer", autonomy: "draft" });
+
+    expect(updateTeammate(teammate.id, {}, ["autonomy"]).autonomy).toBeNull();
+  });
+
+  it("keeps a teammate's duties from firing when teammates are off", async () => {
+    const { enqueueAutomationEvents } =
+      await import("../automation/eventDispatch");
+    const teammate = createTeammate({ name: "Fixer" });
+    const duty = addDuty(teammate.id, {
+      name: "On events",
+      playbook: "# Go",
+      enabled: true,
+      trigger: { kind: "webhook", fire: "each", max_runs_per_hour: 4 },
+    });
+    fs.writeFileSync(
+      path.join(home, "app-settings.json"),
+      JSON.stringify({ version: 1, settings: { teammates_enabled: false } }),
+    );
+
+    expect(
+      enqueueAutomationEvents(duty.id, [
+        {
+          origin: "webhook",
+          kind: "webhook",
+          summary: "webhook",
+          items: [],
+          payload: {},
+          received_at: Date.now(),
+        },
+      ]),
+    ).toMatchObject({ accepted: false });
+  });
 });

@@ -1634,6 +1634,8 @@ extension ArgusProtocol {
     public var updaterChannel: AppSettingsUpdaterChannel?
     public var serverAutoInstallUpdates: Bool?
     public var automationsEnabled: Bool?
+    public var teammatesEnabled: Bool?
+    public var teammateThreadRolloverTurns: Int?
     public var followUpSuggestions: Bool?
     public var claudeArtifacts: Bool?
     public var commitMessageStyle: AppSettingsCommitMessageStyle?
@@ -1687,6 +1689,8 @@ extension ArgusProtocol {
       case updaterChannel = "updater_channel"
       case serverAutoInstallUpdates = "server_auto_install_updates"
       case automationsEnabled = "automations_enabled"
+      case teammatesEnabled = "teammates_enabled"
+      case teammateThreadRolloverTurns = "teammate_thread_rollover_turns"
       case followUpSuggestions = "follow_up_suggestions"
       case claudeArtifacts = "claude_artifacts"
       case commitMessageStyle = "commit_message_style"
@@ -1729,7 +1733,7 @@ extension ArgusProtocol {
       case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, worktreeCleanupEnabled: Bool? = nil, worktreeCleanupLandedDays: Int? = nil, worktreeCleanupIdleDays: Int? = nil, worktreeCleanupMaxGb: Double? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, claudeArtifacts: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, agentIdleTimeoutMinutes: Int? = nil, usageModelFilter: UsageModelFilter? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, notifyNeedsYou: Bool? = nil, notifyFinished: Bool? = nil, remoteLanWebClient: Bool? = nil, remoteKeepAwake: Bool? = nil, remoteMcpEnabled: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, worktreeCleanupEnabled: Bool? = nil, worktreeCleanupLandedDays: Int? = nil, worktreeCleanupIdleDays: Int? = nil, worktreeCleanupMaxGb: Double? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, teammatesEnabled: Bool? = nil, teammateThreadRolloverTurns: Int? = nil, followUpSuggestions: Bool? = nil, claudeArtifacts: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, agentIdleTimeoutMinutes: Int? = nil, usageModelFilter: UsageModelFilter? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, notifyNeedsYou: Bool? = nil, notifyFinished: Bool? = nil, remoteLanWebClient: Bool? = nil, remoteKeepAwake: Bool? = nil, remoteMcpEnabled: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
       self.worktreeCleanupEnabled = worktreeCleanupEnabled
@@ -1741,6 +1745,8 @@ extension ArgusProtocol {
       self.updaterChannel = updaterChannel
       self.serverAutoInstallUpdates = serverAutoInstallUpdates
       self.automationsEnabled = automationsEnabled
+      self.teammatesEnabled = teammatesEnabled
+      self.teammateThreadRolloverTurns = teammateThreadRolloverTurns
       self.followUpSuggestions = followUpSuggestions
       self.claudeArtifacts = claudeArtifacts
       self.commitMessageStyle = commitMessageStyle
@@ -1796,6 +1802,8 @@ extension ArgusProtocol {
       try c.encodeIfPresent(updaterChannel, forKey: .updaterChannel)
       try c.encodeIfPresent(serverAutoInstallUpdates, forKey: .serverAutoInstallUpdates)
       try c.encodeIfPresent(automationsEnabled, forKey: .automationsEnabled)
+      try c.encodeIfPresent(teammatesEnabled, forKey: .teammatesEnabled)
+      try c.encodeIfPresent(teammateThreadRolloverTurns, forKey: .teammateThreadRolloverTurns)
       try c.encodeIfPresent(followUpSuggestions, forKey: .followUpSuggestions)
       try c.encodeIfPresent(claudeArtifacts, forKey: .claudeArtifacts)
       try c.encodeIfPresent(commitMessageStyle, forKey: .commitMessageStyle)
@@ -20561,6 +20569,23 @@ extension ArgusProtocol {
       case .unknown(let value): try value.encode(to: encoder)
       }
     }
+  }
+
+  public struct TeammateClearableField: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let autonomy = TeammateClearableField(rawValue: "autonomy")
+    public static let claudeAccountId = TeammateClearableField(rawValue: "claude_account_id")
+    public static let model = TeammateClearableField(rawValue: "model")
+    public static let runner = TeammateClearableField(rawValue: "runner")
   }
 
   public struct TeammateColor: RawRepresentable, Codable, Hashable, Sendable {

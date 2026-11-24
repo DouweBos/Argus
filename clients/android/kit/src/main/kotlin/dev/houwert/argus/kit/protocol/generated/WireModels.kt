@@ -672,6 +672,8 @@ data class AppSettings(
   @SerialName("updater_channel") val updaterChannel: AppSettingsUpdaterChannel? = null,
   @SerialName("server_auto_install_updates") val serverAutoInstallUpdates: Boolean? = null,
   @SerialName("automations_enabled") val automationsEnabled: Boolean? = null,
+  @SerialName("teammates_enabled") val teammatesEnabled: Boolean? = null,
+  @SerialName("teammate_thread_rollover_turns") val teammateThreadRolloverTurns: Long? = null,
   @SerialName("follow_up_suggestions") val followUpSuggestions: Boolean? = null,
   @SerialName("claude_artifacts") val claudeArtifacts: Boolean? = null,
   @SerialName("commit_message_style") val commitMessageStyle: AppSettingsCommitMessageStyle? = null,
@@ -7566,6 +7568,20 @@ sealed interface TeammateAvatar {
       is Symbol -> json.encodeToJsonElement(value.value)
       is Unknown -> value.value
     }
+  }
+}
+
+@Serializable
+@JvmInline
+value class TeammateClearableField(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val autonomy = TeammateClearableField("autonomy")
+    val claudeAccountId = TeammateClearableField("claude_account_id")
+    val model = TeammateClearableField("model")
+    val runner = TeammateClearableField("runner")
+    val entries: List<TeammateClearableField> = listOf(autonomy, claudeAccountId, model, runner)
   }
 }
 

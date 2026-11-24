@@ -93,6 +93,15 @@ export const UpdateTeammateInput = Teammate.omit({
 }).partial();
 export type UpdateTeammateInput = z.infer<typeof UpdateTeammateInput>;
 
+/** Fields an update can set back to null: inherit the app's default. */
+export const TeammateClearableField = z.enum([
+  "autonomy",
+  "claude_account_id",
+  "model",
+  "runner",
+]);
+export type TeammateClearableField = z.infer<typeof TeammateClearableField>;
+
 /** One row of the teammates list. */
 export const TeammateSummary = z.object({
   teammate: Teammate,

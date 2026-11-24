@@ -21,6 +21,8 @@ enum SettingsField: String {
   case accountReauth = "account_reauth"
   case permissionMode = "permission_mode"
   case automationsEnabled = "automations_enabled"
+  case teammatesEnabled = "teammates_enabled"
+  case teammateRollover = "teammate_thread_rollover_turns"
   case followUpSuggestions = "follow_up_suggestions"
   case claudeArtifacts = "claude_artifacts"
   case warmAgents = "warm_agents"
@@ -72,7 +74,7 @@ enum SettingsField: String {
       .worktrees
     case .accountSelected, .accountAdded, .accountRemoved, .accountRenamed, .accountReauth:
       .accounts
-    case .permissionMode, .automationsEnabled, .followUpSuggestions, .claudeArtifacts, .warmAgents,
+    case .permissionMode, .automationsEnabled, .teammatesEnabled, .teammateRollover, .followUpSuggestions, .claudeArtifacts, .warmAgents,
       .agentIdleTimeoutMinutes, .defaultAutonomy, .concurrency, .dailyBudget, .importCliChats, .saveChatHistory, .allowedCommands, .allowedTools, .refusalAllowed,
       .refusalDismissed, .usageModelFilter:
       .agents

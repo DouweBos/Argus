@@ -61,6 +61,10 @@ export const AppSettings = z.object({
    * work regardless.
    */
   automations_enabled: z.boolean().optional(),
+  /** Master switch for teammates' duties and mentions. Defaults to true. */
+  teammates_enabled: z.boolean().optional(),
+  /** Turns before a teammate's newest conversation is left for a fresh one. Defaults to 200. */
+  teammate_thread_rollover_turns: z.number().int().min(20).max(1000).optional(),
   /** Suggest replies after a turn ends, from the agent's last message. Defaults to true. */
   follow_up_suggestions: z.boolean().optional(),
   /** Let Claude Code agents publish and open claude.ai Artifacts. Defaults to true. */

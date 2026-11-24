@@ -147,10 +147,44 @@ struct AgentsSettingsTab: View {
         }
       }
 
+      SettingsGroup("Teammates") {
+        if let settings = host.settings {
+          SettingsToggleRow(
+            "Let teammates act on their own",
+            description: "Run teammates' duties on their triggers and answer their mentions. "
+              + "Talking to one here always works.",
+            isOn: teammatesEnabled(settings))
+          NumberSetting(
+            label: "Turns per conversation",
+            caption: "After this many turns, opening a teammate starts a fresh conversation. "
+              + "What it learned stays in its memory.",
+            value: Int(settings.teammateThreadRolloverTurns ?? 200), minimum: 20
+          ) { next in
+            await host.save(.teammateRollover, ["teammate_thread_rollover_turns": .number(Double(next))]) {
+              $0.teammateThreadRolloverTurns = next
+            }
+          }
+        } else {
+          SettingsLoading()
+        }
+      }
+
       AutomationAllowlistSection()
 
       SettingsError(text: host.error)
     }
+  }
+
+  private func teammatesEnabled(_ settings: ArgusProtocol.AppSettings) -> Binding<Bool> {
+    Binding(
+      get: { settings.teammatesEnabled != false },
+      set: { next in
+        Task {
+          await host.save(.teammatesEnabled, ["teammates_enabled": .bool(next)]) {
+            $0.teammatesEnabled = next
+          }
+        }
+      })
   }
 
   private func automationsEnabled(_ settings: ArgusProtocol.AppSettings) -> Binding<Bool> {

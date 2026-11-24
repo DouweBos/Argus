@@ -13,6 +13,7 @@
 import type { Automation, AutomationEvent, SignalFireMode } from "./models";
 import fs from "node:fs";
 import { warn } from "@argus/host/logger";
+import { teammatesActive } from "../teammate/settings";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { writeJson } from "./jsonFile";
 import { getAutomation, hasActiveRun } from "./manager";
@@ -122,6 +123,9 @@ export function enqueueAutomationEvents(
   }
   if (!automation.enabled) {
     return { accepted: false, reason: "The automation is paused." };
+  }
+  if (automation.teammate_id && !teammatesActive()) {
+    return { accepted: false, reason: "Teammates are turned off." };
   }
   if (!eventPolicy(automation)) {
     return {

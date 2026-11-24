@@ -112,6 +112,7 @@ import {
   CreateTeammateInput,
   OpenedTeammateThread,
   Teammate,
+  TeammateClearableField,
   TeammateSummary,
   TeammateTemplate,
   TeammateThread,
@@ -892,6 +893,14 @@ export const MethodParams = {
   "teammates.update": z.object({
     teammate_id: z.string(),
     patch: UpdateTeammateInput,
+    /** Back to inheriting; a client that omits nulls says so here. */
+    clear: z.array(TeammateClearableField).optional(),
+  }),
+  /** A rewritten soul for the editor. Nothing is saved. */
+  "teammates.revise_soul": z.object({
+    name: z.string(),
+    soul: z.string(),
+    instruction: z.string(),
   }),
   /** `keep_duties` leaves its automations behind, paused and standalone. */
   "teammates.delete": z.object({
@@ -1523,6 +1532,7 @@ export const MethodResult = {
   "teammates.update": z.object({ teammate: Teammate }),
   "teammates.delete": z.object({ accepted: z.boolean() }),
   "teammates.save_soul": z.object({ accepted: z.boolean() }),
+  "teammates.revise_soul": z.object({ soul: z.string() }),
   "teammates.create_from_template": z.object({ teammate: Teammate }),
   "teammates.promote": z.object({ teammate: Teammate }),
   "teammates.add_duty": z.object({ automation: RemoteAutomation }),
