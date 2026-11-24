@@ -119,6 +119,15 @@ A real git workflow lives inside Argus:
   as a patch, or apply one. Narrower than two columns, and in the side
   panel's Diff tab, the files sit over the diff with a gap to drag between
   them; the Diff tab leaves the commit to the git view.
+- **History** — the commit graph beside the selected commit's changes
+  and file tree, fast however long the history. Return or a double-click
+  checks out a commit after asking (in the project root), ⌘A selects
+  every commit, ⌘C copies the selected SHAs, Shift-arrows extend the
+  selection. Cherry-pick, revert, reset, reword, squash, drop and rebase
+  interactively from a commit's menu; on a session's branch, the commits
+  its base already has are dimmed. Compare takes any two branches, tags or
+  commits, says whether merging would conflict, and opens each changed
+  file into its diff, where you can leave review comments.
 - **Merge & rebase** — Argus runs them for you and surfaces conflicts
   where you commit: both versions side by side above the merged result,
   which you can edit and save as the resolution, or keep one side whole.

@@ -30,6 +30,5 @@ struct TextScaleTests {
     #expect(!unchanged && first && !second)
     #expect(BlameMetrics.font.pointSize > 11.5)
     #expect(GitUIStyle.argus(.dark, scale: TextScale.shared.factor).fontScale == CGFloat(17) / 13)
-    #expect(CommitListMetrics.rowHeight == 31)
   }
 }

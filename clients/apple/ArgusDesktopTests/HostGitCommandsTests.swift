@@ -209,6 +209,25 @@ struct HostGitCommandsTests {
     }
   }
 
+  @Test func historysRewritesRunLocallyEvenInAWorktreeAndAreTrackedOnce() async throws {
+    let rewrites: [(GitCommand, MacTelemetryEvent.GitAction)] = [
+      (.cherryPick("abc"), .cherryPick), (.revert("abc"), .revert), (.reset(to: "abc", mode: .mixed), .reset),
+      (.reword("abc", message: "m"), .reword), (.squash(["abc", "def"], message: "m"), .squash), (.drop("abc"), .drop),
+      (.rebaseInteractive(onto: "abc", steps: []), .interactiveRebase),
+    ]
+    for (command, action) in rewrites {
+      let spy = SpyHost()
+      try await commands(spy, isProjectRoot: false).perform(command)
+      #expect(spy.sent.isEmpty && spy.local.count == 1, "\(command)")
+      #expect(spy.tracked == [action], "\(command)")
+    }
+    // A detached checkout of a commit is the host's, and a worktree session can't.
+    let spy = SpyHost()
+    await #expect(throws: SpyHost.Reached.self) { try await commands(spy).perform(.checkout("abc")) }
+    #expect(spy.sent.map(\.name) == ["git_checkout"])
+    await #expect(throws: GitFeatureError.self) { try await commands(SpyHost(), isProjectRoot: false).perform(.checkout("abc")) }
+  }
+
   @Test func syncFetchesThroughTheHostAndIsTrackedOnce() async {
     let spy = SpyHost()
     await #expect(throws: SpyHost.Reached.self) {

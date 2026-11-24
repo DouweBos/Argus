@@ -141,6 +141,12 @@ struct HostGitCommands: GitCommandPerforming {
       _ = try await host.send(
         Host.GitMarkResolved.self, .init(id: id, filePath: path), label: "Marking \(name) resolved",
         track: .resolveConflict)
+    case .cherryPick, .revert, .reset, .reword, .squash, .drop, .rebaseInteractive:
+      // History's rewrites run on the repository, as before: the host's own (`git_cherry_pick`, `git_revert`,
+      // `git_reset`, `git_rebase_interactive_run`) are admin-tier. Checkout, branch and tag above go through the host.
+      try await host.runLocally(label: Self.localLabel(command), track: Self.localAction(command)) {
+        try await RepositoryCommands(repository: repository, features: features).perform(command, progress: progress)
+      }
     case .fetch, .setUpstream, .deleteRemoteBranch, .applyStash, .dropStash, .snapshot:
       // One remote, unsetting an upstream and the stash list: the host has no command for these.
       try await host.runLocally(label: Self.localLabel(command), track: Self.localAction(command)) {
@@ -198,6 +204,13 @@ struct HostGitCommands: GitCommandPerforming {
     case .deleteRemoteBranch(let name, _): "Deleting \(name)"
     case .snapshot: "Saving a snapshot"
     case .setUpstream: "Untracking"
+    case .cherryPick: "Cherry-picking"
+    case .revert: "Reverting"
+    case .reset: "Resetting"
+    case .reword: "Rewording"
+    case .squash: "Squashing"
+    case .drop: "Dropping"
+    case .rebaseInteractive: "Rebasing"
     default: "Stashing"
     }
   }
@@ -210,6 +223,13 @@ struct HostGitCommands: GitCommandPerforming {
     case .applyStash(_, let drop): drop ? .stashPop : .stashApply
     case .dropStash: .stashDrop
     case .snapshot: .snapshot
+    case .cherryPick: .cherryPick
+    case .revert: .revert
+    case .reset: .reset
+    case .reword: .reword
+    case .squash: .squash
+    case .drop: .drop
+    case .rebaseInteractive: .interactiveRebase
     default: nil
     }
   }

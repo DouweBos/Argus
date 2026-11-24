@@ -123,6 +123,7 @@ final class GitWorkspace: GitHostSending {
       naming: GitWorkspaces.naming)
     stashes.commands = commands
     workingCopy.commands = commands
+    history.commands = commands
     reflog.commands = commands
     branchesReview.commands = commands
   }
@@ -220,6 +221,9 @@ final class GitWorkspace: GitHostSending {
     vm.onRepositoryChanged = { [weak self] in await self?.refreshAll() }
     vm.onAction = { [weak self] in self?.report($0, success: $1) }
     vm.undoManager = undo
+    vm.commands = HostGitCommands(
+      sessionId: sessionId, features: features, host: ViewModelGitHost(host: self), repository: repository,
+      naming: GitWorkspaces.naming)
     filteredHistory[ref] = vm
     while filteredHistoryOrder.count > 8 {
       filteredHistory[filteredHistoryOrder.removeFirst()] = nil
