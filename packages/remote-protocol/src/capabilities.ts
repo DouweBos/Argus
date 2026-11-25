@@ -396,6 +396,11 @@ export const REMOTE_METHODS = {
   "blueprints.create_project": "control",
   "blueprints.draft": "control",
   "blueprints.revise": "control",
+  "projects.clone_defaults": "monitor",
+  "projects.clone_preview": "monitor",
+  "projects.clones": "monitor",
+  "projects.clone": "control",
+  "projects.clone_cancel": "control",
   /** Which integrations the computer has connected, and as whom. Connecting
    *  one takes a secret, which stays on the computer: no method sets it. */
   "integrations.list": "monitor",
@@ -516,6 +521,8 @@ export const REMOTE_EVENTS = [
   "device.state",
   "sessions.changed",
   "projects.changed",
+  /** A clone's progress, or how it ended. */
+  "projects.clone",
   /** The signed-in Claude accounts or the active one changed. */
   "claude_accounts.changed",
   /** An account's plan limits changed. */

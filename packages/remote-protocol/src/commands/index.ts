@@ -9,6 +9,7 @@ import { AGENT_COMMANDS } from "./agents";
 import { AUTOMATION_COMMANDS } from "./automations";
 import { BLUEPRINT_COMMANDS } from "./blueprints";
 import { BROWSER_COMMANDS } from "./browser";
+import { CLONE_COMMANDS } from "./clone";
 import { CODE_COMMANDS } from "./code";
 import { DEVICE_COMMANDS } from "./devices";
 import { FILE_COMMANDS } from "./files";
@@ -37,6 +38,7 @@ export * from "../models/conversation";
 export * from "../models/terminals";
 export * from "../models/automations";
 export * from "../models/blueprints";
+export * from "../models/clone";
 export * from "../models/onboarding";
 export * from "../models/settings";
 export * from "../models/llm";
@@ -65,6 +67,7 @@ export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
   terminals: TERMINAL_COMMANDS,
   automations: AUTOMATION_COMMANDS,
   blueprints: BLUEPRINT_COMMANDS,
+  clone: CLONE_COMMANDS,
   onboarding: ONBOARDING_COMMANDS,
   settings: SETTINGS_COMMANDS,
   llm: LLM_COMMANDS,
@@ -91,6 +94,7 @@ export const COMMANDS = {
   ...TERMINAL_COMMANDS,
   ...AUTOMATION_COMMANDS,
   ...BLUEPRINT_COMMANDS,
+  ...CLONE_COMMANDS,
   ...ONBOARDING_COMMANDS,
   ...SETTINGS_COMMANDS,
   ...LLM_COMMANDS,

@@ -358,6 +358,27 @@ See [Teammates](/argus/docs/teammates).
 
 ---
 
+## Cloning a repository
+
+**Clone Repository** — next to Add Project in the sidebar's + menu, the File
+menu, Home and the command palette, and under + on the phones' Home — turns a
+URL into a project. Paste an https URL, an ssh address
+(`git@github.com:owner/repo.git`) or `owner/repo`, which clones with `gh` when
+it is installed (so private repositories use your GitHub sign-in) and from
+`https://github.com/owner/repo` otherwise. Pick the folder it goes in and the
+folder name (the repository's name unless you change it); Argus checks the
+address and that the folder is free as you type.
+
+The clone shows its phase and progress as it runs, can be cancelled (the
+partial folder is removed), and is added as a project and opened when done.
+On the Mac you can then review a project config, as with Add Project. On a
+phone the folder is on your computer, so it offers the last folder you
+cloned into and the folders your projects are already in. The folder offered
+first is the **Clone location** setting — see
+[App settings](app-settings.md#projects).
+
+---
+
 ## Blueprints
 
 Your own recipes for new projects. Pick a blueprint, type a name and a

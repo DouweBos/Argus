@@ -95,7 +95,7 @@
     static var all: [GalleryStory] {
       ComposerStories.all + SettingsStories.all + DeviceStories.all + FileStories.all + HomeStories.all + AutomationStories.all
         + TeammateStories.all
-        + BlueprintStories.all + GitStories.all + TranscriptStories.all + ShareStories.all + LiveActivityStories.all + CompareStories.all
+        + BlueprintStories.all + CloneStories.all + GitStories.all + TranscriptStories.all + ShareStories.all + LiveActivityStories.all + CompareStories.all
     }
   }
 #endif

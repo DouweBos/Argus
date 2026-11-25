@@ -2,13 +2,11 @@
  * Curated example projects the user can clone during onboarding.
  */
 
-import { execFile } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { promisify } from "node:util";
-
-const execFileAsync = promisify(execFile);
+import { runClone } from "../clone/run";
+import { cloneCommand, parseCloneSource } from "../clone/url";
 
 export interface ExampleProject {
   slug: string;
@@ -51,7 +49,13 @@ export async function cloneExample(slug: string): Promise<{ path: string }> {
     // Already cloned; reuse.
     return { path: destPath };
   }
-  await execFileAsync("git", ["clone", "--depth", "1", example.repo, destPath]);
+  await runClone({
+    ...cloneCommand(parseCloneSource(example.repo), destPath, {
+      gh: false,
+      depth: 1,
+    }),
+    dest: destPath,
+  });
 
   return { path: destPath };
 }

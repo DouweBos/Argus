@@ -85,7 +85,7 @@ extension DesktopModel {
     let location = tab.id == activeTabId ? self.location : tab.location
     let screen: String
     switch location.route {
-    case .home: screen = tab.pinned && location.host == nil ? "This Mac" : "Home"
+    case .home, .cloneRepository: screen = tab.pinned && location.host == nil ? "This Mac" : "Home"
     case .agents: screen = "Agents"
     case .runtimes: screen = "Runtimes"
     case .devices, .device: screen = "Devices"

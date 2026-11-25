@@ -86,6 +86,8 @@ enum Route: Hashable {
   case generateBlueprint
   /// A new project from a blueprint; nil picks the first.
   case newProject(blueprintId: String?)
+  /// Clone a repository from a URL into a new project on the computer.
+  case cloneRepository
   case settings
   /// One page of Settings.
   case settingsPage(SettingsPane)
@@ -147,6 +149,7 @@ enum Route: Hashable {
     case .blueprint(let id): ArgusRoute.blueprint(id: id).pattern
     case .generateBlueprint: ArgusRoute.generateBlueprint.pattern
     case .newProject(let id): ArgusRoute.newProject(blueprintId: id).pattern
+    case .cloneRepository: ArgusRoute.cloneRepository.pattern
     case .notifications: ArgusRoute.notifications.pattern
     case .usage: ArgusRoute.usage(.limits).pattern
     case .usageModel(let tab, let runner, let model, _): ArgusRoute.usageModel(tab, runner: runner, model: model).pattern

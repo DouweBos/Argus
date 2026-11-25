@@ -21,6 +21,13 @@ vi.mock("./gh", async (importOriginal) => {
     }),
   };
 });
+// Clones go through the shared clone service; route its `gh` calls here too.
+vi.mock("../clone/run", () => ({
+  runClone: vi.fn(async (opts: { args: string[]; cwd: string }) => {
+    ghCalls.push(opts.args);
+    await ghImpl(opts.args, opts.cwd);
+  }),
+}));
 vi.mock("../telemetry/telemetry", () => ({ capture: vi.fn() }));
 vi.mock("../session/manager", () => ({
   addRepoRoot: vi.fn(),
@@ -252,7 +259,7 @@ describe("createProjectFromBlueprint", () => {
           if (cloneAttempts < 3) {
             throw "repository is empty";
           }
-          fs.mkdirSync(path.join(cwd, args[3], ".git"), { recursive: true });
+          fs.mkdirSync(path.resolve(cwd, args[3], ".git"), { recursive: true });
         }
 
         return "";

@@ -199,6 +199,9 @@ object Events {
   /** `projects.changed` */
   val ProjectsChanged = EventSpec<EventsTypes.ProjectsChangedPayload>("projects.changed", serializer())
 
+  /** `projects.clone` */
+  val ProjectsClone = EventSpec<CloneJob>("projects.clone", serializer())
+
   /** `sessions.changed` */
   val SessionsChanged = EventSpec<EventsTypes.SessionsChangedPayload>("sessions.changed", serializer())
 

@@ -179,6 +179,8 @@ private struct ProjectCommands: View {
   var body: some View {
     Button("Add Project") { model.addingProject = true }
       .keyboardShortcut(model.menuShortcut(.addProject))
+    Button("Clone Repository") { model.navigate(.cloneRepository) }
+      .keyboardShortcut(model.menuShortcut(.cloneRepository))
     Button("New Project from Blueprint") { model.navigate(.newProject(blueprintId: nil)) }
       .keyboardShortcut(model.menuShortcut(.newProjectFromBlueprint))
     Button("Import Projects from Claude Code") { model.importingCliProjects = true }

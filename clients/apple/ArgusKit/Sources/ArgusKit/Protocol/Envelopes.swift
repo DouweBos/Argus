@@ -256,6 +256,8 @@ public enum RemoteEventName: String, Sendable {
   case deviceClaim = "device.claim"
   case sessionsChanged = "sessions.changed"
   case projectsChanged = "projects.changed"
+  /// A clone's progress, or how it ended.
+  case projectsClone = "projects.clone"
   case claudeAccountsChanged = "claude_accounts.changed"
   case claudeAccountsLogin = "claude_accounts.login"
   case usageLimitsChanged = "usage_limits.changed"

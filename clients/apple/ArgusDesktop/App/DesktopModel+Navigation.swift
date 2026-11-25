@@ -124,6 +124,11 @@ extension DesktopModel {
   }
 
   func navigate(_ next: DesktopRoute) {
+    // A sheet over whatever is showing, like Add Project, not a screen of its own.
+    if next == .cloneRepository {
+      cloningRepository = true
+      return
+    }
     go(to: DesktopLocation(route: next, host: hosts.focused))
   }
 

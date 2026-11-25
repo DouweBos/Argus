@@ -19,6 +19,8 @@ import path from "node:path";
 import { emitHostEvent } from "@argus/host/bus";
 import { info } from "@argus/host/logger";
 import { sendAgentMessage, startAgent } from "../agent/agentService";
+import { runClone } from "../clone/run";
+import { cloneCommand, parseCloneSource } from "../clone/url";
 import { suggestArgusJson, writeArgusJson } from "../onboarding/argusJson";
 import { registerProject } from "../onboarding/state";
 import { getProjectConfig, saveProjectConfig } from "../session/argusConfig";
@@ -228,10 +230,14 @@ async function createRepo(
 
   if (scaffold.kind === "github_template") {
     // No repo of its own: the template's files, without its history.
-    await runGh(
-      ["repo", "clone", scaffold.repo.trim(), plan.name, "--", "--depth", "1"],
-      plan.parentDir,
-    );
+    await runClone({
+      ...cloneCommand(parseCloneSource(scaffold.repo), plan.repoRoot, {
+        gh: true,
+        depth: 1,
+      }),
+      dest: plan.repoRoot,
+      cwd: plan.parentDir,
+    });
     left.folder = true;
     fs.rmSync(path.join(plan.repoRoot, ".git"), {
       recursive: true,
@@ -287,7 +293,11 @@ async function cloneWithRetry(
   let lastError: unknown = null;
   for (let attempt = 0; attempt < cloneRetry.attempts; attempt++) {
     try {
-      await runGh(["repo", "clone", slug, plan.name], plan.parentDir);
+      await runClone({
+        ...cloneCommand(parseCloneSource(slug), plan.repoRoot, { gh: true }),
+        dest: plan.repoRoot,
+        cwd: plan.parentDir,
+      });
 
       return;
     } catch (e) {

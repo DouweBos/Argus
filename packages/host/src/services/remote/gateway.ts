@@ -1033,6 +1033,14 @@ export class DeviceConnection implements DeviceMediaController {
       return;
     }
 
+    if (channel === "project:clone") {
+      if (!this.scope) {
+        this.pushEvent("projects.clone", null, args[0]);
+      }
+
+      return;
+    }
+
     // A rate limit landing, a login finishing in the host's browser, or the
     // active account moving all show up here. Push the new list rather than a
     // bare "it changed" — the account screen should update, not refetch.

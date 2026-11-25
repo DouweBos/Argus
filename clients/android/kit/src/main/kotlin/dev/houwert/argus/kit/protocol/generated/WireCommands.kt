@@ -516,6 +516,26 @@ object CommandsTypes {
   )
 
   @Serializable
+  data class CloneCancelParams(
+    @SerialName("id") val id: String,
+  )
+
+  @Serializable
+  data class CloneCancelResult(
+    @SerialName("accepted") val accepted: Boolean,
+  )
+
+  @Serializable
+  data class ClonePreviewParams(
+    @SerialName("input") val input: ClonePreviewInput,
+  )
+
+  @Serializable
+  data class CloneStartParams(
+    @SerialName("input") val input: StartCloneInput,
+  )
+
+  @Serializable
   data class CodeFormatParams(
     @SerialName("id") val id: String,
     @SerialName("relativePath") val relativePath: String,
@@ -3431,6 +3451,16 @@ object Commands {
   object ClearQueuedMessages : RemoteCommand<CommandsTypes.ClearQueuedMessagesParams, IgnoredResult>("clear_queued_messages", "admin", serializer(), serializer())
 
   object ClearSessionSetupError : RemoteCommand<CommandsTypes.ClearSessionSetupErrorParams, IgnoredResult>("clear_session_setup_error", "admin", serializer(), serializer())
+
+  object CloneCancel : RemoteCommand<CommandsTypes.CloneCancelParams, CommandsTypes.CloneCancelResult>("clone_cancel", "admin", serializer(), serializer())
+
+  object CloneDefaults : RemoteCommand<EmptyParams, dev.houwert.argus.kit.protocol.generated.CloneDefaults>("clone_defaults", "admin", serializer(), serializer())
+
+  object ClonePreview : RemoteCommand<CommandsTypes.ClonePreviewParams, dev.houwert.argus.kit.protocol.generated.ClonePreview>("clone_preview", "admin", serializer(), serializer())
+
+  object CloneStart : RemoteCommand<CommandsTypes.CloneStartParams, CloneJob>("clone_start", "admin", serializer(), serializer())
+
+  object ClonesList : RemoteCommand<EmptyParams, List<CloneJob>>("clones_list", "admin", serializer(), serializer())
 
   object CodeFormat : RemoteCommand<CommandsTypes.CodeFormatParams, CodeFormatResult>("code_format", "admin", serializer(), serializer())
 

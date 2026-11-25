@@ -13,6 +13,7 @@ import dev.houwert.argus.core.usage.mergeUsageLimits
 import dev.houwert.argus.kit.net.Transport
 import dev.houwert.argus.kit.net.TransportException
 import dev.houwert.argus.kit.protocol.EventEnvelope
+import dev.houwert.argus.kit.protocol.generated.CloneJob
 import dev.houwert.argus.kit.protocol.generated.Events
 import dev.houwert.argus.kit.protocol.generated.RemoteAgentCapabilities
 import dev.houwert.argus.kit.protocol.generated.RemoteAgentStatus
@@ -201,6 +202,9 @@ class HostStore(
   /** The computer's in-flight Claude sign-in, if any. */
   internal val _claudeLogin = MutableStateFlow<RemoteClaudeLoginState?>(null)
   val claudeLogin: StateFlow<RemoteClaudeLoginState?> = _claudeLogin.asStateFlow()
+  /** Clones on the computer, by id, as `projects.clone` events leave them. */
+  internal val _clones = MutableStateFlow(emptyMap<String, CloneJob>())
+  val clones: StateFlow<Map<String, CloneJob>> = _clones.asStateFlow()
   /** Fold and orientation for watched devices, by device id. */
   internal val _deviceStates = MutableStateFlow(emptyMap<String, RemoteDeviceState>())
   val deviceStates: StateFlow<Map<String, RemoteDeviceState>> = _deviceStates.asStateFlow()
@@ -385,6 +389,7 @@ class HostStore(
     _claudeAccounts.value = null
     _activeClaudeAccountId.value = null
     _claudeLogin.value = null
+    _clones.value = emptyMap()
     _runnerAccounts.value = null
     _deviceStates.value = emptyMap()
     _deviceClaims.value = emptyMap()
@@ -474,6 +479,7 @@ class HostStore(
         scope.launch { reloadSessions(repoRoot) }
       }
       Events.ProjectsChanged.name -> scope.launch { refreshProjects() }
+      Events.ProjectsClone.name -> envelope.decode(Events.ProjectsClone)?.let { job -> _clones.update { it + (job.id to job) } }
       Events.ClaudeAccountsChanged.name -> envelope.decode(Events.ClaudeAccountsChanged)?.let {
         _claudeAccounts.value = it.accounts
         _activeClaudeAccountId.value = it.activeId

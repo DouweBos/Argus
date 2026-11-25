@@ -42,6 +42,7 @@ import dev.houwert.argus.app.screens.home.ArchivedSessionsScreen
 import dev.houwert.argus.app.screens.home.ComputersScreen
 import dev.houwert.argus.app.screens.home.HomeScreen
 import dev.houwert.argus.app.screens.agent.McpServersScreen
+import dev.houwert.argus.app.screens.newproject.CloneRepositoryScreen
 import dev.houwert.argus.app.screens.newproject.NewProjectScreen
 import dev.houwert.argus.app.screens.pair.PairScreen
 import dev.houwert.argus.app.screens.project.ProjectScreen
@@ -103,6 +104,7 @@ fun RouteScreen(route: Route) {
     is Route.FileSearch -> FileSearchScreen(route.sessionId, route.label)
     Route.QuickRun -> QuickRunScreen()
     is Route.NewProject -> NewProjectScreen(route.blueprintId)
+    Route.CloneRepository -> CloneRepositoryScreen()
     Route.Automations -> AutomationsScreen()
     is Route.Automation -> AutomationScreen(route.id, route.label)
     is Route.AutomationEditor -> AutomationEditorScreen(route.id, route.label)

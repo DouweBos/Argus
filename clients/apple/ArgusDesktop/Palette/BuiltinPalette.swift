@@ -175,6 +175,11 @@ enum BuiltinPalette {
         systemImage: "folder.badge.plus", shortcut: ShortcutCommand.addProject.hint
       ) { model.addingProject = true },
       PaletteCommand(
+        id: "app.clone-repository", title: "Clone Repository", section: "App",
+        keywords: ["git clone", "url", "github", "add project"], systemImage: Icon.cloneRepository,
+        shortcut: ShortcutCommand.cloneRepository.hint
+      ) { model.navigate(.cloneRepository) },
+      PaletteCommand(
         id: "app.new-project-from-blueprint", title: "New Project from Blueprint", section: "App",
         keywords: ["create", "template", "scaffold", "repo"], systemImage: BlueprintText.icon,
         shortcut: ShortcutCommand.newProjectFromBlueprint.hint

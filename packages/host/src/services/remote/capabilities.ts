@@ -139,6 +139,13 @@ import {
 } from "../claudeAuth/claudeAuth";
 import { recheckFlaggedAccounts } from "../claudeAuth/probe";
 import {
+  cancelClone,
+  cloneDefaults,
+  listClones,
+  previewClone,
+  startClone,
+} from "../clone/jobs";
+import {
   CommandParamsError,
   getCommand,
   invokeCommand,
@@ -3245,6 +3252,23 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return await control(async () => ({
       run: await createProjectFromBlueprint(input),
     }));
+  },
+  "projects.clone_defaults": async () => cloneDefaults(),
+  "projects.clone_preview": async (params) => {
+    const { input } = parse("projects.clone_preview", params);
+
+    return previewClone(input);
+  },
+  "projects.clones": async () => ({ clones: listClones() }),
+  "projects.clone": async (params) => {
+    const { input } = parse("projects.clone", params);
+
+    return await control(async () => ({ clone: await startClone(input) }));
+  },
+  "projects.clone_cancel": async (params) => {
+    const { clone_id } = parse("projects.clone_cancel", params);
+
+    return await control(() => ({ accepted: cancelClone(clone_id) }));
   },
   "blueprints.draft": async (params) => {
     const { paths } = parse("blueprints.draft", params);

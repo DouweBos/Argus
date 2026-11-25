@@ -57,7 +57,9 @@ import dev.houwert.argus.ui.components.EmptyState
 import dev.houwert.argus.ui.components.IconBtn
 import dev.houwert.argus.ui.components.LiveRefresh
 import dev.houwert.argus.ui.components.Loading
+import dev.houwert.argus.ui.components.MenuAction
 import dev.houwert.argus.ui.components.MutedText
+import dev.houwert.argus.ui.components.OverflowMenu
 import dev.houwert.argus.ui.components.TopBarScreen
 import dev.houwert.argus.ui.icons.Icon
 import dev.houwert.argus.ui.sessions.AgentStatusRow
@@ -135,7 +137,16 @@ fun HomeScreen() {
   TopBarScreen(
     "Home",
     actions = {
-      if (hasControl && identity != null) IconBtn(Icon.blueprint, "New project") { router.push(Route.NewProject()) }
+      if (hasControl && identity != null) {
+        OverflowMenu(
+          "New project",
+          listOf(
+            MenuAction("New from blueprint", Icon.blueprint) { router.push(Route.NewProject()) },
+            MenuAction("Clone repository", Icon.cloneRepository) { router.push(Route.CloneRepository) },
+          ),
+          icon = Icon.plus,
+        )
+      }
       // The Mac sidebar's New Session, on the project last worked in.
       if (hasControl && projects.isNotEmpty()) IconBtn(Icon.compose, "New session") { newSession(null) }
     },

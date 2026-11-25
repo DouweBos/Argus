@@ -135,6 +135,8 @@ public final class HostStore {
   }
   /// The sign-in page of the attempt in `claudeLogin`, for reopening it.
   public internal(set) var claudeLoginURL: String?
+  /// Clones on the computer, keyed by id, as `projects.clone` events leave them.
+  public internal(set) var clones: [String: ArgusProtocol.CloneJob] = [:]
   /// Fold and orientation for watched devices, keyed by device id.
   public internal(set) var deviceStates: [String: RemoteDeviceState] = [:]
   /// Who is driving each watched device, and this connection's own id so the
@@ -320,6 +322,7 @@ public final class HostStore {
     usageModelFilter = nil
     usageModelFilterError = nil
     claudeLogin = nil
+    clones = [:]
     deviceStates = [:]
     deviceClaims = [:]
     connectionId = nil
@@ -432,6 +435,10 @@ public final class HostStore {
 
     case .projectsChanged:
       Task { await refreshProjects() }
+
+    case .projectsClone:
+      guard let job = try? ProtocolCodec.convert(envelope.payload, to: ArgusProtocol.CloneJob.self) else { return }
+      clones[job.id] = job
 
     case .usageLimitsChanged:
       guard let account = try? ProtocolCodec.convert(envelope.payload, to: ArgusProtocol.ClaudeAccountLimits.self)

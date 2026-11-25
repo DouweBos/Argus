@@ -1625,6 +1625,7 @@ extension ArgusProtocol {
   public struct AppSettings: Codable, Sendable {
     public var worktreesBaseDir: String?
     public var automationWorktreesBaseDir: String?
+    public var cloneParentDir: String?
     public var worktreeCleanupEnabled: Bool?
     public var worktreeCleanupLandedDays: Int?
     public var worktreeCleanupIdleDays: Int?
@@ -1681,6 +1682,7 @@ extension ArgusProtocol {
     enum CodingKeys: String, CodingKey {
       case worktreesBaseDir = "worktrees_base_dir"
       case automationWorktreesBaseDir = "automation_worktrees_base_dir"
+      case cloneParentDir = "clone_parent_dir"
       case worktreeCleanupEnabled = "worktree_cleanup_enabled"
       case worktreeCleanupLandedDays = "worktree_cleanup_landed_days"
       case worktreeCleanupIdleDays = "worktree_cleanup_idle_days"
@@ -1735,9 +1737,10 @@ extension ArgusProtocol {
       case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, worktreeCleanupEnabled: Bool? = nil, worktreeCleanupLandedDays: Int? = nil, worktreeCleanupIdleDays: Int? = nil, worktreeCleanupMaxGb: Double? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, teammatesEnabled: Bool? = nil, teammateThreadRolloverTurns: Int? = nil, followUpSuggestions: Bool? = nil, claudeArtifacts: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, agentIdleTimeoutMinutes: Int? = nil, usageModelFilter: UsageModelFilter? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, notifyNeedsYou: Bool? = nil, notifyFinished: Bool? = nil, usageWarningPercent: Int? = nil, remoteLanWebClient: Bool? = nil, remoteKeepAwake: Bool? = nil, remoteMcpEnabled: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, cloneParentDir: String? = nil, worktreeCleanupEnabled: Bool? = nil, worktreeCleanupLandedDays: Int? = nil, worktreeCleanupIdleDays: Int? = nil, worktreeCleanupMaxGb: Double? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, teammatesEnabled: Bool? = nil, teammateThreadRolloverTurns: Int? = nil, followUpSuggestions: Bool? = nil, claudeArtifacts: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, agentIdleTimeoutMinutes: Int? = nil, usageModelFilter: UsageModelFilter? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, notifyNeedsYou: Bool? = nil, notifyFinished: Bool? = nil, usageWarningPercent: Int? = nil, remoteLanWebClient: Bool? = nil, remoteKeepAwake: Bool? = nil, remoteMcpEnabled: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
+      self.cloneParentDir = cloneParentDir
       self.worktreeCleanupEnabled = worktreeCleanupEnabled
       self.worktreeCleanupLandedDays = worktreeCleanupLandedDays
       self.worktreeCleanupIdleDays = worktreeCleanupIdleDays
@@ -1796,6 +1799,7 @@ extension ArgusProtocol {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encodeIfPresent(worktreesBaseDir, forKey: .worktreesBaseDir)
       try c.encodeIfPresent(automationWorktreesBaseDir, forKey: .automationWorktreesBaseDir)
+      try c.encodeIfPresent(cloneParentDir, forKey: .cloneParentDir)
       try c.encodeIfPresent(worktreeCleanupEnabled, forKey: .worktreeCleanupEnabled)
       try c.encodeIfPresent(worktreeCleanupLandedDays, forKey: .worktreeCleanupLandedDays)
       try c.encodeIfPresent(worktreeCleanupIdleDays, forKey: .worktreeCleanupIdleDays)
@@ -4631,6 +4635,207 @@ extension ArgusProtocol {
       try c.encode(candidates, forKey: .candidates)
       try c.encode(truncated, forKey: .truncated)
     }
+  }
+
+  public struct CloneDefaults: Codable, Sendable {
+    public var parentDir: String
+    public var parents: [String]
+    public var ghAvailable: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case parentDir = "parent_dir"
+      case parents = "parents"
+      case ghAvailable = "gh_available"
+    }
+
+    public init(parentDir: String, parents: [String], ghAvailable: Bool) {
+      self.parentDir = parentDir
+      self.parents = parents
+      self.ghAvailable = ghAvailable
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(parentDir, forKey: .parentDir)
+      try c.encode(parents, forKey: .parents)
+      try c.encode(ghAvailable, forKey: .ghAvailable)
+    }
+  }
+
+  public struct CloneJob: Codable, Sendable {
+    public var id: String
+    public var url: String
+    public var urlKind: CloneUrlKind
+    public var path: String
+    public var status: CloneStatus
+    public var phase: ClonePhase
+    public var percent: Double?
+    public var error: String?
+    public var startedAt: Double
+    public var finishedAt: Double?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case url = "url"
+      case urlKind = "url_kind"
+      case path = "path"
+      case status = "status"
+      case phase = "phase"
+      case percent = "percent"
+      case error = "error"
+      case startedAt = "started_at"
+      case finishedAt = "finished_at"
+    }
+
+    public init(id: String, url: String, urlKind: CloneUrlKind, path: String, status: CloneStatus, phase: ClonePhase, percent: Double? = nil, error: String? = nil, startedAt: Double, finishedAt: Double? = nil) {
+      self.id = id
+      self.url = url
+      self.urlKind = urlKind
+      self.path = path
+      self.status = status
+      self.phase = phase
+      self.percent = percent
+      self.error = error
+      self.startedAt = startedAt
+      self.finishedAt = finishedAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(url, forKey: .url)
+      try c.encode(urlKind, forKey: .urlKind)
+      try c.encode(path, forKey: .path)
+      try c.encode(status, forKey: .status)
+      try c.encode(phase, forKey: .phase)
+      try c.encode(percent, forKey: .percent)
+      try c.encode(error, forKey: .error)
+      try c.encode(startedAt, forKey: .startedAt)
+      try c.encode(finishedAt, forKey: .finishedAt)
+    }
+  }
+
+  public struct ClonePhase: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let checkingOut = ClonePhase(rawValue: "checking_out")
+    public static let compressing = ClonePhase(rawValue: "compressing")
+    public static let connecting = ClonePhase(rawValue: "connecting")
+    public static let counting = ClonePhase(rawValue: "counting")
+    public static let receiving = ClonePhase(rawValue: "receiving")
+    public static let resolving = ClonePhase(rawValue: "resolving")
+  }
+
+  public struct ClonePreview: Codable, Sendable {
+    public var urlKind: CloneUrlKind?
+    public var name: String
+    public var path: String
+    public var problem: String?
+
+    enum CodingKeys: String, CodingKey {
+      case urlKind = "url_kind"
+      case name = "name"
+      case path = "path"
+      case problem = "problem"
+    }
+
+    public init(urlKind: CloneUrlKind? = nil, name: String, path: String, problem: String? = nil) {
+      self.urlKind = urlKind
+      self.name = name
+      self.path = path
+      self.problem = problem
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(urlKind, forKey: .urlKind)
+      try c.encode(name, forKey: .name)
+      try c.encode(path, forKey: .path)
+      try c.encode(problem, forKey: .problem)
+    }
+  }
+
+  public struct ClonePreviewInput: Codable, Sendable {
+    public var url: String
+    public var parentDir: String
+    public var name: String?
+
+    enum CodingKeys: String, CodingKey {
+      case url = "url"
+      case parentDir = "parent_dir"
+      case name = "name"
+    }
+
+    public init(url: String, parentDir: String, name: String? = nil) {
+      self.url = url
+      self.parentDir = parentDir
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(url, forKey: .url)
+      try c.encode(parentDir, forKey: .parentDir)
+      try c.encodeIfPresent(name, forKey: .name)
+    }
+  }
+
+  public struct CloneSource: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let android = CloneSource(rawValue: "android")
+    public static let ios = CloneSource(rawValue: "ios")
+    public static let mac = CloneSource(rawValue: "mac")
+    public static let web = CloneSource(rawValue: "web")
+  }
+
+  public struct CloneStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let cancelled = CloneStatus(rawValue: "cancelled")
+    public static let done = CloneStatus(rawValue: "done")
+    public static let failed = CloneStatus(rawValue: "failed")
+    public static let running = CloneStatus(rawValue: "running")
+  }
+
+  public struct CloneUrlKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let https = CloneUrlKind(rawValue: "https")
+    public static let shorthand = CloneUrlKind(rawValue: "shorthand")
+    public static let ssh = CloneUrlKind(rawValue: "ssh")
   }
 
   public struct CodeFileEol: RawRepresentable, Codable, Hashable, Sendable {
@@ -7546,6 +7751,7 @@ extension ArgusProtocol {
     public static let deviceState = EventEnvelopeEvent(rawValue: "device.state")
     public static let sessionsChanged = EventEnvelopeEvent(rawValue: "sessions.changed")
     public static let projectsChanged = EventEnvelopeEvent(rawValue: "projects.changed")
+    public static let projectsClone = EventEnvelopeEvent(rawValue: "projects.clone")
     public static let claudeAccountsChanged = EventEnvelopeEvent(rawValue: "claude_accounts.changed")
     public static let usageLimitsChanged = EventEnvelopeEvent(rawValue: "usage_limits.changed")
     public static let claudeAccountsLogin = EventEnvelopeEvent(rawValue: "claude_accounts.login")
@@ -20522,6 +20728,35 @@ extension ArgusProtocol {
     public static let ed25519 = SshKeyType(rawValue: "ed25519")
     public static let other = SshKeyType(rawValue: "other")
     public static let rsa = SshKeyType(rawValue: "rsa")
+  }
+
+  public struct StartCloneInput: Codable, Sendable {
+    public var url: String
+    public var parentDir: String
+    public var name: String?
+    public var source: CloneSource
+
+    enum CodingKeys: String, CodingKey {
+      case url = "url"
+      case parentDir = "parent_dir"
+      case name = "name"
+      case source = "source"
+    }
+
+    public init(url: String, parentDir: String, name: String? = nil, source: CloneSource) {
+      self.url = url
+      self.parentDir = parentDir
+      self.name = name
+      self.source = source
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(url, forKey: .url)
+      try c.encode(parentDir, forKey: .parentDir)
+      try c.encodeIfPresent(name, forKey: .name)
+      try c.encode(source, forKey: .source)
+    }
   }
 
   public struct StartOptions: Codable, Sendable {

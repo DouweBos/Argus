@@ -30,6 +30,11 @@ export interface AppSettings {
    * roomier drive. Absent falls through to `worktrees_base_dir`.
    */
   automation_worktrees_base_dir?: string;
+  /**
+   * The folder Clone Repository offers first; set to the last one cloned
+   * into. Absent means the folder most projects sit in, else `~/Developer`.
+   */
+  clone_parent_dir?: string;
   /** Sweep stale worktrees on a schedule. Off by default. */
   worktree_cleanup_enabled?: boolean;
   /** Days after merging, or the pull request closing, before cleanup. Defaults to 7; 0 never. */

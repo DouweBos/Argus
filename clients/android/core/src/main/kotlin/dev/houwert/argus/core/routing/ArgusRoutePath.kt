@@ -42,6 +42,7 @@ internal fun parseRoute(raw: String): ArgusRoute? {
       val url = query["url"].nonEmpty()
       if (count == 1 && url != null) ArgusRoute.Design(url, query["session"].nonEmpty()) else null
     }
+    "projects" -> if (count == 2 && parts[1] == "clone") ArgusRoute.CloneRepository else null
     "blueprints" -> when {
       count == 1 -> ArgusRoute.Blueprints
       count != 2 -> null
@@ -215,6 +216,7 @@ internal fun routePath(route: ArgusRoute): String {
     is ArgusRoute.Blueprint -> "/blueprints/" + (route.id?.let(e) ?: "new")
     ArgusRoute.GenerateBlueprint -> "/blueprints/generate"
     is ArgusRoute.NewProject -> "/blueprints/new-project" + q("blueprint" to route.blueprintId)
+    ArgusRoute.CloneRepository -> "/projects/clone"
     ArgusRoute.Teammates -> "/teammates"
     ArgusRoute.TeammateGallery -> "/teammates/gallery"
     is ArgusRoute.Teammate -> "/teammates/${e(route.id)}" + when (val page = route.page) {

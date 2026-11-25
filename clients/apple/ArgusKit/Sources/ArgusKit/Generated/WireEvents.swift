@@ -418,6 +418,9 @@ extension ArgusProtocol {
     /// `projects.changed`
     public typealias ProjectsChanged = ArgusProtocol.EventsTypes.ProjectsChangedPayload
 
+    /// `projects.clone`
+    public typealias ProjectsClone = ArgusProtocol.CloneJob
+
     /// `sessions.changed`
     public typealias SessionsChanged = ArgusProtocol.EventsTypes.SessionsChangedPayload
 

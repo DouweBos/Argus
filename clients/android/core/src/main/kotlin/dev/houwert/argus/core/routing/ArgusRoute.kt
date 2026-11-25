@@ -70,6 +70,8 @@ sealed interface ArgusRoute {
   data object GenerateBlueprint : ArgusRoute
   /** `/blueprints/new-project?blueprint=`: a new project from a blueprint. */
   data class NewProject(val blueprintId: String? = null) : ArgusRoute
+  /** `/projects/clone`: clone a repository from a URL into a new project. */
+  data object CloneRepository : ArgusRoute
   /** `/inbox?automation=&project=`: proposals, work waiting for review, failed runs. */
   data class Inbox(val filter: InboxFilter = InboxFilter.all) : ArgusRoute
   /** `/inbox/proposals/:proposalId`. */
@@ -152,6 +154,7 @@ sealed interface ArgusRoute {
       is Blueprint -> if (id == null) "/blueprints/new" else "/blueprints/:blueprintId"
       GenerateBlueprint -> "/blueprints/generate"
       is NewProject -> "/blueprints/new-project"
+      CloneRepository -> "/projects/clone"
       is Inbox -> "/inbox"
       is Proposal -> "/inbox/proposals/:proposalId"
       Notifications -> "/notifications"

@@ -88,13 +88,13 @@ fun TextPromptDialog(
 /** One entry in an [OverflowMenu]. */
 data class MenuAction(val label: String, val icon: ImageVector? = null, val destructive: Boolean = false, val onClick: () -> Unit)
 
-/** A row's trailing "more" button opening its actions (the iOS ellipsis menu). */
+/** A row's trailing "more" button opening its actions (the iOS ellipsis menu); [icon] for a toolbar's "+" menu. */
 @Composable
-fun OverflowMenu(label: String, actions: List<MenuAction>, modifier: Modifier = Modifier) {
+fun OverflowMenu(label: String, actions: List<MenuAction>, modifier: Modifier = Modifier, icon: ImageVector = ArgusIcon.ellipsis) {
   val theme = ArgusTheme.colors
   var open by remember { mutableStateOf(false) }
   Box(modifier) {
-    IconBtn(ArgusIcon.ellipsis, label, size = 18.dp) { open = true }
+    IconBtn(icon, label, size = 18.dp) { open = true }
     DropdownMenu(open, { open = false }, containerColor = theme.surface) {
       for (action in actions) {
         val tint = if (action.destructive) theme.error else theme.text

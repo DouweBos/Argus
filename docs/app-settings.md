@@ -23,6 +23,16 @@ targets, related projects, …) see
 
 ---
 
+## Projects
+
+| Setting            | Default                                           | Description                                                                                                                                                                                         |
+| ------------------ | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Clone location** | the folder most projects are in, or `~/Developer` | The folder Clone Repository offers first, on the Mac and the phones. Each clone remembers the folder it went into here, so it follows the last place you cloned into. Stored as `clone_parent_dir`. |
+
+In **Settings → General**.
+
+---
+
 ## Accounts
 
 **Settings → Accounts** shows every runner's sign-in: your Claude accounts

@@ -61,6 +61,7 @@ struct ShortcutCommand: Hashable, Sendable {
   static let addProject = Self("app.add-project", "Add Project", .app, .global, key("o", .command))
   static let newProjectFromBlueprint = Self(
     "app.new-project-from-blueprint", "New Project from Blueprint", .app, .global, nil)
+  static let cloneRepository = Self("app.clone-repository", "Clone Repository", .app, .global, nil)
   static let importCliProjects = Self("app.import-cli-projects", "Import Projects from Claude Code", .app, .global, nil)
   static let openSession = Self("app.open-session", "Open Session", .app, .global, key("o", [.shift, .command]))
   static let commandPalette = Self(
@@ -188,7 +189,7 @@ struct ShortcutCommand: Hashable, Sendable {
 
   static let all: [Self] =
     [
-      newSession, deleteSession, addProject, newProjectFromBlueprint, importCliProjects, openSession, commandPalette,
+      newSession, deleteSession, addProject, cloneRepository, newProjectFromBlueprint, importCliProjects, openSession, commandPalette,
       settings, quit, back, forward, home, inbox, automations, blueprints,
     ]
     + screens + SessionPanel.allCases.map(panel)

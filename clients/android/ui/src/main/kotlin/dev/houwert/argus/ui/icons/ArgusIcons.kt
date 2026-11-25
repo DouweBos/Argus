@@ -3,6 +3,7 @@ package dev.houwert.argus.ui.icons
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
+import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PanTool
@@ -230,6 +231,8 @@ object Icon {
   val eyeSlash = Icons.Outlined.VisibilityOff
   val copy = Icons.Outlined.ContentCopy
   val download = Icons.Outlined.FileDownload
+  /** Clone Repository: a project from a git URL. */
+  val cloneRepository = Icons.Outlined.CloudDownload
   val share = Icons.Outlined.Share
   val lock = Icons.Outlined.Lock
   val clock = Icons.Outlined.Schedule

@@ -251,6 +251,8 @@ struct RouteScreen: View {
       GenerateBlueprintView()
     case .newProject(let id):
       NewProjectView(blueprintId: id)
+    case .cloneRepository:
+      CloneRepositoryView()
     case .settings:
       SettingsView()
     case .settingsPage(let page):

@@ -65,8 +65,17 @@ struct ProjectsView: View {
     .toolbar {
       if host.hasControl, app.identity != nil {
         ToolbarItem(placement: .topBarTrailing) {
-          Button {
-            router.push(.newProject(blueprintId: nil))
+          Menu {
+            Button {
+              router.push(.newProject(blueprintId: nil))
+            } label: {
+              Label("New from Blueprint", systemImage: BlueprintSymbol.blueprint)
+            }
+            Button {
+              router.push(.cloneRepository)
+            } label: {
+              Label("Clone Repository", systemImage: Icon.cloneRepository)
+            }
           } label: {
             Label("New project", systemImage: BlueprintSymbol.newProject)
           }

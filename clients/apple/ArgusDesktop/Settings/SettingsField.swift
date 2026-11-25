@@ -9,6 +9,7 @@ enum SettingsField: String {
   case usageWarningPercent = "usage_warning_percent"
   case worktreeLocation = "worktree_location"
   case automationWorktreeLocation = "automation_worktree_location"
+  case cloneLocation = "clone_location"
   case worktreeCleanupEnabled = "worktree_cleanup_enabled"
   case worktreeCleanupLandedDays = "worktree_cleanup_landed_days"
   case worktreeCleanupIdleDays = "worktree_cleanup_idle_days"
@@ -71,7 +72,8 @@ enum SettingsField: String {
   var section: SettingsTab {
     switch self {
     case .theme, .colorTheme, .displaySize, .usageLimitsInDetails: .appearance
-    case .launchRoute, .notifyNeedsYou, .notifyFinished, .usageWarningPercent, .customEditors, .telemetryMode: .general
+    case .launchRoute, .notifyNeedsYou, .notifyFinished, .usageWarningPercent, .customEditors, .telemetryMode, .cloneLocation:
+      .general
     case .worktreeLocation, .automationWorktreeLocation, .worktreeCleanupEnabled, .worktreeCleanupLandedDays,
       .worktreeCleanupIdleDays, .worktreeCleanupMaxSize:
       .worktrees

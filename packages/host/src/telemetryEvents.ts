@@ -622,6 +622,17 @@ export interface EventMap {
     hosted_web: boolean;
   };
   remote_device_watched: { success: boolean };
+  repository_clone_finished: {
+    cancelled: boolean;
+    duration_bucket: "<1m" | "<5m" | "<10s" | ">=5m";
+    source: "android" | "ios" | "mac" | "web";
+    success: boolean;
+    url_kind: "https" | "shorthand" | "ssh";
+  };
+  repository_clone_started: {
+    source: "android" | "ios" | "mac" | "web";
+    url_kind: "https" | "shorthand" | "ssh";
+  };
   review_guide_asked: { source: "pull_request" | "session"; success: boolean };
   review_guide_generated: {
     source: "pull_request" | "session";

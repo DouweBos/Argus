@@ -663,6 +663,7 @@ value class AppSettingsGitDiffLayout(val rawValue: String) {
 data class AppSettings(
   @SerialName("worktrees_base_dir") val worktreesBaseDir: String? = null,
   @SerialName("automation_worktrees_base_dir") val automationWorktreesBaseDir: String? = null,
+  @SerialName("clone_parent_dir") val cloneParentDir: String? = null,
   @SerialName("worktree_cleanup_enabled") val worktreeCleanupEnabled: Boolean? = null,
   @SerialName("worktree_cleanup_landed_days") val worktreeCleanupLandedDays: Long? = null,
   @SerialName("worktree_cleanup_idle_days") val worktreeCleanupIdleDays: Long? = null,
@@ -1699,6 +1700,99 @@ data class CliProjectScan(
   @SerialName("candidates") val candidates: List<CliProjectCandidate>,
   @SerialName("truncated") val truncated: Boolean,
 )
+
+@Serializable
+data class CloneDefaults(
+  @SerialName("parent_dir") val parentDir: String,
+  @SerialName("parents") val parents: List<String>,
+  @SerialName("gh_available") val ghAvailable: Boolean,
+)
+
+@Serializable
+data class CloneJob(
+  @SerialName("id") val id: String,
+  @SerialName("url") val url: String,
+  @SerialName("url_kind") val urlKind: CloneUrlKind,
+  @SerialName("path") val path: String,
+  @SerialName("status") val status: CloneStatus,
+  @SerialName("phase") val phase: ClonePhase,
+  @SerialName("percent") @EncodeDefault val percent: Double? = null,
+  @SerialName("error") @EncodeDefault val error: String? = null,
+  @SerialName("started_at") val startedAt: Double,
+  @SerialName("finished_at") @EncodeDefault val finishedAt: Double? = null,
+)
+
+@Serializable
+@JvmInline
+value class ClonePhase(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val checkingOut = ClonePhase("checking_out")
+    val compressing = ClonePhase("compressing")
+    val connecting = ClonePhase("connecting")
+    val counting = ClonePhase("counting")
+    val receiving = ClonePhase("receiving")
+    val resolving = ClonePhase("resolving")
+    val entries: List<ClonePhase> = listOf(checkingOut, compressing, connecting, counting, receiving, resolving)
+  }
+}
+
+@Serializable
+data class ClonePreview(
+  @SerialName("url_kind") @EncodeDefault val urlKind: CloneUrlKind? = null,
+  @SerialName("name") val name: String,
+  @SerialName("path") val path: String,
+  @SerialName("problem") @EncodeDefault val problem: String? = null,
+)
+
+@Serializable
+data class ClonePreviewInput(
+  @SerialName("url") val url: String,
+  @SerialName("parent_dir") val parentDir: String,
+  @SerialName("name") val name: String? = null,
+)
+
+@Serializable
+@JvmInline
+value class CloneSource(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val android = CloneSource("android")
+    val ios = CloneSource("ios")
+    val mac = CloneSource("mac")
+    val web = CloneSource("web")
+    val entries: List<CloneSource> = listOf(android, ios, mac, web)
+  }
+}
+
+@Serializable
+@JvmInline
+value class CloneStatus(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val cancelled = CloneStatus("cancelled")
+    val done = CloneStatus("done")
+    val failed = CloneStatus("failed")
+    val running = CloneStatus("running")
+    val entries: List<CloneStatus> = listOf(cancelled, done, failed, running)
+  }
+}
+
+@Serializable
+@JvmInline
+value class CloneUrlKind(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val https = CloneUrlKind("https")
+    val shorthand = CloneUrlKind("shorthand")
+    val ssh = CloneUrlKind("ssh")
+    val entries: List<CloneUrlKind> = listOf(https, shorthand, ssh)
+  }
+}
 
 @Serializable
 @JvmInline
@@ -2778,6 +2872,7 @@ value class EventEnvelopeEvent(val rawValue: String) {
     val deviceState = EventEnvelopeEvent("device.state")
     val sessionsChanged = EventEnvelopeEvent("sessions.changed")
     val projectsChanged = EventEnvelopeEvent("projects.changed")
+    val projectsClone = EventEnvelopeEvent("projects.clone")
     val claudeAccountsChanged = EventEnvelopeEvent("claude_accounts.changed")
     val usageLimitsChanged = EventEnvelopeEvent("usage_limits.changed")
     val claudeAccountsLogin = EventEnvelopeEvent("claude_accounts.login")
@@ -2790,7 +2885,7 @@ value class EventEnvelopeEvent(val rawValue: String) {
     val huddleChat = EventEnvelopeEvent("huddle.chat")
     val ipc = EventEnvelopeEvent("ipc")
     val platformRequest = EventEnvelopeEvent("platform.request")
-    val entries: List<EventEnvelopeEvent> = listOf(agentEvent, agentStatus, agentTranscript, agentQueue, agentCapabilities, permissionRequest, permissionCancel, deviceClaim, deviceState, sessionsChanged, projectsChanged, claudeAccountsChanged, usageLimitsChanged, claudeAccountsLogin, notification, hostEndpoints, terminalData, terminalExit, filesSearch, huddleState, huddleChat, ipc, platformRequest)
+    val entries: List<EventEnvelopeEvent> = listOf(agentEvent, agentStatus, agentTranscript, agentQueue, agentCapabilities, permissionRequest, permissionCancel, deviceClaim, deviceState, sessionsChanged, projectsChanged, projectsClone, claudeAccountsChanged, usageLimitsChanged, claudeAccountsLogin, notification, hostEndpoints, terminalData, terminalExit, filesSearch, huddleState, huddleChat, ipc, platformRequest)
   }
 }
 
@@ -7566,6 +7661,14 @@ value class SshKeyType(val rawValue: String) {
     val entries: List<SshKeyType> = listOf(dsa, ecdsa, ed25519, other, rsa)
   }
 }
+
+@Serializable
+data class StartCloneInput(
+  @SerialName("url") val url: String,
+  @SerialName("parent_dir") val parentDir: String,
+  @SerialName("name") val name: String? = null,
+  @SerialName("source") val source: CloneSource,
+)
 
 @Serializable
 data class StartOptions(

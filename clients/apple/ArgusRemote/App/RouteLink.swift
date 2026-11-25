@@ -73,6 +73,7 @@ extension PhoneDestination {
     case .blueprint(let id): return PhoneDestination(section: .blueprints, route: .blueprint(id: id))
     case .generateBlueprint: return PhoneDestination(section: .blueprints, route: .generateBlueprint)
     case .newProject(let id): return PhoneDestination(section: .blueprints, route: .newProject(blueprintId: id))
+    case .cloneRepository: return PhoneDestination(section: .home, route: .cloneRepository)
     case .notifications: return PhoneDestination(section: .notifications)
     case .archivedSessions: return PhoneDestination(section: .home, route: .archivedSessions)
     case .usage: return PhoneDestination(section: .usage)

@@ -59,6 +59,8 @@ public enum ArgusRoute: Hashable, Sendable {
   case generateBlueprint
   /// `/blueprints/new-project?blueprint=`: a new project from a blueprint.
   case newProject(blueprintId: String?)
+  /// `/projects/clone`: clone a repository from a URL into a new project.
+  case cloneRepository
   /// `/inbox?automation=&project=`: proposals, work waiting for review, failed
   /// runs, optionally narrowed to one automation and/or project.
   case inbox(InboxFilter = .all)
@@ -164,6 +166,7 @@ public enum ArgusRoute: Hashable, Sendable {
     case .blueprint(let id): id == nil ? "/blueprints/new" : "/blueprints/:blueprintId"
     case .generateBlueprint: "/blueprints/generate"
     case .newProject: "/blueprints/new-project"
+    case .cloneRepository: "/projects/clone"
     case .inbox: "/inbox"
     case .proposal: "/inbox/proposals/:proposalId"
     case .notifications: "/notifications"

@@ -20,6 +20,9 @@ struct ProjectFlows: ViewModifier {
       .argusSheet(isPresented: importingCliProjects) {
         CliProjectImportSheet().presentationBackground(theme.surface)
       }
+      .argusSheet(isPresented: cloningRepository) {
+        CloneRepositorySheet().presentationBackground(theme.surface)
+      }
       // On a ready connection: the backend exists before its socket does, and
       // a request made in between fails without a retry.
       .task(id: model.store.connection == .ready) {
@@ -45,6 +48,10 @@ struct ProjectFlows: ViewModifier {
 
   private var importingCliProjects: Binding<Bool> {
     Binding(get: { model.importingCliProjects }, set: { model.importingCliProjects = $0 })
+  }
+
+  private var cloningRepository: Binding<Bool> {
+    Binding(get: { model.cloningRepository }, set: { model.cloningRepository = $0 })
   }
 
   private var onboardingVisible: Binding<Bool> {

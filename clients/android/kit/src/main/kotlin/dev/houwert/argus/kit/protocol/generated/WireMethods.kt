@@ -1805,6 +1805,42 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class ProjectsCloneParams(
+    @SerialName("input") val input: StartCloneInput,
+  )
+
+  @Serializable
+  data class ProjectsCloneResult(
+    @SerialName("clone") val clone: CloneJob,
+  )
+
+  @Serializable
+  data class ProjectsCloneCancelParams(
+    @SerialName("clone_id") val cloneId: String,
+  )
+
+  @Serializable
+  data class ProjectsCloneCancelResult(
+    @SerialName("accepted") val accepted: Boolean,
+  )
+
+  @Serializable
+  class ProjectsCloneDefaultsParams
+
+  @Serializable
+  data class ProjectsClonePreviewParams(
+    @SerialName("input") val input: ClonePreviewInput,
+  )
+
+  @Serializable
+  class ProjectsClonesParams
+
+  @Serializable
+  data class ProjectsClonesResult(
+    @SerialName("clones") val clones: List<CloneJob>,
+  )
+
+  @Serializable
   class ProjectsListParams
 
   @Serializable
@@ -3395,6 +3431,16 @@ object Methods {
   object PermissionRespond : RemoteCommand<MethodsTypes.PermissionRespondParams, MethodsTypes.PermissionRespondResult>("permission.respond", "control", serializer(), serializer())
 
   object ProjectsBaseBranches : RemoteCommand<MethodsTypes.ProjectsBaseBranchesParams, MethodsTypes.ProjectsBaseBranchesResult>("projects.base_branches", "control", serializer(), serializer())
+
+  object ProjectsClone : RemoteCommand<MethodsTypes.ProjectsCloneParams, MethodsTypes.ProjectsCloneResult>("projects.clone", "control", serializer(), serializer())
+
+  object ProjectsCloneCancel : RemoteCommand<MethodsTypes.ProjectsCloneCancelParams, MethodsTypes.ProjectsCloneCancelResult>("projects.clone_cancel", "control", serializer(), serializer())
+
+  object ProjectsCloneDefaults : RemoteCommand<MethodsTypes.ProjectsCloneDefaultsParams, CloneDefaults>("projects.clone_defaults", "control", serializer(), serializer())
+
+  object ProjectsClonePreview : RemoteCommand<MethodsTypes.ProjectsClonePreviewParams, ClonePreview>("projects.clone_preview", "control", serializer(), serializer())
+
+  object ProjectsClones : RemoteCommand<MethodsTypes.ProjectsClonesParams, MethodsTypes.ProjectsClonesResult>("projects.clones", "control", serializer(), serializer())
 
   object ProjectsList : RemoteCommand<MethodsTypes.ProjectsListParams, MethodsTypes.ProjectsListResult>("projects.list", "control", serializer(), serializer())
 

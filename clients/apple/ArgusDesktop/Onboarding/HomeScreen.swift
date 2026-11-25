@@ -58,6 +58,7 @@ struct HomeScreen: View {
           HStack(spacing: 12) {
             Button("Import from Claude Code") { model.importingCliProjects = true }.buttonStyle(.accentLink)
             Button("New from Blueprint") { model.navigate(.newProject(blueprintId: nil)) }.buttonStyle(.accentLink)
+            Button("Clone Repository") { model.navigate(.cloneRepository) }.buttonStyle(.accentLink)
             Button("Add Project") { model.addingProject = true }.buttonStyle(.accentLink)
           }
         } content: {
@@ -113,6 +114,11 @@ struct HomeScreen: View {
           Label("Add repository", systemImage: "folder")
         }
         .buttonStyle(.borderedProminent)
+        Button {
+          model.navigate(.cloneRepository)
+        } label: {
+          Label("Clone Repository", systemImage: Icon.cloneRepository)
+        }
         Button {
           model.importingCliProjects = true
         } label: {

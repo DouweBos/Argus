@@ -70,6 +70,8 @@ struct GeneralSettingsTab: View {
 
       CustomEditorsSection()
 
+      CloneLocationSection()
+
       SettingsGroup("Privacy") {
         SettingsRow("Telemetry", description: telemetryCaption) {
           Picker("Telemetry", selection: telemetryMode) {

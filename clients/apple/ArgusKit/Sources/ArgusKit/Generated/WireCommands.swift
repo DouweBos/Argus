@@ -1628,6 +1628,74 @@ extension ArgusProtocol {
       }
     }
 
+    public struct CloneCancelParams: Codable, Sendable {
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: String) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
+    public struct CloneCancelResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct ClonePreviewParams: Codable, Sendable {
+      public var input: ClonePreviewInput
+
+      enum CodingKeys: String, CodingKey {
+        case input = "input"
+      }
+
+      public init(input: ClonePreviewInput) {
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
+    public struct CloneStartParams: Codable, Sendable {
+      public var input: StartCloneInput
+
+      enum CodingKeys: String, CodingKey {
+        case input = "input"
+      }
+
+      public init(input: StartCloneInput) {
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
     public struct CodeFormatParams: Codable, Sendable {
       public var id: String
       public var relativePath: String
@@ -11452,6 +11520,41 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.ClearSessionSetupErrorParams
       public typealias Result = IgnoredResult
       public static let name = "clear_session_setup_error"
+      public static let tier = "admin"
+    }
+
+    public enum CloneCancel: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.CloneCancelParams
+      public typealias Result = ArgusProtocol.CommandsTypes.CloneCancelResult
+      public static let name = "clone_cancel"
+      public static let tier = "admin"
+    }
+
+    public enum CloneDefaults: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.CloneDefaults
+      public static let name = "clone_defaults"
+      public static let tier = "admin"
+    }
+
+    public enum ClonePreview: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.ClonePreviewParams
+      public typealias Result = ArgusProtocol.ClonePreview
+      public static let name = "clone_preview"
+      public static let tier = "admin"
+    }
+
+    public enum CloneStart: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.CloneStartParams
+      public typealias Result = ArgusProtocol.CloneJob
+      public static let name = "clone_start"
+      public static let tier = "admin"
+    }
+
+    public enum ClonesList: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.CloneJob]
+      public static let name = "clones_list"
       public static let tier = "admin"
     }
 

@@ -83,6 +83,13 @@ import {
   ReviseBlueprintInput,
   UpdateBlueprintInput,
 } from "./models/blueprints";
+import {
+  CloneDefaults,
+  CloneJob,
+  ClonePreview,
+  ClonePreviewInput,
+  StartCloneInput,
+} from "./models/clone";
 import { CodeFile, CodeSearchEvent } from "./models/code";
 import { GitStashEntry } from "./models/git/history";
 import { GitTag } from "./models/git/remotes";
@@ -1034,6 +1041,14 @@ export const MethodParams = {
   "blueprints.draft": z.object({ paths: z.array(z.string()).min(1) }),
   /** Instructions rewritten to a note, for the editor. Nothing is saved. */
   "blueprints.revise": z.object({ input: ReviseBlueprintInput }),
+  /** Clone a repository into a new project on the host. */
+  "projects.clone_defaults": z.object({}),
+  "projects.clone_preview": z.object({ input: ClonePreviewInput }),
+  /** Returns once started; `projects.clone` events carry its progress. */
+  "projects.clone": z.object({ input: StartCloneInput }),
+  /** Stops the clone and removes the partial folder. */
+  "projects.clone_cancel": z.object({ clone_id: z.string() }),
+  "projects.clones": z.object({}),
   "integrations.list": z.object({}),
   "slack.status": z.object({}),
   /** No query: the connected user's open issues in `scope`, newest first. */
@@ -1620,6 +1635,11 @@ export const MethodResult = {
   "blueprints.runs": z.object({ runs: z.array(BlueprintRun) }),
   "blueprints.draft": z.object({ draft: BlueprintDraft }),
   "blueprints.revise": z.object({ instructions: z.string() }),
+  "projects.clone_defaults": CloneDefaults,
+  "projects.clone_preview": ClonePreview,
+  "projects.clone": z.object({ clone: CloneJob }),
+  "projects.clone_cancel": z.object({ accepted: z.boolean() }),
+  "projects.clones": z.object({ clones: z.array(CloneJob) }),
   "integrations.list": z.object({ integrations: z.array(IntegrationStatus) }),
   /** `claim_code` is always null here; claiming the bot is the Mac's to show. */
   /** `status` is the first workspace, for clients from before there were several. */
@@ -1894,6 +1914,8 @@ export const EventPayloads = {
    *  a client that cares refetches whatever it holds. */
   "sessions.changed": z.object({ repo_root: z.string().nullable() }),
   "projects.changed": z.object({}),
+  /** A clone moved on: its phase, percent, or how it ended. */
+  "projects.clone": CloneJob,
   /** Base64 output, in the order the terminal produced it. */
   "terminal.data": z.object({ terminal_id: z.string(), data: z.string() }),
   "terminal.exit": z.object({ terminal_id: z.string(), exit_code: z.number() }),

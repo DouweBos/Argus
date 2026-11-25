@@ -5719,6 +5719,128 @@ extension ArgusProtocol {
       }
     }
 
+    public struct ProjectsCloneParams: Codable, Sendable {
+      public var input: StartCloneInput
+
+      enum CodingKeys: String, CodingKey {
+        case input = "input"
+      }
+
+      public init(input: StartCloneInput) {
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
+    public struct ProjectsCloneResult: Codable, Sendable {
+      public var clone: CloneJob
+
+      enum CodingKeys: String, CodingKey {
+        case clone = "clone"
+      }
+
+      public init(clone: CloneJob) {
+        self.clone = clone
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(clone, forKey: .clone)
+      }
+    }
+
+    public struct ProjectsCloneCancelParams: Codable, Sendable {
+      public var cloneId: String
+
+      enum CodingKeys: String, CodingKey {
+        case cloneId = "clone_id"
+      }
+
+      public init(cloneId: String) {
+        self.cloneId = cloneId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(cloneId, forKey: .cloneId)
+      }
+    }
+
+    public struct ProjectsCloneCancelResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct ProjectsCloneDefaultsParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct ProjectsClonePreviewParams: Codable, Sendable {
+      public var input: ClonePreviewInput
+
+      enum CodingKeys: String, CodingKey {
+        case input = "input"
+      }
+
+      public init(input: ClonePreviewInput) {
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
+    public struct ProjectsClonesParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct ProjectsClonesResult: Codable, Sendable {
+      public var clones: [CloneJob]
+
+      enum CodingKeys: String, CodingKey {
+        case clones = "clones"
+      }
+
+      public init(clones: [CloneJob]) {
+        self.clones = clones
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(clones, forKey: .clones)
+      }
+    }
+
     public struct ProjectsListParams: Codable, Sendable {
 
       public init() {
@@ -10754,6 +10876,36 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.ProjectsBaseBranchesParams
       public typealias Result = ArgusProtocol.MethodsTypes.ProjectsBaseBranchesResult
       public static let name = "projects.base_branches"
+    }
+
+    public enum ProjectsClone: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.ProjectsCloneParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ProjectsCloneResult
+      public static let name = "projects.clone"
+    }
+
+    public enum ProjectsCloneCancel: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.ProjectsCloneCancelParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ProjectsCloneCancelResult
+      public static let name = "projects.clone_cancel"
+    }
+
+    public enum ProjectsCloneDefaults: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.ProjectsCloneDefaultsParams
+      public typealias Result = ArgusProtocol.CloneDefaults
+      public static let name = "projects.clone_defaults"
+    }
+
+    public enum ProjectsClonePreview: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.ProjectsClonePreviewParams
+      public typealias Result = ArgusProtocol.ClonePreview
+      public static let name = "projects.clone_preview"
+    }
+
+    public enum ProjectsClones: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.ProjectsClonesParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ProjectsClonesResult
+      public static let name = "projects.clones"
     }
 
     public enum ProjectsList: RemoteCommand {

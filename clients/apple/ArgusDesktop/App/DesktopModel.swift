@@ -91,6 +91,8 @@ final class DesktopModel {
   var projectSettingsRepo: String?
   /// The Add Project flow (⌘O).
   var addingProject = false
+  /// The Clone Repository sheet, which `.cloneRepository` opens over the current screen.
+  var cloningRepository = false
   /// The Import from Claude Code sheet.
   var importingCliProjects = false
   /// What the last git command from a menu or key has to say.

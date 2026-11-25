@@ -265,6 +265,13 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `blueprint_drafted`         | host   | A blueprint was generated from existing projects, or a generated draft was saved | `project_count_bucket` (`1`, `2-3`, `4+`), `success`, `saved` — `true` when a draft was saved as a blueprint                                                                                                                            |
 | `blueprint_revised`         | host   | Claude revised a blueprint's instructions to a note                              | `success`                                                                                                                                                                                                                               |
 
+## Cloning repositories
+
+| Event                       | Source | When                                                           | Extra props                                                                                                               |
+| --------------------------- | ------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `repository_clone_started`  | host   | Clone Repository started cloning into a new project            | `source` — the app that asked (`mac`, `ios`, `android`, `web`), `url_kind` (`https`, `ssh`, `shorthand` for `owner/repo`) |
+| `repository_clone_finished` | host   | A clone finished: added as a project, failed, or was cancelled | `source`, `url_kind`, `success`, `cancelled`, `duration_bucket` (`<10s`, `<1m`, `<5m`, `>=5m`)                            |
+
 ## Simulators
 
 | Event                           | Source | When                                                                               | Extra props                                                                                                                                                                                                                                                                                                                       |
@@ -758,7 +765,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 
 `mac_settings_changed`'s `section` is `general`, `appearance`, `accounts`, `agents`, `llm`,
 `mcp`, `integrations`, `tools`, `git`, `worktrees`, `editor` or `advanced`, and `setting` is one of `theme`, `color_theme`, `display_size`,
-`launch_route`, `notify_needs_you`, `notify_finished`, `usage_warning_percent`, `worktree_location`, `automation_worktree_location`,
+`launch_route`, `notify_needs_you`, `notify_finished`, `usage_warning_percent`, `clone_location`, `worktree_location`, `automation_worktree_location`,
 `worktree_cleanup_enabled`, `worktree_cleanup_landed_days`, `worktree_cleanup_idle_days`, `worktree_cleanup_max_size`,
 `custom_editors`, `telemetry_mode`, `account_selected`, `account_added`,
 `account_removed`, `account_renamed`, `account_reauth`,
