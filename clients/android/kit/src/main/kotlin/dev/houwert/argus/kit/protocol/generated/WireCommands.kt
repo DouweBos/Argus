@@ -549,6 +549,14 @@ object CommandsTypes {
   )
 
   @Serializable
+  data class CodeReadRangeParams(
+    @SerialName("id") val id: String,
+    @SerialName("relativePath") val relativePath: String,
+    @SerialName("offset") val offset: Long,
+    @SerialName("length") val length: Long,
+  )
+
+  @Serializable
   data class CodeSearchParams(
     @SerialName("query") val query: String,
     @SerialName("regex") val regex: Boolean,
@@ -3465,6 +3473,8 @@ object Commands {
   object CodeFormat : RemoteCommand<CommandsTypes.CodeFormatParams, CodeFormatResult>("code_format", "admin", serializer(), serializer())
 
   object CodeReadFile : RemoteCommand<CommandsTypes.CodeReadFileParams, CodeFile>("code_read_file", "admin", serializer(), serializer())
+
+  object CodeReadRange : RemoteCommand<CommandsTypes.CodeReadRangeParams, CodeFileRange>("code_read_range", "admin", serializer(), serializer())
 
   object CodeSearch : RemoteCommand<CommandsTypes.CodeSearchParams, CommandsTypes.CodeSearchResult>("code_search", "admin", serializer(), serializer())
 

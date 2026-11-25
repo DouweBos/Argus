@@ -1430,6 +1430,14 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class FilesReadRangeParams(
+    @SerialName("session_id") val sessionId: String,
+    @SerialName("path") val path: String,
+    @SerialName("offset") val offset: Long,
+    @SerialName("length") val length: Long,
+  )
+
+  @Serializable
   data class FilesSearchParams(
     @SerialName("session_id") val sessionId: String,
     @SerialName("search_id") val searchId: String,
@@ -3433,6 +3441,8 @@ object Methods {
   object FilesRead : RemoteCommand<MethodsTypes.FilesReadParams, CodeFile>("files.read", "control", serializer(), serializer())
 
   object FilesReadBytes : RemoteCommand<MethodsTypes.FilesReadBytesParams, MethodsTypes.FilesReadBytesResult>("files.read_bytes", "control", serializer(), serializer())
+
+  object FilesReadRange : RemoteCommand<MethodsTypes.FilesReadRangeParams, CodeFileRange>("files.read_range", "control", serializer(), serializer())
 
   object FilesSearch : RemoteCommand<MethodsTypes.FilesSearchParams, MethodsTypes.FilesSearchResult>("files.search", "control", serializer(), serializer())
 

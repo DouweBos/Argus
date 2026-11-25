@@ -4935,6 +4935,39 @@ extension ArgusProtocol {
     }
   }
 
+  public struct CodeFileRange: Codable, Sendable {
+    public var text: String
+    public var offset: Int
+    public var end: Int
+    public var size: Int
+    public var binary: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case text = "text"
+      case offset = "offset"
+      case end = "end"
+      case size = "size"
+      case binary = "binary"
+    }
+
+    public init(text: String, offset: Int, end: Int, size: Int, binary: Bool) {
+      self.text = text
+      self.offset = offset
+      self.end = end
+      self.size = size
+      self.binary = binary
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(text, forKey: .text)
+      try c.encode(offset, forKey: .offset)
+      try c.encode(end, forKey: .end)
+      try c.encode(size, forKey: .size)
+      try c.encode(binary, forKey: .binary)
+    }
+  }
+
   public struct CodeFormatResult: Codable, Sendable {
     public var formatter: CodeFormatter
     public var formatted: String?

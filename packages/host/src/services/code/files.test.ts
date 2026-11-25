@@ -17,8 +17,13 @@ vi.mock("../../state", () => ({
 vi.mock("../session/git", () => ({ git: vi.fn(async () => "") }));
 
 const { appState } = await import("../../state");
-const { readCodeFile, sha1, writeCodeFile, onCodeFileWritten } =
-  await import("./files");
+const {
+  readCodeFile,
+  readCodeFileRange,
+  sha1,
+  writeCodeFile,
+  onCodeFileWritten,
+} = await import("./files");
 
 let worktree: string;
 
@@ -74,6 +79,41 @@ describe("code editor file IO", () => {
 
     it("refuses paths outside the session", async () => {
       await expect(readCodeFile("s1", "/etc/hosts")).rejects.toMatch(/outside/);
+    });
+
+    it("calls a file too large past the limit it's given", async () => {
+      await fs.promises.writeFile(file("mid"), "x".repeat(100));
+      const read = await readCodeFile("s1", "mid", 99);
+      expect(read.readOnlyReason).toBe("too_large");
+    });
+  });
+
+  describe("read a range", () => {
+    it("pages on line breaks, the last page to the end", async () => {
+      await fs.promises.writeFile(file("log"), "aaa\nbbb\ncc");
+      const first = await readCodeFileRange("s1", "log", 0, 6);
+      expect(first).toEqual({
+        text: "aaa\n",
+        offset: 0,
+        end: 4,
+        size: 10,
+        binary: false,
+      });
+      const second = await readCodeFileRange("s1", "log", first.end, 6);
+      expect(second).toMatchObject({ text: "bbb\ncc", end: 10 });
+    });
+
+    it("never splits a character when one line outruns the page", async () => {
+      await fs.promises.writeFile(file("wide"), "ééé");
+      const page = await readCodeFileRange("s1", "wide", 0, 3);
+      expect(page).toMatchObject({ text: "é", end: 2 });
+    });
+
+    it("flags a binary page", async () => {
+      await fs.promises.writeFile(file("bin"), Buffer.from([1, 0, 2]));
+      await expect(readCodeFileRange("s1", "bin", 0, 3)).resolves.toMatchObject(
+        { binary: true, text: "" },
+      );
     });
   });
 

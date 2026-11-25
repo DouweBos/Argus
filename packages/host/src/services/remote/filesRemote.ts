@@ -4,10 +4,18 @@
  * `code_read_file`, never another project or an absolute path.
  */
 
-import type { CodeFile, MethodParams } from "@argus/remote-protocol";
+import type {
+  CodeFile,
+  CodeFileRange,
+  MethodParams,
+} from "@argus/remote-protocol";
 import path from "node:path";
 import type { z } from "zod";
-import { readCodeFile } from "../code/files";
+import {
+  MAX_PHONE_BYTES,
+  readCodeFile,
+  readCodeFileRange,
+} from "../code/files";
 import { clientPath } from "../code/paths";
 import {
   cancelCodeSearch,
@@ -40,7 +48,26 @@ export async function readSessionFile(
   sessionId: string,
   requested: string,
 ): Promise<CodeFile> {
-  return readCodeFile(sessionId, await sessionRelative(sessionId, requested));
+  return readCodeFile(
+    sessionId,
+    await sessionRelative(sessionId, requested),
+    MAX_PHONE_BYTES,
+  );
+}
+
+/** A page of a file too large for `readSessionFile`. */
+export async function readSessionFileRange(
+  sessionId: string,
+  requested: string,
+  offset: number,
+  length: number,
+): Promise<CodeFileRange> {
+  return readCodeFileRange(
+    sessionId,
+    await sessionRelative(sessionId, requested),
+    offset,
+    length,
+  );
 }
 
 /** A PDF's or an image's bytes, base64, under the same confinement. */

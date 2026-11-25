@@ -6,6 +6,7 @@
 import { z } from "zod";
 import {
   CodeFile,
+  CodeFileRange,
   CodeFormatResult,
   CodeSearchQuery,
   CodeSymbolKind,
@@ -20,6 +21,15 @@ const SessionFiles = z.object({ id: z.string(), paths: z.array(z.string()) });
 export const CODE_COMMANDS = {
   /** Never throws for binary, oversized or non-UTF-8 files: see `readOnlyReason`. */
   code_read_file: { tier: "admin", params: SessionFile, result: CodeFile },
+  /** A page of a file `code_read_file` calls `too_large`; `length` is capped at 1 MB. */
+  code_read_range: {
+    tier: "admin",
+    params: SessionFile.extend({
+      offset: z.number().int().nonnegative(),
+      length: z.number().int().positive(),
+    }),
+    result: CodeFileRange,
+  },
   /**
    * Atomic. Refuses with `conflict` when the file on disk isn't `baseHash`
    * (null: expected not to exist) unless `force`.

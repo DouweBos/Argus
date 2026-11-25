@@ -43,6 +43,9 @@ import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.listFiles
 import dev.houwert.argus.core.stores.readFile
 import dev.houwert.argus.core.stores.readFileBytes
+import dev.houwert.argus.core.stores.readFileRange
+import dev.houwert.argus.core.files.LargeFilePager
+import dev.houwert.argus.ui.files.LargeFileView
 import dev.houwert.argus.core.files.FilePreviewKind
 import dev.houwert.argus.app.telemetry.Telemetry
 import dev.houwert.argus.app.telemetry.TelemetryEvent
@@ -84,12 +87,15 @@ fun FileScreen(sessionId: String, path: String, line: Int?) {
   var bytes by remember { mutableStateOf<ByteArray?>(null) }
   var showSource by remember { mutableStateOf(false) }
   var reportedPreview by remember { mutableStateOf(false) }
-  val reportPreview = {
-    if (!reportedPreview && preview != null) {
+  val reportKind = { kind: FilePreviewKind? ->
+    if (!reportedPreview && kind != null) {
       reportedPreview = true
-      Telemetry.capture(TelemetryEvent.PreviewOpened(preview))
+      Telemetry.capture(TelemetryEvent.PreviewOpened(kind))
     }
   }
+  val reportPreview = { reportKind(preview) }
+  /** A file too large for `files.read`, a page at a time. */
+  var pager by remember { mutableStateOf<LargeFilePager?>(null) }
   var relativePath by remember { mutableStateOf<String?>(null) }
   var failure by remember { mutableStateOf<String?>(null) }
   var focusLine by remember { mutableStateOf(line) }
@@ -103,7 +109,13 @@ fun FileScreen(sessionId: String, path: String, line: Int?) {
     if (file != null || bytes != null || connection != Transport.State.Ready || !hasControl) return@LaunchedEffect
     load(host, sessionId, path, relativePath, preview?.isBinary == true, { relativePath = it }, { loaded ->
       when (loaded) {
-        is CodeFile -> file = loaded
+        is CodeFile -> {
+          file = loaded
+          val relative = relativePath ?: path
+          if (loaded.readOnlyReason == CodeReadOnlyReason.tooLarge) {
+            pager = LargeFilePager(loaded.size) { offset, length -> host.readFileRange(sessionId, relative, offset, length) }
+          }
+        }
         is ByteArray -> bytes = loaded
       }
       failure = null
@@ -158,6 +170,10 @@ fun FileScreen(sessionId: String, path: String, line: Int?) {
       !hasControl -> Screen { ControlRequiredBanner("read files") }
       failure != null -> EmptyState(Icon.warning, "Can't open this file", body = failure)
       data != null && preview != null -> BinaryFilePreview(preview, shownPath, data, reportPreview)
+      pager != null -> {
+        LaunchedEffect(Unit) { reportKind(FilePreviewKind.Large) }
+        LargeFileView(pager!!)
+      }
       current != null && current.readOnlyReason == null && preview == FilePreviewKind.Markdown && !showSource ->
         MarkdownFilePreview(host, sessionId, shownPath, current.content, reportPreview)
       current?.readOnlyReason != null -> EmptyState(Icon.file, "Nothing to show", body = message(current.readOnlyReason!!, Formatter.formatShortFileSize(context, current.size.toLong())))

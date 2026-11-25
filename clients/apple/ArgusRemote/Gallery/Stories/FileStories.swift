@@ -45,6 +45,9 @@
         GalleryStory("previews/pdf") {
           PDFDocumentView(document: PDFDocument(data: GalleryFixtures.previewPDF())!)
         },
+        GalleryStory("previews/large-file") {
+          LargeFileView(pager: GalleryFixtures.previewLargePager(), limitation: "show in full on a phone")
+        },
         GalleryStory("previews/transcript-mermaid", setup: warm) {
           ScrollView {
             MarkdownView(text: GalleryFixtures.previewTranscript).padding(16)

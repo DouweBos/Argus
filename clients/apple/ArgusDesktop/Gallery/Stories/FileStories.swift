@@ -19,6 +19,9 @@
         GalleryStory("previews/pdf", size: CGSize(width: 720, height: 900)) {
           PDFDocumentView(document: PDFDocument(data: GalleryFixtures.previewPDF())!)
         },
+        GalleryStory("previews/large-file", size: CGSize(width: 900, height: 560)) {
+          LargeFileView(pager: GalleryFixtures.previewLargePager(), limitation: "edit")
+        },
         GalleryStory("previews/transcript-mermaid", size: CGSize(width: 720, height: 1100)) {
           TranscriptMermaidStory()
           .padding(20)

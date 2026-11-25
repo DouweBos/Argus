@@ -50,7 +50,15 @@ import kotlinx.coroutines.withContext
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun CodeView(text: String, language: SyntaxLanguage?, modifier: Modifier = Modifier, focusLine: Int? = null, fontSize: Float = 12f) {
+fun CodeView(
+  text: String,
+  language: SyntaxLanguage?,
+  modifier: Modifier = Modifier,
+  focusLine: Int? = null,
+  fontSize: Float = 12f,
+  /** The number of the first line, for a page out of a larger file. */
+  firstLine: Long = 1,
+) {
   val theme = ArgusTheme.colors
   val palette = theme.syntax
   val lines = remember(text) { CodeHighlighting.lineRanges(text).map { text.substring(it.first, it.last + 1) } }
@@ -67,7 +75,7 @@ fun CodeView(text: String, language: SyntaxLanguage?, modifier: Modifier = Modif
   val density = LocalDensity.current
   val charWidth = remember(style, density) { with(density) { measurer.measure("0", style).size.width.toDp() } }
   val longest = remember(lines) { lines.maxOfOrNull { it.length } ?: 0 }
-  val gutter = charWidth * maxOf(2, lines.size.toString().length)
+  val gutter = charWidth * maxOf(2, (lines.size + firstLine - 1).toString().length)
   val contentWidth = gutter + 36.dp + charWidth * longest
   val listState = rememberLazyListState()
   val clipboard = LocalClipboardManager.current
@@ -88,8 +96,8 @@ fun CodeView(text: String, language: SyntaxLanguage?, modifier: Modifier = Modif
     Box(Modifier.fillMaxSize().horizontalScroll(rememberScrollState())) {
       LazyColumn(Modifier.width(maxOf(contentWidth, 1.dp)).fillMaxSize(), state = listState, contentPadding = PaddingValues(vertical = 6.dp)) {
         items(lines.size) { index ->
-          val number = index + 1
-          val focused = number == focusLine
+          val number = index + firstLine
+          val focused = number == focusLine?.toLong()
           var menu by remember { mutableStateOf(false) }
           Row(
             Modifier.fillMaxWidth()

@@ -105,6 +105,11 @@ the full schema.
 - **Images** (PNG, JPEG, GIF, WebP, SVG and more) open as images, with zoom
   and pan, instead of as a binary file.
 
+- **Large files** open read-only, a page at a time, instead of not at all:
+  past 5 MB in the Mac code view (the editor's limit) and past 2 MB in the
+  iPhone and Android file viewers. A banner says why it can't be edited, and
+  Previous / Next step through the file with its line numbers.
+
 PDFs and images up to 8 MB open in place; larger ones open in their default
 app on the Mac.
 

@@ -1742,6 +1742,35 @@ extension ArgusProtocol {
       }
     }
 
+    public struct CodeReadRangeParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var offset: Int
+      public var length: Int
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case offset = "offset"
+        case length = "length"
+      }
+
+      public init(id: String, relativePath: String, offset: Int, length: Int) {
+        self.id = id
+        self.relativePath = relativePath
+        self.offset = offset
+        self.length = length
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(offset, forKey: .offset)
+        try c.encode(length, forKey: .length)
+      }
+    }
+
     public struct CodeSearchParams: Codable, Sendable {
       public var query: String
       public var regex: Bool
@@ -11569,6 +11598,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.CodeReadFileParams
       public typealias Result = ArgusProtocol.CodeFile
       public static let name = "code_read_file"
+      public static let tier = "admin"
+    }
+
+    public enum CodeReadRange: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.CodeReadRangeParams
+      public typealias Result = ArgusProtocol.CodeFileRange
+      public static let name = "code_read_range"
       public static let tier = "admin"
     }
 

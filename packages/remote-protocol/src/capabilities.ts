@@ -211,6 +211,7 @@ export const REMOTE_METHODS = {
    *  same tier as listing them. */
   "files.read": "control",
   "files.read_bytes": "control",
+  "files.read_range": "control",
   "files.search": "control",
   "files.search_cancel": "control",
   /** Resolve a directory path for the @-mention browse mode. */

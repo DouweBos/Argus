@@ -39,6 +39,8 @@ struct FileView: View {
   /// A Markdown file's text rather than its rendered page.
   @State private var showSource = false
   @State private var reportedPreview = false
+  /// A file too large for `files.read`, a page at a time.
+  @State private var pager: LargeFilePager?
 
   private var shownPath: String { relativePath ?? path }
   private var preview: FilePreviewKind? { FilePreviewKind.of(path: path) }
@@ -91,6 +93,9 @@ struct FileView: View {
         EmptyState(icon: Icon.warning, title: "Can't open this file", body: failure)
       }
       .refreshable { await load() }
+    } else if let pager {
+      LargeFileView(pager: pager, limitation: "show in full on a phone")
+        .onAppear { reportPreview(.large) }
     } else if let file, let reason = file.readOnlyReason {
       Screen {
         EmptyState(icon: Icon.file, title: "Nothing to show", body: Self.message(for: reason, size: file.size))
@@ -139,8 +144,8 @@ struct FileView: View {
       })
   }
 
-  private func reportPreview() {
-    guard !reportedPreview, let preview else { return }
+  private func reportPreview(_ kind: FilePreviewKind? = nil) {
+    guard !reportedPreview, let preview = kind ?? preview else { return }
     reportedPreview = true
     Telemetry.capture(.previewOpened(kind: preview))
   }
@@ -206,7 +211,13 @@ struct FileView: View {
       if preview?.isBinary == true {
         bytes = try await host.readFileBytes(sessionId: sessionId, path: relativePath ?? path)
       } else {
-        file = try await host.readFile(sessionId: sessionId, path: relativePath ?? path)
+        let read = try await host.readFile(sessionId: sessionId, path: relativePath ?? path)
+        file = read
+        if read.readOnlyReason == .tooLarge, pager?.size != read.size {
+          pager = LargeFilePager(size: read.size) { [host, sessionId, path = relativePath ?? path] offset, length in
+            try await host.readFileRange(sessionId: sessionId, path: path, offset: offset, length: length)
+          }
+        }
       }
       failure = nil
     } catch {

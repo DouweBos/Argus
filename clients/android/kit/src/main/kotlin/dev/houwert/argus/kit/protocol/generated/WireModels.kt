@@ -1838,6 +1838,15 @@ data class CodeFileChanged(
 )
 
 @Serializable
+data class CodeFileRange(
+  @SerialName("text") val text: String,
+  @SerialName("offset") val offset: Long,
+  @SerialName("end") val end: Long,
+  @SerialName("size") val size: Long,
+  @SerialName("binary") val binary: Boolean,
+)
+
+@Serializable
 data class CodeFormatResult(
   @SerialName("formatter") val formatter: CodeFormatter,
   @SerialName("formatted") @EncodeDefault val formatted: String? = null,

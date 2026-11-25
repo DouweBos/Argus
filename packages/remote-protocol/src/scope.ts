@@ -170,6 +170,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.upload_attachment": session(),
   "files.read": session(),
   "files.read_bytes": session(),
+  "files.read_range": session(),
   "files.search": session(),
   "files.search_cancel": session(),
   "sessions.git_status": session(),

@@ -33,7 +33,7 @@ extension CodeSession {
           source: source, language: MacTelemetryEvent.languageName(language),
           sizeBucket: MacTelemetryEvent.fileSizeBucket(read.size), readOnly: read.readOnlyReason != nil))
       if let reason = read.readOnlyReason {
-        file.phase = .readOnly(reason)
+        file.phase = readOnlyPhase(file, reason: reason, size: read.size)
         return
       }
       file.editorConfig = await editorConfigs.properties(for: file.path)
@@ -65,6 +65,20 @@ extension CodeSession {
     } catch {
       file.phase = .failed(HostStore.describe(error))
     }
+  }
+
+  /// A file past the editor's limit pages through `code_read_range`; anything else can't be shown.
+  private func readOnlyPhase(_ file: CodeFile, reason: ArgusProtocol.CodeReadOnlyReason, size: Int) -> CodeFile.Phase {
+    guard reason == .tooLarge, let store else { return .readOnly(reason) }
+    let sessionId = sessionId
+    let path = file.path
+    return .large(
+      LargeFilePager(size: size) { [weak store] offset, length in
+        guard let store else { throw CancellationError() }
+        return try await store.request(
+          ArgusProtocol.Commands.CodeReadRange.self,
+          .init(id: sessionId, relativePath: path, offset: offset, length: length), session: sessionId)
+      })
   }
 
   /// A PDF's or an image's bytes, shown by the pane; the host refuses past 8 MB.
@@ -218,7 +232,7 @@ extension CodeSession {
       let read = try await store.request(
         ArgusProtocol.Commands.CodeReadFile.self, .init(id: sessionId, relativePath: file.path), session: sessionId)
       if let reason = read.readOnlyReason {
-        file.phase = .readOnly(reason)
+        file.phase = readOnlyPhase(file, reason: reason, size: read.size)
         return
       }
       document.reload(from: read.content, flashChanges: true)

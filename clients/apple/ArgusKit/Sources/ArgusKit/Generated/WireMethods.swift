@@ -4549,6 +4549,35 @@ extension ArgusProtocol {
       }
     }
 
+    public struct FilesReadRangeParams: Codable, Sendable {
+      public var sessionId: String
+      public var path: String
+      public var offset: Int
+      public var length: Int
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case path = "path"
+        case offset = "offset"
+        case length = "length"
+      }
+
+      public init(sessionId: String, path: String, offset: Int, length: Int) {
+        self.sessionId = sessionId
+        self.path = path
+        self.offset = offset
+        self.length = length
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(path, forKey: .path)
+        try c.encode(offset, forKey: .offset)
+        try c.encode(length, forKey: .length)
+      }
+    }
+
     public struct FilesSearchParams: Codable, Sendable {
       public var sessionId: String
       public var searchId: String
@@ -10905,6 +10934,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.FilesReadBytesParams
       public typealias Result = ArgusProtocol.MethodsTypes.FilesReadBytesResult
       public static let name = "files.read_bytes"
+    }
+
+    public enum FilesReadRange: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.FilesReadRangeParams
+      public typealias Result = ArgusProtocol.CodeFileRange
+      public static let name = "files.read_range"
     }
 
     public enum FilesSearch: RemoteCommand {

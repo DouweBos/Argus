@@ -1,4 +1,8 @@
-import { readCodeFile, writeCodeFile } from "../services/code/files";
+import {
+  readCodeFile,
+  readCodeFileRange,
+  writeCodeFile,
+} from "../services/code/files";
 import { formatCode } from "../services/code/format";
 import { cancelCodeSearch, startCodeSearch } from "../services/code/search";
 import { searchSymbols } from "../services/code/symbols";
@@ -8,6 +12,9 @@ import { defineTypedCommand } from "../services/command/registry";
 export function registerCodeCommands(): void {
   defineTypedCommand("code_read_file", (p) =>
     readCodeFile(p.id, p.relativePath),
+  );
+  defineTypedCommand("code_read_range", (p) =>
+    readCodeFileRange(p.id, p.relativePath, p.offset, p.length),
   );
   defineTypedCommand("code_write_file", (p) =>
     writeCodeFile(p.id, p.relativePath, p.content, p.baseHash, p.force),

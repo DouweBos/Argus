@@ -11,14 +11,19 @@ public struct CodeView: View {
   let language: SyntaxLanguage?
   let focusLine: Int?
   let fontSize: CGFloat
+  /// The number of the first line, for a page out of a larger file.
+  let firstLine: Int
 
   @State private var lines: [String] = []
   @State private var highlighted: [AttributedString]?
   @State private var disabledReason: SyntaxLimits.DisabledReason?
   @State private var longestLine = 0
 
-  public init(text: String, language: SyntaxLanguage?, focusLine: Int? = nil, fontSize: CGFloat = 12) {
+  public init(
+    text: String, language: SyntaxLanguage?, focusLine: Int? = nil, fontSize: CGFloat = 12, firstLine: Int = 1
+  ) {
     self.text = text
+    self.firstLine = firstLine
     self.language = language
     self.focusLine = focusLine
     self.fontSize = fontSize
@@ -38,6 +43,8 @@ public struct CodeView: View {
           }
           .padding(.vertical, 6)
         }
+        // A two-axis scroll view otherwise starts centred, on macOS mid-file.
+        .defaultScrollAnchor(.topLeading)
         .onAppear { scroll(proxy, animated: false) }
         .onChange(of: focusLine) { scroll(proxy, animated: true) }
         .onChange(of: lines.count) { scroll(proxy, animated: false) }
@@ -50,7 +57,7 @@ public struct CodeView: View {
   }
 
   private func row(_ index: Int) -> some View {
-    let number = index + 1
+    let number = index + firstLine
     let isFocused = number == focusLine
     return HStack(alignment: .firstTextBaseline, spacing: 0) {
       Text(verbatim: "\(number)")
@@ -89,7 +96,7 @@ public struct CodeView: View {
   }
 
   private var gutterWidth: CGFloat {
-    CGFloat(max(2, String(lines.count).count)) * TextScale.shared(fontSize) * 0.62
+    CGFloat(max(2, String(lines.count + firstLine - 1).count)) * TextScale.shared(fontSize) * 0.62
   }
 
   private func scroll(_ proxy: ScrollViewProxy, animated: Bool) {

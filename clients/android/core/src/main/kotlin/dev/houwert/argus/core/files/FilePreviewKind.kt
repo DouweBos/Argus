@@ -7,10 +7,12 @@ import java.net.URLDecoder
 enum class FilePreviewKind(val wire: String) {
   Markdown("markdown"),
   Pdf("pdf"),
-  Image("image");
+  Image("image"),
+  /** Too large to open whole, so paged; never from an extension. */
+  Large("large");
 
   /** Read as bytes rather than text: the host calls these binary. */
-  val isBinary: Boolean get() = this != Markdown
+  val isBinary: Boolean get() = this == Pdf || this == Image
 
   companion object {
     fun of(path: String): FilePreviewKind? = when (extension(path)) {

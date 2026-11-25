@@ -90,7 +90,7 @@ import {
   ClonePreviewInput,
   StartCloneInput,
 } from "./models/clone";
-import { CodeFile, CodeSearchEvent } from "./models/code";
+import { CodeFile, CodeFileRange, CodeSearchEvent } from "./models/code";
 import { GitStashEntry } from "./models/git/history";
 import { GitTag } from "./models/git/remotes";
 import {
@@ -564,6 +564,13 @@ export const MethodParams = {
   "files.read": z.object({ session_id: z.string(), path: z.string() }),
   /** One file's bytes, for the PDF and image viewers; 8 MB at most. */
   "files.read_bytes": z.object({ session_id: z.string(), path: z.string() }),
+  /** A page of a file too large for `files.read`, as `code_read_range`. */
+  "files.read_range": z.object({
+    session_id: z.string(),
+    path: z.string(),
+    offset: z.number().int().nonnegative(),
+    length: z.number().int().positive(),
+  }),
   /**
    * Search the worktree. Subscribe to `code-search:<search_id>` first: matches
    * arrive as `files.search` events, ending with one `kind: "done"`.
@@ -1407,6 +1414,7 @@ export const MethodResult = {
     data: z.string(),
     size: z.number().int(),
   }),
+  "files.read_range": CodeFileRange,
   "files.search": z.object({ search_id: z.string() }),
   "files.search_cancel": z.object({ accepted: z.boolean() }),
   "sessions.resolve_mention_path": RemoteMentionPathResult,

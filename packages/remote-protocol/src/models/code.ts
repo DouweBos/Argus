@@ -19,6 +19,21 @@ export const CodeFile = z.object({
 });
 export type CodeFile = z.infer<typeof CodeFile>;
 
+/**
+ * A page of a file too large to open whole. `text` starts at `offset` and ends
+ * at `end`, on a line break unless one line outruns the page.
+ */
+export const CodeFileRange = z.object({
+  text: z.string(),
+  offset: z.number().int().nonnegative(),
+  end: z.number().int().nonnegative(),
+  /** The whole file's bytes. */
+  size: z.number().int().nonnegative(),
+  /** The page holds NUL bytes: not text, so `text` is empty. */
+  binary: z.boolean(),
+});
+export type CodeFileRange = z.infer<typeof CodeFileRange>;
+
 /** What was on disk instead of the expected base. Nulls mean no file. */
 export const CodeWriteConflict = z.object({
   hash: z.string().nullable(),

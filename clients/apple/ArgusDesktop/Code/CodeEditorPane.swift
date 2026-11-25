@@ -55,6 +55,13 @@ struct CodeEditorPane: View {
       }
     case .binary(let data):
       CodeBinaryContent(file: file, data: data)
+    case .large(let pager):
+      LargeFileView(pager: pager, limitation: "edit")
+        .onAppear {
+          guard !file.reportedPreview else { return }
+          file.reportedPreview = true
+          MacTelemetry.capture(.previewOpened(kind: .large))
+        }
     case .readOnly(let reason):
       EmptyState(
         icon: "doc.questionmark", title: Self.title(reason), body: "Argus only edits UTF-8 text files up to 5 MB."

@@ -5,6 +5,8 @@ public enum FilePreviewKind: String, Sendable, CaseIterable {
   case markdown
   case pdf
   case image
+  /// Too large to open whole, so paged; never from an extension.
+  case large
 
   public static func of(path: String) -> FilePreviewKind? {
     switch (path as NSString).pathExtension.lowercased() {
@@ -16,7 +18,7 @@ public enum FilePreviewKind: String, Sendable, CaseIterable {
   }
 
   /// Read as bytes rather than text: the host calls these binary.
-  public var isBinary: Bool { self != .markdown }
+  public var isBinary: Bool { self == .pdf || self == .image }
 
   public static func isSVG(_ path: String) -> Bool {
     (path as NSString).pathExtension.lowercased() == "svg"

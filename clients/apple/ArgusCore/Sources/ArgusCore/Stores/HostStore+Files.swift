@@ -22,6 +22,16 @@ extension HostStore {
     return data
   }
 
+  /// A page of a file too large for `readFile`.
+  public func readFileRange(
+    sessionId: String, path: String, offset: Int, length: Int
+  ) async throws -> ArgusProtocol.CodeFileRange {
+    guard let backend else { throw Self.offlineError }
+    return try await backend.request(
+      ArgusProtocol.Methods.FilesReadRange.self,
+      .init(sessionId: sessionId, path: path, offset: offset, length: length))
+  }
+
   /// Start a search whose events go to `deliver` until it is done or `endFileSearch`.
   /// The subscription is opened before the call, so no early batch is lost.
   public func startFileSearch(

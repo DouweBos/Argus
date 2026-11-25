@@ -14,7 +14,9 @@ final class CodeFile {
     case ready(EditorDocument)
     /// A PDF or an image, shown rather than edited.
     case binary(Data)
-    /// Too large, binary, or not UTF-8: offered to another app instead.
+    /// Too large to edit: read a page at a time.
+    case large(LargeFilePager)
+    /// Binary, or not UTF-8: offered to another app instead.
     case readOnly(ArgusProtocol.CodeReadOnlyReason)
     case failed(String)
   }

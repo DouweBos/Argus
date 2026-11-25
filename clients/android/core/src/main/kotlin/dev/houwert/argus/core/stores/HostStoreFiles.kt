@@ -4,6 +4,7 @@ import dev.houwert.argus.core.files.FileSearchQuery
 import dev.houwert.argus.core.files.FileSearchTransport
 import dev.houwert.argus.kit.protocol.EventEnvelope
 import dev.houwert.argus.kit.protocol.generated.CodeFile
+import dev.houwert.argus.kit.protocol.generated.CodeFileRange
 import dev.houwert.argus.kit.protocol.generated.CodeSearchEvent
 import dev.houwert.argus.kit.protocol.generated.Events
 import dev.houwert.argus.kit.protocol.generated.Methods
@@ -23,6 +24,12 @@ suspend fun HostStore.readFileBytes(sessionId: String, path: String): ByteArray 
   val backend = backend ?: throw HostStore.offlineError
   val result = backend.request(Methods.FilesReadBytes, MethodsTypes.FilesReadBytesParams(sessionId, path))
   return java.util.Base64.getDecoder().decode(result.data)
+}
+
+/** A page of a file too large for [readFile]. */
+suspend fun HostStore.readFileRange(sessionId: String, path: String, offset: Long, length: Long): CodeFileRange {
+  val backend = backend ?: throw HostStore.offlineError
+  return backend.request(Methods.FilesReadRange, MethodsTypes.FilesReadRangeParams(sessionId, path, offset, length))
 }
 
 /** The gateway's `files.search`, with `files.search` events routed to each search's listener. */
