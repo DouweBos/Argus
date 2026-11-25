@@ -1,5 +1,6 @@
 package dev.houwert.argus.core.automations
 
+import dev.houwert.argus.kit.protocol.generated.RemoteAutomation
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetail
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetailAutonomy
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationTriggerKind
@@ -43,6 +44,16 @@ fun RemoteAutomationDetail.withAutonomy(rung: Autonomy?) = copy(autonomy = rung?
 
 val RemoteAutomationRun.isActive: Boolean
   get() = status == RemoteAutomationRunStatus.queued || status == RemoteAutomationRunStatus.running
+
+/** The Automations list without teammates' duties, which live on their teammate's Duties page. */
+data class StandaloneAutomations(val automations: List<RemoteAutomation>, val runs: List<RemoteAutomationRun>) {
+  companion object {
+    fun of(automations: List<RemoteAutomation>, runs: List<RemoteAutomationRun>): StandaloneAutomations {
+      val duties = automations.filter { it.teammateId != null }.mapTo(HashSet()) { it.id }
+      return StandaloneAutomations(automations.filter { it.id !in duties }, runs.filter { it.automationId !in duties })
+    }
+  }
+}
 
 /** The report's first line when there is one, else why it ran. */
 val RemoteAutomationRun.summary: String get() = reportPreview?.takeIf { it.isNotEmpty() } ?: triggerReason

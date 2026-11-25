@@ -18,7 +18,8 @@ struct AutomationsScreen: View {
   private var quickRuns: Int { store.runs.count { $0.isQuick } }
 
   var body: some View {
-    let phase = LoadPhase(loaded: store.loaded, error: store.error, isEmpty: store.automations.isEmpty)
+    let automations = store.standaloneAutomations
+    let phase = LoadPhase(loaded: store.loaded, error: store.error, isEmpty: automations.isEmpty)
     Group {
       switch phase {
       case .loading: ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -27,7 +28,7 @@ struct AutomationsScreen: View {
           Button("Try Again") { Task { await store.refresh() } }
         }
       case .empty: empty
-      case .content: table
+      case .content: table(automations)
       }
     }
     .safeAreaInset(edge: .top) {
@@ -36,7 +37,7 @@ struct AutomationsScreen: View {
       }
     }
     .navigationTitle("Automations")
-    .navigationSubtitle(AutomationText.plural(store.automations.count, "automation"))
+    .navigationSubtitle(AutomationText.plural(automations.count, "automation"))
     .toolbar { toolbar }
     .sheet(isPresented: $describing) { DescribeAutomationSheet() }
     // Closing the sheet a link opened leaves its route, so the link works again.
@@ -74,8 +75,9 @@ struct AutomationsScreen: View {
     }
   }
 
-  private var table: some View {
-    Table(store.automations, selection: $selection) {
+  /// Teammates' duties are left out: they're listed on their teammate's page.
+  private func table(_ automations: [RemoteAutomation]) -> some View {
+    Table(automations, selection: $selection) {
       TableColumn("") { automation in
         Toggle(
           "",

@@ -4,7 +4,7 @@ import type {
   RemoteAutomation,
   RemoteAutomationRun,
 } from "@argus/remote-protocol";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   formatRelative,
   isRunActive,
@@ -61,7 +61,12 @@ export function RunControl({
 export function AutomationsScreen() {
   const ready = useConnectionStore((s) => s.connection === "ready");
   const hasControl = useConnectionStore((s) => s.hasControl());
-  const automations = useAutomationsStore((s) => s.automations);
+  const allAutomations = useAutomationsStore((s) => s.automations);
+  // Duties are reached from their teammate's Duties page.
+  const automations = useMemo(
+    () => allAutomations.filter((a) => !a.teammate_id),
+    [allAutomations],
+  );
   const runs = useAutomationsStore((s) => s.runs);
   const load = useAutomationsStore((s) => s.load);
   const error = useAutomationsStore((s) => s.error);

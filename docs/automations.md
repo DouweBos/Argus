@@ -729,7 +729,8 @@ owns several automations as its duties. A duty runs exactly like any other
 automation, with two differences — it reads and writes its teammate's memory
 instead of its own, and it never goes further than its teammate's autonomy.
 **Move to Teammate** on an automation's screen makes it one; its memories move
-with it.
+with it. Duties, and their runs, are listed on their teammate's page rather than
+in the Automations list.
 
 ---
 

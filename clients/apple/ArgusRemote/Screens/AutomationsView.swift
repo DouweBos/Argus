@@ -17,6 +17,8 @@ struct AutomationsView: View {
   @State private var showingAllRuns = false
 
   var body: some View {
+    let automations = store.standaloneAutomations
+    let runs = store.standaloneRuns
     List {
       if phase.showsContent {
         if let error = store.error {
@@ -27,9 +29,9 @@ struct AutomationsView: View {
             NavigationLink(value: Route.teammates) { TeammatesEntryRow(summaries: teammates.summaries) }
           }
         }
-        if !store.automations.isEmpty {
+        if !automations.isEmpty {
           Section {
-            ForEach(store.automations) { automation in
+            ForEach(automations) { automation in
               let latest = store.runs(for: automation.id).first
               NavigationLink(
                 value: Route.automation(id: automation.id, label: automation.name)
@@ -50,18 +52,18 @@ struct AutomationsView: View {
             }
           } header: {
             // Alone on the screen it would only repeat the title.
-            if !store.runs.isEmpty { Text("Automations") }
+            if !runs.isEmpty { Text("Automations") }
           }
         }
-        if !store.runs.isEmpty {
+        if !runs.isEmpty {
           Section("Recent runs") {
-            ForEach(showingAllRuns ? store.runs : Array(store.runs.prefix(Self.recentRuns))) { run in
+            ForEach(showingAllRuns ? runs : Array(runs.prefix(Self.recentRuns))) { run in
               NavigationLink(value: Route.run(id: run.id, label: run.automationName)) {
                 RunRow(run: run, showName: true)
               }
             }
-            if store.runs.count > Self.recentRuns {
-              Button(showingAllRuns ? "Show fewer" : "See all \(store.runs.count)") {
+            if runs.count > Self.recentRuns {
+              Button(showingAllRuns ? "Show fewer" : "See all \(runs.count)") {
                 withAnimation { showingAllRuns.toggle() }
               }
             }
@@ -118,9 +120,12 @@ struct AutomationsView: View {
     teammates.loaded && (teammates.error == nil || !teammates.summaries.isEmpty)
   }
 
-  /// The teammates entry counts as content, so it stays reachable with no automations.
+  /// Duties don't count: they're listed under their teammate. The teammates
+  /// entry does, so it stays reachable with no automations.
   private var phase: LoadPhase {
-    store.phase == .empty && showsTeammates ? .content : store.phase
+    var phase = store.phase
+    if phase == .content && store.standaloneAutomations.isEmpty && store.standaloneRuns.isEmpty { phase = .empty }
+    return phase == .empty && showsTeammates ? .content : phase
   }
 }
 

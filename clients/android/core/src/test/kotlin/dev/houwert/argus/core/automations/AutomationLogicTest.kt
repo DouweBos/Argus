@@ -7,6 +7,7 @@ import dev.houwert.argus.kit.protocol.generated.MethodsTypes
 import dev.houwert.argus.kit.protocol.generated.AutomationInput as GeneratedAutomationInput
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomation
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationDetail
+import dev.houwert.argus.kit.protocol.generated.RemoteAutomationRun
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationTriggerKind
 import dev.houwert.argus.kit.protocol.generated.RemoteClaudeAccount
 import dev.houwert.argus.kit.protocol.generated.RemoteRunner
@@ -220,5 +221,33 @@ class AutomationInputTest {
     val detail = ProtocolJson.decode(RemoteAutomationDetail.serializer(), JsonObject(old - "claude_account_id"))
     assertNull(detail.claudeAccountId)
     assertEquals(JsonPrimitive("work"), encode(newAutomationDetail(name = "A", claudeAccountId = "work"))["claude_account_id"])
+  }
+}
+
+class StandaloneAutomationsTest {
+  private fun automation(id: String, teammate: String? = null) = decode(
+    RemoteAutomation.serializer(),
+    """{"id":"$id","name":"$id","description":"","enabled":true,"trigger_kind":"cron","projects":[],"running":false,"teammate_id":${teammate?.let { "\"$it\"" } ?: "null"}}""",
+  )
+
+  private fun run(id: String, automation: String) = decode(
+    RemoteAutomationRun.serializer(),
+    """{"id":"$id","automation_id":"$automation","automation_name":"n","is_quick":false,"status":"succeeded","trigger_reason":"cron","started_at":1,"unread_report":false}""",
+  )
+
+  @Test
+  fun dutiesAndTheirRunsAreLeftOut() {
+    val list = StandaloneAutomations.of(
+      listOf(automation("a"), automation("d", teammate = "t")),
+      listOf(run("1", "a"), run("2", "d"), run("3", "quick")),
+    )
+    assertEquals(listOf("a"), list.automations.map { it.id })
+    assertEquals(listOf("1", "3"), list.runs.map { it.id })
+  }
+
+  @Test
+  fun onlyDutiesLeavesNothing() {
+    val list = StandaloneAutomations.of(listOf(automation("d", teammate = "t")), listOf(run("1", "d")))
+    assertTrue(list.automations.isEmpty() && list.runs.isEmpty())
   }
 }

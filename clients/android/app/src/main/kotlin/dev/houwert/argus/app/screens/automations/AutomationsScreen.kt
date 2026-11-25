@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -30,6 +31,7 @@ import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.app.navigation.Route
 import dev.houwert.argus.app.screens.teammates.TeammatesEntryRow
+import dev.houwert.argus.core.automations.StandaloneAutomations
 import dev.houwert.argus.core.automations.isActive
 import dev.houwert.argus.ui.automations.AutomationRow
 import dev.houwert.argus.ui.automations.RunRow
@@ -60,8 +62,10 @@ fun AutomationsScreen() {
   val router = LocalRouter.current
   val access = rememberHostAccess()
   val scope = rememberCoroutineScope()
-  val automations by store.automations.collectAsState()
-  val runs by store.runs.collectAsState()
+  val allAutomations by store.automations.collectAsState()
+  val allRuns by store.runs.collectAsState()
+  // Duties are reached from their teammate's Duties page.
+  val (automations, runs) = remember(allAutomations, allRuns) { StandaloneAutomations.of(allAutomations, allRuns) }
   val loaded by store.loaded.collectAsState()
   val error by store.error.collectAsState()
   val triggering by store.triggering.collectAsState()
