@@ -95,6 +95,7 @@ struct TranscriptMessageRow: View, Equatable {
     return TranscriptMessageText(
       rendered: text, unit: message.id, highlights: model.hitsByUnit[unit] ?? [], current: current,
       revealToken: current == nil ? 0 : model.pendingReveal, fills: fills,
+      diagramsDrawn: text.hasDiagram ? MermaidRenders.shared.count : 0,
       onRevealed: { model.revealedToken = $0 }
     )
   }

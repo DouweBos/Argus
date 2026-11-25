@@ -76,6 +76,7 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
       self, selector: #selector(boundsChanged), name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
     center.addObserver(
       self, selector: #selector(frameChanged), name: NSView.frameDidChangeNotification, object: scrollView.contentView)
+    center.addObserver(self, selector: #selector(diagramRendered), name: MermaidRenderer.didRender, object: nil)
     observeFind()
     wireSelection()
     scrollView.onScrollUp = { [weak self] in self?.follow.atBottom = false }
@@ -485,6 +486,15 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     }
     measureAroundViewport()
     loadOlderIfNeeded()
+  }
+
+  /// A diagram drew at its own height: rows on screen measure again, the rest when they near it.
+  @objc private func diagramRendered() {
+    heights.forgetAll()
+    let visible = table.rows(in: scrollView.contentView.bounds.insetBy(dx: 0, dy: -200))
+    guard visible.length > 0 else { return }
+    let moved = measure(visible.location..<(visible.location + visible.length), always: true)
+    if !moved.isEmpty { keepingPlace { note(moved) } }
   }
 
   @objc private func frameChanged() {

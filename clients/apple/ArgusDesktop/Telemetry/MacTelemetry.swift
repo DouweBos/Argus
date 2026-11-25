@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import Foundation
 
 /// The Mac app's events, through its host's `telemetry_capture` (see
@@ -19,6 +20,7 @@ enum MacTelemetry {
   /// The host is reachable: apply the consent level, then flush. A window
   /// attached to another app's host leaves that app's consent alone.
   static func attach(_ backend: LocalBackend, applyMode: Bool = true) async {
+    MermaidRenderer.shared.onRender = { capture(.mermaidRendered(failed: $0)) }
     await client.attach(backend, mode: applyMode ? ArgusProtocol.TelemetryMode(rawValue: mode) : nil)
   }
 
