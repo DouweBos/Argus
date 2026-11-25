@@ -206,6 +206,8 @@ The waveform button next to the microphone in the message field turns on voice
 mode. When an agent finishes a turn, its reply is read aloud, with code blocks
 and tables skipped, and the microphone opens; stop talking for a moment and
 what you said is sent. Start talking while a reply is being read and it stops.
+On the Mac, sounds the microphone picks up while you type in Argus are ignored,
+so keyboard clicks aren't sent.
 Permission prompts are read too: say "allow" or "deny" to answer. Questions,
 plans and secrets are announced and left on screen. Nothing leaves the device:
 speech and recognition both run on it. Voice mode is one switch for the whole

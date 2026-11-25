@@ -167,7 +167,7 @@ internal suspend fun ComposerModel.finishDictation(run: DictationRun) {
   _dictation.value = DictationPhase.Idle
   // The draft as it was first: an answer or a fresh listen must not start from the partials.
   setText(run.draft.original, run.draft.prefix.length)
-  if (transcript.isBlank() || !voiceFinished(run, transcript)) return
+  if (SpokenText.words(transcript).isEmpty() || !voiceFinished(run, transcript)) return
   val merged = run.draft.merged(transcript)
   setText(merged.text, merged.caret)
   run.trigger.affordance?.let { onAffordance?.invoke(it) }

@@ -163,7 +163,8 @@ internal fun ComposerModel.voiceHeard(transcript: String, run: DictationRun): St
     voiceSynthesizer?.stop()
   }
   val words = SpokenText.dropping(run.echoWords, transcript)
-  if (words.isEmpty()) return null
+  // A lone "." from a cough or a tap isn't speech.
+  if (SpokenText.words(words).isEmpty()) return null
   run.heard = true
   armVoiceTimer(run, voice.pauseMs ?: (VoiceSettings.load(preferences).sendAfter * 1000).toLong())
   return words

@@ -139,7 +139,7 @@ extension ComposerModel {
     editor?.restore(original)
     text = original
     transcript = SpokenText.dropping(run.echoWords, wordsOf: transcript)
-    guard !transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+    guard !SpokenText.words(transcript).isEmpty,
       voiceFinished(run, transcript: transcript)
     else { return }
     let merged = run.draft.merged(transcript)

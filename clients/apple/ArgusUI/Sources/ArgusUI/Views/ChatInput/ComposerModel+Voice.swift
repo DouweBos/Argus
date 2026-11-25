@@ -28,6 +28,8 @@ enum VoiceListen: Equatable {
 public struct VoiceEnvironment {
   let synthesizer: @MainActor () -> any SpeechSynthesizer
   let isForeground: @MainActor () -> Bool
+  /// The keyboard was just used here, so what the microphone hears is its clicking.
+  let typedRecently: @MainActor () -> Bool
   /// Silence after speech that sends it; nil is the user's setting.
   let pause: Duration?
   /// Silence with nothing said that closes the microphone.
@@ -36,18 +38,24 @@ public struct VoiceEnvironment {
 
   public init(
     synthesizer: @escaping @MainActor () -> any SpeechSynthesizer, isForeground: @escaping @MainActor () -> Bool,
+    typedRecently: @escaping @MainActor () -> Bool = { false },
     pause: Duration? = nil, giveUp: Duration = .seconds(30),
     sleep: @escaping @MainActor (Duration) async -> Void = { try? await Task.sleep(for: $0) }
   ) {
     self.synthesizer = synthesizer
     self.isForeground = isForeground
+    self.typedRecently = typedRecently
     self.pause = pause
     self.giveUp = giveUp
     self.sleep = sleep
   }
 
-  @MainActor public static let live = VoiceEnvironment(
-    synthesizer: { SystemSpeechSynthesizer() }, isForeground: { AppActivity.isForeground })
+  @MainActor public static let live: VoiceEnvironment = {
+    KeyActivity.watch()
+    return VoiceEnvironment(
+      synthesizer: { SystemSpeechSynthesizer() }, isForeground: { AppActivity.isForeground },
+      typedRecently: { KeyActivity.typedRecently })
+  }()
 }
 
 /// Hands-free: a finished turn's reply is read aloud, then the microphone opens and a pause sends what was said.
@@ -164,6 +172,11 @@ extension ComposerModel {
   func voiceHeard(_ transcript: String, in run: DictationRun) -> String? {
     guard run.listen != nil else { return transcript }
     run.latest = transcript
+    if voice.typedRecently() {
+      // Everything heard so far is set aside, like the reply's echo.
+      run.echoWords = transcript.split(whereSeparator: \.isWhitespace).count
+      return nil
+    }
     if speaking, let echo = run.echo {
       guard !SpokenText.novelWords(in: transcript, spoken: echo).isEmpty else { return nil }
       // The user started talking: the reply stops for them.
@@ -172,7 +185,8 @@ extension ComposerModel {
       speaking = false
     }
     let transcript = SpokenText.dropping(run.echoWords, wordsOf: transcript)
-    guard !transcript.isEmpty else { return nil }
+    // A lone "." from a cough or a click isn't speech.
+    guard !SpokenText.words(transcript).isEmpty else { return nil }
     run.heard = true
     armVoiceTimer(run, after: voice.pause ?? .seconds(VoiceSettings.load(preferences).sendAfter))
     return transcript

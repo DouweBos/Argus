@@ -142,6 +142,17 @@ class ComposerVoiceTest {
     assertEquals(listOf(ChatInputAffordance.VoiceMode, ChatInputAffordance.VoiceSend), affordances)
   }
 
+  @Test fun `punctuation alone isn't speech, so nothing is sent`() {
+    val composer = model()
+    composer.setVoiceMode(true)
+    settle()
+    engine.say(".")
+    settle()
+    pass(120)
+    assertTrue(host.sent.isEmpty())
+    assertEquals(DictationPhase.Listening, composer.dictation.value)
+  }
+
   @Test fun `the pause that sends is the user's setting`() {
     val composer = model(pauseMs = null, sendAfter = 3.0)
     composer.setVoiceMode(true)

@@ -80,6 +80,7 @@ struct ComposerVoiceTests {
   private let engine = FakeDictationEngine(final: nil)
   private let speaker = FakeSpeaker()
   private let clock = ManualClock()
+  private let keyboard = FakeKeyboard()
 
   private func model(
     foreground: Bool = false, onlyInBackground: Bool = false, giveUp: Duration = .seconds(30),
@@ -91,11 +92,13 @@ struct ComposerVoiceTests {
     let engine = engine
     let speaker = speaker
     let clock = clock
+    let keyboard = keyboard
     return ComposerModel(
       agentId: "a1", sessionId: "s1", host: host, style: .phone, preferences: preferences,
       dictationEngine: { _ in engine },
       voice: VoiceEnvironment(
-        synthesizer: { speaker }, isForeground: { foreground }, pause: pause, giveUp: giveUp,
+        synthesizer: { speaker }, isForeground: { foreground }, typedRecently: { keyboard.typing }, pause: pause,
+        giveUp: giveUp,
         sleep: { await clock.sleep($0) }))
   }
 
@@ -124,6 +127,36 @@ struct ComposerVoiceTests {
     #expect(host.sent.map(\.message) == ["run the tests"])
     #expect(composer.text.isEmpty)
     #expect(affordances == [.voiceMode, .voiceSend])
+  }
+
+  @Test("punctuation alone isn't speech, so nothing is sent")
+  func punctuationOnly() async {
+    let composer = model()
+    composer.setVoiceMode(true)
+    await settle()
+    engine.say(".")
+    await settle()
+    await clock.advance(by: .seconds(1))
+    #expect(host.sent.isEmpty)
+    #expect(composer.dictation == .listening)
+  }
+
+  @Test("what's heard while typing is the keyboard, and only words after it are sent")
+  func typing() async {
+    let composer = model()
+    composer.setVoiceMode(true)
+    await settle()
+    keyboard.typing = true
+    engine.say("the")
+    await settle()
+    await clock.advance(by: .seconds(1))
+    #expect(host.sent.isEmpty)
+    keyboard.typing = false
+    engine.say("the run the tests")
+    await settle()
+    #expect(composer.text == "run the tests")
+    await clock.advance(by: .seconds(1))
+    #expect(host.sent.map(\.message) == ["run the tests"])
   }
 
   @Test("the pause that sends is the user's setting")
@@ -314,4 +347,9 @@ final class FakeSpeaker: SpeechSynthesizer {
     pending?.resume()
     pending = nil
   }
+}
+
+@MainActor
+private final class FakeKeyboard {
+  var typing = false
 }
