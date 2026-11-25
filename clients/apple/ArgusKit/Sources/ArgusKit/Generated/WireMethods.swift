@@ -2781,6 +2781,7 @@ extension ArgusProtocol {
       public var guardrails: RemoteAutomationGuardrails?
       public var precheckCommand: String?
       public var precheckTimeoutSeconds: Double?
+      public var continueConversation: Bool?
 
       enum CodingKeys: String, CodingKey {
         case name = "name"
@@ -2808,9 +2809,10 @@ extension ArgusProtocol {
         case guardrails = "guardrails"
         case precheckCommand = "precheck_command"
         case precheckTimeoutSeconds = "precheck_timeout_seconds"
+        case continueConversation = "continue_conversation"
       }
 
-      public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, triggerKind: RemoteAutomationTriggerKind? = nil, slackChannel: SlackChannelRef? = nil, slackMatch: SlackTriggerMatch? = nil, slackText: String? = nil, reportSlackChannel: SlackChannelRef? = nil, cron: String? = nil, runAt: String? = nil, signal: RemoteSignalTrigger? = nil, webhook: RemoteWebhookTriggerInput? = nil, timezone: String? = nil, catchUp: Bool? = nil, repoRoots: [String]? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutomationsUpdateParamsPatchAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails? = nil, precheckCommand: String? = nil, precheckTimeoutSeconds: Double? = nil) {
+      public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, triggerKind: RemoteAutomationTriggerKind? = nil, slackChannel: SlackChannelRef? = nil, slackMatch: SlackTriggerMatch? = nil, slackText: String? = nil, reportSlackChannel: SlackChannelRef? = nil, cron: String? = nil, runAt: String? = nil, signal: RemoteSignalTrigger? = nil, webhook: RemoteWebhookTriggerInput? = nil, timezone: String? = nil, catchUp: Bool? = nil, repoRoots: [String]? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutomationsUpdateParamsPatchAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails? = nil, precheckCommand: String? = nil, precheckTimeoutSeconds: Double? = nil, continueConversation: Bool? = nil) {
         self.name = name
         self.description = description
         self.enabled = enabled
@@ -2836,6 +2838,7 @@ extension ArgusProtocol {
         self.guardrails = guardrails
         self.precheckCommand = precheckCommand
         self.precheckTimeoutSeconds = precheckTimeoutSeconds
+        self.continueConversation = continueConversation
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -2865,6 +2868,7 @@ extension ArgusProtocol {
         try c.encodeIfPresent(guardrails, forKey: .guardrails)
         try c.encodeIfPresent(precheckCommand, forKey: .precheckCommand)
         try c.encodeIfPresent(precheckTimeoutSeconds, forKey: .precheckTimeoutSeconds)
+        try c.encodeIfPresent(continueConversation, forKey: .continueConversation)
       }
     }
 

@@ -916,6 +916,7 @@ object MethodsTypes {
     @SerialName("guardrails") val guardrails: RemoteAutomationGuardrails? = null,
     @SerialName("precheck_command") val precheckCommand: String? = null,
     @SerialName("precheck_timeout_seconds") val precheckTimeoutSeconds: Double? = null,
+    @SerialName("continue_conversation") val continueConversation: Boolean? = null,
   )
 
   @Serializable

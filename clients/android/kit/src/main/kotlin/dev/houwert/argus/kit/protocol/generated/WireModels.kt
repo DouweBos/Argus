@@ -812,6 +812,7 @@ data class Automation(
   @SerialName("report_slack_channel") val reportSlackChannel: SlackChannelRef? = null,
   @SerialName("precheck_command") val precheckCommand: String,
   @SerialName("precheck_timeout_seconds") val precheckTimeoutSeconds: Double,
+  @SerialName("continue_conversation") val continueConversation: Boolean,
 )
 
 @Serializable
@@ -904,6 +905,7 @@ data class AutomationInput(
   @SerialName("guardrails") val guardrails: RemoteAutomationGuardrails,
   @SerialName("precheck_command") val precheckCommand: String? = null,
   @SerialName("precheck_timeout_seconds") val precheckTimeoutSeconds: Double? = null,
+  @SerialName("continue_conversation") val continueConversation: Boolean? = null,
 )
 
 @Serializable
@@ -936,6 +938,18 @@ value class AutomationMemoryType(val rawValue: String) {
 }
 
 @Serializable
+@JvmInline
+value class AutomationRunConversation(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val continued = AutomationRunConversation("continued")
+    val fellBack = AutomationRunConversation("fell_back")
+    val entries: List<AutomationRunConversation> = listOf(continued, fellBack)
+  }
+}
+
+@Serializable
 data class AutomationRun(
   @SerialName("id") val id: String,
   @SerialName("automation_id") val automationId: String,
@@ -952,6 +966,7 @@ data class AutomationRun(
   @SerialName("error") @EncodeDefault val error: String? = null,
   @SerialName("report_read") val reportRead: Boolean,
   @SerialName("feedback") val feedback: List<AutomationRunFeedback>,
+  @SerialName("conversation") @EncodeDefault val conversation: AutomationRunConversation? = null,
 )
 
 @Serializable
@@ -2260,6 +2275,7 @@ data class CreateAutomationInput(
   @SerialName("teammate_id") val teammateId: String? = null,
   @SerialName("precheck_command") val precheckCommand: String? = null,
   @SerialName("precheck_timeout_seconds") val precheckTimeoutSeconds: Double? = null,
+  @SerialName("continue_conversation") val continueConversation: Boolean? = null,
 )
 
 @Serializable
@@ -5355,6 +5371,7 @@ data class RemoteAutomationDetail(
   @SerialName("guardrails") val guardrails: RemoteAutomationGuardrails,
   @SerialName("precheck_command") val precheckCommand: String? = null,
   @SerialName("precheck_timeout_seconds") val precheckTimeoutSeconds: Double? = null,
+  @SerialName("continue_conversation") val continueConversation: Boolean? = null,
 )
 
 @Serializable
@@ -5393,6 +5410,18 @@ data class RemoteAutomationMemory(
 )
 
 @Serializable
+@JvmInline
+value class RemoteAutomationRunConversation(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val continued = RemoteAutomationRunConversation("continued")
+    val fellBack = RemoteAutomationRunConversation("fell_back")
+    val entries: List<RemoteAutomationRunConversation> = listOf(continued, fellBack)
+  }
+}
+
+@Serializable
 data class RemoteAutomationRun(
   @SerialName("id") val id: String,
   @SerialName("automation_id") val automationId: String,
@@ -5409,6 +5438,7 @@ data class RemoteAutomationRun(
   @SerialName("report_preview") val reportPreview: String? = null,
   @SerialName("host_session_id") @EncodeDefault val hostSessionId: String? = null,
   @SerialName("host_agent_id") @EncodeDefault val hostAgentId: String? = null,
+  @SerialName("conversation") val conversation: RemoteAutomationRunConversation? = null,
 )
 
 @Serializable
@@ -7868,6 +7898,7 @@ data class UpdateAutomationInput(
   @SerialName("report_slack_channel") val reportSlackChannel: SlackChannelRef? = null,
   @SerialName("precheck_command") val precheckCommand: String? = null,
   @SerialName("precheck_timeout_seconds") val precheckTimeoutSeconds: Double? = null,
+  @SerialName("continue_conversation") val continueConversation: Boolean? = null,
 )
 
 @Serializable

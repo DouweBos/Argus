@@ -85,6 +85,21 @@ export const SkippedByPrecheck: Story = {
   },
 };
 
+/** Picked up where the previous run stopped. */
+export const ContinuedConversation: Story = {
+  args: {
+    status: "succeeded",
+    reason: "schedule 07:30 · Continued the previous run's conversation",
+    report: (
+      <RunReport
+        active={false}
+        blocks={null}
+        markdown="Two new issues since yesterday; one duplicate closed."
+      />
+    ),
+  },
+};
+
 export const MarkdownReport: Story = {
   args: {
     status: "succeeded",

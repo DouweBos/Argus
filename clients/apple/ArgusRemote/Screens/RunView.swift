@@ -111,6 +111,7 @@ struct RunView: View {
         Spacer(minLength: 6)
       }
       MutedText(run.triggerReason)
+      if let note = AutomationText.conversationNote(run.conversation) { MutedText(note) }
 
       RunFigures([
         ("Started", Labels.timeAgo(run.startedAt)), ("Duration", Labels.runDuration(run)),

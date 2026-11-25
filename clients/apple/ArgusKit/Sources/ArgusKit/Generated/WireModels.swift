@@ -2128,6 +2128,7 @@ extension ArgusProtocol {
     public var reportSlackChannel: SlackChannelRef?
     public var precheckCommand: String
     public var precheckTimeoutSeconds: Double
+    public var continueConversation: Bool
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -2154,9 +2155,10 @@ extension ArgusProtocol {
       case reportSlackChannel = "report_slack_channel"
       case precheckCommand = "precheck_command"
       case precheckTimeoutSeconds = "precheck_timeout_seconds"
+      case continueConversation = "continue_conversation"
     }
 
-    public init(id: String, name: String, description: String, enabled: Bool, trigger: AutomationTrigger, scope: AutomationScope, sourceIds: [String], playbook: String, extraInstructions: String, autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, teammateId: String? = nil, seededPlaybookHash: String? = nil, createdAt: Double, updatedAt: Double, lastRunAt: Double? = nil, nextRunAt: Double? = nil, reportSlackChannel: SlackChannelRef? = nil, precheckCommand: String, precheckTimeoutSeconds: Double) {
+    public init(id: String, name: String, description: String, enabled: Bool, trigger: AutomationTrigger, scope: AutomationScope, sourceIds: [String], playbook: String, extraInstructions: String, autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, teammateId: String? = nil, seededPlaybookHash: String? = nil, createdAt: Double, updatedAt: Double, lastRunAt: Double? = nil, nextRunAt: Double? = nil, reportSlackChannel: SlackChannelRef? = nil, precheckCommand: String, precheckTimeoutSeconds: Double, continueConversation: Bool) {
       self.id = id
       self.name = name
       self.description = description
@@ -2181,6 +2183,7 @@ extension ArgusProtocol {
       self.reportSlackChannel = reportSlackChannel
       self.precheckCommand = precheckCommand
       self.precheckTimeoutSeconds = precheckTimeoutSeconds
+      self.continueConversation = continueConversation
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -2209,6 +2212,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(reportSlackChannel, forKey: .reportSlackChannel)
       try c.encode(precheckCommand, forKey: .precheckCommand)
       try c.encode(precheckTimeoutSeconds, forKey: .precheckTimeoutSeconds)
+      try c.encode(continueConversation, forKey: .continueConversation)
     }
   }
 
@@ -2436,6 +2440,7 @@ extension ArgusProtocol {
     public var guardrails: RemoteAutomationGuardrails
     public var precheckCommand: String?
     public var precheckTimeoutSeconds: Double?
+    public var continueConversation: Bool?
 
     enum CodingKeys: String, CodingKey {
       case name = "name"
@@ -2463,9 +2468,10 @@ extension ArgusProtocol {
       case guardrails = "guardrails"
       case precheckCommand = "precheck_command"
       case precheckTimeoutSeconds = "precheck_timeout_seconds"
+      case continueConversation = "continue_conversation"
     }
 
-    public init(name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationTriggerKind, slackChannel: SlackChannelRef? = nil, slackMatch: SlackTriggerMatch? = nil, slackText: String? = nil, reportSlackChannel: SlackChannelRef? = nil, cron: String, runAt: String? = nil, signal: RemoteSignalTrigger? = nil, webhook: RemoteWebhookTriggerInput? = nil, timezone: String, catchUp: Bool, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String? = nil, autonomy: AutomationInputAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails, precheckCommand: String? = nil, precheckTimeoutSeconds: Double? = nil) {
+    public init(name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationTriggerKind, slackChannel: SlackChannelRef? = nil, slackMatch: SlackTriggerMatch? = nil, slackText: String? = nil, reportSlackChannel: SlackChannelRef? = nil, cron: String, runAt: String? = nil, signal: RemoteSignalTrigger? = nil, webhook: RemoteWebhookTriggerInput? = nil, timezone: String, catchUp: Bool, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String? = nil, autonomy: AutomationInputAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails, precheckCommand: String? = nil, precheckTimeoutSeconds: Double? = nil, continueConversation: Bool? = nil) {
       self.name = name
       self.description = description
       self.enabled = enabled
@@ -2491,6 +2497,7 @@ extension ArgusProtocol {
       self.guardrails = guardrails
       self.precheckCommand = precheckCommand
       self.precheckTimeoutSeconds = precheckTimeoutSeconds
+      self.continueConversation = continueConversation
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -2520,6 +2527,7 @@ extension ArgusProtocol {
       try c.encode(guardrails, forKey: .guardrails)
       try c.encodeIfPresent(precheckCommand, forKey: .precheckCommand)
       try c.encodeIfPresent(precheckTimeoutSeconds, forKey: .precheckTimeoutSeconds)
+      try c.encodeIfPresent(continueConversation, forKey: .continueConversation)
     }
   }
 
@@ -2594,6 +2602,21 @@ extension ArgusProtocol {
     public static let reference = AutomationMemoryType(rawValue: "reference")
   }
 
+  public struct AutomationRunConversation: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let continued = AutomationRunConversation(rawValue: "continued")
+    public static let fellBack = AutomationRunConversation(rawValue: "fell_back")
+  }
+
   public struct AutomationRun: Codable, Sendable {
     public var id: String
     public var automationId: String
@@ -2610,6 +2633,7 @@ extension ArgusProtocol {
     public var error: String?
     public var reportRead: Bool
     public var feedback: [AutomationRunFeedback]
+    public var conversation: AutomationRunConversation?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -2627,9 +2651,10 @@ extension ArgusProtocol {
       case error = "error"
       case reportRead = "report_read"
       case feedback = "feedback"
+      case conversation = "conversation"
     }
 
-    public init(id: String, automationId: String, scratch: AutomationScratchSpec? = nil, status: AutomationRunStatus, triggerReason: String, startedAt: Double, finishedAt: Double? = nil, hostSessionId: String? = nil, hostAgentId: String? = nil, costUsd: Double? = nil, reportMarkdown: String? = nil, reportBlocks: [ReportBlock]? = nil, error: String? = nil, reportRead: Bool, feedback: [AutomationRunFeedback]) {
+    public init(id: String, automationId: String, scratch: AutomationScratchSpec? = nil, status: AutomationRunStatus, triggerReason: String, startedAt: Double, finishedAt: Double? = nil, hostSessionId: String? = nil, hostAgentId: String? = nil, costUsd: Double? = nil, reportMarkdown: String? = nil, reportBlocks: [ReportBlock]? = nil, error: String? = nil, reportRead: Bool, feedback: [AutomationRunFeedback], conversation: AutomationRunConversation? = nil) {
       self.id = id
       self.automationId = automationId
       self.scratch = scratch
@@ -2645,6 +2670,7 @@ extension ArgusProtocol {
       self.error = error
       self.reportRead = reportRead
       self.feedback = feedback
+      self.conversation = conversation
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -2664,6 +2690,7 @@ extension ArgusProtocol {
       try c.encode(error, forKey: .error)
       try c.encode(reportRead, forKey: .reportRead)
       try c.encode(feedback, forKey: .feedback)
+      try c.encode(conversation, forKey: .conversation)
     }
   }
 
@@ -5972,6 +5999,7 @@ extension ArgusProtocol {
     public var teammateId: String?
     public var precheckCommand: String?
     public var precheckTimeoutSeconds: Double?
+    public var continueConversation: Bool?
 
     enum CodingKeys: String, CodingKey {
       case name = "name"
@@ -5992,9 +6020,10 @@ extension ArgusProtocol {
       case teammateId = "teammate_id"
       case precheckCommand = "precheck_command"
       case precheckTimeoutSeconds = "precheck_timeout_seconds"
+      case continueConversation = "continue_conversation"
     }
 
-    public init(name: String, description: String? = nil, enabled: Bool? = nil, trigger: AutomationTrigger, scope: CreateAutomationInputScope? = nil, sourceIds: [String]? = nil, playbook: String, extraInstructions: String? = nil, autonomy: AutonomyLevel? = nil, guardrails: CreateAutomationInputGuardrails? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, reportSlackChannel: SlackChannelRef? = nil, teammateId: String? = nil, precheckCommand: String? = nil, precheckTimeoutSeconds: Double? = nil) {
+    public init(name: String, description: String? = nil, enabled: Bool? = nil, trigger: AutomationTrigger, scope: CreateAutomationInputScope? = nil, sourceIds: [String]? = nil, playbook: String, extraInstructions: String? = nil, autonomy: AutonomyLevel? = nil, guardrails: CreateAutomationInputGuardrails? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, reportSlackChannel: SlackChannelRef? = nil, teammateId: String? = nil, precheckCommand: String? = nil, precheckTimeoutSeconds: Double? = nil, continueConversation: Bool? = nil) {
       self.name = name
       self.description = description
       self.enabled = enabled
@@ -6013,6 +6042,7 @@ extension ArgusProtocol {
       self.teammateId = teammateId
       self.precheckCommand = precheckCommand
       self.precheckTimeoutSeconds = precheckTimeoutSeconds
+      self.continueConversation = continueConversation
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -6035,6 +6065,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(teammateId, forKey: .teammateId)
       try c.encodeIfPresent(precheckCommand, forKey: .precheckCommand)
       try c.encodeIfPresent(precheckTimeoutSeconds, forKey: .precheckTimeoutSeconds)
+      try c.encodeIfPresent(continueConversation, forKey: .continueConversation)
     }
   }
 
@@ -14640,6 +14671,7 @@ extension ArgusProtocol {
     public var guardrails: RemoteAutomationGuardrails
     public var precheckCommand: String?
     public var precheckTimeoutSeconds: Double?
+    public var continueConversation: Bool?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -14668,9 +14700,10 @@ extension ArgusProtocol {
       case guardrails = "guardrails"
       case precheckCommand = "precheck_command"
       case precheckTimeoutSeconds = "precheck_timeout_seconds"
+      case continueConversation = "continue_conversation"
     }
 
-    public init(id: String, name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationTriggerKind, slackChannel: SlackChannelRef? = nil, slackMatch: SlackTriggerMatch? = nil, slackText: String? = nil, reportSlackChannel: SlackChannelRef? = nil, cron: String? = nil, runAt: String? = nil, timezone: String? = nil, catchUp: Bool, signal: RemoteSignalTrigger? = nil, webhook: RemoteWebhookTrigger? = nil, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String, autonomy: RemoteAutomationDetailAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails, precheckCommand: String? = nil, precheckTimeoutSeconds: Double? = nil) {
+    public init(id: String, name: String, description: String, enabled: Bool, triggerKind: RemoteAutomationTriggerKind, slackChannel: SlackChannelRef? = nil, slackMatch: SlackTriggerMatch? = nil, slackText: String? = nil, reportSlackChannel: SlackChannelRef? = nil, cron: String? = nil, runAt: String? = nil, timezone: String? = nil, catchUp: Bool, signal: RemoteSignalTrigger? = nil, webhook: RemoteWebhookTrigger? = nil, repoRoots: [String], sourceIds: [String], playbook: String, extraInstructions: String, autonomy: RemoteAutomationDetailAutonomy? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, guardrails: RemoteAutomationGuardrails, precheckCommand: String? = nil, precheckTimeoutSeconds: Double? = nil, continueConversation: Bool? = nil) {
       self.id = id
       self.name = name
       self.description = description
@@ -14697,6 +14730,7 @@ extension ArgusProtocol {
       self.guardrails = guardrails
       self.precheckCommand = precheckCommand
       self.precheckTimeoutSeconds = precheckTimeoutSeconds
+      self.continueConversation = continueConversation
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -14727,6 +14761,7 @@ extension ArgusProtocol {
       try c.encode(guardrails, forKey: .guardrails)
       try c.encodeIfPresent(precheckCommand, forKey: .precheckCommand)
       try c.encodeIfPresent(precheckTimeoutSeconds, forKey: .precheckTimeoutSeconds)
+      try c.encodeIfPresent(continueConversation, forKey: .continueConversation)
     }
   }
 
@@ -14825,6 +14860,21 @@ extension ArgusProtocol {
     }
   }
 
+  public struct RemoteAutomationRunConversation: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let continued = RemoteAutomationRunConversation(rawValue: "continued")
+    public static let fellBack = RemoteAutomationRunConversation(rawValue: "fell_back")
+  }
+
   public struct RemoteAutomationRun: Codable, Sendable {
     public var id: String
     public var automationId: String
@@ -14841,6 +14891,7 @@ extension ArgusProtocol {
     public var reportPreview: String?
     public var hostSessionId: String?
     public var hostAgentId: String?
+    public var conversation: RemoteAutomationRunConversation?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -14858,9 +14909,10 @@ extension ArgusProtocol {
       case reportPreview = "report_preview"
       case hostSessionId = "host_session_id"
       case hostAgentId = "host_agent_id"
+      case conversation = "conversation"
     }
 
-    public init(id: String, automationId: String, automationName: String, isQuick: Bool, status: RemoteAutomationRunStatus, triggerReason: String, startedAt: Double, finishedAt: Double? = nil, costUsd: Double? = nil, error: String? = nil, unreadReport: Bool, reportRead: Bool? = nil, reportPreview: String? = nil, hostSessionId: String? = nil, hostAgentId: String? = nil) {
+    public init(id: String, automationId: String, automationName: String, isQuick: Bool, status: RemoteAutomationRunStatus, triggerReason: String, startedAt: Double, finishedAt: Double? = nil, costUsd: Double? = nil, error: String? = nil, unreadReport: Bool, reportRead: Bool? = nil, reportPreview: String? = nil, hostSessionId: String? = nil, hostAgentId: String? = nil, conversation: RemoteAutomationRunConversation? = nil) {
       self.id = id
       self.automationId = automationId
       self.automationName = automationName
@@ -14876,6 +14928,7 @@ extension ArgusProtocol {
       self.reportPreview = reportPreview
       self.hostSessionId = hostSessionId
       self.hostAgentId = hostAgentId
+      self.conversation = conversation
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -14895,6 +14948,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(reportPreview, forKey: .reportPreview)
       try c.encode(hostSessionId, forKey: .hostSessionId)
       try c.encode(hostAgentId, forKey: .hostAgentId)
+      try c.encodeIfPresent(conversation, forKey: .conversation)
     }
   }
 
@@ -21317,6 +21371,7 @@ extension ArgusProtocol {
     public var reportSlackChannel: SlackChannelRef?
     public var precheckCommand: String?
     public var precheckTimeoutSeconds: Double?
+    public var continueConversation: Bool?
 
     enum CodingKeys: String, CodingKey {
       case name = "name"
@@ -21338,9 +21393,10 @@ extension ArgusProtocol {
       case reportSlackChannel = "report_slack_channel"
       case precheckCommand = "precheck_command"
       case precheckTimeoutSeconds = "precheck_timeout_seconds"
+      case continueConversation = "continue_conversation"
     }
 
-    public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, trigger: AutomationTrigger? = nil, scope: UpdateAutomationInputScope? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, lastRunAt: Double? = nil, nextRunAt: Double? = nil, reportSlackChannel: SlackChannelRef? = nil, precheckCommand: String? = nil, precheckTimeoutSeconds: Double? = nil) {
+    public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, trigger: AutomationTrigger? = nil, scope: UpdateAutomationInputScope? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutonomyLevel? = nil, guardrails: AutomationGuardrails? = nil, model: String? = nil, runner: String? = nil, claudeAccountId: String? = nil, templateId: String? = nil, lastRunAt: Double? = nil, nextRunAt: Double? = nil, reportSlackChannel: SlackChannelRef? = nil, precheckCommand: String? = nil, precheckTimeoutSeconds: Double? = nil, continueConversation: Bool? = nil) {
       self.name = name
       self.description = description
       self.enabled = enabled
@@ -21360,6 +21416,7 @@ extension ArgusProtocol {
       self.reportSlackChannel = reportSlackChannel
       self.precheckCommand = precheckCommand
       self.precheckTimeoutSeconds = precheckTimeoutSeconds
+      self.continueConversation = continueConversation
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -21383,6 +21440,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(reportSlackChannel, forKey: .reportSlackChannel)
       try c.encodeIfPresent(precheckCommand, forKey: .precheckCommand)
       try c.encodeIfPresent(precheckTimeoutSeconds, forKey: .precheckTimeoutSeconds)
+      try c.encodeIfPresent(continueConversation, forKey: .continueConversation)
     }
   }
 

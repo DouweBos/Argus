@@ -117,6 +117,7 @@ export function toRemoteAutomationRun(run: AutomationRun): RemoteAutomationRun {
     report_preview: reportPreview(run),
     host_session_id: run.host_session_id,
     host_agent_id: run.host_agent_id,
+    conversation: run.conversation,
   };
 }
 
@@ -143,6 +144,7 @@ function toRemoteAutomationDetail(
     guardrails: automation.guardrails,
     precheck_command: automation.precheck_command,
     precheck_timeout_seconds: automation.precheck_timeout_seconds,
+    continue_conversation: automation.continue_conversation,
   };
 }
 
@@ -354,6 +356,7 @@ export function toCreateAutomationInput(
     report_slack_channel: input.report_slack_channel ?? null,
     precheck_command: input.precheck_command,
     precheck_timeout_seconds: input.precheck_timeout_seconds,
+    continue_conversation: input.continue_conversation,
   };
 }
 
@@ -396,6 +399,9 @@ export function updateRemoteAutomation(
     }),
     ...(patch.precheck_timeout_seconds !== undefined && {
       precheck_timeout_seconds: patch.precheck_timeout_seconds,
+    }),
+    ...(patch.continue_conversation !== undefined && {
+      continue_conversation: patch.continue_conversation,
     }),
   };
 
@@ -606,6 +612,7 @@ export async function remoteAutomationDraft(
       precheck_timeout_seconds: normalizePrecheckTimeout(
         input.precheck_timeout_seconds,
       ),
+      continue_conversation: input.continue_conversation ?? false,
     },
     notes,
   };

@@ -44,6 +44,7 @@ export const FIXTURE_DETAIL: RemoteAutomationDetail = {
   },
   precheck_command: "",
   precheck_timeout_seconds: 60,
+  continue_conversation: false,
 };
 
 export const FIXTURE_PROJECTS = [

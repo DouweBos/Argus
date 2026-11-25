@@ -326,6 +326,7 @@ export interface EventMap {
       | "webhook";
     outcome: "dropped" | "ran" | "rate_capped";
   };
+  automation_conversation_continued: { outcome: "continued" | "fell_back" };
   automation_precheck_ran: { outcome: "failed" | "passed" | "timed_out" };
   automation_run_started: {
     /** `none` unpinned; otherwise whether the pinned account could run it. */

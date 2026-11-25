@@ -232,7 +232,7 @@ internal fun AutomationsGalleryPage() {
     var draft by remember {
       mutableStateOf(
         newAutomationDetail(name = "Stale pull requests", playbook = "# Stale pull requests", precheckCommand = "./scripts/has-stale-prs.sh")
-          .copy(precheckTimeoutSeconds = 30.0),
+          .copy(precheckTimeoutSeconds = 30.0, continueConversation = true),
       )
     }
     RunStartFields(draft) { draft = it }

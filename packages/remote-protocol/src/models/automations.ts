@@ -157,6 +157,11 @@ export const Automation = z.object({
   precheck_command: z.string(),
   /** How long the precheck may take before the run is skipped. */
   precheck_timeout_seconds: z.number(),
+  /**
+   * Pick up the previous run's conversation instead of starting fresh. Falls
+   * back to a fresh one when it is gone.
+   */
+  continue_conversation: z.boolean(),
 });
 export type Automation = z.infer<typeof Automation>;
 
@@ -232,6 +237,11 @@ export const AutomationRun = z.object({
   report_read: z.boolean(),
   /** What the user pushed back on after reading the report, oldest first. */
   feedback: z.array(AutomationRunFeedback),
+  /**
+   * For an automation that continues its conversation: whether this run did,
+   * or started fresh because the previous one was gone. Null otherwise.
+   */
+  conversation: z.enum(["continued", "fell_back"]).nullable(),
 });
 export type AutomationRun = z.infer<typeof AutomationRun>;
 
@@ -255,6 +265,7 @@ export const CreateAutomationInput = z.object({
   teammate_id: z.string().nullish(),
   precheck_command: z.string().optional(),
   precheck_timeout_seconds: z.number().optional(),
+  continue_conversation: z.boolean().optional(),
 });
 export type CreateAutomationInput = z.infer<typeof CreateAutomationInput>;
 

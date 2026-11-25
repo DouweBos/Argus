@@ -11,6 +11,7 @@ import {
   formatRunDuration,
   formatTimestamp,
   isRunActive,
+  runConversationNote,
 } from "@argus/client-core";
 import {
   AutomationRunView,
@@ -260,11 +261,13 @@ export function RunScreen({
         feedback={detail?.feedback}
         finished={run.finished_at ? formatTimestamp(run.finished_at) : "—"}
         live={active}
-        reason={
-          run.is_quick
-            ? `${run.trigger_reason} · ${run.automation_name}`
-            : run.trigger_reason
-        }
+        reason={[
+          run.trigger_reason,
+          run.is_quick ? run.automation_name : null,
+          runConversationNote(run.conversation),
+        ]
+          .filter(Boolean)
+          .join(" · ")}
         report={
           detail ? (
             <RunReport

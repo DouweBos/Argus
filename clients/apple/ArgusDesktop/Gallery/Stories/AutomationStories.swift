@@ -53,13 +53,13 @@
         GalleryStory("automations/project-scope", size: CGSize(width: 640, height: 640), fixtures: fixtures) {
           ScopeForm(picked: ["/Users/dev/Projects/Argus"])
         },
-        GalleryStory("automations/editor/precheck", size: CGSize(width: 720, height: 260), fixtures: fixtures) {
+        GalleryStory("automations/editor/precheck", size: CGSize(width: 720, height: 340), fixtures: fixtures) {
           Form {
             RunStartSection(
               draft: .constant(
                 RemoteAutomationDetail(
                   precheckCommand: "git fetch -q && [ \"$(git rev-parse HEAD)\" != \"$(git rev-parse @{u})\" ]",
-                  precheckTimeoutSeconds: 30)))
+                  precheckTimeoutSeconds: 30, continueConversation: true)))
           }
           .formStyle(.grouped)
         },

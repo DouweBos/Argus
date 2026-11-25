@@ -82,8 +82,11 @@ struct RunScreen: View {
         HStack(spacing: 8) {
           Badge(label: run.status.label, tone: run.status.tone)
           if run.isQuick { Badge(label: "Quick") }
-          Text(run.isQuick ? "\(run.triggerReason) · \(run.automationName)" : run.triggerReason)
-            .foregroundStyle(theme.textSecondary)
+          Text(
+            [run.triggerReason, run.isQuick ? run.automationName : nil, AutomationText.conversationNote(run.conversation)]
+              .compactMap(\.self).joined(separator: " · ")
+          )
+          .foregroundStyle(theme.textSecondary)
         }
         stats(run)
         if let error = run.error, !error.isEmpty {

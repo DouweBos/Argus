@@ -246,3 +246,17 @@ export const SIGNAL_EVENT_ORDER: RemoteSignalEventKind[] = [
   "ci_failed",
   "mentioned",
 ];
+
+/** What a run says about the conversation it picked up, or null when it had none to pick up. */
+export function runConversationNote(
+  conversation: "continued" | "fell_back" | null | undefined,
+): string | null {
+  switch (conversation) {
+    case "continued":
+      return "Continued the previous run's conversation";
+    case "fell_back":
+      return "Started fresh: the previous run's conversation was gone";
+    default:
+      return null;
+  }
+}

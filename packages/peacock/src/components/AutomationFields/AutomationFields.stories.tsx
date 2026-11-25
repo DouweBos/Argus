@@ -53,6 +53,7 @@ export const WithPrecheck: Story = {
         ...FIXTURE_DETAIL,
         precheck_command: "git fetch -q && ! git diff --quiet HEAD @{u}",
         precheck_timeout_seconds: 30,
+        continue_conversation: true,
       }}
     />
   ),

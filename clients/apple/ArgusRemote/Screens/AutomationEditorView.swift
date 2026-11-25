@@ -15,7 +15,7 @@ struct AutomationEditorView: View {
   /// Nil creates a new automation.
   let automationId: String?
 
-  @State private var draft = RemoteAutomationDetail(extraInstructions: "", precheckCommand: "")
+  @State private var draft = RemoteAutomationDetail(extraInstructions: "", precheckCommand: "", continueConversation: false)
   @State private var loaded = false
   @State private var saving = false
   @State private var confirmingDelete = false

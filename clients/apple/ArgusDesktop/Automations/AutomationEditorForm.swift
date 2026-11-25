@@ -33,8 +33,8 @@ struct AutomationEditorForm: View {
     }
     .task { if host.claudeAccounts == nil { await host.refreshClaudeAccounts() } }
     AutonomySection(autonomy: $draft.autonomy, guardrails: $draft.guardrails)
-    // Hidden on a computer too old to run a precheck.
-    if draft.precheckCommand != nil { RunStartSection(draft: $draft) }
+    // Hidden on a computer too old to have either part.
+    if draft.precheckCommand != nil || draft.continueConversation != nil { RunStartSection(draft: $draft) }
     playbook
     if draft.extraInstructions != nil { extraInstructions }
   }
@@ -169,32 +169,44 @@ struct AutomationEditorForm: View {
   }
 }
 
-/// What happens before a run's agent starts: the precheck that must exit 0.
+/// What happens before a run's agent starts: the precheck that must exit 0,
+/// and whether it picks up the previous run's conversation.
 struct RunStartSection: View {
   @Binding var draft: RemoteAutomationDetail
 
   var body: some View {
     Section {
-      // A command outgrows a label-and-value row, so it gets the full width.
-      TextField(
-        "Precheck command",
-        text: Binding(get: { draft.precheckCommand ?? "" }, set: { draft.precheckCommand = $0 }),
-        prompt: Text("Precheck command, e.g. ./scripts/has-new-work.sh"), axis: .vertical
-      )
-      .labelsHidden()
-      .font(.system(.body, design: .monospaced))
-      TextField(
-        "Timeout (seconds)",
-        value: Binding(
-          get: { draft.precheckTimeoutSeconds ?? AutomationText.defaultPrecheckTimeout },
-          set: { draft.precheckTimeoutSeconds = max(1, $0.rounded()) }),
-        format: .number
-      )
-      .monospacedDigit()
+      if draft.precheckCommand != nil {
+        // A command outgrows a label-and-value row, so it gets the full width.
+        TextField(
+          "Precheck command",
+          text: Binding(get: { draft.precheckCommand ?? "" }, set: { draft.precheckCommand = $0 }),
+          prompt: Text("Precheck command, e.g. ./scripts/has-new-work.sh"), axis: .vertical
+        )
+        .labelsHidden()
+        .font(.system(.body, design: .monospaced))
+        TextField(
+          "Timeout (seconds)",
+          value: Binding(
+            get: { draft.precheckTimeoutSeconds ?? AutomationText.defaultPrecheckTimeout },
+            set: { draft.precheckTimeoutSeconds = max(1, $0.rounded()) }),
+          format: .number
+        )
+        .monospacedDigit()
+      }
+      if draft.continueConversation != nil {
+        Toggle(
+          "Continue the previous run's conversation",
+          isOn: Binding(get: { draft.continueConversation ?? false }, set: { draft.continueConversation = $0 }))
+      }
     } header: {
       Text("Before each run")
     } footer: {
-      Text(AutomationText.precheckCaption)
+      Text(
+        [
+          draft.precheckCommand != nil ? AutomationText.precheckCaption : nil,
+          draft.continueConversation == true ? AutomationText.continueCaption : nil,
+        ].compactMap(\.self).joined(separator: " "))
     }
   }
 }

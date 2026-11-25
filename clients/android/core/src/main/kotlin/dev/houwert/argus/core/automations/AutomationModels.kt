@@ -45,6 +45,14 @@ fun RemoteAutomationDetail.withAutonomy(rung: Autonomy?) = copy(autonomy = rung?
 val RemoteAutomationRun.isActive: Boolean
   get() = status == RemoteAutomationRunStatus.queued || status == RemoteAutomationRunStatus.running
 
+/** What a run says about the conversation it picked up; null when it had none to pick up. */
+val RemoteAutomationRun.conversationNote: String?
+  get() = when (conversation?.rawValue) {
+    "continued" -> "Continued the previous run's conversation"
+    "fell_back" -> "Started fresh: the previous run's conversation was gone"
+    else -> null
+  }
+
 /** A skipped run's `error` is why it didn't fire, not something that broke. */
 val RemoteAutomationRun.isSkipped: Boolean
   get() = status == RemoteAutomationRunStatus.skipped
@@ -114,6 +122,7 @@ fun newAutomationDetail(
   extraInstructions: String = "",
   claudeAccountId: String? = null,
   precheckCommand: String? = "",
+  continueConversation: Boolean? = false,
 ) = RemoteAutomationDetail(
   id = "",
   name = name,
@@ -131,6 +140,7 @@ fun newAutomationDetail(
   claudeAccountId = claudeAccountId,
   guardrails = defaultGuardrails,
   precheckCommand = precheckCommand,
+  continueConversation = continueConversation,
 )
 
 /**
@@ -166,6 +176,7 @@ object AutomationInput {
     guardrails = detail.guardrails,
     precheckCommand = detail.precheckCommand?.trim(),
     precheckTimeoutSeconds = detail.precheckTimeoutSeconds,
+    continueConversation = detail.continueConversation,
   )
 
   fun patch(detail: RemoteAutomationDetail) = MethodsTypes.AutomationsUpdateParamsPatch(
@@ -190,6 +201,7 @@ object AutomationInput {
     guardrails = detail.guardrails,
     precheckCommand = detail.precheckCommand?.trim(),
     precheckTimeoutSeconds = detail.precheckTimeoutSeconds,
+    continueConversation = detail.continueConversation,
   )
 
   /**

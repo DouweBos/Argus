@@ -160,6 +160,27 @@ git fetch -q && [ "$(git rev-parse HEAD)" != "$(git rev-parse @{u})" ]
 Skipped runs show in the run history on every client, with the reason, and
 don't count toward the daily budget. Quick runs have no precheck.
 
+### Continuing the previous run's conversation
+
+By default every run starts from nothing: a fresh agent reads the playbook,
+the signals and the automation's [memory](#memory). Turn on **Continue the
+previous run's conversation** (under **Before each run**) and each run picks up
+the last run's conversation instead — everything it read, decided and wrote —
+and is told the history is the previous run's, so it works from current state.
+Use it for a playbook that builds on itself day to day; memory stays the place
+for what must survive long term.
+
+Each run keeps its own directory and transcript, so the previous run's
+conversation is copied into the new run rather than added to: deleting an old
+run never breaks a newer one. A run that was skipped never had a conversation,
+so the most recent run that did is the one continued.
+
+When there is nothing to continue — the previous run's transcript was deleted
+or swept, or the automation's runner can't carry a conversation over — the run
+starts fresh, and its run page says so: _Started fresh: the previous run's
+conversation was gone_. A run that did continue says _Continued the previous
+run's conversation_.
+
 ---
 
 ## Which runner and model it uses

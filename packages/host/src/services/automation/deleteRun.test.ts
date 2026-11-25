@@ -33,6 +33,7 @@ function run(id: string, status: AutomationRun["status"]): AutomationRun {
     report_read: false,
     error: null,
     feedback: [],
+    conversation: null,
   };
 }
 

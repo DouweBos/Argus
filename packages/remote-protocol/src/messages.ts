@@ -187,6 +187,7 @@ export const AutomationInput = z.object({
   /** Optional so a client built before prechecks still creates and saves. */
   precheck_command: z.string().optional(),
   precheck_timeout_seconds: z.number().optional(),
+  continue_conversation: z.boolean().optional(),
 });
 export type AutomationInput = z.infer<typeof AutomationInput>;
 

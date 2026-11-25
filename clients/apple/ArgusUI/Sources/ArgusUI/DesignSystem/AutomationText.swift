@@ -44,6 +44,19 @@ public enum AutomationText {
     return value.rounded()
   }
 
+  public static let continueCaption =
+    "Each run picks up where the last one stopped, with everything it read and decided. "
+    + "When that conversation is gone, the run starts fresh and says so."
+
+  /// What a run says about the conversation it picked up; nil when it had none to pick up.
+  public static func conversationNote(_ conversation: String?) -> String? {
+    switch conversation {
+    case "continued": "Continued the previous run's conversation"
+    case "fell_back": "Started fresh: the previous run's conversation was gone"
+    default: nil
+    }
+  }
+
   public static func plural(_ count: Int, _ noun: String) -> String {
     "\(count) \(noun)\(count == 1 ? "" : "s")"
   }

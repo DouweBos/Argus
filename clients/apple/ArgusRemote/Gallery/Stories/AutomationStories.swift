@@ -28,7 +28,7 @@
               draft: .constant(
                 RemoteAutomationDetail(
                   precheckCommand: "git fetch -q && [ \"$(git rev-parse HEAD)\" != \"$(git rev-parse @{u})\" ]",
-                  precheckTimeoutSeconds: 30)))
+                  precheckTimeoutSeconds: 30, continueConversation: true)))
           }
         },
         GalleryStory("automations/run", fixtures: fixtures, setup: loadSessions) {

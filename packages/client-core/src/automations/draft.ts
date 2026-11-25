@@ -62,6 +62,7 @@ export function newAutomationDraft(
     guardrails: { ...DEFAULT_GUARDRAILS },
     precheck_command: "",
     precheck_timeout_seconds: DEFAULT_PRECHECK_TIMEOUT_SECONDS,
+    continue_conversation: false,
   };
 }
 
@@ -109,6 +110,9 @@ export function draftToInput(draft: RemoteAutomationDetail): AutomationInput {
     }),
     ...(draft.precheck_timeout_seconds !== undefined && {
       precheck_timeout_seconds: draft.precheck_timeout_seconds,
+    }),
+    ...(draft.continue_conversation !== undefined && {
+      continue_conversation: draft.continue_conversation,
     }),
   };
 }

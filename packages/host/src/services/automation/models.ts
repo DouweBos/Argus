@@ -180,6 +180,11 @@ export interface Automation {
   precheck_command: string;
   /** How long the precheck may take before the run is skipped. */
   precheck_timeout_seconds: number;
+  /**
+   * Pick up the previous run's conversation instead of starting fresh. Falls
+   * back to a fresh one when it is gone.
+   */
+  continue_conversation: boolean;
 }
 
 /**
@@ -263,7 +268,14 @@ export interface AutomationRun {
   report_read: boolean;
   /** What the user pushed back on after reading the report, oldest first. */
   feedback: RunFeedbackNote[];
+  /**
+   * For an automation that continues its conversation: whether this run did,
+   * or started fresh because the previous one was gone. Null otherwise.
+   */
+  conversation: RunConversation | null;
 }
+
+export type RunConversation = "continued" | "fell_back";
 
 /** Fields accepted when creating an automation. */
 export interface CreateAutomationInput {
@@ -286,6 +298,7 @@ export interface CreateAutomationInput {
   teammate_id?: string | null;
   precheck_command?: string;
   precheck_timeout_seconds?: number;
+  continue_conversation?: boolean;
 }
 
 /**

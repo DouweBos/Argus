@@ -399,6 +399,8 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
   /// from a computer too old to run one.
   public var precheckCommand: String?
   public var precheckTimeoutSeconds: Double?
+  /// Pick up the previous run's conversation. Nil from a computer too old to.
+  public var continueConversation: Bool?
 
   public init(
     id: String = "", name: String = "", description: String = "",
@@ -413,8 +415,10 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     guardrails: RemoteAutomationGuardrails = .init(),
     slackChannel: RemoteSlackChannel? = nil, slackMatch: ArgusProtocol.SlackTriggerMatch? = nil,
     slackText: String? = nil, reportSlackChannel: RemoteSlackChannel? = nil,
-    precheckCommand: String? = nil, precheckTimeoutSeconds: Double? = nil
+    precheckCommand: String? = nil, precheckTimeoutSeconds: Double? = nil,
+    continueConversation: Bool? = nil
   ) {
+    self.continueConversation = continueConversation
     self.precheckCommand = precheckCommand
     self.precheckTimeoutSeconds = precheckTimeoutSeconds
     self.slackChannel = slackChannel
@@ -459,6 +463,7 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     case reportSlackChannel = "report_slack_channel"
     case precheckCommand = "precheck_command"
     case precheckTimeoutSeconds = "precheck_timeout_seconds"
+    case continueConversation = "continue_conversation"
   }
 }
 
@@ -494,6 +499,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
   /// Sent only when the computer reported them, so an older one never sees them.
   public var precheckCommand: String?
   public var precheckTimeoutSeconds: Double?
+  public var continueConversation: Bool?
   /// False leaves the saved trigger alone: rebuilding a Slack trigger from the
   /// flat wire fields would reset the settings only the Mac's host keeps.
   public var sendsTrigger = true
@@ -524,6 +530,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     guardrails = detail.guardrails
     precheckCommand = detail.precheckCommand?.trimmingCharacters(in: .whitespacesAndNewlines)
     precheckTimeoutSeconds = detail.precheckTimeoutSeconds
+    continueConversation = detail.continueConversation
   }
 
   enum CodingKeys: String, CodingKey {
@@ -542,6 +549,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     case reportSlackChannel = "report_slack_channel"
     case precheckCommand = "precheck_command"
     case precheckTimeoutSeconds = "precheck_timeout_seconds"
+    case continueConversation = "continue_conversation"
   }
 
   /// The trigger fields match what `detail` already has saved.
@@ -588,6 +596,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     try c.encode(guardrails, forKey: .guardrails)
     try c.encodeIfPresent(precheckCommand, forKey: .precheckCommand)
     try c.encodeIfPresent(precheckTimeoutSeconds, forKey: .precheckTimeoutSeconds)
+    try c.encodeIfPresent(continueConversation, forKey: .continueConversation)
   }
 
   private struct WebhookInput: Encodable {
@@ -625,6 +634,9 @@ public struct RemoteAutomationRun: Codable, Hashable, Sendable, Identifiable {
   public var reportPreview: String?
   public var hostSessionId: String?
   public var hostAgentId: String?
+  /// `continued` or `fell_back` for an automation that continues its
+  /// conversation; nil otherwise, and from older computers.
+  public var conversation: String?
 
   /// What a list row says under the name: the report, else why the run fired.
   public var summary: String {
@@ -654,6 +666,7 @@ public struct RemoteAutomationRun: Codable, Hashable, Sendable, Identifiable {
     case reportPreview = "report_preview"
     case hostSessionId = "host_session_id"
     case hostAgentId = "host_agent_id"
+    case conversation
   }
 }
 

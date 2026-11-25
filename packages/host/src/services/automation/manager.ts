@@ -75,6 +75,7 @@ function automationCache(): Automation[] {
       automation.claude_account_id ??= null;
       automation.teammate_id ??= null;
       automation.precheck_command ??= "";
+      automation.continue_conversation ??= false;
       automation.precheck_timeout_seconds = normalizePrecheckTimeout(
         automation.precheck_timeout_seconds,
       );
@@ -93,6 +94,7 @@ function runCache(): AutomationRun[] {
     for (const run of runs) {
       run.report_read ??= true;
       run.feedback ??= [];
+      run.conversation ??= null;
     }
   }
 
@@ -165,6 +167,7 @@ function buildAutomation(input: CreateAutomationInput): Automation {
     precheck_timeout_seconds: normalizePrecheckTimeout(
       input.precheck_timeout_seconds,
     ),
+    continue_conversation: input.continue_conversation ?? false,
     // Only a built-in has a fingerprint to compare a future release against.
     seeded_playbook_hash: input.template_id
       ? playbookHash(input.playbook)
@@ -365,6 +368,7 @@ export function scratchAutomationForRun(run: AutomationRun): Automation | null {
     seeded_playbook_hash: null,
     precheck_command: "",
     precheck_timeout_seconds: DEFAULT_PRECHECK_TIMEOUT_SECONDS,
+    continue_conversation: false,
     created_at: run.started_at,
     updated_at: run.started_at,
     last_run_at: run.started_at,
@@ -588,6 +592,7 @@ export function createRun(
     error,
     report_read: false,
     feedback: [],
+    conversation: null,
   };
 
   runCache().push(run);

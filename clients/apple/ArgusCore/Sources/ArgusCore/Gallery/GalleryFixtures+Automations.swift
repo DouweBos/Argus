@@ -90,13 +90,15 @@ extension GalleryFixtures {
     var quick = false
     var reason = "schedule"
     var preview: String?
+    var conversation: String?
   }
 
   private static let runRecords: [Run] = [
     Run(id: "r-triage-1", automation: triageId, status: "running", ago: 3, cost: nil, reason: "manual"),
     Run(
       id: "r-deps-1", automation: "deps", status: "succeeded", ago: 90, minutes: 11, cost: 1.24, unread: true,
-      read: false, preview: "14 packages behind; react-native 0.81 → 0.83 needs the new architecture flag."),
+      read: false, preview: "14 packages behind; react-native 0.81 → 0.83 needs the new architecture flag.",
+      conversation: "continued"),
     Run(
       id: "r-flaky-1", automation: "flaky", status: "failed", ago: 380, minutes: 20, cost: 2.02,
       error: "Usage limit reached on every signed-in Claude account. The run stopped at 20 minutes.",
@@ -139,6 +141,7 @@ extension GalleryFixtures {
     if let cost = r.cost { json["cost_usd"] = cost }
     if let error = r.error { json["error"] = error }
     if let preview = r.preview { json["report_preview"] = preview }
+    if let conversation = r.conversation { json["conversation"] = conversation }
     return json
   }
 
@@ -289,7 +292,7 @@ extension GalleryFixtures {
       "playbook": triagePlaybook, "extra_instructions": "", "autonomy": "propose", "model": "default",
       "runner": "claude-code", "guardrails": guardrailsJSON,
       "precheck_command": "test -n \"$(gh issue list --search 'created:>=yesterday' -q '.[]' --json number)\"",
-      "precheck_timeout_seconds": 30,
+      "precheck_timeout_seconds": 30, "continue_conversation": true,
     ]
   }
 
@@ -302,7 +305,7 @@ extension GalleryFixtures {
       "repo_roots": [root("Argus"), root("conductor")], "source_ids": ["github"],
       "playbook": "# Fix my red CI\n\nRead the failing job's log, find the cause and push a fix to the same branch.\n",
       "extra_instructions": "", "autonomy": "pr", "runner": "claude-code", "guardrails": guardrailsJSON,
-      "precheck_command": "", "precheck_timeout_seconds": 60,
+      "precheck_command": "", "precheck_timeout_seconds": 60, "continue_conversation": false,
     ]
   }
 
@@ -318,7 +321,7 @@ extension GalleryFixtures {
       "repo_roots": [root("web-tv-client")], "source_ids": [],
       "playbook": "# Smoke-test every deploy\n\nOpen staging, sign in and walk the five main screens.\n",
       "extra_instructions": "", "autonomy": "propose", "runner": "claude-code", "guardrails": guardrailsJSON,
-      "precheck_command": "", "precheck_timeout_seconds": 60,
+      "precheck_command": "", "precheck_timeout_seconds": 60, "continue_conversation": false,
     ]
   }
 

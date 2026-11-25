@@ -41,6 +41,7 @@ import {
   runAccountOrder,
 } from "./accountPin";
 import { resolveHostAutonomy } from "./autonomy";
+import { CONTINUED_PREAMBLE, continuationFor } from "./continuation";
 import { normalizeGuardrails } from "./guardrails";
 import {
   createAutomationHostSession,
@@ -235,10 +236,24 @@ async function execute(
   }
   updateRun(runId, { host_session_id: session.id });
 
+  const continuation = await continuationFor(automation, runId, session);
+  if (continuation.conversation) {
+    updateRun(runId, { conversation: continuation.conversation });
+  }
+
   const autonomy = resolveHostAutonomy(automation);
   const guardrails = normalizeGuardrails(automation.guardrails);
   const permissionMode = permissionModeFor(autonomy);
-  const prompt = buildPrompt(automation, signals, autonomy, scope, events);
+  const playbookPrompt = buildPrompt(
+    automation,
+    signals,
+    autonomy,
+    scope,
+    events,
+  );
+  const prompt = continuation.resumeRef
+    ? `${CONTINUED_PREAMBLE}\n\n${playbookPrompt}`
+    : playbookPrompt;
 
   // A spent plan limit on one Claude account says nothing about the others, so
   // an unpinned run moves on to the next one before giving up, unless opted out.
@@ -259,6 +274,7 @@ async function execute(
       session.id,
       automation.model ?? undefined,
       permissionMode,
+      continuation.resumeRef,
     );
     updateRun(runId, { host_agent_id: agentInfo.agent_id });
 

@@ -66,6 +66,7 @@ function automation(overrides: Partial<Automation> = {}): Automation {
     seeded_playbook_hash: null,
     precheck_command: "",
     precheck_timeout_seconds: 60,
+    continue_conversation: false,
     created_at: 1,
     updated_at: 1,
     last_run_at: null,

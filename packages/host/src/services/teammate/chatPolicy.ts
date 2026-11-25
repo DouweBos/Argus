@@ -47,6 +47,7 @@ export function teammateChatAutomation(teammate: Teammate): Automation {
     seeded_playbook_hash: null,
     precheck_command: "",
     precheck_timeout_seconds: 60,
+    continue_conversation: false,
     created_at: teammate.created_at,
     updated_at: teammate.updated_at,
     last_run_at: null,

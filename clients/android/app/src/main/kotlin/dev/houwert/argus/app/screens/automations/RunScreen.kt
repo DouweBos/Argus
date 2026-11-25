@@ -1,5 +1,6 @@
 package dev.houwert.argus.app.screens.automations
 
+import dev.houwert.argus.core.automations.conversationNote
 import dev.houwert.argus.core.automations.isSkipped
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -146,6 +147,7 @@ private fun Summary(run: RemoteAutomationRun, access: HostAccess, onFeedback: ()
       if (run.isQuick) Badge("Quick")
     }
     MutedText(run.triggerReason)
+    run.conversationNote?.let { MutedText(it) }
     RunFigures(listOf("Started" to Labels.timeAgo(run.startedAt), "Duration" to Labels.runDuration(run), "Cost" to Labels.runCost(run)))
     run.error?.takeIf { it.isNotEmpty() }?.let { Banner(it, tone = if (run.isSkipped) Tone.Warning else Tone.Danger) }
 
