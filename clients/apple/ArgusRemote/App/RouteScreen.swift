@@ -139,6 +139,8 @@ struct RouteScreen: View {
       PairView()
     case .computer(let deviceId):
       ComputerView(deviceId: deviceId)
+    case .integration(let kind):
+      IntegrationView(kind: kind)
     case .projects:
       ProjectsView()
     case .agents:

@@ -96,6 +96,7 @@ import { GitTag } from "./models/git/remotes";
 import {
   DesignComparison,
   FigmaFrameDetails,
+  IntegrationId,
   IntegrationStatus,
   LinearIssue,
   LinearIssueDetail,
@@ -1050,7 +1051,16 @@ export const MethodParams = {
   "projects.clone_cancel": z.object({ clone_id: z.string() }),
   "projects.clones": z.object({}),
   "integrations.list": z.object({}),
+  /** The key goes to the computer's secret store once the service accepts
+   *  it; no answer ever carries it back. */
+  "integrations.connect_key": z.object({ id: IntegrationId, key: z.string() }),
+  "integrations.disconnect": z.object({ id: IntegrationId }),
   "slack.status": z.object({}),
+  /** The app manifest to create the Slack app from; nothing secret in it. */
+  "slack.manifest": z.object({}),
+  /** Checked with Slack, then encrypted on the computer. */
+  "slack.connect": z.object({ bot_token: z.string(), app_token: z.string() }),
+  "slack.disconnect": z.object({ team_id: z.string() }),
   /** No query: the connected user's open issues in `scope`, newest first. */
   "linear.issues": z.object({
     query: z.string().max(500).optional(),
@@ -1641,11 +1651,24 @@ export const MethodResult = {
   "projects.clone_cancel": z.object({ accepted: z.boolean() }),
   "projects.clones": z.object({ clones: z.array(CloneJob) }),
   "integrations.list": z.object({ integrations: z.array(IntegrationStatus) }),
-  /** `claim_code` is always null here; claiming the bot is the Mac's to show. */
-  /** `status` is the first workspace, for clients from before there were several. */
+  /** `claim_code` is always null here. `status` is the first workspace, for
+   *  clients from before there were several. */
   "slack.status": z.object({
     status: SlackStatus,
     workspaces: z.array(SlackStatus).optional(),
+  }),
+  "integrations.connect_key": z.object({ integration: IntegrationStatus }),
+  "integrations.disconnect": z.object({ integration: IntegrationStatus }),
+  "slack.manifest": z.object({ manifest: z.string() }),
+  /** `status` is the connected workspace and carries `claim_code`, so the
+   *  device that connected the bot can claim it. */
+  "slack.connect": z.object({
+    status: SlackStatus,
+    workspaces: z.array(SlackStatus),
+  }),
+  "slack.disconnect": z.object({
+    status: SlackStatus,
+    workspaces: z.array(SlackStatus),
   }),
   "linear.issues": z.object({ issues: z.array(LinearIssue) }),
   /** Null when Linear has no such issue; `states` is its team's workflow, for

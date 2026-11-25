@@ -22,6 +22,8 @@ export interface IntegrationStatusListProps {
   integrations: IntegrationStatusRowData[] | null;
   error?: string | null;
   onRetry?: () => void;
+  /** A control after a row's state, e.g. Connect or Disconnect. */
+  renderAction?: (row: IntegrationStatusRowData) => ReactNode;
 }
 
 const ICON: Record<string, ReactNode> = {
@@ -29,11 +31,12 @@ const ICON: Record<string, ReactNode> = {
   figma: <FigmaIcon size={14} />,
 };
 
-/** Read-only: which integrations a computer has connected, and as whom. */
+/** Which integrations a computer has connected, and as whom; `renderAction` adds each row's control. */
 export function IntegrationStatusList({
   integrations,
   error,
   onRetry,
+  renderAction,
 }: IntegrationStatusListProps) {
   if (integrations === null) {
     return error ? (
@@ -72,6 +75,7 @@ export function IntegrationStatusList({
           <Badge size="tag" tone={i.tone}>
             {i.stateLabel}
           </Badge>
+          {renderAction?.(i)}
         </li>
       ))}
     </ul>

@@ -122,6 +122,8 @@ public enum RemoteMethod: String, Codable, Sendable {
   case agentsHistoryDelete = "agents.history_delete"
 
   case integrationsList = "integrations.list"
+  case integrationsConnectKey = "integrations.connect_key"
+  case integrationsDisconnect = "integrations.disconnect"
   case linearIssues = "linear.issues"
   case linearIssue = "linear.issue"
   case linearUpdateIssue = "linear.update_issue"
@@ -129,6 +131,9 @@ public enum RemoteMethod: String, Codable, Sendable {
   case figmaFrameDetails = "figma.frame_details"
   case designCompare = "design.compare"
   case slackStatus = "slack.status"
+  case slackManifest = "slack.manifest"
+  case slackConnect = "slack.connect"
+  case slackDisconnect = "slack.disconnect"
 
   case githubPullRequests = "github.pull_requests"
   case githubPullRequest = "github.pull_request"

@@ -39,6 +39,10 @@ enum TelemetryEvent {
   /// What happened to a reply written while offline.
   typealias OfflineReplyAction = StoreEvent.OfflineReplyAction
 
+  enum IntegrationAction: String {
+    case connect, disconnect
+  }
+
   /// Where the design viewer was opened from.
   enum DesignSource: String {
     /// A Figma link in an issue.
@@ -323,6 +327,8 @@ enum TelemetryEvent {
   case fileSearchRun(regex: Bool, results: Int, truncated: Bool)
   /// A workspace issue search settled; once per term, never the term itself.
   case issueSearched(results: Int)
+  /// An integration connected or disconnected from this phone, or the attempt failed.
+  case integrationChanged(provider: IntegrationKind, action: IntegrationAction, success: Bool)
   /// `message` is scrubbed and truncated by `Telemetry` before it is sent.
   case appError(scope: String, message: String)
   /// The computer is too old for something the phone asked; `method` is a protocol name.
@@ -423,6 +429,7 @@ enum TelemetryEvent {
     case .designOpened: "ios_design_opened"
     case .designLayerSelected: "ios_design_layer_selected"
     case .fileSearchRun: "ios_file_search_run"
+    case .integrationChanged: "ios_integration_changed"
     case .issueSearched: "ios_issue_searched"
     case .appError: "ios_app_error"
     case .hostFeatureUnsupported: "ios_host_feature_unsupported"
@@ -582,6 +589,8 @@ enum TelemetryEvent {
       ["source": source.rawValue]
     case .designLayerSelected(let source):
       ["source": source.rawValue]
+    case .integrationChanged(let provider, let action, let success):
+      ["provider": provider.rawValue, "action": action.rawValue, "success": success]
     case .fileSearchRun(let regex, let results, let truncated):
       ["regex": regex, "result_bucket": Self.resultBucket(results), "truncated": truncated]
     case .issueSearched(let results):

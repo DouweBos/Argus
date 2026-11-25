@@ -155,6 +155,9 @@ it can:
   and `/usage/prices` open a model's detail and the price editor inside Usage,
   `/usage/models` the counted models; both editors are read-only without the control tier. Links from widgets and the
   control carry `?src=widget` / `?src=control`.
+  `/settings/integrations/:integration` (`linear`, `figma` or `slack`,
+  iPhone and Android only) is one integration's screen under the connected
+  computer's page, to connect or disconnect it.
 
   The phone's tabs are the Mac's top-level destinations that fit five:
   Home (`/`), Inbox (`/inbox`), Agents (`/agents`), Automations

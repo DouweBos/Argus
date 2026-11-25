@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { Button } from "../Button/Button";
 import {
   IntegrationStatusList,
   type IntegrationStatusRowData,
@@ -30,7 +31,7 @@ const meta: Meta<typeof IntegrationStatusList> = {
     docs: {
       description: {
         component:
-          "Read-only: which integrations a computer has connected, and as whom. Rows come from `integrationView` in `@argus/client-core`.",
+          "Which integrations a computer has connected, and as whom, with an optional control per row. Rows come from `integrationView` in `@argus/client-core`.",
       },
     },
   },
@@ -65,3 +66,14 @@ export const LoadFailed: Story = {
 };
 
 export const Empty: Story = { args: { integrations: [] } };
+
+/** A device with control: connect or disconnect each one. */
+export const WithActions: Story = {
+  args: {
+    renderAction: (row) => (
+      <Button size="sm" variant="secondary">
+        {row.tone === "neutral" ? "Connect" : "Disconnect"}
+      </Button>
+    ),
+  },
+};

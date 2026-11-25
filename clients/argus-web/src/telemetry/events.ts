@@ -114,6 +114,11 @@ export interface EventMap {
   web_connection_lost: { connected_bucket: DurationBucket };
   web_reconnected: { offline_bucket: DurationBucket };
   web_host_switched: { computer_count: number };
+  web_integration_changed: {
+    provider: "linear" | "figma";
+    action: "connect" | "disconnect";
+    success: boolean;
+  };
   web_account_member_changed: {
     action: "remove" | "rename";
     role: "device" | "host";

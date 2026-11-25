@@ -91,6 +91,8 @@ sealed interface Route {
   @Serializable data class SettingsPage(val pane: String) : Route
   @Serializable data object Notifications : Route
   @Serializable data object Computers : Route
+  /** One of the connected computer's integrations, by its `IntegrationKind` wire name, to connect or disconnect. */
+  @Serializable data class Integration(val kind: String) : Route
   @Serializable data object Account : Route
   @Serializable data object AddComputer : Route
   @Serializable data object ClaudeAccounts : Route

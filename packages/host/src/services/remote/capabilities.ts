@@ -35,6 +35,7 @@ import {
   type RemotePlatform,
   type RemoteSession,
   type RemoteStoppedAgent,
+  type SlackOverview,
 } from "@argus/remote-protocol";
 import type { z } from "zod";
 import { emitHostEvent } from "@argus/host/bus";
@@ -167,7 +168,10 @@ import { figmaFrameDetails } from "../integrations/figma/service";
 import { prepareIssueStart } from "../integrations/issueStart";
 import {
   commentOnLinearIssueById,
+  connectWithKey,
+  disconnect as disconnectIntegration,
   getLinearIssue,
+  integrationStatus,
   linearTeamStates,
   listIntegrations,
   listLinearIssues,
@@ -265,7 +269,8 @@ import {
 } from "../simulator/ios";
 import { devicePng } from "../simulator/screenshot";
 import { getVideoDims } from "../simulator/videoForward";
-import { remoteSlackStatus } from "../slack/status";
+import { slackManifestJson } from "../slack/manifest";
+import { remoteSlackStatus, slackOverview } from "../slack/status";
 import {
   createBlankTeammate,
   createTeammateFromTemplate,
@@ -2967,6 +2972,61 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   },
   "integrations.list": async () => ({ integrations: listIntegrations() }),
   "slack.status": async () => remoteSlackStatus(),
+  "integrations.connect_key": async (params) => {
+    const { id, key } = parse("integrations.connect_key", params);
+
+    return await control(async () => ({
+      integration: await connectWithKey(id, key),
+    }));
+  },
+  "integrations.disconnect": async (params) => {
+    const { id } = parse("integrations.disconnect", params);
+
+    return await control(() => {
+      disconnectIntegration(id);
+
+      return { integration: integrationStatus(id) };
+    });
+  },
+  "slack.manifest": async () => ({ manifest: slackManifestJson() }),
+  // Through the registry: importing the Slack service here closes an import cycle.
+  "slack.connect": async (params) => {
+    const { bot_token, app_token } = parse("slack.connect", params);
+    const before = new Map(
+      slackOverview().workspaces.map((w) => [w.team_id, w.claim_code]),
+    );
+    const overview = (await control(() =>
+      invokeCommand("slack_connect", {
+        botToken: bot_token,
+        appToken: app_token,
+      }),
+    )) as SlackOverview;
+    // Connecting mints a fresh claim code for an unowned workspace, or adds a new one.
+    const connected =
+      overview.workspaces.find(
+        (w) =>
+          !before.has(w.team_id) ||
+          (w.claim_code !== null && w.claim_code !== before.get(w.team_id)),
+      ) ?? null;
+    const workspaces = overview.workspaces.map((w) => ({
+      ...w,
+      claim_code: w === connected ? w.claim_code : null,
+    }));
+    const status =
+      workspaces.find((w) => w.team_id === connected?.team_id) ??
+      remoteSlackStatus().status;
+
+    return { status, workspaces };
+  },
+  "slack.disconnect": async (params) => {
+    const { team_id } = parse("slack.disconnect", params);
+    await control(() => invokeCommand("slack_disconnect", { teamId: team_id }));
+    const remote = remoteSlackStatus();
+    const status =
+      remote.workspaces.find((w) => w.team_id === team_id) ?? remote.status;
+
+    return { status, workspaces: remote.workspaces };
+  },
 
   "linear.issues": async (params) => {
     const { query, scope, limit } = parse("linear.issues", params);

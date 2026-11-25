@@ -1,6 +1,7 @@
 package dev.houwert.argus.app.telemetry
 
 import dev.houwert.argus.core.files.FilePreviewKind
+import dev.houwert.argus.core.stores.IntegrationKind
 import dev.houwert.argus.core.stores.StoreEvent
 import dev.houwert.argus.kit.storage.RemoteEndpoint
 
@@ -346,6 +347,14 @@ sealed interface TelemetryEvent {
   }
 
   /** Once per settled term, never the term itself. */
+  /** An integration connected or disconnected from this phone, or the attempt failed. */
+  data class IntegrationChanged(val provider: IntegrationKind, val action: IntegrationAction, val success: Boolean) : TelemetryEvent {
+    override val name = "android_integration_changed"
+    override val properties get() = mapOf("provider" to provider.wire, "action" to action.wire, "success" to success)
+  }
+
+  enum class IntegrationAction(val wire: String) { Connect("connect"), Disconnect("disconnect") }
+
   data class IssueSearched(val results: Int) : TelemetryEvent {
     override val name = "android_issue_searched"
     override val properties get() = mapOf("result_bucket" to resultBucket(results))

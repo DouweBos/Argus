@@ -11,8 +11,8 @@ import java.util.WeakHashMap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-// Slack as the computer has it connected. Its tokens and allowlist decide who runs agents on that
-// computer, so the phone only reads them; connecting and choosing people happen on the Mac.
+// Slack as the computer has it connected. The phone may connect or disconnect each workspace's bot; who may use it
+// (owner, allowlist, channel projects) decides who runs agents on that computer, so it's chosen on the Mac.
 
 private val slackByStore = Collections.synchronizedMap(WeakHashMap<HostStore, MutableStateFlow<List<SlackStatus>?>>())
 
@@ -58,4 +58,21 @@ object SlackStatusText {
 
   /** Where a message in an unmapped channel or a DM goes. */
   fun fallback(status: SlackStatus): String = status.defaultProject?.let { "Everything else → ${projectName(it)}" } ?: "Asks which project"
+}
+
+/** The manifest to create the Slack app from, for the clipboard. */
+suspend fun HostStore.slackManifest(): String {
+  val backend = backend ?: return ""
+  return backend.request(Methods.SlackManifest, MethodsTypes.SlackManifestParams()).manifest
+}
+
+/** The tokens go to the computer's secret store; the answer carries the claim code for this phone to show. */
+suspend fun HostStore.connectSlack(botToken: String, appToken: String) {
+  val backend = backend ?: return
+  slackFlow.value = backend.request(Methods.SlackConnect, MethodsTypes.SlackConnectParams(botToken.trim(), appToken.trim())).workspaces
+}
+
+suspend fun HostStore.disconnectSlack(teamId: String) {
+  val backend = backend ?: return
+  slackFlow.value = backend.request(Methods.SlackDisconnect, MethodsTypes.SlackDisconnectParams(teamId)).workspaces
 }

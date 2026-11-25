@@ -326,11 +326,15 @@ teammate is an ordinary request.
 
 ### On iPhone and Android
 
-The phones' Settings show each connected Slack workspace, its owner and
-channel projects. Connecting Slack and changing who may use it are only
-possible on the Mac: the tokens and the allowlist decide who can run agents
-on your computer, so they stay off the paired-device protocol, just like
-granting Control.
+With control, the computer's page in the phones' Settings opens **Slack**:
+each connected workspace with its owner and channel projects, a
+**Disconnect** for each, and a form to connect another workspace's bot with
+its two tokens (copy the manifest and open Slack's app page from there). The
+tokens go over the encrypted channel to the computer's secure storage and
+never come back to the phone. The phone that connected a bot shows the code
+to claim it with. Who may use a workspace (allowed members, channel
+projects, resetting the owner) is chosen only on the Mac: that list decides
+who can run agents on your computer, just like granting Control.
 
 ## On iPhone and the Mac app
 
@@ -366,10 +370,15 @@ with Simulator** diffs the frame against one of the computer's running
 simulators or emulators: the share of pixels that differ, and the design,
 the screen and the differences one at a time.
 
-The computer's page in the iPhone app's settings lists which integrations
-are connected and as whom. Connecting and disconnecting stay on the
-computer, so API keys never travel to the phone. Filing bugs from the
-simulator is desktop-only.
+The computer's page in the iPhone and Android apps' settings lists Linear,
+Figma and Slack, each opening its own screen. With control, connect Linear or
+Figma with a personal API key, reconnect it with a new one, or disconnect
+it; the web client's computer settings do the same for Linear and Figma.
+The key is checked with the service, then kept in the computer's secure
+storage and never sent back. Browser sign-in answers on the computer's
+loopback address, which a phone's browser can't reach, and neither service
+offers a device-code sign-in, so it stays in Argus on the computer. Filing
+bugs from the simulator is desktop-only.
 
 The Mac app has the same flow in **New Session**: **Add Linear Issue**
 picks the issues, and **Start N Agents** creates a session per issue. The

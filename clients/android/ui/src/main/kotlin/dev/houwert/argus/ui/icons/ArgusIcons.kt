@@ -245,6 +245,8 @@ object Icon {
   val issue = Icons.Outlined.Checklist
   /** A Figma frame. */
   val design = Icons.Outlined.Brush
+  /** Slack, by its channels. */
+  val slack = Icons.Outlined.Tag
   val compare = Icons.Outlined.VerticalSplit
   /** A review guide: a tour of a change, stop by stop. */
   val guide = Icons.Outlined.Map

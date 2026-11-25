@@ -85,26 +85,17 @@ struct ComputerView: View {
       }
     }
 
-    if active, !host.integrations.isEmpty {
+    if active, !host.integrations.isEmpty || host.slackOverview != nil {
       SettingsGroup(
         "Integrations",
-        footer: "Connect or disconnect them in Argus on the computer; their keys never leave it."
+        footer: "Keys and tokens typed here go to the computer's secret store and never come back to this phone."
       ) {
-        IntegrationStatusRows(integrations: host.integrations)
-      }
-    }
-
-    if active, let slack = host.slackOverview {
-      SettingsGroup(
-        "Slack",
-        footer:
-          "Connect Slack workspaces and choose who may use them on the Mac: the tokens and the allowlists decide who can run agents on this computer, so they never leave it."
-      ) {
-        if slack.workspaces.isEmpty {
-          SlackNotConnectedRow()
-        }
-        ForEach(slack.workspaces, id: \.teamId) { workspace in
-          SlackStatusRows(status: workspace) { host.projectName(repoRoot: $0) }
+        ForEach(IntegrationKind.allCases.filter(available), id: \.self) { kind in
+          NavigationLink(value: Route.integration(kind)) {
+            SettingsLinkRow(kind.name, value: integrationState(kind)) { SettingsRowIcon(IntegrationIcon.symbol(kind)) }
+          }
+          .buttonStyle(.settingsRow)
+          .settingsRowFlush()
         }
       }
     }
@@ -195,6 +186,22 @@ struct ComputerView: View {
         }
       }
     }
+  }
+
+  private func available(_ kind: IntegrationKind) -> Bool {
+    if let id = kind.keyIntegration { return host.integrations.contains { $0.id == id } }
+    return host.slackOverview != nil
+  }
+
+  private func integrationState(_ kind: IntegrationKind) -> String {
+    if let id = kind.keyIntegration {
+      guard let status = host.integrations.first(where: { $0.id == id }) else { return "" }
+      return IntegrationLabels.account(status) ?? IntegrationLabels.state(status)
+    }
+    let connected = host.slackWorkspaces.filter(\.configured)
+    guard let first = connected.first else { return "Not connected" }
+    if connected.count > 1 { return "\(connected.count) workspaces" }
+    return first.workspace ?? SlackLabels.state(first.state)
   }
 
   private func save(_ computer: DeviceIdentity) {

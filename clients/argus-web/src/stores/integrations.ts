@@ -1,6 +1,6 @@
 /**
- * Which integrations the computer has connected, and as whom. Read-only:
- * connecting one takes a secret, which stays on the computer.
+ * Which integrations the computer has connected, and as whom. A key typed here
+ * goes to the computer's secret store and never comes back.
  */
 
 import { create } from "zustand";
@@ -10,7 +10,7 @@ import {
   isQuietError,
   type LoadState,
 } from "@argus/client-core";
-import type { IntegrationStatus } from "@argus/remote-protocol";
+import type { IntegrationId, IntegrationStatus } from "@argus/remote-protocol";
 import { request } from "../lib/request";
 import { currentTransport } from "./connection";
 
@@ -19,9 +19,21 @@ interface IntegrationsState {
   integrationsLoad: LoadState;
   /** `background` for polls and resumes: a dropped connection stays quiet. */
   refreshIntegrations: (options?: { background?: boolean }) => Promise<void>;
+  /** Throws the computer's sentence, e.g. that the service rejected the key. */
+  connectIntegration: (id: IntegrationId, key: string) => Promise<void>;
+  disconnectIntegration: (id: IntegrationId) => Promise<void>;
 }
 
-export const useIntegrationsStore = create<IntegrationsState>()((set) => ({
+function replaced(
+  list: IntegrationStatus[],
+  next: IntegrationStatus,
+): IntegrationStatus[] {
+  return list.some((i) => i.id === next.id)
+    ? list.map((i) => (i.id === next.id ? next : i))
+    : [...list, next];
+}
+
+export const useIntegrationsStore = create<IntegrationsState>()((set, get) => ({
   integrations: [],
   integrationsLoad: INITIAL_LOAD,
 
@@ -42,6 +54,27 @@ export const useIntegrationsStore = create<IntegrationsState>()((set) => ({
         });
       }
     }
+  },
+
+  connectIntegration: async (id, key) => {
+    const t = currentTransport();
+    if (!t) {
+      return;
+    }
+    const { integration } = await request(t, "integrations.connect_key", {
+      id,
+      key: key.trim(),
+    });
+    set({ integrations: replaced(get().integrations, integration) });
+  },
+
+  disconnectIntegration: async (id) => {
+    const t = currentTransport();
+    if (!t) {
+      return;
+    }
+    const { integration } = await request(t, "integrations.disconnect", { id });
+    set({ integrations: replaced(get().integrations, integration) });
   },
 }));
 

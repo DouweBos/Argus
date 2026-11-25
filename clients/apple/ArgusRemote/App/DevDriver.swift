@@ -514,6 +514,9 @@
       case "settingsPage":
         guard let page = SettingsPane(rawValue: arg(1)) else { return nil }
         self = .settingsPage(page)
+      case "integration":
+        guard let kind = IntegrationKind(rawValue: arg(1)) else { return nil }
+        self = .integration(kind)
       case "devices": self = .devices
       case "pullRequests": self = .pullRequests
       case "issues": self = .issues

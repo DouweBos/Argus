@@ -1629,6 +1629,27 @@ object MethodsTypes {
   class HostPingResult
 
   @Serializable
+  data class IntegrationsConnectKeyParams(
+    @SerialName("id") val id: IntegrationId,
+    @SerialName("key") val key: String,
+  )
+
+  @Serializable
+  data class IntegrationsConnectKeyResult(
+    @SerialName("integration") val integration: IntegrationStatus,
+  )
+
+  @Serializable
+  data class IntegrationsDisconnectParams(
+    @SerialName("id") val id: IntegrationId,
+  )
+
+  @Serializable
+  data class IntegrationsDisconnectResult(
+    @SerialName("integration") val integration: IntegrationStatus,
+  )
+
+  @Serializable
   class IntegrationsListParams
 
   @Serializable
@@ -2842,6 +2863,37 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class SlackConnectParams(
+    @SerialName("bot_token") val botToken: String,
+    @SerialName("app_token") val appToken: String,
+  )
+
+  @Serializable
+  data class SlackConnectResult(
+    @SerialName("status") val status: SlackStatus,
+    @SerialName("workspaces") val workspaces: List<SlackStatus>,
+  )
+
+  @Serializable
+  data class SlackDisconnectParams(
+    @SerialName("team_id") val teamId: String,
+  )
+
+  @Serializable
+  data class SlackDisconnectResult(
+    @SerialName("status") val status: SlackStatus,
+    @SerialName("workspaces") val workspaces: List<SlackStatus>,
+  )
+
+  @Serializable
+  class SlackManifestParams
+
+  @Serializable
+  data class SlackManifestResult(
+    @SerialName("manifest") val manifest: String,
+  )
+
+  @Serializable
   class SlackStatusParams
 
   @Serializable
@@ -3412,6 +3464,10 @@ object Methods {
 
   object HostPing : RemoteCommand<MethodsTypes.HostPingParams, MethodsTypes.HostPingResult>("host.ping", "control", serializer(), serializer())
 
+  object IntegrationsConnectKey : RemoteCommand<MethodsTypes.IntegrationsConnectKeyParams, MethodsTypes.IntegrationsConnectKeyResult>("integrations.connect_key", "control", serializer(), serializer())
+
+  object IntegrationsDisconnect : RemoteCommand<MethodsTypes.IntegrationsDisconnectParams, MethodsTypes.IntegrationsDisconnectResult>("integrations.disconnect", "control", serializer(), serializer())
+
   object IntegrationsList : RemoteCommand<MethodsTypes.IntegrationsListParams, MethodsTypes.IntegrationsListResult>("integrations.list", "control", serializer(), serializer())
 
   object LinearComment : RemoteCommand<MethodsTypes.LinearCommentParams, MethodsTypes.LinearCommentResult>("linear.comment", "control", serializer(), serializer())
@@ -3593,6 +3649,12 @@ object Methods {
   object SessionsViewing : RemoteCommand<MethodsTypes.SessionsViewingParams, MethodsTypes.SessionsViewingResult>("sessions.viewing", "control", serializer(), serializer())
 
   object SessionsWatchPullRequest : RemoteCommand<MethodsTypes.SessionsWatchPullRequestParams, MethodsTypes.SessionsWatchPullRequestResult>("sessions.watch_pull_request", "control", serializer(), serializer())
+
+  object SlackConnect : RemoteCommand<MethodsTypes.SlackConnectParams, MethodsTypes.SlackConnectResult>("slack.connect", "control", serializer(), serializer())
+
+  object SlackDisconnect : RemoteCommand<MethodsTypes.SlackDisconnectParams, MethodsTypes.SlackDisconnectResult>("slack.disconnect", "control", serializer(), serializer())
+
+  object SlackManifest : RemoteCommand<MethodsTypes.SlackManifestParams, MethodsTypes.SlackManifestResult>("slack.manifest", "control", serializer(), serializer())
 
   object SlackStatus : RemoteCommand<MethodsTypes.SlackStatusParams, MethodsTypes.SlackStatusResult>("slack.status", "control", serializer(), serializer())
 

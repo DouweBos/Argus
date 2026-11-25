@@ -1,31 +1,7 @@
 import ArgusCore
 import SwiftUI
 
-/// Read-only: which integrations the computer has connected, and as whom.
-public struct IntegrationStatusRows: View {
-  @Environment(\.theme) private var theme
-  let integrations: [ArgusProtocol.IntegrationStatus]
-
-  public init(integrations: [ArgusProtocol.IntegrationStatus]) {
-    self.integrations = integrations
-  }
-
-  public var body: some View {
-    ForEach(integrations, id: \.id.rawValue) { status in
-      HStack(spacing: 8) {
-        VStack(alignment: .leading, spacing: 2) {
-          BodyText(IntegrationLabels.name(status.id))
-          if let account = IntegrationLabels.account(status) {
-            MutedText(account, lineLimit: 1)
-          }
-        }
-        Spacer(minLength: 6)
-        Badge(label: IntegrationLabels.state(status), tone: IntegrationLabels.tone(status))
-      }
-    }
-  }
-}
-
+/// How an integration's state reads, on the Mac and the phone.
 public enum IntegrationLabels {
   public static func name(_ id: ArgusProtocol.IntegrationId) -> String {
     switch id {
@@ -49,5 +25,16 @@ public enum IntegrationLabels {
   public static func account(_ status: ArgusProtocol.IntegrationStatus) -> String? {
     guard status.connected, let account = status.account else { return nil }
     return [account.name, account.workspace].compactMap { $0 }.joined(separator: " · ")
+  }
+}
+
+/// Each integration's row symbol: what it brings in rather than its brand.
+public enum IntegrationIcon {
+  public static func symbol(_ kind: IntegrationKind) -> String {
+    switch kind {
+    case .linear: Icon.issue
+    case .figma: Icon.design
+    case .slack: "number"
+    }
   }
 }

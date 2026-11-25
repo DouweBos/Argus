@@ -18,8 +18,8 @@ import java.util.WeakHashMap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-// Linear and Figma as the computer has them connected. The secret never leaves the computer,
-// so connecting is the computer's job; the phone only reads and acts as that user.
+// Linear and Figma as the computer has them connected. A key typed on the phone goes to the computer's
+// secret store and never comes back; browser sign-in needs the computer's own loopback, so it stays there.
 
 // Held beside the store rather than in it; every Issues or Design screen reloads it on open.
 private val integrationsByStore = Collections.synchronizedMap(WeakHashMap<HostStore, MutableStateFlow<List<IntegrationStatus>>>())
@@ -110,4 +110,43 @@ suspend fun HostStore.startFromIssues(
     prompt = prompt.ifEmpty { null }, model = model, permissionMode = permissionMode, runnerId = runnerId,
     linearIssue = issue.identifier,
   )
+}
+
+/** Sends a key typed on the phone to the computer's secret store; it never comes back. Throws the computer's sentence. */
+suspend fun HostStore.connectIntegration(id: IntegrationId, key: String) {
+  val backend = backend ?: return
+  apply(backend.request(Methods.IntegrationsConnectKey, MethodsTypes.IntegrationsConnectKeyParams(id, key.trim())).integration)
+}
+
+suspend fun HostStore.disconnectIntegration(id: IntegrationId) {
+  val backend = backend ?: return
+  apply(backend.request(Methods.IntegrationsDisconnect, MethodsTypes.IntegrationsDisconnectParams(id)).integration)
+}
+
+private fun HostStore.apply(status: IntegrationStatus) {
+  val current = integrationsFlow.value
+  integrationsFlow.value = if (current.any { it.id == status.id }) current.map { if (it.id == status.id) status else it } else current + status
+}
+
+/** The integrations a phone can connect, one screen each. */
+enum class IntegrationKind(val wire: String, val title: String) {
+  Linear("linear", "Linear"), Figma("figma", "Figma"), Slack("slack", "Slack");
+
+  /** Linear and Figma take a key; Slack takes its own app's two tokens. */
+  val keyIntegration: IntegrationId? get() = when (this) {
+    Linear -> IntegrationId.linear
+    Figma -> IntegrationId.figma
+    Slack -> null
+  }
+
+  /** Where to create the key, as the Mac's Settings → Integrations says it. */
+  val keyHelp: String get() = when (this) {
+    Linear -> "Create a personal API key in Linear under Settings → Account → Security & access."
+    Figma -> "Create a personal access token in Figma under Settings → Security."
+    Slack -> "Create the app from the manifest, install it, then paste its two tokens."
+  }
+
+  companion object {
+    fun of(wire: String): IntegrationKind? = entries.firstOrNull { it.wire == wire }
+  }
 }

@@ -30,6 +30,8 @@ import dev.houwert.argus.app.stores.presence
 import dev.houwert.argus.core.account.AccountStore
 import dev.houwert.argus.core.account.refreshDirectory
 import dev.houwert.argus.core.account.remove
+import dev.houwert.argus.core.stores.IntegrationKind
+import dev.houwert.argus.core.stores.SlackStatusText
 import dev.houwert.argus.core.stores.integrations
 import dev.houwert.argus.core.stores.loadIntegrations
 import dev.houwert.argus.core.stores.loadSlackStatus
@@ -37,6 +39,7 @@ import dev.houwert.argus.core.stores.slackWorkspaces
 import dev.houwert.argus.ui.components.LiveRefresh
 import kotlin.time.Duration.Companion.milliseconds
 import dev.houwert.argus.kit.net.Transport
+import dev.houwert.argus.kit.protocol.generated.SlackStatus
 import dev.houwert.argus.kit.storage.DeviceIdentity
 import dev.houwert.argus.ui.components.Badge
 import dev.houwert.argus.ui.components.Btn
@@ -50,9 +53,8 @@ import dev.houwert.argus.ui.components.SettingsRow
 import dev.houwert.argus.ui.components.StatusDot
 import dev.houwert.argus.ui.components.TextInput
 import dev.houwert.argus.ui.components.ThemedTextField
-import dev.houwert.argus.ui.integrations.IntegrationStatusRows
-import dev.houwert.argus.ui.integrations.SlackNotConnectedRow
-import dev.houwert.argus.ui.integrations.SlackStatusRows
+import dev.houwert.argus.ui.components.SettingsLinkRow
+import dev.houwert.argus.ui.icons.Icon
 import dev.houwert.argus.ui.components.label
 import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.ui.theme.Tone
@@ -216,10 +218,11 @@ private fun ComputerContent(computer: DeviceIdentity) {
   }
 }
 
-/** What the connected computer has hooked up, read-only: the phone never holds those keys or tokens. */
+/** What the connected computer has hooked up, one row each opening its own screen to connect or disconnect it. */
 @Composable
 private fun IntegrationGroups(ready: Boolean) {
   val host = LocalAppStore.current.host
+  val router = LocalRouter.current
   val integrations by host.integrations.collectAsState()
   val slack by host.slackWorkspaces.collectAsState()
   LaunchedEffect(ready) {
@@ -227,21 +230,23 @@ private fun IntegrationGroups(ready: Boolean) {
     host.loadIntegrations()
     host.loadSlackStatus()
   }
-  if (integrations.isNotEmpty()) {
-    SettingsGroup(title = "Integrations", footer = "Connect or disconnect them in Argus on the computer; their keys never leave it.") {
-      IntegrationStatusRows(integrations)
+  val kinds = IntegrationKind.entries.filter { kind ->
+    kind.keyIntegration?.let { id -> integrations.any { it.id == id } } ?: (slack != null)
+  }
+  if (kinds.isEmpty()) return
+  SettingsGroup(title = "Integrations", footer = "Keys and tokens typed here go to the computer's secret store and never come back to this phone.") {
+    for (kind in kinds) {
+      val value = kind.keyIntegration?.let { id -> integrations.firstOrNull { it.id == id }?.label }
+        ?: slack?.let(::slackSummary)
+      SettingsLinkRow(kind.title, icon = integrationIcon(kind), value = value) { router.push(Route.Integration(kind.wire)) }
     }
   }
-  slack?.let { workspaces ->
-    SettingsGroup(
-      title = "Slack",
-      footer = "Connect Slack workspaces and choose who may use them on the Mac: the tokens and the allowlists decide who " +
-        "can run agents on this computer, so they never leave it.",
-    ) {
-      if (workspaces.isEmpty()) SlackNotConnectedRow()
-      for (workspace in workspaces) SlackStatusRows(workspace)
-    }
-  }
+}
+
+private fun integrationIcon(kind: IntegrationKind) = when (kind) {
+  IntegrationKind.Linear -> Icon.issue
+  IntegrationKind.Figma -> Icon.design
+  IntegrationKind.Slack -> Icon.slack
 }
 
 @Composable
@@ -269,4 +274,11 @@ private fun NameGroup(computer: DeviceIdentity) {
       }
     }
   }
+}
+
+/** The Slack row's value: the one connected workspace's name, or how many there are. */
+private fun slackSummary(workspaces: List<SlackStatus>): String {
+  val connected = workspaces.filter { it.configured }
+  val first = connected.firstOrNull() ?: return "Not connected"
+  return if (connected.size > 1) "${connected.size} workspaces" else first.workspace ?: SlackStatusText.state(first)
 }

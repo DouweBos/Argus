@@ -329,7 +329,12 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "projects.clone_cancel": DENIED,
   // The host owner's Linear account; a guest has no claim on it.
   "integrations.list": DENIED,
+  "integrations.connect_key": DENIED,
+  "integrations.disconnect": DENIED,
   "slack.status": DENIED,
+  "slack.manifest": DENIED,
+  "slack.connect": DENIED,
+  "slack.disconnect": DENIED,
   "linear.issues": DENIED,
   "linear.issue": DENIED,
   "linear.update_issue": DENIED,

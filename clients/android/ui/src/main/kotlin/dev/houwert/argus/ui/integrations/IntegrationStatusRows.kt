@@ -10,22 +10,6 @@ import dev.houwert.argus.ui.components.Badge
 import dev.houwert.argus.ui.components.SettingsRow
 import dev.houwert.argus.ui.theme.Tone
 
-/** The computer's Linear and Figma: one row each with who it's connected as and its state. */
-@Composable
-fun IntegrationStatusRows(integrations: List<IntegrationStatus>) {
-  for (status in integrations) {
-    SettingsRow(IntegrationLabels.name(status.id), description = IntegrationLabels.account(status)) {
-      Badge(IntegrationLabels.state(status), tone = IntegrationLabels.tone(status))
-    }
-  }
-}
-
-/** No Slack workspace connected on the computer. */
-@Composable
-fun SlackNotConnectedRow() {
-  SettingsRow("Connection") { Badge("Not connected", tone = Tone.Muted) }
-}
-
 /** One Slack workspace as the computer has it: connection, who owns it, and which channel works in which project. Read-only. */
 @Composable
 fun SlackStatusRows(status: SlackStatus) {

@@ -66,9 +66,9 @@ extension GalleryFixtures {
       RemoteMethod.projectsList.rawValue: GalleryJSON.projects(GalleryJSON.someProjects),
       RemoteMethod.integrationsList.rawValue: GalleryJSON.encode([
         "integrations": [
-          ["id": "linear", "connected": true, "needsReauth": false, "oauthAvailable": true,
-           "account": ["name": "Sam Rivera", "workspace": "Northwind"]],
-          ["id": "figma", "connected": false, "needsReauth": false, "oauthAvailable": false],
+          ["id": "linear", "connected": true, "method": "key", "needsReauth": false, "oauthAvailable": true,
+           "account": ["name": "Sam Rivera", "email": "sam@northwind.studio", "workspace": "Northwind"]],
+          ["id": "figma", "connected": false, "needsReauth": false, "oauthAvailable": true],
         ]
       ]),
       ArgusProtocol.Commands.SlackStatus.name: GalleryJSON.encode([
@@ -102,4 +102,17 @@ extension GalleryFixtures {
   public static var slackNotConnected: [String: String] { slack(workspaces: []) }
   /// Argus created the app; its two tokens still to paste.
   public static var slackAppCreated: [String: String] { slack(workspaces: [], pendingApp: true) }
+
+  /// Linear's saved key stopped working.
+  public static var integrationNeedsReauth: [String: String] {
+    slackConnected.merging([
+      RemoteMethod.integrationsList.rawValue: GalleryJSON.encode([
+        "integrations": [
+          ["id": "linear", "connected": true, "method": "key", "needsReauth": true, "oauthAvailable": true,
+           "account": ["name": "Sam Rivera", "email": "sam@northwind.studio", "workspace": "Northwind"]],
+          ["id": "figma", "connected": false, "needsReauth": false, "oauthAvailable": true],
+        ]
+      ])
+    ]) { $1 }
+  }
 }

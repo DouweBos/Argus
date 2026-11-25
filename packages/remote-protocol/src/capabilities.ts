@@ -401,12 +401,18 @@ export const REMOTE_METHODS = {
   "projects.clones": "monitor",
   "projects.clone": "control",
   "projects.clone_cancel": "control",
-  /** Which integrations the computer has connected, and as whom. Connecting
-   *  one takes a secret, which stays on the computer: no method sets it. */
+  /** Which integrations the computer has connected, and as whom. */
   "integrations.list": "monitor",
-  /** Read-only: the Slack tokens and who may drive agents from Slack are set
-   *  on the computer only, like the Control grant. */
+  /** A key typed on the device goes to the computer's secret store and never
+   *  comes back; browser sign-in stays on the computer's own loopback. */
+  "integrations.connect_key": "control",
+  "integrations.disconnect": "control",
+  /** Who may drive agents from Slack (owner, allowlist, channel projects) is
+   *  set on the computer only; a device connects or disconnects the bot. */
   "slack.status": "monitor",
+  "slack.manifest": "monitor",
+  "slack.connect": "control",
+  "slack.disconnect": "control",
   /** Reads Linear as the computer's connected user. */
   "linear.issues": "monitor",
   "linear.issue": "monitor",

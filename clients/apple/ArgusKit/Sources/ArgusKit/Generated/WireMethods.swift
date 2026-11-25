@@ -5186,6 +5186,78 @@ extension ArgusProtocol {
       }
     }
 
+    public struct IntegrationsConnectKeyParams: Codable, Sendable {
+      public var id: IntegrationId
+      public var key: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case key = "key"
+      }
+
+      public init(id: IntegrationId, key: String) {
+        self.id = id
+        self.key = key
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(key, forKey: .key)
+      }
+    }
+
+    public struct IntegrationsConnectKeyResult: Codable, Sendable {
+      public var integration: IntegrationStatus
+
+      enum CodingKeys: String, CodingKey {
+        case integration = "integration"
+      }
+
+      public init(integration: IntegrationStatus) {
+        self.integration = integration
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(integration, forKey: .integration)
+      }
+    }
+
+    public struct IntegrationsDisconnectParams: Codable, Sendable {
+      public var id: IntegrationId
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: IntegrationId) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
+    public struct IntegrationsDisconnectResult: Codable, Sendable {
+      public var integration: IntegrationStatus
+
+      enum CodingKeys: String, CodingKey {
+        case integration = "integration"
+      }
+
+      public init(integration: IntegrationStatus) {
+        self.integration = integration
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(integration, forKey: .integration)
+      }
+    }
+
     public struct IntegrationsListParams: Codable, Sendable {
 
       public init() {
@@ -9026,6 +9098,113 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SlackConnectParams: Codable, Sendable {
+      public var botToken: String
+      public var appToken: String
+
+      enum CodingKeys: String, CodingKey {
+        case botToken = "bot_token"
+        case appToken = "app_token"
+      }
+
+      public init(botToken: String, appToken: String) {
+        self.botToken = botToken
+        self.appToken = appToken
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(botToken, forKey: .botToken)
+        try c.encode(appToken, forKey: .appToken)
+      }
+    }
+
+    public struct SlackConnectResult: Codable, Sendable {
+      public var status: SlackStatus
+      public var workspaces: [SlackStatus]
+
+      enum CodingKeys: String, CodingKey {
+        case status = "status"
+        case workspaces = "workspaces"
+      }
+
+      public init(status: SlackStatus, workspaces: [SlackStatus]) {
+        self.status = status
+        self.workspaces = workspaces
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(status, forKey: .status)
+        try c.encode(workspaces, forKey: .workspaces)
+      }
+    }
+
+    public struct SlackDisconnectParams: Codable, Sendable {
+      public var teamId: String
+
+      enum CodingKeys: String, CodingKey {
+        case teamId = "team_id"
+      }
+
+      public init(teamId: String) {
+        self.teamId = teamId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teamId, forKey: .teamId)
+      }
+    }
+
+    public struct SlackDisconnectResult: Codable, Sendable {
+      public var status: SlackStatus
+      public var workspaces: [SlackStatus]
+
+      enum CodingKeys: String, CodingKey {
+        case status = "status"
+        case workspaces = "workspaces"
+      }
+
+      public init(status: SlackStatus, workspaces: [SlackStatus]) {
+        self.status = status
+        self.workspaces = workspaces
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(status, forKey: .status)
+        try c.encode(workspaces, forKey: .workspaces)
+      }
+    }
+
+    public struct SlackManifestParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct SlackManifestResult: Codable, Sendable {
+      public var manifest: String
+
+      enum CodingKeys: String, CodingKey {
+        case manifest = "manifest"
+      }
+
+      public init(manifest: String) {
+        self.manifest = manifest
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(manifest, forKey: .manifest)
+      }
+    }
+
     public struct SlackStatusParams: Codable, Sendable {
 
       public init() {
@@ -10818,6 +10997,18 @@ extension ArgusProtocol {
       public static let name = "host.ping"
     }
 
+    public enum IntegrationsConnectKey: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.IntegrationsConnectKeyParams
+      public typealias Result = ArgusProtocol.MethodsTypes.IntegrationsConnectKeyResult
+      public static let name = "integrations.connect_key"
+    }
+
+    public enum IntegrationsDisconnect: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.IntegrationsDisconnectParams
+      public typealias Result = ArgusProtocol.MethodsTypes.IntegrationsDisconnectResult
+      public static let name = "integrations.disconnect"
+    }
+
     public enum IntegrationsList: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.IntegrationsListParams
       public typealias Result = ArgusProtocol.MethodsTypes.IntegrationsListResult
@@ -11362,6 +11553,24 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsWatchPullRequestParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsWatchPullRequestResult
       public static let name = "sessions.watch_pull_request"
+    }
+
+    public enum SlackConnect: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SlackConnectParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SlackConnectResult
+      public static let name = "slack.connect"
+    }
+
+    public enum SlackDisconnect: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SlackDisconnectParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SlackDisconnectResult
+      public static let name = "slack.disconnect"
+    }
+
+    public enum SlackManifest: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SlackManifestParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SlackManifestResult
+      public static let name = "slack.manifest"
     }
 
     public enum SlackStatus: RemoteCommand {

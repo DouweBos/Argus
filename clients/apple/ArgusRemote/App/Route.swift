@@ -94,6 +94,8 @@ enum Route: Hashable {
   /// Warnings and errors shown this launch, as the desktop's `/notifications`.
   case notifications
   case computers
+  /// One of the connected computer's integrations, to connect or disconnect.
+  case integration(IntegrationKind)
   case account
   case addComputer
   case claudeAccounts
@@ -174,6 +176,7 @@ enum Route: Hashable {
     case .computers: "/settings/computers"
     case .computer: "/settings/computers/:deviceId"
     case .addComputer: "/settings/computers/new"
+    case .integration(let kind): "/settings/integrations/\(kind.rawValue)"
     case .account: "/settings/account"
     case .claudeAccounts: "/settings/accounts"
     case .more: "/more"

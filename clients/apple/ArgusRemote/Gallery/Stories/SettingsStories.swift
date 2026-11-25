@@ -33,6 +33,12 @@
         slack("two-workspaces", GalleryFixtures.slackTwoWorkspaces),
         slack("claim", GalleryFixtures.slackClaimPending),
         slack("not-connected", GalleryFixtures.slackNotConnected),
+        integration(.linear, "connected"),
+        integration(.figma, "not-connected"),
+        GalleryStory(
+          "settings/integrations/linear/needs-reauth",
+          fixtures: GalleryFixtures.deviceHosts.merging(GalleryFixtures.integrationNeedsReauth) { $1 }, setup: connect
+        ) { IntegrationView(kind: .linear) },
         account("signed-in", GalleryAccount(selfKind: "ios")),
         account("signed-out", GalleryAccount(phase: .signedOut, selfKind: "ios")),
         account(
@@ -53,22 +59,23 @@
     }
 
     private static var computerFixtures: [String: String] {
-      GalleryFixtures.deviceHosts.merging([
-        RemoteMethod.integrationsList.rawValue: GalleryJSON.encode([
-          "integrations": [
-            ["id": "github", "connected": true, "needsReauth": false, "oauthAvailable": true, "account": ["name": "alex-rivera"]],
-            ["id": "linear", "connected": false, "needsReauth": false, "oauthAvailable": true],
-          ]
-        ])
-      ]) { $1 }
+      GalleryFixtures.deviceHosts.merging(GalleryFixtures.slackConnected) { $1 }
     }
 
-    /// The computer's page with its Slack in one of its states; the Mac's ids.
+    /// The Slack screen in one of its states; the Mac's ids.
     private static func slack(_ state: String, _ fixtures: [String: String]) -> GalleryStory {
       GalleryStory(
         "settings/integrations/slack/\(state)", fixtures: GalleryFixtures.deviceHosts.merging(fixtures) { $1 },
         setup: connect
-      ) { ComputerStory() }
+      ) { IntegrationView(kind: .slack) }
+    }
+
+    /// Linear connected and Figma not, as the Slack fixtures have them.
+    private static func integration(_ kind: IntegrationKind, _ state: String) -> GalleryStory {
+      GalleryStory(
+        "settings/integrations/\(kind.rawValue)/\(state)",
+        fixtures: GalleryFixtures.deviceHosts.merging(GalleryFixtures.slackConnected) { $1 }, setup: connect
+      ) { IntegrationView(kind: kind) }
     }
 
     private static func account(_ state: String, _ fixture: GalleryAccount) -> GalleryStory {

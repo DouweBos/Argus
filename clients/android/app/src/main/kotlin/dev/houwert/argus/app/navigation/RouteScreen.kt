@@ -32,6 +32,7 @@ import dev.houwert.argus.app.screens.account.AccountScreen
 import dev.houwert.argus.app.screens.account.AddComputerScreen
 import dev.houwert.argus.app.screens.accounts.ClaudeAccountsScreen
 import dev.houwert.argus.app.screens.computers.ComputerScreen
+import dev.houwert.argus.app.screens.computers.IntegrationScreen
 import dev.houwert.argus.app.screens.devices.DeviceScreen
 import dev.houwert.argus.app.screens.devices.DevicesScreen
 import dev.houwert.argus.app.screens.files.FileScreen
@@ -132,6 +133,7 @@ fun RouteScreen(route: Route) {
     Route.Settings -> SettingsScreen()
     is Route.SettingsPage -> SettingsPaneScreen(route.pane)
     is Route.Computer -> ComputerScreen(route.deviceId)
+    is Route.Integration -> IntegrationScreen(route.kind)
     Route.ClaudeAccounts -> ClaudeAccountsScreen()
     Route.Devices -> DevicesScreen()
     is Route.Device -> DeviceScreen(route)
