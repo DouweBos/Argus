@@ -42,6 +42,10 @@ import dev.houwert.argus.core.files.SessionFilePaths
 import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.listFiles
 import dev.houwert.argus.core.stores.readFile
+import dev.houwert.argus.core.stores.readFileBytes
+import dev.houwert.argus.core.files.FilePreviewKind
+import dev.houwert.argus.app.telemetry.Telemetry
+import dev.houwert.argus.app.telemetry.TelemetryEvent
 import dev.houwert.argus.kit.net.Transport
 import dev.houwert.argus.kit.protocol.generated.CodeFile
 import dev.houwert.argus.kit.protocol.generated.CodeReadOnlyReason
@@ -75,6 +79,17 @@ fun FileScreen(sessionId: String, path: String, line: Int?) {
   val capabilities by host.capabilities.collectAsState()
   val hasControl = "control" in capabilities
   var file by remember { mutableStateOf<CodeFile?>(null) }
+  val preview = remember(path) { FilePreviewKind.of(path) }
+  /** A PDF's or an image's bytes. */
+  var bytes by remember { mutableStateOf<ByteArray?>(null) }
+  var showSource by remember { mutableStateOf(false) }
+  var reportedPreview by remember { mutableStateOf(false) }
+  val reportPreview = {
+    if (!reportedPreview && preview != null) {
+      reportedPreview = true
+      Telemetry.capture(TelemetryEvent.PreviewOpened(preview))
+    }
+  }
   var relativePath by remember { mutableStateOf<String?>(null) }
   var failure by remember { mutableStateOf<String?>(null) }
   var focusLine by remember { mutableStateOf(line) }
@@ -85,8 +100,14 @@ fun FileScreen(sessionId: String, path: String, line: Int?) {
   val lineCount = (file?.content?.count { it == '\n' } ?: 0) + 1
 
   LaunchedEffect(connection == Transport.State.Ready, hasControl) {
-    if (file != null || connection != Transport.State.Ready || !hasControl) return@LaunchedEffect
-    load(host, sessionId, path, relativePath, { relativePath = it }, { file = it; failure = null }, { failure = it })
+    if (file != null || bytes != null || connection != Transport.State.Ready || !hasControl) return@LaunchedEffect
+    load(host, sessionId, path, relativePath, preview?.isBinary == true, { relativePath = it }, { loaded ->
+      when (loaded) {
+        is CodeFile -> file = loaded
+        is ByteArray -> bytes = loaded
+      }
+      failure = null
+    }, { failure = it })
   }
 
   Column(Modifier.fillMaxSize().background(theme.bg)) {
@@ -103,12 +124,19 @@ fun FileScreen(sessionId: String, path: String, line: Int?) {
       },
       navigationIcon = { IconButton(router::pop) { Icon(Icon.arrowBack, "Back") } },
       actions = {
+        if (preview == FilePreviewKind.Markdown && file?.readOnlyReason == null && file != null) {
+          IconButton({ showSource = !showSource }) {
+            Icon(if (showSource) Icon.eye else Icon.source, if (showSource) "Show Preview" else "Show Source")
+          }
+        }
         Box {
           IconButton({ menu = true }) { Icon(Icon.ellipsis, "File actions") }
           DropdownMenu(menu, { menu = false }) {
             val readable = file?.takeIf { it.readOnlyReason == null }
             if (readable != null) {
-              DropdownMenuItem({ Text("Go to Line") }, { menu = false; jumping = true })
+              if (preview != FilePreviewKind.Markdown || showSource) {
+                DropdownMenuItem({ Text("Go to Line") }, { menu = false; jumping = true })
+              }
               DropdownMenuItem({ Text("Copy Contents") }, { menu = false; clipboard.setText(AnnotatedString(readable.content)) })
               DropdownMenuItem({ Text("Share") }, {
                 menu = false
@@ -125,9 +153,13 @@ fun FileScreen(sessionId: String, path: String, line: Int?) {
       windowInsets = WindowInsets(0, 0, 0, 0),
     )
     val current = file
+    val data = bytes
     when {
       !hasControl -> Screen { ControlRequiredBanner("read files") }
       failure != null -> EmptyState(Icon.warning, "Can't open this file", body = failure)
+      data != null && preview != null -> BinaryFilePreview(preview, shownPath, data, reportPreview)
+      current != null && current.readOnlyReason == null && preview == FilePreviewKind.Markdown && !showSource ->
+        MarkdownFilePreview(host, sessionId, shownPath, current.content, reportPreview)
       current?.readOnlyReason != null -> EmptyState(Icon.file, "Nothing to show", body = message(current.readOnlyReason!!, Formatter.formatShortFileSize(context, current.size.toLong())))
       current != null -> CodeView(current.content, language, focusLine = focusLine)
       else -> Loading("Opening file")
@@ -156,8 +188,9 @@ private suspend fun load(
   sessionId: String,
   path: String,
   known: String?,
+  binary: Boolean,
   resolved: (String) -> Unit,
-  loaded: (CodeFile) -> Unit,
+  loaded: (Any) -> Unit,
   failed: (String) -> Unit,
 ) {
   var relative = known
@@ -168,7 +201,7 @@ private suspend fun load(
     resolved(relative)
   }
   try {
-    loaded(host.readFile(sessionId, relative))
+    loaded(if (binary) host.readFileBytes(sessionId, relative) else host.readFile(sessionId, relative))
   } catch (e: Exception) {
     if (HostStore.isCancellation(e)) throw e
     failed(HostStore.describe(e))

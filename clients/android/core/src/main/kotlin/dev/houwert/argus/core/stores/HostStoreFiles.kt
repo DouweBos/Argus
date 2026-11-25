@@ -18,6 +18,13 @@ suspend fun HostStore.readFile(sessionId: String, path: String): CodeFile {
   return backend.request(Methods.FilesRead, MethodsTypes.FilesReadParams(sessionId, path))
 }
 
+/** A PDF's or an image's bytes; the host refuses past 8 MB. */
+suspend fun HostStore.readFileBytes(sessionId: String, path: String): ByteArray {
+  val backend = backend ?: throw HostStore.offlineError
+  val result = backend.request(Methods.FilesReadBytes, MethodsTypes.FilesReadBytesParams(sessionId, path))
+  return java.util.Base64.getDecoder().decode(result.data)
+}
+
 /** The gateway's `files.search`, with `files.search` events routed to each search's listener. */
 class HostFileSearch(private val host: HostStore) : FileSearchTransport {
   private val observers = mutableMapOf<String, (CodeSearchEvent) -> Unit>()

@@ -23,6 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalUriHandler
@@ -38,7 +40,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import dev.houwert.argus.core.files.MarkdownImageLine
+import dev.houwert.argus.core.files.MarkdownTarget
+import dev.houwert.argus.core.files.MarkdownTask
 import dev.houwert.argus.core.transcript.FileLinks
+import dev.houwert.argus.ui.icons.Icon as Icons
+import dev.houwert.argus.ui.mermaid.MermaidDiagramView
 import dev.houwert.argus.kit.util.MarkdownBlock
 import dev.houwert.argus.ui.theme.ArgusColors
 import dev.houwert.argus.ui.theme.ArgusMetrics
@@ -54,16 +63,30 @@ fun MarkdownView(text: String, modifier: Modifier = Modifier, baseSize: Int = 15
   val theme = ArgusTheme.colors
   val blocks = remember(text) { MarkdownBlock.parse(text) }
   val inline = rememberInline(mentions)
+  val document = LocalMarkdownDocument.current
   Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
     for (block in blocks) {
       when (block) {
         is MarkdownBlock.Heading ->
           Text(
-            inline(block.text), Modifier.padding(top = 2.dp), color = theme.text,
+            inline(block.text),
+            Modifier.padding(top = 2.dp).then(
+              if (document == null) Modifier
+              else Modifier.onGloballyPositioned {
+                document.headings[MarkdownTarget.anchor(block.text)] = it.positionInParent().y
+              }
+            ),
+            color = theme.text,
             style = argusFont(headingSize(block.level), FontWeight.Bold),
           )
-        is MarkdownBlock.Paragraph -> Text(inline(block.text), color = theme.text, style = argusFont(baseSize))
-        is MarkdownBlock.Code -> CodeBlockView(block.body, language = block.language)
+        is MarkdownBlock.Paragraph -> {
+          val images = if (document != null) MarkdownImageLine.images(block.text) else null
+          if (images != null) MarkdownImages(images) else Text(inline(block.text), color = theme.text, style = argusFont(baseSize))
+        }
+        // What a person typed stays as written; a diagram is something an agent or a file drew.
+        is MarkdownBlock.Code ->
+          if (!mentions && block.language?.lowercase() == "mermaid") MermaidDiagramView(block.body)
+          else CodeBlockView(block.body, language = block.language)
         is MarkdownBlock.Quote ->
           Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.width(3.dp).fillMaxHeight().background(theme.borderStrong))
@@ -73,8 +96,17 @@ fun MarkdownView(text: String, modifier: Modifier = Modifier, baseSize: Int = 15
           Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             block.items.forEachIndexed { index, item ->
               Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(if (block.ordered) "${index + 1}." else "•", color = theme.textMuted, style = argusFont(baseSize))
-                Text(inline(item), color = theme.text, style = argusFont(baseSize))
+                val task = MarkdownTask.split(item)
+                if (task != null) {
+                  Icon(
+                    if (task.checked) Icons.taskDone else Icons.taskOpen, if (task.checked) "Done" else "To do",
+                    Modifier.padding(top = 2.dp).size(baseSize.dp + 2.dp), tint = if (task.checked) theme.accent else theme.textMuted,
+                  )
+                  Text(inline(task.text), color = theme.text, style = argusFont(baseSize))
+                } else {
+                  Text(if (block.ordered) "${index + 1}." else "•", color = theme.textMuted, style = argusFont(baseSize))
+                  Text(inline(item), color = theme.text, style = argusFont(baseSize))
+                }
               }
             }
           }
@@ -97,9 +129,10 @@ internal fun rememberInline(mentions: Boolean): (String) -> AnnotatedString {
   val theme = ArgusTheme.colors
   val openFile = LocalOpenFileLink.current ?: LocalTranscript.current?.openFileLink
   val uri = LocalUriHandler.current
-  return remember(theme, openFile, uri, mentions) {
+  val document = LocalMarkdownDocument.current
+  return remember(theme, openFile, uri, mentions, document) {
     val cache = HashMap<String, AnnotatedString>()
-    val render: (String) -> AnnotatedString = { source -> cache.getOrPut(source) { inlineAnnotated(source, theme, openFile, uri, mentions) } }
+    val render: (String) -> AnnotatedString = { source -> cache.getOrPut(source) { inlineAnnotated(source, theme, openFile, uri, mentions, document) } }
     render
   }
 }
@@ -110,8 +143,12 @@ internal fun inlineAnnotated(
   openFile: ((FileLinks.FileRef) -> Unit)?,
   uri: UriHandler,
   mentions: Boolean,
+  document: MarkdownDocument? = null,
 ): AnnotatedString {
-  val parsed = InlineMarkdown.linkified(InlineMarkdown.parse(source), files = openFile != null, mentions = mentions)
+  // A previewed file's links resolve against its own path, so bare paths in its prose aren't guessed at.
+  val parsed =
+    if (document != null) InlineMarkdown.parse(source)
+    else InlineMarkdown.linkified(InlineMarkdown.parse(source), files = openFile != null, mentions = mentions)
   // Underlined too, since Muted's accent is the text colour.
   val linkStyle = TextLinkStyles(SpanStyle(color = theme.accent, textDecoration = TextDecoration.Underline))
   return buildAnnotatedString {
@@ -126,7 +163,9 @@ internal fun inlineAnnotated(
         is InlineMarkdown.Style.Link -> {
           val ref = FileLinks.fileRef(style.url)
           val link =
-            if (ref != null && openFile != null) {
+            if (document != null) {
+              LinkAnnotation.Clickable(style.url, linkStyle) { MarkdownTarget.resolve(style.url, document.path)?.let(document.open) }
+            } else if (ref != null && openFile != null) {
               LinkAnnotation.Clickable(style.url, linkStyle) { openFile(ref) }
             } else {
               LinkAnnotation.Clickable(style.url, linkStyle) { runCatching { uri.openUri(style.url) } }

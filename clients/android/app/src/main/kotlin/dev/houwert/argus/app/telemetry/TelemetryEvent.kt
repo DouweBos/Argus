@@ -1,5 +1,6 @@
 package dev.houwert.argus.app.telemetry
 
+import dev.houwert.argus.core.files.FilePreviewKind
 import dev.houwert.argus.core.stores.StoreEvent
 import dev.houwert.argus.kit.storage.RemoteEndpoint
 
@@ -315,6 +316,18 @@ sealed interface TelemetryEvent {
   data class FileViewed(val source: FileViewSource, val language: String) : TelemetryEvent {
     override val name = "android_file_viewed"
     override val properties get() = mapOf("source" to source.wire, "language" to language)
+  }
+
+  /** A file showed as a rendered preview rather than its source; [kind] is `markdown`, `pdf` or `image`. */
+  data class PreviewOpened(val kind: FilePreviewKind) : TelemetryEvent {
+    override val name = "android_preview_opened"
+    override val properties get() = mapOf("kind" to kind.wire)
+  }
+
+  /** Once per diagram drawn (never a cached one); [failed] says Mermaid couldn't draw it. */
+  data class MermaidRendered(val failed: Boolean) : TelemetryEvent {
+    override val name = "android_mermaid_rendered"
+    override val properties get() = mapOf("failed" to failed)
   }
 
   data class DesignOpened(val source: DesignSource) : TelemetryEvent {

@@ -66,9 +66,18 @@ fun ZoomPanImage(
   label: String,
   modifier: Modifier = Modifier,
   overlay: (@Composable (fitted: DpSize, zoom: Float) -> Unit)? = null,
+) = ZoomPanImage(rememberPngBitmap(data), label, modifier, overlay)
+
+/** [ZoomPanImage] for a bitmap already decoded (a downsampled photo, a PDF page); a spinner while null. */
+@Composable
+fun ZoomPanImage(
+  image: ImageBitmap?,
+  label: String,
+  modifier: Modifier = Modifier,
+  overlay: (@Composable (fitted: DpSize, zoom: Float) -> Unit)? = null,
 ) {
   val theme = ArgusTheme.colors
-  val image = rememberPngBitmap(data)
+  val data = image
   var scale by remember(data) { mutableFloatStateOf(1f) }
   var offset by remember(data) { mutableStateOf(Offset.Zero) }
   fun fit() {
