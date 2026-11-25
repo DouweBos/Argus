@@ -294,7 +294,13 @@
     override func paste(_ sender: Any?) {
       if let drop = Self.drop(from: .general, pasted: true) {
         switch drop {
-        case .images, .element:
+        case .images:
+          if let text = Self.textBesideImages(on: .general) {
+            insertText(text, replacementRange: selectedRange())
+          }
+          onDrop?(drop)
+          return
+        case .element:
           onDrop?(drop)
           return
         // Finder copies carry the file's icon as an image; never attach that.
@@ -302,6 +308,17 @@
         }
       }
       pasteAsPlainText(sender)
+    }
+
+    /// Text copied together with images, minus a Finder copy's file names or an image's URL.
+    static func textBesideImages(on pasteboard: NSPasteboard) -> String? {
+      let urls =
+        (pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true])
+          as? [URL]) ?? []
+      let names =
+        urls.flatMap { [$0.lastPathComponent, $0.path, $0.absoluteString] }
+        + [pasteboard.string(forType: .URL)].compactMap { $0 }
+      return PastedText.besideImages(pasteboard.string(forType: .string), naming: names)
     }
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {

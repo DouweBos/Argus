@@ -17,6 +17,7 @@ import {
 } from "@argus/peacock";
 import {
   ACCEPTED_IMAGE_TYPES,
+  clipboardKeepsText,
   extractImageFilesFromClipboard,
 } from "../../lib/images";
 import type { RemoteSession } from "../../lib/protocol";
@@ -240,7 +241,10 @@ export function WebStartComposer({
         onPaste={(e) => {
           const files = extractImageFilesFromClipboard(e);
           if (files.length > 0) {
-            e.preventDefault();
+            // Text copied with the images is pasted natively at the caret.
+            if (!clipboardKeepsText(e, files)) {
+              e.preventDefault();
+            }
             c.addImages(files).catch(() => {});
           }
         }}

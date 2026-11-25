@@ -26,6 +26,7 @@ import {
 } from "../lib/contextWindow";
 import {
   ACCEPTED_IMAGE_TYPES,
+  clipboardKeepsText,
   extractImageFilesFromClipboard,
   filesToPendingImages,
   type PendingImage,
@@ -836,7 +837,10 @@ export function ChatInput({
           onPaste={(e) => {
             const imgs = extractImageFilesFromClipboard(e);
             if (imgs.length > 0) {
-              e.preventDefault();
+              // Text copied with the images is pasted natively at the caret.
+              if (!clipboardKeepsText(e, imgs)) {
+                e.preventDefault();
+              }
               addImageFiles(imgs).catch(() => {});
             }
           }}

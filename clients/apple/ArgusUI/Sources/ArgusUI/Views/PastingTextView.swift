@@ -201,9 +201,11 @@
     public override func paste(_ sender: Any?) {
       let pasteboard = UIPasteboard.general
       if pasteboard.hasImages, let images = pasteboard.images, !images.isEmpty {
+        let names = [pasteboard.url?.absoluteString].compactMap { $0 }
+        if let text = PastedText.besideImages(pasteboard.string, naming: names) {
+          insertText(text)
+        }
         onPasteImages?(images)
-        // A pasteboard carrying both is rare; the images are the payload the
-        // user meant, and pasting the accompanying text too reads as a bug.
         return
       }
       super.paste(sender)

@@ -92,7 +92,22 @@ fun ComposerField(
     ReceiveContentListener { content: TransferableContent ->
       if (!content.hasMediaType(MediaType.Image)) return@ReceiveContentListener content
       val uris = mutableListOf<Uri>()
-      val rest = content.consume { item -> item.uri?.also { uris += it } != null }
+      val texts = mutableListOf<String>()
+      val rest = content.consume { item ->
+        val uri = item.uri ?: return@consume false
+        uris += uri
+        // Consuming the item would otherwise drop the text it carries next to the image.
+        PastedText.besideImages(item.text?.toString(), listOf(uri.toString()))?.let { texts += it }
+        true
+      }
+      if (texts.isNotEmpty()) {
+        val pasted = texts.joinToString("\n")
+        state.edit {
+          val start = selection.min
+          replace(start, selection.max, pasted)
+          selection = TextRange(start + pasted.length)
+        }
+      }
       if (uris.isNotEmpty()) paste(uris)
       rest
     }

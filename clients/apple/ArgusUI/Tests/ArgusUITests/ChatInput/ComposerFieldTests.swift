@@ -117,6 +117,25 @@
       #expect(dropped.first?.attachment.data == png.base64EncodedString())
     }
 
+    @Test("text pasted with an image is kept; a Finder copy's file name is not")
+    func textBesideImages() throws {
+      let board = NSPasteboard(name: .init("argus-test-\(UUID().uuidString)"))
+      defer { board.releaseGlobally() }
+      board.clearContents()
+      board.setData(Data([0]), forType: .png)
+      board.setString("see the error", forType: .string)
+      #expect(ComposerTextView.textBesideImages(on: board) == "see the error")
+
+      let image = FileManager.default.temporaryDirectory.appendingPathComponent(
+        "argus-\(UUID().uuidString).png")
+      try Data([0]).write(to: image)
+      defer { try? FileManager.default.removeItem(at: image) }
+      board.clearContents()
+      board.writeObjects([image as NSURL])
+      board.setString(image.lastPathComponent, forType: .string)
+      #expect(ComposerTextView.textBesideImages(on: board) == nil)
+    }
+
     @Test("images and files stay pasteable and droppable on a plain-text composer")
     func attachmentTypes() {
       let plain = NSTextView()

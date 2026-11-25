@@ -37,6 +37,39 @@ export async function filesToPendingImages(files: File[]): Promise<PendingImage[
   return Promise.all(images.map(fileToAttachment));
 }
 
+/** Text pasted beside images, unless it only names them: a copied file's name or an image's URL. */
+export function textBesideImages(
+  text: string,
+  names: string[],
+): string | null {
+  const known = new Set(names.map((n) => n.trim()));
+  const lines = text
+    .split(/\r?\n|\r/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+
+  return lines.length === 0 || lines.every((l) => known.has(l)) ? null : text;
+}
+
+/** Whether a paste that attaches `images` should still let the browser insert its text. */
+export function clipboardKeepsText(
+  e: React.ClipboardEvent,
+  images: File[],
+): boolean {
+  const data = e.clipboardData;
+  if (!data) {
+    return false;
+  }
+  const urls = data.getData("text/uri-list").split(/\r?\n/);
+
+  return (
+    textBesideImages(data.getData("text/plain"), [
+      ...images.map((f) => f.name),
+      ...urls,
+    ]) !== null
+  );
+}
+
 export function extractImageFilesFromClipboard(
   e: React.ClipboardEvent,
 ): File[] {
