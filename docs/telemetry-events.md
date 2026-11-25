@@ -692,6 +692,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_account_member_changed` | This Mac removed or renamed a device or host on the account | `action` (`removed`, `renamed`), `role` (`device`, `host`) |
 | `mac_device_name_changed` | This Mac's name setting changed, in Settings → General or by renaming this Mac or its host in the account list (a rename from another device that the setting follows sends nothing) | `source` (`settings`, `account_list`), `linked` — renamed on the account too |
 | `mac_hosts_used` | Another host was paired, attached, detached, forgotten, renamed or shown from the Hosts settings or the machines menu | `action` (`pair`, `attach`, `detach`, `forget`, `rename`, `focus`), `success` |
+| `mac_port_forwarded` | A paired host's port was forwarded to this Mac's localhost, opened in the browser, or stopped, from Runtimes or the session browser's toolbar | `action` (`start`, `open`, `stop`), `via` (`runtimes`, `browser`), `success` (the host had something listening and a local port was bound; always true for `open` and `stop`) |
 | --- | --- | --- |
 | `mac_palette_command_run` | A command palette entry was run | `section` (`navigate`, `sessions`, `session`, `project`, `app`, `git`, `settings`, `automations`) |
 | `mac_handoff_continued` | The phone handed a session over through Handoff | `matched` (it named this computer, so the session opened) |

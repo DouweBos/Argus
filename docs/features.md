@@ -261,6 +261,15 @@ at the same time, with both sets of projects in the sidebar.
   anything new fails loudly rather than silently hitting the wrong Mac.
 - Projects registered on a remote host stay on that host — they are
   paths on a different disk.
+- **Forward a remote dev server to your localhost.** Runtimes lists each
+  run's ports with a **Forward** button, and the session browser has
+  **Open in Your Browser** for the page it shows. The port opens on
+  `localhost` on this Mac (another free port when that one is taken),
+  carried over the same encrypted connection, so your own browser and
+  devtools reach it. Only this Mac can use it — it listens on loopback —
+  and it ends when you stop it, the session is deleted or the host is
+  detached. It needs the **Admin** grant, so phones and huddle guests
+  never get it.
 
 ---
 

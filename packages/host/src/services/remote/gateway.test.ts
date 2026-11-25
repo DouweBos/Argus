@@ -111,6 +111,8 @@ describe("gateway capability boundary", () => {
     // `upload_session_attachment` / `write_file` commands it replaces.
     "transfer.upload.open",
     "transfer.download.open",
+    // Forwarding reaches anything listening on the host.
+    "tunnel.open",
   ])(
     "rejects out-of-scope method %s with capability_denied",
     async (method) => {

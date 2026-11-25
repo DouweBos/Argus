@@ -57,6 +57,10 @@ struct RuntimesOverview: View {
             envLabel(row.tab)
           }
           .width(min: 90, ideal: 160)
+          TableColumn("Localhost") { row in
+            forwardControls(row)
+          }
+          .width(min: 90, ideal: 150)
           TableColumn("Session") { row in
             Button { model.open(session: row.session.id) } label: {
               Text(sessionLabel(row.session)).lineLimit(1)
@@ -116,6 +120,20 @@ struct RuntimesOverview: View {
         .lineLimit(1)
         .textSelection(.enabled)
         .help(tab.workspaceEnv.map { "\($0.name)=\($0.value)" }.joined(separator: "\n"))
+    }
+  }
+
+  /// A paired host's ports, forwardable to this Mac; nothing for this Mac's own.
+  @ViewBuilder
+  private func forwardControls(_ row: Row) -> some View {
+    let host = model.host(ofSession: row.session.id)
+    let ports = PortForwardControl.ports(in: row.tab.workspaceEnv)
+    if host != Hosts.local, !row.tab.exited, !ports.isEmpty {
+      HStack(spacing: 8) {
+        ForEach(ports, id: \.self) { port in
+          PortForwardControl(model: model, key: .init(hostId: host, sessionId: row.session.id, port: port))
+        }
+      }
     }
   }
 

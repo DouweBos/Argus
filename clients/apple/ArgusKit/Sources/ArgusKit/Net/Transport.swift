@@ -37,9 +37,10 @@ public actor Transport {
 
   /// Plaintext tags distinguishing JSON envelopes from binary media frames.
   /// `0x02` is the desktop-to-desktop file transfer channel; a phone never
-  /// sends or handles it.
+  /// sends or handles it. `0x03` carries forwarded ports (`Transport+Tunnel`).
   private static let tagJSON: UInt8 = 0x00
   private static let tagMedia: UInt8 = 0x01
+  static let tagTunnel: UInt8 = 0x03
 
   public static let requestTimeout: Duration = .seconds(15)
   /// Plan limits spawn the Claude CLI per account, each probe allowed 20 s on the host.
@@ -79,6 +80,9 @@ public actor Transport {
   /// order, so they reach the socket one at a time, first in first out.
   private var outbox: AsyncStream<Data>.Continuation
   private var writer: Task<Void, Never>
+  /// Open forwarded connections' inbound bytes, by tunnel id.
+  var tunnels: [UInt16: AsyncStream<Data>.Continuation] = [:]
+  var nextTunnel: UInt16 = 1
 
   public init(identity: DeviceIdentity, url: String? = nil) {
     self.identity = identity
@@ -161,6 +165,8 @@ public actor Transport {
       cont.resume(throwing: TransportError.notReady)
     }
     pending.removeAll()
+    for (_, tunnel) in tunnels { tunnel.finish() }
+    tunnels.removeAll()
   }
 
   private func handle(_ event: GatewaySocket.Event) async {
@@ -217,6 +223,10 @@ public actor Transport {
       continuation?.yield(.media(Data(body)))
       return
     }
+    if tag == Self.tagTunnel {
+      receiveTunnel(Data(body))
+      return
+    }
     guard tag == Self.tagJSON,
       let frame = try? ProtocolCodec.decodeFrame(Data(body))
     else { return }
@@ -237,8 +247,12 @@ public actor Transport {
 
   /// Seals now, in numbering order, and queues the frame for the writer.
   private func emit(_ data: Data) {
+    emit(data, tag: Self.tagJSON)
+  }
+
+  func emit(_ data: Data, tag: UInt8) {
     guard let session else { return }
-    var plain = Data([Self.tagJSON])
+    var plain = Data([tag])
     plain.append(data)
     guard let sealed = try? session.encrypt(plain) else { return }
     outbox.yield(sealed)

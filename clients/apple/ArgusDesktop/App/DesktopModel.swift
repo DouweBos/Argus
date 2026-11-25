@@ -41,6 +41,12 @@ final class DesktopModel {
   let languages: LanguageSupport
   let notificationsLog: NotificationsLog
   let huddles: HuddleStore
+  /// A paired host's ports forwarded to this Mac's localhost.
+  let portForwards = PortForwardsStore()
+  #if DEBUG
+    /// Sessions a gallery story places on another machine; it has no router.
+    var galleryHosts: [String: HostId] = [:]
+  #endif
   /// Paired hosts this window drives besides its own.
   let hosts: RemoteHostsStore
   /// The Argus account: sign-in, and the hosts on it.
@@ -207,6 +213,11 @@ final class DesktopModel {
     runtime = RuntimeModel(store: store)
     huddles = HuddleStore(store: store, runtime: runtime)
     store.hooks.sessionIsRemote = { [weak self] id in self?.host(ofSession: id) != Hosts.local }
+    portForwards.tunnels = { [weak self] hostId in self?.backend?.link(hostId)?.tunnels }
+    _ = store.observeIpc { [portForwards] channel, args, _ in
+      guard channel == "session:deleted", case .string(let id)? = args.first else { return }
+      portForwards.stop(sessionId: id)
+    }
     store.hooks.artifactShown = { [weak self] agentId, link in self?.artifactShown(agentId: agentId, link: link) }
     store.hooks.agentNotificationClicked = { [weak self] agentId, sessionId in
       NSApp.activate()
@@ -221,7 +232,11 @@ final class DesktopModel {
     AutomationsWiring.install(in: self)
     BlueprintsWiring.install(in: self)
     hosts.onReady = { [weak self] hostId in Task { await self?.hostCameUp(hostId) } }
-    hosts.onHostsChanged = { [weak self] in Task { await self?.reloadLists() } }
+    hosts.onHostsChanged = { [weak self] in
+      guard let self else { return }
+      portForwards.retain(hosts: hosts.attached)
+      Task { await self.reloadLists() }
+    }
     hosts.onAction = { action, success in
       MacTelemetry.capture(.hostsUsed(action: .init(action), success: success))
     }
@@ -316,7 +331,10 @@ final class DesktopModel {
 
   /// Which machine a session lives on.
   func host(ofSession id: String) -> HostId {
-    backend?.host(of: .session, id) ?? Hosts.local
+    #if DEBUG
+      if let host = galleryHosts[id] { return host }
+    #endif
+    return backend?.host(of: .session, id) ?? Hosts.local
   }
 
   func host(ofProject repoRoot: String) -> HostId {

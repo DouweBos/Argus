@@ -58,6 +58,17 @@ enum MacTelemetryEvent {
     case openPreview = "open_preview"
   }
 
+  enum PortForwardAction: String {
+    case start
+    case open
+    case stop
+  }
+
+  enum PortForwardVia: String {
+    case runtimes
+    case browser
+  }
+
   enum TerminalAction: String {
     case newShell = "new_shell"
     case close
@@ -413,6 +424,8 @@ enum MacTelemetryEvent {
   case remoteDeviceManaged(action: RemoteDeviceAction, success: Bool)
   /// An attached host's live link moved to a better route (e.g. tunnel → Wi-Fi) without dropping.
   case routeUpgraded(from: RemoteEndpoint.Kind, to: RemoteEndpoint.Kind)
+  /// A paired host's port was forwarded to this Mac, opened, or stopped.
+  case portForwarded(action: PortForwardAction, via: PortForwardVia, success: Bool)
   /// Something done to a huddle from its sheet, chat or join requests.
   case huddleUsed(action: HuddleAction, hasDevice: Bool)
   case automationEdited(action: StoreEvent.AutomationAction)
@@ -521,6 +534,7 @@ enum MacTelemetryEvent {
     case .diffLayoutChanged: "mac_diff_layout_changed"
     case .diffOptionChanged: "mac_diff_option_changed"
     case .hostsUsed: "mac_hosts_used"
+    case .portForwarded: "mac_port_forwarded"
     case .pullRequestActed: "mac_pull_request_acted"
     case .accountJoinActed: "mac_account_join_acted"
     case .accountReset: "mac_account_reset"
@@ -755,6 +769,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue, "success": success]
     case .routeUpgraded(let from, let to):
       ["from": from.rawValue, "to": to.rawValue]
+    case .portForwarded(let action, let via, let success):
+      ["action": action.rawValue, "via": via.rawValue, "success": success]
     case .huddleUsed(let action, let hasDevice):
       ["action": action.rawValue, "has_device": hasDevice]
     case .automationEdited(let action):

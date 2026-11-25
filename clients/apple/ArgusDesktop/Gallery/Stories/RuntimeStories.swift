@@ -7,10 +7,23 @@
     static var all: [GalleryStory] {
       [
         GalleryStory(
-          "runtimes/overview", size: CGSize(width: 1300, height: 360), chrome: true, fixtures: GalleryFixtures.home.merging(["list_terminals": "[]"]) { _, new in new },
+          "runtimes/overview", size: CGSize(width: 1300, height: 360), chrome: true, fixtures: GalleryFixtures.home,
           setup: { stage in
             await HomeStories.load(stage)
             stage.model.terminals.galleryFill(tabs)
+          }
+        ) { RuntimesOverview() },
+        // Sessions on a paired Mac: one port forwarded to this Mac, the others offered.
+        GalleryStory(
+          "runtimes/overview/remote", size: CGSize(width: 1300, height: 360), chrome: true,
+          fixtures: GalleryFixtures.home,
+          setup: { stage in
+            await HomeStories.load(stage)
+            stage.model.terminals.galleryFill(tabs)
+            stage.model.galleryHosts = ["rn-1": "mac-mini", "rn-2": "mac-mini"]
+            stage.model.portForwards.galleryFill([
+              (.init(hostId: "mac-mini", sessionId: "rn-2", port: 3012), localPort: 3012)
+            ])
           }
         ) { RuntimesOverview() },
         // The Device tab on a capture card: nothing picked yet, and another computer's session.

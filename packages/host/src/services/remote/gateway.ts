@@ -61,6 +61,8 @@ import { watchRemoteVideo } from "../simulator/remoteVideo";
 import { onVideo } from "../simulator/videoForward";
 import { TransferHub } from "../transfer/hub";
 import { TAG_XFER } from "../transfer/protocol";
+import { PortTunnelHub } from "../tunnel/hub";
+import { TAG_TUNNEL } from "../tunnel/protocol";
 import {
   agentAwaiting,
   dispatch,
@@ -340,6 +342,11 @@ export class DeviceConnection implements DeviceMediaController {
     send: (body) => this.emitXfer(body),
     buffered: () => this.bufferedProbe?.() ?? 0,
   });
+  /** Forwarded TCP connections to this host's ports, admin devices only. */
+  private readonly tunnels = new PortTunnelHub({
+    send: (body) => this.emitTagged(TAG_TUNNEL, body),
+    buffered: () => this.bufferedProbe?.() ?? 0,
+  });
 
   /**
    * Narrows this connection to one agent + device (a huddle guest). Mutable:
@@ -470,6 +477,7 @@ export class DeviceConnection implements DeviceMediaController {
     }
     // A transfer cut off mid-flight must leave no partial behind.
     this.transfers.dispose();
+    this.tunnels.dispose();
     if (this.guest?.roomId) {
       leaveGuest(this.guest.roomId, this.guest.devStaticPub);
     }
@@ -612,6 +620,13 @@ export class DeviceConnection implements DeviceMediaController {
 
         return;
       }
+      if (plain.length > 0 && plain[0] === TAG_TUNNEL) {
+        if (this.raw) {
+          this.tunnels.onBody(plain.subarray(1));
+        }
+
+        return;
+      }
       // Inbound media (tag 0x01) is client→gateway only in theory; the client
       // never sends it, so drop anything that isn't a JSON envelope.
       if (plain.length === 0 || plain[0] !== TAG_JSON) {
@@ -697,6 +712,9 @@ export class DeviceConnection implements DeviceMediaController {
     }
     if (method.startsWith("transfer.")) {
       return await this.handleTransfer(method, params);
+    }
+    if (method.startsWith("tunnel.")) {
+      return await this.handleTunnel(method, params);
     }
     if (method === CONNECTION_TYPED_EVENTS) {
       return this.handleTypedEvents(params);
@@ -832,6 +850,37 @@ export class DeviceConnection implements DeviceMediaController {
     }
   }
 
+  /**
+   * The `tunnel.*` control plane: forward a client's loopback connection to a
+   * port on this host. Admin only — it reaches anything listening here.
+   */
+  private async handleTunnel(
+    method: string,
+    params: unknown,
+  ): Promise<unknown> {
+    if (!this.raw) {
+      throw new GatewayError(
+        "capability_denied",
+        "device lacks 'admin' capability",
+      );
+    }
+    const p = (params ?? {}) as Record<string, unknown>;
+    switch (method) {
+      case "tunnel.open":
+        return await this.tunnels.open({
+          tunnel_id: Number(p.tunnel_id),
+          session_id: String(p.session_id ?? ""),
+          port: Number(p.port),
+        });
+      case "tunnel.close":
+        this.tunnels.close(Number(p.tunnel_id));
+
+        return {};
+      default:
+        throw unknownMethodError("capability_denied", method);
+    }
+  }
+
   /** `connection.typed_events`: raw (admin) connections only. */
   private handleTypedEvents(params: unknown): unknown {
     if (!this.raw) {
@@ -901,6 +950,9 @@ export class DeviceConnection implements DeviceMediaController {
 
   /** Forward a tapped renderer broadcast to this device, if relevant. */
   handleBroadcast(channel: string, args: unknown[]): void {
+    if (channel === "session:deleted" && typeof args[0] === "string") {
+      this.tunnels.closeSession(args[0]);
+    }
     if (this.raw) {
       this.trackPermissions(channel, args);
       this.forwardRawBroadcast(channel, args);
@@ -1230,8 +1282,12 @@ export class DeviceConnection implements DeviceMediaController {
 
   /** Send one transfer chunk on the same encrypted channel. */
   private emitXfer(body: Uint8Array): void {
+    this.emitTagged(TAG_XFER, body);
+  }
+
+  private emitTagged(tag: number, body: Uint8Array): void {
     const plain = new Uint8Array(1 + body.length);
-    plain[0] = TAG_XFER;
+    plain[0] = tag;
     plain.set(body, 1);
     this.sink(this.session.encrypt(plain));
   }

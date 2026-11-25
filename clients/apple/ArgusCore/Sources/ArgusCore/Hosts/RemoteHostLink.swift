@@ -44,6 +44,9 @@ public final class RemoteHostLink: Sendable {
     RemoteHostLink(identity: identity, attempt: attempt, subscriptions: subscriptions.withLock { $0 })
   }
 
+  /// This link's connection, for forwarding ports.
+  public var tunnels: any TunnelOpener { transport }
+
   public var state: Transport.State { current.withLock { $0 } }
   public var isReady: Bool { state == .ready }
 

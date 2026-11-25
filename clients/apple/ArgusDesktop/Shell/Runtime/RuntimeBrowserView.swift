@@ -91,6 +91,11 @@ struct RuntimeBrowserView: View {
       // Loopback URLs: only this Mac's own browser can be inspected from here.
       if browserHost == Hosts.local {
         navButton("DevTools", "hammer", enabled: true) { openDevTools() }
+      } else if let key = forwardKey {
+        // Forwards the port to this Mac's localhost first.
+        navButton("Open in Your Browser", "arrow.up.forward.app", enabled: !forwarding(key)) {
+          openOnThisMac(key)
+        }
       }
     }
     .padding(.horizontal, 8)
@@ -100,6 +105,27 @@ struct RuntimeBrowserView: View {
   /// The machine running this session's browser.
   private var browserHost: HostId {
     (store.backend as? HostRouter)?.host(of: .session, sessionKey) ?? Hosts.local
+  }
+
+  /// The remote session's own dev server, when that's what the address bar shows.
+  private var forwardKey: PortForwardsStore.Key? {
+    guard chatSessionId != nil, let url = URL(string: inputUrl), let port = url.port,
+      let host = url.host(), ["localhost", "127.0.0.1", "::1", "0.0.0.0"].contains(host)
+    else { return nil }
+    return .init(hostId: browserHost, sessionId: sessionKey, port: port)
+  }
+
+  private func forwarding(_ key: PortForwardsStore.Key) -> Bool {
+    model.portForwards.starting.contains(key)
+  }
+
+  private func openOnThisMac(_ key: PortForwardsStore.Key) {
+    guard let url = URL(string: inputUrl) else { return }
+    if let forward = model.portForwards.forward(key) {
+      model.openForwarded(forward, url: url, via: .browser)
+    } else {
+      Task { await model.forwardPort(key, via: .browser, open: url) }
+    }
   }
 
   private func openDevTools() {
