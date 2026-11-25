@@ -65,15 +65,42 @@ export const DESCRIBE_AT = String.raw`(function (nx, ny, full) {
     });
   var text = (el.innerText || "").replace(/\s+/g, " ").trim();
 
-  var component, source;
+  // Raw source hints; the host parses them and maps stacks through the dev server's source maps.
+  var hints = {};
   var fiberKey = Object.keys(el).find(function (k) { return k.indexOf("__reactFiber$") === 0; });
-  for (var fiber = fiberKey ? el[fiberKey] : null; fiber; fiber = fiber.return) {
+  var hostFiber = fiberKey ? el[fiberKey] : null;
+  for (var fiber = hostFiber; fiber; fiber = fiber.return) {
     if (typeof fiber.type === "function") {
-      component = fiber.type.displayName || fiber.type.name || undefined;
-      var src = fiber._debugSource;
-      if (src) source = src.fileName + ":" + src.lineNumber;
+      var own = (hostFiber && hostFiber._debugSource) || fiber._debugSource;
+      var debugStack = (hostFiber && hostFiber._debugStack) || fiber._debugStack;
+      hints.react = {
+        component: fiber.type.displayName || fiber.type.name || undefined,
+        fileName: own ? own.fileName : undefined,
+        lineNumber: own ? own.lineNumber : undefined,
+        columnNumber: own ? own.columnNumber : undefined,
+        stack: debugStack && typeof debugStack.stack === "string" ? cap(debugStack.stack, 4000) : undefined
+      };
       break;
     }
+  }
+  for (var vnode = el; vnode && !hints.vue; vnode = vnode.parentElement) {
+    var instance = vnode.__vueParentComponent || (vnode.__vue__ && vnode.__vue__.$);
+    if (instance && instance.type) {
+      hints.vue = { component: instance.type.name || instance.type.__name || undefined, file: instance.type.__file };
+    }
+  }
+  for (var snode = el; snode && !hints.svelte; snode = snode.parentElement) {
+    var loc = snode.__svelte_meta && snode.__svelte_meta.loc;
+    if (loc && loc.file) {
+      hints.svelte = { file: loc.file, line: loc.line, column: loc.column, zeroBased: "char" in loc };
+    }
+  }
+  for (var anode = el; anode && anode.getAttribute && !hints.attributes; anode = anode.parentElement) {
+    var found = {};
+    Array.from(anode.attributes).forEach(function (a) {
+      if (/^data-(v-inspector|inspector-|source|locator)/.test(a.name)) found[a.name] = cap(a.value, 500);
+    });
+    if (Object.keys(found).length) hints.attributes = found;
   }
 
   return Object.assign(hit, {
@@ -83,8 +110,7 @@ export const DESCRIBE_AT = String.raw`(function (nx, ny, full) {
     attributes: attributes,
     styles: styles,
     html: cap(el.outerHTML, 1500),
-    component: component,
-    source: source,
+    sourceHints: hints,
     url: location.href,
     scroll: { x: scrollX, y: scrollY }
   });

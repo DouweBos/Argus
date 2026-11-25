@@ -72,7 +72,9 @@ extension PickedElement {
   public static func browser(_ element: ArgusProtocol.BrowserElement) -> PickedElement {
     var lines = ["[Picked element — browser, \(element.url)]", "Selector: `\(element.selector)`"]
     if let component = element.component {
-      lines.append("React component: \(component)" + (element.source.map { " (\($0))" } ?? ""))
+      lines.append("\(frameworkName(element.framework)) component: \(component)" + (element.source.map { " (\($0))" } ?? ""))
+    } else if let source = element.source {
+      lines.append("Source: \(source)")
     }
     if let text = element.text, !text.isEmpty { lines.append("Text: \"\(text)\"") }
     let b = element.bounds
@@ -93,6 +95,15 @@ extension PickedElement {
     return PickedElement(
       source: .browser, title: element.component.map { "\($0) · \(element.label)" } ?? element.label,
       context: lines.joined(separator: "\n"), crop: crop)
+  }
+
+  /// A host before Vue and Svelte only ever named React components.
+  private static func frameworkName(_ framework: ArgusProtocol.BrowserElementFramework?) -> String {
+    switch framework {
+    case .vue?: "Vue"
+    case .svelte?: "Svelte"
+    default: "React"
+    }
   }
 
   // MARK: Device

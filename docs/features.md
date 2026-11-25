@@ -41,10 +41,14 @@ Argus detects Android projects (Gradle, Expo, React Native, Flutter) on its own.
 - Agents can click, type, scroll, fill forms, and run JavaScript.
 - DevTools available on demand, per-session.
 - **Select element**: hover the page, click an element, and it lands in the
-  chat as a chip — its selector, React component, text, styles, bounds and a
-  cropped screenshot — so you can type "make this red". Simulators and emulators
-  have the same button on their toolbar, and the device inspector's
-  **Attach to Chat** does it for a view selected there.
+  chat as a chip — its selector, component, text, styles, bounds and a
+  cropped screenshot — so you can type "make this red". Each chip takes its own
+  note for the agent, and chips stay with the chat's draft until it's sent.
+  The file and line it's written in come from React, Vue or Svelte's dev
+  hints, a dev plugin's source attribute, or React 19's JSX stack mapped
+  through the dev server's source maps. Simulators and emulators have the same
+  button on their toolbar, and the device inspector's **Attach to Chat** does
+  it for a view selected there.
 
 Point it at your dev server with `browser_url` in `.argus.json` (e.g.
 `"http://localhost:{PORT}"`).

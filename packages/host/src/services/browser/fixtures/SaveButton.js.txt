@@ -1,0 +1,14 @@
+import { jsxDEV } from "react/jsx-dev-runtime";
+import { useState } from "react";
+function SaveButton({ label }) {
+  const [busy, setBusy] = useState(false);
+  return /* @__PURE__ */ jsxDEV("button", { className: "btn primary", disabled: busy, onClick: () => setBusy(true), children: label }, void 0, false, {
+    fileName: "src/SaveButton.tsx",
+    lineNumber: 9,
+    columnNumber: 5
+  }, this);
+}
+export {
+  SaveButton
+};
+//# sourceMappingURL=SaveButton.js.map

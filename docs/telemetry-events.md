@@ -298,9 +298,10 @@ initial attempt from a `continue` after the user resolved conflicts.
 
 ## Browser
 
-| Event                        | Source | When                                                            | Extra props                                         |
-| ---------------------------- | ------ | --------------------------------------------------------------- | --------------------------------------------------- |
-| `browser_devtools_requested` | host   | A client on this machine asked for a session browser's DevTools | `available` — whether that session had a browser up |
+| Event                             | Source | When                                                                     | Extra props                                                                                                                                                                                                                                                                 |
+| --------------------------------- | ------ | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `browser_devtools_requested`      | host   | A client on this machine asked for a session browser's DevTools          | `available` — whether that session had a browser up                                                                                                                                                                                                                         |
+| `browser_element_source_resolved` | host   | An element picked in a session browser was traced to where it is written | `method` — how: `react` (React's dev source), `vue` (the component's file), `svelte` (Svelte's dev location), `attribute` (a dev plugin's `data-*` source attribute), `sourcemap` (React's JSX stack mapped through the dev server's source maps), `none` (no source found) |
 
 ## Claude accounts
 

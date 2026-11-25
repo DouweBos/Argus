@@ -3776,6 +3776,22 @@ extension ArgusProtocol {
     }
   }
 
+  public struct BrowserElementFramework: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let react = BrowserElementFramework(rawValue: "react")
+    public static let vue = BrowserElementFramework(rawValue: "vue")
+    public static let svelte = BrowserElementFramework(rawValue: "svelte")
+  }
+
   public struct BrowserElement: Codable, Sendable {
     public var label: String
     public var bounds: BrowserRect
@@ -3786,6 +3802,7 @@ extension ArgusProtocol {
     public var attributes: [String: String]
     public var styles: [String: String]
     public var html: String
+    public var framework: BrowserElementFramework?
     public var component: String?
     public var source: String?
     public var url: String
@@ -3801,13 +3818,14 @@ extension ArgusProtocol {
       case attributes = "attributes"
       case styles = "styles"
       case html = "html"
+      case framework = "framework"
       case component = "component"
       case source = "source"
       case url = "url"
       case screenshot = "screenshot"
     }
 
-    public init(label: String, bounds: BrowserRect, viewport: BrowserElementViewport, selector: String, tagName: String, text: String? = nil, attributes: [String: String], styles: [String: String], html: String, component: String? = nil, source: String? = nil, url: String, screenshot: String? = nil) {
+    public init(label: String, bounds: BrowserRect, viewport: BrowserElementViewport, selector: String, tagName: String, text: String? = nil, attributes: [String: String], styles: [String: String], html: String, framework: BrowserElementFramework? = nil, component: String? = nil, source: String? = nil, url: String, screenshot: String? = nil) {
       self.label = label
       self.bounds = bounds
       self.viewport = viewport
@@ -3817,6 +3835,7 @@ extension ArgusProtocol {
       self.attributes = attributes
       self.styles = styles
       self.html = html
+      self.framework = framework
       self.component = component
       self.source = source
       self.url = url
@@ -3834,6 +3853,7 @@ extension ArgusProtocol {
       try c.encode(attributes, forKey: .attributes)
       try c.encode(styles, forKey: .styles)
       try c.encode(html, forKey: .html)
+      try c.encodeIfPresent(framework, forKey: .framework)
       try c.encodeIfPresent(component, forKey: .component)
       try c.encodeIfPresent(source, forKey: .source)
       try c.encode(url, forKey: .url)

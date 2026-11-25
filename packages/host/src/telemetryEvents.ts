@@ -353,6 +353,9 @@ export interface EventMap {
     visibility: "private" | "public";
   };
   browser_devtools_requested: { available: boolean };
+  browser_element_source_resolved: {
+    method: "attribute" | "none" | "react" | "sourcemap" | "svelte" | "vue";
+  };
   claude_account_rechecked: {
     badge_cleared: boolean;
     outcome: "ok" | "rate_limited" | "reauth" | "unknown";

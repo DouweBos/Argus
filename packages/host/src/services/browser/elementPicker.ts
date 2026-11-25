@@ -5,7 +5,14 @@
  */
 
 import type { BrowserElement, BrowserElementHit } from "@argus/remote-protocol";
+import { appState } from "../../state";
+import { capture } from "../telemetry/telemetry";
 import { cdpCall } from "./cdpScreencast";
+import {
+  type ResolvedSource,
+  resolveElementSource,
+  type SourceHints,
+} from "./elementSource";
 import { DESCRIBE_AT } from "./pageScript";
 
 async function evaluateAt(
@@ -48,11 +55,25 @@ export async function browserPickElement(
     clampUnit(x),
     clampUnit(y),
     true,
-  )) as (BrowserElement & { scroll: { x: number; y: number } }) | null;
+  )) as
+    | (BrowserElement & {
+        scroll: { x: number; y: number };
+        sourceHints?: SourceHints;
+      })
+    | null;
   if (!picked) {
     return null;
   }
-  const { scroll, ...element } = picked;
+  const { scroll, sourceHints, ...element } = picked;
+  const resolved: ResolvedSource = await resolveElementSource(sourceHints, {
+    pageUrl: element.url,
+    worktree: appState.sessions.get(sessionId)?.path,
+    fetchText: (url) => fetchInPage(sessionId, url),
+  }).catch(() => ({ method: "none" }));
+  element.framework = resolved.framework;
+  element.component = resolved.component;
+  element.source = resolved.source;
+  capture("browser_element_source_resolved", { method: resolved.method });
   const clip = cropRect(element);
   if (clip) {
     try {
@@ -69,6 +90,27 @@ export async function browserPickElement(
   }
 
   return element;
+}
+
+const FETCH_TIMEOUT_MS = 5000;
+
+/** A dev server's script or source map, fetched by the page so its origin and cookies apply. */
+async function fetchInPage(
+  sessionId: string,
+  url: string,
+): Promise<string | null> {
+  const call = cdpCall(sessionId, "Runtime.evaluate", {
+    expression: `fetch(${JSON.stringify(url)}).then(function (r) { return r.ok ? r.text() : null; }).catch(function () { return null; })`,
+    awaitPromise: true,
+    returnByValue: true,
+  });
+  const timeout = new Promise<null>((resolve) =>
+    setTimeout(() => resolve(null), FETCH_TIMEOUT_MS).unref(),
+  );
+  const reply = await Promise.race([call, timeout]).catch(() => null);
+  const value = (reply?.result as { value?: unknown } | undefined)?.value;
+
+  return typeof value === "string" ? value : null;
 }
 
 /** The element's bounds, padded and clipped to the viewport; null off screen. */

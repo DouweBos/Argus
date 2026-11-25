@@ -1378,6 +1378,19 @@ data class BrowserElementViewport(
 )
 
 @Serializable
+@JvmInline
+value class BrowserElementFramework(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val react = BrowserElementFramework("react")
+    val vue = BrowserElementFramework("vue")
+    val svelte = BrowserElementFramework("svelte")
+    val entries: List<BrowserElementFramework> = listOf(react, vue, svelte)
+  }
+}
+
+@Serializable
 data class BrowserElement(
   @SerialName("label") val label: String,
   @SerialName("bounds") val bounds: BrowserRect,
@@ -1388,6 +1401,7 @@ data class BrowserElement(
   @SerialName("attributes") val attributes: Map<String, String>,
   @SerialName("styles") val styles: Map<String, String>,
   @SerialName("html") val html: String,
+  @SerialName("framework") val framework: BrowserElementFramework? = null,
   @SerialName("component") val component: String? = null,
   @SerialName("source") val source: String? = null,
   @SerialName("url") val url: String,

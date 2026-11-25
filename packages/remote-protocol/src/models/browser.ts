@@ -53,9 +53,14 @@ export const BrowserElement = BrowserElementHit.extend({
   styles: z.record(z.string(), z.string()),
   /** Its opening tag and children, capped. */
   html: z.string(),
-  /** The nearest React component around it, when the page runs React. */
+  /** The UI framework whose component holds it, when the page runs one Argus reads. */
+  framework: z.enum(["react", "vue", "svelte"]).optional(),
+  /** The nearest component around it. */
   component: z.string().optional(),
-  /** `file:line` of that component's JSX, when React's dev build records it. */
+  /**
+   * `file:line` (or just the file) where it is written, relative to the
+   * worktree: from the framework's dev hints or the dev server's source maps.
+   */
   source: z.string().optional(),
   url: z.string(),
   /** A PNG crop of the element, base64; absent when it's off screen. */

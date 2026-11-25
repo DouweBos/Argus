@@ -25,6 +25,18 @@ struct PickedElementTests {
     #expect(picked.crop?.mediaType == "image/png")
   }
 
+  @Test("a Vue element names its framework; a source with no component still goes out")
+  func frameworks() {
+    func element(framework: ArgusProtocol.BrowserElementFramework?, component: String?) -> PickedElement {
+      .browser(ArgusProtocol.BrowserElement(
+        label: "div", bounds: .init(x: 0, y: 0, width: 1, height: 1), viewport: .init(width: 1, height: 1),
+        selector: "div", tagName: "div", attributes: [:], styles: [:], html: "<div></div>",
+        framework: framework, component: component, source: "src/Card.vue:7", url: "http://localhost:5173/"))
+    }
+    #expect(element(framework: .vue, component: "Card").context.contains("Vue component: Card (src/Card.vue:7)"))
+    #expect(element(framework: nil, component: nil).context.contains("Source: src/Card.vue:7"))
+  }
+
   @Test("a device node gives its view path and a crop scaled to the screenshot")
   func device() throws {
     var button = Inspection.Node(
