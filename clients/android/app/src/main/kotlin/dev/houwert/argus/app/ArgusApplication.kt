@@ -44,6 +44,10 @@ class ArgusApplication : Application() {
       accountAuth = clerk,
     )
     dev.houwert.argus.app.telemetry.Telemetry.start(this, app.preferences)
+    dev.houwert.argus.ui.mermaid.MermaidRenderer.attach(this)
+    dev.houwert.argus.ui.mermaid.MermaidRenderer.onRender = { failed ->
+      dev.houwert.argus.app.telemetry.Telemetry.capture(dev.houwert.argus.app.telemetry.TelemetryEvent.MermaidRendered(failed))
+    }
     platform = dev.houwert.argus.app.platform.AndroidPlatform(this, app, AndroidSecretStore(this))
     app.platform = platform
     app.initialize()

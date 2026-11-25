@@ -81,6 +81,31 @@ the full schema.
 
 ---
 
+## Previews and diagrams
+
+- **Markdown** in the Mac code view opens rendered: tables, task lists,
+  highlighted code, images from the worktree and links that open the file
+  they point at (or the browser). A Source / Preview / Split switch above the
+  file flips between the text, the page, and both side by side, the page
+  following your typing. Settings → Editor → **Markdown files open in** picks
+  the default. The iPhone and Android file viewers render Markdown too, with
+  a button to see the source.
+- **Mermaid** diagrams (` ```mermaid ` fences) are drawn in agent
+  transcripts and Markdown previews on the Mac, iPhone, Android and the web,
+  in the app's colours for light and dark. Pinch or the zoom buttons to zoom,
+  drag to pan, Expand to see it full size, Copy Source for the text. A
+  diagram Mermaid can't parse shows its source with Mermaid's error. The
+  native apps draw diagrams offline, in a sandboxed page with no network.
+- **PDFs** open in the code view and the phone file viewers, with page
+  navigation and zoom.
+- **Images** (PNG, JPEG, GIF, WebP, SVG and more) open as images, with zoom
+  and pan, instead of as a binary file.
+
+PDFs and images up to 8 MB open in place; larger ones open in their default
+app on the Mac.
+
+---
+
 ## Git workflow
 
 A real git workflow lives inside Argus:

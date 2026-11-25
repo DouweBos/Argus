@@ -1,6 +1,8 @@
 package dev.houwert.argus.ui.icons
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PanTool
@@ -191,6 +193,9 @@ object Icon {
   val arrowBack = Icons.AutoMirrored.Outlined.ArrowBack
   val keyboard = Icons.Outlined.Keyboard
   val check = Icons.Outlined.Check
+  val taskDone = Icons.Filled.CheckBox
+  val taskOpen = Icons.Outlined.CheckBoxOutlineBlank
+  val source = Icons.Outlined.Code
   val done = Icons.Outlined.CheckCircle
   val snooze = Icons.Outlined.Snooze
   val unsnooze = Icons.Outlined.WbSunny
