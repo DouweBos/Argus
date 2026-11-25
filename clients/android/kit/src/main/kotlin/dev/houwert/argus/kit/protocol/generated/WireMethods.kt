@@ -1405,6 +1405,18 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class FilesReadBytesParams(
+    @SerialName("session_id") val sessionId: String,
+    @SerialName("path") val path: String,
+  )
+
+  @Serializable
+  data class FilesReadBytesResult(
+    @SerialName("data") val data: String,
+    @SerialName("size") val size: Long,
+  )
+
+  @Serializable
   data class FilesSearchParams(
     @SerialName("session_id") val sessionId: String,
     @SerialName("search_id") val searchId: String,
@@ -3276,6 +3288,8 @@ object Methods {
   object FigmaFrameDetails : RemoteCommand<MethodsTypes.FigmaFrameDetailsParams, MethodsTypes.FigmaFrameDetailsResult>("figma.frame_details", "control", serializer(), serializer())
 
   object FilesRead : RemoteCommand<MethodsTypes.FilesReadParams, CodeFile>("files.read", "control", serializer(), serializer())
+
+  object FilesReadBytes : RemoteCommand<MethodsTypes.FilesReadBytesParams, MethodsTypes.FilesReadBytesResult>("files.read_bytes", "control", serializer(), serializer())
 
   object FilesSearch : RemoteCommand<MethodsTypes.FilesSearchParams, MethodsTypes.FilesSearchResult>("files.search", "control", serializer(), serializer())
 

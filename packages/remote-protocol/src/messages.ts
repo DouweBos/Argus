@@ -549,6 +549,8 @@ export const MethodParams = {
   "sessions.files": z.object({ session_id: z.string() }),
   /** One file's contents, read-only: the phone views, it never writes. */
   "files.read": z.object({ session_id: z.string(), path: z.string() }),
+  /** One file's bytes, for the PDF and image viewers; 8 MB at most. */
+  "files.read_bytes": z.object({ session_id: z.string(), path: z.string() }),
   /**
    * Search the worktree. Subscribe to `code-search:<search_id>` first: matches
    * arrive as `files.search` events, ending with one `kind: "done"`.
@@ -1349,6 +1351,11 @@ export const MethodResult = {
   }),
   "sessions.files": z.object({ files: z.array(z.string()) }),
   "files.read": CodeFile,
+  "files.read_bytes": z.object({
+    /** Base64. */
+    data: z.string(),
+    size: z.number().int(),
+  }),
   "files.search": z.object({ search_id: z.string() }),
   "files.search_cancel": z.object({ accepted: z.boolean() }),
   "sessions.resolve_mention_path": RemoteMentionPathResult,

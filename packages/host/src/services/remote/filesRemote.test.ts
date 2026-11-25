@@ -18,7 +18,8 @@ vi.mock("../../state", () => ({
 vi.mock("../session/git", () => ({ git: vi.fn(async () => "") }));
 
 const { appState } = await import("../../state");
-const { cancelSessionSearch, readSessionFile } = await import("./filesRemote");
+const { cancelSessionSearch, readSessionFile, readSessionFileBytes } =
+  await import("./filesRemote");
 const { startCodeSearch, stopCodeSearches } = await import("../code/search");
 
 let worktree: string;
@@ -65,6 +66,16 @@ describe("phone file methods", () => {
       readSessionFile("s1", path.join(project, "secret.ts")),
     ).rejects.toMatch(/relative/);
     await expect(readSessionFile("s1", "link.ts")).rejects.toMatch(
+      /outside this session/,
+    );
+  });
+
+  it("reads a session file's bytes under the same confinement", async () => {
+    await expect(readSessionFileBytes("s1", "a.ts")).resolves.toEqual({
+      data: Buffer.from("hello").toString("base64"),
+      size: 5,
+    });
+    await expect(readSessionFileBytes("s1", "link.ts")).rejects.toMatch(
       /outside this session/,
     );
   });

@@ -11,6 +11,17 @@ extension HostStore {
       ArgusProtocol.Methods.FilesRead.self, .init(sessionId: sessionId, path: path))
   }
 
+  /// A PDF's or an image's bytes; the host refuses past 8 MB.
+  public func readFileBytes(sessionId: String, path: String) async throws -> Data {
+    guard let backend else { throw Self.offlineError }
+    let result = try await backend.request(
+      ArgusProtocol.Methods.FilesReadBytes.self, .init(sessionId: sessionId, path: path))
+    guard let data = Data(base64Encoded: result.data) else {
+      throw GatewayErrorPayload(code: "bad_data", message: "The file couldn't be read.")
+    }
+    return data
+  }
+
   /// Start a search whose events go to `deliver` until it is done or `endFileSearch`.
   /// The subscription is opened before the call, so no early batch is lost.
   public func startFileSearch(

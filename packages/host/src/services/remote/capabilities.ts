@@ -332,6 +332,7 @@ import { getEndpoints } from "./endpoints";
 import {
   cancelSessionSearch,
   readSessionFile,
+  readSessionFileBytes,
   searchSessionFiles,
 } from "./filesRemote";
 import {
@@ -1906,6 +1907,13 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     requireSession(session_id);
 
     return control(() => readSessionFile(session_id, path));
+  },
+
+  "files.read_bytes": async (params) => {
+    const { session_id, path } = parse("files.read_bytes", params);
+    requireSession(session_id);
+
+    return control(() => readSessionFileBytes(session_id, path));
   },
 
   "files.search": async (params) => {
