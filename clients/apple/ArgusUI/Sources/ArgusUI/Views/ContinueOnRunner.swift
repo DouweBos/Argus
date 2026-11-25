@@ -3,7 +3,17 @@ import SwiftUI
 
 extension EnvironmentValues {
   /// Puts an agent a "Continue on" just started in front; set by each app's screen.
-  @Entry public var openContinuedAgent: ((RemoteAgentStatus) -> Void)?
+  @Entry public var openContinuedAgent: OpenContinuedAgentAction?
+}
+
+public struct OpenContinuedAgentAction {
+  let handler: @MainActor (RemoteAgentStatus) -> Void
+
+  public init(_ handler: @escaping @MainActor (RemoteAgentStatus) -> Void) {
+    self.handler = handler
+  }
+
+  @MainActor public func callAsFunction(_ agent: RemoteAgentStatus) { handler(agent) }
 }
 
 /// "Continue on" as a submenu of an agent's menu: every installed runner but

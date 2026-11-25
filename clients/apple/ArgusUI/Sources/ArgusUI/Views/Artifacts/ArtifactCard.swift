@@ -4,7 +4,17 @@ import SwiftUI
 extension EnvironmentValues {
   /// Shows an Artifact where the platform views them: the Mac's side panel,
   /// the phone's sheet. Unset, the card opens it in the browser.
-  @Entry public var openArtifact: (@MainActor (ArtifactLink) -> Void)?
+  @Entry public var openArtifact: OpenArtifactAction?
+}
+
+public struct OpenArtifactAction {
+  let handler: @MainActor (ArtifactLink) -> Void
+
+  public init(_ handler: @escaping @MainActor (ArtifactLink) -> Void) {
+    self.handler = handler
+  }
+
+  @MainActor public func callAsFunction(_ link: ArtifactLink) { handler(link) }
 }
 
 /// An Artifact the agent published or opened, shown as the page it is: its

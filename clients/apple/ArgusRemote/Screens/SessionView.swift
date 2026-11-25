@@ -133,7 +133,7 @@ struct SessionView: View {
       let new = ids.filter { !shown.contains($0) && !closed.contains($0) }
       if !new.isEmpty { shown += new }
     }
-    .environment(\.openContinuedAgent) { focus($0) }
+    .environment(\.openContinuedAgent, OpenContinuedAgentAction { focus($0) })
     .alert(
       "Couldn't continue the chat", isPresented: Binding(get: { continueError != nil }, set: { if !$0 { continueError = nil } })
     ) {

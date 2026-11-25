@@ -181,7 +181,7 @@ public struct LimitHandoffCard: View {
       do {
         let agent = try await host.continueOnRunner(agentId: agentId, runnerId: runnerId, source: .limitCard)
         onHandedOff()
-        openContinuedAgent?(agent)
+        openContinuedAgent?.callAsFunction(agent)
       } catch {
         self.error = HostStore.describe(error)
       }

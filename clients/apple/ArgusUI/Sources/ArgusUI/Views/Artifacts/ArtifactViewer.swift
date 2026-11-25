@@ -88,10 +88,12 @@ private struct ArtifactSheet: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .environment(\.openArtifact) { link in
-        shown = link
-        opened()
-      }
+      .environment(
+        \.openArtifact,
+        OpenArtifactAction { link in
+          shown = link
+          opened()
+        })
       .sheet(item: $shown) { link in
         ArtifactViewer(link: link) { shown = nil }
           .presentationDragIndicator(.visible)

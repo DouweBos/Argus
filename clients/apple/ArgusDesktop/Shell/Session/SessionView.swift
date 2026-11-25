@@ -120,7 +120,7 @@ struct SessionView: View {
         }
       }
       .environment(\.readingColumnReserve, readingReserve)
-      .environment(\.openContinuedAgent) { model.open(spawned: $0.agentId, session: $0.sessionId) }
+      .environment(\.openContinuedAgent, OpenContinuedAgentAction { model.open(spawned: $0.agentId, session: $0.sessionId) })
     }
     .frame(maxHeight: .infinity, alignment: .top)
     .sessionContextCard(session, panel: .agents, barHeight: AgentTabBar.height, roomToOpen: agentCardFits)
@@ -351,9 +351,11 @@ struct AgentPane: View {
         agentKey: agentId, sessionId: sessionId, fixture: TranscriptStress.fixture,
         showsEmptyState: TranscriptStress.fixture != nil
       )
-        .environment(\.openArtifact) { [model, sessionId] link in
-          model.showArtifact(link, session: sessionId, via: .chat)
-        }
+        .environment(
+          \.openArtifact,
+          OpenArtifactAction { [model, sessionId] link in
+            model.showArtifact(link, session: sessionId, via: .chat)
+          })
         .onDrop(of: ComposerDropInbox.types, isTargeted: $dropTargeted, perform: drops.accept)
         .overlay {
           if dropTargeted {
