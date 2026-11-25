@@ -108,6 +108,13 @@ the full schema.
 PDFs and images up to 8 MB open in place; larger ones open in their default
 app on the Mac.
 
+**Attached documents.** A Word (`.docx`), PowerPoint (`.pptx`), Excel
+(`.xlsx`) or RTF file attached to a message, from any client, reaches the
+agent as its text as well as its path: paragraphs, slides in order, and each
+sheet as tab-separated rows. Up to five documents of 25 MB each per message,
+and 100,000 characters from each; the transcript still shows your message as
+you wrote it.
+
 ---
 
 ## Git workflow

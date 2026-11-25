@@ -15,6 +15,10 @@ import type { LlmRunner } from "../../llm/runners/types";
 import type { ForkReplayOp } from "@argus/remote-protocol";
 import { emitHostEvent } from "@argus/host/bus";
 import { appState } from "../../../state";
+import {
+  mentionedPaths,
+  withAttachedDocumentText,
+} from "../../file/attachedDocuments";
 import { capture as telemetryCapture } from "../../telemetry/telemetry";
 import { restoreAgentAtTurn, sendAgentMessage } from "../agentService";
 import { createCheckpoint, restoreCheckpoint } from "../checkpoints";
@@ -104,10 +108,29 @@ export interface SubmittedMessage {
  */
 export async function submitAgentMessage(
   agentId: string,
-  message: SubmittedMessage,
-  { whenBusy = "mid_turn" }: { whenBusy?: "after_turn" | "mid_turn" } = {},
+  submitted: SubmittedMessage,
+  {
+    whenBusy = "mid_turn",
+    documents,
+  }: {
+    whenBusy?: "after_turn" | "mid_turn";
+    documents?: "anywhere" | "worktree";
+  } = {},
 ): Promise<{ queued: boolean }> {
   const agent = requireAgent(agentId);
+  let message = submitted;
+  if (documents && mentionedPaths(message.text).length > 0) {
+    const text = await withAttachedDocumentText(agent.sessionId, message.text, {
+      anywhere: documents === "anywhere",
+    });
+    if (text !== message.text) {
+      message = {
+        ...message,
+        displayText: message.displayText ?? message.text,
+        text,
+      };
+    }
+  }
   const shownAs = { displayText: message.displayText, author: message.author };
   const working = isAgentWorking(agent) || isInflight(agentId);
   // Like the terminal: a message typed mid-turn joins it at the next tool boundary.

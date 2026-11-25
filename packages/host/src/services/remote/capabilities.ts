@@ -1439,12 +1439,16 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const { submitAgentMessage } =
       await import("../agent/conversation/actions");
     const { queued } = await control(() =>
-      submitAgentMessage(agent_id, {
-        text: message,
-        displayText: display_text,
-        author,
-        images,
-      }),
+      submitAgentMessage(
+        agent_id,
+        {
+          text: message,
+          displayText: display_text,
+          author,
+          images,
+        },
+        { documents: "worktree" },
+      ),
     );
 
     return queued ? { accepted: true, queued: true } : { accepted: true };

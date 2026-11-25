@@ -620,6 +620,11 @@ export interface EventMap {
     type_bucket: "archive" | "code" | "document" | "image" | "other" | "text";
     size_bucket: "<1MB" | "<5MB" | "<100KB" | ">=5MB";
   };
+  /** A Word, PowerPoint, Excel or RTF file mentioned in a message had its text sent along. */
+  attachment_text_extracted: {
+    kind: "docx" | "pptx" | "rtf" | "xlsx";
+    success: boolean;
+  };
   remote_connection_opened: {
     trust: "account" | "paired";
     hosted_web: boolean;

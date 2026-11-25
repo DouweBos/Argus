@@ -233,7 +233,7 @@ export function registerAgentCommands(): void {
     return live ? JSON.stringify(live) : null;
   });
   defineTypedCommand("submit_agent_message", ({ agentId, ...message }) =>
-    submitAgentMessage(agentId, message),
+    submitAgentMessage(agentId, message, { documents: "anywhere" }),
   );
   defineTypedCommand("rewind_agent", ({ agentId, messageId, ...options }) =>
     rewindAgent(agentId, messageId, options),
