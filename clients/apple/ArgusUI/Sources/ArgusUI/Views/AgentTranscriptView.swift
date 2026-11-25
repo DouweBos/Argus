@@ -451,7 +451,7 @@ public struct QueuedMessageCard: View {
     // A sheet, not an inline field: the transcript scrolls itself to the
     // newest message and dismisses the keyboard on any scroll, so an editor
     // living inside it loses both its place and the cursor.
-    .sheet(isPresented: $editing) {
+    .argusSheet(isPresented: $editing) {
       QueuedMessageEditor(text: $draft, onSave: save)
     }
     .confirmationDialog(

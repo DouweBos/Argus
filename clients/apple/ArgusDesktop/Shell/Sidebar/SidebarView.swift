@@ -26,19 +26,19 @@ struct SidebarView: View {
       SidebarBottomBar()
     }
     .background(theme.sidebar.ignoresSafeArea())
-    .sheet(item: newSessionProject) { project in
+    .argusSheet(item: newSessionProject) { project in
       NewSessionSheet(project: project) { session in
         model.openAgents(session: session.id)
       }
     }
-    .sheet(item: newSessionParent) { parent in
+    .argusSheet(item: newSessionParent) { parent in
       if let project = store.projects.first(where: { $0.repoRoot == parent.repoRoot }) {
         NewSessionSheet(project: project, parent: parent) { session in
           model.openAgents(session: session.id)
         }
       }
     }
-    .sheet(item: deletingSession) { session in
+    .argusSheet(item: deletingSession) { session in
       DeleteSessionSheet(session: session) {
         if model.route.sessionId == session.id { model.navigate(.home) }
       }

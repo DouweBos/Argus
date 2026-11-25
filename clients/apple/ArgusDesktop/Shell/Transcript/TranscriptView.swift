@@ -76,7 +76,7 @@ struct TranscriptView: View {
       guard !Task.isCancelled else { return }
       await model.search(messages)
     }
-    .sheet(item: Bindable(model).messageAction) { action in
+    .argusSheet(item: Bindable(model).messageAction) { action in
       switch action {
       case .edit(let message): EditMessageSheet(agentKey: agentKey, message: message)
       case .fork(let message): ForkMessageSheet(agentKey: agentKey, message: message)

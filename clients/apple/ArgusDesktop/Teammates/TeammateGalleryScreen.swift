@@ -36,7 +36,7 @@ struct TeammateGalleryScreen: View {
     }
     .navigationTitle("New Teammate")
     .navigationSubtitle("Each one starts paused; turn it on once you've read its duties")
-    .sheet(item: $picked) { template in
+    .argusSheet(item: $picked) { template in
       NavigationStack {
         Form {
           Section {

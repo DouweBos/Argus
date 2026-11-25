@@ -27,7 +27,7 @@ struct HuddleToolbarButton: View {
     .overlay(alignment: .topTrailing) { if !inCard { PillBadge(waiting) } }
     .help(help(room: room, waiting: waiting))
     .disabled(agentId == nil)
-    .sheet(isPresented: $sheetOpen) {
+    .argusSheet(isPresented: $sheetOpen) {
       if let agentId {
         HuddleSheet(agentId: agentId, sessionId: sessionId)
       }

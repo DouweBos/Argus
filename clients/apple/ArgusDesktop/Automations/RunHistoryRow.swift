@@ -92,7 +92,7 @@ struct MemoriesSection: View {
       }
     }
     .task { await store.loadMemories(automationId: automationId) }
-    .sheet(item: $open) { selection in
+    .argusSheet(item: $open) { selection in
       MemoryEditorSheet(automationId: automationId, memory: selection.memory)
         .frame(minWidth: 560, minHeight: 520)
     }

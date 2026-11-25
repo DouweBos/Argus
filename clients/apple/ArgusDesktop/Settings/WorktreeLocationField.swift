@@ -65,7 +65,7 @@ struct WorktreeLocationField: View {
       probe = try? await backend.request(
         ArgusProtocol.Commands.ProbeWorktreeLocation.self, .init(baseDir: trimmed, repoRoot: repoRoot))
     }
-    .sheet(item: Binding(get: { moving.map(RepoPath.init) }, set: { moving = $0?.path })) { target in
+    .argusSheet(item: Binding(get: { moving.map(RepoPath.init) }, set: { moving = $0?.path })) { target in
       if let repoRoot {
         MoveWorktreesSheet(repoRoot: repoRoot, toBaseDir: target.path, purpose: purpose, onClose: write)
       }

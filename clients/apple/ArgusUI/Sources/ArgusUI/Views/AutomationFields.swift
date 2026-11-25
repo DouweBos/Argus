@@ -235,7 +235,7 @@ public struct AutomationFields: View {
           .disabled(draft.playbook.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
       }
     }
-    .sheet(isPresented: $revising) {
+    .argusSheet(isPresented: $revising) {
       RevisePlaybookSheet(playbook: draft.playbook, name: draft.name) { rewritten in
         draft.playbook = rewritten
       }

@@ -41,7 +41,7 @@ struct GitRemotesSection: View {
       }
     }
     .task(id: workspace.generation) { await load() }
-    .sheet(item: $editing) { edit in
+    .argusSheet(item: $editing) { edit in
       RemoteEditSheet(edit: edit, existing: remotes.map(\.name)) { apply(edit, $0) }
     }
     .confirmationDialog("Remove remote “\(removing ?? "")”?", isPresented: removingShown, presenting: removing) { name in

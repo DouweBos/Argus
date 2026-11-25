@@ -94,7 +94,7 @@ private struct ArtifactSheet: ViewModifier {
           shown = link
           opened()
         })
-      .sheet(item: $shown) { link in
+      .argusSheet(item: $shown) { link in
         ArtifactViewer(link: link) { shown = nil }
           .presentationDragIndicator(.visible)
       }

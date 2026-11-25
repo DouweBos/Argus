@@ -38,7 +38,7 @@ struct CompareRunView: View {
       await model.refresh()
     }
     .liveRefresh(enabled: model?.isWorking ?? false, every: .seconds(5)) { await model?.load() }
-    .sheet(item: $keeping) { score in
+    .argusSheet(item: $keeping) { score in
       if let model {
         CompareKeepSheet(score: score, model: model) { kept in
           keeping = nil

@@ -11,13 +11,13 @@ struct ProjectFlows: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .sheet(isPresented: onboardingVisible) {
+      .argusSheet(isPresented: onboardingVisible) {
         OnboardingView(onboarding: onboarding).interactiveDismissDisabled()
       }
-      .sheet(item: $adding) { repo in
+      .argusSheet(item: $adding) { repo in
         AddProjectSheet(path: repo.path).presentationBackground(theme.surface)
       }
-      .sheet(isPresented: importingCliProjects) {
+      .argusSheet(isPresented: importingCliProjects) {
         CliProjectImportSheet().presentationBackground(theme.surface)
       }
       // On a ready connection: the backend exists before its socket does, and

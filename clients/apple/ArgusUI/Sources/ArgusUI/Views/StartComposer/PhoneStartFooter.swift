@@ -42,8 +42,8 @@
       .overlay { shape.strokeBorder(theme.border, lineWidth: 1) }
       // Shares the card's bottom edge rather than doubling it.
       .padding(.top, -1)
-      .sheet(item: $picker) { picked($0) }
-      .sheet(isPresented: $pickingIssues) { IssuePickerSheet(selection: $flow.issues) }
+      .argusSheet(item: $picker) { picked($0) }
+      .argusSheet(isPresented: $pickingIssues) { IssuePickerSheet(selection: $flow.issues) }
     }
 
     /// Where it works, the runner and Linear issues.

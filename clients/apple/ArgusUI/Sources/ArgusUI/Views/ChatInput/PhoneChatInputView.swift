@@ -91,7 +91,7 @@
         composer.showingModelPicker = false
         picker = .model
       }
-      .sheet(item: $picker) { PhoneComposerPickerSheet(composer: composer, which: $0) }
+      .argusSheet(item: $picker) { PhoneComposerPickerSheet(composer: composer, which: $0) }
     }
 
     private static let radius: CGFloat = 18

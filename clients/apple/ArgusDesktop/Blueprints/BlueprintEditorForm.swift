@@ -68,7 +68,7 @@ struct BlueprintEditorForm: View {
       Text("Handed to the agent that starts in the new project. "
         + BlueprintText.placeholders.joined(separator: ", ") + " are filled in for each project.")
     }
-    .sheet(isPresented: $revising) {
+    .argusSheet(isPresented: $revising) {
       ReviseBlueprintSheet(form: form) { form.instructions = $0 }
     }
   }

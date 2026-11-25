@@ -63,7 +63,7 @@ struct RunScreen: View {
       guard let id = run?.hostSessionId, hostSession == nil else { return }
       await host.adoptSession(id: id)
     }
-    .sheet(isPresented: $givingFeedback) {
+    .argusSheet(isPresented: $givingFeedback) {
       RunFeedbackSheet(runId: runId).frame(minWidth: 520, minHeight: 360)
     }
     .confirmationDialog("Delete this run?", isPresented: $confirmingDelete) {

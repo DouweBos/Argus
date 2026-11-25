@@ -45,7 +45,7 @@ struct BlueprintsScreen: View {
           .labelStyle(.titleAndIcon)
       }
     }
-    .sheet(isPresented: $creatingProject) { NewProjectSheet(blueprintId: blueprintId) }
+    .argusSheet(isPresented: $creatingProject) { NewProjectSheet(blueprintId: blueprintId) }
     // Closing the sheet a link opened leaves its route, so the link works again.
     .onChange(of: creatingProject) { _, open in
       if !open, case .newProject = model.route { model.navigate(.blueprints) }

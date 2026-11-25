@@ -77,10 +77,10 @@ struct MainWindow: View {
     .modifier(ProjectFlows())
     .modifier(HandoffActivity())
     .modifier(RunnerSetupPresenter(window: .main))
-    .sheet(item: projectSettingsRepo) { repo in
+    .argusSheet(item: projectSettingsRepo) { repo in
       ProjectSettingsSheet(repoRoot: repo.path)
     }
-    .sheet(item: hostFolderRequest) { HostFolderPicker(request: $0) }
+    .argusSheet(item: hostFolderRequest) { HostFolderPicker(request: $0) }
     .environment(imageViewer)
     .environment(\.codeOpener, model)
     .toolbar { HistoryButtons() }

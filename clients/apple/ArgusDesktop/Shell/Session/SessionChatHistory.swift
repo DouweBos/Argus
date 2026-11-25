@@ -48,7 +48,7 @@ struct RecentChatsSheet: View {
       searched = true
       MacTelemetry.capture(.chatHistoryUsed(action: .search))
     }
-    .sheet(item: $viewing) { chat in
+    .argusSheet(item: $viewing) { chat in
       ChatHistoryViewer(chat: chat, sessionId: session.id) {
         viewing = nil
         Task { await resume(chat.entry) }

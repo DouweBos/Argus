@@ -1,5 +1,5 @@
 // Swift UI rules `pnpm lint` can't otherwise see: system styles that ignore
-// the theme and draw in macOS's blue.
+// the theme and draw in macOS's blue, or the window's near-black.
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
@@ -9,6 +9,12 @@ const RULES = [
   {
     pattern: /\.buttonStyle\(\.link\)/,
     message: "use .buttonStyle(.accentLink) — .link ignores the theme's accent",
+  },
+  {
+    pattern: /\.sheet\(/,
+    message:
+      "use .argusSheet — a plain .sheet paints the Mac main window's near-black theme.bg behind the content",
+    skip: /ArgusRemote\/|DesignSystem\/Sheet\.swift$/,
   },
 ];
 
@@ -30,7 +36,9 @@ const problems = swiftFiles(ROOT).flatMap((file) =>
   readFileSync(file, "utf8")
     .split("\n")
     .flatMap((line, i) =>
-      RULES.filter((rule) => rule.pattern.test(line)).map(
+      RULES.filter(
+        (rule) => rule.pattern.test(line) && !rule.skip?.test(file),
+      ).map(
         (rule) =>
           `${path.relative(process.cwd(), file)}:${i + 1}: ${rule.message}`,
       ),

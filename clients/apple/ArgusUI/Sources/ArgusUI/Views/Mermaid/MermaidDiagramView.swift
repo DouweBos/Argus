@@ -62,7 +62,7 @@ public struct MermaidDiagramView: View {
       }
       .padding(.top, 4)
     }
-    .sheet(isPresented: $expanded) {
+    .argusSheet(isPresented: $expanded) {
       MermaidExpandedView(png: diagram.png, source: source)
     }
   }

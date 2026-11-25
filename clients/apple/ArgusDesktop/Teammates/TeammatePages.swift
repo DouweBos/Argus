@@ -110,7 +110,7 @@ struct TeammateMemoryView: View {
     }
     .formStyle(.grouped)
     .task { await store.loadMemories(teammateId: teammateId) }
-    .sheet(item: $open) { selection in
+    .argusSheet(item: $open) { selection in
       TeammateMemoryEditorSheet(teammateId: teammateId, memory: selection.memory)
         .frame(minWidth: 560, minHeight: 520)
     }
@@ -204,7 +204,7 @@ struct TeammateProfileForm: View {
       AutonomySection(autonomy: draft.autonomy, guardrails: draft.guardrails)
     }
     .formStyle(.grouped)
-    .sheet(isPresented: $revising) {
+    .argusSheet(isPresented: $revising) {
       SoulRewriteSheet(name: draft.wrappedValue.name, soul: draft.wrappedValue.soul) { draft.wrappedValue.soul = $0 }
     }
   }

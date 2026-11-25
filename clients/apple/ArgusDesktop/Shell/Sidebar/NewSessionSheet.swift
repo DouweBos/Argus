@@ -141,7 +141,7 @@ struct NewSessionSheet: View {
         .disabled(!canCreate)
       }
     }
-    .sheet(isPresented: $pickingIssues) { IssuePickerSheet(selection: $issues) }
+    .argusSheet(isPresented: $pickingIssues) { IssuePickerSheet(selection: $issues) }
     .task { await store.loadIntegrations() }
     // Branches are the picked project's; a base from the last one means nothing here.
     .task(id: projectRoot) {

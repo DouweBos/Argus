@@ -135,7 +135,7 @@ public struct LandWorkCard: View {
     } message: {
       Text(conflictMessage)
     }
-    .sheet(isPresented: $changingBase) {
+    .argusSheet(isPresented: $changingBase) {
       BaseBranchSheet(sessionId: sessionId, current: session?.baseBranch) { branch in
         Task {
           await host.setBaseBranch(id: sessionId, baseBranch: branch)
@@ -144,7 +144,7 @@ public struct LandWorkCard: View {
         }
       }
     }
-    .sheet(isPresented: $openingPullRequest) {
+    .argusSheet(isPresented: $openingPullRequest) {
       OpenPullRequestSheet(sessionId: sessionId, defaultTitle: status?.branch ?? "") { url in
         note = "Opened \(url)"
       }

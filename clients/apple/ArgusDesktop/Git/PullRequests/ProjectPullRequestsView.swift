@@ -38,7 +38,7 @@ struct ProjectPullRequestsView: View {
       ) { Task { await refresh() } }
     }
     .task { await refresh() }
-    .sheet(isPresented: $creating) {
+    .argusSheet(isPresented: $creating) {
       OpenPullRequestSheet(sessionId: sessions.first?.id ?? "", choices: sessions, draft: false)
     }
   }

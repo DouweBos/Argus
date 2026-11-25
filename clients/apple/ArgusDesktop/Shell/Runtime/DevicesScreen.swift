@@ -62,7 +62,7 @@ struct DevicesScreen: View {
     }
     .background(theme.bg)
     .navigationTitle("Devices")
-    .sheet(item: selectedDevice) { device in
+    .argusSheet(item: selectedDevice) { device in
       DeviceDetailSheet(
         device: device, busy: busy.contains(device.deviceKey),
         onBoot: { boot(device) }, onShutdown: { stop(device) },

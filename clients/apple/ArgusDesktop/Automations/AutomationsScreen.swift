@@ -39,7 +39,7 @@ struct AutomationsScreen: View {
     .navigationTitle("Automations")
     .navigationSubtitle(AutomationText.plural(automations.count, "automation"))
     .toolbar { toolbar }
-    .sheet(isPresented: $describing) { DescribeAutomationSheet() }
+    .argusSheet(isPresented: $describing) { DescribeAutomationSheet() }
     // Closing the sheet a link opened leaves its route, so the link works again.
     .onChange(of: describing) { _, open in
       if !open, model.route == .describeAutomation { model.navigate(.automations) }

@@ -64,7 +64,7 @@ private struct IssuesScreenContent: View {
       .navigationTitle(issueRef ?? "Issues")
       .navigationSubtitle(issueRef == nil ? subtitle : query.map { "Results for \u{201C}\($0)\u{201D}" } ?? scope.title)
       .toolbar { toolbar }
-      .sheet(item: $starting) { issue in
+      .argusSheet(item: $starting) { issue in
         if let project {
           NewSessionSheet(project: project, choices: store.projects, issues: [issue]) { session in
             lastRoot = session.repoRoot

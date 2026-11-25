@@ -101,7 +101,7 @@ public struct PullRequestReviewBar: View {
     .padding(.horizontal, 16)
     .padding(.vertical, 10)
     .background(.bar)
-    .sheet(isPresented: $finishing) {
+    .argusSheet(isPresented: $finishing) {
       PullRequestReviewSheet(comments: comments.count) { event, body in
         await host.submitPullRequestReview(repo: repo, number: number, event: event, body: body)
       }

@@ -26,7 +26,7 @@ struct AccountRequestsGroup: View {
           }
         }
       }
-      .sheet(item: $reviewing) { request in
+      .argusSheet(item: $reviewing) { request in
         AccountApprovalPanel(request: request)
       }
     }
@@ -121,7 +121,7 @@ struct AccountDevicesGroup: View {
     } message: { _ in
       Text("It's disconnected from every host on your account and has to be approved again to come back.")
     }
-    .sheet(item: $renaming) { member in
+    .argusSheet(item: $renaming) { member in
       AccountRenameSheet(member: member)
     }
   }

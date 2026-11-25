@@ -32,7 +32,7 @@ struct CodeEditorPane: View {
         CodeStatusBar(code: code, file: file, document: document)
       }
     }
-    .sheet(isPresented: comparing) {
+    .argusSheet(isPresented: comparing) {
       if let comparison = file.comparison {
         CodeCompareSheet(
           path: file.path, comparison: comparison,

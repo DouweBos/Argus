@@ -122,7 +122,7 @@ private struct SnoozeSessionSheet: ViewModifier {
   @Environment(DesktopModel.self) private var model
 
   func body(content: Content) -> some View {
-    content.sheet(item: snoozing) { session in
+    content.argusSheet(item: snoozing) { session in
       NavigationStack { SnoozeUntilForm(session: session) }
         .frame(width: 340, height: 440)
     }

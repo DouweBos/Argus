@@ -151,7 +151,7 @@ private struct BranchActionPrompts: ViewModifier {
   func body(content: Content) -> some View {
     content
       .alert(item: $actions.prompt) { alert(for: $0) }
-      .sheet(item: $actions.nameSheet) { sheet in
+      .argusSheet(item: $actions.nameSheet) { sheet in
         switch sheet {
         case .create(let from):
           NewBranchSheet(

@@ -149,12 +149,12 @@ struct RunnerSetupPresenter: ViewModifier {
   func body(content: Content) -> some View {
     let setup = model.runnerSetup
     content
-      .sheet(
+      .argusSheet(
         isPresented: Binding(
           get: { setup.flow != nil && setup.window == window },
           set: { if !$0 { setup.close() } })
       ) {
-        RunnerSetupSheet(setup: setup).environment(model.terminals).themed()
+        RunnerSetupSheet(setup: setup).environment(model.terminals).themed().sheetSurface()
       }
       .environment(\.runnerSetup, RunnerSetupAction { [weak setup] in setup?.begin($0, in: window) })
   }

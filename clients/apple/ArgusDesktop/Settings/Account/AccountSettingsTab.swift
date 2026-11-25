@@ -40,7 +40,7 @@ struct AccountSettingsTab: View {
           footer: "Only when every other device and computer on your account is lost. Everything leaves the account and has to join again.")
       }
     }
-    .sheet(isPresented: $resetting) {
+    .argusSheet(isPresented: $resetting) {
       AccountResetSheet(account: account, deviceNoun: "Mac") { resetting = false }
         .frame(width: 420)
     }
@@ -164,7 +164,7 @@ private struct AccountOverview: View {
     } message: {
       Text("Your devices stop connecting to it through the account. Link it again with a new code.")
     }
-    .sheet(item: $renaming) { member in
+    .argusSheet(item: $renaming) { member in
       AccountRenameSheet(member: member)
     }
   }

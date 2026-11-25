@@ -57,7 +57,7 @@ public struct ReviewGuideStopView: View {
     }
     .onAppear { host.markStopVisited(target, stop: stop.id) }
     .onChange(of: stop.id) { _, id in host.markStopVisited(target, stop: id) }
-    .sheet(item: $composing) { composing in
+    .argusSheet(item: $composing) { composing in
       DiffCommentSheet(
         title: composing.isNew ? "Line \(composing.comment.lines.lowerBound)" : "Edit comment",
         submitTitle: composing.isNew ? "Add" : "Save", text: composing.comment.body

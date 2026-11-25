@@ -171,7 +171,7 @@ private struct RemoteSettingsForm: View {
         Text(error).foregroundStyle(theme.error).textSelection(.enabled)
       }
     }
-    .sheet(isPresented: Binding(get: { model.pairing.presented }, set: { model.pairing.presented = $0 })) {
+    .argusSheet(isPresented: Binding(get: { model.pairing.presented }, set: { model.pairing.presented = $0 })) {
       PairingPanel(model: model.pairing)
     }
     .alert(

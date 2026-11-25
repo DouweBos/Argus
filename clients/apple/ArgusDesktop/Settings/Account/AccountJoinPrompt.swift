@@ -40,7 +40,7 @@ struct AccountJoinPrompt: ViewModifier {
       } message: { _ in
         Text("You'll compare a 6-digit code on both screens. Didn't just sign in on it? Choose Not Now and deny it in Settings → Account.")
       }
-      .sheet(item: $reviewing) { request in
+      .argusSheet(item: $reviewing) { request in
         AccountApprovalPanel(request: request)
       }
   }

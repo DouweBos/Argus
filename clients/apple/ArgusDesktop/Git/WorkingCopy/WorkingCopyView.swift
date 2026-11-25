@@ -24,7 +24,7 @@ struct WorkingCopyView: View {
         .gitPanelPadding()
     }
     .gitFeatures(workspace.features)
-    .sheet(isPresented: $managingTemplates) { CommitTemplatesSheet(store: CommitPreferences.templates) }
+    .argusSheet(isPresented: $managingTemplates) { CommitTemplatesSheet(store: CommitPreferences.templates) }
     .onChange(of: workspace.suppressLfsWarning, initial: true) { _, suppressed in
       if suppressed { vm.dismissLFSWarning() }
     }

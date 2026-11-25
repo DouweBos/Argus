@@ -61,7 +61,7 @@ struct AccountsSettingsTab: View {
     .onChange(of: store.claudeLogin?.pending) { _, pending in
       if pending == false { Task { await store.refreshClaudeAccounts() } }
     }
-    .sheet(item: $renaming) { account in
+    .argusSheet(item: $renaming) { account in
       RenameAccountSheet(account: account) { label in
         await store.renameClaudeAccount(id: account.id, label: label)
         MacTelemetry.capture(.settingsChanged(setting: .accountRenamed))

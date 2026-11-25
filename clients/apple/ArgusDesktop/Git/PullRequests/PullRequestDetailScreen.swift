@@ -90,7 +90,7 @@ private struct PullRequestDetailContent: View {
         ProgressView("Loading pull request").controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
       }
     }
-    .sheet(isPresented: $merging) {
+    .argusSheet(isPresented: $merging) {
       if let detail = model.detail {
         MergePullRequestSheet(detail: detail) { strategy in Task { await model.merge(strategy) } }
       }

@@ -34,14 +34,14 @@ struct CustomEditorsSection: View {
     } accessory: {
       SettingsHeaderButton("Add App", systemImage: "plus") { adding = true }
     }
-    .sheet(isPresented: $adding) {
+    .argusSheet(isPresented: $adding) {
       CustomEditorSheet(title: "Add App", editor: nil) { name, command in
         guard let editor = CustomEditor.make(name: name, command: command) else { return }
         prefs.customEditors.append(editor)
         MacTelemetry.capture(.settingsChanged(setting: .customEditors))
       }
     }
-    .sheet(item: $editing) { editor in
+    .argusSheet(item: $editing) { editor in
       CustomEditorSheet(title: "Edit App", editor: editor) { name, command in
         guard let index = prefs.customEditors.firstIndex(where: { $0.id == editor.id }) else { return }
         prefs.customEditors[index] = editor.updated(name: name, command: command)

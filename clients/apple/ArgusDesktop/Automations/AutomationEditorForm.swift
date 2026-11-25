@@ -145,7 +145,7 @@ struct AutomationEditorForm: View {
     } footer: {
       Text("Markdown instructions handed to the run's agent.")
     }
-    .sheet(isPresented: $revising) {
+    .argusSheet(isPresented: $revising) {
       RevisePlaybookSheet(playbook: draft.playbook, name: draft.name) { draft.playbook = $0 }
     }
   }

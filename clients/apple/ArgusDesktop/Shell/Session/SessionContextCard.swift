@@ -64,8 +64,8 @@ struct SessionContextCard: View {
       if !collapsed { details }
     }
     .onChange(of: roomToOpen) { peeking = false }
-    .sheet(isPresented: $renamingBranch) { RenameBranchSheet(session: session) }
-    .sheet(isPresented: $showingChats) {
+    .argusSheet(isPresented: $renamingBranch) { RenameBranchSheet(session: session) }
+    .argusSheet(isPresented: $showingChats) {
       RecentChatsSheet(session: session) { Task { await loadChatCount() } }
     }
     .task(id: "\(session.id):\(session.status.rawValue)") { await loadPaths() }
