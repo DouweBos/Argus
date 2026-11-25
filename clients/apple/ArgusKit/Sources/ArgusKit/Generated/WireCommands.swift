@@ -9369,6 +9369,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SlackCreateAppParams: Codable, Sendable {
+      public var configToken: String
+      public var name: String
+
+      enum CodingKeys: String, CodingKey {
+        case configToken = "configToken"
+        case name = "name"
+      }
+
+      public init(configToken: String, name: String) {
+        self.configToken = configToken
+        self.name = name
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(configToken, forKey: .configToken)
+        try c.encode(name, forKey: .name)
+      }
+    }
+
+    public struct SlackManifestParams: Codable, Sendable {
+      public var name: String?
+
+      enum CodingKeys: String, CodingKey {
+        case name = "name"
+      }
+
+      public init(name: String? = nil) {
+        self.name = name
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(name, forKey: .name)
+      }
+    }
+
     public struct SlackRemoveAllowedUserParams: Codable, Sendable {
       public var userId: String
 
@@ -14018,10 +14056,24 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum SlackCreateApp: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.SlackCreateAppParams
+      public typealias Result = ArgusProtocol.SlackStatus
+      public static let name = "slack_create_app"
+      public static let tier = "admin"
+    }
+
     public enum SlackDisconnect: RemoteCommand {
       public typealias Params = EmptyParams
       public typealias Result = ArgusProtocol.SlackStatus
       public static let name = "slack_disconnect"
+      public static let tier = "admin"
+    }
+
+    public enum SlackForgetApp: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.SlackStatus
+      public static let name = "slack_forget_app"
       public static let tier = "admin"
     }
 
@@ -14033,7 +14085,7 @@ extension ArgusProtocol {
     }
 
     public enum SlackManifest: RemoteCommand {
-      public typealias Params = EmptyParams
+      public typealias Params = ArgusProtocol.CommandsTypes.SlackManifestParams
       public typealias Result = String
       public static let name = "slack_manifest"
       public static let tier = "admin"

@@ -17,7 +17,7 @@ struct SlackSettingsSection: View {
         SlackMembersGroup(status: status)
         SlackProjectsGroups(status: status)
       } else {
-        SlackConnectGroup()
+        SlackSetupGroup(status: status)
       }
     }
   }
@@ -27,84 +27,6 @@ struct SlackSettingsSection: View {
 @MainActor
 func applySlack(_ status: ArgusProtocol.SlackStatus?, to store: HostStore) {
   if let status { store.applySlackStatus(status) }
-}
-
-/// Not connected: the manifest to create the app from, and its two tokens.
-private struct SlackConnectGroup: View {
-  @Environment(HostSettingsModel.self) private var host
-  @Environment(HostStore.self) private var store
-  @Environment(\.openURL) private var openURL
-  @State private var botToken = ""
-  @State private var appToken = ""
-  @State private var busy = false
-  @State private var copied = false
-
-  private var canConnect: Bool {
-    !busy && !botToken.trimmingCharacters(in: .whitespaces).isEmpty
-      && !appToken.trimmingCharacters(in: .whitespaces).isEmpty
-  }
-
-  var body: some View {
-    SettingsGroup(
-      "Slack",
-      footer:
-        "Argus reaches Slack over an outbound connection, so nothing but Slack sits between your workspace and this Mac. The tokens are checked with Slack, then encrypted here; they never leave this Mac."
-    ) {
-      SettingsRow(
-        "Slack app",
-        description:
-          "Mention the bot or message it, and an agent starts here. Create the app in your workspace from this manifest, install it, then paste its tokens below."
-      ) {
-        HStack(spacing: 8) {
-          Button("Open Slack apps") {
-            if let url = URL(string: "https://api.slack.com/apps") { openURL(url) }
-          }
-          Button(copied ? "Copied" : "Copy manifest") { Task { await copyManifest() } }
-        }
-      }
-      SettingsRow("Bot token", description: "Install App → Bot User OAuth Token, starting xoxb-.") {
-        SecureField("Bot token", text: $botToken, prompt: Text("xoxb-"))
-          .frame(width: 260)
-      }
-      SettingsRow(
-        "App-level token",
-        description: "Basic Information → App-Level Tokens, with the connections:write scope, starting xapp-."
-      ) {
-        SecureField("App-level token", text: $appToken, prompt: Text("xapp-"))
-          .frame(width: 260)
-          .onSubmit { if canConnect { Task { await connect() } } }
-      }
-      HStack {
-        Spacer()
-        Button(busy ? "Connecting" : "Connect") { Task { await connect() } }
-          .buttonStyle(.borderedProminent)
-          .disabled(!canConnect)
-      }
-    }
-  }
-
-  private func copyManifest() async {
-    guard let manifest = await host.run(ArgusProtocol.Commands.SlackManifest.self, EmptyParams()) else { return }
-    NSPasteboard.general.clearContents()
-    NSPasteboard.general.setString(manifest, forType: .string)
-    copied = true
-    try? await Task.sleep(for: .seconds(2))
-    copied = false
-  }
-
-  private func connect() async {
-    busy = true
-    defer { busy = false }
-    let status = await host.run(
-      ArgusProtocol.Commands.SlackConnect.self,
-      .init(
-        botToken: botToken.trimmingCharacters(in: .whitespaces),
-        appToken: appToken.trimmingCharacters(in: .whitespaces)))
-    guard status != nil else { return }
-    botToken = ""
-    appToken = ""
-    applySlack(status, to: store)
-  }
 }
 
 /// Connected: the workspace and socket state, claiming the bot, its owner.

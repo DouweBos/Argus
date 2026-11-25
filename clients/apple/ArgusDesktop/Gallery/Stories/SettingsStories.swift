@@ -46,6 +46,7 @@
         slack("connected", GalleryFixtures.slackConnected),
         slack("claim", GalleryFixtures.slackClaimPending),
         slack("not-connected", GalleryFixtures.slackNotConnected),
+        slack("app-created", GalleryFixtures.slackAppCreated),
         customRunner("acp-agent", acpDraft),
         customRunner("gateway", gatewayDraft),
         GalleryStory("settings/remote/mcp-clients", size: CGSize(width: 760, height: 560)) {

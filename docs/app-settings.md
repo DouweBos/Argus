@@ -489,6 +489,7 @@ change them.
 
 | Setting             | Default | Description                                                                                                                                                 |
 | ------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **App**             | none    | The Slack app Argus created from a configuration token, named after you. **Start over** forgets it; the app stays in Slack.                                 |
 | **Tokens**          | none    | The bot token (`xoxb-…`) and app-level token (`xapp-…`), encrypted with this machine's secure storage. Disconnect deletes them.                             |
 | **Owner**           | none    | The Slack member who claimed the bot by sending it the code Settings shows. Until someone claims it, the bot refuses everyone. **Reset** forgets the owner. |
 | **Allowed members** | empty   | Other Slack member IDs that may drive agents. Empty means only the owner. Everyone else gets a polite refusal.                                              |

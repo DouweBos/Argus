@@ -5,7 +5,7 @@ import Foundation
 extension GalleryFixtures {
   private static let slackRoot = "/Users/dev/Projects/"
 
-  private static func slackStatus(configured: Bool, claimed: Bool) -> [String: Any] {
+  private static func slackStatus(configured: Bool, claimed: Bool, app: Bool) -> [String: Any] {
     [
       "configured": configured,
       "state": configured ? "connected" : "off",
@@ -28,6 +28,7 @@ extension GalleryFixtures {
           ["user_id": "U06BZK41QE", "name": NSNull()],
         ] : [],
       "thread_count": claimed ? 7 : 0,
+      "app": app ? ["id": "A07NWS2K9Q", "name": "Argus (Sam)"] : NSNull(),
     ]
   }
 
@@ -37,8 +38,8 @@ extension GalleryFixtures {
     ("C07", "general", false),
   ].map { ["id": $0.0, "name": $0.1, "is_private": false, "is_member": $0.2] } }
 
-  private static func slack(configured: Bool, claimed: Bool) -> [String: String] {
-    let status = slackStatus(configured: configured, claimed: claimed)
+  private static func slack(configured: Bool, claimed: Bool, app: Bool = true) -> [String: String] {
+    let status = slackStatus(configured: configured, claimed: claimed, app: app)
     var redacted = status
     redacted["claim_code"] = NSNull()
     return [
@@ -60,5 +61,7 @@ extension GalleryFixtures {
   public static var slackConnected: [String: String] { slack(configured: true, claimed: true) }
   /// Tokens saved, nobody has sent the bot its code yet.
   public static var slackClaimPending: [String: String] { slack(configured: true, claimed: false) }
-  public static var slackNotConnected: [String: String] { slack(configured: false, claimed: false) }
+  public static var slackNotConnected: [String: String] { slack(configured: false, claimed: false, app: false) }
+  /// Argus created the app; its two tokens still to paste.
+  public static var slackAppCreated: [String: String] { slack(configured: false, claimed: false) }
 }

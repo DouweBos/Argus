@@ -26,6 +26,10 @@ export const SlackChannel = z.object({
 });
 export type SlackChannel = z.infer<typeof SlackChannel>;
 
+/** The app Argus created in the workspace, for links to its Slack pages. */
+export const SlackApp = z.object({ id: z.string(), name: z.string() });
+export type SlackApp = z.infer<typeof SlackApp>;
+
 export const SlackConnectionState = z.enum([
   "off",
   "connecting",
@@ -55,6 +59,8 @@ export const SlackStatus = z.object({
   allowed_users: z.array(SlackUser),
   /** Slack threads tied to an agent. */
   thread_count: z.number(),
+  /** Set once Argus created the app; optional so older hosts still decode. */
+  app: SlackApp.nullish(),
 });
 export type SlackStatus = z.infer<typeof SlackStatus>;
 

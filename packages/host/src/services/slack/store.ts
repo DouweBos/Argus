@@ -28,12 +28,19 @@ export interface SlackConfig {
   claimCode: string | null;
 }
 
+/** The app Argus created from a configuration token, until it's forgotten. */
+export interface SlackApp {
+  id: string;
+  name: string;
+}
+
 interface SlackFile {
   /** Base64 of the sealed tokens. */
   sealedBot?: string;
   sealedApp?: string;
   identity?: SlackIdentity;
   config?: Partial<SlackConfig>;
+  app?: SlackApp;
 }
 
 export interface SlackTokens {
@@ -133,6 +140,7 @@ export function saveSlackTokens(
   const sameTeam = file.identity?.teamId === identity.teamId;
   const config = sameTeam ? loadSlackConfig() : null;
   writeFile({
+    app: file.app,
     sealedBot: storage.encrypt(tokens.bot).toString("base64"),
     sealedApp: storage.encrypt(tokens.app).toString("base64"),
     identity,
@@ -149,5 +157,14 @@ export function saveSlackTokens(
 /** Drops the tokens; routing and access stay for a reconnect. */
 export function deleteSlackTokens(): void {
   const file = readFile();
-  writeFile({ identity: file.identity, config: file.config });
+  writeFile({ identity: file.identity, config: file.config, app: file.app });
+}
+
+export function loadSlackApp(): SlackApp | null {
+  return readFile().app ?? null;
+}
+
+/** Null forgets it, to start over with another app. */
+export function saveSlackApp(app: SlackApp | null): void {
+  writeFile({ ...readFile(), app: app ?? undefined });
 }

@@ -24,10 +24,13 @@ export const SLACK_BOT_EVENTS = [
   "message.im",
 ];
 
-export function slackManifest(): Record<string, unknown> {
+/** Slack caps an app's name at 35 characters. */
+export const SLACK_APP_NAME_MAX = 35;
+
+export function slackManifest(name = "Argus"): Record<string, unknown> {
   return {
     display_information: {
-      name: "Argus",
+      name,
       description: "Start and steer Argus agents from Slack.",
       background_color: "#1c1c1e",
     },
@@ -37,7 +40,7 @@ export function slackManifest(): Record<string, unknown> {
         messages_tab_enabled: true,
         messages_tab_read_only_enabled: false,
       },
-      bot_user: { display_name: "Argus", always_online: true },
+      bot_user: { display_name: name, always_online: true },
     },
     oauth_config: { scopes: { bot: SLACK_BOT_SCOPES } },
     settings: {
@@ -50,6 +53,6 @@ export function slackManifest(): Record<string, unknown> {
   };
 }
 
-export function slackManifestJson(): string {
-  return JSON.stringify(slackManifest(), null, 2);
+export function slackManifestJson(name?: string): string {
+  return JSON.stringify(slackManifest(name), null, 2);
 }

@@ -11,6 +11,8 @@ export class SlackApiError extends Error {
   constructor(
     readonly method: string,
     readonly code: string,
+    /** What Slack found wrong, for `invalid_manifest`. */
+    readonly details: string[] = [],
   ) {
     super(`Slack ${method} failed: ${code}`);
   }
@@ -61,9 +63,19 @@ export class SlackApi {
     if (!res.ok) {
       throw new SlackApiError(method, `http_${res.status}`);
     }
-    const json = (await res.json()) as T & { ok?: boolean; error?: string };
+    const json = (await res.json()) as T & {
+      ok?: boolean;
+      error?: string;
+      errors?: { message?: string; pointer?: string }[];
+    };
     if (!json.ok) {
-      throw new SlackApiError(method, json.error ?? "unknown_error");
+      throw new SlackApiError(
+        method,
+        json.error ?? "unknown_error",
+        (json.errors ?? []).map((e) =>
+          [e.pointer, e.message].filter(Boolean).join(": "),
+        ),
+      );
     }
 
     return json;
@@ -83,6 +95,17 @@ export class SlackApi {
     }>("auth.test");
 
     return { teamId: r.team_id, team: r.team, userId: r.user_id, user: r.user };
+  }
+
+  /** Needs an app configuration token; creates the app in the token's workspace. */
+  async createApp(
+    manifest: Record<string, unknown>,
+  ): Promise<{ appId: string }> {
+    const r = await this.call<{ app_id: string }>("apps.manifest.create", {
+      manifest: JSON.stringify(manifest),
+    });
+
+    return { appId: r.app_id };
   }
 
   async postMessage(message: {

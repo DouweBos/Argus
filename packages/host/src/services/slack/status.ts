@@ -4,7 +4,12 @@
  */
 
 import type { SlackConnectionState, SlackStatus } from "@argus/remote-protocol";
-import { hasSlackTokens, loadSlackConfig, loadSlackIdentity } from "./store";
+import {
+  hasSlackTokens,
+  loadSlackApp,
+  loadSlackConfig,
+  loadSlackIdentity,
+} from "./store";
 import { SlackThreadStore } from "./threads";
 
 export const slackThreads = new SlackThreadStore();
@@ -46,6 +51,7 @@ export function slackStatus(): SlackStatus {
     mappings: config.mappings,
     allowed_users: config.allowedUsers,
     thread_count: slackThreads.all().filter((t) => t.sessionId).length,
+    app: loadSlackApp(),
   };
 }
 

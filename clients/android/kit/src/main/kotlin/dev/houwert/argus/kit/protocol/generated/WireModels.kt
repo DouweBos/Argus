@@ -7404,6 +7404,12 @@ value class SimulatorProblemKind(val rawValue: String) {
 }
 
 @Serializable
+data class SlackApp(
+  @SerialName("id") val id: String,
+  @SerialName("name") val name: String,
+)
+
+@Serializable
 data class SlackChannel(
   @SerialName("id") val id: String,
   @SerialName("name") val name: String,
@@ -7451,6 +7457,7 @@ data class SlackStatus(
   @SerialName("mappings") val mappings: List<SlackChannelMapping>,
   @SerialName("allowed_users") val allowedUsers: List<SlackUser>,
   @SerialName("thread_count") val threadCount: Double,
+  @SerialName("app") val app: SlackApp? = null,
 )
 
 @Serializable

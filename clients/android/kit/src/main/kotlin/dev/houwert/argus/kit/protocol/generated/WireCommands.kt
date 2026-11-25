@@ -2835,6 +2835,17 @@ object CommandsTypes {
   )
 
   @Serializable
+  data class SlackCreateAppParams(
+    @SerialName("configToken") val configToken: String,
+    @SerialName("name") val name: String,
+  )
+
+  @Serializable
+  data class SlackManifestParams(
+    @SerialName("name") val name: String? = null,
+  )
+
+  @Serializable
   data class SlackRemoveAllowedUserParams(
     @SerialName("userId") val userId: String,
   )
@@ -4164,11 +4175,15 @@ object Commands {
 
   object SlackConnect : RemoteCommand<CommandsTypes.SlackConnectParams, dev.houwert.argus.kit.protocol.generated.SlackStatus>("slack_connect", "admin", serializer(), serializer())
 
+  object SlackCreateApp : RemoteCommand<CommandsTypes.SlackCreateAppParams, dev.houwert.argus.kit.protocol.generated.SlackStatus>("slack_create_app", "admin", serializer(), serializer())
+
   object SlackDisconnect : RemoteCommand<EmptyParams, dev.houwert.argus.kit.protocol.generated.SlackStatus>("slack_disconnect", "admin", serializer(), serializer())
+
+  object SlackForgetApp : RemoteCommand<EmptyParams, dev.houwert.argus.kit.protocol.generated.SlackStatus>("slack_forget_app", "admin", serializer(), serializer())
 
   object SlackListChannels : RemoteCommand<EmptyParams, List<SlackChannel>>("slack_list_channels", "admin", serializer(), serializer())
 
-  object SlackManifest : RemoteCommand<EmptyParams, String>("slack_manifest", "admin", serializer(), serializer())
+  object SlackManifest : RemoteCommand<CommandsTypes.SlackManifestParams, String>("slack_manifest", "admin", serializer(), serializer())
 
   object SlackRemoveAllowedUser : RemoteCommand<CommandsTypes.SlackRemoveAllowedUserParams, dev.houwert.argus.kit.protocol.generated.SlackStatus>("slack_remove_allowed_user", "admin", serializer(), serializer())
 

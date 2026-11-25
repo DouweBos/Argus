@@ -218,28 +218,45 @@ in your own workspace.
 
 ### Setting it up
 
-1. In Argus, open **Settings → Integrations → Slack** and click **Copy
-   manifest**.
-2. Go to [api.slack.com/apps](https://api.slack.com/apps), click **Create New
-   App → From a manifest**, pick your workspace, paste the manifest and
-   create the app. It asks for these bot scopes: `app_mentions:read`,
-   `channels:history`, `channels:read`, `chat:write`, `files:read`,
-   `groups:history`, `groups:read`, `im:history`, `im:read`, `im:write`,
-   `users:read`; subscribes to `app_mention`, `message.channels`,
-   `message.groups` and `message.im`; and turns on Socket Mode and
-   interactivity.
-3. Under **Basic Information → App-Level Tokens**, click **Generate Token and
-   Scopes**, add the `connections:write` scope and generate it. Copy the
-   token (`xapp-…`).
-4. Under **Install App**, install the app to your workspace and copy the
-   **Bot User OAuth Token** (`xoxb-…`).
-5. Back in Argus, paste both tokens and click **Connect**. Argus checks them
-   with Slack, then encrypts them with this machine's secure storage in
+Each person creates their own Slack app, so every Argus install has a bot of
+its own. Socket Mode hands each message to one connection only, so one app
+can't be shared between computers. Name the bot after yourself (Argus
+suggests **Argus (your first name)**) so teammates' bots tell apart.
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps). Under **Your App
+   Configuration Tokens**, click **Generate Token**, pick your workspace and
+   copy the access token (`xoxe.xoxp-…`).
+2. In Argus, open **Settings → Integrations → Slack**, check the bot's name,
+   paste the configuration token and click **Create app**. Argus creates the
+   app in your workspace with every scope, event, Socket Mode and
+   interactivity it needs, then forgets the token. Slack expires it after 12
+   hours anyway.
+3. Click **Generate** next to **App-level token**. On the app's Basic
+   Information page, under **App-Level Tokens**, click **Generate Token and
+   Scopes**, add the `connections:write` scope and copy the token (`xapp-…`).
+   Slack has no API for this one.
+4. Click **Install** next to **Bot token**, install the app to your workspace
+   and copy the **Bot User OAuth Token** (`xoxb-…`). If your workspace needs
+   an admin to approve new apps, this waits until they do.
+5. Paste both tokens and click **Connect**. Argus checks them with Slack,
+   then encrypts them with this machine's secure storage in
    `~/.argus/slack.json`. They never leave the host and are never logged.
 6. Settings now shows a six-digit code. Send it to the bot in a direct
-   message (find **Argus** under Apps in Slack). That makes you the bot's
-   owner. Until someone claims it, the bot answers nobody.
-7. Invite the bot to the channels it should listen in (`/invite @Argus`).
+   message (find it under Apps in Slack). That makes you the bot's owner.
+   Until someone claims it, the bot answers nobody.
+7. Invite the bot to the channels it should listen in (`/invite @Argus (Sam)`).
+
+**Start over** forgets the created app so you can create another; delete the
+old one in Slack if you no longer need it.
+
+To create the app yourself instead, click **Create by hand**, then **Copy
+manifest** and paste it into **Create New App → From a manifest**. It asks
+for these bot scopes: `app_mentions:read`, `channels:history`,
+`channels:read`, `chat:write`, `files:read`, `groups:history`, `groups:read`,
+`im:history`, `im:read`, `im:write`, `users:read`; subscribes to
+`app_mention`, `message.channels`, `message.groups` and `message.im`; and
+turns on Socket Mode and interactivity. Then follow steps 3 to 7 from the
+app's own pages.
 
 ### Who can use it
 

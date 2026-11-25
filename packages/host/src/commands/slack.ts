@@ -1,4 +1,5 @@
 import { defineTypedCommand } from "../services/command/registry";
+import { createSlackApp, forgetSlackApp } from "../services/slack/appSetup";
 import { slackManifestJson } from "../services/slack/manifest";
 import {
   addAllowedUser,
@@ -18,7 +19,11 @@ export function registerSlackCommands(): void {
     connectSlack(p.botToken, p.appToken),
   );
   defineTypedCommand("slack_disconnect", () => disconnectSlack());
-  defineTypedCommand("slack_manifest", () => slackManifestJson());
+  defineTypedCommand("slack_manifest", (p) => slackManifestJson(p.name));
+  defineTypedCommand("slack_create_app", (p) =>
+    createSlackApp(p.configToken, p.name),
+  );
+  defineTypedCommand("slack_forget_app", () => forgetSlackApp());
   defineTypedCommand("slack_list_channels", () => listSlackChannels());
   defineTypedCommand("slack_set_default_project", (p) =>
     setDefaultProject(p.repoRoot),

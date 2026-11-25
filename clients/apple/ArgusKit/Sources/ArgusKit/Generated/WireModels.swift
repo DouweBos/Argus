@@ -20114,6 +20114,27 @@ extension ArgusProtocol {
     public static let unavailable = SimulatorProblemKind(rawValue: "unavailable")
   }
 
+  public struct SlackApp: Codable, Sendable {
+    public var id: String
+    public var name: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+    }
+
+    public init(id: String, name: String) {
+      self.id = id
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+    }
+  }
+
   public struct SlackChannel: Codable, Sendable {
     public var id: String
     public var name: String
@@ -20218,6 +20239,7 @@ extension ArgusProtocol {
     public var mappings: [SlackChannelMapping]
     public var allowedUsers: [SlackUser]
     public var threadCount: Double
+    public var app: SlackApp?
 
     enum CodingKeys: String, CodingKey {
       case configured = "configured"
@@ -20231,9 +20253,10 @@ extension ArgusProtocol {
       case mappings = "mappings"
       case allowedUsers = "allowed_users"
       case threadCount = "thread_count"
+      case app = "app"
     }
 
-    public init(configured: Bool, state: SlackConnectionState, error: String? = nil, workspace: String? = nil, botName: String? = nil, owner: SlackUser? = nil, claimCode: String? = nil, defaultProject: String? = nil, mappings: [SlackChannelMapping], allowedUsers: [SlackUser], threadCount: Double) {
+    public init(configured: Bool, state: SlackConnectionState, error: String? = nil, workspace: String? = nil, botName: String? = nil, owner: SlackUser? = nil, claimCode: String? = nil, defaultProject: String? = nil, mappings: [SlackChannelMapping], allowedUsers: [SlackUser], threadCount: Double, app: SlackApp? = nil) {
       self.configured = configured
       self.state = state
       self.error = error
@@ -20245,6 +20268,7 @@ extension ArgusProtocol {
       self.mappings = mappings
       self.allowedUsers = allowedUsers
       self.threadCount = threadCount
+      self.app = app
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -20260,6 +20284,7 @@ extension ArgusProtocol {
       try c.encode(mappings, forKey: .mappings)
       try c.encode(allowedUsers, forKey: .allowedUsers)
       try c.encode(threadCount, forKey: .threadCount)
+      try c.encodeIfPresent(app, forKey: .app)
     }
   }
 

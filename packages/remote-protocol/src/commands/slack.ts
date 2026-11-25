@@ -12,8 +12,23 @@ export const SLACK_COMMANDS = {
   },
   /** Closes the socket and deletes the tokens; mappings and users stay. */
   slack_disconnect: { tier: "admin", params: NoParams, result: SlackStatus },
-  /** The app manifest to paste into Slack, as JSON. */
-  slack_manifest: { tier: "admin", params: NoParams, result: z.string() },
+  /** The app manifest to paste into Slack, as JSON; `name` defaults to Argus. */
+  slack_manifest: {
+    tier: "admin",
+    params: z.object({ name: z.string().optional() }),
+    result: z.string(),
+  },
+  /**
+   * Creates the Slack app with an app configuration token, used once and
+   * never saved. The tokens still come from Slack: it has no API for them.
+   */
+  slack_create_app: {
+    tier: "admin",
+    params: z.object({ configToken: z.string(), name: z.string() }),
+    result: SlackStatus,
+  },
+  /** Forgets the created app, to start over; the app stays in Slack. */
+  slack_forget_app: { tier: "admin", params: NoParams, result: SlackStatus },
   slack_list_channels: {
     tier: "admin",
     params: NoParams,
