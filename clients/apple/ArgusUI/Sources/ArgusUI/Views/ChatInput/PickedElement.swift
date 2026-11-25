@@ -21,26 +21,49 @@ public struct PickedElement: Identifiable, Hashable, Sendable, Codable {
   /// What the agent reads to find the element in code.
   public var context: String
   public var crop: RemoteImageAttachment?
+  /// What the user wants done to this element, typed on its chip.
+  public var note: String
 
-  public init(id: UUID = UUID(), source: Source, title: String, context: String, crop: RemoteImageAttachment?) {
+  public init(
+    id: UUID = UUID(), source: Source, title: String, context: String, crop: RemoteImageAttachment?,
+    note: String = ""
+  ) {
     self.id = id
     self.source = source
     self.title = title
     self.context = context
     self.crop = crop
+    self.note = note
   }
+
+  /// A draft saved before notes existed decodes with none.
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    id = try container.decode(UUID.self, forKey: .id)
+    source = try container.decode(Source.self, forKey: .source)
+    title = try container.decode(String.self, forKey: .title)
+    context = try container.decode(String.self, forKey: .context)
+    crop = try container.decodeIfPresent(RemoteImageAttachment.self, forKey: .crop)
+    note = try container.decodeIfPresent(String.self, forKey: .note) ?? ""
+  }
+
+  var trimmedNote: String { note.trimmingCharacters(in: .whitespacesAndNewlines) }
 }
 
 extension PickedElement {
-  /// The message an agent gets: what was typed, then each element's context.
+  /// The message an agent gets: what was typed, then each element's context with its note.
   static func body(typed: String, elements: [PickedElement]) -> String {
-    let blocks = elements.map(\.context)
+    let blocks = elements.map { element in
+      element.trimmedNote.isEmpty ? element.context : "\(element.context)\nNote: \(element.trimmedNote)"
+    }
     return ([typed.isEmpty ? "(see the picked element)" : typed] + blocks).joined(separator: "\n\n")
   }
 
   /// What the transcript shows instead of the context blocks.
   static func display(typed: String, elements: [PickedElement]) -> String {
-    let chips = elements.map { "[Element: \($0.title)]" }.joined(separator: " ")
+    let chips = elements.map { element in
+      element.trimmedNote.isEmpty ? "[Element: \(element.title)]" : "[Element: \(element.title) — \(element.trimmedNote)]"
+    }.joined(separator: " ")
     return typed.isEmpty ? chips : "\(typed)\n\n\(chips)"
   }
 

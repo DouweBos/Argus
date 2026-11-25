@@ -41,6 +41,7 @@ extension ComposerModel {
     }
     var message = display
     if !elements.isEmpty {
+      onAffordance?(elements.contains { !$0.trimmedNote.isEmpty } ? .pickedElementsNoted : .pickedElements)
       message = PickedElement.body(typed: display, elements: elements)
       display = PickedElement.display(typed: display, elements: elements)
     }
@@ -201,6 +202,12 @@ extension ComposerModel {
 
   public func removeElement(_ id: UUID) {
     elements.removeAll { $0.id == id }
+    saveElements()
+  }
+
+  public func setNote(_ note: String, forElement id: UUID) {
+    guard let index = elements.firstIndex(where: { $0.id == id }), elements[index].note != note else { return }
+    elements[index].note = note
     saveElements()
   }
 

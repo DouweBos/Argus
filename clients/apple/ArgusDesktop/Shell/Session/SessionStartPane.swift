@@ -20,7 +20,7 @@ struct SessionStartPane: View {
           AgentStartTitle(sessionId: sessionId).padding(.bottom, 18)
         }
       ChatInputView(startingIn: sessionId, starter: model.composerStarter(session: sessionId)) { affordance in
-        MacTelemetry.capture(.inputUsed(affordance: affordance.rawValue))
+        MacTelemetry.capture(input: affordance)
       }
       .startWorkspace(workspace, session: model.session(sessionId))
       // Shares the height with the space above, which centres the composer.

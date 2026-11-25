@@ -367,7 +367,7 @@ struct AgentPane: View {
         }
       HuddleTypingBar(agentId: agentId)
       ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
-        MacTelemetry.capture(.inputUsed(affordance: affordance.rawValue))
+        MacTelemetry.capture(input: affordance)
       }
       .startWorkspace(workspace, session: fresh ? model.session(sessionId) : nil, replacing: agentId)
     }

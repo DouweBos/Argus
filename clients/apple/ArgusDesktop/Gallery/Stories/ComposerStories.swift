@@ -10,8 +10,18 @@
         GalleryStory("composer/dictation", size: CGSize(width: 520, height: 0)) { DictationStory(size: 26) },
         GalleryStory("composer/picked-elements", size: CGSize(width: 720, height: 0)) {
           AttachmentStrip(
-            images: [], elements: [browser, browserNoReact, device, deviceNoCrop], remove: { _ in }
+            images: [], elements: [browser, browserNoReact, device, deviceNoCrop], setNote: { _, _ in },
+            remove: { _ in }
           )
+          .padding(12)
+        },
+        // Two picks with a note for the agent, one still waiting for its note.
+        GalleryStory("composer/picked-elements/notes", size: CGSize(width: 760, height: 0)) {
+          PickedNotesStory(elements: [
+            noted(browser, "Make this match the secondary button, and keep the icon"),
+            noted(device, "Too close to the edge on small phones"),
+            browserNoReact,
+          ])
           .padding(12)
         },
         // Two files on the host and one still uploading, beside a picked element.
@@ -150,6 +160,12 @@
       PickedElement(source: .device, title: "UIButton \"checkout\"", context: "", crop: crop(width: 300, height: 100))
     }
 
+    private static func noted(_ element: PickedElement, _ note: String) -> PickedElement {
+      var element = element
+      element.note = note
+      return element
+    }
+
     private static var deviceNoCrop: PickedElement {
       PickedElement(source: .device, title: "RCTViewComponentView", context: "", crop: nil)
     }
@@ -212,6 +228,20 @@
         ChatInputView(agentId: "a1")
       }
       .padding(.top, 12)
+    }
+  }
+  /// Notes edit in place, as in the composer.
+  private struct PickedNotesStory: View {
+    @State var elements: [PickedElement]
+
+    var body: some View {
+      AttachmentStrip(
+        images: [], elements: elements, removeElement: { id in elements.removeAll { $0.id == id } },
+        setNote: { id, note in
+          if let index = elements.firstIndex(where: { $0.id == id }) { elements[index].note = note }
+        },
+        remove: { _ in }
+      )
     }
   }
 #endif

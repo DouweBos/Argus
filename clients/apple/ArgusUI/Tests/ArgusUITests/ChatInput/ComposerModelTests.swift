@@ -154,6 +154,25 @@ struct ComposerModelTests {
     #expect(afterSend.elements.isEmpty)
   }
 
+  @Test("an element's note rides the draft and goes out beside its context")
+  func pickedElementNote() async throws {
+    let element = PickedElement(source: .browser, title: "button.save", context: "[ctx]", crop: nil)
+    let composer = model()
+    var affordances: [ChatInputAffordance] = []
+    composer.onAffordance = { affordances.append($0) }
+    composer.attach(element)
+    composer.setNote("  make it red ", forElement: element.id)
+    let reopened = model()
+    await reopened.load()
+    #expect(reopened.elements.first?.note == "  make it red ")
+    composer.submit()
+    await settle()
+    let sent = try #require(host.sent.first)
+    #expect(sent.message == "(see the picked element)\n\n[ctx]\nNote: make it red")
+    #expect(sent.displayText == "[Element: button.save — make it red]")
+    #expect(affordances == [.pickedElementsNoted])
+  }
+
   @Test("/plan toggles plan mode and /model sets or opens the picker, never reaching the CLI")
   func localCommands() async {
     let composer = model()

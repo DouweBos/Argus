@@ -32,6 +32,15 @@ enum MacTelemetry {
     client.capture(event.name, event.properties)
   }
 
+  /// A chat input's affordance; a send carrying picked elements gets its own event.
+  static func capture(input affordance: ChatInputAffordance) {
+    switch affordance {
+    case .pickedElements: capture(.pickedElementsSent(hasNote: false))
+    case .pickedElementsNoted: capture(.pickedElementsSent(hasNote: true))
+    default: capture(.inputUsed(affordance: affordance.rawValue))
+    }
+  }
+
   private static var unsupportedSeen: Set<String> = []
 
   /// Once per method per launch: a screen retrying against an old host would flood.

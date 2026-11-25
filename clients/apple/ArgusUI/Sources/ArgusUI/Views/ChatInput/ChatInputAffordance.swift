@@ -31,4 +31,8 @@ public enum ChatInputAffordance: String, Sendable {
   case voiceAnswer = "voice_answer"
   /// `/usage-limits` opened the composer's limits panel.
   case usageLimits = "usage_limits"
+  /// Picked elements were sent, none with a note.
+  case pickedElements = "picked_elements"
+  /// Picked elements were sent, at least one with a note.
+  case pickedElementsNoted = "picked_elements_noted"
 }

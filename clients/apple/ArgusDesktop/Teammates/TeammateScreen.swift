@@ -189,7 +189,7 @@ private struct TeammateChat: View {
           .padding(.top, 8)
       }
       ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
-        MacTelemetry.capture(.inputUsed(affordance: affordance.rawValue))
+        MacTelemetry.capture(input: affordance)
       }
     }
     // A turn ending is when its failure lands on the thread.

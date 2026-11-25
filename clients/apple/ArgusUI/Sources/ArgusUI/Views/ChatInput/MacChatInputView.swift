@@ -123,7 +123,8 @@
         if !composer.images.isEmpty || !composer.elements.isEmpty || !composer.files.isEmpty {
           AttachmentStrip(
             images: composer.images, elements: composer.elements, files: composer.files,
-            removeElement: composer.removeElement, removeFile: composer.removeFile
+            removeElement: composer.removeElement, removeFile: composer.removeFile,
+            setNote: { composer.setNote($1, forElement: $0) }
           ) { composer.removeImage($0) }
           .padding(.horizontal, 10)
           .padding(.top, 10)

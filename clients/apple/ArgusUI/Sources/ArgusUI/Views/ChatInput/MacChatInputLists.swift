@@ -146,18 +146,21 @@
     var files: [PendingFile] = []
     var removeElement: (UUID) -> Void = { _ in }
     var removeFile: (UUID) -> Void = { _ in }
+    /// Nil: the chips show their notes read-only.
+    var setNote: ((UUID, String) -> Void)?
     let remove: (UUID) -> Void
 
     public init(
       images: [PendingImage], elements: [PickedElement] = [], files: [PendingFile] = [],
       removeElement: @escaping (UUID) -> Void = { _ in }, removeFile: @escaping (UUID) -> Void = { _ in },
-      remove: @escaping (UUID) -> Void
+      setNote: ((UUID, String) -> Void)? = nil, remove: @escaping (UUID) -> Void
     ) {
       self.images = images
       self.elements = elements
       self.files = files
       self.removeElement = removeElement
       self.removeFile = removeFile
+      self.setNote = setNote
       self.remove = remove
     }
 
@@ -166,7 +169,7 @@
         HStack(spacing: 8) {
           ForEach(elements) { element in
             removable(help: "Remove element", action: { removeElement(element.id) }) {
-              PickedElementChip(element: element)
+              PickedElementChip(element: element, setNote: setNote.map { set in { set(element.id, $0) } })
             }
           }
           ForEach(images) { image in
@@ -215,10 +218,11 @@
     }
   }
 
-  /// A picked element in the composer: its crop, what it is and where it came from.
+  /// A picked element in the composer: its crop, what it is, where it came from and a note for the agent.
   struct PickedElementChip: View {
     @Environment(\.theme) private var theme
     let element: PickedElement
+    var setNote: ((String) -> Void)?
 
     private var preview: PlatformImage? {
       element.crop.flatMap { Data(base64Encoded: $0.data) }.flatMap(PlatformImage.init(data:))
@@ -234,31 +238,50 @@
             Image(systemName: Icon.elementPick).foregroundStyle(theme.textMuted)
           }
         }
-        .frame(width: 44, height: 44)
+        .frame(width: 52, height: 52)
         .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall - 2))
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 3) {
           Text(element.title)
             .font(.scaled(size: 12, design: .monospaced))
             .foregroundStyle(theme.text)
             .lineLimit(1)
             .truncationMode(.middle)
+            .help(element.context)
           Label(element.source == .browser ? "Browser element" : "Simulator element",
                 systemImage: element.source == .browser ? Icon.web : Icon.simulator)
             .font(.scaled(size: 10))
             .foregroundStyle(theme.textMuted)
             .lineLimit(1)
+          note
         }
-        .frame(maxWidth: 180, alignment: .leading)
+        .frame(width: 200, alignment: .leading)
       }
       .padding(6)
-      .frame(height: 56)
+      .frame(height: 64)
       .background(theme.surface, in: .rect(cornerRadius: theme.radiusSmall))
       .overlay {
         RoundedRectangle(cornerRadius: theme.radiusSmall).strokeBorder(theme.border, lineWidth: 1)
       }
-      .help(element.context)
-      .accessibilityElement(children: .combine)
+      .accessibilityElement(children: .contain)
       .accessibilityLabel("Picked element \(element.title)")
+    }
+
+    @ViewBuilder private var note: some View {
+      if let setNote {
+        TextField("Add a note", text: Binding(get: { element.note }, set: setNote))
+          .textFieldStyle(.plain)
+          .font(.scaled(size: 11))
+          .foregroundStyle(theme.text)
+          .padding(.horizontal, 5)
+          .padding(.vertical, 2)
+          .background(theme.bgTertiary, in: .rect(cornerRadius: 4))
+          .accessibilityLabel("Note for \(element.title)")
+      } else if !element.note.isEmpty {
+        Text(element.note)
+          .font(.scaled(size: 11))
+          .foregroundStyle(theme.textSecondary)
+          .lineLimit(1)
+      }
     }
   }
 #endif

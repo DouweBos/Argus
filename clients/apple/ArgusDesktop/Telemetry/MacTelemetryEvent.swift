@@ -370,6 +370,8 @@ enum MacTelemetryEvent {
   case inspectionUsed(action: InspectionAction, success: Bool)
   /// An element picked in the browser, the device inspector or the device preview and attached to the chat.
   case elementPicked(source: ElementPickSource, success: Bool)
+  /// A message carrying picked elements was sent; `hasNote` when any of them had a note.
+  case pickedElementsSent(hasNote: Bool)
   /// A git action from the git panel; `scope` is `session` or `project`,
   /// `remote` when the session is on a paired host.
   case gitUsed(action: GitAction, scope: String, remote: Bool, success: Bool)
@@ -531,6 +533,7 @@ enum MacTelemetryEvent {
     case .browserUsed: "mac_browser_used"
     case .inspectionUsed: "mac_inspection_used"
     case .elementPicked: "mac_element_picked"
+    case .pickedElementsSent: "mac_picked_elements_sent"
     case .gitUsed: "mac_git_used"
     case .gitRecoveryUsed: "mac_git_recovery_used"
     case .gitDialogClosed: "mac_git_dialog_closed"
@@ -725,6 +728,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue, "success": success]
     case .elementPicked(let source, let success):
       ["source": source.rawValue, "success": success]
+    case .pickedElementsSent(let hasNote):
+      ["has_note": hasNote]
     case .gitUsed(let action, let scope, let remote, let success):
       ["action": action.rawValue, "scope": scope, "remote": remote, "success": success]
     case .gitRecoveryUsed(let kind, let action):
