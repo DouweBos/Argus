@@ -44,6 +44,8 @@ final class MicrophoneCapture: @unchecked Sendable {
       ?? (handsFree && source.channelCount > 1
         ? AVAudioFormat(standardFormatWithSampleRate: source.sampleRate, channels: 1) : nil)
     let converter = format.flatMap { $0 == source ? nil : AVAudioConverter(from: source, to: $0) }
+    // The Mac's voice processing hands over 9 channels, which the converter's own downmix turns into silence.
+    if let converter, source.channelCount > 1, converter.outputFormat.channelCount == 1 { converter.channelMap = [0] }
     input.installTap(onBus: 0, bufferSize: 4096, format: source) { buffer, _ in
       guard let converter, let format else { return onBuffer(buffer) }
       if let converted = Self.convert(buffer, with: converter, to: format) { onBuffer(converted) }
