@@ -1,5 +1,6 @@
 package dev.houwert.argus.app.screens.automations
 
+import dev.houwert.argus.core.automations.isSkipped
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -146,7 +147,7 @@ private fun Summary(run: RemoteAutomationRun, access: HostAccess, onFeedback: ()
     }
     MutedText(run.triggerReason)
     RunFigures(listOf("Started" to Labels.timeAgo(run.startedAt), "Duration" to Labels.runDuration(run), "Cost" to Labels.runCost(run)))
-    run.error?.takeIf { it.isNotEmpty() }?.let { Banner(it, tone = Tone.Danger) }
+    run.error?.takeIf { it.isNotEmpty() }?.let { Banner(it, tone = if (run.isSkipped) Tone.Warning else Tone.Danger) }
 
     FlowRow(Modifier.fillMaxWidth(), spacing = 8.dp) {
       run.hostAgentId?.let { agentId ->

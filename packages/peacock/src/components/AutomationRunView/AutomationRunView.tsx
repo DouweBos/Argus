@@ -76,7 +76,14 @@ export function AutomationRunView({
         {session !== undefined && <StatCell label="Session" value={session} />}
       </StatsStrip>
 
-      {error && <p className={styles.error}>{error}</p>}
+      {/* A skipped run did nothing wrong; its reason reads as a note, not a failure. */}
+      {error && (
+        <p
+          className={`${styles.error} ${status === "skipped" ? styles.skipped : ""}`}
+        >
+          {error}
+        </p>
+      )}
 
       <SectionPanel title="Report">{report}</SectionPanel>
 

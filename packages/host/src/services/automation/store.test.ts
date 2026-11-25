@@ -44,6 +44,8 @@ function automation(overrides: Partial<Automation> = {}): Automation {
     template_id: "standup-digest",
     teammate_id: null,
     seeded_playbook_hash: null,
+    precheck_command: "",
+    precheck_timeout_seconds: 60,
     created_at: 1,
     updated_at: 1,
     last_run_at: null,

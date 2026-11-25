@@ -73,6 +73,18 @@ export const Failed: Story = {
   },
 };
 
+/** Its precheck said there was nothing to do; the reason is the command's output. */
+export const SkippedByPrecheck: Story = {
+  args: {
+    status: "skipped",
+    duration: "2s",
+    cost: "—",
+    error:
+      "Skipped — the precheck exited with code 1.\nAlready up to date.\nNo new commits on origin/main since the last run.",
+    report: <RunReport active={false} blocks={null} markdown={null} />,
+  },
+};
+
 export const MarkdownReport: Story = {
   args: {
     status: "succeeded",

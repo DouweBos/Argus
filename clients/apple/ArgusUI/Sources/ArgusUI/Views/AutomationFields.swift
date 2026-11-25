@@ -39,6 +39,8 @@ public struct AutomationFields: View {
     if showsSchedule { trigger }
     scope
     behaviour
+    // Nil means the computer is too old to run one; a quick run never has one.
+    if showsSchedule, draft.precheckCommand != nil { RunStartFields(draft: $draft) }
     playbook
     // Nil means the computer is too old to keep them, so don't offer the field.
     if showsSchedule, draft.extraInstructions != nil { extraInstructions }

@@ -45,6 +45,10 @@ fun RemoteAutomationDetail.withAutonomy(rung: Autonomy?) = copy(autonomy = rung?
 val RemoteAutomationRun.isActive: Boolean
   get() = status == RemoteAutomationRunStatus.queued || status == RemoteAutomationRunStatus.running
 
+/** A skipped run's `error` is why it didn't fire, not something that broke. */
+val RemoteAutomationRun.isSkipped: Boolean
+  get() = status == RemoteAutomationRunStatus.skipped
+
 /** The Automations list without teammates' duties, which live on their teammate's Duties page. */
 data class StandaloneAutomations(val automations: List<RemoteAutomation>, val runs: List<RemoteAutomationRun>) {
   companion object {
@@ -109,6 +113,7 @@ fun newAutomationDetail(
   playbook: String = "",
   extraInstructions: String = "",
   claudeAccountId: String? = null,
+  precheckCommand: String? = "",
 ) = RemoteAutomationDetail(
   id = "",
   name = name,
@@ -125,6 +130,7 @@ fun newAutomationDetail(
   extraInstructions = extraInstructions,
   claudeAccountId = claudeAccountId,
   guardrails = defaultGuardrails,
+  precheckCommand = precheckCommand,
 )
 
 /**
@@ -158,6 +164,8 @@ object AutomationInput {
     runner = detail.runner,
     claudeAccountId = detail.claudeAccountId,
     guardrails = detail.guardrails,
+    precheckCommand = detail.precheckCommand?.trim(),
+    precheckTimeoutSeconds = detail.precheckTimeoutSeconds,
   )
 
   fun patch(detail: RemoteAutomationDetail) = MethodsTypes.AutomationsUpdateParamsPatch(
@@ -180,6 +188,8 @@ object AutomationInput {
     runner = detail.runner,
     claudeAccountId = detail.claudeAccountId,
     guardrails = detail.guardrails,
+    precheckCommand = detail.precheckCommand?.trim(),
+    precheckTimeoutSeconds = detail.precheckTimeoutSeconds,
   )
 
   /**

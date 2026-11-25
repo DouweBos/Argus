@@ -150,6 +150,13 @@ export const Automation = z.object({
   next_run_at: z.number().nullable(),
   /** Also post each finished run's report to this Slack channel. */
   report_slack_channel: SlackChannelRef.nullish(),
+  /**
+   * Shell command run in the first project in scope before the agent starts;
+   * a non-zero exit or a timeout skips the run. Empty means no precheck.
+   */
+  precheck_command: z.string(),
+  /** How long the precheck may take before the run is skipped. */
+  precheck_timeout_seconds: z.number(),
 });
 export type Automation = z.infer<typeof Automation>;
 
@@ -246,6 +253,8 @@ export const CreateAutomationInput = z.object({
   template_id: z.string().nullish(),
   report_slack_channel: SlackChannelRef.nullish(),
   teammate_id: z.string().nullish(),
+  precheck_command: z.string().optional(),
+  precheck_timeout_seconds: z.number().optional(),
 });
 export type CreateAutomationInput = z.infer<typeof CreateAutomationInput>;
 

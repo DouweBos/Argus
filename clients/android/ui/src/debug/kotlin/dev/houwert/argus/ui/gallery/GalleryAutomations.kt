@@ -43,6 +43,7 @@ import dev.houwert.argus.ui.automations.ReportBlocksView
 import dev.houwert.argus.ui.automations.ReportMarkdown
 import dev.houwert.argus.ui.automations.RunFeedbackFields
 import dev.houwert.argus.ui.automations.RunFigures
+import dev.houwert.argus.ui.automations.RunStartFields
 import dev.houwert.argus.ui.automations.RunRow
 import dev.houwert.argus.ui.automations.rememberFeedbackState
 import dev.houwert.argus.ui.components.Card
@@ -135,6 +136,10 @@ internal val galleryRuns = listOf(
   run("r3", "Nightly dependency audit", RemoteAutomationRunStatus.failed, 9 * HOUR, error = "pnpm audit exited with code 1: registry unreachable"),
   run("r4", "Triage new Linear issues", RemoteAutomationRunStatus.skipped, 30 * MINUTE, took = 1000.0, cost = 0.0, preview = "Nothing new since the last run."),
   run("r5", "Rename the settings keys", RemoteAutomationRunStatus.cancelled, 26 * HOUR, quick = true),
+  run(
+    "r6", "Stale pull requests", RemoteAutomationRunStatus.skipped, 2 * HOUR, took = 2000.0, cost = null,
+    error = "Skipped — the precheck exited with code 1.\nNo pull requests idle for a week.",
+  ),
 )
 
 private val calibration = AutomationCalibration(
@@ -222,6 +227,15 @@ internal fun AutomationsGalleryPage() {
   Story("Automation fields") {
     var draft by remember { mutableStateOf(newAutomationDetail(name = "Stale pull requests", playbook = "# Stale pull requests\n\nList open PRs with no review for 7 days.", claudeAccountId = "h")) }
     AutomationFields(draft, { draft = it }, fieldsContext, revise = { "$it\n\n(rewritten)" })
+  }
+  Story("Precheck fields") {
+    var draft by remember {
+      mutableStateOf(
+        newAutomationDetail(name = "Stale pull requests", playbook = "# Stale pull requests", precheckCommand = "./scripts/has-stale-prs.sh")
+          .copy(precheckTimeoutSeconds = 30.0),
+      )
+    }
+    RunStartFields(draft) { draft = it }
   }
   Story("Signal trigger fields") {
     var draft by remember { mutableStateOf(signalDraft) }

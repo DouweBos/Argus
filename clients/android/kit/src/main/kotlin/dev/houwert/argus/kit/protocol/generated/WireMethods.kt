@@ -914,6 +914,8 @@ object MethodsTypes {
     @SerialName("runner") val runner: String? = null,
     @SerialName("claude_account_id") val claudeAccountId: String? = null,
     @SerialName("guardrails") val guardrails: RemoteAutomationGuardrails? = null,
+    @SerialName("precheck_command") val precheckCommand: String? = null,
+    @SerialName("precheck_timeout_seconds") val precheckTimeoutSeconds: Double? = null,
   )
 
   @Serializable

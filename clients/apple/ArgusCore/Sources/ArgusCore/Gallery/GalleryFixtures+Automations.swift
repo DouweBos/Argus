@@ -115,6 +115,9 @@ extension GalleryFixtures {
     Run(id: "r-linear-1", automation: "linear", status: "cancelled", ago: 2880, minutes: 2, cost: 0.05),
     Run(id: "r-reviews-1", automation: "reviews", status: "skipped", ago: 3000, minutes: 0, cost: nil),
     Run(id: "r-triage-3", automation: triageId, status: "succeeded", ago: 2900, cost: 0.51),
+    Run(
+      id: "r-triage-4", automation: triageId, status: "skipped", ago: 4320, minutes: 0, cost: nil,
+      error: "Skipped — the precheck exited with code 1.\nNo issues opened since the last run."),
   ]
 
   private static func name(of automationId: String) -> String {
@@ -125,9 +128,13 @@ extension GalleryFixtures {
     var json: [String: Any] = [
       "id": r.id, "automation_id": r.automation, "automation_name": name(of: r.automation),
       "is_quick": r.quick, "status": r.status, "trigger_reason": r.reason, "started_at": ago(r.ago),
-      "unread_report": r.unread, "report_read": r.read, "host_session_id": "s-\(r.id)",
-      "host_agent_id": "a-\(r.id)",
+      "unread_report": r.unread, "report_read": r.read,
     ]
+    // A skipped run never got as far as a session.
+    if r.status != "skipped" {
+      json["host_session_id"] = "s-\(r.id)"
+      json["host_agent_id"] = "a-\(r.id)"
+    }
     if r.status != "running" { json["finished_at"] = ago(r.ago - r.minutes) }
     if let cost = r.cost { json["cost_usd"] = cost }
     if let error = r.error { json["error"] = error }
@@ -281,6 +288,8 @@ extension GalleryFixtures {
       "catch_up": true, "repo_roots": [root("Argus"), root("conductor")], "source_ids": ["github"],
       "playbook": triagePlaybook, "extra_instructions": "", "autonomy": "propose", "model": "default",
       "runner": "claude-code", "guardrails": guardrailsJSON,
+      "precheck_command": "test -n \"$(gh issue list --search 'created:>=yesterday' -q '.[]' --json number)\"",
+      "precheck_timeout_seconds": 30,
     ]
   }
 
@@ -293,6 +302,7 @@ extension GalleryFixtures {
       "repo_roots": [root("Argus"), root("conductor")], "source_ids": ["github"],
       "playbook": "# Fix my red CI\n\nRead the failing job's log, find the cause and push a fix to the same branch.\n",
       "extra_instructions": "", "autonomy": "pr", "runner": "claude-code", "guardrails": guardrailsJSON,
+      "precheck_command": "", "precheck_timeout_seconds": 60,
     ]
   }
 
@@ -308,6 +318,7 @@ extension GalleryFixtures {
       "repo_roots": [root("web-tv-client")], "source_ids": [],
       "playbook": "# Smoke-test every deploy\n\nOpen staging, sign in and walk the five main screens.\n",
       "extra_instructions": "", "autonomy": "propose", "runner": "claude-code", "guardrails": guardrailsJSON,
+      "precheck_command": "", "precheck_timeout_seconds": 60,
     ]
   }
 
@@ -374,7 +385,14 @@ extension GalleryFixtures {
     ]
   }
 
-  private static var runDetail: [String: Any] {
+  private static func runDetail(_ runId: String) -> [String: Any] {
+    guard let record = runRecords.first(where: { $0.id == runId }), record.status != "succeeded" else {
+      return depsRunDetail
+    }
+    return ["run": gatewayRun(record), "report_blocks": NSNull(), "feedback": []]
+  }
+
+  private static var depsRunDetail: [String: Any] {
     let run = gatewayRun(runRecords[1])
     return [
       "run": run, "report_blocks": reportBlocks,
@@ -424,8 +442,10 @@ extension GalleryFixtures {
 
   /// Everything the automation, run, quick-run and inbox screens read.
   /// `empty` answers every list with nothing.
-  /// `detailId` picks which automation `automations.get` answers with.
-  public static func automations(empty: Bool = false, detailId: String = triageId) -> [String: String] {
+  /// `detailId` picks which automation `automations.get` answers with, `runId` which run `automations.run` does.
+  public static func automations(
+    empty: Bool = false, detailId: String = triageId, runId: String = "r-deps-1"
+  ) -> [String: String] {
     let runs = empty ? [] : runRecords
     let proposals = empty ? [] : proposalRecords
     let automations = empty ? [] : automationRecords
@@ -437,7 +457,7 @@ extension GalleryFixtures {
       RemoteMethod.automationsScratchRuns.rawValue: GalleryJSON.encode([
         "runs": runs.filter(\.quick).map(gatewayRun)
       ]),
-      RemoteMethod.automationsRun.rawValue: GalleryJSON.encode(runDetail),
+      RemoteMethod.automationsRun.rawValue: GalleryJSON.encode(runDetail(runId)),
       RemoteMethod.automationsGet.rawValue: GalleryJSON.encode(["automation": detail(detailId)]),
       RemoteMethod.automationsSources.rawValue: GalleryJSON.encode(["sources": sources]),
       RemoteMethod.automationsMemories.rawValue: GalleryJSON.encode(["memories": empty ? [] : memories]),

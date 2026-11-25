@@ -118,7 +118,7 @@ struct RunView: View {
       ])
 
       if let error = run.error, !error.isEmpty {
-        Banner(text: error, tone: .danger)
+        Banner(text: error, tone: run.isSkipped ? .warning : .danger)
       }
 
       FlowRow(spacing: 8) {

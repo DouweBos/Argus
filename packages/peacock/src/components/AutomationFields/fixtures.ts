@@ -42,6 +42,8 @@ export const FIXTURE_DETAIL: RemoteAutomationDetail = {
     require_clean_ci: true,
     retry_other_accounts: true,
   },
+  precheck_command: "",
+  precheck_timeout_seconds: 60,
 };
 
 export const FIXTURE_PROJECTS = [

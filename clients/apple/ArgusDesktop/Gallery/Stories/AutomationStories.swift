@@ -35,6 +35,11 @@
           "automations/run", size: screen, chrome: true, fixtures: fixtures, setup: attachModel
         ) { AutomationScreen(automationId: "deps", runId: "r-deps-1") },
         GalleryStory(
+          "automations/run/skipped", size: CGSize(width: 1000, height: 700), chrome: true,
+          fixtures: GalleryFixtures.automations(runId: "r-triage-4"),
+          setup: attachModel
+        ) { AutomationScreen(automationId: GalleryFixtures.triageId, runId: "r-triage-4") },
+        GalleryStory(
           "automations/quick-run", size: CGSize(width: 1000, height: 1100), chrome: true, fixtures: fixtures,
           setup: attachModel
         ) { QuickRunScreen(runId: nil) },
@@ -48,6 +53,16 @@
         GalleryStory("automations/project-scope", size: CGSize(width: 640, height: 640), fixtures: fixtures) {
           ScopeForm(picked: ["/Users/dev/Projects/Argus"])
         },
+        GalleryStory("automations/editor/precheck", size: CGSize(width: 720, height: 260), fixtures: fixtures) {
+          Form {
+            RunStartSection(
+              draft: .constant(
+                RemoteAutomationDetail(
+                  precheckCommand: "git fetch -q && [ \"$(git rev-parse HEAD)\" != \"$(git rev-parse @{u})\" ]",
+                  precheckTimeoutSeconds: 30)))
+          }
+          .formStyle(.grouped)
+        },
         GalleryStory("automations/run-history-row", size: CGSize(width: 720, height: 300), fixtures: fixtures) {
           Form {
             Section("Run history") {
@@ -55,6 +70,12 @@
               RunHistoryRow(run: decoded(run("b", status: "succeeded", ago: 600, cost: 0.42)), title: "Weekly digest") {}
               RunHistoryRow(
                 run: decoded(run("c", status: "failed", ago: 3600, cost: 0.08, error: "Usage limit reached")),
+                title: "Triage issues") {}
+              RunHistoryRow(
+                run: decoded(
+                  run(
+                    "d", status: "skipped", ago: 7200, cost: nil,
+                    error: "Skipped — the precheck exited with code 1.\nNo issues opened since the last run.")),
                 title: "Triage issues") {}
             }
           }

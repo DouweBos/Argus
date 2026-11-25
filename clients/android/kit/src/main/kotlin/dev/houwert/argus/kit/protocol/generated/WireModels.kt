@@ -810,6 +810,8 @@ data class Automation(
   @SerialName("last_run_at") @EncodeDefault val lastRunAt: Double? = null,
   @SerialName("next_run_at") @EncodeDefault val nextRunAt: Double? = null,
   @SerialName("report_slack_channel") val reportSlackChannel: SlackChannelRef? = null,
+  @SerialName("precheck_command") val precheckCommand: String,
+  @SerialName("precheck_timeout_seconds") val precheckTimeoutSeconds: Double,
 )
 
 @Serializable
@@ -900,6 +902,8 @@ data class AutomationInput(
   @SerialName("runner") val runner: String? = null,
   @SerialName("claude_account_id") val claudeAccountId: String? = null,
   @SerialName("guardrails") val guardrails: RemoteAutomationGuardrails,
+  @SerialName("precheck_command") val precheckCommand: String? = null,
+  @SerialName("precheck_timeout_seconds") val precheckTimeoutSeconds: Double? = null,
 )
 
 @Serializable
@@ -2254,6 +2258,8 @@ data class CreateAutomationInput(
   @SerialName("template_id") val templateId: String? = null,
   @SerialName("report_slack_channel") val reportSlackChannel: SlackChannelRef? = null,
   @SerialName("teammate_id") val teammateId: String? = null,
+  @SerialName("precheck_command") val precheckCommand: String? = null,
+  @SerialName("precheck_timeout_seconds") val precheckTimeoutSeconds: Double? = null,
 )
 
 @Serializable
@@ -5347,6 +5353,8 @@ data class RemoteAutomationDetail(
   @SerialName("runner") @EncodeDefault val runner: String? = null,
   @SerialName("claude_account_id") val claudeAccountId: String? = null,
   @SerialName("guardrails") val guardrails: RemoteAutomationGuardrails,
+  @SerialName("precheck_command") val precheckCommand: String? = null,
+  @SerialName("precheck_timeout_seconds") val precheckTimeoutSeconds: Double? = null,
 )
 
 @Serializable
@@ -7858,6 +7866,8 @@ data class UpdateAutomationInput(
   @SerialName("last_run_at") val lastRunAt: Double? = null,
   @SerialName("next_run_at") val nextRunAt: Double? = null,
   @SerialName("report_slack_channel") val reportSlackChannel: SlackChannelRef? = null,
+  @SerialName("precheck_command") val precheckCommand: String? = null,
+  @SerialName("precheck_timeout_seconds") val precheckTimeoutSeconds: Double? = null,
 )
 
 @Serializable

@@ -85,6 +85,8 @@ fun AutomationFields(
     if (showsSchedule) draft.reportSlackChannel?.let { ReportChannel(it) }
     Scope(draft, onChange, context)
     Behaviour(draft, onChange, context, showsSchedule)
+    // Null means the computer is too old to run one; a quick run never has one.
+    if (showsSchedule && draft.precheckCommand != null) RunStartFields(draft, onChange)
     Playbook(draft, onChange, context.hasControl, reviseError, revise)
     if (showsSchedule) {
       Field("Extra instructions", caption = "Added after the playbook on every run; they win where the two disagree.") {

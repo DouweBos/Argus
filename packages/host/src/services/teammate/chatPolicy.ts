@@ -45,6 +45,8 @@ export function teammateChatAutomation(teammate: Teammate): Automation {
     teammate_id: teammate.id,
     report_slack_channel: null,
     seeded_playbook_hash: null,
+    precheck_command: "",
+    precheck_timeout_seconds: 60,
     created_at: teammate.created_at,
     updated_at: teammate.updated_at,
     last_run_at: null,

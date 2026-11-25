@@ -51,6 +51,7 @@ import {
   requireAutomation,
   updateAutomation,
 } from "../automation/manager";
+import { normalizePrecheckTimeout } from "../automation/precheck";
 import { reportPreview } from "../automation/reportPreview";
 import {
   saveScratchRunAsAutomation,
@@ -140,6 +141,8 @@ function toRemoteAutomationDetail(
     claude_account_id: automation.claude_account_id ?? null,
     report_slack_channel: automation.report_slack_channel ?? null,
     guardrails: automation.guardrails,
+    precheck_command: automation.precheck_command,
+    precheck_timeout_seconds: automation.precheck_timeout_seconds,
   };
 }
 
@@ -349,6 +352,8 @@ export function toCreateAutomationInput(
     runner: input.runner ?? null,
     claude_account_id: input.claude_account_id ?? null,
     report_slack_channel: input.report_slack_channel ?? null,
+    precheck_command: input.precheck_command,
+    precheck_timeout_seconds: input.precheck_timeout_seconds,
   };
 }
 
@@ -385,6 +390,12 @@ export function updateRemoteAutomation(
     }),
     ...(patch.report_slack_channel !== undefined && {
       report_slack_channel: patch.report_slack_channel ?? null,
+    }),
+    ...(patch.precheck_command !== undefined && {
+      precheck_command: patch.precheck_command,
+    }),
+    ...(patch.precheck_timeout_seconds !== undefined && {
+      precheck_timeout_seconds: patch.precheck_timeout_seconds,
     }),
   };
 
@@ -591,6 +602,10 @@ export async function remoteAutomationDraft(
       runner: input.runner ?? null,
       claude_account_id: input.claude_account_id ?? null,
       guardrails: normalizeGuardrails(input.guardrails),
+      precheck_command: input.precheck_command ?? "",
+      precheck_timeout_seconds: normalizePrecheckTimeout(
+        input.precheck_timeout_seconds,
+      ),
     },
     notes,
   };

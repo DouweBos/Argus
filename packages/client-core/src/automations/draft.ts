@@ -60,8 +60,13 @@ export function newAutomationDraft(
     runner: null,
     claude_account_id: null,
     guardrails: { ...DEFAULT_GUARDRAILS },
+    precheck_command: "",
+    precheck_timeout_seconds: DEFAULT_PRECHECK_TIMEOUT_SECONDS,
   };
 }
+
+/** What the computer gives a precheck when nobody set a timeout. */
+export const DEFAULT_PRECHECK_TIMEOUT_SECONDS = 60;
 
 /** What `automations.create` / `update` take, from what the editor holds. */
 export function draftToInput(draft: RemoteAutomationDetail): AutomationInput {
@@ -98,6 +103,13 @@ export function draftToInput(draft: RemoteAutomationDetail): AutomationInput {
     runner: draft.runner?.trim() || null,
     claude_account_id: draft.claude_account_id ?? null,
     guardrails: draft.guardrails,
+    // Only sent when the computer reported them, so an older one never sees them.
+    ...(draft.precheck_command !== undefined && {
+      precheck_command: draft.precheck_command.trim(),
+    }),
+    ...(draft.precheck_timeout_seconds !== undefined && {
+      precheck_timeout_seconds: draft.precheck_timeout_seconds,
+    }),
   };
 }
 

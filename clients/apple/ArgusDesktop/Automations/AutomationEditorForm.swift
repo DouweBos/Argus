@@ -33,6 +33,8 @@ struct AutomationEditorForm: View {
     }
     .task { if host.claudeAccounts == nil { await host.refreshClaudeAccounts() } }
     AutonomySection(autonomy: $draft.autonomy, guardrails: $draft.guardrails)
+    // Hidden on a computer too old to run a precheck.
+    if draft.precheckCommand != nil { RunStartSection(draft: $draft) }
     playbook
     if draft.extraInstructions != nil { extraInstructions }
   }
@@ -164,6 +166,36 @@ struct AutomationEditorForm: View {
 
   private func optional(_ path: WritableKeyPath<RemoteAutomationDetail, String?>) -> Binding<String> {
     Binding(get: { draft[keyPath: path] ?? "" }, set: { draft[keyPath: path] = $0 })
+  }
+}
+
+/// What happens before a run's agent starts: the precheck that must exit 0.
+struct RunStartSection: View {
+  @Binding var draft: RemoteAutomationDetail
+
+  var body: some View {
+    Section {
+      // A command outgrows a label-and-value row, so it gets the full width.
+      TextField(
+        "Precheck command",
+        text: Binding(get: { draft.precheckCommand ?? "" }, set: { draft.precheckCommand = $0 }),
+        prompt: Text("Precheck command, e.g. ./scripts/has-new-work.sh"), axis: .vertical
+      )
+      .labelsHidden()
+      .font(.system(.body, design: .monospaced))
+      TextField(
+        "Timeout (seconds)",
+        value: Binding(
+          get: { draft.precheckTimeoutSeconds ?? AutomationText.defaultPrecheckTimeout },
+          set: { draft.precheckTimeoutSeconds = max(1, $0.rounded()) }),
+        format: .number
+      )
+      .monospacedDigit()
+    } header: {
+      Text("Before each run")
+    } footer: {
+      Text(AutomationText.precheckCaption)
+    }
   }
 }
 

@@ -33,6 +33,10 @@ import {
 import { deleteAllMemories } from "./memory/store";
 import { automationRunDir, automationRunsDir } from "./paths";
 import {
+  DEFAULT_PRECHECK_TIMEOUT_SECONDS,
+  normalizePrecheckTimeout,
+} from "./precheck";
+import {
   deleteProposalsForAutomation,
   deleteProposalsForRun,
 } from "./proposals/manager";
@@ -70,6 +74,10 @@ function automationCache(): Automation[] {
       automation.extra_instructions ??= "";
       automation.claude_account_id ??= null;
       automation.teammate_id ??= null;
+      automation.precheck_command ??= "";
+      automation.precheck_timeout_seconds = normalizePrecheckTimeout(
+        automation.precheck_timeout_seconds,
+      );
     }
     seedBuiltIns(automations, migrated);
   }
@@ -153,6 +161,10 @@ function buildAutomation(input: CreateAutomationInput): Automation {
     template_id: input.template_id ?? null,
     teammate_id: input.teammate_id ?? null,
     report_slack_channel: input.report_slack_channel ?? null,
+    precheck_command: input.precheck_command?.trim() ?? "",
+    precheck_timeout_seconds: normalizePrecheckTimeout(
+      input.precheck_timeout_seconds,
+    ),
     // Only a built-in has a fingerprint to compare a future release against.
     seeded_playbook_hash: input.template_id
       ? playbookHash(input.playbook)
@@ -351,6 +363,8 @@ export function scratchAutomationForRun(run: AutomationRun): Automation | null {
     template_id: null,
     teammate_id: null,
     seeded_playbook_hash: null,
+    precheck_command: "",
+    precheck_timeout_seconds: DEFAULT_PRECHECK_TIMEOUT_SECONDS,
     created_at: run.started_at,
     updated_at: run.started_at,
     last_run_at: run.started_at,
@@ -430,6 +444,10 @@ export function updateAutomation(
     };
   Object.assign(automation, fields, { trigger, updated_at: Date.now() });
   automation.guardrails = normalizeGuardrails(automation.guardrails);
+  automation.precheck_command = automation.precheck_command.trim();
+  automation.precheck_timeout_seconds = normalizePrecheckTimeout(
+    automation.precheck_timeout_seconds,
+  );
   if (patch.next_run_at === undefined) {
     // The clock changed, or the switch did — either way the old fire is stale.
     automation.next_run_at = nextRunFor(automation, Date.now());

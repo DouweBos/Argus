@@ -1,5 +1,6 @@
 package dev.houwert.argus.ui.automations
 
+import dev.houwert.argus.core.automations.isSkipped
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -132,7 +133,7 @@ fun RunRow(
       val preview = run.reportPreview
       when {
         !error.isNullOrEmpty() ->
-          Text(error, color = theme.error, style = ArgusTheme.typography.footnote, maxLines = 2, overflow = TextOverflow.Ellipsis)
+          Text(error, color = if (run.isSkipped) theme.textSecondary else theme.error, style = ArgusTheme.typography.footnote, maxLines = 2, overflow = TextOverflow.Ellipsis)
         !preview.isNullOrEmpty() ->
           Text(preview, color = theme.textSecondary, style = ArgusTheme.typography.footnote, maxLines = 2, overflow = TextOverflow.Ellipsis)
       }

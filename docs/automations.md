@@ -133,6 +133,33 @@ web client show it but can't change the channel.
 
 **No automation at all** — see [Quick runs](#quick-runs-one-off-without-saving).
 
+### Only when there is work — the precheck
+
+**Before each run** in the editor takes a shell command that decides whether a
+run is worth starting at all. It runs right after the trigger fires, before any
+agent starts or any signal is fetched, so a check that comes back empty costs
+nothing:
+
+- **Exit 0** — the run goes ahead as usual.
+- **Any other exit** — the run is recorded as **skipped**, with the exit code
+  and the last few lines of the command's output as the reason.
+- **No answer within the timeout** (60 seconds unless you set another, up to
+  30 minutes) — the command and whatever it started are stopped, and the run is
+  skipped the same way.
+
+It runs with `bash -c` in the first project in scope that is reachable, at the
+repo root — a run has no worktree of its own, so there is nothing more specific
+to run in. An automation with no projects in scope runs it in the run's own
+directory. Use it for "only if `main` moved since yesterday", "only if there are
+open issues labelled `triage`", or anything else a script can answer:
+
+```sh
+git fetch -q && [ "$(git rev-parse HEAD)" != "$(git rev-parse @{u})" ]
+```
+
+Skipped runs show in the run history on every client, with the reason, and
+don't count toward the daily budget. Quick runs have no precheck.
+
 ---
 
 ## Which runner and model it uses

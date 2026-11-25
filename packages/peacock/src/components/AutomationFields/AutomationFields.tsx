@@ -21,6 +21,7 @@ import { Toggle } from "../Toggle/Toggle";
 import { ToggleList, type ToggleListOption } from "../ToggleList/ToggleList";
 import styles from "./AutomationFields.module.css";
 import { GuardrailFields } from "./GuardrailFields";
+import { RunStartFields } from "./RunStartFields";
 import { TriggerFields } from "./TriggerFields";
 
 export interface AutomationFieldsProps {
@@ -258,6 +259,8 @@ export function AutomationFields({
           onChange={(guardrails) => patch({ guardrails })}
         />
       </section>
+
+      <RunStartFields disabled={disabled} draft={draft} onChange={patch} />
 
       <section className={styles.group}>
         <div className={styles.headingRow}>

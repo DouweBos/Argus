@@ -45,6 +45,19 @@ export const Scheduled: Story = {
   render: () => <Live initial={FIXTURE_DETAIL} />,
 };
 
+/** Only runs when its precheck exits 0. */
+export const WithPrecheck: Story = {
+  render: () => (
+    <Live
+      initial={{
+        ...FIXTURE_DETAIL,
+        precheck_command: "git fetch -q && ! git diff --quiet HEAD @{u}",
+        precheck_timeout_seconds: 30,
+      }}
+    />
+  ),
+};
+
 export const Manual: Story = {
   render: () => (
     <Live initial={{ ...FIXTURE_DETAIL, trigger_kind: "manual", cron: null }} />

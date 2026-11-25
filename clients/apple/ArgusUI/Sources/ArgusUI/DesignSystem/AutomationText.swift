@@ -28,6 +28,22 @@ public enum AutomationText {
     }
   }
 
+  /// What a precheck does, as both editors explain it.
+  public static let precheckCaption =
+    "Runs in the first project in scope. Exit 0 starts the run; any other exit, or no answer in time, "
+    + "records it as skipped with the output."
+
+  /// The timeout the computer applies when nobody set one.
+  public static let defaultPrecheckTimeout: Double = 60
+
+  /// A typed timeout, or the default while what was typed isn't a positive number.
+  public static func precheckTimeout(parsing text: String) -> Double {
+    guard let value = Double(text.trimmingCharacters(in: .whitespaces)), value >= 1 else {
+      return defaultPrecheckTimeout
+    }
+    return value.rounded()
+  }
+
   public static func plural(_ count: Int, _ noun: String) -> String {
     "\(count) \(noun)\(count == 1 ? "" : "s")"
   }

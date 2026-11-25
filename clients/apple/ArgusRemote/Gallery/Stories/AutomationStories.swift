@@ -22,9 +22,22 @@
         GalleryStory(
           "automations/editor/webhook", fixtures: GalleryFixtures.automations(detailId: GalleryFixtures.deployHookId)
         ) { AutomationEditorView(automationId: GalleryFixtures.deployHookId) },
+        GalleryStory("automations/editor/precheck", fixtures: fixtures) {
+          Screen {
+            RunStartFields(
+              draft: .constant(
+                RemoteAutomationDetail(
+                  precheckCommand: "git fetch -q && [ \"$(git rev-parse HEAD)\" != \"$(git rev-parse @{u})\" ]",
+                  precheckTimeoutSeconds: 30)))
+          }
+        },
         GalleryStory("automations/run", fixtures: fixtures, setup: loadSessions) {
           RunView(runId: "r-deps-1", label: "Weekly dependency digest")
         },
+        GalleryStory(
+          "automations/run/skipped", fixtures: GalleryFixtures.automations(runId: "r-triage-4"),
+          setup: loadSessions
+        ) { RunView(runId: "r-triage-4", label: "Triage new GitHub issues") },
         GalleryStory("automations/quick-run", fixtures: fixtures) { QuickRunView() },
         GalleryStory("automations/quick-run/empty", fixtures: empty) { QuickRunView() },
         GalleryStory("automations/describe", fixtures: fixtures) { DescribeAutomationView() },

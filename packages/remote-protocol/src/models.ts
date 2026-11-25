@@ -1142,6 +1142,9 @@ export const RemoteAutomationDetail = z.object({
   /** Optional so a phone still reads a host from before accounts could be pinned. */
   claude_account_id: z.string().nullable().optional(),
   guardrails: RemoteAutomationGuardrails,
+  /** Shell command that must exit 0 before a run starts; empty for none. Missing from older hosts. */
+  precheck_command: z.string().optional(),
+  precheck_timeout_seconds: z.number().optional(),
 });
 export type RemoteAutomationDetail = z.infer<typeof RemoteAutomationDetail>;
 

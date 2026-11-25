@@ -50,6 +50,16 @@ export const Skipped: Story = {
   },
 };
 
+export const SkippedByPrecheck: Story = {
+  args: {
+    status: <Badge tone="warning">skipped</Badge>,
+    error:
+      "Skipped — the precheck exited with code 1.\nNo new commits since the last run.",
+    duration: "1s",
+    cost: "—",
+  },
+};
+
 export const Selected: Story = { args: { selected: true } };
 
 /** Across automations — the home screen's list, where the row needs naming. */

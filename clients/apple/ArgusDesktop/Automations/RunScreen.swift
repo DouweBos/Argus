@@ -87,7 +87,7 @@ struct RunScreen: View {
         }
         stats(run)
         if let error = run.error, !error.isEmpty {
-          Banner(text: error, tone: .danger).textSelection(.enabled)
+          Banner(text: error, tone: run.isSkipped ? .warning : .danger).textSelection(.enabled)
         }
         if let error = store.error { Banner(text: error, tone: .danger) }
         Card {

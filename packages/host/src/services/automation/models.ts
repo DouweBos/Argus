@@ -173,6 +173,13 @@ export interface Automation {
   next_run_at: number | null;
   /** Also post each finished run's report to this Slack channel. */
   report_slack_channel?: SlackChannelRef | null;
+  /**
+   * Shell command run in the first project in scope before the agent starts;
+   * a non-zero exit or a timeout skips the run. Empty means no precheck.
+   */
+  precheck_command: string;
+  /** How long the precheck may take before the run is skipped. */
+  precheck_timeout_seconds: number;
 }
 
 /**
@@ -277,6 +284,8 @@ export interface CreateAutomationInput {
   report_slack_channel?: SlackChannelRef | null;
   /** Set by the teammate service only; ownership moves memory with it. */
   teammate_id?: string | null;
+  precheck_command?: string;
+  precheck_timeout_seconds?: number;
 }
 
 /**

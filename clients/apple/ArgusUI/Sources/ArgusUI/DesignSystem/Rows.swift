@@ -179,7 +179,8 @@ public struct RunRow: View {
         Text("\(Labels.timeAgo(run.startedAt)) · \(run.triggerReason)")
           .font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
         if let error = run.error, !error.isEmpty {
-          Text(error).font(.scaled(.footnote)).foregroundStyle(theme.error).lineLimit(2)
+          Text(error).font(.scaled(.footnote))
+            .foregroundStyle(run.isSkipped ? theme.textSecondary : theme.error).lineLimit(2)
         } else if let preview = run.reportPreview, !preview.isEmpty {
           Text(preview).font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(2)
         }

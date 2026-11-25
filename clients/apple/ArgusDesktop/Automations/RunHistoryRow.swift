@@ -21,7 +21,8 @@ struct RunHistoryRow: View {
           Text(AutomationText.timestamp(run.startedAt))
           Text(title).font(.scaled(.caption)).foregroundStyle(.secondary).lineLimit(1)
           if let error = run.error, !error.isEmpty {
-            Text(error).font(.scaled(.caption)).foregroundStyle(theme.error).lineLimit(2)
+            Text(error).font(.scaled(.caption))
+              .foregroundStyle(run.isSkipped ? theme.textSecondary : theme.error).lineLimit(2)
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

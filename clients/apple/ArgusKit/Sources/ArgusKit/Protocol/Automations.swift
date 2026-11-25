@@ -395,6 +395,10 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
   /// is all a computer from before pins ever sends.
   public var claudeAccountId: String?
   public var guardrails: RemoteAutomationGuardrails
+  /// Shell command that must exit 0 before a run starts; empty for none. Nil
+  /// from a computer too old to run one.
+  public var precheckCommand: String?
+  public var precheckTimeoutSeconds: Double?
 
   public init(
     id: String = "", name: String = "", description: String = "",
@@ -408,8 +412,11 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     runner: String? = nil, claudeAccountId: String? = nil,
     guardrails: RemoteAutomationGuardrails = .init(),
     slackChannel: RemoteSlackChannel? = nil, slackMatch: ArgusProtocol.SlackTriggerMatch? = nil,
-    slackText: String? = nil, reportSlackChannel: RemoteSlackChannel? = nil
+    slackText: String? = nil, reportSlackChannel: RemoteSlackChannel? = nil,
+    precheckCommand: String? = nil, precheckTimeoutSeconds: Double? = nil
   ) {
+    self.precheckCommand = precheckCommand
+    self.precheckTimeoutSeconds = precheckTimeoutSeconds
     self.slackChannel = slackChannel
     self.slackMatch = slackMatch
     self.slackText = slackText
@@ -450,6 +457,8 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     case slackMatch = "slack_match"
     case slackText = "slack_text"
     case reportSlackChannel = "report_slack_channel"
+    case precheckCommand = "precheck_command"
+    case precheckTimeoutSeconds = "precheck_timeout_seconds"
   }
 }
 
@@ -482,6 +491,9 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
   public var runner: String?
   public var claudeAccountId: String?
   public var guardrails: RemoteAutomationGuardrails
+  /// Sent only when the computer reported them, so an older one never sees them.
+  public var precheckCommand: String?
+  public var precheckTimeoutSeconds: Double?
   /// False leaves the saved trigger alone: rebuilding a Slack trigger from the
   /// flat wire fields would reset the settings only the Mac's host keeps.
   public var sendsTrigger = true
@@ -510,6 +522,8 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     runner = detail.runner
     claudeAccountId = detail.claudeAccountId
     guardrails = detail.guardrails
+    precheckCommand = detail.precheckCommand?.trimmingCharacters(in: .whitespacesAndNewlines)
+    precheckTimeoutSeconds = detail.precheckTimeoutSeconds
   }
 
   enum CodingKeys: String, CodingKey {
@@ -526,6 +540,8 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     case slackMatch = "slack_match"
     case slackText = "slack_text"
     case reportSlackChannel = "report_slack_channel"
+    case precheckCommand = "precheck_command"
+    case precheckTimeoutSeconds = "precheck_timeout_seconds"
   }
 
   /// The trigger fields match what `detail` already has saved.
@@ -570,6 +586,8 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     try c.encode(runner, forKey: .runner)
     try c.encode(claudeAccountId, forKey: .claudeAccountId)
     try c.encode(guardrails, forKey: .guardrails)
+    try c.encodeIfPresent(precheckCommand, forKey: .precheckCommand)
+    try c.encodeIfPresent(precheckTimeoutSeconds, forKey: .precheckTimeoutSeconds)
   }
 
   private struct WebhookInput: Encodable {
@@ -618,6 +636,9 @@ public struct RemoteAutomationRun: Codable, Hashable, Sendable, Identifiable {
   public var isActive: Bool {
     status == .queued || status == .running
   }
+
+  /// A skipped run's `error` is why it didn't fire, not something that broke.
+  public var isSkipped: Bool { status == .skipped }
 
   enum CodingKeys: String, CodingKey {
     case id, status, error

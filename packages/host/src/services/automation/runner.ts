@@ -17,6 +17,7 @@ import type {
 } from "./models";
 import type { GatheredSignals } from "../signals/registry";
 import type { WorkItem } from "../signals/types";
+import fs from "node:fs";
 import { emitHostEvent } from "@argus/host/bus";
 import { error, info } from "@argus/host/logger";
 import { appState } from "../../state";
@@ -53,6 +54,8 @@ import {
   requireAutomation,
   updateRun,
 } from "./manager";
+import { automationRunDir } from "./paths";
+import { runPrecheck } from "./precheck";
 import { buildPrompt } from "./runPrompt";
 import { scopeAvailability, scopeAvailabilityBlock } from "./scopeAvailability";
 import { dailyBudgetBlock, runBudgetBlock, runSpendUsd } from "./spend";
@@ -183,6 +186,10 @@ async function execute(
     );
   }
 
+  if (!(await precheckPasses(automation, runId, scope.available))) {
+    return;
+  }
+
   for (const repoRoot of scope.available) {
     try {
       ensureRepoRegistered(repoRoot);
@@ -283,6 +290,40 @@ async function execute(
       `automation run ${runId}: account ${accountId} hit its plan limit, retrying on ${accounts[attempt + 1]}`,
     );
   }
+}
+
+/**
+ * Run the automation's precheck, if it has one, and skip the run when it
+ * fails. It runs in the first reachable project in scope — runs have no
+ * worktree of their own — or the run's own directory without one.
+ */
+async function precheckPasses(
+  automation: Automation,
+  runId: string,
+  repoRoots: string[],
+): Promise<boolean> {
+  const command = automation.precheck_command.trim();
+  if (!command) {
+    return true;
+  }
+  let cwd = repoRoots[0];
+  if (!cwd) {
+    cwd = automationRunDir(automation.id, runId);
+    fs.mkdirSync(cwd, { recursive: true });
+  }
+  const result = await runPrecheck(
+    command,
+    cwd,
+    automation.precheck_timeout_seconds,
+  );
+  telemetryCapture("automation_precheck_ran", { outcome: result.outcome });
+  if (result.outcome === "passed") {
+    return true;
+  }
+  info(`automation run ${runId}: precheck ${result.outcome}, skipping`);
+  finishRun(runId, "skipped", { error: result.reason });
+
+  return false;
 }
 
 export function finishRun(

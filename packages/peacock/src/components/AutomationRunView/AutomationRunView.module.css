@@ -50,6 +50,12 @@
   white-space: pre-wrap;
 }
 
+.skipped {
+  border-color: var(--warning-overlay-xl);
+  background: var(--warning-overlay-sm);
+  color: var(--text-primary);
+}
+
 .pending {
   margin: 0;
   padding: 12px 2px;
