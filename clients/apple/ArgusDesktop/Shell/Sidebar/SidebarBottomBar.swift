@@ -6,23 +6,23 @@ import SwiftUI
 struct SidebarDestination {
   let title: String
   let symbol: String
-  let shortcut: String?
+  let shortcut: ShortcutCommand?
   let route: DesktopRoute
   let isOn: (DesktopRoute) -> Bool
 
-  var help: String { shortcut.map { "\(title) (\($0))" } ?? title }
+  @MainActor var help: String { shortcut?.help(title) ?? title }
 
   /// The everyday screens, listed under the sidebar's search.
   @MainActor static let primary: [SidebarDestination] = [
-    .init(title: "Home", symbol: Icon.home, shortcut: "⇧⌘H", route: .home) { $0 == .home },
-    .init(title: "Inbox", symbol: Icon.inbox, shortcut: "⇧⌘I", route: .inbox()) {
+    .init(title: "Home", symbol: Icon.home, shortcut: .home, route: .home) { $0 == .home },
+    .init(title: "Inbox", symbol: Icon.inbox, shortcut: .inbox, route: .inbox()) {
       if case .proposal = $0 { return true }
       return $0.isInbox
     },
-    .init(title: "Agents", symbol: Icon.agents, shortcut: "⌥⌘1", route: .agents) { $0 == .agents },
-    .init(title: "Devices", symbol: Icon.devices, shortcut: "⌥⌘2", route: .devices) { $0.isDevices },
-    .init(title: "Runtimes", symbol: Icon.runtimes, shortcut: "⌥⌘3", route: .runtimes) { $0 == .runtimes },
-    .init(title: "Automations", symbol: Icon.automations, shortcut: nil, route: .automations) {
+    .init(title: "Agents", symbol: Icon.agents, shortcut: .screen(.agents), route: .agents) { $0 == .agents },
+    .init(title: "Devices", symbol: Icon.devices, shortcut: .screen(.devices), route: .devices) { $0.isDevices },
+    .init(title: "Runtimes", symbol: Icon.runtimes, shortcut: .screen(.runtimes), route: .runtimes) { $0 == .runtimes },
+    .init(title: "Automations", symbol: Icon.automations, shortcut: .automations, route: .automations) {
       switch $0 {
       case .automations, .automation, .quickRun, .describeAutomation: true
       default: false
@@ -38,11 +38,11 @@ struct SidebarDestination {
 
   /// The occasional ones, as icons along the sidebar's foot.
   @MainActor static let footer: [SidebarDestination] = [
-    .init(title: "Pull Requests", symbol: Icon.pullRequests, shortcut: "⌥⌘4", route: .pullRequests) {
+    .init(title: "Pull Requests", symbol: Icon.pullRequests, shortcut: .screen(.pullRequests), route: .pullRequests) {
       if case .pullRequest = $0 { return true }
       return $0 == .pullRequests
     },
-    .init(title: "Blueprints", symbol: BlueprintText.icon, shortcut: nil, route: .blueprints) { $0.isBlueprints },
+    .init(title: "Blueprints", symbol: BlueprintText.icon, shortcut: .blueprints, route: .blueprints) { $0.isBlueprints },
     .init(title: "Usage", symbol: Icon.usage, shortcut: nil, route: .usage(.limits)) {
       if case .usage = $0 { return true }
       if case .usageModel = $0 { return true }
@@ -101,7 +101,7 @@ struct SidebarBottomBar: View {
         Label("Settings", systemImage: Icon.gear)
       }
       .buttonStyle(FlatIconButtonStyle(size: 28))
-      .help("Settings (⌘,)")
+      .help(ShortcutCommand.settings.help("Settings"))
       ForEach(SidebarDestination.footer, id: \.title) { destination in
         Button {
           model.navigate(destination.route)
@@ -130,7 +130,9 @@ struct SidebarBottomBar: View {
     }
     .buttonStyle(FlatIconButtonStyle(selected: model.route == .notifications, size: 28))
     .overlay(alignment: .topTrailing) { PillBadge(unseen).scaleEffect(0.85) }
-    .help(unseen > 0 ? "Notifications — \(unseen) new (⌥⌘5)" : "Notifications (⌥⌘5)")
+    .help(
+      ShortcutCommand.screen(.notifications)?.help(unseen > 0 ? "Notifications — \(unseen) new" : "Notifications")
+        ?? "Notifications")
   }
 }
 

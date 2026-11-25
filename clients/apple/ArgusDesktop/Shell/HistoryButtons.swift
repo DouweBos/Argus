@@ -11,14 +11,14 @@ struct HistoryButtons: ToolbarContent {
       } label: {
         Label("Back", systemImage: "chevron.left")
       }
-      .help("Back (⌘[)")
+      .help(ShortcutCommand.back.help("Back"))
       .disabled(!model.canGoBack)
       Button {
         model.goForward(via: .button)
       } label: {
         Label("Forward", systemImage: "chevron.right")
       }
-      .help("Forward (⌘])")
+      .help(ShortcutCommand.forward.help("Forward"))
       .disabled(!model.canGoForward)
     }
     .flatToolbarItem()

@@ -1,4 +1,5 @@
 import AppKit
+import ArgusCore
 import ArgusEditor
 import SwiftUI
 
@@ -62,11 +63,12 @@ enum MenuCommand {
   /// A key the router left alone still reaches the menu, whose binding can trail the key window.
   @MainActor
   private static func keyIsForGit(_ action: GitMenuAction, _ model: DesktopModel) -> Bool {
-    guard let event = NSApp.currentEvent, event.type == .keyDown, let chord = ShortcutChord(event: event) else {
+    guard let event = NSApp.currentEvent, event.type == .keyDown, let chord = KeyChord(event: event) else {
       return true
     }
     guard let window = event.window ?? NSApp.window(withWindowNumber: event.windowNumber) else { return false }
-    return ShortcutRouter.resolve(chord, model.shortcutContext(in: window)) == .git(action)
+    return ShortcutRouter.resolve(chord, model.shortcutContext(in: window), AppPreferences.shared.shortcutKeymap)
+      == .git(action)
   }
 
   /// A key equivalent arrives as the current event; a click doesn't.
@@ -86,27 +88,25 @@ struct AgentMenuCommands: View {
     let agentCount = model.route.sessionId.map { model.agents(inSession: $0).count } ?? 0
     let onAgents = model.sessionPanel == .agents
     Button("New Agent") { MenuCommand.newAgent.run(model) }
-      .keyboardShortcut("a", modifiers: [.command, .shift])
+      .keyboardShortcut(model.menuShortcut(.newAgent))
       .disabled(model.sessionReadyForAgent == nil)
     Button("Interrupt Agent") { MenuCommand.interruptAgent.run(model) }
-      .keyboardShortcut(".", modifiers: .command)
+      .keyboardShortcut(model.menuShortcut(.interruptAgent))
       .disabled(inFront?.status != .running)
     Button("Focus Chat Input") { MenuCommand.focusComposer.run(model) }
-      .keyboardShortcut("l", modifiers: .command)
+      .keyboardShortcut(model.menuShortcut(.focusComposer))
       .disabled(inFront == nil)
     Divider()
     Button("Show Next Agent") { MenuCommand.nextAgent.run(model) }
-      // The shifted character: a ⇧⌘] press arrives as "}", which "]" plus ⇧ never matches.
-      .keyboardShortcut("}", modifiers: .command)
+      .keyboardShortcut(model.menuShortcut(.nextAgent))
       .disabled(!onAgents || agentCount < 2)
     Button("Show Previous Agent") { MenuCommand.previousAgent.run(model) }
-      .keyboardShortcut("{", modifiers: .command)
+      .keyboardShortcut(model.menuShortcut(.previousAgent))
       .disabled(!onAgents || agentCount < 2)
     Divider()
-    // ⌘1–⌘3 are the session's panels, so agents take ⌃⌘ instead.
     ForEach(0..<9, id: \.self) { index in
       Button("Agent \(index + 1)") { MenuCommand.selectAgent(index).run(model) }
-        .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [.command, .control])
+        .keyboardShortcut(model.menuShortcut(ShortcutCommand.agents[index]))
         .disabled(index >= agentCount)
     }
   }
@@ -118,10 +118,10 @@ struct GoMenuCommands: View {
 
   var body: some View {
     Button("App Home") { MenuCommand.goHome.run(model) }
-      .keyboardShortcut("h", modifiers: [.command, .shift])
+      .keyboardShortcut(model.menuShortcut(.home))
     ForEach(Array(MenuCommand.screens.enumerated()), id: \.offset) { index, screen in
       Button(screen.title) { MenuCommand.goTo(screen.route).run(model) }
-        .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [.command, .option])
+        .keyboardShortcut(model.menuShortcut(ShortcutCommand.screens[index]))
     }
   }
 }
@@ -140,7 +140,7 @@ struct HistoryCommands: View {
         model.goBack(via: Self.isKey ? .shortcut : .menu)
       }
     }
-    .keyboardShortcut("[", modifiers: .command)
+    .keyboardShortcut(model.menuShortcut(.back))
     .disabled(!model.canGoBack && !model.codeEditorFocused)
     Button("Forward") {
       if model.codeEditorFocused, Self.isKey {
@@ -149,7 +149,7 @@ struct HistoryCommands: View {
         model.goForward(via: Self.isKey ? .shortcut : .menu)
       }
     }
-    .keyboardShortcut("]", modifiers: .command)
+    .keyboardShortcut(model.menuShortcut(.forward))
     .disabled(!model.canGoForward && !model.codeEditorFocused)
   }
 

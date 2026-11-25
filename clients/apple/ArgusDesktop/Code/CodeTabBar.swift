@@ -16,7 +16,7 @@ struct CodeTabBar: View {
         Label("Toggle Navigator", systemImage: "sidebar.left")
       }
       .buttonStyle(FlatIconButtonStyle(selected: code.navigatorVisible, size: 24))
-      .help(code.navigatorVisible ? "Hide navigator (⌘B)" : "Show navigator (⌘B)")
+      .help(ShortcutCommand.toggleNavigator.help(code.navigatorVisible ? "Hide navigator" : "Show navigator"))
       .padding(.horizontal, 6)
       ScrollViewReader { proxy in
         ScrollView(.horizontal, showsIndicators: false) {
@@ -87,7 +87,7 @@ private struct CodeTabItem: View {
           .buttonStyle(.argusPlain)
           .foregroundStyle(theme.textSecondary)
           .opacity(selected || hovering ? 1 : 0)
-          .help("Close (⌘W)")
+          .help(ShortcutCommand.closeTab.help("Close"))
         }
       }
       .frame(width: 12, height: 12)

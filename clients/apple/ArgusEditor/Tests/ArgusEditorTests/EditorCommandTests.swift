@@ -256,13 +256,23 @@ final class EditorCommandTests: XCTestCase {
     document.engine.textView.keyDown(with: try event(0, "Å", [.shift, .option]))
     XCTAssertEqual(rendered(document), "/* «x» */")
     var wrapped = 0
-    document.hostShortcuts = [EditorShortcut("z", .option): { wrapped += 1; return true }]
+    document.hostKeys = { event in
+      guard EditorShortcut("z", .option).matches(event) else { return false }
+      wrapped += 1
+      return true
+    }
     document.engine.textView.keyDown(with: try event(6, "Ω", .option))
     XCTAssertEqual(wrapped, 1)
     XCTAssertEqual(document.text, "/* x */", "the host's key didn't type")
-    let shortcuts = EditorCommand.allCases.map { [$0.chordPrefix, $0.shortcut] }
+    let shortcuts = EditorCommand.allCases.map { [$0.chordPrefix, $0.defaultShortcut] }
     XCTAssertEqual(Set(shortcuts).count, shortcuts.count, "no two commands share a key")
     let prefixes = Set(EditorCommand.allCases.compactMap(\.chordPrefix))
-    XCTAssertTrue(EditorCommand.allCases.allSatisfy { !prefixes.contains($0.shortcut) }, "a chord's first key isn't a command")
+    XCTAssertTrue(EditorCommand.allCases.allSatisfy { !prefixes.contains($0.defaultShortcut) }, "a chord's first key isn't a command")
+
+    EditorKeymap.overrides = [.outdentLines: EditorShortcut("u", [.control, .command]), .indentLines: EditorShortcut?.none]
+    defer { EditorKeymap.overrides = [:] }
+    XCTAssertNil(EditorCommand.matching(try event(33, "[", .command)), "rebound away")
+    XCTAssertNil(EditorCommand.matching(try event(30, "]", .command)), "unbound")
+    XCTAssertEqual(EditorCommand.matching(try event(32, "u", [.control, .command])), .outdentLines)
   }
 }

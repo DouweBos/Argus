@@ -10,8 +10,11 @@ import Testing
 struct QuickOpenModelTests {
   @Test("its keys don't collide with the editor's or each other")
   func shortcuts() {
-    let quickOpen = QuickOpenModel.Entry.allCases.map(\.shortcut)
-    let editor = EditorCommand.allCases.map(\.shortcut) + [CodeShortcuts.wordWrap, CodeShortcuts.format]
+    let keymap = ShortcutKeymap.argusDefaults
+    let quickOpen = QuickOpenModel.Entry.allCases.compactMap { keymap.chord(for: .quickOpen($0)) }
+    let editor = EditorCommand.allCases.compactMap { keymap.chord(for: .editor($0)) }
+      + [keymap.chord(for: .wordWrap), keymap.chord(for: .formatDocument)].compactMap { $0 }
+    #expect(quickOpen.count == QuickOpenModel.Entry.allCases.count)
     #expect(Set(quickOpen).count == quickOpen.count)
     #expect(Set(quickOpen).isDisjoint(with: editor))
   }

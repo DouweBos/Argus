@@ -15,6 +15,7 @@
         },
         GalleryStory("settings/appearance", size: page) { AppearanceSettingsTab() },
         GalleryStory("settings/general", size: CGSize(width: 760, height: 900)) { GeneralStage() },
+        GalleryStory("settings/keyboard", size: CGSize(width: 760, height: 1500)) { KeyboardSettingsTab(prefs: keyboardPrefs) },
         GalleryStory("settings/worktrees", size: CGSize(width: 760, height: 1100), fixtures: GalleryFixtures.worktreeCleanup) {
           WorktreesSettingsTab().environment(HostSettingsModel())
         },
@@ -179,6 +180,18 @@
     /// Settings → Agents as a host answers it, the idle timeout set.
     /// Notifications with "finished" banners off, as someone watching the Mac's own windows might set it,
     /// and the usage warning moved down to 80%.
+    /// Inbox moved onto New Session's ⌘N (a conflict), Push on ⌃⌘K, App Home on macOS's ⌘H.
+    @MainActor private static var keyboardPrefs: AppPreferences {
+      let suite = "argus-gallery-keyboard"
+      let defaults = UserDefaults(suiteName: suite) ?? .standard
+      defaults.removePersistentDomain(forName: suite)
+      let prefs = AppPreferences(defaults: defaults)
+      prefs.shortcutKeymap.bind(ShortcutCommand.inbox.id, to: KeyChord("n", .command))
+      prefs.shortcutKeymap.bind(ShortcutCommand.git(.push).id, to: KeyChord("k", [.control, .command]))
+      prefs.shortcutKeymap.bind(ShortcutCommand.home.id, to: KeyChord("h", .command))
+      return prefs
+    }
+
     private struct GeneralStage: View {
       @State private var host = HostSettingsModel()
 

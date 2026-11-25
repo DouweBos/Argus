@@ -45,7 +45,7 @@ struct SidePanelTabStrip: View {
         Label("Close Panel", systemImage: Icon.close)
       }
       .buttonStyle(FlatIconButtonStyle(size: 22))
-      .help("Close the panel (⌘J)")
+      .help(ShortcutCommand.sidePanel.help("Close the panel"))
     }
     .labelStyle(.iconOnly)
     .padding(.horizontal, 8)

@@ -14,26 +14,25 @@ struct CodeCommands: View {
       guard let document, let code = model.activeCodeSession else { return }
       Task { await LspRename.run(in: code, document: document) }
     }
-    .keyboardShortcut(.function(2), modifiers: [])
+    .keyboardShortcut(model.menuShortcut(.renameSymbol))
     .disabled(!language)
     Button("Format Document") { model.formatActiveCodeDocument() }
-      .keyboardShortcut(CodeShortcuts.format.key, modifiers: CodeShortcuts.format.modifiers)
+      .keyboardShortcut(model.menuShortcut(.formatDocument))
       .disabled(document?.isEditable != true)
     Button("Show Completions") {
       document?.focus()
       document?.perform(.triggerCompletion)
     }
-    .keyboardShortcut(.space, modifiers: .control)
+    .keyboardShortcut(model.menuShortcut(.editor(.triggerCompletion)))
     .disabled(!language)
     Divider()
     ForEach(Self.editing, id: \.self) { command in
       EditorCommandButton(
-        command: command, document: document, enabled: focused && document?.isEditable == true,
-        showsKey: command != .insertLineBelow || !model.binds(.commit, to: .git(.commit)))
+        model: model, command: command, document: document, enabled: focused && document?.isEditable == true)
     }
     Divider()
     Button("Send Selection to Agent") { document?.sendSelectionToAgent() }
-      .keyboardShortcut("l", modifiers: [.command, .option])
+      .keyboardShortcut(model.menuShortcut(.sendSelection))
       .disabled(document == nil)
   }
 
@@ -43,19 +42,17 @@ struct CodeCommands: View {
   ]
 }
 
-/// A menu item for an `EditorCommand`, on its own key.
+/// A menu item for an `EditorCommand`, on its own key unless something else here owns it.
 struct EditorCommandButton: View {
+  let model: DesktopModel
   let command: EditorCommand
   let document: EditorDocument?
   var enabled = true
-  /// Off while something else on screen owns the key.
-  var showsKey = true
 
   var body: some View {
     // A chord (⌘K ⌘0) can't be a menu key; the editor handles it itself.
     Button(command.title) { document?.perform(command) }
-      .keyboardShortcut(
-        showsKey && command.chordPrefix == nil ? KeyboardShortcut(command.shortcut.key, modifiers: command.shortcut.modifiers) : nil)
+      .keyboardShortcut(model.menuShortcut(.editor(command)))
       .disabled(document == nil || !enabled)
   }
 }
@@ -71,13 +68,13 @@ struct CodeSaveCommands: View {
       guard let code, let path else { return }
       Task { await code.save(path) }
     }
-    .keyboardShortcut("s", modifiers: .command)
+    .keyboardShortcut(model.menuShortcut(.save))
     .disabled(code == nil || path == nil)
     Button("Save All") {
       guard let code else { return }
       Task { _ = await code.saveAll() }
     }
-    .keyboardShortcut(model.binds(.snapshot, to: .git(.snapshot)) ? nil : ShortcutChord.snapshot.keyboardShortcut)
+    .keyboardShortcut(model.menuShortcut(.saveAll))
     .disabled(code == nil)
   }
 }

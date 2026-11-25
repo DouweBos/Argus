@@ -129,8 +129,9 @@ struct SessionContextCard: View {
   /// Agent, Code and Git (⌘1–⌘3), and the chevron that folds the card down to them.
   private var switcher: some View {
     ContextCardSegments(
-      segments: SessionPanel.allCases.enumerated().map { index, panel in
-        ContextCardSegment(id: panel, title: panel.title, symbol: panel.symbol, help: "\(panel.title) (⌘\(index + 1))")
+      segments: SessionPanel.allCases.map { panel in
+        ContextCardSegment(
+          id: panel, title: panel.title, symbol: panel.symbol, help: ShortcutCommand.panel(panel).help(panel.title))
       },
       selection: model.sessionPanel ?? panel
     ) { picked in

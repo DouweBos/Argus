@@ -284,6 +284,8 @@ enum MacTelemetryEvent {
   /// One of the keyboard commands for agents, panels and screens was used.
   case menuCommandUsed(action: MenuCommandAction, via: MenuCommandSource)
   case gitCommandRefused(action: MenuCommandAction, reason: GitRefusalReason, via: MenuCommandSource)
+  /// A key was changed in Settings → Keyboard; `command` is the catalog's fixed id, nil for Reset All.
+  case shortcutChanged(action: ShortcutChangeAction, command: String?, conflict: Bool)
   /// An item in the menu-bar item's menu that does something.
   case menuBarUsed(action: MenuBarAction)
   /// The menu-bar item was shown or hidden, from Settings or by dragging it off the menu bar.
@@ -496,6 +498,7 @@ enum MacTelemetryEvent {
     case .sessionPanelSwitched: "mac_session_panel_switched"
     case .agentCloseConfirmed: "mac_agent_close_confirmed"
     case .menuCommandUsed: "mac_menu_command_used"
+    case .shortcutChanged: "mac_shortcut_changed"
     case .gitCommandRefused: "mac_git_command_refused"
     case .menuBarUsed: "mac_menu_bar_used"
     case .menuBarToggled: "mac_menu_bar_toggled"
@@ -660,6 +663,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue, "via": via.rawValue]
     case .gitCommandRefused(let action, let reason, let via):
       ["action": action.rawValue, "reason": reason.rawValue, "via": via.rawValue]
+    case .shortcutChanged(let action, let command, let conflict):
+      (["action": action.rawValue, "command": command, "conflict": conflict] as [String: Any?]).compactMapValues { $0 }
     case .menuBarUsed(let action):
       ["action": action.rawValue]
     case .menuBarToggled(let shown, let via, let serverInstalled):

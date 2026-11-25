@@ -28,7 +28,7 @@ struct GitMenuCommands: View {
 
   private func item(_ action: GitMenuAction, _ session: RemoteSession?, _ features: GitFeatures) -> some View {
     let refusal = session.flatMap { self.refusal(action, $0, features) }
-    let bound = action.chord.flatMap { model.binds($0, to: .git(action)) ? $0.keyboardShortcut : nil }
+    let bound = model.menuShortcut(.git(action))
     return Button {
       MenuCommand.git(action).run(model)
     } label: {

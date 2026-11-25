@@ -46,7 +46,7 @@ import Observation
   @ObservationIgnored public weak var actions: EditorActions?
   /// The app's own keys the editor takes ahead of typing: ⌥ shortcuts (⌥Z, ⇧⌥F) would otherwise
   /// insert a character before any menu saw them. Return false to let the key through.
-  @ObservationIgnored public var hostShortcuts: [EditorShortcut: () -> Bool] = [:]
+  @ObservationIgnored public var hostKeys: ((NSEvent) -> Bool)?
 
   @ObservationIgnored let engine: EditorEngine
   @ObservationIgnored var lineIndex: LineIndex

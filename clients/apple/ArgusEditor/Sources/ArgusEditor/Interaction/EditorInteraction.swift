@@ -55,9 +55,12 @@ import AppKit
       document.perform(command)
       return true
     }
-    if let action = document.hostShortcuts.first(where: { $0.key.matches(event) })?.value { return action() }
+    if let hostKeys = document.hostKeys, hostKeys(event) { return true }
+    if EditorKeymap.sendSelection?.matches(event) == true {
+      document.sendSelectionToAgent()
+      return true
+    }
     switch (flags, EditorShortcut.baseKey(of: event)) {
-    case ([.command, .option], "l"): document.sendSelectionToAgent()
     case ([.command], "f"): document.showFind(replace: false)
     case ([.command, .option], "f"): document.showFind(replace: true)
     case ([.command], "g"): document.findNext()
@@ -143,7 +146,10 @@ import AppKit
     definition.isEnabled = document.languageProvider != nil
     menu.addItem(definition)
     menu.addItem(.separator())
-    let send = MenuAction.item("Send Selection to Agent", key: "l", modifiers: [.command, .option]) { [weak self] in
+    let sendKey = EditorKeymap.sendSelection
+    let send = MenuAction.item(
+      "Send Selection to Agent", key: sendKey?.menuKey ?? "", modifiers: sendKey?.eventFlags ?? []
+    ) { [weak self] in
       self?.document.sendSelectionToAgent()
     }
     send.isEnabled = document.selectedText != nil && document.actions != nil
@@ -153,7 +159,7 @@ import AppKit
   }
 
   private func commandItem(_ command: EditorCommand) -> NSMenuItem {
-    MenuAction.item(command.title, key: command.shortcut.menuKey, modifiers: command.shortcut.eventFlags) {
+    MenuAction.item(command.title, key: command.shortcut?.menuKey ?? "", modifiers: command.shortcut?.eventFlags ?? []) {
       [weak self] in self?.document.perform(command)
     }
   }

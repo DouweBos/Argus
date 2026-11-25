@@ -119,18 +119,20 @@ struct HomeScreen: View {
           Label("Import from Claude Code", systemImage: "square.and.arrow.down")
         }
         VStack(alignment: .leading, spacing: 6) {
-          shortcut("⌘O", "Add project")
-          shortcut("⌘N", "New session")
-          shortcut("⇧⌘P", "Command palette")
+          shortcut(.addProject, "Add project")
+          shortcut(.newSession, "New session")
+          shortcut(.commandPalette, "Command palette")
         }
       }
     }
   }
 
-  private func shortcut(_ keys: String, _ label: String) -> some View {
-    HStack(spacing: 8) {
-      KeyHint(keys)
-      Text(label).font(.scaled(size: 11)).foregroundStyle(theme.textMuted)
+  @ViewBuilder private func shortcut(_ command: ShortcutCommand, _ label: String) -> some View {
+    if let chord = AppPreferences.shared.shortcutKeymap.chord(for: command) {
+      HStack(spacing: 8) {
+        KeyHint(parts: chord.displayParts)
+        Text(label).font(.scaled(size: 11)).foregroundStyle(theme.textMuted)
+      }
     }
   }
 

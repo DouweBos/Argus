@@ -1,49 +1,6 @@
 import AppKit
+import ArgusCore
 import SwiftUI
-
-/// A key and its modifiers, as pressed.
-struct ShortcutChord: Equatable {
-  let key: Character
-  let modifiers: EventModifiers
-
-  init(_ key: Character, _ modifiers: EventModifiers) {
-    self.key = key
-    self.modifiers = modifiers
-  }
-
-  static let fetch = Self("f", [.command, .shift])
-  static let pull = Self("p", [.command, .shift])
-  static let push = Self("u", [.command, .shift])
-  static let branch = Self("b", .command)
-  static let merge = Self("m", [.command, .shift])
-  static let rebase = Self("r", [.command, .shift])
-  static let commit = Self("\r", .command)
-  static let stash = Self("s", [.command, .shift])
-  static let snapshot = Self("s", [.command, .option])
-  static let undo = Self("z", [.command, .option])
-
-  var keyboardShortcut: KeyboardShortcut {
-    KeyboardShortcut(key == "\r" ? .return : KeyEquivalent(key), modifiers: modifiers)
-  }
-
-  init?(event: NSEvent) {
-    guard event.type == .keyDown else { return nil }
-    let flags = event.modifierFlags
-    guard flags.contains(.command), !flags.contains(.control) else { return nil }
-    var modifiers: EventModifiers = .command
-    if flags.contains(.shift) { modifiers.insert(.shift) }
-    if flags.contains(.option) { modifiers.insert(.option) }
-    if event.keyCode == 36 || event.keyCode == 76 {
-      self.init("\r", modifiers)
-      return
-    }
-    var typed = event.charactersIgnoringModifiers?.lowercased()
-    // A non-Latin layout types Latin with ⌘ held, which is what menus match.
-    if typed?.first?.isASCII != true { typed = event.characters(byApplyingModifiers: .command)?.lowercased() }
-    guard let key = typed?.first else { return nil }
-    self.init(key, modifiers)
-  }
-}
 
 /// Where a key was pressed, as far as the router cares.
 struct ShortcutContext: Equatable {
@@ -63,14 +20,27 @@ struct ShortcutContext: Equatable {
   /// The pull request view's comment box sends on ⌘↩ itself.
   var inPullRequests = false
   var diffTabFocused = false
+  /// The code view's editor has focus, so its own keys come first.
+  var editorFocused = false
   var paletteOpen = false
   var focus = Focus.none
 
   var ownsPanelKeys: Bool { hasRepository && (gitInFront || diffTabFocused) }
+
+  /// The scopes whose commands are live here.
+  var scopes: Set<ShortcutScope> {
+    var scopes: Set<ShortcutScope> = [.global]
+    if hasRepository { scopes.insert(.session) }
+    if inCode { scopes.insert(.code) }
+    if inCode && editorFocused { scopes.insert(.editor) }
+    if ownsPanelKeys { scopes.insert(.gitPanel) }
+    return scopes
+  }
 }
 
 /// The keys several commands want, decided here rather than by menu items, which SwiftUI
-/// strips of a duplicate key and updates late when the key moves between them.
+/// strips of a duplicate key and updates late when the key moves between them. Which command
+/// a key runs comes from the keymap: the narrowest live scope's.
 enum ShortcutRouter {
   enum Resolution: Equatable {
     case git(GitMenuAction)
@@ -79,36 +49,21 @@ enum ShortcutRouter {
     case pass
   }
 
-  static func resolve(_ chord: ShortcutChord, _ context: ShortcutContext) -> Resolution {
+  static func resolve(_ chord: KeyChord, _ context: ShortcutContext, _ keymap: ShortcutKeymap = .argusDefaults)
+    -> Resolution
+  {
     guard context.takesKeys else { return .pass }
-    if context.paletteOpen { return chord == .pull ? .commandPalette : .pass }
-    let inSession = context.hasRepository
-    switch chord {
-    case .push: return inSession ? .git(.push) : .pass
-    case .rebase: return inSession ? .git(.rebase) : .pass
-    case .stash: return inSession ? .git(.stash) : .pass
-    case .fetch:
-      if context.inCode { return .findInFiles }
-      return inSession ? .git(.fetch) : .pass
-    case .branch:
-      if context.inCode { return .toggleNavigator }
-      return inSession ? .git(.branch) : .pass
-    case .merge:
-      if context.inCode { return .toggleProblems }
-      return inSession ? .git(.merge) : .pass
-    case .pull:
-      return context.ownsPanelKeys ? .git(.pull) : .commandPalette
-    case .commit:
-      guard context.ownsPanelKeys, context.focus != .text else { return .pass }
-      return context.gitInFront && context.inPullRequests ? .pass : .git(.commit)
-    case .snapshot:
-      if context.ownsPanelKeys { return .git(.snapshot) }
-      return context.inCode ? .saveAll : .pass
-    case .undo:
-      return context.ownsPanelKeys ? .git(.undo) : .pass
-    default:
-      return .pass
+    if context.paletteOpen {
+      return chord == keymap.chord(for: ShortcutCommand.commandPalette) ? .commandPalette : .pass
     }
+    guard let id = keymap.command(for: chord, in: context.scopes), let command = ShortcutCommand.named(id),
+      let resolution = command.routed
+    else { return .pass }
+    if resolution == .git(.commit) {
+      // The pull request view's comment box and other text send on ⌘↩ themselves.
+      guard context.focus != .text, !(context.gitInFront && context.inPullRequests) else { return .pass }
+    }
+    return resolution
   }
 
   @MainActor private static var monitor: Any?
@@ -118,10 +73,10 @@ enum ShortcutRouter {
     monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak model] event in
       nonisolated(unsafe) let event = event
       let handled = MainActor.assumeIsolated {
-        guard let model, let chord = ShortcutChord(event: event),
+        guard let model, let chord = KeyChord(event: event), chord.isUsable,
           let window = event.window ?? NSApp.window(withWindowNumber: event.windowNumber)
         else { return false }
-        let resolution = resolve(chord, model.shortcutContext(in: window))
+        let resolution = resolve(chord, model.shortcutContext(in: window), AppPreferences.shared.shortcutKeymap)
         guard resolution != .pass else { return false }
         if !event.isARepeat { model.run(resolution) }
         return true

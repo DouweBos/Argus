@@ -1,10 +1,24 @@
 import AppKit
+import ArgusCore
 import Testing
 
 @testable import Argus
 
+extension KeyChord {
+  static let fetch = Self("f", [.command, .shift])
+  static let pull = Self("p", [.command, .shift])
+  static let push = Self("u", [.command, .shift])
+  static let branch = Self("b", .command)
+  static let merge = Self("m", [.command, .shift])
+  static let rebase = Self("r", [.command, .shift])
+  static let commit = Self(Key.return, .command)
+  static let stash = Self("s", [.command, .shift])
+  static let snapshot = Self("s", [.command, .option])
+  static let undo = Self("z", [.command, .option])
+}
+
 struct ShortcutRouterTests {
-  typealias Chord = ShortcutChord
+  typealias Chord = KeyChord
   typealias Resolution = ShortcutRouter.Resolution
 
   static let outside = ShortcutContext()
@@ -104,10 +118,31 @@ struct ShortcutRouterTests {
   }
 
   @Test func everyActionHasTheKeyItResolvesTo() {
+    let keymap = ShortcutKeymap.argusDefaults
     for action in GitMenuAction.allCases where action != .createPullRequest {
-      #expect(action.chord.map { ShortcutRouter.resolve($0, Self.git) } == .git(action))
+      #expect(keymap.chord(for: .git(action)).map { ShortcutRouter.resolve($0, Self.git) } == .git(action))
     }
-    #expect(GitMenuAction.createPullRequest.chord == nil)
+    #expect(keymap.chord(for: .git(.createPullRequest)) == nil)
+  }
+
+  @Test func followsARebind() {
+    var keymap = ShortcutKeymap.argusDefaults
+    keymap.bind(ShortcutCommand.git(.push).id, to: Chord("k", [.control, .command]))
+    #expect(ShortcutRouter.resolve(.push, Self.agents, keymap) == .pass)
+    #expect(ShortcutRouter.resolve(Chord("k", [.control, .command]), Self.agents, keymap) == .git(.push))
+    keymap.bind(ShortcutCommand.commandPalette.id, to: Chord("k", [.shift, .command]))
+    #expect(ShortcutRouter.resolve(.pull, Self.outside, keymap) == .pass)
+    var open = Self.outside
+    open.paletteOpen = true
+    #expect(ShortcutRouter.resolve(Chord("k", [.shift, .command]), open, keymap) == .commandPalette)
+  }
+
+  @Test func theEditorKeepsItsKeysWhileFocused() {
+    var editing = Self.code
+    editing.editorFocused = true
+    // ⌘L selects a line in the editor; the router leaves every editor key to it.
+    #expect(ShortcutRouter.resolve(Chord("l", .command), editing, .argusDefaults) == .pass)
+    #expect(ShortcutRouter.resolve(.branch, editing) == .toggleNavigator)
   }
 
   @Test func readsPressedKeys() {
@@ -116,13 +151,15 @@ struct ShortcutRouterTests {
     #expect(press("\r", 36, .command) == .commit)
     #expect(press("\u{3}", 76, [.command, .numericPad]) == .commit)
     #expect(press("b", 11, []) == nil)
-    #expect(press("b", 11, [.command, .control]) == nil)
+    #expect(press("b", 11, [.command, .control]) == Chord("b", [.control, .command]))
+    #expect(press("}", 30, [.command, .shift]) == Chord("]", [.shift, .command]))
+    #expect(press("\u{F70F}", 111, .function) == Chord(KeyChord.Key.function(12), []))
   }
 
   private func press(_ characters: String, _ code: UInt16, _ flags: NSEvent.ModifierFlags) -> Chord? {
     NSEvent.keyEvent(
       with: .keyDown, location: .zero, modifierFlags: flags, timestamp: 0, windowNumber: 0, context: nil,
       characters: characters, charactersIgnoringModifiers: characters, isARepeat: false, keyCode: code
-    ).flatMap(ShortcutChord.init(event:))
+    ).flatMap(KeyChord.init(event:)).flatMap { $0.isUsable ? $0 : nil }
   }
 }

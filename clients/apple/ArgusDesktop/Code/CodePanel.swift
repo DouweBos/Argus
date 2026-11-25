@@ -13,6 +13,16 @@ struct CodePanel: View {
 
   private var code: CodeSession { model.code.session(session.id) }
 
+  private var emptyMessage: String {
+    switch (ShortcutCommand.quickOpen(.files).hint, ShortcutCommand.quickOpen(.openQuickly).hint) {
+    case let (byName?, quickly?):
+      "Pick a file from the navigator, press \(byName) to open one by name, or \(quickly) to open a file or symbol."
+    case let (byName?, nil): "Pick a file from the navigator, or press \(byName) to open one by name."
+    case let (nil, quickly?): "Pick a file from the navigator, or press \(quickly) to open a file or symbol."
+    case (nil, nil): "Pick a file from the navigator."
+    }
+  }
+
   var body: some View {
     ResizableHSplit(
       key: "code.navigator", leadingMin: 180, leadingIdeal: 260, leadingMax: 520, trailingMin: 320,
@@ -30,7 +40,7 @@ struct CodePanel: View {
         } else {
           QuietEmptyState(
             icon: "doc.text", title: "No file open",
-            message: "Pick a file from the navigator, press ⌘P to open one by name, or ⇧⌘O to open a file or symbol.")
+            message: emptyMessage)
         }
       }
       .sessionContextCard(session, panel: .code, barHeight: CodeTabBar.height)
@@ -54,7 +64,7 @@ struct CodePanel: View {
   @ViewBuilder private var shortcuts: some View {
     Group {
       Button("Find in Files") { code.findInFiles() }
-      .keyboardShortcut("f", modifiers: [.command, .shift])
+      .keyboardShortcut(model.menuShortcut(.findInFiles))
     }
     .hidden()
   }

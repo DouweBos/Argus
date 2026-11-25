@@ -79,7 +79,7 @@ struct SidebarTopBar: View {
 
   private var addProject: some View {
     SidebarMenuButton("Add Project", systemImage: "folder.badge.plus") {
-      ChromeMenuItem("Add Project", icon: .symbol("folder.badge.plus"), shortcut: "⌘O") { model.addingProject = true }
+      ChromeMenuItem("Add Project", icon: .symbol("folder.badge.plus"), shortcut: ShortcutCommand.addProject.hint) { model.addingProject = true }
       ChromeMenuItem("New Project from Blueprint", icon: .symbol(BlueprintText.icon)) {
         model.navigate(.newProject(blueprintId: nil))
       }
@@ -87,7 +87,7 @@ struct SidebarTopBar: View {
         model.importingCliProjects = true
       }
     }
-    .help("Add a project (⌘O)")
+    .help(ShortcutCommand.addProject.help("Add a project"))
   }
 
   private var newSession: some View {
@@ -106,7 +106,7 @@ struct SidebarTopBar: View {
       ChromeMenuEntry.divider
       ChromeMenuItem("New Scratch Pad", icon: .symbol(Icon.scratchPad)) { Task { await model.newScratchPad() } }
     }
-    .help("New session (⌘N) — hold for more")
+    .help(ShortcutCommand.newSession.help("New session") + " — hold for more")
   }
 
   private func pick(_ repoRoot: String?) {

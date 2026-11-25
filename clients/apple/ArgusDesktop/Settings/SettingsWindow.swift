@@ -51,6 +51,7 @@ struct SettingsWindow: View {
     case .git: GitSettingsTab()
     case .worktrees: WorktreesSettingsTab()
     case .editor: EditorTab()
+    case .keyboard: KeyboardSettingsTab()
     case .remote: RemoteSettingsTab()
     case .hosts: HostsSettingsTab()
     case .advanced: AdvancedSettingsTab()
@@ -84,7 +85,8 @@ private struct SettingsNavList: View {
 }
 
 enum SettingsTab: String, Hashable, CaseIterable {
-  case general, appearance, account, accounts, agents, llm, mcp, integrations, tools, git, worktrees, editor, remote, hosts, advanced
+  case general, appearance, account, accounts, agents, llm, mcp, integrations, tools, git, worktrees, editor, keyboard, remote,
+    hosts, advanced
 
   var title: String {
     switch self {
@@ -100,6 +102,7 @@ enum SettingsTab: String, Hashable, CaseIterable {
     case .git: "Git"
     case .worktrees: "Worktrees"
     case .editor: "Editor"
+    case .keyboard: "Keyboard"
     case .remote: "Remote"
     case .hosts: "Hosts"
     case .advanced: "Advanced"
@@ -120,6 +123,7 @@ enum SettingsTab: String, Hashable, CaseIterable {
     case .git: "arrow.triangle.branch"
     case .worktrees: "externaldrive"
     case .editor: "chevron.left.forwardslash.chevron.right"
+    case .keyboard: "keyboard"
     case .remote: "antenna.radiowaves.left.and.right"
     case .hosts: "desktopcomputer"
     case .advanced: "slider.horizontal.3"

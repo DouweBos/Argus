@@ -49,7 +49,7 @@ struct SessionToolbar: ToolbarContent {
     }
     .toggleStyle(.button)
     .labelStyle(.iconOnly)
-    .help(model.sidePanelVisible ? "Hide side panel (⌘J)" : "Show side panel (⌘J)")
+    .help(ShortcutCommand.sidePanel.help(model.sidePanelVisible ? "Hide side panel" : "Show side panel"))
   }
 }
 

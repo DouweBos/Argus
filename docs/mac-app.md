@@ -161,6 +161,8 @@ installed, which has its own menu bar item.
 Every shortcut is a menu item, so the menu bar lists them all and greys out
 the ones that don't apply where you are. They match the old Electron app's,
 except where macOS or the Mac app's own layout already uses the keys.
+Change any of them in Settings → Keyboard ([how](app-settings.md#keyboard-mac-app));
+the table lists the defaults.
 
 | Shortcut              | Does                                                       | Menu  |
 | --------------------- | ---------------------------------------------------------- | ----- |

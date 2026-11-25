@@ -154,10 +154,10 @@ private struct NewSessionCommand: View {
 
   var body: some View {
     Button("New Session") { model.requestNewSession() }
-      .keyboardShortcut("n", modifiers: .command)
+      .keyboardShortcut(model.menuShortcut(.newSession))
       .disabled(model.store.projects.isEmpty)
     Button("Delete Session") { model.requestDeleteSession() }
-      .keyboardShortcut(.delete, modifiers: .command)
+      .keyboardShortcut(model.menuShortcut(.deleteSession))
       .disabled(model.deletableSession == nil)
   }
 }
@@ -178,17 +178,18 @@ private struct ProjectCommands: View {
 
   var body: some View {
     Button("Add Project") { model.addingProject = true }
-      .keyboardShortcut("o", modifiers: .command)
+      .keyboardShortcut(model.menuShortcut(.addProject))
     Button("New Project from Blueprint") { model.navigate(.newProject(blueprintId: nil)) }
+      .keyboardShortcut(model.menuShortcut(.newProjectFromBlueprint))
     Button("Import Projects from Claude Code") { model.importingCliProjects = true }
+      .keyboardShortcut(model.menuShortcut(.importCliProjects))
     Divider()
     // The code view's Open Quickly owns ⇧⌘O while it's on screen, as in Xcode.
     Button("Open Session") { MenuCommand.quickSwitcher.run(model) }
-      .keyboardShortcut("o", modifiers: [.command, .shift])
+      .keyboardShortcut(model.menuShortcut(.openSession))
       .disabled(model.store.projects.isEmpty || model.activeCodeSession != nil)
     Button("Command Palette") { model.toggleCommandPalette() }
-      .keyboardShortcut(
-        model.binds(.pull, to: .commandPalette) ? ShortcutChord.pull.keyboardShortcut : nil)
+      .keyboardShortcut(model.menuShortcut(.commandPalette))
   }
 }
 
@@ -204,42 +205,44 @@ private struct NavigationCommands: View {
           // A key equivalent arrives as the current event; a click doesn't.
           model.show(panel, via: NSApp.currentEvent?.type == .keyDown ? .shortcut : .menu)
         }))
-      .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
+      .keyboardShortcut(model.menuShortcut(.panel(panel)))
       .disabled(model.sessionPanel == nil)
     }
     Divider()
     Button("New Tab") { model.openTab() }
-      .keyboardShortcut("t", modifiers: [.command, .option])
+      .keyboardShortcut(model.menuShortcut(.newTab))
     Button(KeyWindow.shared.isMain ? "Close Tab" : "Close Window") {
       if !KeyWindow.shared.closeOther() { model.closeTabOrEditor() }
     }
     // Never disabled: AppKit would hand ⌘W to the system Close and shut the main window.
     .keyboardShortcut("w", modifiers: .command)
     Button("Show Next Tab") { model.cycleTab(by: 1) }
-      .keyboardShortcut(.tab, modifiers: .control)
+      .keyboardShortcut(model.menuShortcut(.nextTab))
       .disabled(model.tabs.count < 2)
     Button("Show Previous Tab") { model.cycleTab(by: -1) }
-      .keyboardShortcut(.tab, modifiers: [.control, .shift])
+      .keyboardShortcut(model.menuShortcut(.previousTab))
       .disabled(model.tabs.count < 2)
     Divider()
     GoMenuCommands(model: model)
     Button("Inbox") { model.navigate(.inbox()) }
-      .keyboardShortcut("i", modifiers: [.command, .shift])
+      .keyboardShortcut(model.menuShortcut(.inbox))
     Button("Automations") { model.navigate(.automations) }
+      .keyboardShortcut(model.menuShortcut(.automations))
     Button("Blueprints") { model.navigate(.blueprints) }
+      .keyboardShortcut(model.menuShortcut(.blueprints))
     Divider()
     Button(model.sidePanelVisible ? "Hide Side Panel" : "Show Side Panel") {
       model.toggleSidePanel(via: NSApp.currentEvent?.type == .keyDown ? .shortcut : .menu)
     }
-    .keyboardShortcut("j", modifiers: .command)
+    .keyboardShortcut(model.menuShortcut(.sidePanel))
     Button("Terminal Tab") {
       model.togglePanelTab(.terminal, via: NSApp.currentEvent?.type == .keyDown ? .shortcut : .menu)
     }
-    .keyboardShortcut("t", modifiers: [.command, .shift])
+    .keyboardShortcut(model.menuShortcut(.terminalTab))
     .disabled(!model.panelKindAvailable(.terminal))
     Button("Device Tab") {
       model.togglePanelTab(.device, via: NSApp.currentEvent?.type == .keyDown ? .shortcut : .menu)
     }
-    .keyboardShortcut("b", modifiers: [.command, .option])
+    .keyboardShortcut(model.menuShortcut(.deviceTab))
   }
 }

@@ -109,6 +109,13 @@ extension MacTelemetryEvent {
   }
 
   /// A keyboard command from the Agent, Git, File or View menu.
+  enum ShortcutChangeAction: String {
+    case rebind
+    case clear
+    case reset
+    case resetAll = "reset_all"
+  }
+
   enum MenuCommandAction: String {
     case newAgent = "new_agent"
     case nextAgent = "next_agent"

@@ -43,7 +43,13 @@ public enum EditorCommand: String, CaseIterable, Sendable {
     }
   }
 
-  public var shortcut: EditorShortcut {
+  /// The key the app has bound, which `EditorKeymap` can change; nil has none.
+  @MainActor public var shortcut: EditorShortcut? {
+    if chordPrefix == nil, let override = EditorKeymap.overrides[self] { return override }
+    return defaultShortcut
+  }
+
+  public var defaultShortcut: EditorShortcut {
     switch self {
     case .toggleLineComment: EditorShortcut("/", .command)
     case .toggleBlockComment: EditorShortcut("a", [.shift, .option])
@@ -84,18 +90,25 @@ public enum EditorCommand: String, CaseIterable, Sendable {
   }
 
   /// The single-key command `event` is the shortcut for.
-  static func matching(_ event: NSEvent) -> EditorCommand? {
-    allCases.first { $0.chordPrefix == nil && $0.shortcut.matches(event) }
+  @MainActor static func matching(_ event: NSEvent) -> EditorCommand? {
+    allCases.first { $0.chordPrefix == nil && $0.shortcut?.matches(event) == true }
   }
 
   /// The chord command `event` completes after `prefix`.
   static func matching(_ event: NSEvent, after prefix: EditorShortcut) -> EditorCommand? {
-    allCases.first { $0.chordPrefix == prefix && $0.shortcut.matches(event) }
+    allCases.first { $0.chordPrefix == prefix && $0.defaultShortcut.matches(event) }
   }
 
   static func isChordPrefix(_ event: NSEvent) -> EditorShortcut? {
     allCases.lazy.compactMap(\.chordPrefix).first { $0.matches(event) }
   }
+}
+
+/// The app's rebound editor keys (Settings → Keyboard); the rest keep `defaultShortcut`.
+@MainActor public enum EditorKeymap {
+  public static var overrides: [EditorCommand: EditorShortcut?] = [:]
+  /// Send Selection to Agent, which the app owns but the editor has to take ahead of typing.
+  public static var sendSelection: EditorShortcut? = EditorShortcut("l", [.command, .option])
 }
 
 /// A key plus modifiers, usable both as a SwiftUI menu shortcut and to match an `NSEvent`.

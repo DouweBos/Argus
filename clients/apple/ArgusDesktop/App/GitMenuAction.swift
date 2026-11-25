@@ -1,25 +1,9 @@
 import GroveKit
 import SwiftUI
 
-/// The git commands the menu, the keys and the tooltips share.
+/// The git commands the menu, the keys and the tooltips share; their keys are `ShortcutCommand.git`'s.
 enum GitMenuAction: String, CaseIterable {
   case fetch, pull, push, branch, merge, rebase, createPullRequest, commit, stash, snapshot, undo
-
-  var chord: ShortcutChord? {
-    switch self {
-    case .fetch: .fetch
-    case .pull: .pull
-    case .push: .push
-    case .branch: .branch
-    case .merge: .merge
-    case .rebase: .rebase
-    case .createPullRequest: nil
-    case .commit: .commit
-    case .stash: .stash
-    case .snapshot: .snapshot
-    case .undo: .undo
-    }
-  }
 
   func title(_ features: GitFeatures) -> String {
     switch self {

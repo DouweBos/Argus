@@ -35,6 +35,7 @@ final class AppPreferences {
     static let deviceName = "argus:device.name"
     static let showInMenuBar = AppPreferences.showInMenuBarKey
     static let usageLimitsInDetails = "argus:contextCard.usageLimits"
+    static let shortcuts = "argus:keyboard.shortcuts"
   }
 
   private let defaults: UserDefaults
@@ -86,6 +87,15 @@ final class AppPreferences {
   /// The session details card lists what's left of the front agent's plan limits.
   var showUsageLimitsInDetails: Bool {
     didSet { defaults.set(showUsageLimitsInDetails, forKey: Key.usageLimitsInDetails) }
+  }
+
+  /// Every command's key: the defaults with Settings → Keyboard's changes, which are all it stores.
+  var shortcutKeymap: ShortcutKeymap {
+    didSet {
+      guard shortcutKeymap != oldValue else { return }
+      defaults.set(shortcutKeymap.storage, forKey: Key.shortcuts)
+      if defaults === UserDefaults.standard { applyEditorKeymap() }
+    }
   }
 
   /// The host's `default_llm.model`, which Settings → LLM edits; empty means the runner's own default.
@@ -191,6 +201,11 @@ final class AppPreferences {
     markdownOpensIn = MarkdownViewMode(rawValue: defaults.string(forKey: Key.markdownOpensIn) ?? "") ?? .preview
     languageServersEnabled = defaults.object(forKey: Key.languageServers) as? Bool ?? true
     disabledLanguageServers = Set(defaults.stringArray(forKey: Key.disabledLanguageServers) ?? [])
+    shortcutKeymap = ShortcutKeymap(
+      definitions: ShortcutCommand.definitions,
+      storage: defaults.dictionary(forKey: Key.shortcuts) as? [String: String] ?? [:])
+    // The editor's keymap is process-wide; a test's own defaults leave it alone.
+    if defaults === UserDefaults.standard { applyEditorKeymap() }
   }
 
   /// The tri-state, or the boolean it replaced: on (every save) is Always; off becomes Automatic,

@@ -32,18 +32,18 @@ enum BuiltinPalette {
     var commands = screens.map { route, title, image in
       PaletteCommand(
         id: "navigate.\(route.pattern)", title: "Go to \(title)", section: "Navigate",
-        systemImage: image
+        systemImage: image, shortcut: screenShortcut(route)?.hint
       ) { model.navigate(route) }
     }
     if model.canGoBack {
       commands.append(
-        PaletteCommand(id: "navigate.back", title: "Back", section: "Navigate", shortcut: "⌘[") {
+        PaletteCommand(id: "navigate.back", title: "Back", section: "Navigate", shortcut: ShortcutCommand.back.hint) {
           model.goBack(via: .palette)
         })
     }
     if model.canGoForward {
       commands.append(
-        PaletteCommand(id: "navigate.forward", title: "Forward", section: "Navigate", shortcut: "⌘]") {
+        PaletteCommand(id: "navigate.forward", title: "Forward", section: "Navigate", shortcut: ShortcutCommand.forward.hint) {
           model.goForward(via: .palette)
         })
     }
@@ -61,13 +61,26 @@ enum BuiltinPalette {
     return commands
   }
 
+  private static func screenShortcut(_ route: DesktopRoute) -> ShortcutCommand? {
+    switch route {
+    case .home: .home
+    case .inbox: .inbox
+    case .automations: .automations
+    case .blueprints: .blueprints
+    default: ShortcutCommand.screen(route)
+    }
+  }
+
   /// The side panel and a command per tab kind there's something to show for.
   private static func panelCommands(_ model: DesktopModel) -> [PaletteCommand] {
-    let shortcuts: [PanelTabKind: String] = [.terminal: "⇧⌘T", .device: "⌥⌘B"]
+    let shortcuts: [PanelTabKind: String] = [
+      .terminal: ShortcutCommand.terminalTab.hint, .device: ShortcutCommand.deviceTab.hint,
+    ].compactMapValues { $0 }
     return [
       PaletteCommand(
         id: "session.side-panel", title: model.sidePanelVisible ? "Hide Side Panel" : "Show Side Panel",
-        section: "Session", systemImage: "rectangle.righthalf.inset.filled", shortcut: "⌘J"
+        section: "Session", systemImage: "rectangle.righthalf.inset.filled",
+        shortcut: ShortcutCommand.sidePanel.hint
       ) { model.toggleSidePanel(via: .palette) }
     ]
       + PanelTabKind.openable.filter(model.panelKindAvailable).map { kind in
@@ -80,11 +93,11 @@ enum BuiltinPalette {
 
   private static func session(_ model: DesktopModel) -> [PaletteCommand] {
     guard let id = model.route.sessionId else { return [] }
-    // The card switcher's order and the View menu's ⌘1–⌘3.
-    var commands = SessionPanel.allCases.enumerated().map { index, panel in
+    // The card switcher's order and the View menu's.
+    var commands = SessionPanel.allCases.map { panel in
       PaletteCommand(
         id: "session.\(panel.rawValue)", title: "Session \(panel.title)", section: "Session",
-        systemImage: panel.symbol, shortcut: "⌘\(index + 1)"
+        systemImage: panel.symbol, shortcut: ShortcutCommand.panel(panel).hint
       ) { model.show(panel, via: .palette) }
     }
     commands += panelCommands(model)
@@ -96,7 +109,8 @@ enum BuiltinPalette {
     if model.sessionReadyForAgent != nil {
       commands.append(
         PaletteCommand(
-          id: "session.new-agent", title: "New Agent", section: "Session", systemImage: "plus", shortcut: "⇧⌘A"
+          id: "session.new-agent", title: "New Agent", section: "Session", systemImage: "plus",
+          shortcut: ShortcutCommand.newAgent.hint
         ) {
           model.startAgent(inSession: id)
         })
@@ -104,18 +118,22 @@ enum BuiltinPalette {
     if model.agentInFront?.status == .running {
       commands.append(
         PaletteCommand(
-          id: "session.interrupt", title: "Interrupt Agent", section: "Session", systemImage: "stop", shortcut: "⌘."
+          id: "session.interrupt", title: "Interrupt Agent", section: "Session", systemImage: "stop",
+          shortcut: ShortcutCommand.interruptAgent.hint
         ) {
           model.interruptAgentInFront()
         })
     }
     if model.sessionPanel == .agents, model.agents(inSession: id).count > 1 {
       commands += [
-        PaletteCommand(id: "session.next-agent", title: "Show Next Agent", section: "Session", shortcut: "⇧⌘]") {
+        PaletteCommand(id: "session.next-agent", title: "Show Next Agent", section: "Session",
+          shortcut: ShortcutCommand.nextAgent.hint
+        ) {
           model.cycleAgent(by: 1)
         },
         PaletteCommand(
-          id: "session.previous-agent", title: "Show Previous Agent", section: "Session", shortcut: "⇧⌘["
+          id: "session.previous-agent", title: "Show Previous Agent", section: "Session",
+          shortcut: ShortcutCommand.previousAgent.hint
         ) {
           model.cycleAgent(by: -1)
         },
@@ -149,23 +167,25 @@ enum BuiltinPalette {
     [
       PaletteCommand(
         id: settingsId, title: "Settings", section: "App", keywords: ["preferences"],
-        systemImage: "gearshape", shortcut: "⌘,", opensSettings: true
+        systemImage: "gearshape", shortcut: ShortcutCommand.settings.hint, opensSettings: true
       ) {},
       PaletteCommand(
         id: "app.add-project", title: "Add Project", section: "App", keywords: ["open repo"],
-        systemImage: "folder.badge.plus", shortcut: "⌘O"
+        systemImage: "folder.badge.plus", shortcut: ShortcutCommand.addProject.hint
       ) { model.addingProject = true },
       PaletteCommand(
         id: "app.new-project-from-blueprint", title: "New Project from Blueprint", section: "App",
-        keywords: ["create", "template", "scaffold", "repo"], systemImage: BlueprintText.icon
+        keywords: ["create", "template", "scaffold", "repo"], systemImage: BlueprintText.icon,
+        shortcut: ShortcutCommand.newProjectFromBlueprint.hint
       ) { model.navigate(.newProject(blueprintId: nil)) },
       PaletteCommand(
         id: "app.import-cli-projects", title: "Import Projects from Claude Code", section: "App",
-        keywords: ["claude code", "cli", "history", "add project"], systemImage: "square.and.arrow.down"
+        keywords: ["claude code", "cli", "history", "add project"], systemImage: "square.and.arrow.down",
+        shortcut: ShortcutCommand.importCliProjects.hint
       ) { model.importingCliProjects = true },
       PaletteCommand(
         id: "app.new-session", title: "New Session", section: "App", systemImage: "plus",
-        shortcut: "⌘N"
+        shortcut: ShortcutCommand.newSession.hint
       ) { model.requestNewSession() },
       PaletteCommand(
         id: "app.triage", title: "Triage a Problem with Argus", section: "App",
@@ -173,7 +193,8 @@ enum BuiltinPalette {
       ) { Task { await model.triage(nil) } },
       PaletteCommand(
         id: "app.open-session", title: "Open Session", section: "App", keywords: ["quick switcher"],
-        systemImage: "arrow.triangle.branch", shortcut: "⇧⌘O"
+        systemImage: "arrow.triangle.branch",
+        shortcut: ShortcutCommand.openSession.hint
       ) { model.palette.present(switcher: true) },
     ]
   }

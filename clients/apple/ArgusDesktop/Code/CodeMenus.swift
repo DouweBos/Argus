@@ -1,3 +1,4 @@
+import ArgusCore
 import ArgusEditor
 import SwiftUI
 
@@ -9,11 +10,11 @@ struct CodeSelectionCommands: View {
     let document = model.activeCodeDocument
     let focused = document?.hasFocus == true
     ForEach([EditorCommand.selectLine, .addNextOccurrence, .selectAllOccurrences, .addCursorAbove, .addCursorBelow], id: \.self) {
-      EditorCommandButton(command: $0, document: document, enabled: focused)
+      EditorCommandButton(model: model, command: $0, document: document, enabled: focused)
     }
     Divider()
     ForEach([EditorCommand.moveLinesUp, .moveLinesDown, .copyLinesUp, .copyLinesDown], id: \.self) {
-      EditorCommandButton(command: $0, document: document, enabled: focused && document?.isEditable == true)
+      EditorCommandButton(model: model, command: $0, document: document, enabled: focused && document?.isEditable == true)
     }
   }
 }
@@ -29,24 +30,26 @@ struct CodeGoCommands: View {
     QuickOpenCommands(model: model)
     Divider()
     Button("Next Editor") { code?.cycleEditor(by: 1, active: model.activeCodePath) }
-      .keyboardShortcut(.rightArrow, modifiers: [.option, .command])
+      .keyboardShortcut(model.menuShortcut(.nextEditor))
       .disabled((code?.tabs.tabs.count ?? 0) < 2)
     Button("Previous Editor") { code?.cycleEditor(by: -1, active: model.activeCodePath) }
-      .keyboardShortcut(.leftArrow, modifiers: [.option, .command])
+      .keyboardShortcut(model.menuShortcut(.previousEditor))
       .disabled((code?.tabs.tabs.count ?? 0) < 2)
     Divider()
-    EditorCommandButton(command: .goToDefinition, document: document, enabled: language)
+    EditorCommandButton(model: model, command: .goToDefinition, document: document, enabled: language)
     Button("Find References") {
       guard let document, let code else { return }
       Task { await LspReferences.run(in: code, document: document) }
     }
-    .keyboardShortcut(.function(12), modifiers: .shift)
+    .keyboardShortcut(model.menuShortcut(.findReferences))
     .disabled(!language)
-    EditorCommandButton(command: .goToLine, document: document)
-    EditorCommandButton(command: .jumpToBracket, document: document)
+    EditorCommandButton(model: model, command: .goToLine, document: document)
+    EditorCommandButton(model: model, command: .jumpToBracket, document: document)
     Divider()
-    EditorCommandButton(command: .nextProblem, document: document, enabled: document?.diagnostics.isEmpty == false)
-    EditorCommandButton(command: .previousProblem, document: document, enabled: document?.diagnostics.isEmpty == false)
+    EditorCommandButton(
+      model: model, command: .nextProblem, document: document, enabled: document?.diagnostics.isEmpty == false)
+    EditorCommandButton(
+      model: model, command: .previousProblem, document: document, enabled: document?.diagnostics.isEmpty == false)
   }
 }
 
@@ -58,7 +61,7 @@ private struct QuickOpenCommands: View {
     let code = model.activeCodeSession
     ForEach(QuickOpenModel.Entry.allCases, id: \.self) { entry in
       Button(entry.title) { model.toggleQuickOpen(entry) }
-        .keyboardShortcut(entry.shortcut.key, modifiers: entry.shortcut.modifiers)
+        .keyboardShortcut(model.menuShortcut(.quickOpen(entry)))
         .disabled(code == nil)
     }
   }
@@ -72,28 +75,28 @@ struct CodeViewCommands: View {
   var body: some View {
     let code = model.activeCodeSession
     Toggle("Word Wrap", isOn: wordWrap)
-      .keyboardShortcut(CodeShortcuts.wordWrap.key, modifiers: CodeShortcuts.wordWrap.modifiers)
+      .keyboardShortcut(model.menuShortcut(.wordWrap))
       .disabled(code == nil)
     Divider()
     let document = model.activeCodeDocument
     ForEach([EditorCommand.fold, .unfold, .foldAll, .unfoldAll], id: \.self) {
-      EditorCommandButton(command: $0, document: document, enabled: document?.hasFocus == true)
+      EditorCommandButton(model: model, command: $0, document: document, enabled: document?.hasFocus == true)
     }
     Divider()
     Button("Toggle Navigator") { code?.navigatorVisible.toggle() }
-      .keyboardShortcut(model.binds(.branch, to: .git(.branch)) ? nil : ShortcutChord.branch.keyboardShortcut)
+      .keyboardShortcut(model.menuShortcut(.toggleNavigator))
       .disabled(code == nil)
     Button("Show Files") { code?.showNavigator(.files) }
-      .keyboardShortcut("e", modifiers: [.shift, .command])
+      .keyboardShortcut(model.menuShortcut(.showFiles))
       .disabled(code == nil)
     Button("Show Changes") { code?.showNavigator(.changes) }
-      .keyboardShortcut("g", modifiers: [.control, .shift])
+      .keyboardShortcut(model.menuShortcut(.showChanges))
       .disabled(code == nil)
     Button("Toggle Problems") { model.toggleProblems() }
-      .keyboardShortcut(model.binds(.merge, to: .git(.merge)) ? nil : ShortcutChord.merge.keyboardShortcut)
+      .keyboardShortcut(model.menuShortcut(.toggleProblems))
       .disabled(code == nil)
     Button("Toggle Terminal") { model.togglePanelTab(.terminal, via: .shortcut) }
-      .keyboardShortcut("`", modifiers: .control)
+      .keyboardShortcut(model.menuShortcut(.toggleTerminal))
       .disabled(code == nil)
   }
 
@@ -104,30 +107,27 @@ struct CodeViewCommands: View {
   }
 }
 
-/// App keys the editor hands back before its own handling: on ⌥ they'd type a character first, and
-/// quick open's must open from inside the editor too.
+/// App keys the editor takes ahead of its own handling: on ⌥ they'd type a character first, and
+/// quick open's must open from inside the editor too. Read from the keymap on each press.
 enum CodeShortcuts {
-  static let wordWrap = EditorShortcut("z", .option)
-  static let format = EditorShortcut("f", [.shift, .option])
-
   @MainActor static func install(on document: EditorDocument, store: CodeStore?) {
-    var quickOpen: [EditorShortcut: () -> Bool] = [:]
-    for entry in QuickOpenModel.Entry.allCases {
-      quickOpen[entry.shortcut] = { [weak store] in
-        store?.model?.toggleQuickOpen(entry)
-        return store != nil
+    document.hostKeys = { [weak store] event in
+      guard let store, let chord = KeyChord(event: event) else { return false }
+      let keymap = AppPreferences.shared.shortcutKeymap
+      for entry in QuickOpenModel.Entry.allCases where keymap.chord(for: .quickOpen(entry)) == chord {
+        store.model?.toggleQuickOpen(entry)
+        return true
       }
+      if keymap.chord(for: .wordWrap) == chord {
+        store.toggleWordWrap()
+        return true
+      }
+      if keymap.chord(for: .formatDocument) == chord {
+        store.model?.formatActiveCodeDocument()
+        return true
+      }
+      return false
     }
-    document.hostShortcuts = quickOpen.merging([
-      wordWrap: { [weak store] in
-        store?.toggleWordWrap()
-        return store != nil
-      },
-      format: { [weak store] in
-        store?.model?.formatActiveCodeDocument()
-        return store != nil
-      },
-    ]) { first, _ in first }
   }
 }
 
@@ -150,14 +150,6 @@ extension QuickOpenModel.Entry: CaseIterable {
     }
   }
 
-  /// ⌘P and ⌘T as VS Code has them, ⇧⌘O as Xcode does.
-  var shortcut: EditorShortcut {
-    switch self {
-    case .files: EditorShortcut("p", .command)
-    case .openQuickly: EditorShortcut("o", [.shift, .command])
-    case .workspaceSymbols: EditorShortcut("t", .command)
-    }
-  }
 }
 
 extension DesktopModel {

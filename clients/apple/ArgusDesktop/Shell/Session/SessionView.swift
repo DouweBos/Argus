@@ -125,9 +125,9 @@ struct SessionView: View {
     .frame(maxHeight: .infinity, alignment: .top)
     .sessionContextCard(session, panel: .agents, barHeight: AgentTabBar.height, roomToOpen: agentCardFits)
     .background {
-      // ⌘T too, as the Mac app always had it: agents are this panel's tabs.
+      // A second key, ⌘T by default, as the Mac app always had it: agents are this panel's tabs.
       Button("New Agent") { MenuCommand.newAgent.run(model, via: .shortcut) }
-        .keyboardShortcut("t", modifiers: .command)
+        .keyboardShortcut(model.menuShortcut(.newAgentTab))
         .hidden()
     }
   }
@@ -181,7 +181,7 @@ struct AgentTabBar: View {
       }
       .buttonStyle(FlatIconButtonStyle(size: 22))
       .disabled(!canStart)
-      .help("New agent (⇧⌘A)")
+      .help(ShortcutCommand.newAgent.help("New agent"))
     }
     .padding(.horizontal, 10)
     // A scroll view takes all the height it's offered; a tab bar is one row.

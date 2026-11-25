@@ -1203,6 +1203,19 @@ The Mac app's code view (⌘3 in a session). These live on this Mac only.
 
 ---
 
+## Keyboard (Mac app)
+
+Settings → Keyboard in Argus for Mac lists every command a key can run, grouped like the menus: the app, Go, sessions and panels, agents, Git, the code view and the editor. Search narrows it by name or key (`⇧⌘P`). These live on this Mac only, and only the keys you changed are stored.
+
+| Setting             | Default      | Description                                                                                                                                                                                                                                                                                       |
+| ------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A command's key** | see the list | Click the key, then press the new one: it needs ⌘, ⌃ or ⌥ (an F-key works alone). Escape cancels, Delete leaves the command without a key. The menus, the shortcut that runs it, the command palette's hints and tooltips all follow. The arrow beside a changed key puts it back to its default. |
+| **Reset All**       | —            | In the toolbar: every key back to Argus's defaults.                                                                                                                                                                                                                                               |
+
+A narrower place can reuse a key on purpose: the code view's keys win while it's on screen (⇧⌘F finds in files there and fetches elsewhere in a session), the git view's and the Diff tab's in git, the editor's while it has focus. Two commands on one key where both are live clash, and the list marks both in red; only one of them runs. A key macOS already uses (⌘H, ⌘Space, ⌘C) gets a yellow warning but is kept. Quit, Close Tab, Settings and the editor's ⌘K chords (Fold All, Unfold All) are listed but can't be changed. The phones have no keyboard shortcuts to change.
+
+---
+
 ## Menu bar and login (Mac app)
 
 Settings → General → Startup in Argus for Mac. These live on this Mac only.
