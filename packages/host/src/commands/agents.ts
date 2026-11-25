@@ -31,6 +31,7 @@ import {
   rewindAgent,
   seedForkedConversation,
   setConversationTitle,
+  noteQueuedByClient,
   submitAgentMessage,
 } from "../services/agent/conversation/actions";
 import { sendQueuedMessageNow } from "../services/agent/conversation/hostDriver";
@@ -199,14 +200,16 @@ export function registerAgentCommands(): void {
     dismissLimitResume(p.agentId),
   );
   defineTypedCommand("list_queued_messages", (p) => listQueue(p.agentId));
-  defineTypedCommand("queue_message", (p) =>
-    enqueueMessage(p.agentId, {
+  defineTypedCommand("queue_message", (p) => {
+    noteQueuedByClient(p.agentId);
+
+    return enqueueMessage(p.agentId, {
       text: p.text,
       displayText: p.displayText,
       images: p.images,
       author: p.author,
-    }),
-  );
+    });
+  });
   defineTypedCommand("remove_queued_message", (p) =>
     removeQueuedMessage(p.agentId, p.id),
   );

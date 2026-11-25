@@ -127,6 +127,7 @@ export function fakeClaude(): {
       supportsSetEffort: true,
       supportsInterrupt: true,
       supportsSideQuestion: true,
+      supportsMidTurnMessages: true,
     }),
     defaultModel: () => null,
     preflight: async () => {

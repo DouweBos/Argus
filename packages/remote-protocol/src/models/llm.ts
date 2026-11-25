@@ -15,6 +15,8 @@ export const RunnerCapabilities = z.object({
   supportsInterrupt: z.boolean(),
   /** Whether a running agent can be asked a side question. */
   supportsSideQuestion: z.boolean(),
+  /** Absent from hosts that predate it; a message sent mid-turn then waits for the turn. */
+  supportsMidTurnMessages: z.boolean().optional(),
 });
 export type RunnerCapabilities = z.infer<typeof RunnerCapabilities>;
 

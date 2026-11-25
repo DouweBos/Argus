@@ -90,6 +90,8 @@ public enum ComposerOptions {
 /// What a key press in the composer does. Pure, so the bindings are testable.
 public enum ComposerKey: Equatable, Sendable {
   case returnKey(shift: Bool)
+  /// ⌥Return — sends after the running turn instead of joining it.
+  case optionReturn
   case tab(shift: Bool)
   case up, down, escape
   /// ⌘. — the Mac's "cancel".
@@ -102,6 +104,8 @@ public enum ComposerKeyAction: Equatable, Sendable {
   /// Eat it — Esc would otherwise open AppKit's completion popup.
   case ignore
   case send
+  /// Queued until the running turn ends.
+  case sendAfterTurn
   case menuMove(Int)
   case menuAccept
   case menuDismiss
@@ -112,8 +116,8 @@ public enum ComposerKeyAction: Equatable, Sendable {
 }
 
 public enum ComposerKeymap {
-  /// Return sends whatever modifier is held, ⇧Return is a newline, as on the
-  /// desktop. An open menu takes ↑/↓/Tab/Return/Esc first, then Tab takes a
+  /// Return sends whatever modifier is held, ⇧Return is a newline, ⌥Return
+  /// waits for a running turn to end. An open menu takes ↑/↓/Tab/Return/Esc first, then Tab takes a
   /// suggested reply when there is one.
   public static func action(
     for key: ComposerKey, menuOpen: Bool, isRunning: Bool, hasFollowUp: Bool = false
@@ -122,13 +126,14 @@ public enum ComposerKeymap {
       switch key {
       case .up: return .menuMove(-1)
       case .down: return .menuMove(1)
-      case .tab(shift: false), .returnKey(shift: false): return .menuAccept
+      case .tab(shift: false), .returnKey(shift: false), .optionReturn: return .menuAccept
       case .escape: return .menuDismiss
       default: break
       }
     }
     switch key {
     case .returnKey(shift: false): return .send
+    case .optionReturn: return isRunning ? .sendAfterTurn : .send
     case .tab(shift: false) where hasFollowUp: return .acceptFollowUp
     case .tab(shift: true): return .cyclePermissionMode
     case .commandPeriod: return isRunning ? .interrupt : .ignore

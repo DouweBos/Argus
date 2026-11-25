@@ -4,7 +4,8 @@ import Foundation
 
 /// Sending, queueing and starting, the draft's load and save, and attachments.
 extension ComposerModel {
-  public func submit(redirect: ComposerStarter? = nil) {
+  /// A running agent takes the message mid-turn; `afterTurn` queues it until the turn ends.
+  public func submit(redirect: ComposerStarter? = nil, afterTurn: Bool = false) {
     guard isEnabled, !dictation.isActive, !isUploadingFiles,
       hasContent || sendTarget(redirect: redirect)?.needsContent == false
     else { return }
@@ -51,7 +52,7 @@ extension ComposerModel {
       guard canSend(redirect: redirect) else { return }
       return start(with: target, body: body, display: display, images: attachments)
     }
-    let queue = isRunning
+    let queue = afterTurn && isRunning
     clearComposer()
     clearLinks()
 

@@ -1600,6 +1600,9 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       params,
     );
     requireAgent(agent_id);
+    const { noteQueuedByClient } =
+      await import("../agent/conversation/actions");
+    noteQueuedByClient(agent_id);
     const queued = await control(() =>
       enqueueMessage(agent_id, {
         text: message,

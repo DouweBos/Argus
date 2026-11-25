@@ -5,7 +5,7 @@ import Observation
 
 /// The composer's state and actions, shared by the Mac and phone inputs: the
 /// draft (text, images, files, linked projects), the `/` and `@` menus, the model,
-/// effort, mode and account pickers, and sending, queueing or starting.
+/// effort, mode and account pickers, and sending (mid-turn or after it) or starting.
 /// The platform views only render it.
 @MainActor
 @Observable
@@ -269,6 +269,8 @@ public final class ComposerModel {
       return true
     case .send:
       submit(redirect: redirect)
+    case .sendAfterTurn:
+      submit(redirect: redirect, afterTurn: true)
     case .menuMove(let delta):
       menuIndex = ComposerKeymap.move(menuIndex, by: delta, count: menuCount)
     case .menuAccept:

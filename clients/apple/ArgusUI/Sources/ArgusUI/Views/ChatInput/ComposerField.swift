@@ -253,7 +253,8 @@
         return .commandPeriod
       }
       switch event.keyCode {
-      case 36, 76: return .returnKey(shift: shift)
+      case 36, 76:
+        return flags.subtracting([.capsLock, .function, .numericPad]) == .option ? .optionReturn : .returnKey(shift: shift)
       case 48: return .tab(shift: shift)
       case 126 where flags.isDisjoint(with: [.command, .option, .shift]): return .up
       case 125 where flags.isDisjoint(with: [.command, .option, .shift]): return .down

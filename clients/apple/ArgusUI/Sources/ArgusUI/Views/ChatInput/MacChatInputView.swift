@@ -4,9 +4,9 @@
   import SwiftUI
   import UniformTypeIdentifiers
 
-  /// The Mac chat input, one box in the reading column: Return sends (or queues
-  /// while the agent works), ⇧Return breaks the line, `/` and `@` open
-  /// keyboard-driven menus, images paste, drop or attach, and the agent's
+  /// The Mac chat input, one box in the reading column: Return sends (joining
+  /// a running turn), ⌥Return waits for the turn to end, ⇧Return breaks the line,
+  /// `/` and `@` open keyboard-driven menus, images paste, drop or attach, and the agent's
   /// model, effort and permission mode sit in pills along its foot.
   struct MacChatInputView: View {
     @Environment(\.theme) var theme
@@ -165,7 +165,7 @@
       return composer.followUps.first.map { "\($0)  (Tab)" } ?? "Ask anything, @ for files, / for commands"
     }
 
-    /// Attach, then send — or, while the agent works, queue and stop.
+    /// Attach, then send — or, while the agent works, send into the turn and stop.
     private var actions: some View {
       HStack(spacing: 6) {
         if composer.contextTokens > 0 {
@@ -187,8 +187,11 @@
           .disabled(!composer.isEnabled)
         if composer.isRunning {
           if composer.hasContent {
-            ComposerRoundButton(kind: .send, label: "Queue message") { composer.submit(redirect: redirect) }
-              .help("Queue — sent when the agent finishes its turn")
+            ComposerRoundButton(kind: .send, label: "Send") { composer.submit(redirect: redirect) }
+              .help("Send (Return) — ⌥Return sends after this turn")
+              .contextMenu {
+                Button("Send After This Turn") { composer.submit(redirect: redirect, afterTurn: true) }
+              }
           }
           ComposerRoundButton(kind: .stop, label: "Interrupt") { composer.interrupt() }
             .help("Interrupt (⌘.)")

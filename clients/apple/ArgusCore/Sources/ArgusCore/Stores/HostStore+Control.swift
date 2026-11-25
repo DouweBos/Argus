@@ -41,8 +41,8 @@ extension HostStore {
       hooks.track(
         .messageSent(
           queued: result.queued == true, hasImages: !images.isEmpty, length: message.count))
-      // The computer queues a send that arrived mid-turn. Drop the bubble and
-      // let the queue show it, or it reads as already delivered.
+      // The computer queues a send it can't put into the turn (a pending question, a
+      // pause, an ACP runner). Drop the bubble and let the queue show it.
       if result.queued == true {
         await loadQueue(agentId: agentId)
         optimisticByAgent[agentId]?.removeAll { $0.id == localId }
@@ -131,7 +131,7 @@ extension HostStore {
   public func queueMessage(
     agentId: String, message: String, images: [RemoteImageAttachment], displayText: String
   ) async {
-    // Sent as a plain message on reconnect: the computer queues one that arrives mid-turn.
+    // Held offline and sent as a plain message on reconnect, so it may join a running turn.
     if shouldHoldReply {
       return holdReply(agentId: agentId, message: message, displayText: displayText, images: images)
     }

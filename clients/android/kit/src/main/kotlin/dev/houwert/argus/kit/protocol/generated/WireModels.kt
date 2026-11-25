@@ -7019,6 +7019,7 @@ data class RunnerCapabilities(
   @SerialName("supportsSetEffort") val supportsSetEffort: Boolean,
   @SerialName("supportsInterrupt") val supportsInterrupt: Boolean,
   @SerialName("supportsSideQuestion") val supportsSideQuestion: Boolean,
+  @SerialName("supportsMidTurnMessages") val supportsMidTurnMessages: Boolean? = null,
 )
 
 @Serializable

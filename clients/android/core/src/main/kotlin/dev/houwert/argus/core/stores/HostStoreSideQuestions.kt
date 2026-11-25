@@ -35,7 +35,7 @@ suspend fun HostStore.askSide(agentId: String, question: String) {
   }
 }
 
-/** Send an answered side question into the agent's conversation, queued behind a running turn. */
+/** Send an answered side question into the agent's conversation, joining a running turn. */
 suspend fun HostStore.sendSideToAgent(agentId: String, id: String) {
   val side = _sideQuestionsByAgent.value[agentId]?.firstOrNull { it.id == id } ?: return
   val answer = side.answer ?: return

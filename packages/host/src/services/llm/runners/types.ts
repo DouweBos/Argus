@@ -142,6 +142,8 @@ export interface RunnerCapabilities {
   supportsInterrupt: boolean;
   /** Whether a running agent can be asked a side question (a read-only run on its history). */
   supportsSideQuestion: boolean;
+  /** Whether a message sent mid-turn joins the running turn instead of stopping it. */
+  supportsMidTurnMessages?: boolean;
 }
 
 // ---------------------------------------------------------------------------

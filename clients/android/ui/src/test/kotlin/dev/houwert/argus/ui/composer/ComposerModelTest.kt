@@ -64,12 +64,30 @@ class ComposerModelTest {
     assertNull(preferences.string(PreferenceKey.draft("a1")))
   }
 
-  @Test fun `a running agent gets the message queued`() {
+  @Test fun `a running agent is sent the message into its turn`() {
     val composer = model(RemoteAgentStatusStatus.running)
     composer.setText("next")
     composer.submit()
-    assertEquals(listOf("next"), host.queued.map { it.message })
+    assertEquals(listOf("next"), host.sent.map { it.message })
+    assertTrue(host.queued.isEmpty())
+    assertEquals("", composer.text.value)
+  }
+
+  @Test fun `send after this turn queues it on a running agent`() {
+    val composer = model(RemoteAgentStatusStatus.running)
+    composer.setText("later")
+    composer.submit(afterTurn = true)
+    assertEquals(listOf("later"), host.queued.map { it.message })
+    assertEquals("later", host.queued.single().displayText)
     assertTrue(host.sent.isEmpty())
+  }
+
+  @Test fun `send after this turn on an idle agent just sends`() {
+    val composer = model()
+    composer.setText("now")
+    composer.submit(afterTurn = true)
+    assertEquals(listOf("now"), host.sent.map { it.message })
+    assertTrue(host.queued.isEmpty())
   }
 
   @Test fun `images alone send as see attached images and links ride one message`() {

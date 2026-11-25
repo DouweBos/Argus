@@ -208,10 +208,14 @@ async function wake(
   let outcome: "no_agent" | "queued" | "sent" = "no_agent";
   if (agentId) {
     watch.agentId = agentId;
-    const { queued } = await submitAgentMessage(agentId, {
-      text: wakeMessage(snap, events, logs),
-      displayText: summary,
-    });
+    const { queued } = await submitAgentMessage(
+      agentId,
+      {
+        text: wakeMessage(snap, events, logs),
+        displayText: summary,
+      },
+      { whenBusy: "after_turn" },
+    );
     outcome = queued ? "queued" : "sent";
     watch.wakes += 1;
   } else {

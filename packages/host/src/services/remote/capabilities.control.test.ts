@@ -308,7 +308,10 @@ describe("control capability gating", () => {
       permissionMode: "auto",
       parentAgentId: null,
       createdAt: 0,
-      runner: { id: "claude-code" },
+      runner: {
+        id: "claude-code",
+        capabilities: () => ({ supportsMidTurnMessages: true }),
+      },
       handle: {
         initializeResponse: () => ({
           models: [],
@@ -343,34 +346,57 @@ describe("control capability gating", () => {
     );
   });
 
-  it("queues a send that lands mid-turn instead of injecting it", async () => {
+  it("joins a running turn, like a message typed in the terminal", async () => {
     const ctx = makeCtx(["monitor", "control"]);
     appState.agents.get("a1")!.status = "running";
 
     const res = await dispatch(
       "agents.send",
-      { agent_id: "a1", message: "wait for me" },
+      { agent_id: "a1", message: "also check the PRs" },
       ctx,
     );
 
-    expect(res).toMatchObject({ queued: true });
-    expect(sendAgentMessage).not.toHaveBeenCalled();
-    expect(appState.agentQueues.get("a1")).toHaveLength(1);
+    expect(res).not.toMatchObject({ queued: true });
+    expect(sendAgentMessage).toHaveBeenCalledWith(
+      "a1",
+      "also check the PRs",
+      undefined,
+      expect.objectContaining({ steer: true }),
+    );
+    expect(appState.agentQueues.get("a1") ?? []).toHaveLength(0);
   });
 
-  it("queues a send while a prompt is in flight, whatever the CLI reports", async () => {
+  it("joins the turn between tool calls, whatever the CLI reports", async () => {
     const ctx = makeCtx(["monitor", "control"]);
     // The CLI flips to idle between tool calls, so status alone says nothing.
     appState.agents.get("a1")!.inflightPrompts = 1;
 
-    const res = await dispatch(
+    await dispatch(
       "agents.send",
-      { agent_id: "a1", message: "wait for me" },
+      { agent_id: "a1", message: "also check the PRs" },
       ctx,
     );
 
-    expect(res).toMatchObject({ queued: true });
+    expect(sendAgentMessage).toHaveBeenCalledWith(
+      "a1",
+      "also check the PRs",
+      undefined,
+      expect.objectContaining({ steer: true }),
+    );
+  });
+
+  it("queues what the client asks to send after the turn", async () => {
+    const ctx = makeCtx(["monitor", "control"]);
+    appState.agents.get("a1")!.status = "running";
+
+    await dispatch(
+      "agents.queue_add",
+      { agent_id: "a1", message: "after this" },
+      ctx,
+    );
+
     expect(sendAgentMessage).not.toHaveBeenCalled();
+    expect(appState.agentQueues.get("a1")).toHaveLength(1);
   });
 
   it("still queues while the agent waits on a question", async () => {

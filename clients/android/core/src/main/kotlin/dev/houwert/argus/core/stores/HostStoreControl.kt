@@ -39,7 +39,7 @@ suspend fun HostStore.sendMessage(
   try {
     val result = backend.request(Methods.AgentsSend, MethodsTypes.AgentsSendParams(agentId, message, displayText, images.ifEmpty { null }))
     hooks.track(StoreEvent.MessageSent(queued = result.queued == true, hasImages = images.isNotEmpty(), length = message.length))
-    // The computer queues a send that arrived mid-turn: drop the bubble and let the queue show it.
+    // The computer queues a send it can't steer into the turn (a pending prompt, a pause, an ACP runner): the queue shows it.
     if (result.queued == true) {
       loadQueue(agentId)
       _optimisticByAgent.update { it.removingItem(agentId) { m -> m.id == localId } }
@@ -106,7 +106,7 @@ private fun optimisticId() = "optimistic-${System.currentTimeMillis()}-${Random.
 // host's list is authoritative; it comes back on `agent.queue` and `loadQueue`.
 
 suspend fun HostStore.queueMessage(agentId: String, message: String, images: List<RemoteImageAttachment>, displayText: String) {
-  // Sent as a plain message on reconnect: the computer queues one that arrives mid-turn.
+  // Replayed as a plain message on reconnect, which joins a running turn rather than waiting for it.
   if (shouldHoldReply) return holdReply(agentId, message, displayText, images)
   val backend = backend ?: run {
     _failedByAgent.update { it.appendingItem(agentId, FailedSend("failed-${UUID.randomUUID()}", message, displayText, images)) }

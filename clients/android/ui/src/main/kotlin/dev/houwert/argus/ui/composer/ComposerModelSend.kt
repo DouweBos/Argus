@@ -11,7 +11,8 @@ import kotlinx.serialization.builtins.serializer
 
 // Sending, queueing and starting, the draft's load and save, and attachments.
 
-fun ComposerModel.submit(redirect: ComposerStarter? = null) {
+/** A busy agent takes the message into its running turn; `afterTurn` holds it in the queue until the turn ends. */
+fun ComposerModel.submit(redirect: ComposerStarter? = null, afterTurn: Boolean = false) {
   if (!isEnabled || dictation.value.isActive || isUploadingFiles) return
   if (!hasContent && sendTarget(redirect)?.needsContent != false) return
   val typed = trimmedText
@@ -52,12 +53,13 @@ fun ComposerModel.submit(redirect: ComposerStarter? = null) {
     if (!canSend(redirect)) return
     return start(target, body, display, attachments)
   }
-  val queue = isRunning
+  val queue = afterTurn && isRunning
   clearComposer()
   clearLinks()
   val agentId = agentId
   scope.launch {
     // The bubble keeps the preamble: the transcript draws it as linked-project chips.
+    // A plain send can still come back queued (a pending prompt, a paused agent); the store reloads the queue then.
     if (queue) host.queueMessage(agentId, body, attachments, shown ?: body)
     else host.sendMessage(agentId, body, attachments, shown)
   }

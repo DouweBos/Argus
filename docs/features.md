@@ -492,6 +492,22 @@ an automation can't ask, and huddle guests see the card but can't answer it.
 
 ---
 
+## Messages while an agent works
+
+A message you send while an agent is working joins its turn at the next step,
+the way typing does in Claude Code's terminal, so a follow-up question doesn't
+wait for a long build or test run to finish. To hold it until the turn ends
+instead, use **Send After This Turn**: ⌥↩ or the send button's menu on the
+Mac, a long press on the send button on the iPhone and Android, Alt+Enter in
+the web client. Queued messages show in the chat, where **Send now**
+moves one into the running turn.
+
+A message waits for the turn anyway while the agent is asking you something,
+while it is paused or restarting, and for ACP agents, which can't take a
+message mid-turn.
+
+---
+
 ## Permissions
 
 - Every tool call an agent makes asks for approval if it isn't already

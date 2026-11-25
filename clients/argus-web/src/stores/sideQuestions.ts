@@ -105,7 +105,8 @@ export const useSideQuestionsStore = create<SideQuestionsState>()(
         }
         const message = sideQuestionMessage(exchange.question, exchange.answer);
         patch(agentId, exchangeId, { sent: true });
-        // Same path as the composer: a busy agent gets it queued behind its turn.
+        // Unlike the composer's default, a side answer waits for the turn to end
+        // rather than steering the agent mid-turn.
         const running =
           useAgentsStore.getState().statusByAgent[agentId]?.status === "running";
         try {

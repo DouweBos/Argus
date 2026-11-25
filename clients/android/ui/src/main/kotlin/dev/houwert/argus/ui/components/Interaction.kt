@@ -1,6 +1,7 @@
 package dev.houwert.argus.ui.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -35,17 +36,29 @@ fun Modifier.argusClickable(
   role: Role = Role.Button,
   label: String? = null,
   ripple: Boolean = true,
+  longClickLabel: String? = null,
+  onLongClick: (() -> Unit)? = null,
   onClick: () -> Unit,
 ): Modifier =
-  clip(shape)
-    .clickable(
+  clip(shape).then(
+    if (onLongClick == null) Modifier.clickable(
       interactionSource = interaction.source,
       indication = if (ripple) ripple() else null,
       enabled = enabled,
       onClickLabel = label,
       role = role,
       onClick = onClick,
-    )
+    ) else Modifier.combinedClickable(
+      interactionSource = interaction.source,
+      indication = if (ripple) ripple() else null,
+      enabled = enabled,
+      onClickLabel = label,
+      role = role,
+      onLongClickLabel = longClickLabel,
+      onLongClick = onLongClick,
+      onClick = onClick,
+    ),
+  )
 
 /** A tappable toggle (checkbox, switch row) with the same treatment. */
 fun Modifier.argusToggleable(

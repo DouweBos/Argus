@@ -37,14 +37,30 @@ struct ComposerModelTests {
     #expect(preferences.string(PreferenceKey.draft(agentId: "a1")) == nil)
   }
 
-  @Test("a running agent gets the message queued")
-  func queue() async {
+  @Test("a running agent is sent the message mid-turn")
+  func sendWhileRunning() async {
     let composer = model(status: .running)
     composer.text = "next"
     composer.submit()
     await settle()
-    #expect(host.queued.map(\.message) == ["next"])
+    #expect(host.sent.map(\.message) == ["next"])
+    #expect(host.queued.isEmpty)
+  }
+
+  @Test("⌥Return queues after a running turn; idle, it just sends")
+  func sendAfterTurn() async {
+    let composer = model(status: .running)
+    composer.text = "later"
+    #expect(composer.handle(.optionReturn))
+    await settle()
+    #expect(host.queued.map(\.message) == ["later"])
     #expect(host.sent.isEmpty)
+
+    let idle = model()
+    idle.text = "now"
+    idle.submit(afterTurn: true)
+    await settle()
+    #expect(host.sent.map(\.message) == ["now"])
   }
 
   @Test("images alone send as \"(see attached images)\"; links ride one message")

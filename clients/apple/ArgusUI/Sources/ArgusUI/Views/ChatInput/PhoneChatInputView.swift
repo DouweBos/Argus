@@ -133,7 +133,7 @@
       .overlay { RoundedRectangle(cornerRadius: Self.radius).strokeBorder(theme.border, lineWidth: 1) }
     }
 
-    /// Attach, then send — or, while the agent works, queue and stop.
+    /// Attach, then send — or, while the agent works, send into the turn and stop.
     private var actions: some View {
       HStack(spacing: 6) {
         if composer.contextTokens > 0 {
@@ -158,7 +158,12 @@
         }
         if composer.isRunning {
           if composer.hasContent {
-            ComposerRoundButton(kind: .send, label: "Queue message") { composer.submit() }
+            // Long-press offers waiting for the turn to end instead.
+            ComposerRoundButton(kind: .send, label: "Send") { composer.submit() }
+              .contextMenu {
+                Button("Send After This Turn", systemImage: "clock") { composer.submit(afterTurn: true) }
+              }
+              .accessibilityAction(named: "Send After This Turn") { composer.submit(afterTurn: true) }
           }
           ComposerRoundButton(kind: .stop, label: "Interrupt") { composer.interrupt() }
         } else if composer.starting {

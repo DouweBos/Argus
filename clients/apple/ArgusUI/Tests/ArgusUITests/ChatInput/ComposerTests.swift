@@ -62,8 +62,11 @@ struct ComposerKeymapTests {
   func returnKey() {
     #expect(action(.returnKey(shift: false)) == .send)
     #expect(action(.returnKey(shift: true)) == .passThrough)
-    // Sending while the agent runs queues; the key is the same.
+    // Sending while the agent runs joins the turn; ⌥Return waits for it to end.
     #expect(action(.returnKey(shift: false), running: true) == .send)
+    #expect(action(.optionReturn, running: true) == .sendAfterTurn)
+    #expect(action(.optionReturn) == .send)
+    #expect(action(.optionReturn, menu: true, running: true) == .menuAccept)
   }
 
   @Test("an open menu takes the arrows, Tab, Return and Esc")

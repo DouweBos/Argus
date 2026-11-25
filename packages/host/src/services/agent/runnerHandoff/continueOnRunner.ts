@@ -134,10 +134,14 @@ export async function continueAgentOnRunner(
   });
 
   try {
-    await submitAgentMessage(info.agent_id, {
-      text: native ? kickoff(fromRunner) : seedFor(mcp),
-      displayText: kickoff(fromRunner),
-    });
+    await submitAgentMessage(
+      info.agent_id,
+      {
+        text: native ? kickoff(fromRunner) : seedFor(mcp),
+        displayText: kickoff(fromRunner),
+      },
+      { whenBusy: "after_turn" },
+    );
   } catch (e) {
     capture(false);
     throw e;

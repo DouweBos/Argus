@@ -34,19 +34,20 @@
       var consume = true
     }
 
-    @Test("Return, ⇧Return, ⌘Return, Tab, arrows and Esc reach the composer")
+    @Test("Return, ⇧Return, ⌘Return, ⌥Return, Tab, arrows and Esc reach the composer")
     func keys() {
       let (view, recorder) = field()
       view.keyDown(with: key(36, "\r"))
       view.keyDown(with: key(36, "\r", .shift))
       view.keyDown(with: key(36, "\r", .command))
+      view.keyDown(with: key(36, "\r", .option))
       view.keyDown(with: key(48, "\t", .shift))
       view.keyDown(with: key(126, ""))
       view.keyDown(with: key(125, ""))
       view.keyDown(with: key(53, "\u{1b}"))
       #expect(
         recorder.keys == [
-          .returnKey(shift: false), .returnKey(shift: true), .returnKey(shift: false),
+          .returnKey(shift: false), .returnKey(shift: true), .returnKey(shift: false), .optionReturn,
           .tab(shift: true), .up, .down, .escape,
         ])
     }

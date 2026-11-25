@@ -19120,6 +19120,7 @@ extension ArgusProtocol {
     public var supportsSetEffort: Bool
     public var supportsInterrupt: Bool
     public var supportsSideQuestion: Bool
+    public var supportsMidTurnMessages: Bool?
 
     enum CodingKeys: String, CodingKey {
       case supportsMcp = "supportsMcp"
@@ -19129,9 +19130,10 @@ extension ArgusProtocol {
       case supportsSetEffort = "supportsSetEffort"
       case supportsInterrupt = "supportsInterrupt"
       case supportsSideQuestion = "supportsSideQuestion"
+      case supportsMidTurnMessages = "supportsMidTurnMessages"
     }
 
-    public init(supportsMcp: Bool, supportsTranscriptFork: Bool, supportsSetModel: Bool, supportsSetPermissionMode: Bool, supportsSetEffort: Bool, supportsInterrupt: Bool, supportsSideQuestion: Bool) {
+    public init(supportsMcp: Bool, supportsTranscriptFork: Bool, supportsSetModel: Bool, supportsSetPermissionMode: Bool, supportsSetEffort: Bool, supportsInterrupt: Bool, supportsSideQuestion: Bool, supportsMidTurnMessages: Bool? = nil) {
       self.supportsMcp = supportsMcp
       self.supportsTranscriptFork = supportsTranscriptFork
       self.supportsSetModel = supportsSetModel
@@ -19139,6 +19141,7 @@ extension ArgusProtocol {
       self.supportsSetEffort = supportsSetEffort
       self.supportsInterrupt = supportsInterrupt
       self.supportsSideQuestion = supportsSideQuestion
+      self.supportsMidTurnMessages = supportsMidTurnMessages
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -19150,6 +19153,7 @@ extension ArgusProtocol {
       try c.encode(supportsSetEffort, forKey: .supportsSetEffort)
       try c.encode(supportsInterrupt, forKey: .supportsInterrupt)
       try c.encode(supportsSideQuestion, forKey: .supportsSideQuestion)
+      try c.encodeIfPresent(supportsMidTurnMessages, forKey: .supportsMidTurnMessages)
     }
   }
 

@@ -50,6 +50,7 @@ export class AcpRunner implements LlmRunner {
       supportsSetEffort: true,
       supportsInterrupt: true,
       supportsSideQuestion: true,
+      supportsMidTurnMessages: false,
     };
   }
 

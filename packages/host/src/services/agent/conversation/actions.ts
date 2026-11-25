@@ -15,8 +15,10 @@ import type { LlmRunner } from "../../llm/runners/types";
 import type { ForkReplayOp } from "@argus/remote-protocol";
 import { emitHostEvent } from "@argus/host/bus";
 import { appState } from "../../../state";
+import { capture as telemetryCapture } from "../../telemetry/telemetry";
 import { restoreAgentAtTurn, sendAgentMessage } from "../agentService";
 import { createCheckpoint, restoreCheckpoint } from "../checkpoints";
+import { transitionOf } from "../lifecycleState";
 import {
   clearQueue,
   enqueueMessage,
@@ -46,6 +48,23 @@ export function isAgentWorking(agent: AgentSession): boolean {
     agent.status === "running" ||
     agent.status === "requires_action" ||
     agent.inflightPrompts > 0
+  );
+}
+
+/**
+ * A live turn the runner can fold a message into. Not while it waits on a question
+ * (typing there isn't the answer) or while its process is paused or restarting.
+ */
+function canJoinTurn(agentId: string, agent: AgentSession): boolean {
+  const asking = (appState.agentPendingPermissions.get(agentId)?.size ?? 0) > 0;
+
+  return (
+    agent.runner.capabilities().supportsMidTurnMessages === true &&
+    (agent.status === "running" || agent.inflightPrompts > 0) &&
+    agent.status !== "requires_action" &&
+    !asking &&
+    agent.paused !== true &&
+    transitionOf(agentId) === null
   );
 }
 
@@ -86,20 +105,44 @@ export interface SubmittedMessage {
 export async function submitAgentMessage(
   agentId: string,
   message: SubmittedMessage,
+  { whenBusy = "mid_turn" }: { whenBusy?: "after_turn" | "mid_turn" } = {},
 ): Promise<{ queued: boolean }> {
   const agent = requireAgent(agentId);
-  if (
-    isAgentWorking(agent) ||
-    isInflight(agentId) ||
-    listQueue(agentId).length > 0
-  ) {
+  const shownAs = { displayText: message.displayText, author: message.author };
+  const working = isAgentWorking(agent) || isInflight(agentId);
+  // Like the terminal: a message typed mid-turn joins it at the next tool boundary.
+  if (working && whenBusy === "mid_turn" && canJoinTurn(agentId, agent)) {
+    if (isFolding(agentId)) {
+      recordUserMessage(agentId, message.displayText ?? message.text, {
+        author: message.author,
+        images: message.images,
+        sent: message.text,
+      });
+      setInflight(agentId, true);
+    }
+    sendAgentMessage(agentId, message.text, message.images, {
+      ...shownAs,
+      steer: true,
+    });
+    if (!isFolding(agentId)) {
+      emitHostEvent(`agent:remote-message:${agentId}`, {
+        message: message.displayText ?? message.text,
+        images: message.images,
+        author: message.author ?? null,
+        sent: message.text,
+      });
+    }
+    telemetryCapture("busy_message_sent", { delivery: "mid_turn" });
+
+    return { queued: false };
+  }
+  if (working || listQueue(agentId).length > 0) {
     enqueueMessage(agentId, message);
     // Sending is the retry a failed wake waits for.
     unparkQueue(agentId);
 
     return { queued: true };
   }
-  const shownAs = { displayText: message.displayText, author: message.author };
   if (!isFolding(agentId)) {
     // A UI still folds this conversation; it records the bubble from this.
     sendAgentMessage(agentId, message.text, message.images, shownAs);
@@ -238,6 +281,14 @@ export async function rewindAgent(
 }
 
 /** Rewind and fork rebuild the CLI's transcript, natively or from a seed. */
+/** A client chose "send after this turn"; counted only when there was a turn to wait for. */
+export function noteQueuedByClient(agentId: string): void {
+  const agent = appState.agents.get(agentId);
+  if (agent && (isAgentWorking(agent) || isInflight(agentId))) {
+    telemetryCapture("busy_message_sent", { delivery: "after_turn" });
+  }
+}
+
 export function requireTranscriptFork(runner: LlmRunner): void {
   if (!runner.capabilities().supportsTranscriptFork) {
     throw `${runner.displayName} can't rewind or fork a conversation`;

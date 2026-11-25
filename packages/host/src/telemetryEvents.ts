@@ -594,6 +594,8 @@ export interface EventMap {
     success: boolean;
   };
   queued_message_sent_now: { mid_turn: boolean };
+  /** A message sent while the agent was busy, and when it reached the agent. */
+  busy_message_sent: { delivery: "after_turn" | "mid_turn" };
   /** A file attached on another device was saved into a session's worktree. */
   session_attachment_saved: {
     type_bucket: "archive" | "code" | "document" | "image" | "other" | "text";

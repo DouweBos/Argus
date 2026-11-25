@@ -48,6 +48,7 @@ import {
   USAGE_LIMITS_COMMAND,
   useUsageLimitsCommand,
 } from "./AgentLimits";
+import { BusySendButton, type SendTiming } from "./BusySendButton";
 import { ComposerOverflowMenu } from "./ComposerOverflowMenu";
 import { SideQuestionsDialog } from "./SideQuestionsDialog";
 import { useMentionPicker } from "./useMentionPicker";
@@ -308,7 +309,7 @@ export function ChatInput({
     localStorage.setItem(draftKey(agentId), textareaRef.current?.value ?? "");
   }, [adjustHeight, updateSuggestions, updateMentions, typingReporter, agentId]);
 
-  const submit = useCallback(() => {
+  const submit = useCallback((timing: SendTiming = "now") => {
     const value = textareaRef.current?.value.trim() ?? "";
     if (!value && pending.length === 0) {
       return;
@@ -330,9 +331,9 @@ export function ChatInput({
       pending.length > 0 ? pending.map((p) => p.attachment) : undefined;
     const displayText = value || "(see attached images)";
     const message = buildLinkedProjectsPreamble(linked, displayText);
-    // Busy agent → park it on the computer's queue, which the desktop drains
-    // when the turn ends. Idle → send straight away.
-    if (isRunning) {
+    // A plain send joins a busy agent's turn at its next tool boundary (the
+    // host queues it itself when it can't); "after this turn" parks it on the queue.
+    if (isRunning && timing === "after_turn") {
       queueMessage(agentId, message, images, displayText).catch(() => {});
     } else {
       sendMessage(agentId, message, images, displayText).catch(() => {});
@@ -494,6 +495,13 @@ export function ChatInput({
               PERMISSION_MODES.length
           ];
         setPermissionMode(agentId, next).catch(() => {});
+
+        return;
+      }
+
+      if (e.key === "Enter" && e.altKey) {
+        e.preventDefault();
+        submit("after_turn");
 
         return;
       }
@@ -751,16 +759,7 @@ export function ChatInput({
       >
         <Icons.PaperclipIcon />
       </button>
-      {isRunning && hasText && (
-        <Button
-          variant="send"
-          aria-label="Queue message"
-          title="Queue — sends when the agent is idle"
-          onClick={submit}
-        >
-          <Icons.SendIcon />
-        </Button>
-      )}
+      {isRunning && hasText && <BusySendButton onSend={submit} />}
       {isRunning ? (
         <Button
           variant="stop"
@@ -775,7 +774,7 @@ export function ChatInput({
           variant="send"
           aria-label="Send message"
           title="Send"
-          onClick={submit}
+          onClick={() => submit()}
         >
           <Icons.SendIcon />
         </Button>

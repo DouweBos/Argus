@@ -59,6 +59,7 @@ export class ClaudeCodeRunner implements LlmRunner {
       supportsSetEffort: true,
       supportsInterrupt: true,
       supportsSideQuestion: true,
+      supportsMidTurnMessages: true,
     };
   }
 

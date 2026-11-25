@@ -64,7 +64,7 @@ struct StartAgentIntent: AppIntent {
 
 struct SendMessageIntent: AppIntent {
   static let title: LocalizedStringResource = "Send Message to Agent"
-  static let description = IntentDescription("Sends a message to a running agent. Mid-turn, it waits in the agent's queue.")
+  static let description = IntentDescription("Sends a message to a running agent. Mid-turn, it joins the turn in progress.")
   static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
 
   @Parameter(title: "Agent", requestValueDialog: "Which agent?")

@@ -158,7 +158,7 @@ private fun ComposerBox(composer: ComposerModel, redirect: ComposerStarter?, onA
   }
 }
 
-/** Attach, then send; or, while the agent works, queue and stop. */
+/** Attach, then send; or, while the agent works, steer it (long-press to wait for the turn) and stop. */
 @Composable
 private fun ComposerActions(composer: ComposerModel, redirect: ComposerStarter?) {
   composer.observe()
@@ -187,7 +187,7 @@ private fun ComposerActions(composer: ComposerModel, redirect: ComposerStarter?)
     }
     when {
       composer.isRunning -> {
-        if (composer.hasContent) ComposerRoundButton(ComposerRoundKind.Send, "Queue message") { composer.submit() }
+        if (composer.hasContent) BusySendButton(composer)
         ComposerRoundButton(ComposerRoundKind.Stop, "Interrupt") { composer.interrupt() }
       }
       composer.starting.value -> Box(

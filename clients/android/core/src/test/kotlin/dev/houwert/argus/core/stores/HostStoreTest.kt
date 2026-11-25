@@ -190,6 +190,20 @@ class HostStoreTest {
     assertEquals(StoreEvent.MessageSent(queued = false, hasImages = false, length = 7), events.last())
   }
 
+  @Test fun aSendTheHostQueuedShowsInTheQueueNotTheTranscript() = runTest {
+    val events = mutableListOf<StoreEvent>()
+    val store = HostStore(backgroundScope, HostStoreHooks(track = { events += it }))
+    val backend = FakeBackend()
+    backend.reply(Methods.AgentsSend, """{"accepted":true,"queued":true}""")
+    backend.reply(Methods.AgentsQueueList, """{"messages":[{"id":"q1","text":"hello","queued_at":1}]}""")
+    attach(store, backend)
+    store.sendMessage("a1", "hello")
+    assertEquals(listOf("q1"), store.queuedByAgent.value["a1"]?.map { it.id })
+    assertTrue(store.optimisticByAgent.value["a1"].isNullOrEmpty())
+    assertNull(store.failedByAgent.value["a1"])
+    assertEquals(StoreEvent.MessageSent(queued = true, hasImages = false, length = 5), events.last())
+  }
+
   @Test fun anUndeliverableAnswerIsHandedToTheApp() = runTest {
     val undelivered = mutableListOf<String>()
     val store = HostStore(backgroundScope, HostStoreHooks(decisionUndelivered = { agent, tool, decision -> undelivered += "$agent:$tool:$decision" }))

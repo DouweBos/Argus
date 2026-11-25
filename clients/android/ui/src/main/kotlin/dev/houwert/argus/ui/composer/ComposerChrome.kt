@@ -84,7 +84,15 @@ enum class ComposerRoundKind { Send, Stop }
 
 /** The composer's round send and stop buttons. */
 @Composable
-fun ComposerRoundButton(kind: ComposerRoundKind, label: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
+fun ComposerRoundButton(
+  kind: ComposerRoundKind,
+  label: String,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  longClickLabel: String? = null,
+  onLongClick: (() -> Unit)? = null,
+  onClick: () -> Unit,
+) {
   val theme = ArgusTheme.colors
   val interaction = rememberInteraction()
   // Disabled drops to a solid muted fill; fading the accent left it unreadable on dark backgrounds.
@@ -97,7 +105,7 @@ fun ComposerRoundButton(kind: ComposerRoundKind, label: String, modifier: Modifi
   Box(
     modifier
       .size(ComposerMetrics.roundButton)
-      .argusClickable(interaction, enabled, CircleShape, label = label, onClick = onClick)
+      .argusClickable(interaction, enabled, CircleShape, label = label, longClickLabel = longClickLabel, onLongClick = onLongClick, onClick = onClick)
       .background(fill, CircleShape)
       .then(if (enabled) Modifier else Modifier.border(1.dp, theme.border, CircleShape)),
     contentAlignment = Alignment.Center,
