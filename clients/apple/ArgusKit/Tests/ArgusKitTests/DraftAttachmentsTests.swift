@@ -32,4 +32,17 @@ struct DraftAttachmentsTests {
     #expect(store.load(agentId: "a").isEmpty)
     try? FileManager.default.removeItem(at: directory)
   }
+
+  @Test("Another kind keeps its own file beside the images")
+  func kinds() {
+    let store = DraftAttachments(directory: directory)
+    let image = RemoteImageAttachment(data: "aGVsbG8=", mediaType: "image/png")
+    store.save([image], agentId: "a")
+    store.save(["one", "two"], agentId: "a", kind: "notes")
+    #expect(store.load(String.self, agentId: "a", kind: "notes") == ["one", "two"])
+    store.remove(agentId: "a")
+    #expect(store.load(String.self, agentId: "a", kind: "notes") == ["one", "two"])
+    #expect(store.load(agentId: "a").isEmpty)
+    try? FileManager.default.removeItem(at: directory)
+  }
 }

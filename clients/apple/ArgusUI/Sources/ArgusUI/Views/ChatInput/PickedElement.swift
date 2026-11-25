@@ -7,13 +7,14 @@ import UniformTypeIdentifiers
 
 /// A UI element picked in the browser or the device inspector, riding the
 /// draft as a chip: the agent gets `context` and the `crop` as an image.
-public struct PickedElement: Identifiable, Hashable, Sendable {
-  public enum Source: String, Sendable {
+/// Codable so it's saved with the draft.
+public struct PickedElement: Identifiable, Hashable, Sendable, Codable {
+  public enum Source: String, Sendable, Codable {
     case browser
     case device
   }
 
-  public let id = UUID()
+  public var id: UUID
   public var source: Source
   /// The chip's label, e.g. `button.primary` or `UIButton "Save"`.
   public var title: String
@@ -21,7 +22,8 @@ public struct PickedElement: Identifiable, Hashable, Sendable {
   public var context: String
   public var crop: RemoteImageAttachment?
 
-  public init(source: Source, title: String, context: String, crop: RemoteImageAttachment?) {
+  public init(id: UUID = UUID(), source: Source, title: String, context: String, crop: RemoteImageAttachment?) {
+    self.id = id
     self.source = source
     self.title = title
     self.context = context
@@ -115,6 +117,9 @@ extension PickedElement {
 
   /// Padding around a crop, in points, so the element reads in context.
   static let cropPadding: Double = 8
+
+  /// The draft file the composer keeps its picks in, beside its images.
+  static let draftKind = "elements"
 
   /// The rect (in screen points) cut out of a screenshot of the whole screen, as PNG.
   static func cropPNG(_ png: Data, rect: Inspection.Frame, screen: CGSize) -> Data? {

@@ -133,6 +133,27 @@ struct ComposerModelTests {
     #expect(composer.elements.isEmpty)
   }
 
+  @Test("picked elements ride the saved draft until the message is sent")
+  func pickedElementDraft() async {
+    let element = PickedElement(source: .browser, title: "button.save", context: "[ctx]", crop: .pixel)
+    let composer = model()
+    composer.attach(element)
+    let reopened = model()
+    await reopened.load()
+    #expect(reopened.elements == [element])
+    reopened.removeElement(element.id)
+    let emptied = model()
+    await emptied.load()
+    #expect(emptied.elements.isEmpty)
+    emptied.attach(element)
+    emptied.text = "make this red"
+    emptied.submit()
+    await settle()
+    let afterSend = model()
+    await afterSend.load()
+    #expect(afterSend.elements.isEmpty)
+  }
+
   @Test("/plan toggles plan mode and /model sets or opens the picker, never reaching the CLI")
   func localCommands() async {
     let composer = model()

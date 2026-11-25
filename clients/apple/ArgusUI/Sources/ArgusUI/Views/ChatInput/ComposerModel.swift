@@ -38,9 +38,9 @@ public final class ComposerModel {
     didSet { if caret != oldValue { mentionMayHaveMoved() } }
   }
   public internal(set) var images: [PendingImage] = []
-  /// Non-image files; like elements they ride the composer, not the saved draft.
+  /// Non-image files; they ride the composer, not the saved draft.
   public internal(set) var files: [PendingFile] = []
-  /// Picked in the browser or the device inspector; they live with the composer, not the saved draft.
+  /// Picked in the browser or the device inspector; saved with the draft like its images.
   public internal(set) var elements: [PickedElement] = []
   public internal(set) var linkedProjects: [String] = []
   /// Esc closes a menu until the text changes again.

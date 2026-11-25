@@ -104,6 +104,7 @@ extension ComposerModel {
     files = []
     preferences.remove(PreferenceKey.draft(agentId: agentId))
     draftImages.remove(agentId: agentId)
+    draftImages.remove(agentId: agentId, kind: PickedElement.draftKind)
     if style == .desktop { editor?.focus() }
   }
 
@@ -120,6 +121,7 @@ extension ComposerModel {
     text = preferences.string(PreferenceKey.draft(agentId: agentId)) ?? ""
     caret = text.utf16.count
     images = draftImages.load(agentId: agentId).compactMap(ImageAttachments.pending(restoring:))
+    elements = draftImages.load(PickedElement.self, agentId: agentId, kind: PickedElement.draftKind)
     linkedProjects = preferences.decode(PreferenceKey.linkedProjects(agentId: agentId), as: [String].self) ?? []
     if style == .desktop { editor?.focus() }
     // Files first: capabilities wait on the CLI's first turn.
@@ -194,10 +196,16 @@ extension ComposerModel {
 
   public func attach(_ element: PickedElement) {
     elements.append(element)
+    saveElements()
   }
 
   public func removeElement(_ id: UUID) {
     elements.removeAll { $0.id == id }
+    saveElements()
+  }
+
+  private func saveElements() {
+    draftImages.save(elements, agentId: agentId, kind: PickedElement.draftKind)
   }
 
   /// Image files attach; any other file becomes an `@`-mention at the caret.
