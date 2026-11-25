@@ -1,5 +1,27 @@
 # argus
 
+## 0.83.0
+
+### Minor Changes
+
+- 3bb81fa: The command palette jumps straight to any chat, terminal, run or open file across your sessions, and the session switcher (⇧⌘O) finds chats too.
+- 3ac42f3: Slack setup creates the Slack app for you from a configuration token, named after you so teammates who run their own Argus each get a bot they can tell apart.
+- 12cbcb4: Connect Argus to several Slack workspaces, each with its own bot, owner, members and projects. Phones list every connected workspace.
+- 1aca827: When a teammate's duty finishes, the teammate tells you what it found in its conversation, with the full report a tap away, and you can reply to it right there.
+- c0e9126: Teammates are listed like conversations, with what you last talked about, who is busy and when each was last active, and an empty conversation greets you with the teammate.
+- 5586c30: Voice mode waits longer before sending what you said, and Voice settings let you choose how long a pause sends it.
+
+### Patch Changes
+
+- 6a2f335: Agents may start their own long-running processes again, as long as they don't clash with the project's run commands, and pick their own tools for device work, with conductor available among them.
+- ca3d228: The Automations list no longer shows teammates' duties; they stay on their teammate's page.
+- bf7e5d5: Dictation, voice mode and camera capture ask for permission again instead of failing straight away.
+- 6d6fd01: Voice mode on the Mac hears you again: what you say shows up as you talk, and a pause sends it.
+- b798d0a: The command palette and session switcher take the keyboard as soon as they open, even when a terminal or the browser had focus.
+- 83dc7b0: Agents run much like Claude Code in the terminal: Argus adds only a few lines of instructions, so they answer directly instead of spawning helper agents, checking devices or comparing designs unless the task calls for it.
+- ac7cf9e: Every card in the New Teammate gallery is the same height.
+- 53a6a1a: Voice mode no longer sends a lone "." from background noise, and on the Mac it ignores keyboard clicks while you type.
+
 ## 0.82.0
 
 ### Minor Changes
