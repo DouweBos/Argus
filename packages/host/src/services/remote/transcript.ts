@@ -72,6 +72,12 @@ export interface RawMessage {
   images?: RawImage[];
   source?: RawSource;
   handoff?: { fromAgentId?: string; fromRunner?: string; toRunner?: string };
+  dutyRun?: {
+    automationId: string;
+    automationName: string;
+    runId: string;
+    status: "failed" | "succeeded";
+  };
   isError?: boolean;
   timestamp?: number;
   usage?: RawTokenUsage;
@@ -237,6 +243,16 @@ export function toRemoteMessage(m: RawMessage): RemoteMessage {
             output_tokens: m.usage.output_tokens ?? 0,
             cache_read_input_tokens: m.usage.cache_read_input_tokens,
             cache_creation_input_tokens: m.usage.cache_creation_input_tokens,
+          },
+        }
+      : {}),
+    ...(m.dutyRun
+      ? {
+          duty_run: {
+            automation_id: m.dutyRun.automationId,
+            automation_name: m.dutyRun.automationName,
+            run_id: m.dutyRun.runId,
+            status: m.dutyRun.status,
           },
         }
       : {}),

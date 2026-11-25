@@ -115,6 +115,15 @@ export const ConversationHandoff = z.object({
 });
 export type ConversationHandoff = z.infer<typeof ConversationHandoff>;
 
+/** Marks the message that handed a finished duty run to its teammate's conversation. */
+export const ConversationDutyRun = z.object({
+  automationId: z.string(),
+  automationName: z.string(),
+  runId: z.string(),
+  status: z.enum(["failed", "succeeded"]),
+});
+export type ConversationDutyRun = z.infer<typeof ConversationDutyRun>;
+
 /** A message that was one of the runner's own slash commands (`/compact keep the plan`). */
 export const ConversationCommand = z.object({
   /** Whatever followed the command's name. */
@@ -127,6 +136,7 @@ export const ConversationMessage = z.object({
   author: z.string().optional(),
   checkpointId: z.string().optional(),
   command: ConversationCommand.optional(),
+  dutyRun: ConversationDutyRun.optional(),
   handoff: ConversationHandoff.optional(),
   id: z.string(),
   images: z.array(ImageAttachment).optional(),

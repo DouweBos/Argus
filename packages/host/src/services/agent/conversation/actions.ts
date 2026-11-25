@@ -7,6 +7,7 @@
 import type { AgentSession } from "../models";
 import type {
   AgentConversation,
+  ConversationDutyRun,
   ConversationMessage,
   ImageAttachment,
 } from "./types";
@@ -71,6 +72,8 @@ export interface SubmittedMessage {
   author?: string;
   /** What the transcript shows, when it differs from what the agent gets. */
   displayText?: string;
+  /** Marks a finished duty run handed to its teammate; never queued. */
+  dutyRun?: ConversationDutyRun;
   images?: ImageAttachment[];
   text: string;
 }
@@ -120,6 +123,7 @@ export async function submitAgentMessage(
   recordUserMessage(agentId, message.displayText ?? message.text, {
     author: message.author,
     checkpointId,
+    dutyRun: message.dutyRun,
     images: message.images,
     sent: message.text,
   });

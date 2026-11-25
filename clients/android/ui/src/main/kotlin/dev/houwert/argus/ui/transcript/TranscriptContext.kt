@@ -10,6 +10,7 @@ import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.transcript.FileLinks
 import dev.houwert.argus.core.transcript.PendingPrompts
 import dev.houwert.argus.kit.protocol.generated.RemoteAgentStatusStatus
+import dev.houwert.argus.kit.protocol.generated.RemoteMessageDutyRun
 import dev.houwert.argus.kit.protocol.generated.RemoteToolCall
 import dev.houwert.argus.kit.util.ArtifactLink
 import kotlinx.coroutines.CoroutineScope
@@ -31,6 +32,8 @@ class TranscriptEnvironment(
   val toolExpansion: MutableMap<String, Boolean> = mutableStateMapOf(),
   /** Outlives the rows: an answered form leaves the screen before its request lands. */
   val scope: CoroutineScope,
+  /** Opens a teammate duty run's report; unset, its divider has no button. */
+  val openDutyRun: ((RemoteMessageDutyRun) -> Unit)? = null,
 )
 
 val LocalTranscript = staticCompositionLocalOf<TranscriptEnvironment?> { null }

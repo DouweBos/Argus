@@ -549,6 +549,31 @@ public struct RemoteMessageHandoff: Codable, Hashable, Sendable {
   }
 }
 
+/// The finished duty run a teammate was handed; shown as a divider, not a bubble.
+public struct RemoteMessageDutyRun: Codable, Hashable, Sendable {
+  public var automationId: String
+  public var automationName: String
+  public var runId: String
+  /// `succeeded` or `failed`.
+  public var status: String
+
+  public init(automationId: String, automationName: String, runId: String, status: String) {
+    self.automationId = automationId
+    self.automationName = automationName
+    self.runId = runId
+    self.status = status
+  }
+
+  public var failed: Bool { status == "failed" }
+
+  enum CodingKeys: String, CodingKey {
+    case status
+    case automationId = "automation_id"
+    case automationName = "automation_name"
+    case runId = "run_id"
+  }
+}
+
 /// A message that was one of the runner's own slash commands (`/compact keep the plan`).
 public struct RemoteMessageCommand: Codable, Hashable, Sendable {
   public var name: String
@@ -569,6 +594,7 @@ public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
   public var images: [RemoteImageRef]?
   public var source: RemoteMessageSource?
   public var handoff: RemoteMessageHandoff?
+  public var dutyRun: RemoteMessageDutyRun?
   public var author: String?
   public var command: RemoteMessageCommand?
   public var isError: Bool?
@@ -583,6 +609,7 @@ public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
     images: [RemoteImageRef]? = nil,
     source: RemoteMessageSource? = nil,
     handoff: RemoteMessageHandoff? = nil,
+    dutyRun: RemoteMessageDutyRun? = nil,
     author: String? = nil,
     command: RemoteMessageCommand? = nil,
     isError: Bool? = nil,
@@ -596,6 +623,7 @@ public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
     self.images = images
     self.source = source
     self.handoff = handoff
+    self.dutyRun = dutyRun
     self.author = author
     self.command = command
     self.isError = isError
@@ -608,6 +636,7 @@ public struct RemoteMessage: Codable, Hashable, Sendable, Identifiable {
     case textBlocks = "text_blocks"
     case toolCalls = "tool_calls"
     case isError = "is_error"
+    case dutyRun = "duty_run"
   }
 }
 

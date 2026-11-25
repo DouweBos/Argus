@@ -177,7 +177,7 @@ extension GalleryFixtures {
   }
 
   public static func teammates(empty: Bool = false) -> [String: String] {
-    automations(empty: empty).merging([
+    automations(empty: empty).merging(transcript(.dutyReport)) { old, _ in old }.merging([
       ArgusProtocol.Methods.TeammatesList.name: GalleryJSON.encode([
         "teammates": empty ? [] : mates.map(summaryJSON)
       ]),

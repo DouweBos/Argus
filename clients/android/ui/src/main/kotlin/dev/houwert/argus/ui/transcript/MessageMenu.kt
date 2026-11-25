@@ -43,6 +43,7 @@ import dev.houwert.argus.core.stores.isOptimistic
 import dev.houwert.argus.core.stores.rewind
 import dev.houwert.argus.core.transcript.copyText
 import dev.houwert.argus.core.transcript.editableText
+import dev.houwert.argus.core.transcript.isDutyRun
 import dev.houwert.argus.kit.protocol.generated.RemoteMessage
 import dev.houwert.argus.kit.protocol.generated.RemoteMessageRole
 import dev.houwert.argus.ui.components.Field
@@ -69,7 +70,7 @@ class MessageMenu(val canChange: Boolean, val perform: (MessageMenuAction, Remot
 
 /** The actions [menu] offers on [message]: copy for any text, edit for your own and fork for both while live. */
 internal fun menuActions(menu: MessageMenu?, message: RemoteMessage): List<MessageMenuAction> {
-  if (menu == null || HostStore.isOptimistic(message.id)) return emptyList()
+  if (menu == null || HostStore.isOptimistic(message.id) || message.isDutyRun) return emptyList()
   return buildList {
     if (message.copyText != null) add(MessageMenuAction.Copy)
     if (menu.canChange) {

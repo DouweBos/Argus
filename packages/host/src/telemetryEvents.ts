@@ -454,6 +454,11 @@ export interface EventMap {
   teammate_soul_changed: { via: "edit" | "revise" };
   /** `resumed`: an earlier conversation was picked back up from disk. */
   teammate_thread_opened: { new_thread: boolean; resumed: boolean };
+  /** `delivered`: the teammate's conversation was handed the run. */
+  teammate_duty_reported: {
+    status: "failed" | "succeeded";
+    delivered: boolean;
+  };
   /** `answered`: a reply was posted back. */
   /** `depth`: teammates already in the chain when this one was asked. */
   teammate_handoff: {

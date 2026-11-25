@@ -53,6 +53,7 @@ import dev.houwert.argus.core.transcript.TranscriptItem
 import dev.houwert.argus.core.transcript.TranscriptItems
 import dev.houwert.argus.kit.net.Transport
 import dev.houwert.argus.kit.protocol.generated.RemoteAgentStatusStatus
+import dev.houwert.argus.kit.protocol.generated.RemoteMessageDutyRun
 import dev.houwert.argus.kit.util.Activity
 import dev.houwert.argus.kit.util.ArtifactLink
 import dev.houwert.argus.ui.components.EmptyState
@@ -101,6 +102,7 @@ fun AgentTranscript(
   onArtifactOpened: () -> Unit = {},
   autoExpandImageReads: Boolean = false,
   onWorkLogOpened: (working: Boolean) -> Unit = {},
+  openDutyRun: ((RemoteMessageDutyRun) -> Unit)? = null,
 ) {
   key(agentKey) {
     var shownArtifact by remember { mutableStateOf<ArtifactLink?>(null) }
@@ -111,9 +113,9 @@ fun AgentTranscript(
     }
     val viewer = remember { ImageViewerState() }
     val expansion = remember { mutableStateMapOf<String, Boolean>() }
-    val env = remember(host, messageMenu, openFileLink, openArtifact, autoExpandImageReads) {
+    val env = remember(host, messageMenu, openFileLink, openArtifact, autoExpandImageReads, openDutyRun) {
       TranscriptEnvironment(
-        host, agentKey, openFileLink, artifacts, messageMenu, autoExpandImageReads, viewer, expansion, detached,
+        host, agentKey, openFileLink, artifacts, messageMenu, autoExpandImageReads, viewer, expansion, detached, openDutyRun,
       )
     }
     CompositionLocalProvider(LocalTranscript provides env, LocalOpenFileLink provides openFileLink) {

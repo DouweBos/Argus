@@ -1987,6 +1987,26 @@ data class ConversationCommand(
 )
 
 @Serializable
+@JvmInline
+value class ConversationDutyRunStatus(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val failed = ConversationDutyRunStatus("failed")
+    val succeeded = ConversationDutyRunStatus("succeeded")
+    val entries: List<ConversationDutyRunStatus> = listOf(failed, succeeded)
+  }
+}
+
+@Serializable
+data class ConversationDutyRun(
+  @SerialName("automationId") val automationId: String,
+  @SerialName("automationName") val automationName: String,
+  @SerialName("runId") val runId: String,
+  @SerialName("status") val status: ConversationDutyRunStatus,
+)
+
+@Serializable
 data class ConversationHandoff(
   @SerialName("fromAgentId") val fromAgentId: String,
   @SerialName("fromRunner") val fromRunner: String,
@@ -2023,6 +2043,7 @@ data class ConversationMessage(
   @SerialName("author") val author: String? = null,
   @SerialName("checkpointId") val checkpointId: String? = null,
   @SerialName("command") val command: ConversationCommand? = null,
+  @SerialName("dutyRun") val dutyRun: ConversationDutyRun? = null,
   @SerialName("handoff") val handoff: ConversationHandoff? = null,
   @SerialName("id") val id: String,
   @SerialName("images") val images: List<ImageAttachment>? = null,
@@ -5824,6 +5845,7 @@ data class RemoteMessage(
   @SerialName("images") val images: List<RemoteImageRef>? = null,
   @SerialName("source") val source: RemoteMessageSource? = null,
   @SerialName("handoff") val handoff: RemoteMessageHandoff? = null,
+  @SerialName("duty_run") val dutyRun: RemoteMessageDutyRun? = null,
   @SerialName("author") val author: String? = null,
   @SerialName("command") val command: RemoteMessageCommand? = null,
   @SerialName("is_error") val isError: Boolean? = null,
@@ -5835,6 +5857,26 @@ data class RemoteMessage(
 data class RemoteMessageCommand(
   @SerialName("name") val name: String,
   @SerialName("args") val args: String? = null,
+)
+
+@Serializable
+@JvmInline
+value class RemoteMessageDutyRunStatus(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val failed = RemoteMessageDutyRunStatus("failed")
+    val succeeded = RemoteMessageDutyRunStatus("succeeded")
+    val entries: List<RemoteMessageDutyRunStatus> = listOf(failed, succeeded)
+  }
+}
+
+@Serializable
+data class RemoteMessageDutyRun(
+  @SerialName("automation_id") val automationId: String,
+  @SerialName("automation_name") val automationName: String,
+  @SerialName("run_id") val runId: String,
+  @SerialName("status") val status: RemoteMessageDutyRunStatus,
 )
 
 @Serializable

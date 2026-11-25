@@ -10,6 +10,8 @@ extension GalleryFixtures {
   public enum TranscriptState: Sendable {
     /// A finished turn with follow-ups suggested.
     case idle
+    /// A teammate's conversation: a duty run handed over, its summary, and a reply.
+    case dutyReport
     /// Mid-turn: a running call, tasks and todos, a queued and an unsent message.
     case working
     /// Waiting on a Bash permission.
@@ -113,7 +115,7 @@ extension GalleryFixtures {
   private static func agentStatus(_ state: TranscriptState) -> [String: Any] {
     let status: String =
       switch state {
-      case .idle, .empty, .limit, .handoff, .command, .expiredQuestion, .artifact: "idle"
+      case .idle, .empty, .limit, .handoff, .command, .expiredQuestion, .artifact, .dutyReport: "idle"
       case .working, .subagents: "running"
       case .permission, .question, .secret, .plan: "requires_action"
       case .stopped: "stopped"
@@ -187,9 +189,39 @@ extension GalleryFixtures {
     case .plan: return conversation + [pending(plan)]
     case .subagents: return conversation + subagents
     case .handoff: return handedOff
+    case .dutyReport: return dutyReport
     case .command: return commandChat
     case .artifact: return conversation + published
     }
+  }
+
+  private static var dutyReport: [[String: Any]] {
+    [
+      [
+        "id": "d0", "role": "user", "text_blocks": ["Review requested finished"], "tool_calls": [],
+        "timestamp": t(10),
+        "duty_run": [
+          "automation_id": "review-requested", "automation_name": "Review requested", "run_id": "run-7781",
+          "status": "succeeded",
+        ],
+      ],
+      assistant(
+        "d1", 11,
+        text: [
+          """
+          Reviewed #7781, the Ubuntu 26.04 runner bump, and I'd request changes. The diff itself is clean — 113 \
+          `runs-on` lines across 35 workflows, nothing else touched — but the new image breaks 4 CI jobs that pass on main:
+
+          - **Hermes benchmarks** restore a binary cached on 22.04 that links ICU 70; the cache key needs the OS version.
+          - **Android C++ tests** don't compile against 26.04's libfmt.
+          - **Visual snapshots** drift on font rendering in both shards.
+
+          They didn't mention any of this in the description, so I don't think they ran CI before asking. I left 3 \
+          blocking comments. Want me to post them, or soften the snapshot one?
+          """
+        ]),
+      user("d2", 14, "Post them, but make the snapshot one a suggestion."),
+    ]
   }
 
   private static var handedOff: [[String: Any]] {

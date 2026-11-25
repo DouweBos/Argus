@@ -32,7 +32,7 @@
 
     /// The conversation opens on the transcript fixture's agent.
     private static var chat: [String: String] {
-      var merged = GalleryFixtures.teammates().merging(GalleryFixtures.transcript(.idle)) { _, new in new }
+      var merged = GalleryFixtures.teammates().merging(GalleryFixtures.transcript(.dutyReport)) { _, new in new }
       let method = ArgusProtocol.Methods.TeammatesOpenThread.name
       if let data = merged[method]?.data(using: .utf8),
         var opened = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]

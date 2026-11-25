@@ -28,6 +28,8 @@ public struct TranscriptMessageView: View {
   public var body: some View {
     if let handoff = message.handoff {
       HandoffDivider(handoff: handoff)
+    } else if let dutyRun = message.dutyRun {
+      DutyRunDivider(dutyRun: dutyRun)
     } else {
       bubbleRow
     }

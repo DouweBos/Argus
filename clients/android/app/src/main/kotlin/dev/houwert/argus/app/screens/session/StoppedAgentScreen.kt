@@ -100,6 +100,7 @@ fun StoppedAgentScreen(route: Route.StoppedAgent) {
       messageMenu = menu,
       onArtifactOpened = { Telemetry.capture(TelemetryEvent.ArtifactOpened) },
       onWorkLogOpened = { Telemetry.capture(TelemetryEvent.TranscriptWorkLogOpened(it)) },
+      openDutyRun = { run -> router.push(Route.Run(run.runId, run.automationName)) },
     )
     TranscriptFooterNote {
       if (hasControl && session != null) {

@@ -52,6 +52,12 @@ and wakes on your next message; after a restart it picks the same
 conversation back up from disk under the same agent id. **New Conversation**
 starts a clean one; **Archive** stops one and takes it out of the list.
 
+When a duty finishes with a report — or fails — the teammate tells you about
+it in its newest conversation, in its own words: the verdict, what it found,
+what was missing and what it would do next, with **Open Report** for the full
+run. Reply right there; it has the report in front of it. Runs with nothing to
+report stay out of the conversation, and a paused teammate doesn't report.
+
 Tell it to remember something and it saves a memory. Its memory page lists
 them: read, edit, delete or add your own.
 

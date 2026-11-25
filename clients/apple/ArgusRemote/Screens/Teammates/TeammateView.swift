@@ -72,6 +72,9 @@ struct TeammateView: View {
         Telemetry.capture(.transcriptWorkLogOpened(working: working))
       }
       .artifactSheet { Telemetry.capture(.artifactOpened) }
+      .environment(\.openDutyRun) { run in
+        router.push(.run(id: run.runId, label: run.automationName))
+      }
       if !host.hasControl {
         TranscriptFooterNote("This device can read conversations but not talk to teammates.")
       } else if host.isGone(agentId) {

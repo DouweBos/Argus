@@ -8,6 +8,7 @@ import type {
   AgentCapabilities,
   ConversationBackgroundTask as BackgroundTask,
   ConversationCommand,
+  ConversationDutyRun,
   ConversationHandoff,
   AgentSlashCommand as SlashCommand,
   ImageAttachment,
@@ -17,6 +18,7 @@ export type {
   AgentCapabilities,
   BackgroundTask,
   ConversationCommand,
+  ConversationDutyRun,
   ImageAttachment,
   SlashCommand,
 };
@@ -249,6 +251,8 @@ export interface ConversationMessage {
   checkpointId?: string;
   /** Set on a user message that was one of the runner's slash commands. */
   command?: ConversationCommand;
+  /** Set on the message that handed a finished duty run to its teammate. */
+  dutyRun?: ConversationDutyRun;
   /** Set on the divider a "Continue on…" leaves at the top of the new chat. */
   handoff?: ConversationHandoff;
   id: string;

@@ -5313,6 +5313,50 @@ extension ArgusProtocol {
     }
   }
 
+  public struct ConversationDutyRunStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let failed = ConversationDutyRunStatus(rawValue: "failed")
+    public static let succeeded = ConversationDutyRunStatus(rawValue: "succeeded")
+  }
+
+  public struct ConversationDutyRun: Codable, Sendable {
+    public var automationId: String
+    public var automationName: String
+    public var runId: String
+    public var status: ConversationDutyRunStatus
+
+    enum CodingKeys: String, CodingKey {
+      case automationId = "automationId"
+      case automationName = "automationName"
+      case runId = "runId"
+      case status = "status"
+    }
+
+    public init(automationId: String, automationName: String, runId: String, status: ConversationDutyRunStatus) {
+      self.automationId = automationId
+      self.automationName = automationName
+      self.runId = runId
+      self.status = status
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(automationId, forKey: .automationId)
+      try c.encode(automationName, forKey: .automationName)
+      try c.encode(runId, forKey: .runId)
+      try c.encode(status, forKey: .status)
+    }
+  }
+
   public struct ConversationHandoff: Codable, Sendable {
     public var fromAgentId: String
     public var fromRunner: String
@@ -5373,6 +5417,7 @@ extension ArgusProtocol {
     public var author: String?
     public var checkpointId: String?
     public var command: ConversationCommand?
+    public var dutyRun: ConversationDutyRun?
     public var handoff: ConversationHandoff?
     public var id: String
     public var images: [ImageAttachment]?
@@ -5388,6 +5433,7 @@ extension ArgusProtocol {
       case author = "author"
       case checkpointId = "checkpointId"
       case command = "command"
+      case dutyRun = "dutyRun"
       case handoff = "handoff"
       case id = "id"
       case images = "images"
@@ -5400,10 +5446,11 @@ extension ArgusProtocol {
       case usage = "usage"
     }
 
-    public init(author: String? = nil, checkpointId: String? = nil, command: ConversationCommand? = nil, handoff: ConversationHandoff? = nil, id: String, images: [ImageAttachment]? = nil, role: ConversationMessageRole, source: ConversationMessageSource? = nil, textBlocks: [String], timestamp: Double, tone: ConversationMessageTone? = nil, toolCalls: [ConversationToolCall], usage: ConversationTokenUsage? = nil) {
+    public init(author: String? = nil, checkpointId: String? = nil, command: ConversationCommand? = nil, dutyRun: ConversationDutyRun? = nil, handoff: ConversationHandoff? = nil, id: String, images: [ImageAttachment]? = nil, role: ConversationMessageRole, source: ConversationMessageSource? = nil, textBlocks: [String], timestamp: Double, tone: ConversationMessageTone? = nil, toolCalls: [ConversationToolCall], usage: ConversationTokenUsage? = nil) {
       self.author = author
       self.checkpointId = checkpointId
       self.command = command
+      self.dutyRun = dutyRun
       self.handoff = handoff
       self.id = id
       self.images = images
@@ -5421,6 +5468,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(author, forKey: .author)
       try c.encodeIfPresent(checkpointId, forKey: .checkpointId)
       try c.encodeIfPresent(command, forKey: .command)
+      try c.encodeIfPresent(dutyRun, forKey: .dutyRun)
       try c.encodeIfPresent(handoff, forKey: .handoff)
       try c.encode(id, forKey: .id)
       try c.encodeIfPresent(images, forKey: .images)
@@ -15916,6 +15964,7 @@ extension ArgusProtocol {
     public var images: [RemoteImageRef]?
     public var source: RemoteMessageSource?
     public var handoff: RemoteMessageHandoff?
+    public var dutyRun: RemoteMessageDutyRun?
     public var author: String?
     public var command: RemoteMessageCommand?
     public var isError: Bool?
@@ -15930,6 +15979,7 @@ extension ArgusProtocol {
       case images = "images"
       case source = "source"
       case handoff = "handoff"
+      case dutyRun = "duty_run"
       case author = "author"
       case command = "command"
       case isError = "is_error"
@@ -15937,7 +15987,7 @@ extension ArgusProtocol {
       case usage = "usage"
     }
 
-    public init(id: String, role: RemoteMessageRole, textBlocks: [String], toolCalls: [RemoteToolCall], images: [RemoteImageRef]? = nil, source: RemoteMessageSource? = nil, handoff: RemoteMessageHandoff? = nil, author: String? = nil, command: RemoteMessageCommand? = nil, isError: Bool? = nil, timestamp: Double? = nil, usage: RemoteTokenUsage? = nil) {
+    public init(id: String, role: RemoteMessageRole, textBlocks: [String], toolCalls: [RemoteToolCall], images: [RemoteImageRef]? = nil, source: RemoteMessageSource? = nil, handoff: RemoteMessageHandoff? = nil, dutyRun: RemoteMessageDutyRun? = nil, author: String? = nil, command: RemoteMessageCommand? = nil, isError: Bool? = nil, timestamp: Double? = nil, usage: RemoteTokenUsage? = nil) {
       self.id = id
       self.role = role
       self.textBlocks = textBlocks
@@ -15945,6 +15995,7 @@ extension ArgusProtocol {
       self.images = images
       self.source = source
       self.handoff = handoff
+      self.dutyRun = dutyRun
       self.author = author
       self.command = command
       self.isError = isError
@@ -15961,6 +16012,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(images, forKey: .images)
       try c.encodeIfPresent(source, forKey: .source)
       try c.encodeIfPresent(handoff, forKey: .handoff)
+      try c.encodeIfPresent(dutyRun, forKey: .dutyRun)
       try c.encodeIfPresent(author, forKey: .author)
       try c.encodeIfPresent(command, forKey: .command)
       try c.encodeIfPresent(isError, forKey: .isError)
@@ -15987,6 +16039,50 @@ extension ArgusProtocol {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(name, forKey: .name)
       try c.encodeIfPresent(args, forKey: .args)
+    }
+  }
+
+  public struct RemoteMessageDutyRunStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let failed = RemoteMessageDutyRunStatus(rawValue: "failed")
+    public static let succeeded = RemoteMessageDutyRunStatus(rawValue: "succeeded")
+  }
+
+  public struct RemoteMessageDutyRun: Codable, Sendable {
+    public var automationId: String
+    public var automationName: String
+    public var runId: String
+    public var status: RemoteMessageDutyRunStatus
+
+    enum CodingKeys: String, CodingKey {
+      case automationId = "automation_id"
+      case automationName = "automation_name"
+      case runId = "run_id"
+      case status = "status"
+    }
+
+    public init(automationId: String, automationName: String, runId: String, status: RemoteMessageDutyRunStatus) {
+      self.automationId = automationId
+      self.automationName = automationName
+      self.runId = runId
+      self.status = status
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(automationId, forKey: .automationId)
+      try c.encode(automationName, forKey: .automationName)
+      try c.encode(runId, forKey: .runId)
+      try c.encode(status, forKey: .status)
     }
   }
 

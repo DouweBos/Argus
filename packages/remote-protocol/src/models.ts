@@ -327,6 +327,15 @@ export const RemoteMessageHandoff = z.object({
 });
 export type RemoteMessageHandoff = z.infer<typeof RemoteMessageHandoff>;
 
+/** The finished duty run a teammate was handed; shown as a divider, not a bubble. */
+export const RemoteMessageDutyRun = z.object({
+  automation_id: z.string(),
+  automation_name: z.string(),
+  run_id: z.string(),
+  status: z.enum(["failed", "succeeded"]),
+});
+export type RemoteMessageDutyRun = z.infer<typeof RemoteMessageDutyRun>;
+
 /** A message that was one of the runner's own slash commands. */
 export const RemoteMessageCommand = z.object({
   name: z.string(),
@@ -345,6 +354,8 @@ export const RemoteMessage = z.object({
   images: z.array(RemoteImageRef).optional(),
   source: RemoteMessageSource.optional(),
   handoff: RemoteMessageHandoff.optional(),
+  /** Set on the user message that handed a finished duty run to its teammate. */
+  duty_run: RemoteMessageDutyRun.optional(),
   /** Who sent a user message, when it came from a remote client or huddle guest. */
   author: z.string().optional(),
   /** Set when the message was one of the runner's slash commands. */

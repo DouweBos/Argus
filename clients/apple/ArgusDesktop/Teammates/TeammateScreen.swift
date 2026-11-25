@@ -151,6 +151,7 @@ private struct TeammateConversation: View {
 /// A teammate thread's transcript and input: the session chat, without the
 /// session's start workspace, since a teammate's folder is not a project.
 private struct TeammateChat: View {
+  @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
   let teammate: TeammatesStore.Teammate
   let agentId: String
@@ -166,6 +167,9 @@ private struct TeammateChat: View {
       TranscriptView(agentKey: agentId, sessionId: sessionId, showsEmptyState: false)
         .overlay {
           if isEmpty { TeammateGreeting(teammate: teammate).allowsHitTesting(false) }
+        }
+        .environment(\.openDutyRun) { run in
+          model.navigate(.automation(id: run.automationId, runId: run.runId))
         }
       ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
         MacTelemetry.capture(.inputUsed(affordance: affordance.rawValue))

@@ -117,6 +117,7 @@ fun AgentView(
       onArtifactOpened = { Telemetry.capture(TelemetryEvent.ArtifactOpened) },
       onWorkLogOpened = { Telemetry.capture(TelemetryEvent.TranscriptWorkLogOpened(it)) },
       openFileLink = sessionId?.takeIf { hasControl }?.let { sid -> { ref -> router.push(Route.File(sid, ref.path, ref.line, "chat_link")) } },
+      openDutyRun = { run -> router.push(Route.Run(run.runId, run.automationName)) },
     )
     when {
       isGone && stoppedFooter != null -> stoppedFooter()

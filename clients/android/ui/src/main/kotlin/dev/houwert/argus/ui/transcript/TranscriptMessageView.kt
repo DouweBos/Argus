@@ -45,6 +45,11 @@ fun TranscriptMessageView(message: RemoteMessage, modifier: Modifier = Modifier)
     HandoffDivider(handoff, modifier)
     return
   }
+  val dutyRun = message.dutyRun
+  if (dutyRun != null) {
+    DutyRunDivider(dutyRun, transcriptEnvironment.openDutyRun, modifier)
+    return
+  }
   val isUser = message.role == RemoteMessageRole.user
   if (isUser) {
     // A sent message is inset from the leading edge; a reply fills the column, as on the Mac.

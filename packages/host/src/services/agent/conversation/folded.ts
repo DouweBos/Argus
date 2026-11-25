@@ -3,7 +3,11 @@
  * event routing (`./hostDriver`) and viewer requests (`./actions`) share.
  */
 
-import type { ImageAttachment, AgentConversation } from "./types";
+import type {
+  AgentConversation,
+  ConversationDutyRun,
+  ImageAttachment,
+} from "./types";
 import { IMAGES_ONLY_PROMPT } from "@argus/remote-protocol";
 import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
@@ -105,6 +109,7 @@ export function recordUserMessage(
   options: {
     author?: string;
     checkpointId?: string;
+    dutyRun?: ConversationDutyRun;
     images?: ImageAttachment[];
     /** What goes to the agent, when the bubble shows something else. */
     sent?: string;
@@ -149,6 +154,7 @@ export function userMessage(
   options: {
     author?: string;
     checkpointId?: string;
+    dutyRun?: ConversationDutyRun;
     images?: ImageAttachment[];
     sent?: string;
   } = {},

@@ -109,3 +109,49 @@ public struct HandoffDivider: View {
     Rectangle().fill(theme.border).frame(height: 1).frame(maxWidth: .infinity)
   }
 }
+
+/// Where a teammate was handed a finished duty run: a quiet divider with the
+/// report one click away, then the teammate's own summary below it.
+public struct DutyRunDivider: View {
+  @Environment(\.theme) private var theme
+  @Environment(\.openDutyRun) private var openDutyRun
+  let dutyRun: RemoteMessageDutyRun
+
+  public init(dutyRun: RemoteMessageDutyRun) {
+    self.dutyRun = dutyRun
+  }
+
+  public var body: some View {
+    HStack(spacing: 10) {
+      rule
+      Label {
+        Text("\(dutyRun.automationName) \(dutyRun.failed ? "failed" : "finished")")
+      } icon: {
+        Image(systemName: dutyRun.failed ? "exclamationmark.triangle" : Icon.automations)
+      }
+      .font(.scaled(size: 12, weight: .medium))
+      .foregroundStyle(dutyRun.failed ? theme.warning : theme.textMuted)
+      .lineLimit(1)
+      .layoutPriority(1)
+      if let openDutyRun {
+        Button("Open Report") { openDutyRun(dutyRun) }
+          .buttonStyle(.argusBorderless)
+          .font(.scaled(size: 12, weight: .medium))
+          .foregroundStyle(theme.accent)
+          .fixedSize()
+      }
+      rule
+    }
+    .padding(.vertical, 4)
+    .accessibilityElement(children: .contain)
+  }
+
+  private var rule: some View {
+    Rectangle().fill(theme.border).frame(height: 1).frame(maxWidth: .infinity)
+  }
+}
+
+extension EnvironmentValues {
+  /// Opens a duty run's report; each app routes it its own way.
+  @Entry public var openDutyRun: ((RemoteMessageDutyRun) -> Void)? = nil
+}
