@@ -1,6 +1,6 @@
 /**
- * A sidebar session's right-click menu: its workflow status and note, as the
- * Mac sidebar's and the phone's session menus offer.
+ * A sidebar session's right-click menu: its workflow status and note, and
+ * Mark as unread, as the Mac sidebar's and the phone's session menus offer.
  */
 
 import { type MouseEvent, type ReactNode, useState } from "react";
@@ -21,10 +21,15 @@ import type { RemoteSession, SessionWorkflowStatus } from "../../lib/protocol";
 import { useConnectionStore } from "../../stores/connection";
 import { useProjectsStore } from "../../stores/projects";
 
+interface TriageActions {
+  set: (status: SessionWorkflowStatus | null) => void;
+  editNote: () => void;
+  setUnread: (unread: boolean) => void;
+}
+
 export function sessionTriageItems(
   session: RemoteSession,
-  set: (status: SessionWorkflowStatus | null) => void,
-  editNote: () => void,
+  { set, editNote, setUnread }: TriageActions,
 ): ContextMenuItem[] {
   const current = effectiveWorkflowStatus(session);
   const done = current === "done";
@@ -69,6 +74,9 @@ export function sessionTriageItems(
       label: session.status_note ? "Edit note" : "Add note",
       onClick: editNote,
     },
+    session.unread
+      ? { label: "Mark as read", onClick: () => setUnread(false) }
+      : { label: "Mark as unread", onClick: () => setUnread(true) },
   ];
 }
 
@@ -79,6 +87,7 @@ export function useSessionTriageMenu(session: RemoteSession): {
 } {
   const hasControl = useConnectionStore((s) => s.hasControl());
   const setSessionStatus = useProjectsStore((s) => s.setSessionStatus);
+  const setSessionUnread = useProjectsStore((s) => s.setSessionUnread);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [editingNote, setEditingNote] = useState(false);
   const triageable =
@@ -99,7 +108,13 @@ export function useSessionTriageMenu(session: RemoteSession): {
       <>
         {menu && (
           <ContextMenu
-            items={sessionTriageItems(session, set, () => setEditingNote(true))}
+            items={sessionTriageItems(session, {
+              set,
+              editNote: () => setEditingNote(true),
+              setUnread: (unread) => {
+                setSessionUnread(session, unread).catch(() => {});
+              },
+            })}
             position={menu}
             onClose={() => setMenu(null)}
           />

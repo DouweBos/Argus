@@ -381,6 +381,9 @@ keeping the list in order:
   In Review, merged or closed as Done. **Mark as Done** folds it away under
   Done; **Move Back to Active** brings it back. Agents set it too, through the
   `set_session_status` MCP tool.
+- **Mark as Unread** — keep it under Needs you until you open it again, as a
+  session whose agent finished while you were away does. **Mark as Read**
+  clears it without opening it.
 - **Snooze** — hide it until a time, when it comes back with a notification.
 
 ## Scratch pads

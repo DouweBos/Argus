@@ -2607,6 +2607,17 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class SessionsSetUnreadParams(
+    @SerialName("session_id") val sessionId: String,
+    @SerialName("unread") val unread: Boolean,
+  )
+
+  @Serializable
+  data class SessionsSetUnreadResult(
+    @SerialName("accepted") val accepted: Boolean,
+  )
+
+  @Serializable
   data class SessionsSettleParams(
     @SerialName("session_id") val sessionId: String,
     @SerialName("settled") @EncodeDefault val settled: Boolean? = null,
@@ -3476,6 +3487,8 @@ object Methods {
   object SessionsSetFileViewed : RemoteCommand<MethodsTypes.SessionsSetFileViewedParams, MethodsTypes.SessionsSetFileViewedResult>("sessions.set_file_viewed", "control", serializer(), serializer())
 
   object SessionsSetStatus : RemoteCommand<MethodsTypes.SessionsSetStatusParams, MethodsTypes.SessionsSetStatusResult>("sessions.set_status", "control", serializer(), serializer())
+
+  object SessionsSetUnread : RemoteCommand<MethodsTypes.SessionsSetUnreadParams, MethodsTypes.SessionsSetUnreadResult>("sessions.set_unread", "control", serializer(), serializer())
 
   object SessionsSettle : RemoteCommand<MethodsTypes.SessionsSettleParams, MethodsTypes.SessionsSettleResult>("sessions.settle", "control", serializer(), serializer())
 

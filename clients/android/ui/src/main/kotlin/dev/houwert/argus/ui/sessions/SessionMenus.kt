@@ -38,6 +38,7 @@ import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.parts
 import dev.houwert.argus.core.stores.setPullRequestWatched
 import dev.houwert.argus.core.stores.setSessionStatus
+import dev.houwert.argus.core.stores.setSessionUnread
 import dev.houwert.argus.core.stores.snoozeSession
 import dev.houwert.argus.kit.protocol.generated.RemoteSession
 import dev.houwert.argus.kit.protocol.generated.RemoteSessionKind
@@ -118,7 +119,7 @@ fun SessionTriageSheetDialog(host: HostStore, sheet: SessionTriageSheet, onDismi
 }
 
 /**
- * Mark as Done / Move Back to Active, its status and note, Snooze with its presets, and Watch Pull
+ * Mark as Done / Move Back to Active, its status and note, Mark as Unread, Snooze with its presets, and Watch Pull
  * Request: the items of a session row's long-press menu. [present] opens a dialog the caller shows.
  */
 @Composable
@@ -166,6 +167,11 @@ fun SessionRowMenuItems(host: HostStore, session: RemoteSession, dismiss: () -> 
     trailingIcon = {
       Text(session.effectiveStatus?.title ?: "None", color = theme.textMuted, style = ArgusTheme.typography.footnote)
     },
+  )
+  val unread = session.unread == true
+  DropdownMenuItem(
+    { Text(if (unread) "Mark as Read" else "Mark as Unread") }, { run { host.setSessionUnread(session, !unread) } },
+    leadingIcon = { Icon(if (unread) Icon.markRead else Icon.markUnread, null, tint = theme.textSecondary) },
   )
   if (session.isSnoozed()) {
     DropdownMenuItem({ Text("Unsnooze") }, { run { host.snoozeSession(session, null) } }, leadingIcon = { Icon(Icon.unsnooze, null, tint = theme.textSecondary) })

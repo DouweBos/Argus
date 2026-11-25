@@ -475,6 +475,20 @@ extension HostStore {
     } catch { report(error, scope: "session:set_status") }
   }
 
+  /// Mark as Unread (it waits under Needs you until opened) or Mark as Read.
+  public func setSessionUnread(_ session: RemoteSession, unread: Bool) async {
+    guard let backend else { return }
+    struct Params: Encodable {
+      let session_id: String
+      let unread: Bool
+    }
+    do {
+      try await backend.request(
+        .sessionsSetUnread, Params(session_id: session.id, unread: unread), as: IgnoredResult.self)
+      await reloadTriaged(session)
+    } catch { report(error, scope: "session:set_unread") }
+  }
+
   /// Hide it until `until`, when the computer brings it back with a notification; nil unsnoozes.
   public func snoozeSession(_ session: RemoteSession, until: Date?) async {
     guard let backend else { return }

@@ -691,7 +691,13 @@ export interface EventMap {
   };
   session_started_from_issue: { source: "linear" };
   session_triaged: {
-    action: "snoozed" | "status_set" | "unsnoozed" | "woke";
+    action:
+      | "marked_read"
+      | "marked_unread"
+      | "snoozed"
+      | "status_set"
+      | "unsnoozed"
+      | "woke";
     /** Only on `snoozed`. */
     duration_bucket?: "<1d" | "<1w" | "<4h" | "1w+";
     /** Only on `status_set`; `cleared` goes back to following the pull request. */

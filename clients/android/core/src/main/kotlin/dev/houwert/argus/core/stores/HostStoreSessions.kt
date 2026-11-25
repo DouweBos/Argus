@@ -312,6 +312,17 @@ suspend fun HostStore.setSessionStatus(session: RemoteSession, status: SessionWo
   }
 }
 
+/** Mark as Unread (it waits under Needs you until opened) or Mark as Read. */
+suspend fun HostStore.setSessionUnread(session: RemoteSession, unread: Boolean) {
+  val backend = backend ?: return
+  try {
+    backend.request(Methods.SessionsSetUnread, MethodsTypes.SessionsSetUnreadParams(session.id, unread))
+    reloadTriaged(session)
+  } catch (e: Exception) {
+    report(e, "session:set_unread")
+  }
+}
+
 /** Hide it until [untilMillis], when the computer brings it back with a notification; null unsnoozes. */
 suspend fun HostStore.snoozeSession(session: RemoteSession, untilMillis: Long?) {
   val backend = backend ?: return

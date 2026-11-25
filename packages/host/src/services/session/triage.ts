@@ -266,6 +266,16 @@ export function markSessionUnread(id: string): void {
   patch(id, { unread: true });
 }
 
+/** Mark as Unread / Mark as Read from a client's menu. */
+export function setSessionUnread(id: string, unread: boolean): void {
+  requireSession(id);
+  patch(id, { unread: unread || undefined });
+  telemetryCapture("session_triaged", {
+    action: unread ? "marked_unread" : "marked_read",
+    actor: "user",
+  });
+}
+
 /** A client opened it. */
 export function markSessionRead(id: string): void {
   if (!load().get(id)?.unread) {

@@ -50,6 +50,8 @@ import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Contrast
+import androidx.compose.material.icons.outlined.MarkEmailRead
+import androidx.compose.material.icons.outlined.MarkEmailUnread
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.CreateNewFolder
 import androidx.compose.material.icons.outlined.CropFree
@@ -202,6 +204,8 @@ object Icon {
   val reopen = Icons.Outlined.Replay
   /** A session's workflow status menu. */
   val workflowStatus = Icons.Outlined.Contrast
+  val markUnread = Icons.Outlined.MarkEmailUnread
+  val markRead = Icons.Outlined.MarkEmailRead
   val history = Icons.Outlined.History
   val search = Icons.Outlined.Search
   val filter = Icons.Outlined.FilterList

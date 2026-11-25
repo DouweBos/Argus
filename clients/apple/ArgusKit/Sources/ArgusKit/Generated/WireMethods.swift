@@ -8242,6 +8242,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsSetUnreadParams: Codable, Sendable {
+      public var sessionId: String
+      public var unread: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case unread = "unread"
+      }
+
+      public init(sessionId: String, unread: Bool) {
+        self.sessionId = sessionId
+        self.unread = unread
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(unread, forKey: .unread)
+      }
+    }
+
+    public struct SessionsSetUnreadResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
     public struct SessionsSettleParams: Codable, Sendable {
       public var sessionId: String
       public var settled: Bool?
@@ -10981,6 +11019,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsSetStatusParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsSetStatusResult
       public static let name = "sessions.set_status"
+    }
+
+    public enum SessionsSetUnread: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsSetUnreadParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsSetUnreadResult
+      public static let name = "sessions.set_unread"
     }
 
     public enum SessionsSettle: RemoteCommand {

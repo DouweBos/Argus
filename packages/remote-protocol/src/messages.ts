@@ -628,6 +628,11 @@ export const MethodParams = {
     status: SessionWorkflowStatus.nullable(),
     note: z.string().max(500).nullable().optional(),
   }),
+  /** Mark it unread (it waits under Needs you) or read, by hand. */
+  "sessions.set_unread": z.object({
+    session_id: z.string(),
+    unread: z.boolean(),
+  }),
   /** Hide until `until` (epoch ms), then notify; null brings it back now. */
   "sessions.snooze": z.object({
     session_id: z.string(),
@@ -1387,6 +1392,7 @@ export const MethodResult = {
   "sessions.watch_pull_request": z.object({ watching: z.boolean() }),
   "sessions.settle": z.object({ accepted: z.boolean() }),
   "sessions.set_status": z.object({ accepted: z.boolean() }),
+  "sessions.set_unread": z.object({ accepted: z.boolean() }),
   "sessions.snooze": z.object({ accepted: z.boolean() }),
   "sessions.git_status": z.object({ status: RemoteGitStatus }),
   "terminals.list": z.object({ terminals: z.array(RemoteTerminal) }),

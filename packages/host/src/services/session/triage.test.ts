@@ -11,6 +11,7 @@ import {
   sessionTriage,
   setSessionSettled,
   setSessionStatus,
+  setSessionUnread,
   snoozeSession,
   startSessionTriage,
   stopSessionTriage,
@@ -132,6 +133,17 @@ describe("session triage", () => {
     };
     expect(saved.version).toBe(2);
     expect(saved.sessions.some((r) => "settled" in r)).toBe(false);
+  });
+
+  it("marks unread by hand until a client opens it", () => {
+    setSessionUnread("s1", true);
+    expect(sessionTriage("s1").unread).toBe(true);
+    markSessionRead("s1");
+    expect(sessionTriage("s1").unread).toBe(false);
+    setSessionUnread("s1", true);
+    setSessionUnread("s1", false);
+    expect(sessionTriage("s1").unread).toBe(false);
+    expect(() => setSessionUnread("gone", true)).toThrow();
   });
 
   it("clears unread when opened and when marked done", () => {

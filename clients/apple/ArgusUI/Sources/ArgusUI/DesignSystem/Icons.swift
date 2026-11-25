@@ -62,6 +62,8 @@ public enum Icon {
   /// A session's workflow status menu.
   public static let workflowStatus = "circle.lefthalf.filled"
   public static let note = "text.bubble"
+  public static let markUnread = "envelope.badge"
+  public static let markRead = "envelope.open"
   public static let history = "clock.arrow.circlepath"
   public static let search = "magnifyingglass"
   public static let filter = "line.3.horizontal.decrease"

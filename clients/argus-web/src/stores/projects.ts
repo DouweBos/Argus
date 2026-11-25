@@ -59,6 +59,7 @@ interface ProjectsState {
     status: SessionWorkflowStatus | null,
     note?: string,
   ) => Promise<void>;
+  setSessionUnread: (session: RemoteSession, unread: boolean) => Promise<void>;
   renameSessionBranch: (
     id: string,
     repoRoot: string,
@@ -183,6 +184,17 @@ export const useProjectsStore = create<ProjectsState>()((set, get) => ({
       status,
       ...(note === undefined ? {} : { note }),
     });
+    await get()
+      .loadSessions(session.repo_root)
+      .catch(() => {});
+  },
+
+  setSessionUnread: async (session, unread) => {
+    const t = currentTransport();
+    if (!t) {
+      return;
+    }
+    await request(t, "sessions.set_unread", { session_id: session.id, unread });
     await get()
       .loadSessions(session.repo_root)
       .catch(() => {});
