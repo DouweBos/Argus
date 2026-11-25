@@ -18,12 +18,14 @@ public struct SealedNotification: Codable, Sendable {
   public var agentId: String?
   public var sessionId: String?
   public var toolUseId: String?
+  /// The Claude account a usage warning's Switch moves to.
+  public var accountId: String?
   public var actions: [RemoteNotificationAction]
 
   public init(
     title: String, body: String, kind: String,
     agentId: String?, sessionId: String?, toolUseId: String?,
-    actions: [RemoteNotificationAction]
+    accountId: String? = nil, actions: [RemoteNotificationAction]
   ) {
     self.title = title
     self.body = body
@@ -31,6 +33,7 @@ public struct SealedNotification: Codable, Sendable {
     self.agentId = agentId
     self.sessionId = sessionId
     self.toolUseId = toolUseId
+    self.accountId = accountId
     self.actions = actions
   }
 }

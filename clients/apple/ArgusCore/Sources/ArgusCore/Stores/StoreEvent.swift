@@ -23,6 +23,8 @@ public enum StoreEvent: Sendable, Equatable {
     case reauth
     /// A session pinned to one account from the chat input.
     case pin
+    /// Switched to from a usage warning's notification.
+    case usageWarning = "usage_warning"
   }
 
   /// What happened to an automation's memory.

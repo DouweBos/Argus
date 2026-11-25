@@ -38,10 +38,10 @@ final class NotificationService: UNNotificationServiceExtension {
 
     content.title = opened.title
     content.body = opened.body
-    // The category is what draws Approve/Deny, so it only appears once we know
-    // this really is a permission prompt.
-    if !opened.actions.isEmpty {
-      content.categoryIdentifier = NotificationCategory.permission
+    // The category is what draws the buttons, so it only appears once we know
+    // which ones the desktop asked for.
+    if let category = NotificationCategory.forActions(opened.actions.map(\.id)) {
+      content.categoryIdentifier = category
     }
 
     // Native code reads these straight off userInfo; there is no
@@ -52,6 +52,7 @@ final class NotificationService: UNNotificationServiceExtension {
     info[NotificationUserInfoKey.toolUseId] = opened.toolUseId
     info[NotificationUserInfoKey.label] = opened.title
     info[NotificationUserInfoKey.kind] = opened.kind
+    info[NotificationUserInfoKey.accountId] = opened.accountId
     info.removeValue(forKey: "e")
     content.userInfo = info
 

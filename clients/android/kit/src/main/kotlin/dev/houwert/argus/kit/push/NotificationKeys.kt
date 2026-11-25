@@ -7,6 +7,7 @@ package dev.houwert.argus.kit.push
 object NotificationAction {
   const val APPROVE = "approve"
   const val DENY = "deny"
+  const val SWITCH_ACCOUNT = "switch_account"
 }
 
 /** Keys of the extras a posted notification carries back to the app on tap or action. */
@@ -16,6 +17,7 @@ object NotificationExtra {
   const val TOOL_USE_ID = "toolUseId"
   const val LABEL = "label"
   const val KIND = "kind"
+  const val ACCOUNT_ID = "accountId"
 }
 
 /** Keys of the FCM data message the relay forwards. */

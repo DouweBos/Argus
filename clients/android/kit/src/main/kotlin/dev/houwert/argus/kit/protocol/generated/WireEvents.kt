@@ -77,7 +77,8 @@ object EventsTypes {
       val failed = NotificationPayloadKind("failed")
       val permission = NotificationPayloadKind("permission")
       val push = NotificationPayloadKind("push")
-      val entries: List<NotificationPayloadKind> = listOf(finished, failed, permission, push)
+      val usage = NotificationPayloadKind("usage")
+      val entries: List<NotificationPayloadKind> = listOf(finished, failed, permission, push, usage)
     }
   }
 
@@ -89,7 +90,8 @@ object EventsTypes {
     companion object {
       val approve = NotificationPayloadActionsItemId("approve")
       val deny = NotificationPayloadActionsItemId("deny")
-      val entries: List<NotificationPayloadActionsItemId> = listOf(approve, deny)
+      val switchAccount = NotificationPayloadActionsItemId("switch_account")
+      val entries: List<NotificationPayloadActionsItemId> = listOf(approve, deny, switchAccount)
     }
   }
 
@@ -107,6 +109,7 @@ object EventsTypes {
     @SerialName("kind") val kind: NotificationPayloadKind,
     @SerialName("title") val title: String,
     @SerialName("body") val body: String,
+    @SerialName("account_id") val accountId: String? = null,
     @SerialName("actions") val actions: List<NotificationPayloadActionsItem>? = null,
   )
 

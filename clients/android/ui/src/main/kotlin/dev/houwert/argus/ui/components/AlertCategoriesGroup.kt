@@ -16,7 +16,7 @@ fun AlertCategoriesGroup(
   ) {
     SettingsToggleRow(
       "Agent needs you", needsYou, onNeedsYou,
-      description = "A permission prompt, a question, a plan to approve, or an error.",
+      description = "A permission prompt, a question, a plan to approve, an error, or a usage limit running low.",
     )
     SettingsToggleRow("Agent finished", finished, onFinished, description = "An agent completed its turn.")
   }

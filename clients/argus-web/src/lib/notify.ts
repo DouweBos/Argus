@@ -77,7 +77,9 @@ export function showRemoteNotification(n: RemoteNotification): void {
   // Only the service worker can render buttons, so a notification with quick
   // actions goes through it — that also keeps its click handling identical to
   // a pushed one. Everything else stays on the plain page notification.
-  if (n.actions.length > 0 && "serviceWorker" in navigator) {
+  // The worker answers prompts only; a usage warning's Switch belongs to the apps.
+  const actions = n.actions.filter((a) => a.id !== "switch_account");
+  if (actions.length > 0 && "serviceWorker" in navigator) {
     void navigator.serviceWorker
       .getRegistration()
       .then((reg) => {
@@ -87,7 +89,7 @@ export function showRemoteNotification(n: RemoteNotification): void {
 
         return reg.showNotification(n.title, {
           ...options,
-          actions: n.actions.map((a) => ({ action: a.id, title: a.title })),
+          actions: actions.map((a) => ({ action: a.id, title: a.title })),
         } as NotificationOptions);
       })
       .catch(() => showPageNotification(n, options));

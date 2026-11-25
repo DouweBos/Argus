@@ -27,6 +27,8 @@ data class SealedNotification(
   @EncodeDefault val sessionId: String? = null,
   @EncodeDefault val toolUseId: String? = null,
   val actions: List<SealedNotificationAction> = emptyList(),
+  /** The Claude account a usage warning's Switch moves to. */
+  val accountId: String? = null,
 )
 
 /**

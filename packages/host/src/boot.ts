@@ -129,6 +129,10 @@ import {
 import { reapOrphanedSpawnHelpers } from "./services/terminal/reapOrphans";
 import { fixProcessPath } from "./services/terminal/shellEnv";
 import {
+  startUsageWarnings,
+  stopUsageWarnings,
+} from "./services/usage/usageWarningService";
+import {
   startWorktreeCleanup,
   stopWorktreeCleanup,
 } from "./services/worktreeCleanup/sweep";
@@ -286,6 +290,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   startWarmPolicy({ spawn: spawnSpare });
   startIdlePause();
   startLimitAutoSwitch();
+  startUsageWarnings();
   // Pinned chats come back idle once the MCP server is listening.
   startPinnedChats();
   // Outbound only (Socket Mode); a no-op until Slack is connected.
@@ -347,6 +352,7 @@ export function stopHostServices(): void {
   stopLinearMentions();
   stopDutyReports();
   stopLimitAutoSwitch();
+  stopUsageWarnings();
   stopSlack();
   stopMcpServer();
   stopRemote();

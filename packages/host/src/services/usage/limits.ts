@@ -238,6 +238,9 @@ export function noteUsageRateLimitLine(accountId: string, line: string): void {
   }
   const cached = cache.get(accountId);
   if (!cached) {
+    // Nothing to patch yet: read the plan once so a usage warning has numbers to go on.
+    getAccountLimits(accountId).catch(() => undefined);
+
     return;
   }
   const windows = applyRateLimitEvent(cached.windows, line, Date.now());

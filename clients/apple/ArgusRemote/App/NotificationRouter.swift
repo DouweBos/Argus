@@ -45,7 +45,15 @@ final class NotificationRouter: NSObject {
       actions: [approve, deny],
       intentIdentifiers: [],
       options: [])
-    UNUserNotificationCenter.current().setNotificationCategories([category])
+    // Opens the app: the switch needs the computer, and a background wake may not reach it.
+    let switchAccount = UNNotificationAction(
+      identifier: NotificationAction.switchAccount, title: "Switch Account", options: [.foreground])
+    let usage = UNNotificationCategory(
+      identifier: NotificationCategory.usage,
+      actions: [switchAccount],
+      intentIdentifiers: [],
+      options: [])
+    UNUserNotificationCenter.current().setNotificationCategories([category, usage])
   }
 
   func requestAuthorization() async -> Bool {
@@ -172,11 +180,16 @@ extension NotificationRouter: UNUserNotificationCenterDelegate {
     let agentId = info[NotificationUserInfoKey.agentId] as? String
     let toolUseId = info[NotificationUserInfoKey.toolUseId] as? String
     let label = info[NotificationUserInfoKey.label] as? String ?? "Agent"
+    let accountId = info[NotificationUserInfoKey.accountId] as? String
     let action = response.actionIdentifier
     let completion = MainThreadCompletion<Void> { _ in completionHandler() }
 
     Task { @MainActor in
-      handle(agentId: agentId, toolUseId: toolUseId, label: label, action: action)
+      if action == NotificationAction.switchAccount, let accountId {
+        switchAccount(to: accountId)
+      } else {
+        handle(agentId: agentId, toolUseId: toolUseId, label: label, action: action)
+      }
       completion.call(())
     }
   }
@@ -189,6 +202,18 @@ extension NotificationRouter: UNUserNotificationCenterDelegate {
   ) {
     let completion = MainThreadCompletion(call: completionHandler)
     Task { @MainActor in completion.call([.banner, .list]) }
+  }
+
+  /// A usage warning's Switch: make another Claude account the computer's active one.
+  private func switchAccount(to accountId: String) {
+    guard let app else { return }
+    Task {
+      // Opened from the notification, the app may still be reconnecting.
+      for _ in 0..<40 where app.host.connection != .ready {
+        try? await Task.sleep(for: .milliseconds(200))
+      }
+      await app.host.setActiveClaudeAccount(id: accountId, action: .usageWarning)
+    }
   }
 
   private func handle(agentId: String?, toolUseId: String?, label: String, action: String) {

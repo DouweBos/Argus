@@ -59,6 +59,7 @@ describe("seal", () => {
       agentId: "agent-1",
       sessionId: "session-1",
       toolUseId: "tool-1",
+      accountId: null,
       actions: [
         { id: "approve", title: "Approve" },
         { id: "deny", title: "Deny" },

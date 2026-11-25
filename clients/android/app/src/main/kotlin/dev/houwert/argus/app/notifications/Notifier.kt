@@ -24,7 +24,7 @@ import dev.houwert.argus.kit.push.SealedNotificationAction
 import dev.houwert.argus.kit.protocol.generated.EventsTypes
 import java.util.UUID
 
-/** Posts what the computer asked to show, pushed or in-band, with Approve/Deny and Reply where they apply. */
+/** Posts what the computer asked to show, pushed or in-band, with Approve/Deny, Reply or Switch where they apply. */
 object Notifier {
   const val CHANNEL_APPROVALS = "approvals"
   const val CHANNEL_AGENTS = "agents"
@@ -63,6 +63,7 @@ object Notifier {
         sessionId = payload.sessionId,
         toolUseId = payload.toolUseId,
         actions = payload.actions.orEmpty().map { SealedNotificationAction(it.id.rawValue, it.title) },
+        accountId = payload.accountId,
       ),
     )
   }
@@ -83,7 +84,11 @@ object Notifier {
       .setCategory(if (permission) NotificationCompat.CATEGORY_REMINDER else NotificationCompat.CATEGORY_STATUS)
       .setContentIntent(openIntent(context, notification, tag))
     val agentId = notification.agentId
-    if (permission && agentId != null) {
+    val switchTo = notification.accountId
+    val switchAction = notification.actions.firstOrNull { it.id == NotificationAction.SWITCH_ACCOUNT }
+    if (switchAction != null && switchTo != null) {
+      builder.addAction(0, switchAction.title, switchIntent(context, switchTo, tag))
+    } else if (permission && agentId != null) {
       for (action in notification.actions) {
         val id = action.id.takeIf { it == NotificationAction.APPROVE || it == NotificationAction.DENY } ?: continue
         builder.addAction(0, action.title, actionIntent(context, id, agentId, notification.toolUseId, tag))
@@ -122,6 +127,17 @@ object Notifier {
       .putExtra(NotificationExtra.LABEL, notification.title)
       .putExtra(NotificationExtra.KIND, notification.kind)
     return PendingIntent.getActivity(context, tag.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+  }
+
+  private fun switchIntent(context: Context, accountId: String, tag: String): PendingIntent {
+    val intent = Intent(context, NotificationActionReceiver::class.java)
+      .setAction(NotificationAction.SWITCH_ACCOUNT)
+      .putExtra(NotificationExtra.ACCOUNT_ID, accountId)
+      .putExtra(NotificationActionReceiver.EXTRA_TAG, tag)
+    return PendingIntent.getBroadcast(
+      context, (tag + NotificationAction.SWITCH_ACCOUNT).hashCode(), intent,
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
   }
 
   private fun actionIntent(

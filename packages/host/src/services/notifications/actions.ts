@@ -6,7 +6,7 @@
 
 import { isSecretRequestTool } from "../secretRequest/toolName";
 
-export type NotificationActionId = "approve" | "deny";
+export type NotificationActionId = "approve" | "deny" | "switch_account";
 
 export interface RemoteNotificationAction {
   id: NotificationActionId;
@@ -29,4 +29,13 @@ export function permissionActions(
     { id: "approve", title: "Approve" },
     { id: "deny", title: "Deny" },
   ];
+}
+
+/** A usage warning's one action: move to the Claude account with the most room, when there is one. */
+export function switchAccountActions(
+  targetLabel: string | null,
+): RemoteNotificationAction[] {
+  return targetLabel
+    ? [{ id: "switch_account", title: `Switch to ${targetLabel}` }]
+    : [];
 }

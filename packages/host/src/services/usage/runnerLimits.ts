@@ -21,7 +21,12 @@ import { readCursorLimits, readGrokLimits, type PlanReading } from "./planApis";
 
 const CACHE_MS = 60_000;
 
-type PlanRunner = "antigravity" | "codex" | "cursor" | "grok" | "opencode";
+export type PlanRunner =
+  | "antigravity"
+  | "codex"
+  | "cursor"
+  | "grok"
+  | "opencode";
 
 const READERS: Record<PlanRunner, (now: number) => Promise<PlanReading>> = {
   [CODEX_RUNNER_ID]: readCodexLimits,
@@ -33,6 +38,22 @@ const READERS: Record<PlanRunner, (now: number) => Promise<PlanReading>> = {
 
 const cache = new Map<PlanRunner, RunnerUsageLimits>();
 const inflight = new Map<PlanRunner, Promise<RunnerUsageLimits>>();
+const listeners = new Set<(limits: RunnerUsageLimits) => void>();
+
+/** Hear every fresh reading, whoever asked for it. Returns the unsubscribe. */
+export function onRunnerUsageLimits(
+  listener: (limits: RunnerUsageLimits) => void,
+): () => void {
+  listeners.add(listener);
+
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export function isPlanRunner(id: string): id is PlanRunner {
+  return id in READERS;
+}
 
 async function check(runner: PlanRunner): Promise<RunnerUsageLimits> {
   const now = Date.now();
@@ -91,6 +112,13 @@ function limitsFor(
   const next = check(runner)
     .then((result) => {
       cache.set(runner, result);
+      for (const listener of listeners) {
+        try {
+          listener(result);
+        } catch (e) {
+          warn(`[usage] runner limits listener failed: ${String(e)}`);
+        }
+      }
 
       return result;
     })
@@ -98,6 +126,14 @@ function limitsFor(
   inflight.set(runner, next);
 
   return next;
+}
+
+/** One runner's plan limits through the same cache as the Usage screen. */
+export function getRunnerLimits(
+  runner: PlanRunner,
+  refresh = false,
+): Promise<RunnerUsageLimits> {
+  return limitsFor(runner, refresh);
 }
 
 /** Installed runners with plan limits, in a fixed order. */

@@ -6,9 +6,9 @@ import { capture } from "../telemetry/telemetry";
 export type NotificationCategory = "finished" | "needs_you";
 
 /** `RemoteNotificationPayload["kind"]`, spelled out to keep this module a leaf. */
-type NotificationKind = "failed" | "finished" | "permission" | "push";
+type NotificationKind = "failed" | "finished" | "permission" | "push" | "usage";
 
-/** A finished turn is "finished"; prompts, failures and agent nudges wait on you. */
+/** A finished turn is "finished"; prompts, failures, nudges and usage warnings wait on you. */
 export function notificationCategory(
   kind: NotificationKind,
 ): NotificationCategory {

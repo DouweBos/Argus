@@ -132,6 +132,8 @@ export const AppSettings = z.object({
   notify_needs_you: z.boolean().optional(),
   /** Banners on this computer when an agent finishes. On by default. */
   notify_finished: z.boolean().optional(),
+  /** Warn once per window when a plan limit reaches this percent; 0 turns it off. 90 by default. */
+  usage_warning_percent: z.number().int().min(0).max(100).optional(),
   /** Serve the web client to direct local-network browsers. Off by default. */
   remote_lan_web_client: z.boolean().optional(),
   /** Keep the Mac from sleeping on power while remote access is on. On by default. */

@@ -89,4 +89,20 @@ struct SealTests {
       title: "", body: "", actions: [])
     #expect(push.collapseIdentifier == nil)
   }
+
+  @Test("a usage warning carries the account Switch moves to and draws its own buttons")
+  func usageWarning() throws {
+    let json = Data(
+      """
+      {"agent_id":null,"session_id":null,"tool_use_id":null,"kind":"usage","title":"t","body":"b",
+       "account_id":"personal","actions":[{"id":"switch_account","title":"Switch to Personal"}]}
+      """.utf8)
+    let warning = try JSONDecoder().decode(RemoteNotification.self, from: json)
+    #expect(warning.kind == .usage)
+    #expect(warning.accountId == "personal")
+    #expect(warning.collapseIdentifier == nil)
+    #expect(NotificationCategory.forActions(warning.actions.map(\.id)) == NotificationCategory.usage)
+    #expect(NotificationCategory.forActions(["approve", "deny"]) == NotificationCategory.permission)
+    #expect(NotificationCategory.forActions([]) == nil)
+  }
 }

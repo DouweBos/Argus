@@ -26,8 +26,8 @@ extension HostStore {
 
   /// Make this the account every new agent authenticates as. Running agents
   /// keep theirs — the switch only takes effect on the next spawn.
-  public func setActiveClaudeAccount(id: String) async {
-    hooks.track(.claudeAccountChanged(action: .select))
+  public func setActiveClaudeAccount(id: String, action: StoreEvent.AccountAction = .select) async {
+    hooks.track(.claudeAccountChanged(action: action))
     guard let backend else { return }
     struct Params: Encodable { let id: String }
     do {

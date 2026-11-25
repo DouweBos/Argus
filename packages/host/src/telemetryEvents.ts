@@ -737,6 +737,21 @@ export interface EventMap {
     outcome: "failed" | "ok" | "unsupported";
     window_count: number;
   };
+  /** A plan limit in use reached the warning threshold; once per window. */
+  usage_warning_sent: {
+    runner:
+      | "antigravity"
+      | "claude-code"
+      | "codex"
+      | "cursor"
+      | "grok"
+      | "opencode";
+    threshold_bucket: "75" | "80" | "85" | "90" | "95" | "other";
+    /** Another Claude account had room, so the warning offered Switch. */
+    switch_offered: boolean;
+  };
+  /** Switch was pressed on a usage warning's banner on this computer. */
+  usage_warning_switched: { success: boolean };
   usage_limits_fetched: {
     outcome: "failed" | "ok" | "unsupported";
     window_count: number;

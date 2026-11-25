@@ -18,6 +18,7 @@ describe("notification categories", () => {
     expect(notificationCategory("failed")).toBe("needs_you");
     expect(notificationCategory("permission")).toBe("needs_you");
     expect(notificationCategory("push")).toBe("needs_you");
+    expect(notificationCategory("usage")).toBe("needs_you");
   });
 
   it("lets everything through without a choice", () => {

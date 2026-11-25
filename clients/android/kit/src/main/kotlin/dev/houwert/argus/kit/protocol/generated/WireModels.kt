@@ -699,6 +699,7 @@ data class AppSettings(
   @SerialName("remote_notify_when_focused") val remoteNotifyWhenFocused: Boolean? = null,
   @SerialName("notify_needs_you") val notifyNeedsYou: Boolean? = null,
   @SerialName("notify_finished") val notifyFinished: Boolean? = null,
+  @SerialName("usage_warning_percent") val usageWarningPercent: Long? = null,
   @SerialName("remote_lan_web_client") val remoteLanWebClient: Boolean? = null,
   @SerialName("remote_keep_awake") val remoteKeepAwake: Boolean? = null,
   @SerialName("remote_mcp_enabled") val remoteMcpEnabled: Boolean? = null,

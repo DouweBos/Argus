@@ -176,6 +176,11 @@ export interface AppSettings {
   /** Banners on this computer when an agent finishes. On by default. */
   notify_finished?: boolean;
   /**
+   * Warn once per usage window when a plan limit reaches this percent, as a
+   * needs-you alert. 0 turns it off; unset means 90.
+   */
+  usage_warning_percent?: number;
+  /**
    * Serve the web client to browsers that connect straight over the local
    * network. Off by default: that page travels as plain http, so anyone on the
    * same network could tamper with it.

@@ -1171,6 +1171,8 @@ public struct RemoteNotificationAction: Codable, Hashable, Sendable {
 public struct RemoteNotification: Codable, Hashable, Sendable {
   public enum Kind: String, Codable, Sendable {
     case failed, finished, permission, push
+    /// A plan limit crossed the computer's warning threshold.
+    case usage
   }
 
   public var agentId: String?
@@ -1180,11 +1182,14 @@ public struct RemoteNotification: Codable, Hashable, Sendable {
   public var kind: Kind
   public var title: String
   public var body: String
+  /// The Claude account a usage warning's Switch moves to.
+  public var accountId: String?
   public var actions: [RemoteNotificationAction]
 
   public init(
     agentId: String?, sessionId: String?, toolUseId: String?,
-    kind: Kind, title: String, body: String, actions: [RemoteNotificationAction]
+    kind: Kind, title: String, body: String, accountId: String? = nil,
+    actions: [RemoteNotificationAction]
   ) {
     self.agentId = agentId
     self.sessionId = sessionId
@@ -1192,6 +1197,7 @@ public struct RemoteNotification: Codable, Hashable, Sendable {
     self.kind = kind
     self.title = title
     self.body = body
+    self.accountId = accountId
     self.actions = actions
   }
 
@@ -1200,6 +1206,7 @@ public struct RemoteNotification: Codable, Hashable, Sendable {
     case agentId = "agent_id"
     case sessionId = "session_id"
     case toolUseId = "tool_use_id"
+    case accountId = "account_id"
   }
 
   /// What this notification replaces, or nil to let it stack. Mirrors
@@ -1209,7 +1216,7 @@ public struct RemoteNotification: Codable, Hashable, Sendable {
     switch kind {
     case .finished, .failed: agentId.map { "agent-\($0)" }
     case .permission: toolUseId.map { "prompt-\($0)" }
-    case .push: nil
+    case .push, .usage: nil
     }
   }
 }

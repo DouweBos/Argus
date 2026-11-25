@@ -54,6 +54,18 @@ struct GeneralSettingsTab: View {
           isOn: notify(.notifyFinished, get: \.notifyFinished) { $0.notifyFinished = $1 }
         )
         .disabled(!host.loaded)
+        SettingsRow(
+          "Usage limit warning",
+          description: "Warns once per window when a plan limit reaches this much, with a switch to another "
+            + "Claude account when one has room. Arrives as Agent needs you, here and on your phones."
+        ) {
+          Picker("Usage limit warning", selection: usageWarning) {
+            Text("Off").tag(0)
+            ForEach(Self.usageWarningSteps, id: \.self) { Text("\($0)%").tag($0) }
+          }
+          .clickable(host.loaded)
+          .disabled(!host.loaded)
+        }
       }
 
       CustomEditorsSection()
@@ -81,6 +93,21 @@ struct GeneralSettingsTab: View {
         Task {
           await host.save(.launchRoute, ["launch_route": .string(next.rawValue)]) {
             $0.launchRoute = next
+          }
+        }
+      })
+  }
+
+  static let usageWarningSteps = [75, 80, 85, 90, 95]
+
+  /// Unset means 90%; 0 is off.
+  private var usageWarning: Binding<Int> {
+    Binding(
+      get: { host.settings?.usageWarningPercent ?? 90 },
+      set: { next in
+        Task {
+          await host.save(.usageWarningPercent, ["usage_warning_percent": .number(Double(next))]) {
+            $0.usageWarningPercent = next
           }
         }
       })

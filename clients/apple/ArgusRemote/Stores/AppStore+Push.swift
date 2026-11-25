@@ -289,14 +289,15 @@ enum NotificationPresenter {
     let content = UNMutableNotificationContent()
     content.title = notification.title
     content.body = notification.body
-    if !notification.actions.isEmpty {
-      content.categoryIdentifier = NotificationCategory.permission
+    if let category = NotificationCategory.forActions(notification.actions.map(\.id)) {
+      content.categoryIdentifier = category
     }
     content.userInfo = [
       NotificationUserInfoKey.agentId: notification.agentId as Any,
       NotificationUserInfoKey.toolUseId: notification.toolUseId as Any,
       NotificationUserInfoKey.label: notification.title,
       NotificationUserInfoKey.kind: notification.kind.rawValue,
+      NotificationUserInfoKey.accountId: notification.accountId as Any,
     ]
 
     // The same collapse key the pushed version uses, so an in-band alert and a

@@ -40,6 +40,17 @@ class SealTest {
     assertArrayEquals(ArgusBase64.decode(nonce), ArgusBase64.decode(produced)!!.copyOfRange(0, 12))
   }
 
+  @Test fun usageWarningCarriesTheAccountToSwitchTo() {
+    val warning = SealedNotification(
+      title = "Claude Code is at 91% of its limit", body = "Session limit.", kind = "usage",
+      actions = listOf(SealedNotificationAction(NotificationAction.SWITCH_ACCOUNT, "Switch to Personal")),
+      accountId = "personal",
+    )
+    val opened = ArgusSeal.open(ArgusSeal.seal(warning, pushKey, ArgusBase64.decode(nonce)!!), pushKey)
+    assertEquals("personal", opened?.accountId)
+    assertNull(ArgusSeal.collapseSubject("usage", null, null))
+  }
+
   @Test fun collapseIdMatchesDesktop() {
     assertEquals("nwyawhtQoWIzki7AzDpCnA", ArgusSeal.collapseId(pushKey, "prompt-tu-77"))
   }

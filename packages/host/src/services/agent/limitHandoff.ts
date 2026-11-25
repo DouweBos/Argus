@@ -106,7 +106,8 @@ function isSpent(window: UsageLimitWindow | null, now: number): boolean {
   );
 }
 
-async function limitsWithin(
+/** An account's limits, or null when the probe takes longer than `ms`. */
+export async function limitsWithin(
   id: string,
   ms: number,
   refresh = false,

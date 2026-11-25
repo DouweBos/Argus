@@ -20,8 +20,8 @@ suspend fun HostStore.refreshClaudeAccounts() {
 }
 
 /** New agents authenticate as this account; running ones keep theirs until their next spawn. */
-suspend fun HostStore.setActiveClaudeAccount(id: String) {
-  hooks.track(StoreEvent.ClaudeAccountChanged(StoreEvent.AccountAction.Select))
+suspend fun HostStore.setActiveClaudeAccount(id: String, action: StoreEvent.AccountAction = StoreEvent.AccountAction.Select) {
+  hooks.track(StoreEvent.ClaudeAccountChanged(action))
   val backend = backend ?: return
   try {
     backend.request(Methods.ClaudeAccountsSetActive, MethodsTypes.ClaudeAccountsSetActiveParams(id))

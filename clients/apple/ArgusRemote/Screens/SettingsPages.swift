@@ -165,7 +165,7 @@ struct AlertsSettingsPage: View {
         footer: "Each computer you're paired with stops sending what you turn off. Needs you and the widgets still list everything."
       ) {
         SettingsToggleRow(
-          "Agent needs you", description: "A permission prompt, a question, a plan to approve, or an error.",
+          "Agent needs you", description: "A permission prompt, a question, a plan to approve, an error, or a usage limit running low.",
           isOn: Binding(
             get: { app.alertNeedsYou },
             set: { on in Task { await app.setAlert(needsYou: on) } }))

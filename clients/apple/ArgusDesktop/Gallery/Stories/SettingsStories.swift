@@ -177,14 +177,15 @@
     }
 
     /// Settings → Agents as a host answers it, the idle timeout set.
-    /// Notifications with "finished" banners off, as someone watching the Mac's own windows might set it.
+    /// Notifications with "finished" banners off, as someone watching the Mac's own windows might set it,
+    /// and the usage warning moved down to 80%.
     private struct GeneralStage: View {
       @State private var host = HostSettingsModel()
 
       var body: some View {
         GeneralSettingsTab()
           .environment(host)
-          .onAppear { host.galleryFill(.init(notifyNeedsYou: true, notifyFinished: false)) }
+          .onAppear { host.galleryFill(.init(notifyNeedsYou: true, notifyFinished: false, usageWarningPercent: 80)) }
       }
     }
 

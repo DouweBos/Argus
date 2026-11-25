@@ -13,6 +13,8 @@ import { warn } from "@argus/host/logger";
 import { hostPlatform } from "@argus/host/platform";
 import { respondToPermission } from "../agent/agentService";
 import { loadAppSettings } from "../appSettings/store";
+import { switchClaudeAccount } from "../claudeAuth/accountActions";
+import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { broadcastRemoteNotification, permissionActions } from "./broadcast";
 import { desktopNotificationPrefs, wantsNotification } from "./categories";
 
@@ -24,7 +26,8 @@ export interface AgentNotificationInput {
   tool_use_id: string | null;
   /** The tool being requested — decides which quick actions make sense. */
   tool_name: string | null;
-  kind: RemoteNotificationPayload["kind"];
+  /** Usage warnings come from the host itself, never from a client. */
+  kind: Exclude<RemoteNotificationPayload["kind"], "usage">;
   title: string;
   body: string;
 }
@@ -75,8 +78,13 @@ function routeToAgent(payload: RemoteNotificationPayload): void {
  */
 function runAction(
   payload: RemoteNotificationPayload,
-  actionId: "approve" | "deny",
+  actionId: RemoteNotificationPayload["actions"][number]["id"],
 ): void {
+  if (actionId === "switch_account") {
+    switchFromWarning(payload.account_id ?? null);
+
+    return;
+  }
   if (!payload.agent_id || !payload.tool_use_id) {
     return;
   }
@@ -91,6 +99,20 @@ function runAction(
   }
 }
 
+/** A usage warning's Switch button on this Mac; phones switch through `claude_accounts.set_active`. */
+function switchFromWarning(accountId: string | null): void {
+  if (!accountId) {
+    return;
+  }
+  try {
+    switchClaudeAccount(accountId);
+    telemetryCapture("usage_warning_switched", { success: true });
+  } catch (err) {
+    warn(`[notify] could not switch account from a warning: ${String(err)}`);
+    telemetryCapture("usage_warning_switched", { success: false });
+  }
+}
+
 /**
  * Show the notification locally (when asked) and mirror it to paired devices
  * when they aren't redundant. Returns whether a local banner was raised.
@@ -99,14 +121,24 @@ export function showAgentNotification(
   input: AgentNotificationInput,
   options: ShowNotificationOptions,
 ): boolean {
-  const payload: RemoteNotificationPayload = {
-    ...input,
-    // Derived here, once, so every surface offers the same buttons.
-    actions:
-      input.kind === "permission"
-        ? permissionActions(input.tool_name ?? "")
-        : [],
-  };
+  return presentNotification(
+    {
+      ...input,
+      // Derived here, once, so every surface offers the same buttons.
+      actions:
+        input.kind === "permission"
+          ? permissionActions(input.tool_name ?? "")
+          : [],
+    },
+    options,
+  );
+}
+
+/** `showAgentNotification` for a payload whose actions are already decided. */
+export function presentNotification(
+  payload: RemoteNotificationPayload,
+  options: ShowNotificationOptions,
+): boolean {
   if (shouldNotifyRemote()) {
     broadcastRemoteNotification(payload);
   }

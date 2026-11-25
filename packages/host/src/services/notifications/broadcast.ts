@@ -11,6 +11,7 @@ import { dispatchRemotePush } from "../remote/push/dispatch";
 
 export {
   permissionActions,
+  switchAccountActions,
   type NotificationActionId,
   type RemoteNotificationAction,
 } from "./actions";
@@ -27,9 +28,11 @@ export interface RemoteNotificationPayload {
   session_id: string | null;
   /** The prompt an action answers. Only set for `kind: "permission"`. */
   tool_use_id: string | null;
-  kind: "failed" | "finished" | "permission" | "push";
+  kind: "failed" | "finished" | "permission" | "push" | "usage";
   title: string;
   body: string;
+  /** The Claude account `switch_account` moves to. Only set for `kind: "usage"`. */
+  account_id?: string | null;
   /** Quick actions, identical on the desktop, the phone, and in browsers. */
   actions: RemoteNotificationAction[];
 }

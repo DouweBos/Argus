@@ -183,6 +183,7 @@ extension ArgusProtocol {
       public static let failed = NotificationPayloadKind(rawValue: "failed")
       public static let permission = NotificationPayloadKind(rawValue: "permission")
       public static let push = NotificationPayloadKind(rawValue: "push")
+      public static let usage = NotificationPayloadKind(rawValue: "usage")
     }
 
     public struct NotificationPayloadActionsItemId: RawRepresentable, Codable, Hashable, Sendable {
@@ -198,6 +199,7 @@ extension ArgusProtocol {
 
       public static let approve = NotificationPayloadActionsItemId(rawValue: "approve")
       public static let deny = NotificationPayloadActionsItemId(rawValue: "deny")
+      public static let switchAccount = NotificationPayloadActionsItemId(rawValue: "switch_account")
     }
 
     public struct NotificationPayloadActionsItem: Codable, Sendable {
@@ -228,6 +230,7 @@ extension ArgusProtocol {
       public var kind: NotificationPayloadKind
       public var title: String
       public var body: String
+      public var accountId: String?
       public var actions: [NotificationPayloadActionsItem]?
 
       enum CodingKeys: String, CodingKey {
@@ -237,16 +240,18 @@ extension ArgusProtocol {
         case kind = "kind"
         case title = "title"
         case body = "body"
+        case accountId = "account_id"
         case actions = "actions"
       }
 
-      public init(agentId: String? = nil, sessionId: String? = nil, toolUseId: String? = nil, kind: NotificationPayloadKind, title: String, body: String, actions: [NotificationPayloadActionsItem]? = nil) {
+      public init(agentId: String? = nil, sessionId: String? = nil, toolUseId: String? = nil, kind: NotificationPayloadKind, title: String, body: String, accountId: String? = nil, actions: [NotificationPayloadActionsItem]? = nil) {
         self.agentId = agentId
         self.sessionId = sessionId
         self.toolUseId = toolUseId
         self.kind = kind
         self.title = title
         self.body = body
+        self.accountId = accountId
         self.actions = actions
       }
 
@@ -258,6 +263,7 @@ extension ArgusProtocol {
         try c.encode(kind, forKey: .kind)
         try c.encode(title, forKey: .title)
         try c.encode(body, forKey: .body)
+        try c.encodeIfPresent(accountId, forKey: .accountId)
         try c.encodeIfPresent(actions, forKey: .actions)
       }
     }

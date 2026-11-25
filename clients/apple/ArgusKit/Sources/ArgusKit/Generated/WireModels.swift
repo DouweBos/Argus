@@ -1661,6 +1661,7 @@ extension ArgusProtocol {
     public var remoteNotifyWhenFocused: Bool?
     public var notifyNeedsYou: Bool?
     public var notifyFinished: Bool?
+    public var usageWarningPercent: Int?
     public var remoteLanWebClient: Bool?
     public var remoteKeepAwake: Bool?
     public var remoteMcpEnabled: Bool?
@@ -1716,6 +1717,7 @@ extension ArgusProtocol {
       case remoteNotifyWhenFocused = "remote_notify_when_focused"
       case notifyNeedsYou = "notify_needs_you"
       case notifyFinished = "notify_finished"
+      case usageWarningPercent = "usage_warning_percent"
       case remoteLanWebClient = "remote_lan_web_client"
       case remoteKeepAwake = "remote_keep_awake"
       case remoteMcpEnabled = "remote_mcp_enabled"
@@ -1733,7 +1735,7 @@ extension ArgusProtocol {
       case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, worktreeCleanupEnabled: Bool? = nil, worktreeCleanupLandedDays: Int? = nil, worktreeCleanupIdleDays: Int? = nil, worktreeCleanupMaxGb: Double? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, teammatesEnabled: Bool? = nil, teammateThreadRolloverTurns: Int? = nil, followUpSuggestions: Bool? = nil, claudeArtifacts: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, agentIdleTimeoutMinutes: Int? = nil, usageModelFilter: UsageModelFilter? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, notifyNeedsYou: Bool? = nil, notifyFinished: Bool? = nil, remoteLanWebClient: Bool? = nil, remoteKeepAwake: Bool? = nil, remoteMcpEnabled: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, worktreeCleanupEnabled: Bool? = nil, worktreeCleanupLandedDays: Int? = nil, worktreeCleanupIdleDays: Int? = nil, worktreeCleanupMaxGb: Double? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, teammatesEnabled: Bool? = nil, teammateThreadRolloverTurns: Int? = nil, followUpSuggestions: Bool? = nil, claudeArtifacts: Bool? = nil, commitMessageStyle: AppSettingsCommitMessageStyle? = nil, commitMessageInstructions: String? = nil, warmAgents: Int? = nil, agentIdleTimeoutMinutes: Int? = nil, usageModelFilter: UsageModelFilter? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, notifyNeedsYou: Bool? = nil, notifyFinished: Bool? = nil, usageWarningPercent: Int? = nil, remoteLanWebClient: Bool? = nil, remoteKeepAwake: Bool? = nil, remoteMcpEnabled: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, saveChatHistory: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
       self.worktreeCleanupEnabled = worktreeCleanupEnabled
@@ -1772,6 +1774,7 @@ extension ArgusProtocol {
       self.remoteNotifyWhenFocused = remoteNotifyWhenFocused
       self.notifyNeedsYou = notifyNeedsYou
       self.notifyFinished = notifyFinished
+      self.usageWarningPercent = usageWarningPercent
       self.remoteLanWebClient = remoteLanWebClient
       self.remoteKeepAwake = remoteKeepAwake
       self.remoteMcpEnabled = remoteMcpEnabled
@@ -1829,6 +1832,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(remoteNotifyWhenFocused, forKey: .remoteNotifyWhenFocused)
       try c.encodeIfPresent(notifyNeedsYou, forKey: .notifyNeedsYou)
       try c.encodeIfPresent(notifyFinished, forKey: .notifyFinished)
+      try c.encodeIfPresent(usageWarningPercent, forKey: .usageWarningPercent)
       try c.encodeIfPresent(remoteLanWebClient, forKey: .remoteLanWebClient)
       try c.encodeIfPresent(remoteKeepAwake, forKey: .remoteKeepAwake)
       try c.encodeIfPresent(remoteMcpEnabled, forKey: .remoteMcpEnabled)

@@ -7,7 +7,7 @@ package dev.houwert.argus.core.stores
 sealed interface StoreEvent {
   enum class AgentAction(val wire: String) { Interrupt("interrupt"), Stop("stop"), Model("model"), Effort("effort"), PermissionMode("permission_mode") }
 
-  enum class AccountAction(val wire: String) { Select("select"), Add("add"), Remove("remove"), Rename("rename"), Reauth("reauth"), Pin("pin") }
+  enum class AccountAction(val wire: String) { Select("select"), Add("add"), Remove("remove"), Rename("rename"), Reauth("reauth"), Pin("pin"), UsageWarning("usage_warning") }
 
   enum class MemoryAction(val wire: String) { Save("save"), Delete("delete") }
 

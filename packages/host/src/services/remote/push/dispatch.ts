@@ -87,7 +87,8 @@ async function sendOnce(
         body: n.body,
         data: webPushData(n),
         collapseId: collapseSubject(n) ?? undefined,
-        actions: n.actions,
+        // The page's worker answers prompts only; switching accounts happens in the app.
+        actions: n.actions.filter((a) => a.id !== "switch_account"),
       },
       Date.now(),
     );

@@ -23,6 +23,8 @@ export interface SealedNotification {
   agentId: string | null;
   sessionId: string | null;
   toolUseId: string | null;
+  /** The Claude account a usage warning's Switch moves to. */
+  accountId: string | null;
   actions: RemoteNotificationPayload["actions"];
 }
 
@@ -36,6 +38,7 @@ export function toSealedNotification(
     agentId: n.agent_id,
     sessionId: n.session_id,
     toolUseId: n.tool_use_id,
+    accountId: n.account_id ?? null,
     actions: n.actions,
   };
 }

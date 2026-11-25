@@ -1885,14 +1885,17 @@ export const EventPayloads = {
     session_id: z.string().nullable(),
     /** The prompt a quick action answers; only set for "permission". */
     tool_use_id: z.string().nullable(),
-    kind: z.enum(["finished", "failed", "permission", "push"]),
+    /** `usage`: a plan limit crossed the warning threshold. */
+    kind: z.enum(["finished", "failed", "permission", "push", "usage"]),
     title: z.string(),
     body: z.string(),
+    /** The Claude account `switch_account` moves to; absent from older hosts. */
+    account_id: z.string().nullable().optional(),
     /** Buttons on the notification itself — the same set the desktop shows. */
     actions: z
       .array(
         z.object({
-          id: z.enum(["approve", "deny"]),
+          id: z.enum(["approve", "deny", "switch_account"]),
           title: z.string(),
         }),
       )

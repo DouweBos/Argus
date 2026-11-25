@@ -558,15 +558,17 @@ this computer.
 Each device picks which agent alerts it gets, in two categories:
 
 - **Needs you** — a permission prompt, a question, a plan waiting for approval,
-  a turn that ended in an error, or an agent asking for your attention.
+  a turn that ended in an error, an agent asking for your attention, or a usage
+  limit running low.
 - **Finished** — an agent completed a turn or run.
 
 A common setup is this Mac getting both and the phone only **Needs you**.
 
-| Setting             | Default | Description                                                     |
-| ------------------- | ------- | --------------------------------------------------------------- |
-| **Agent needs you** | On      | Show a banner on this computer when an agent is waiting on you. |
-| **Agent finished**  | On      | Show a banner on this computer when an agent finishes.          |
+| Setting                 | Default | Description                                                                                                                                               |
+| ----------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent needs you**     | On      | Show a banner on this computer when an agent is waiting on you.                                                                                           |
+| **Agent finished**      | On      | Show a banner on this computer when an agent finishes.                                                                                                    |
+| **Usage limit warning** | 90%     | Warn when a plan limit in use reaches this much: Off, 75%, 80%, 85%, 90% or 95% (`usage_warning_percent` in `app-settings.json`, `0` for off). See below. |
 
 On Argus for Mac they are under **Settings → General → Notifications**. Each
 phone and browser chooses for itself under **Settings → Alerts**. The choice
@@ -576,6 +578,25 @@ A computer the device hasn't connected to since sends everything. The paired
 list under **Settings → Remote** shows a device that turned something off
 (_alerts: needs you only_). The in-app "Needs you" lists, widgets and Live
 Activity still show everything.
+
+### Usage limit warning
+
+When a plan limit reaches the **Usage limit warning** percentage, this computer
+sends one notification naming the runner, the limit (session, weekly, monthly)
+and when it resets. It goes out once per limit window, for each runner and
+Claude account, and a restart doesn't send it again; the next window warns
+afresh. It covers the Claude accounts work runs on (the active one, and any a
+running agent still uses) and the other runners' plans (Codex, Cursor, Grok,
+OpenCode Go, Antigravity). Plans that agents are busy on are read every ten
+minutes; opening Usage reads them too.
+
+It arrives as **Needs you**, so it follows each device's choice. When the
+account running low is this computer's active Claude account and another
+signed-in account has room, the warning offers **Switch** (on the Mac banner,
+on Android, and as **Switch Account** on iPhone), which makes that account the
+active one for new agents. Agents already running keep their account until they
+hit the limit, where the limit card offers the move. Browsers get the warning
+without the button.
 
 ---
 
@@ -911,7 +932,8 @@ on the computer as well.
 The phone app's own **Settings** screen holds preferences that stay on that
 phone. Under **Alerts**, **Agent needs you** and **Agent finished** (both on)
 choose which notifications this phone gets; see
-[Notifications](#notifications). Under **Transcript**, **Expand image reads** (off by default) opens every
+[Notifications](#notifications). The usage limit warning counts as **Agent
+needs you**; its threshold is the computer's setting. Under **Transcript**, **Expand image reads** (off by default) opens every
 Read tool call that returned an image, so screenshots an agent looks at show in
 the chat without a tap. You can still collapse any of them.
 
