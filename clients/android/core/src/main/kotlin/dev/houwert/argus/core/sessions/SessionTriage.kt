@@ -25,6 +25,13 @@ enum class SessionAttention(val title: String) {
   Snoozed("Snoozed"),
 }
 
+/** Archived: hidden from the lists until restored, its worktree kept. */
+val RemoteSession.isArchived: Boolean get() = archivedAt != null
+
+/** Every archived session in [sessions], the most recently archived first. */
+fun archivedSessions(sessions: List<RemoteSession>): List<RemoteSession> =
+  sessions.filter { it.isArchived }.sortedByDescending { it.archivedAt ?: 0.0 }
+
 /** Snoozed until a time still to come. */
 fun RemoteSession.isSnoozed(nowMillis: Long = System.currentTimeMillis()): Boolean =
   snoozedUntil?.let { it > nowMillis } ?: false
@@ -105,6 +112,8 @@ data class SessionTriage(
       nowMillis: Long = System.currentTimeMillis(),
       agents: (RemoteSession) -> List<RemoteAgentStatus>,
     ): SessionTriage {
+      // Archived ones only show on the Archived screen.
+      val sessions = sessions.filter { !it.isArchived }
       val buckets = SessionAttention.entries.associateWith { mutableListOf<RemoteSession>() }
       val attention = sessions.map { SessionActivity(it, agents(it)).attention(nowMillis) }
       val runs = runAttention(sessions.map { it.compareGroup?.id }.zip(attention))
@@ -171,6 +180,7 @@ data class SessionGroupTriage(
 
   companion object {
     operator fun invoke(groups: List<SessionGroup>, nowMillis: Long = System.currentTimeMillis()): SessionGroupTriage {
+      val groups = groups.filter { it.session?.isArchived != true }
       val needsYou = mutableListOf<SessionGroup>()
       val working = mutableListOf<SessionGroup>()
       val idle = mutableListOf<SessionGroup>()

@@ -64,6 +64,8 @@ public enum ArgusRoute: Hashable, Sendable {
   case proposal(id: String)
   /// `/notifications`: warnings and errors.
   case notifications
+  /// `/sessions/archived`: archived sessions, to open or restore.
+  case archivedSessions
   /// `/usage` (plan limits), `/usage/cost` or `/usage/tokens`, with `?range=`
   /// on the last two; nil is the default 30 days and stays off the URL.
   case usage(UsageTab, range: ArgusProtocol.UsageRange? = nil)
@@ -162,6 +164,7 @@ public enum ArgusRoute: Hashable, Sendable {
     case .inbox: "/inbox"
     case .proposal: "/inbox/proposals/:proposalId"
     case .notifications: "/notifications"
+    case .archivedSessions: "/sessions/archived"
     case .usage(let tab, _): tab == .limits ? "/usage" : "/usage/\(tab.rawValue)"
     case .usageModel(let tab, _, _, _): "/usage/\(tab.rawValue)/models/:runner/:model"
     case .usagePrices: "/usage/prices"

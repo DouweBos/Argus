@@ -50,7 +50,9 @@ import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Contrast
+import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.MarkEmailRead
+import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material.icons.outlined.MarkEmailUnread
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.CreateNewFolder
@@ -206,6 +208,8 @@ object Icon {
   val workflowStatus = Icons.Outlined.Contrast
   val markUnread = Icons.Outlined.MarkEmailUnread
   val markRead = Icons.Outlined.MarkEmailRead
+  val archive = Icons.Outlined.Archive
+  val unarchive = Icons.Outlined.Unarchive
   val history = Icons.Outlined.History
   val search = Icons.Outlined.Search
   val filter = Icons.Outlined.FilterList

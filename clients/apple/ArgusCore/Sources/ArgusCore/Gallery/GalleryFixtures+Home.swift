@@ -57,6 +57,13 @@ extension GalleryFixtures {
       session(
         "s-done", branch: "spike-tabs", name: "Spike: tab overflow",
         extra: ["workflow_status": "done", "settled": true, "status_note": "Folded into the tab strip rework"]),
+      // Archived: out of every list, only on the Archived screen.
+      session(
+        "s-archived-1", branch: "spike-webgl", name: "Spike: WebGL diff renderer",
+        extra: ["archived_at": ago(2 * 60), "workflow_status": "todo", "status_note": "Parked until the renderer lands"]),
+      session(
+        "s-archived-2", branch: "old-settings", name: "Settings window v1", pr: (377, "closed"),
+        extra: ["archived_at": ago(3 * 24 * 60)]),
       // A stack of three: each branches from the one before, its PR against that branch.
       session("s-stack-1", branch: "stack-protocol", name: "Stack: wire protocol", pr: (420, "open")),
       session(
@@ -244,6 +251,9 @@ extension GalleryFixtures {
         session("l-root", repo: "luma", branch: "main", kind: "project_root"),
         session("l-1", repo: "luma", branch: "dark-tokens", name: "Dark mode tokens"),
         session("l-2", repo: "luma", branch: "icon-sweep", name: "Icon stroke sweep", extra: ["settled": true]),
+        session(
+          "l-archived", repo: "luma", branch: "color-audit", name: "Colour contrast audit",
+          extra: ["archived_at": ago(26 * 60), "workflow_status": "in_review"]),
       ],
     ]
     for (project, list) in sessions {

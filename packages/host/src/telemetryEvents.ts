@@ -692,10 +692,12 @@ export interface EventMap {
   session_started_from_issue: { source: "linear" };
   session_triaged: {
     action:
+      | "archived"
       | "marked_read"
       | "marked_unread"
       | "snoozed"
       | "status_set"
+      | "unarchived"
       | "unsnoozed"
       | "woke";
     /** Only on `snoozed`. */

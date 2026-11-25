@@ -11,6 +11,7 @@ import {
   sessionTriage,
   setSessionSettled,
   setSessionStatus,
+  setSessionArchived,
   setSessionUnread,
   snoozeSession,
   startSessionTriage,
@@ -133,6 +134,27 @@ describe("session triage", () => {
     };
     expect(saved.version).toBe(2);
     expect(saved.sessions.some((r) => "settled" in r)).toBe(false);
+  });
+
+  it("archives without touching the worktree, dropping its unread and snooze, and restores", () => {
+    vi.useFakeTimers();
+    markSessionUnread("s1");
+    snoozeSession("s1", Date.now() + 60_000);
+    setSessionArchived("s1", true);
+    expect(sessionTriage("s1")).toMatchObject({
+      unread: false,
+      snoozed_until: null,
+    });
+    expect(sessionTriage("s1").archived_at).toBeTypeOf("number");
+    expect(appState.sessions.has("s1")).toBe(true);
+    vi.advanceTimersByTime(60_000);
+    expect(notify).not.toHaveBeenCalled();
+
+    stopSessionTriage();
+    startSessionTriage();
+    expect(sessionTriage("s1").archived_at).toBeTypeOf("number");
+    setSessionArchived("s1", false);
+    expect(sessionTriage("s1").archived_at).toBeNull();
   });
 
   it("marks unread by hand until a client opens it", () => {

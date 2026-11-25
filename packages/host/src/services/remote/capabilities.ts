@@ -230,6 +230,7 @@ import {
   setSessionSettled,
   setSessionStatus,
   setSessionUnread,
+  setSessionArchived,
   snoozeSession,
 } from "../session/triage";
 import {
@@ -2056,6 +2057,14 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const { session_id, status, note } = parse("sessions.set_status", params);
     requireSession(session_id);
     await control(() => setSessionStatus(session_id, status, note, "user"));
+
+    return { accepted: true };
+  },
+
+  "sessions.archive": async (params) => {
+    const { session_id, archived } = parse("sessions.archive", params);
+    requireSession(session_id);
+    await control(() => setSessionArchived(session_id, archived));
 
     return { accepted: true };
   },

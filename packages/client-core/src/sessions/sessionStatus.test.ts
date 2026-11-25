@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { effectiveWorkflowStatus, setWorkflowStatus } from "./sessionStatus";
+import {
+  archivedSessions,
+  effectiveWorkflowStatus,
+  setWorkflowStatus,
+} from "./sessionStatus";
 
 const pr = (state: "closed" | "draft" | "merged" | "open") => ({
   number: 1,
@@ -32,5 +36,16 @@ describe("effectiveWorkflowStatus", () => {
     expect(setWorkflowStatus({ settled: true })).toBe("done");
     expect(setWorkflowStatus({ settled: false })).toBe("in_progress");
     expect(setWorkflowStatus({ settled: null })).toBeNull();
+  });
+});
+
+describe("archivedSessions", () => {
+  it("keeps the archived ones, newest archived first", () => {
+    const list = [
+      { id: "a", archived_at: 1 },
+      { id: "b", archived_at: null },
+      { id: "c", archived_at: 5 },
+    ];
+    expect(archivedSessions(list).map((s) => s.id)).toEqual(["c", "a"]);
   });
 });

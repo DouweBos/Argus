@@ -116,6 +116,8 @@ export type Screen =
   | { name: "usagePrices" }
   /** This visit's warnings and errors. */
   | { name: "notifications" }
+  /** Archived sessions, to open or restore: `/sessions/archived`. */
+  | { name: "archivedSessions" }
   /** A Figma frame; `sessionId` when opened from a session, to compare against its device. */
   | {
       name: "design";
@@ -328,6 +330,8 @@ export function screenFromPath(path: string): Screen {
       };
     case "notifications":
       return { name: "notifications" };
+    case "archived-sessions":
+      return { name: "archivedSessions" };
     case "teammates":
       if (route.teammateGallery) {
         return { name: "teammateGallery" };
@@ -427,6 +431,8 @@ export function pathForScreen(screen: Screen): string {
       return "/usage/prices";
     case "notifications":
       return "/notifications";
+    case "archivedSessions":
+      return "/sessions/archived";
     case "design":
       return designPathname({
         designUrl: screen.url,
@@ -539,6 +545,8 @@ export function screenPattern(screen: Screen): string {
       return "/usage/prices";
     case "notifications":
       return "/notifications";
+    case "archivedSessions":
+      return "/sessions/archived";
     case "design":
       return "/design";
     case "devices":

@@ -27,6 +27,7 @@ enum BuiltinPalette {
       (.runtimes, "Runtimes", Icon.runtimes),
       (.devices, "Devices", Icon.devices),
       (.notifications, "Notifications", "exclamationmark.triangle"),
+      (.archivedSessions, "Archived Sessions", Icon.archive),
       (.usage(.limits), "Usage", Icon.usage),
     ]
     var commands = screens.map { route, title, image in

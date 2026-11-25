@@ -64,6 +64,8 @@ public enum Icon {
   public static let note = "text.bubble"
   public static let markUnread = "envelope.badge"
   public static let markRead = "envelope.open"
+  public static let archive = "archivebox"
+  public static let unarchive = "arrow.uturn.backward"
   public static let history = "clock.arrow.circlepath"
   public static let search = "magnifyingglass"
   public static let filter = "line.3.horizontal.decrease"

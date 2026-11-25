@@ -18,6 +18,8 @@ enum Route: Hashable {
   case newSession(repoRoot: String?)
   /// A compare run's slots, scored side by side.
   case compareRun(groupId: String)
+  /// Archived sessions, to open or restore.
+  case archivedSessions
   /// The same screen, opened on one agent before its session is known.
   case agent(id: String, label: String)
   case stoppedAgent(historyId: String, repoRoot: String, label: String, branch: String, runnerSessionId: String)
@@ -109,6 +111,7 @@ enum Route: Hashable {
     case .agents: ArgusRoute.agents.pattern
     case .session, .agent: ArgusRoute.session(id: "", agentId: nil).pattern
     case .compareRun(let id): ArgusRoute.compareRun(groupId: id).pattern
+    case .archivedSessions: ArgusRoute.archivedSessions.pattern
     case .changes(let id, _): ArgusRoute.sessionGit(id: id, view: .working).pattern
     case .timeline(let id, _): ArgusRoute.sessionGit(id: id, view: .timeline(turn: nil)).pattern
     case .turnChanges(let id, _, let turn): ArgusRoute.sessionGit(id: id, view: .timeline(turn: turn)).pattern

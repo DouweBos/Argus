@@ -16,6 +16,7 @@ describe("parseRoute", () => {
     ["/devices", "devices"],
     ["/inbox", "inbox"],
     ["/notifications", "notifications"],
+    ["/sessions/archived", "archived-sessions"],
     ["/pull-requests", "pull-requests"],
     ["/automations", "automations"],
     ["/nowhere", "home"],

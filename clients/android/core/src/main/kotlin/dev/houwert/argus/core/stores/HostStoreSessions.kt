@@ -312,6 +312,17 @@ suspend fun HostStore.setSessionStatus(session: RemoteSession, status: SessionWo
   }
 }
 
+/** Archive it out of the lists, its worktree kept, or restore it. */
+suspend fun HostStore.setSessionArchived(session: RemoteSession, archived: Boolean) {
+  val backend = backend ?: return
+  try {
+    backend.request(Methods.SessionsArchive, MethodsTypes.SessionsArchiveParams(session.id, archived))
+    reloadTriaged(session)
+  } catch (e: Exception) {
+    report(e, "session:archive")
+  }
+}
+
 /** Mark as Unread (it waits under Needs you until opened) or Mark as Read. */
 suspend fun HostStore.setSessionUnread(session: RemoteSession, unread: Boolean) {
   val backend = backend ?: return

@@ -88,6 +88,8 @@ export const RemoteSession = z.object({
   workflow_status: SessionWorkflowStatus.nullable().optional(),
   /** A one-line note on where it stands. Absent on older hosts. */
   status_note: z.string().nullable().optional(),
+  /** When it was archived: hidden from the lists until restored. Absent on older hosts. */
+  archived_at: z.number().nullable().optional(),
   /** Hidden until this epoch ms. Absent on older hosts. */
   snoozed_until: z.number().nullable().optional(),
   /** A turn finished while no client had it open. Absent on older hosts. */

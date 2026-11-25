@@ -385,6 +385,11 @@ keeping the list in order:
   session whose agent finished while you were away does. **Mark as Read**
   clears it without opening it.
 - **Snooze** — hide it until a time, when it comes back with a notification.
+- **Archive** — hide it from every list, Needs you included, until you
+  restore it from **Archived** (the **N archived** row under the sessions, or
+  Home on the phone). Archiving only changes the list: the worktree, branch
+  and chats stay, and deleting is still its own action. It also clears the
+  session's unread mark and snooze, so nothing brings it back on its own.
 
 ## Scratch pads
 

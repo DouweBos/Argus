@@ -2086,6 +2086,17 @@ export function InboxIcon(props: IconProps) {
   );
 }
 
+/** A lidded box: archive a session out of the lists. */
+export function ArchiveIcon(props: IconProps) {
+  return (
+    <StrokeIcon {...props}>
+      <path d="M2.25 3.25h11.5v2.5H2.25z" />
+      <path d="M3.25 5.75V12a1.25 1.25 0 0 0 1.25 1.25h7A1.25 1.25 0 0 0 12.75 12V5.75" />
+      <path d="M6.5 8.25h3" />
+    </StrokeIcon>
+  );
+}
+
 /** Square and pencil: start something new. */
 export function ComposeIcon(props: IconProps) {
   return (

@@ -82,6 +82,8 @@ export function useScreenTitle(screen: Screen): string {
       return "Model prices";
     case "notifications":
       return "Notifications";
+    case "archivedSessions":
+      return "Archived";
     case "design":
       return frameName ?? "Design";
     case "issues":

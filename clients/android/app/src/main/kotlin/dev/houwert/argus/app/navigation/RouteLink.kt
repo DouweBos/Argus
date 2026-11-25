@@ -50,6 +50,7 @@ object RouteLink {
     ArgusRoute.GenerateBlueprint -> PhoneDestination(AppSection.Blueprints, Route.GenerateBlueprint)
     is ArgusRoute.NewProject -> PhoneDestination(AppSection.Blueprints, Route.NewProject(route.blueprintId))
     ArgusRoute.Notifications -> PhoneDestination(AppSection.Notifications)
+    ArgusRoute.ArchivedSessions -> PhoneDestination(AppSection.Home, Route.ArchivedSessions)
     is ArgusRoute.Usage -> PhoneDestination(AppSection.Usage)
     is ArgusRoute.UsageModel -> PhoneDestination(AppSection.Usage, isFallback = true)
     ArgusRoute.UsagePrices -> PhoneDestination(AppSection.Usage, Route.UsagePrices)

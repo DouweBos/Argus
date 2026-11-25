@@ -53,6 +53,16 @@ struct SessionSidebar: View {
           header(project)
         }
       }
+      if !host.archivedSessions.isEmpty {
+        Section {
+          Button {
+            router.open(.archivedSessions, in: .home)
+          } label: {
+            Label("\(host.archivedSessions.count) archived", systemImage: Icon.archive)
+              .foregroundStyle(theme.textMuted)
+          }
+        }
+      }
     }
     .sessionTriageSheet($triageSheet)
     .listStyle(.sidebar)

@@ -60,6 +60,11 @@ interface ProjectsState {
     note?: string,
   ) => Promise<void>;
   setSessionUnread: (session: RemoteSession, unread: boolean) => Promise<void>;
+  /** Hide it from the lists, worktree kept, or restore it. */
+  setSessionArchived: (
+    session: RemoteSession,
+    archived: boolean,
+  ) => Promise<void>;
   renameSessionBranch: (
     id: string,
     repoRoot: string,
@@ -184,6 +189,17 @@ export const useProjectsStore = create<ProjectsState>()((set, get) => ({
       status,
       ...(note === undefined ? {} : { note }),
     });
+    await get()
+      .loadSessions(session.repo_root)
+      .catch(() => {});
+  },
+
+  setSessionArchived: async (session, archived) => {
+    const t = currentTransport();
+    if (!t) {
+      return;
+    }
+    await request(t, "sessions.archive", { session_id: session.id, archived });
     await get()
       .loadSessions(session.repo_root)
       .catch(() => {});

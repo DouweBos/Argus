@@ -98,6 +98,8 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var workflowStatusValue: String?
   /// A one-line note on where it stands. Nil on older computers.
   public var statusNote: String?
+  /// When it was archived, in epoch milliseconds: hidden from the lists until restored. Nil on older computers.
+  public var archivedAt: Double?
   /// Hidden until then, in epoch milliseconds. Nil on older computers.
   public var snoozedUntil: Double?
   /// A turn finished while nobody had it open. Nil on older computers.
@@ -112,6 +114,7 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var mergeLocked: Bool?
 
   public var isUnavailable: Bool { availability == .unavailable }
+  public var isArchived: Bool { archivedAt != nil }
   /// Set by the user or an agent; an older computer's done or kept-active reads as Done or In progress.
   public var workflowStatus: RemoteSessionWorkflowStatus? {
     if let workflowStatusValue { return RemoteSessionWorkflowStatus(rawValue: workflowStatusValue) }
@@ -141,6 +144,7 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case settled
     case workflowStatusValue = "workflow_status"
     case statusNote = "status_note"
+    case archivedAt = "archived_at"
     case snoozedUntil = "snoozed_until"
     case unread
     case lastMessageAt = "last_message_at"

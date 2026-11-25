@@ -31,6 +31,7 @@ struct RouteScreen: View {
     case .inbox(let filter): InboxScreen(filter: filter)
     case .proposal(let id): ProposalScreen(proposalId: id).id(id)
     case .notifications: NotificationsScreen()
+    case .archivedSessions: ArchivedSessionsScreen()
     case .usage(let tab, let range): UsageScreen(tab: tab, range: range)
     case .usageModel(let tab, let runner, let model, let range):
       UsageModelScreen(tab: tab, key: UsageModelKey(runner: runner, model: model), range: range)

@@ -628,6 +628,11 @@ export const MethodParams = {
     status: SessionWorkflowStatus.nullable(),
     note: z.string().max(500).nullable().optional(),
   }),
+  /** Archive it (hidden from the lists, its worktree kept) or restore it. */
+  "sessions.archive": z.object({
+    session_id: z.string(),
+    archived: z.boolean(),
+  }),
   /** Mark it unread (it waits under Needs you) or read, by hand. */
   "sessions.set_unread": z.object({
     session_id: z.string(),
@@ -1393,6 +1398,7 @@ export const MethodResult = {
   "sessions.settle": z.object({ accepted: z.boolean() }),
   "sessions.set_status": z.object({ accepted: z.boolean() }),
   "sessions.set_unread": z.object({ accepted: z.boolean() }),
+  "sessions.archive": z.object({ accepted: z.boolean() }),
   "sessions.snooze": z.object({ accepted: z.boolean() }),
   "sessions.git_status": z.object({ status: RemoteGitStatus }),
   "terminals.list": z.object({ terminals: z.array(RemoteTerminal) }),

@@ -89,6 +89,13 @@ class SessionTriageTest {
   }
 
   @Test
+  fun anArchivedSessionLeavesEveryList() {
+    val triage = SessionTriage(listOf(session("a", unread = true, archivedAt = 1000.0), session("b")), NOW) { emptyList() }
+    assertEquals(listOf("b"), (triage.needsYou + triage.active + triage.folded).map { it.id })
+    assertEquals(listOf("a"), archivedSessions(listOf(session("a", archivedAt = 1000.0), session("b"))).map { it.id })
+  }
+
+  @Test
   fun needingYouOutranksASnoozeAndDone() {
     val s = session("s", settled = true, snoozedUntil = (NOW + 60_000).toDouble())
     val activity = SessionActivity(s, listOf(agentIn("s", requiresAction, RemoteAgentStatusAwaiting.permission)))

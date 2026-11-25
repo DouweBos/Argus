@@ -59,6 +59,7 @@ extension SessionActivity {
 }
 
 /// A list of sessions split by attention, each newest message first (`SessionRecency`).
+/// Archived sessions are left out; they only show in the Archived screen.
 public struct SessionTriage: Sendable {
   public var needsYou: [RemoteSession] = []
   /// Working first, then idle.
@@ -71,6 +72,7 @@ public struct SessionTriage: Sendable {
   ) {
     var working: [RemoteSession] = []
     var idle: [RemoteSession] = []
+    let sessions = sessions.filter { !$0.isArchived }
     let attention = sessions.map { SessionActivity(session: $0, agents: agents($0)).attention(now: now) }
     let runs = Self.runAttention(zip(sessions.map(\.compareGroup?.id), attention))
     for (session, own) in zip(sessions, attention) {
@@ -148,6 +150,7 @@ public struct SessionGroupTriage: Sendable {
   public var snoozed: [SessionGroup] = []
 
   public init(_ groups: [SessionGroup], now: Date = .now) {
+    let groups = groups.filter { $0.session?.isArchived != true }
     var working: [SessionGroup] = []
     var idle: [SessionGroup] = []
     let own = groups.map { group in

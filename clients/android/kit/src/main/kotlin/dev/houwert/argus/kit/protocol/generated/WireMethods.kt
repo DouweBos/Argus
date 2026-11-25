@@ -1973,6 +1973,17 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class SessionsArchiveParams(
+    @SerialName("session_id") val sessionId: String,
+    @SerialName("archived") val archived: Boolean,
+  )
+
+  @Serializable
+  data class SessionsArchiveResult(
+    @SerialName("accepted") val accepted: Boolean,
+  )
+
+  @Serializable
   data class SessionsBranchLogParams(
     @SerialName("session_id") val sessionId: String,
     @SerialName("branch") val branch: String,
@@ -3399,6 +3410,8 @@ object Methods {
   object ScratchPadsList : RemoteCommand<MethodsTypes.ScratchPadsListParams, MethodsTypes.ScratchPadsListResult>("scratch_pads.list", "control", serializer(), serializer())
 
   object SecretRespond : RemoteCommand<MethodsTypes.SecretRespondParams, MethodsTypes.SecretRespondResult>("secret.respond", "control", serializer(), serializer())
+
+  object SessionsArchive : RemoteCommand<MethodsTypes.SessionsArchiveParams, MethodsTypes.SessionsArchiveResult>("sessions.archive", "control", serializer(), serializer())
 
   object SessionsBranchLog : RemoteCommand<MethodsTypes.SessionsBranchLogParams, MethodsTypes.SessionsBranchLogResult>("sessions.branch_log", "control", serializer(), serializer())
 

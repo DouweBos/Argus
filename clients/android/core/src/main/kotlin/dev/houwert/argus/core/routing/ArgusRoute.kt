@@ -74,6 +74,8 @@ sealed interface ArgusRoute {
   data class Proposal(val id: String) : ArgusRoute
   /** `/notifications`: warnings and errors. */
   data object Notifications : ArgusRoute
+  /** `/sessions/archived`: archived sessions, to open or restore. */
+  data object ArchivedSessions : ArgusRoute
   /** `/usage`, `/usage/cost` or `/usage/tokens`, `?range=` on the last two; null is the default 30 days. */
   data class Usage(val tab: UsageTab, val range: UsageRange? = null) : ArgusRoute
   /** `/usage/:tab/models/:runner/:model?range=`: one model's detail under Cost or Tokens. */
@@ -150,6 +152,7 @@ sealed interface ArgusRoute {
       is Inbox -> "/inbox"
       is Proposal -> "/inbox/proposals/:proposalId"
       Notifications -> "/notifications"
+      ArchivedSessions -> "/sessions/archived"
       is Usage -> if (tab == UsageTab.Limits) "/usage" else "/usage/${tab.rawValue}"
       is UsageModel -> "/usage/${tab.rawValue}/models/:runner/:model"
       UsagePrices -> "/usage/prices"

@@ -28,6 +28,7 @@
         GalleryStory("sessions/snooze-sheet", fixtures: GalleryFixtures.home, setup: load) {
           NavigationStack { SnoozeUntilForm(session: GalleryFixtures.argusSession("s-long")) }
         },
+        GalleryStory("sessions/archived", fixtures: GalleryFixtures.home, setup: load) { ArchivedSessionsScreen() },
         GalleryStory("sessions/note-sheet", fixtures: GalleryFixtures.home, setup: load) {
           NavigationStack { SessionNoteForm(session: GalleryFixtures.argusSession("s-long")) }
         },

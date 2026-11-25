@@ -28,6 +28,8 @@ sealed interface Route {
   /** The start composer on a new worktree; null opens on the last active project. */
   @Serializable data class NewSession(val repoRoot: String? = null) : Route
   @Serializable data class CompareRun(val groupId: String) : Route
+  /** Archived sessions, to open or restore. */
+  @Serializable data object ArchivedSessions : Route
   /** The session screen, opened on one agent before its session is known. */
   @Serializable data class Agent(val id: String, val label: String) : Route
   @Serializable data class StoppedAgent(val historyId: String, val repoRoot: String, val label: String, val branch: String, val runnerSessionId: String) : Route

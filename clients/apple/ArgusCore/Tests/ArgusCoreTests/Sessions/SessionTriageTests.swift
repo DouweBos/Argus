@@ -77,6 +77,12 @@ struct SessionTriageTests {
     #expect(session("f").effectiveStatus == nil)
   }
 
+  @Test func anArchivedSessionLeavesEveryList() {
+    let sessions = [session("a", extra: ["archived_at": 1000, "unread": true]), session("b")]
+    let triage = SessionTriage(sessions, now: now) { _ in [] }
+    #expect((triage.needsYou + triage.active + triage.folded).map(\.id) == ["b"])
+  }
+
   @Test func needingYouOutranksASnoozeAndDone() {
     let s = session("s", extra: ["settled": true, "snoozed_until": (now.timeIntervalSince1970 + 60) * 1000])
     let activity = SessionActivity(session: s, agents: [agent("s", status: "requires_action", awaiting: "permission")])

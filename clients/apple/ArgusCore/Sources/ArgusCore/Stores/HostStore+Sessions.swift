@@ -475,6 +475,27 @@ extension HostStore {
     } catch { report(error, scope: "session:set_status") }
   }
 
+  /// Archive it out of the lists, its worktree kept, or restore it.
+  public func setSessionArchived(_ session: RemoteSession, archived: Bool) async {
+    guard let backend else { return }
+    struct Params: Encodable {
+      let session_id: String
+      let archived: Bool
+    }
+    do {
+      try await backend.request(
+        .sessionsArchive, Params(session_id: session.id, archived: archived), as: IgnoredResult.self)
+      await reloadTriaged(session)
+    } catch { report(error, scope: "session:archive") }
+  }
+
+  /// Every archived session and scratch pad, the most recently archived first.
+  public var archivedSessions: [RemoteSession] {
+    (sessionsByRepo.values.joined() + scratchPads)
+      .filter(\.isArchived)
+      .sorted { ($0.archivedAt ?? 0) > ($1.archivedAt ?? 0) }
+  }
+
   /// Mark as Unread (it waits under Needs you until opened) or Mark as Read.
   public func setSessionUnread(_ session: RemoteSession, unread: Bool) async {
     guard let backend else { return }

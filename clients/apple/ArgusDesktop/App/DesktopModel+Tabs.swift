@@ -100,6 +100,7 @@ extension DesktopModel {
     case .blueprints, .blueprint, .generateBlueprint, .newProject: screen = "Blueprints"
     case .inbox, .proposal: screen = "Inbox"
     case .notifications: screen = "Notifications"
+    case .archivedSessions: screen = "Archived"
     case .usage, .usageModel, .usagePrices, .usageModels: screen = "Usage"
     case .session, .sessionGit, .sessionCode:
       let id = location.route.sessionId ?? ""

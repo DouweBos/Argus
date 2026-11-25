@@ -202,6 +202,7 @@ export const REMOTE_METHODS = {
   "sessions.settle": "control",
   "sessions.set_status": "control",
   "sessions.set_unread": "control",
+  "sessions.archive": "control",
   "sessions.snooze": "control",
   /** List a session's files for the @-mention picker. */
   "sessions.files": "control",

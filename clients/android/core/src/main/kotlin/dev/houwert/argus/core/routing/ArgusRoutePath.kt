@@ -60,7 +60,7 @@ internal fun parseRoute(raw: String): ArgusRoute? {
       count == 4 && parts[2] == "runs" -> ArgusRoute.Automation(parts[1], parts[3])
       else -> null
     }
-    "sessions" -> parseSession(parts, query)
+    "sessions" -> if (count == 2 && parts[1] == "archived") ArgusRoute.ArchivedSessions else parseSession(parts, query)
     else -> null
   }
 }
@@ -195,6 +195,7 @@ internal fun routePath(route: ArgusRoute): String {
     is ArgusRoute.Inbox -> "/inbox" + q("automation" to route.filter.automationId, "project" to route.filter.project)
     is ArgusRoute.Proposal -> "/inbox/proposals/${e(route.id)}"
     ArgusRoute.Notifications -> "/notifications"
+    ArgusRoute.ArchivedSessions -> "/sessions/archived"
     is ArgusRoute.Usage ->
       route.pattern + q("range" to if (route.tab == UsageTab.Limits) null else route.range?.rawValue)
     is ArgusRoute.UsageModel ->

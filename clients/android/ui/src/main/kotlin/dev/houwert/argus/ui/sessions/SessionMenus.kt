@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import dev.houwert.argus.core.sessions.SessionActivity
 import dev.houwert.argus.core.sessions.SnoozePreset
 import dev.houwert.argus.core.sessions.effectiveStatus
+import dev.houwert.argus.core.sessions.isArchived
 import dev.houwert.argus.core.sessions.isDone
 import dev.houwert.argus.core.sessions.isSnoozed
 import dev.houwert.argus.core.sessions.setStatus
@@ -37,6 +38,7 @@ import dev.houwert.argus.core.stores.ChatHistoryMatch
 import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.parts
 import dev.houwert.argus.core.stores.setPullRequestWatched
+import dev.houwert.argus.core.stores.setSessionArchived
 import dev.houwert.argus.core.stores.setSessionStatus
 import dev.houwert.argus.core.stores.setSessionUnread
 import dev.houwert.argus.core.stores.snoozeSession
@@ -119,7 +121,7 @@ fun SessionTriageSheetDialog(host: HostStore, sheet: SessionTriageSheet, onDismi
 }
 
 /**
- * Mark as Done / Move Back to Active, its status and note, Mark as Unread, Snooze with its presets, and Watch Pull
+ * Mark as Done / Move Back to Active, its status and note, Mark as Unread, Snooze, Archive with its presets, and Watch Pull
  * Request: the items of a session row's long-press menu. [present] opens a dialog the caller shows.
  */
 @Composable
@@ -188,6 +190,12 @@ fun SessionRowMenuItems(host: HostStore, session: RemoteSession, dismiss: () -> 
   DropdownMenuItem(
     { Text("Snooze Until") }, { dismiss(); present(SessionTriageSheet.Snooze(session)) },
     leadingIcon = { Icon(Icon.clock, null, tint = theme.textSecondary) },
+  )
+  HorizontalDivider()
+  val archived = session.isArchived
+  DropdownMenuItem(
+    { Text(if (archived) "Restore" else "Archive") }, { run { host.setSessionArchived(session, !archived) } },
+    leadingIcon = { Icon(if (archived) Icon.unarchive else Icon.archive, null, tint = theme.textSecondary) },
   )
 }
 

@@ -6423,6 +6423,7 @@ data class RemoteSession(
   @SerialName("settled") val settled: Boolean? = null,
   @SerialName("workflow_status") val workflowStatus: SessionWorkflowStatus? = null,
   @SerialName("status_note") val statusNote: String? = null,
+  @SerialName("archived_at") val archivedAt: Double? = null,
   @SerialName("snoozed_until") val snoozedUntil: Double? = null,
   @SerialName("unread") val unread: Boolean? = null,
   @SerialName("last_message_at") val lastMessageAt: Double? = null,

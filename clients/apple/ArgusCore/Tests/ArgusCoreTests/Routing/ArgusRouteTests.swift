@@ -17,6 +17,7 @@ struct ArgusRouteTests {
     ("/inbox?project=", .inbox()),
     ("/inbox/proposals/p1", .proposal(id: "p1")),
     ("/notifications", .notifications),
+    ("/sessions/archived", .archivedSessions),
     ("/usage", .usage(.limits)),
     ("/usage/cost", .usage(.cost)),
     ("/usage/tokens", .usage(.tokens)),
@@ -117,7 +118,7 @@ struct ArgusRouteTests {
   }
 
   @Test(arguments: [
-    ArgusRoute.home, .agents, .runtimes, .devices, .device(platform: "android", deviceKey: "avd:P 9"), .inbox(), .inbox(InboxFilter(automationId: "a 1", project: "My App")), .proposal(id: "p 1"), .notifications, .usage(.limits), .usage(.cost), .usage(.tokens, range: ._90d),
+    ArgusRoute.home, .agents, .runtimes, .devices, .device(platform: "android", deviceKey: "avd:P 9"), .inbox(), .inbox(InboxFilter(automationId: "a 1", project: "My App")), .proposal(id: "p 1"), .notifications, .archivedSessions, .usage(.limits), .usage(.cost), .usage(.tokens, range: ._90d),
     .usagePrices, .usageModels, .usageModel(.cost, runner: "claude-code", model: "claude-opus-5-5"),
     .usageModel(.tokens, runner: "opencode", model: "a/b c", range: ._24h),
     .pullRequests, .pullRequest(repo: "o/r", number: 7), .issues(), .issues(scope: .created),

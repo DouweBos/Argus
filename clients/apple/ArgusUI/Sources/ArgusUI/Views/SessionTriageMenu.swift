@@ -1,7 +1,7 @@
 import ArgusCore
 import SwiftUI
 
-/// Mark as Done / Move Back to Active, its status and note, Mark as Unread, and Snooze with its presets. Menu items:
+/// Mark as Done / Move Back to Active, its status and note, Mark as Unread, Snooze and Archive with its presets. Menu items:
 /// the Mac sidebar's session menu and the phone's session rows.
 public struct SessionTriageMenu: View {
   @Environment(HostStore.self) private var host
@@ -44,6 +44,12 @@ public struct SessionTriageMenu: View {
         Divider()
         Button("Custom") { present(.snooze(session)) }
       }
+      if session.isArchived {
+        Button("Restore", systemImage: Icon.unarchive) { archive(false) }
+      } else {
+        Button("Archive", systemImage: Icon.archive) { archive(true) }
+          .help("Hide it from the list until you restore it from Archived. Its worktree stays")
+      }
     }
   }
 
@@ -72,6 +78,10 @@ public struct SessionTriageMenu: View {
 
   private func setStatus(_ status: RemoteSessionWorkflowStatus?) {
     Task { await host.setSessionStatus(session, status: status) }
+  }
+
+  private func archive(_ archived: Bool) {
+    Task { await host.setSessionArchived(session, archived: archived) }
   }
 
   private func setUnread(_ unread: Bool) {

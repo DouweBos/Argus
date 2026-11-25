@@ -33,6 +33,8 @@ import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.app.navigation.AppSection
 import dev.houwert.argus.app.navigation.Route
 import dev.houwert.argus.app.telemetry.TelemetryEvent.HomeAction
+import dev.houwert.argus.core.sessions.isArchived
+import dev.houwert.argus.core.sessions.archivedSessions
 import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.createScratchPad
 import dev.houwert.argus.core.stores.deleteScratchPad
@@ -189,7 +191,7 @@ fun HomeScreen() {
         // One-off agents that belong to no project; opening one lands in its chat.
         if (scratchPads.isNotEmpty() || hasControl) {
           item("pads-header") { HomeSectionHeader("Scratch pads") }
-          items(scratchPads, key = { "pad:${it.id}" }) { pad ->
+          items(scratchPads.filter { !it.isArchived }, key = { "pad:${it.id}" }) { pad ->
             PressableRow(
               pad.displayName ?: "Scratch pad", Modifier.padding(horizontal = 16.dp, vertical = 12.dp), enabled = !openingPad,
               onClick = { openAgent { host.scratchPadAgent(pad) } },
@@ -205,6 +207,12 @@ fun HomeScreen() {
             PressableRow("New scratch pad", Modifier.padding(horizontal = 16.dp, vertical = 12.dp), enabled = !openingPad, onClick = { openAgent { host.createScratchPad() } }) {
               IconLabel(Icon.plus, "New scratch pad", accent = true)
             }
+          }
+        }
+        val archivedCount = archivedSessions(sessionsByRepo.values.flatten() + scratchPads).size
+        if (archivedCount > 0) item("archived") {
+          PressableRow("Show archived sessions", Modifier.padding(horizontal = 16.dp, vertical = 12.dp), onClick = { router.push(Route.ArchivedSessions) }) {
+            IconLabel(Icon.archive, "$archivedCount archived")
           }
         }
         item("bottom") { Box(Modifier.size(24.dp)) }

@@ -38,6 +38,8 @@ interface TriageRecord {
   unread?: boolean;
   /** Epoch ms of the latest user or agent message in it. */
   last_message_at?: number;
+  /** Epoch ms it was archived; its worktree stays on disk. */
+  archived_at?: number;
 }
 
 /** What a session listing carries. */
@@ -49,6 +51,7 @@ export interface SessionTriage {
   snoozed_until: number | null;
   unread: boolean;
   last_message_at: number | null;
+  archived_at: number | null;
 }
 
 let records: Map<string, TriageRecord> | null = null;
@@ -111,6 +114,7 @@ function save(): void {
       r.status_note !== undefined ||
       r.snoozed_until !== undefined ||
       r.unread ||
+      r.archived_at !== undefined ||
       r.last_message_at !== undefined,
   );
   dirty = false;
@@ -141,6 +145,7 @@ export function sessionTriage(id: string): SessionTriage {
     snoozed_until: r?.snoozed_until ?? null,
     unread: r?.unread === true,
     last_message_at: r?.last_message_at ?? backfilledLastMessage(id),
+    archived_at: r?.archived_at ?? null,
   };
 }
 
@@ -264,6 +269,29 @@ export function markSessionUnread(id: string): void {
     return;
   }
   patch(id, { unread: true });
+}
+
+/**
+ * Hide it from the lists until restored. Only the listing changes: the worktree,
+ * branch and chats stay, and deleting is still its own action.
+ */
+export function setSessionArchived(id: string, archived: boolean): void {
+  requireSession(id);
+  if (archived) {
+    // Nothing should bring an archived session back on its own.
+    patch(id, {
+      archived_at: Date.now(),
+      unread: undefined,
+      snoozed_until: undefined,
+    });
+    arm(id);
+  } else {
+    patch(id, { archived_at: undefined });
+  }
+  telemetryCapture("session_triaged", {
+    action: archived ? "archived" : "unarchived",
+    actor: "user",
+  });
 }
 
 /** Mark as Unread / Mark as Read from a client's menu. */

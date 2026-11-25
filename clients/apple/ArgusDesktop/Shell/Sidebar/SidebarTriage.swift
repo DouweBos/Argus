@@ -117,6 +117,26 @@ struct FoldedSessions: View {
   }
 }
 
+/// "3 archived" under the sessions, opening the Archived screen; nothing while none are.
+struct ArchivedSidebarRow: View {
+  @Environment(DesktopModel.self) private var model
+  @Environment(HostStore.self) private var store
+  @Environment(\.theme) private var theme
+
+  var body: some View {
+    let count = store.archivedSessions.count
+    if count > 0 || model.route == .archivedSessions {
+      SidebarRow(selected: model.route == .archivedSessions) { model.navigate(.archivedSessions) } content: {
+        Label("\(count) archived", systemImage: Icon.archive)
+          .font(.scaled(size: 11))
+          .foregroundStyle(theme.textMuted)
+          .padding(.vertical, 3)
+      }
+      .help("Show archived sessions")
+    }
+  }
+}
+
 /// Snooze › Custom's day and time picker, or the status note, in a sheet.
 private struct SessionTriageSheets: ViewModifier {
   @Environment(DesktopModel.self) private var model

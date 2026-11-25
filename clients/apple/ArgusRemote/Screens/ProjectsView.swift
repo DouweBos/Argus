@@ -45,6 +45,7 @@ struct ProjectsView: View {
           recentAgents
           HomeRecentRunsSection()
           scratchPads
+          archived
         }
       }
     }
@@ -192,7 +193,7 @@ struct ProjectsView: View {
   private var scratchPads: some View {
     if !host.scratchPads.isEmpty || host.hasControl {
       Section("Scratch pads") {
-        ForEach(host.scratchPads) { pad in
+        ForEach(host.scratchPads.filter { !$0.isArchived }) { pad in
           Button {
             open { await host.scratchPadAgent(pad) }
           } label: {
@@ -213,6 +214,20 @@ struct ProjectsView: View {
             open { await host.createScratchPad() }
           }
           .disabled(openingPad)
+        }
+      }
+    }
+  }
+
+  /// "3 archived", opening the Archived screen; nothing while none are.
+  @ViewBuilder
+  private var archived: some View {
+    let count = host.archivedSessions.count
+    if count > 0 {
+      Section {
+        NavigationLink(value: Route.archivedSessions) {
+          Label("\(count) archived", systemImage: Icon.archive)
+            .foregroundStyle(theme.textMuted)
         }
       }
     }

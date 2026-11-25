@@ -30,6 +30,10 @@
           NavigationStack { SnoozeUntilForm(session: GalleryFixtures.argusSession("s-long")) }
         },
         GalleryStory(
+          "sessions/archived", size: CGSize(width: 900, height: 600), chrome: true, fixtures: GalleryFixtures.home,
+          setup: load
+        ) { ArchivedSessionsScreen() },
+        GalleryStory(
           "sessions/note-sheet", size: CGSize(width: 340, height: 220), fixtures: GalleryFixtures.home, setup: load
         ) {
           NavigationStack { SessionNoteForm(session: GalleryFixtures.argusSession("s-long")) }

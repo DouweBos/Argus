@@ -42,3 +42,12 @@ export function effectiveWorkflowStatus(
 
   return state ? "in_review" : null;
 }
+
+/** Every archived session in `sessions`, the most recently archived first. */
+export function archivedSessions<T extends Pick<RemoteSession, "archived_at">>(
+  sessions: T[],
+): T[] {
+  return sessions
+    .filter((s) => s.archived_at != null)
+    .sort((a, b) => (b.archived_at ?? 0) - (a.archived_at ?? 0));
+}

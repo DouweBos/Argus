@@ -30,6 +30,7 @@ public enum RemoteMethod: String, Codable, Sendable {
   case sessionsSettle = "sessions.settle"
   case sessionsSetStatus = "sessions.set_status"
   case sessionsSetUnread = "sessions.set_unread"
+  case sessionsArchive = "sessions.archive"
   case sessionsSnooze = "sessions.snooze"
   case sessionsFiles = "sessions.files"
   case sessionsResolveMentionPath = "sessions.resolve_mention_path"

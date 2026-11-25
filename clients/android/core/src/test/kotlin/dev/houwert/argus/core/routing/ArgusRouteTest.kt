@@ -41,6 +41,7 @@ class ArgusRouteTest {
       "/inbox?project=" to Inbox(),
       "/inbox/proposals/p1" to ArgusRoute.Proposal("p1"),
       "/notifications" to ArgusRoute.Notifications,
+      "/sessions/archived" to ArgusRoute.ArchivedSessions,
       "/usage" to Usage(UsageTab.Limits),
       "/usage/cost" to Usage(UsageTab.Cost),
       "/usage/tokens" to Usage(UsageTab.Tokens),

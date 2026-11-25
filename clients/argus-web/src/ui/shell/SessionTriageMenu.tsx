@@ -1,6 +1,6 @@
 /**
  * A sidebar session's right-click menu: its workflow status and note, and
- * Mark as unread, as the Mac sidebar's and the phone's session menus offer.
+ * Mark as unread and Archive, as the Mac sidebar's and the phone's session menus offer.
  */
 
 import { type MouseEvent, type ReactNode, useState } from "react";
@@ -11,6 +11,7 @@ import {
   type ContextMenuItem,
   Dialog,
   DialogBody,
+  Icons,
   DialogFooter,
   Input,
   SESSION_WORKFLOW_STATUS_LABELS,
@@ -25,11 +26,12 @@ interface TriageActions {
   set: (status: SessionWorkflowStatus | null) => void;
   editNote: () => void;
   setUnread: (unread: boolean) => void;
+  setArchived: (archived: boolean) => void;
 }
 
 export function sessionTriageItems(
   session: RemoteSession,
-  { set, editNote, setUnread }: TriageActions,
+  { set, editNote, setUnread, setArchived }: TriageActions,
 ): ContextMenuItem[] {
   const current = effectiveWorkflowStatus(session);
   const done = current === "done";
@@ -77,6 +79,14 @@ export function sessionTriageItems(
     session.unread
       ? { label: "Mark as read", onClick: () => setUnread(false) }
       : { label: "Mark as unread", onClick: () => setUnread(true) },
+    { separator: true },
+    session.archived_at
+      ? { label: "Restore", onClick: () => setArchived(false) }
+      : {
+          icon: <Icons.ArchiveIcon size={13} />,
+          label: "Archive",
+          onClick: () => setArchived(true),
+        },
   ];
 }
 
@@ -88,6 +98,7 @@ export function useSessionTriageMenu(session: RemoteSession): {
   const hasControl = useConnectionStore((s) => s.hasControl());
   const setSessionStatus = useProjectsStore((s) => s.setSessionStatus);
   const setSessionUnread = useProjectsStore((s) => s.setSessionUnread);
+  const setSessionArchived = useProjectsStore((s) => s.setSessionArchived);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [editingNote, setEditingNote] = useState(false);
   const triageable =
@@ -113,6 +124,9 @@ export function useSessionTriageMenu(session: RemoteSession): {
               editNote: () => setEditingNote(true),
               setUnread: (unread) => {
                 setSessionUnread(session, unread).catch(() => {});
+              },
+              setArchived: (archived) => {
+                setSessionArchived(session, archived).catch(() => {});
               },
             })}
             position={menu}

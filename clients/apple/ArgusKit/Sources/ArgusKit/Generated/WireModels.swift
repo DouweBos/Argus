@@ -17490,6 +17490,7 @@ extension ArgusProtocol {
     public var settled: Bool?
     public var workflowStatus: SessionWorkflowStatus?
     public var statusNote: String?
+    public var archivedAt: Double?
     public var snoozedUntil: Double?
     public var unread: Bool?
     public var lastMessageAt: Double?
@@ -17521,6 +17522,7 @@ extension ArgusProtocol {
       case settled = "settled"
       case workflowStatus = "workflow_status"
       case statusNote = "status_note"
+      case archivedAt = "archived_at"
       case snoozedUntil = "snoozed_until"
       case unread = "unread"
       case lastMessageAt = "last_message_at"
@@ -17529,7 +17531,7 @@ extension ArgusProtocol {
       case mergeLocked = "merge_locked"
     }
 
-    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, deleteFailed: RemoteSessionDeleteFailed? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, settled: Bool? = nil, workflowStatus: SessionWorkflowStatus? = nil, statusNote: String? = nil, snoozedUntil: Double? = nil, unread: Bool? = nil, lastMessageAt: Double? = nil, compareGroup: SessionCompareGroup? = nil, pushLocked: Bool? = nil, mergeLocked: Bool? = nil) {
+    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, deleteFailed: RemoteSessionDeleteFailed? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, settled: Bool? = nil, workflowStatus: SessionWorkflowStatus? = nil, statusNote: String? = nil, archivedAt: Double? = nil, snoozedUntil: Double? = nil, unread: Bool? = nil, lastMessageAt: Double? = nil, compareGroup: SessionCompareGroup? = nil, pushLocked: Bool? = nil, mergeLocked: Bool? = nil) {
       self.id = id
       self.repoRoot = repoRoot
       self.kind = kind
@@ -17553,6 +17555,7 @@ extension ArgusProtocol {
       self.settled = settled
       self.workflowStatus = workflowStatus
       self.statusNote = statusNote
+      self.archivedAt = archivedAt
       self.snoozedUntil = snoozedUntil
       self.unread = unread
       self.lastMessageAt = lastMessageAt
@@ -17586,6 +17589,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(settled, forKey: .settled)
       try c.encodeIfPresent(workflowStatus, forKey: .workflowStatus)
       try c.encodeIfPresent(statusNote, forKey: .statusNote)
+      try c.encodeIfPresent(archivedAt, forKey: .archivedAt)
       try c.encodeIfPresent(snoozedUntil, forKey: .snoozedUntil)
       try c.encodeIfPresent(unread, forKey: .unread)
       try c.encodeIfPresent(lastMessageAt, forKey: .lastMessageAt)

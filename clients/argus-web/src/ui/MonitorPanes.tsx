@@ -27,6 +27,7 @@ import { DevicesView } from "./DevicesView";
 import { Projects } from "./ProjectViews";
 import { DeviceRoute, ProjectRoute, SessionRedirect } from "./ScreenRoutes";
 import { NotificationsView } from "./NotificationsView";
+import { ArchivedSessionsView } from "./ArchivedSessionsView";
 import {
   LazyBrowserScreen,
   LazySessionTool,
@@ -114,6 +115,8 @@ export function ScreenBody({ screen }: { screen: Screen }) {
       return <UsagePricesView />;
     case "notifications":
       return <NotificationsView />;
+    case "archivedSessions":
+      return <ArchivedSessionsView />;
     case "design":
       return <LazyDesignScreen screen={screen} />;
     case "issues":

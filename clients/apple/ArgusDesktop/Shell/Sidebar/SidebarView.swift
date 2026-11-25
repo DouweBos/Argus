@@ -68,6 +68,9 @@ struct SidebarView: View {
         if !scratchPads.isEmpty || !filter.isActive {
           scratchPadSection
         }
+        if !filter.isActive {
+          ArchivedSidebarRow()
+        }
       }
       .padding(.horizontal, 8)
       .padding(.vertical, 6)

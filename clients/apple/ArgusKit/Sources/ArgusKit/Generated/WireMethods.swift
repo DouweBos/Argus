@@ -6303,6 +6303,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsArchiveParams: Codable, Sendable {
+      public var sessionId: String
+      public var archived: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case archived = "archived"
+      }
+
+      public init(sessionId: String, archived: Bool) {
+        self.sessionId = sessionId
+        self.archived = archived
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(archived, forKey: .archived)
+      }
+    }
+
+    public struct SessionsArchiveResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
     public struct SessionsBranchLogParams: Codable, Sendable {
       public var sessionId: String
       public var branch: String
@@ -10755,6 +10793,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SecretRespondParams
       public typealias Result = ArgusProtocol.MethodsTypes.SecretRespondResult
       public static let name = "secret.respond"
+    }
+
+    public enum SessionsArchive: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsArchiveParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsArchiveResult
+      public static let name = "sessions.archive"
     }
 
     public enum SessionsBranchLog: RemoteCommand {

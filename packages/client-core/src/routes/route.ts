@@ -25,6 +25,7 @@ export const LOCAL_HOST_ID = "local";
 
 export type AppView =
   | "agents"
+  | "archived-sessions"
   | "automations"
   | "design"
   | "devices"
@@ -309,6 +310,13 @@ function parsePathname(pathname: string): Omit<ParsedRoute, NonPathFields> {
     return { ...emptyRoute("usage"), usageTab, usageModel };
   }
 
+  if (
+    segments[0] === "sessions" &&
+    segments[1] === "archived" &&
+    !segments[2]
+  ) {
+    return emptyRoute("archived-sessions");
+  }
   if (segments[0] === "sessions" && segments[1]) {
     const panel = (segments[2] ?? "home") as SessionPanel;
     const validPanel: SessionPanel = VALID_PANELS.includes(panel)
@@ -490,6 +498,8 @@ export function routePattern(pathname: string): string {
     case "pull-requests":
     case "runtimes":
       return `/${route.view}`;
+    case "archived-sessions":
+      return "/sessions/archived";
     case "session":
       return route.panel === "home"
         ? "/sessions/:sessionId"
@@ -612,6 +622,9 @@ function routePathname(route: Partial<ParsedRoute>): string {
     const term = route.issueQuery?.trim();
 
     return term ? `${path}?q=${encodeURIComponent(term)}` : path;
+  }
+  if (route.view === "archived-sessions") {
+    return "/sessions/archived";
   }
   if (
     route.view === "agents" ||

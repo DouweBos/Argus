@@ -106,6 +106,7 @@ describe("usage, notifications and settings pages", () => {
     ],
     ["/usage/prices", { name: "usagePrices" }],
     ["/notifications", { name: "notifications" }],
+    ["/sessions/archived", { name: "archivedSessions" }],
     ["/settings/appearance", { name: "settingsPage", page: "appearance" }],
     [
       "/settings/claude-accounts",
@@ -123,6 +124,7 @@ describe("usage, notifications and settings pages", () => {
     "/usage/tokens/models/claude-code/claude-opus-4-5",
     "/usage/prices",
     "/notifications",
+    "/sessions/archived",
     "/settings/device-hosts",
   ])("round-trips %s", (path) => {
     expect(pathForScreen(screenFromPath(path))).toBe(path);

@@ -37,6 +37,7 @@ import dev.houwert.argus.app.screens.files.FileScreen
 import dev.houwert.argus.app.screens.files.FileSearchScreen
 import dev.houwert.argus.app.screens.files.QuickOpenScreen
 import dev.houwert.argus.app.screens.home.AgentsScreen
+import dev.houwert.argus.app.screens.home.ArchivedSessionsScreen
 import dev.houwert.argus.app.screens.home.ComputersScreen
 import dev.houwert.argus.app.screens.home.HomeScreen
 import dev.houwert.argus.app.screens.agent.McpServersScreen
@@ -121,6 +122,7 @@ fun RouteScreen(route: Route) {
     is Route.Issue -> IssueScreen(route.ref)
     is Route.Design -> DesignScreen(route.url, route.sessionId)
     is Route.CompareRun -> CompareRunScreen(route.groupId)
+    Route.ArchivedSessions -> ArchivedSessionsScreen()
     Route.Account -> AccountScreen()
     Route.AddComputer -> AddComputerScreen()
     Route.Settings -> SettingsScreen()

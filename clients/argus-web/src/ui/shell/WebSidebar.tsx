@@ -205,7 +205,9 @@ function ProjectSection({
     (agents ?? []).filter((a) => a.session_id === session.id);
   const worktrees = sortSessionsByRecency(
     (sessions ?? []).filter(
-      (s) => s.kind === "worktree" || s.kind === "automation_host",
+      (s) =>
+        (s.kind === "worktree" || s.kind === "automation_host") &&
+        s.archived_at == null,
     ),
   );
   const searching = query.length > 0;
@@ -281,6 +283,12 @@ export function WebSidebar({
   const unseen = useUnseenNotifications();
   const showsIssues = useIntegrationsStore((s) => linearConnected(s.integrations));
   const refreshIntegrations = useIntegrationsStore((s) => s.refreshIntegrations);
+  const archivedCount = useProjectsStore((s) =>
+    Object.values(s.sessionsByRepo).reduce(
+      (n, list) => n + list.filter((x) => x.archived_at != null).length,
+      0,
+    ),
+  );
   const [search, setSearch] = useState("");
   const query = search.trim().toLowerCase();
   useProjectLists(connection === "ready", projects);
@@ -413,6 +421,15 @@ export function WebSidebar({
             screen={screen}
           />
         ))}
+        {archivedCount > 0 && !query && (
+          <AppSidebarNavItem
+            count={archivedCount}
+            icon={<Icons.ArchiveIcon size={14} />}
+            label="Archived"
+            selected={screen.name === "archivedSessions"}
+            onClick={() => go({ name: "archivedSessions" })}
+          />
+        )}
       </AppSidebar>
   );
 }
