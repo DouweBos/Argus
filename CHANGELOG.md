@@ -1,5 +1,16 @@
 # argus
 
+## 0.82.0
+
+### Minor Changes
+
+- 3e699be: The code view renders Markdown files, with a Source / Preview / Split switch, and opens PDFs and images instead of handing them to another app.
+- 3a8b3c7: The file viewer renders Markdown, PDFs and images, and Mermaid diagrams in chats and Markdown files are drawn with zoom and pan.
+- 90a0b0a: The file viewer renders Markdown, PDFs and images, and Mermaid diagrams in chats and Markdown files are drawn with zoom and pan.
+- e6e5501: Forward a paired Mac's dev-server ports to your own localhost in one click, from Runtimes or the session browser, to open them in your own browser and devtools.
+- 81d3d84: Mermaid diagrams in agent replies are drawn in the chat, with zoom, pan, full-size view and Copy Source.
+- 073c02c: Voice mode reads an agent's replies and permission prompts aloud, then listens: pause to send what you said, or say "allow" or "deny" to answer a prompt. Turn it on with the waveform button in the message field; voice, speed and "only speak in the background" are in Settings.
+
 ## 0.81.0
 
 ### Minor Changes
