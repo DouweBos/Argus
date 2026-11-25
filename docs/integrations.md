@@ -258,6 +258,20 @@ for these bot scopes: `app_mentions:read`, `channels:history`,
 turns on Socket Mode and interactivity. Then follow steps 3 to 7 from the
 app's own pages.
 
+### Several workspaces
+
+One Argus can be in several Slack workspaces at once, say your own team's and
+a client's. Click **Add workspace** in Settings → Integrations → Slack and
+set the next one up the same way, with a configuration token from that
+workspace. Each workspace gets its own app and bot, and keeps its own owner,
+allowed members, default project and channel projects. That's how you point a
+whole workspace at one project: give it that default project.
+
+Pick a workspace in the list to change its settings. **Disconnect** deletes
+its tokens but keeps the rest, so pasting new tokens reconnects it as it was;
+**Remove** forgets it entirely. A thread stays in the workspace it started
+in.
+
 ### Who can use it
 
 Agents run on your computer with your accounts, so who may drive them from
@@ -279,7 +293,7 @@ someone else's prompt does nothing.
 
 One Slack thread is one Argus session with its own worktree and agent.
 Argus remembers which thread belongs to which session in
-`~/.argus/slack-threads.json`, so a reply in the thread reaches the same
+`~/.argus/slack-threads-<workspace ID>.json`, so a reply in the thread reaches the same
 session even after Argus restarted: it resumes the conversation where it
 left off.
 
@@ -312,8 +326,8 @@ teammate is an ordinary request.
 
 ### On iPhone and Android
 
-The phones' Settings show whether Slack is connected, its workspace, owner
-and channel projects. Connecting Slack and changing who may use it are only
+The phones' Settings show each connected Slack workspace, its owner and
+channel projects. Connecting Slack and changing who may use it are only
 possible on the Mac: the tokens and the allowlist decide who can run agents
 on your computer, so they stay off the paired-device protocol, just like
 granting Control.

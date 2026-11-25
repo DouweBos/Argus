@@ -2764,6 +2764,7 @@ object MethodsTypes {
   @Serializable
   data class SlackStatusResult(
     @SerialName("status") val status: SlackStatus,
+    @SerialName("workspaces") val workspaces: List<SlackStatus>? = null,
   )
 
   @Serializable

@@ -30,6 +30,7 @@
         GalleryStory("settings/accounts", fixtures: GalleryFixtures.runnerAccounts) { ClaudeAccountsView() },
         GalleryStory("settings/computer", fixtures: computerFixtures, setup: connect) { ComputerStory() },
         slack("connected", GalleryFixtures.slackConnected),
+        slack("two-workspaces", GalleryFixtures.slackTwoWorkspaces),
         slack("claim", GalleryFixtures.slackClaimPending),
         slack("not-connected", GalleryFixtures.slackNotConnected),
         account("signed-in", GalleryAccount(selfKind: "ios")),

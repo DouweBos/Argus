@@ -44,6 +44,8 @@
         account("sign-in-needed", GalleryAccount(selfKind: "mac", signInNeeded: .reset)),
         account("awaiting-approval", GalleryAccount(phase: .awaitingApproval, selfKind: "mac")),
         slack("connected", GalleryFixtures.slackConnected),
+        slack("two-workspaces", GalleryFixtures.slackTwoWorkspaces),
+        slack("disconnected", GalleryFixtures.slackDisconnected),
         slack("claim", GalleryFixtures.slackClaimPending),
         slack("not-connected", GalleryFixtures.slackNotConnected),
         slack("app-created", GalleryFixtures.slackAppCreated),

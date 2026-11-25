@@ -483,7 +483,9 @@ Linear and Figma connections for this machine, in Settings → Integrations. See
 ### Slack
 
 Settings → Integrations → **Slack** connects a Slack app you create yourself
-(setup steps in [Integrations](./integrations.md#slack)). Its settings live in
+(setup steps in [Integrations](./integrations.md#slack)), one per workspace:
+**Add workspace** connects another, and every setting below is per workspace.
+Its settings live in
 `~/.argus/slack.json`, never in `app-settings.json`, and only the Mac can
 change them.
 
@@ -1220,8 +1222,8 @@ Argus keeps everything under `~/.argus/`:
   viewed-files.json           ← Files ticked as viewed in session diffs (pull requests keep theirs on GitHub)
   device-hosts.json           ← Other Macs whose simulators Argus streams over SSH
   usage-prices.json           ← Model prices and mappings set by hand on the Usage screen
-  slack.json                  ← Slack tokens (encrypted), owner, allowed members, channel projects
-  slack-threads.json          ← Which Slack thread belongs to which session
+  slack.json                  ← Each Slack workspace's tokens (encrypted), owner, allowed members, channel projects
+  slack-threads-<team>.json   ← Which Slack thread belongs to which session, one file per workspace
   telemetry-id                ← Anonymous install id
 ```
 

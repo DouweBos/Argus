@@ -33,7 +33,7 @@ describe("creating the Slack app", () => {
 
     const status = await createSlackApp(CONFIG, " Argus (Sam) ", fetchImpl);
 
-    expect(status.app).toEqual({ id: "A0123", name: "Argus (Sam)" });
+    expect(status.pending_app).toEqual({ id: "A0123", name: "Argus (Sam)" });
     const [url, init] = fetchImpl.mock.calls[0];
     expect(url).toBe("https://slack.com/api/apps.manifest.create");
     const manifest = JSON.parse(
@@ -93,6 +93,6 @@ describe("creating the Slack app", () => {
     const { createSlackApp, forgetSlackApp } = await import("./appSetup");
     await createSlackApp(CONFIG, "Argus", slack({ ok: true, app_id: "A1" }));
 
-    expect(forgetSlackApp().app).toBeNull();
+    expect(forgetSlackApp().pending_app).toBeNull();
   });
 });

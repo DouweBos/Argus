@@ -7,6 +7,7 @@ struct SlackMembersGroup: View {
   @Environment(HostSettingsModel.self) private var host
   @Environment(HostStore.self) private var store
   let status: ArgusProtocol.SlackStatus
+  let teamId: String
   @State private var memberId = ""
 
   private var trimmed: String { memberId.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -30,7 +31,7 @@ struct SlackMembersGroup: View {
           SlackRemoveButton(help: "Remove \(user.name ?? user.userId)") {
             Task {
               applySlack(
-                await host.run(ArgusProtocol.Commands.SlackRemoveAllowedUser.self, .init(userId: user.userId)),
+                await host.run(ArgusProtocol.Commands.SlackRemoveAllowedUser.self, .init(teamId: teamId, userId: user.userId)),
                 to: store)
             }
           }
@@ -51,7 +52,7 @@ struct SlackMembersGroup: View {
     let userId = trimmed
     guard !userId.isEmpty else { return }
     Task {
-      let status = await host.run(ArgusProtocol.Commands.SlackAddAllowedUser.self, .init(userId: userId))
+      let status = await host.run(ArgusProtocol.Commands.SlackAddAllowedUser.self, .init(teamId: teamId, userId: userId))
       guard status != nil else { return }
       memberId = ""
       applySlack(status, to: store)
@@ -64,6 +65,7 @@ struct SlackProjectsGroups: View {
   @Environment(HostSettingsModel.self) private var host
   @Environment(HostStore.self) private var store
   let status: ArgusProtocol.SlackStatus
+  let teamId: String
   @State private var channels: [HostStore.SlackChannel] = []
   @State private var newChannel: RemoteSlackChannel?
   @State private var newProject = ""
@@ -71,7 +73,7 @@ struct SlackProjectsGroups: View {
   /// Channels not already given a project.
   private var unmapped: [HostStore.SlackChannel] {
     let mapped = Set(status.mappings.map(\.channelId))
-    return channels.filter { !mapped.contains($0.id) }
+    return channels.filter { $0.teamId == teamId && !mapped.contains($0.id) }
   }
 
   var body: some View {
@@ -129,7 +131,7 @@ struct SlackProjectsGroups: View {
         .disabled(newChannel == nil || newProject.isEmpty)
       }
     }
-    .task(id: status.state) { channels = await store.slackChannels() }
+    .task(id: "\(teamId)-\(status.state)") { channels = await store.slackChannels() }
   }
 
   @ViewBuilder
@@ -149,7 +151,8 @@ struct SlackProjectsGroups: View {
         Task {
           applySlack(
             await host.run(
-              ArgusProtocol.Commands.SlackSetDefaultProject.self, .init(repoRoot: next.isEmpty ? nil : next)),
+              ArgusProtocol.Commands.SlackSetDefaultProject.self,
+              .init(teamId: teamId, repoRoot: next.isEmpty ? nil : next)),
             to: store)
         }
       })
@@ -160,7 +163,7 @@ struct SlackProjectsGroups: View {
       applySlack(
         await host.run(
           ArgusProtocol.Commands.SlackSetChannelProject.self,
-          .init(channelId: id, channelName: name, repoRoot: repoRoot)),
+          .init(teamId: teamId, channelId: id, channelName: name, repoRoot: repoRoot)),
         to: store)
     }
   }

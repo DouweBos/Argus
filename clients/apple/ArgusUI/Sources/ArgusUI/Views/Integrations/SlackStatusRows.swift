@@ -1,7 +1,20 @@
 import ArgusCore
 import SwiftUI
 
-/// Read-only: the computer's Slack connection, its owner and channel projects.
+/// No workspace connected on the computer.
+public struct SlackNotConnectedRow: View {
+  public init() {}
+
+  public var body: some View {
+    HStack(spacing: 8) {
+      BodyText("Slack")
+      Spacer(minLength: 6)
+      Badge(label: "Not connected", tone: .muted)
+    }
+  }
+}
+
+/// Read-only: one Slack workspace's connection, its owner and channel projects.
 public struct SlackStatusRows: View {
   @Environment(\.theme) private var theme
   let status: ArgusProtocol.SlackStatus

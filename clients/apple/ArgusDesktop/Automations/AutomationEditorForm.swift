@@ -47,7 +47,7 @@ struct AutomationEditorForm: View {
         }
       }
       .pickerStyle(.segmented)
-      .task { if host.slackStatus == nil { await host.loadSlackStatus() } }
+      .task { if host.slackOverview == nil { await host.loadSlackStatus() } }
       if draft.triggerKind == .slack {
         SlackTriggerRows(channel: $draft.slackChannel, match: $draft.slackMatch, text: optional(\.slackText))
       }

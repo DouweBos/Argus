@@ -19,6 +19,9 @@ export type SlackChannelMapping = z.infer<typeof SlackChannelMapping>;
 /** A channel the bot can see, for picking one in Settings. */
 export const SlackChannel = z.object({
   id: z.string(),
+  /** The workspace it's in, and that workspace's name. */
+  team_id: z.string(),
+  workspace: z.string(),
   name: z.string(),
   is_private: z.boolean(),
   /** The bot is in it; it only hears mentions in channels it was invited to. */
@@ -38,7 +41,10 @@ export const SlackConnectionState = z.enum([
 ]);
 export type SlackConnectionState = z.infer<typeof SlackConnectionState>;
 
+/** One workspace's connection. */
 export const SlackStatus = z.object({
+  /** Optional so older hosts, which had one workspace, still decode. */
+  team_id: z.string().nullish(),
   /** Tokens are saved. */
   configured: z.boolean(),
   state: SlackConnectionState,
@@ -59,13 +65,26 @@ export const SlackStatus = z.object({
   allowed_users: z.array(SlackUser),
   /** Slack threads tied to an agent. */
   thread_count: z.number(),
-  /** Set once Argus created the app; optional so older hosts still decode. */
+  /** The app Argus created for this workspace; optional so older hosts still decode. */
   app: SlackApp.nullish(),
 });
 export type SlackStatus = z.infer<typeof SlackStatus>;
 
+/** Every workspace this computer knows, connected or not. */
+export const SlackOverview = z.object({
+  workspaces: z.array(SlackStatus),
+  /** Created from a configuration token, waiting for its tokens. */
+  pending_app: SlackApp.nullable(),
+});
+export type SlackOverview = z.infer<typeof SlackOverview>;
+
 /** A channel named by an automation: its trigger or where its report goes. */
-export const SlackChannelRef = z.object({ id: z.string(), name: z.string() });
+export const SlackChannelRef = z.object({
+  id: z.string(),
+  name: z.string(),
+  /** Missing on automations saved before Argus had several workspaces. */
+  team_id: z.string().nullish(),
+});
 export type SlackChannelRef = z.infer<typeof SlackChannelRef>;
 
 /** `keyword`: the message contains `text`; `prefix`: it starts with it. */

@@ -132,6 +132,7 @@ async function startTeammate(teammateId: string) {
 }
 
 export function hostDeps(
+  teamId: string,
   api: SlackApi,
   threads: SlackThreadStore,
   respondToPermission: SlackBotDeps["respondToPermission"],
@@ -141,14 +142,14 @@ export function hostDeps(
   return {
     api,
     threads,
-    config: loadSlackConfig,
+    config: () => loadSlackConfig(teamId),
     updateConfig: (fn) => {
-      const next = updateSlackConfig(fn);
+      const next = updateSlackConfig(teamId, fn);
       onConfigChanged();
 
       return next;
     },
-    identity: loadSlackIdentity,
+    identity: () => loadSlackIdentity(teamId),
     projects: () => [...appState.repoRoots],
     startSession: async (repoRoot, prompt, images) => {
       const session = await createSession(

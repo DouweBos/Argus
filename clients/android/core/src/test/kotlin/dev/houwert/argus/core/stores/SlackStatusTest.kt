@@ -30,7 +30,7 @@ class SlackStatusTest {
     backend.reply(Methods.SlackStatus, """{"status":$connected}""")
     store.loadSlackStatus()
 
-    val status = store.slackStatus.value!!
+    val status = store.slackWorkspaces.value!!.single()
     assertEquals(SlackConnectionState.connected, status.state)
     assertEquals("Ada Lovelace", status.owner?.name)
     assertEquals(listOf("infra"), status.mappings.map { SlackStatusText.projectName(it.repoRoot) })
@@ -43,7 +43,21 @@ class SlackStatusTest {
     attach(store, backend)
     backend.fail(Methods.SlackStatus)
     store.loadSlackStatus()
-    assertNull(store.slackStatus.value)
+    assertNull(store.slackWorkspaces.value)
+  }
+
+  @Test fun listsEveryWorkspace() = runTest {
+    val store = HostStore(backgroundScope)
+    val backend = FakeBackend()
+    attach(store, backend)
+    val other = connected.replace("\"Acme\"", "\"Globex\"")
+    backend.reply(Methods.SlackStatus, """{"status":$connected,"workspaces":[$connected,$other]}""")
+    store.loadSlackStatus()
+    assertEquals(listOf("Acme", "Globex"), store.slackWorkspaces.value!!.map { it.workspace })
+
+    backend.reply(Methods.SlackStatus, """{"status":$off}""")
+    store.loadSlackStatus()
+    assertEquals(emptyList(), store.slackWorkspaces.value)
   }
 
   @Test fun statusReadsAsTheMacWordsIt() {

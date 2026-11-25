@@ -7412,6 +7412,8 @@ data class SlackApp(
 @Serializable
 data class SlackChannel(
   @SerialName("id") val id: String,
+  @SerialName("team_id") val teamId: String,
+  @SerialName("workspace") val workspace: String,
   @SerialName("name") val name: String,
   @SerialName("is_private") val isPrivate: Boolean,
   @SerialName("is_member") val isMember: Boolean,
@@ -7428,6 +7430,7 @@ data class SlackChannelMapping(
 data class SlackChannelRef(
   @SerialName("id") val id: String,
   @SerialName("name") val name: String,
+  @SerialName("team_id") val teamId: String? = null,
 )
 
 @Serializable
@@ -7445,7 +7448,14 @@ value class SlackConnectionState(val rawValue: String) {
 }
 
 @Serializable
+data class SlackOverview(
+  @SerialName("workspaces") val workspaces: List<SlackStatus>,
+  @SerialName("pending_app") @EncodeDefault val pendingApp: SlackApp? = null,
+)
+
+@Serializable
 data class SlackStatus(
+  @SerialName("team_id") val teamId: String? = null,
   @SerialName("configured") val configured: Boolean,
   @SerialName("state") val state: SlackConnectionState,
   @SerialName("error") @EncodeDefault val error: String? = null,

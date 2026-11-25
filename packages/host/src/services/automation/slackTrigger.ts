@@ -50,9 +50,14 @@ export function assertValidSlackTrigger(trigger: SlackTrigger): void {
 
 export function slackTriggerMatches(
   trigger: SlackTrigger,
-  message: { channel: string; text: string },
+  message: { channel: string; text: string; teamId?: string },
 ): boolean {
   if (message.channel !== trigger.channel.id) {
+    return false;
+  }
+  // Older triggers name no workspace: any workspace's channel with that ID.
+  const team = trigger.channel.team_id;
+  if (team && message.teamId && team !== message.teamId) {
     return false;
   }
   const text = message.text.trim().toLowerCase();

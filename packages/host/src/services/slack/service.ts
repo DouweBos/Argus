@@ -8,7 +8,7 @@ import type { AutomationRun } from "../automation/models";
 import type {
   SlackChannel,
   SlackConnectionState,
-  SlackStatus,
+  SlackOverview,
 } from "@argus/remote-protocol";
 import { addHostEventSink, emitHostEvent } from "@argus/host/bus";
 import { info, warn } from "@argus/host/logger";
@@ -17,52 +17,61 @@ import { fireAutomationFromEvent } from "../automation/eventDispatch";
 import { getAutomation, listAutomations } from "../automation/manager";
 import { capture } from "../telemetry/telemetry";
 import { SlackApi, SlackApiError } from "./api";
-import { fireSlackTriggers, ReportPoster } from "./automations";
+import {
+  type ChannelMessage,
+  fireSlackTriggers,
+  ReportPoster,
+} from "./automations";
 import { SlackBot } from "./bot";
 import { SocketModeClient } from "./socket";
 import {
   connectionState,
+  forgetSlackThreads,
   setConnectionState,
-  slackStatus,
-  slackThreads as threads,
+  slackOverview,
+  slackThreads,
 } from "./status";
 import {
   deleteSlackTokens,
   hasSlackTokens,
+  listSlackWorkspaces,
   loadSlackConfig,
   newClaimCode,
   readSlackTokens,
+  removeSlackWorkspace,
   saveSlackTokens,
   type SlackConfig,
   updateSlackConfig,
 } from "./store";
 import { hostDeps } from "./wiring";
 
-export { remoteSlackStatus, slackStatus } from "./status";
+export { remoteSlackStatus, slackOverview } from "./status";
 
 export const SLACK_STATUS_CHANGED = "slack_status_changed";
 
-type ChannelMessageListener = NonNullable<
-  ConstructorParameters<typeof SlackBot>[0]["onChannelMessage"]
->;
+/** One connected workspace: its bot, socket and Web API client. */
+interface Workspace {
+  socket: SocketModeClient;
+  bot: SlackBot;
+  api: SlackApi;
+}
 
-let socket: SocketModeClient | null = null;
-let bot: SlackBot | null = null;
-let botApi: SlackApi | null = null;
+const workspaces = new Map<string, Workspace>();
 let unsubscribe: (() => void) | null = null;
-const channelListeners = new Set<ChannelMessageListener>();
 const reports = new ReportPoster({
-  api: () => botApi,
+  api: (teamId) =>
+    (teamId ? workspaces.get(teamId) : workspaces.values().next().value)?.api ??
+    null,
   automation: (id) => getAutomation(id) ?? null,
   onPosted: (success) => capture("slack_report_posted", { success }),
   now: Date.now,
 });
 
 /** Slack-triggered automations. */
-function fireAutomations(message: Parameters<ChannelMessageListener>[0]): void {
+function fireAutomations(message: ChannelMessage): void {
   const fired = fireSlackTriggers({
     message,
-    config: loadSlackConfig(),
+    config: loadSlackConfig(message.teamId),
     automations: listAutomations(),
     // Queued and capped per hour like any event trigger; the run reads the message fenced.
     fire: (id, event) => {
@@ -76,97 +85,104 @@ function fireAutomations(message: Parameters<ChannelMessageListener>[0]): void {
 }
 
 function announce(): void {
-  emitHostEvent(SLACK_STATUS_CHANGED, slackStatus());
+  emitHostEvent(SLACK_STATUS_CHANGED, slackOverview());
 }
 
-function setState(next: SlackConnectionState, error: string | null): void {
-  const current = connectionState();
+function setState(
+  teamId: string,
+  next: SlackConnectionState,
+  error: string | null,
+): void {
+  const current = connectionState(teamId);
   if (next === current.state && error === current.error) {
     return;
   }
   const wasRejected = next === "error" && error?.includes("rejected");
-  setConnectionState(next, error);
+  setConnectionState(teamId, next, error);
   if (wasRejected) {
     capture("slack_disconnected", { reason: "rejected" });
   }
   announce();
 }
 
-/** The bot's Web API client while connected; null otherwise. */
-export function slackBotApi(): SlackApi | null {
-  return botApi;
-}
-
-/** Listen to every human message in channels the bot is in. */
-export function onSlackChannelMessage(
-  listener: ChannelMessageListener,
-): () => void {
-  channelListeners.add(listener);
-
-  return () => {
-    channelListeners.delete(listener);
-  };
-}
-
-export function startSlack(): void {
-  if (socket) {
+/** The bridges hear agent events; finished runs post their reports. */
+function listen(): void {
+  if (unsubscribe) {
     return;
   }
-  const tokens = readSlackTokens();
-  if (!tokens) {
-    return;
-  }
-  const api = new SlackApi(tokens.bot);
-  const appApi = new SlackApi(tokens.app);
-  botApi = api;
-  bot = new SlackBot(
-    hostDeps(
-      api,
-      threads,
-      respondToPermission,
-      (message) => {
-        fireAutomations(message);
-        for (const listener of channelListeners) {
-          try {
-            listener(message);
-          } catch (e) {
-            warn(`[slack] channel listener failed: ${String(e)}`);
-          }
-        }
-      },
-      announce,
-    ),
-  );
-  const current = bot;
   unsubscribe = addHostEventSink((channel, args) => {
     if (channel.startsWith("agent:")) {
-      current.bridge.handleHostEvent(channel, args[0]);
+      for (const w of workspaces.values()) {
+        w.bot.bridge.handleHostEvent(channel, args[0]);
+      }
     } else if (channel === "automation_run:changed") {
       reports
         .runChanged(args[0] as AutomationRun | null)
         .catch(() => undefined);
     }
   });
-  socket = new SocketModeClient({
+}
+
+function startWorkspace(teamId: string): void {
+  if (workspaces.has(teamId)) {
+    return;
+  }
+  const tokens = readSlackTokens(teamId);
+  if (!tokens) {
+    return;
+  }
+  const api = new SlackApi(tokens.bot);
+  const appApi = new SlackApi(tokens.app);
+  const bot = new SlackBot(
+    hostDeps(
+      teamId,
+      api,
+      slackThreads(teamId),
+      respondToPermission,
+      (message) => fireAutomations({ ...message, teamId }),
+      announce,
+    ),
+  );
+  const socket = new SocketModeClient({
     openConnection: () => appApi.openConnection(),
     onEnvelope: (envelope) => {
-      current.handleEnvelope(envelope).catch(() => undefined);
+      bot.handleEnvelope(envelope).catch(() => undefined);
     },
-    onState: setState,
+    onState: (state, error) => setState(teamId, state, error),
   });
+  workspaces.set(teamId, { socket, bot, api });
+  listen();
   socket.start();
-  info("[slack] connecting");
+  info("[slack] connecting a workspace");
+}
+
+function stopWorkspace(teamId: string): void {
+  const w = workspaces.get(teamId);
+  if (w) {
+    w.socket.stop();
+    w.bot.dispose();
+    workspaces.delete(teamId);
+  }
+  setConnectionState(teamId, "off", null);
+  if (!workspaces.size) {
+    unsubscribe?.();
+    unsubscribe = null;
+  }
+}
+
+/** Connects every workspace with saved tokens. */
+export function startSlack(): void {
+  for (const { identity, connected } of listSlackWorkspaces()) {
+    if (connected) {
+      startWorkspace(identity.teamId);
+    }
+  }
 }
 
 export function stopSlack(): void {
-  socket?.stop();
-  socket = null;
-  unsubscribe?.();
-  unsubscribe = null;
-  bot?.dispose();
-  bot = null;
-  botApi = null;
-  setConnectionState("off", null);
+  for (const teamId of [...workspaces.keys()]) {
+    stopWorkspace(teamId);
+  }
 }
 
 function sentence(e: unknown): string {
@@ -180,7 +196,7 @@ function sentence(e: unknown): string {
 export async function connectSlack(
   botToken: string,
   appToken: string,
-): Promise<SlackStatus> {
+): Promise<SlackOverview> {
   const botSecret = botToken.trim();
   const appSecret = appToken.trim();
   if (!botSecret.startsWith("xoxb-")) {
@@ -189,6 +205,7 @@ export async function connectSlack(
   if (!appSecret.startsWith("xapp-")) {
     throw "The app-level token starts with xapp-. Create one under Basic Information → App-Level Tokens.";
   }
+  let teamId: string;
   try {
     const who = await new SlackApi(botSecret).authTest().catch((e: unknown) => {
       throw e instanceof SlackApiError && e.isAuth
@@ -209,47 +226,73 @@ export async function connectSlack(
         botName: who.user,
       },
     );
+    teamId = who.teamId;
   } catch (e) {
-    capture("slack_connected", { success: false });
+    capture("slack_connected", {
+      success: false,
+      workspaces: listSlackWorkspaces().length,
+    });
     throw sentence(e);
   }
-  capture("slack_connected", { success: true });
-  stopSlack();
-  startSlack();
+  capture("slack_connected", {
+    success: true,
+    workspaces: listSlackWorkspaces().length,
+  });
+  stopWorkspace(teamId);
+  startWorkspace(teamId);
   announce();
 
-  return slackStatus();
+  return slackOverview();
 }
 
-export function disconnectSlack(): SlackStatus {
-  const wasConnected = hasSlackTokens();
-  stopSlack();
-  deleteSlackTokens();
+export function disconnectSlack(teamId: string): SlackOverview {
+  const wasConnected = hasSlackTokens(teamId);
+  stopWorkspace(teamId);
+  deleteSlackTokens(teamId);
   if (wasConnected) {
     capture("slack_disconnected", { reason: "user" });
   }
   announce();
 
-  return slackStatus();
+  return slackOverview();
 }
 
-function changeConfig(fn: (config: SlackConfig) => SlackConfig): SlackStatus {
-  updateSlackConfig(fn);
+export function removeWorkspace(teamId: string): SlackOverview {
+  disconnectSlack(teamId);
+  removeSlackWorkspace(teamId);
+  forgetSlackThreads(teamId);
   announce();
 
-  return slackStatus();
+  return slackOverview();
 }
 
-export function setDefaultProject(repoRoot: string | null): SlackStatus {
-  return changeConfig((c) => ({ ...c, defaultProject: repoRoot }));
+function changeConfig(
+  teamId: string,
+  fn: (config: SlackConfig) => SlackConfig,
+): SlackOverview {
+  if (!listSlackWorkspaces().some((w) => w.identity.teamId === teamId)) {
+    throw "Argus doesn't know that Slack workspace.";
+  }
+  updateSlackConfig(teamId, fn);
+  announce();
+
+  return slackOverview();
+}
+
+export function setDefaultProject(
+  teamId: string,
+  repoRoot: string | null,
+): SlackOverview {
+  return changeConfig(teamId, (c) => ({ ...c, defaultProject: repoRoot }));
 }
 
 export function setChannelProject(
+  teamId: string,
   channelId: string,
   channelName: string,
   repoRoot: string | null,
-): SlackStatus {
-  return changeConfig((c) => {
+): SlackOverview {
+  return changeConfig(teamId, (c) => {
     const rest = c.mappings.filter((m) => m.channel_id !== channelId);
 
     return {
@@ -268,14 +311,18 @@ export function setChannelProject(
   });
 }
 
-export async function addAllowedUser(userId: string): Promise<SlackStatus> {
+export async function addAllowedUser(
+  teamId: string,
+  userId: string,
+): Promise<SlackOverview> {
   const id = userId.trim().toUpperCase();
   if (!/^[UW][A-Z0-9]{2,}$/.test(id)) {
     throw "That isn't a Slack member ID. Copy it from the member's profile → ⋯ → Copy member ID.";
   }
-  const name = botApi ? await botApi.userName(id) : null;
+  const api = workspaces.get(teamId)?.api;
+  const name = api ? await api.userName(id) : null;
 
-  return changeConfig((c) => ({
+  return changeConfig(teamId, (c) => ({
     ...c,
     allowedUsers: [
       ...c.allowedUsers.filter((u) => u.user_id !== id),
@@ -284,29 +331,50 @@ export async function addAllowedUser(userId: string): Promise<SlackStatus> {
   }));
 }
 
-export function removeAllowedUser(userId: string): SlackStatus {
-  return changeConfig((c) => ({
+export function removeAllowedUser(
+  teamId: string,
+  userId: string,
+): SlackOverview {
+  return changeConfig(teamId, (c) => ({
     ...c,
     allowedUsers: c.allowedUsers.filter((u) => u.user_id !== userId),
   }));
 }
 
-export function resetOwner(): SlackStatus {
-  return changeConfig((c) => ({
+export function resetOwner(teamId: string): SlackOverview {
+  return changeConfig(teamId, (c) => ({
     ...c,
     owner: null,
     claimCode: newClaimCode(),
   }));
 }
 
+/** Every connected workspace's channels; one that fails is left out. */
 export async function listSlackChannels(): Promise<SlackChannel[]> {
-  if (!botApi) {
+  if (!workspaces.size) {
     throw "Connect Slack first.";
   }
-  try {
-    return await botApi.listChannels();
-  } catch (e) {
-    warn(`[slack] listing channels failed: ${sentence(e)}`);
+  const names = new Map(
+    listSlackWorkspaces().map((w) => [w.identity.teamId, w.identity.workspace]),
+  );
+  const lists = await Promise.all(
+    [...workspaces].map(async ([teamId, w]) => {
+      try {
+        return (await w.api.listChannels()).map((c) => ({
+          ...c,
+          team_id: teamId,
+          workspace: names.get(teamId) ?? "Slack",
+        }));
+      } catch (e) {
+        warn(`[slack] listing a workspace's channels failed: ${sentence(e)}`);
+
+        return null;
+      }
+    }),
+  );
+  if (lists.every((l) => l === null)) {
     throw "Couldn't list the workspace's channels.";
   }
+
+  return lists.flatMap((l) => l ?? []);
 }

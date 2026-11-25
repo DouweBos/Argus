@@ -1591,7 +1591,11 @@ export const MethodResult = {
   "blueprints.revise": z.object({ instructions: z.string() }),
   "integrations.list": z.object({ integrations: z.array(IntegrationStatus) }),
   /** `claim_code` is always null here; claiming the bot is the Mac's to show. */
-  "slack.status": z.object({ status: SlackStatus }),
+  /** `status` is the first workspace, for clients from before there were several. */
+  "slack.status": z.object({
+    status: SlackStatus,
+    workspaces: z.array(SlackStatus).optional(),
+  }),
   "linear.issues": z.object({ issues: z.array(LinearIssue) }),
   /** Null when Linear has no such issue; `states` is its team's workflow, for
    *  the status picker. */

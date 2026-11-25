@@ -9332,18 +9332,22 @@ extension ArgusProtocol {
     }
 
     public struct SlackAddAllowedUserParams: Codable, Sendable {
+      public var teamId: String
       public var userId: String
 
       enum CodingKeys: String, CodingKey {
+        case teamId = "teamId"
         case userId = "userId"
       }
 
-      public init(userId: String) {
+      public init(teamId: String, userId: String) {
+        self.teamId = teamId
         self.userId = userId
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teamId, forKey: .teamId)
         try c.encode(userId, forKey: .userId)
       }
     }
@@ -9390,6 +9394,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SlackDisconnectParams: Codable, Sendable {
+      public var teamId: String
+
+      enum CodingKeys: String, CodingKey {
+        case teamId = "teamId"
+      }
+
+      public init(teamId: String) {
+        self.teamId = teamId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teamId, forKey: .teamId)
+      }
+    }
+
     public struct SlackManifestParams: Codable, Sendable {
       public var name: String?
 
@@ -9408,34 +9429,75 @@ extension ArgusProtocol {
     }
 
     public struct SlackRemoveAllowedUserParams: Codable, Sendable {
+      public var teamId: String
       public var userId: String
 
       enum CodingKeys: String, CodingKey {
+        case teamId = "teamId"
         case userId = "userId"
       }
 
-      public init(userId: String) {
+      public init(teamId: String, userId: String) {
+        self.teamId = teamId
         self.userId = userId
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teamId, forKey: .teamId)
         try c.encode(userId, forKey: .userId)
       }
     }
 
+    public struct SlackRemoveWorkspaceParams: Codable, Sendable {
+      public var teamId: String
+
+      enum CodingKeys: String, CodingKey {
+        case teamId = "teamId"
+      }
+
+      public init(teamId: String) {
+        self.teamId = teamId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teamId, forKey: .teamId)
+      }
+    }
+
+    public struct SlackResetOwnerParams: Codable, Sendable {
+      public var teamId: String
+
+      enum CodingKeys: String, CodingKey {
+        case teamId = "teamId"
+      }
+
+      public init(teamId: String) {
+        self.teamId = teamId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teamId, forKey: .teamId)
+      }
+    }
+
     public struct SlackSetChannelProjectParams: Codable, Sendable {
+      public var teamId: String
       public var channelId: String
       public var channelName: String
       public var repoRoot: String?
 
       enum CodingKeys: String, CodingKey {
+        case teamId = "teamId"
         case channelId = "channelId"
         case channelName = "channelName"
         case repoRoot = "repoRoot"
       }
 
-      public init(channelId: String, channelName: String, repoRoot: String? = nil) {
+      public init(teamId: String, channelId: String, channelName: String, repoRoot: String? = nil) {
+        self.teamId = teamId
         self.channelId = channelId
         self.channelName = channelName
         self.repoRoot = repoRoot
@@ -9443,6 +9505,7 @@ extension ArgusProtocol {
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teamId, forKey: .teamId)
         try c.encode(channelId, forKey: .channelId)
         try c.encode(channelName, forKey: .channelName)
         try c.encode(repoRoot, forKey: .repoRoot)
@@ -9450,18 +9513,22 @@ extension ArgusProtocol {
     }
 
     public struct SlackSetDefaultProjectParams: Codable, Sendable {
+      public var teamId: String
       public var repoRoot: String?
 
       enum CodingKeys: String, CodingKey {
+        case teamId = "teamId"
         case repoRoot = "repoRoot"
       }
 
-      public init(repoRoot: String? = nil) {
+      public init(teamId: String, repoRoot: String? = nil) {
+        self.teamId = teamId
         self.repoRoot = repoRoot
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teamId, forKey: .teamId)
         try c.encode(repoRoot, forKey: .repoRoot)
       }
     }
@@ -14044,35 +14111,35 @@ extension ArgusProtocol {
 
     public enum SlackAddAllowedUser: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.SlackAddAllowedUserParams
-      public typealias Result = ArgusProtocol.SlackStatus
+      public typealias Result = ArgusProtocol.SlackOverview
       public static let name = "slack_add_allowed_user"
       public static let tier = "admin"
     }
 
     public enum SlackConnect: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.SlackConnectParams
-      public typealias Result = ArgusProtocol.SlackStatus
+      public typealias Result = ArgusProtocol.SlackOverview
       public static let name = "slack_connect"
       public static let tier = "admin"
     }
 
     public enum SlackCreateApp: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.SlackCreateAppParams
-      public typealias Result = ArgusProtocol.SlackStatus
+      public typealias Result = ArgusProtocol.SlackOverview
       public static let name = "slack_create_app"
       public static let tier = "admin"
     }
 
     public enum SlackDisconnect: RemoteCommand {
-      public typealias Params = EmptyParams
-      public typealias Result = ArgusProtocol.SlackStatus
+      public typealias Params = ArgusProtocol.CommandsTypes.SlackDisconnectParams
+      public typealias Result = ArgusProtocol.SlackOverview
       public static let name = "slack_disconnect"
       public static let tier = "admin"
     }
 
     public enum SlackForgetApp: RemoteCommand {
       public typealias Params = EmptyParams
-      public typealias Result = ArgusProtocol.SlackStatus
+      public typealias Result = ArgusProtocol.SlackOverview
       public static let name = "slack_forget_app"
       public static let tier = "admin"
     }
@@ -14093,35 +14160,42 @@ extension ArgusProtocol {
 
     public enum SlackRemoveAllowedUser: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.SlackRemoveAllowedUserParams
-      public typealias Result = ArgusProtocol.SlackStatus
+      public typealias Result = ArgusProtocol.SlackOverview
       public static let name = "slack_remove_allowed_user"
       public static let tier = "admin"
     }
 
+    public enum SlackRemoveWorkspace: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.SlackRemoveWorkspaceParams
+      public typealias Result = ArgusProtocol.SlackOverview
+      public static let name = "slack_remove_workspace"
+      public static let tier = "admin"
+    }
+
     public enum SlackResetOwner: RemoteCommand {
-      public typealias Params = EmptyParams
-      public typealias Result = ArgusProtocol.SlackStatus
+      public typealias Params = ArgusProtocol.CommandsTypes.SlackResetOwnerParams
+      public typealias Result = ArgusProtocol.SlackOverview
       public static let name = "slack_reset_owner"
       public static let tier = "admin"
     }
 
     public enum SlackSetChannelProject: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.SlackSetChannelProjectParams
-      public typealias Result = ArgusProtocol.SlackStatus
+      public typealias Result = ArgusProtocol.SlackOverview
       public static let name = "slack_set_channel_project"
       public static let tier = "admin"
     }
 
     public enum SlackSetDefaultProject: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.SlackSetDefaultProjectParams
-      public typealias Result = ArgusProtocol.SlackStatus
+      public typealias Result = ArgusProtocol.SlackOverview
       public static let name = "slack_set_default_project"
       public static let tier = "admin"
     }
 
     public enum SlackStatus: RemoteCommand {
       public typealias Params = EmptyParams
-      public typealias Result = ArgusProtocol.SlackStatus
+      public typealias Result = ArgusProtocol.SlackOverview
       public static let name = "slack_status"
       public static let tier = "admin"
     }

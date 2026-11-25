@@ -466,7 +466,8 @@ export interface EventMap {
     outcome: "delivered" | "refused_depth" | "refused_loop";
   };
   teammate_mention_answered: { surface: "linear"; answered: boolean };
-  slack_connected: { success: boolean };
+  /** `workspaces`: how many this computer knows after the attempt. */
+  slack_connected: { success: boolean; workspaces: number };
   slack_app_created: { success: boolean };
   /** `rejected`: Slack stopped accepting the saved app-level token. */
   slack_disconnected: { reason: "rejected" | "user" };

@@ -20,11 +20,17 @@ fun IntegrationStatusRows(integrations: List<IntegrationStatus>) {
   }
 }
 
-/** Slack as the computer has it: connection, who owns it, and which channel works in which project. Read-only. */
+/** No Slack workspace connected on the computer. */
+@Composable
+fun SlackNotConnectedRow() {
+  SettingsRow("Connection") { Badge("Not connected", tone = Tone.Muted) }
+}
+
+/** One Slack workspace as the computer has it: connection, who owns it, and which channel works in which project. Read-only. */
 @Composable
 fun SlackStatusRows(status: SlackStatus) {
   val failed = status.state == SlackConnectionState.error
-  SettingsRow("Connection", description = if (failed) status.error else SlackStatusText.workspace(status)) {
+  SettingsRow(status.workspace ?: "Connection", description = if (failed) status.error else status.botName?.let { "@$it" }) {
     Badge(SlackStatusText.state(status), tone = IntegrationLabels.tone(status))
   }
   if (!status.configured) return

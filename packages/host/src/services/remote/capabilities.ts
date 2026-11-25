@@ -2917,7 +2917,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return cleanupPolicy();
   },
   "integrations.list": async () => ({ integrations: listIntegrations() }),
-  "slack.status": async () => ({ status: remoteSlackStatus() }),
+  "slack.status": async () => remoteSlackStatus(),
 
   "linear.issues": async (params) => {
     const { query, scope, limit } = parse("linear.issues", params);

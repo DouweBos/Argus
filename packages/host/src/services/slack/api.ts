@@ -7,6 +7,9 @@ import type { SlackChannel } from "@argus/remote-protocol";
 
 export type FetchLike = typeof fetch;
 
+/** A channel as one workspace's bot lists it. */
+export type WorkspaceChannel = Omit<SlackChannel, "team_id" | "workspace">;
+
 export class SlackApiError extends Error {
   constructor(
     readonly method: string,
@@ -164,8 +167,8 @@ export class SlackApi {
     }
   }
 
-  async listChannels(): Promise<SlackChannel[]> {
-    const out: SlackChannel[] = [];
+  async listChannels(): Promise<WorkspaceChannel[]> {
+    const out: WorkspaceChannel[] = [];
     let cursor: string | undefined;
     for (let page = 0; page < 10; page++) {
       const r = await this.call<{

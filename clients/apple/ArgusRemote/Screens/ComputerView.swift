@@ -94,13 +94,18 @@ struct ComputerView: View {
       }
     }
 
-    if active, let slack = host.slackStatus {
+    if active, let slack = host.slackOverview {
       SettingsGroup(
         "Slack",
         footer:
-          "Connect Slack and choose who may use it on the Mac: the tokens and the allowlist decide who can run agents on this computer, so they never leave it."
+          "Connect Slack workspaces and choose who may use them on the Mac: the tokens and the allowlists decide who can run agents on this computer, so they never leave it."
       ) {
-        SlackStatusRows(status: slack) { host.projectName(repoRoot: $0) }
+        if slack.workspaces.isEmpty {
+          SlackNotConnectedRow()
+        }
+        ForEach(slack.workspaces, id: \.teamId) { workspace in
+          SlackStatusRows(status: workspace) { host.projectName(repoRoot: $0) }
+        }
       }
     }
 

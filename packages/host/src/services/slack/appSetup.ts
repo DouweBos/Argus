@@ -3,15 +3,15 @@
  * person's bot carries their own name. The token is used once, never saved.
  */
 
-import type { SlackStatus } from "@argus/remote-protocol";
+import type { SlackOverview } from "@argus/remote-protocol";
 import { emitHostEvent } from "@argus/host/bus";
 import { info } from "@argus/host/logger";
 import { capture } from "../telemetry/telemetry";
 import { SlackApi, SlackApiError, type FetchLike } from "./api";
 import { SLACK_APP_NAME_MAX, slackManifest } from "./manifest";
 import { SLACK_STATUS_CHANGED } from "./service";
-import { slackStatus } from "./status";
-import { saveSlackApp } from "./store";
+import { slackOverview } from "./status";
+import { savePendingSlackApp } from "./store";
 
 function failure(e: unknown): string {
   if (!(e instanceof SlackApiError)) {
@@ -37,7 +37,7 @@ export async function createSlackApp(
   configToken: string,
   name: string,
   fetchImpl: FetchLike = fetch,
-): Promise<SlackStatus> {
+): Promise<SlackOverview> {
   const token = configToken.trim();
   const appName = name.trim();
   if (!token.startsWith("xoxe.")) {
@@ -50,21 +50,21 @@ export async function createSlackApp(
     const { appId } = await new SlackApi(token, fetchImpl).createApp(
       slackManifest(appName),
     );
-    saveSlackApp({ id: appId, name: appName });
+    savePendingSlackApp({ id: appId, name: appName });
   } catch (e) {
     capture("slack_app_created", { success: false });
     throw failure(e);
   }
   capture("slack_app_created", { success: true });
   info("[slack] created the Slack app");
-  emitHostEvent(SLACK_STATUS_CHANGED, slackStatus());
+  emitHostEvent(SLACK_STATUS_CHANGED, slackOverview());
 
-  return slackStatus();
+  return slackOverview();
 }
 
-export function forgetSlackApp(): SlackStatus {
-  saveSlackApp(null);
-  emitHostEvent(SLACK_STATUS_CHANGED, slackStatus());
+export function forgetSlackApp(): SlackOverview {
+  savePendingSlackApp(null);
+  emitHostEvent(SLACK_STATUS_CHANGED, slackOverview());
 
-  return slackStatus();
+  return slackOverview();
 }

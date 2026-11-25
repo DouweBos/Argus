@@ -99,6 +99,7 @@ describe("slack trigger", () => {
 
 describe("fireSlackTriggers", () => {
   const message = {
+    teamId: "T1",
     channel: "CDEPLOY",
     user: "UOWNER",
     text: "deploy failed: web",
@@ -134,6 +135,27 @@ describe("fireSlackTriggers", () => {
       },
       received_at: 5,
     });
+  });
+
+  it("leaves out a trigger whose channel is in another workspace", () => {
+    const fire = vi.fn();
+    const base = automation({});
+    const elsewhere = {
+      ...base,
+      trigger: {
+        ...base.trigger,
+        channel: { id: "CDEPLOY", name: "deploys", team_id: "T2" },
+      },
+    } as typeof base;
+    fireSlackTriggers({
+      message,
+      config,
+      automations: [elsewhere],
+      fire,
+      now: 0,
+    });
+
+    expect(fire).not.toHaveBeenCalled();
   });
 
   it("ignores members who may not drive agents", () => {

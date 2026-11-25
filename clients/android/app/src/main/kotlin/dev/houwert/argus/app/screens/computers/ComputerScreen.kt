@@ -33,7 +33,7 @@ import dev.houwert.argus.core.account.remove
 import dev.houwert.argus.core.stores.integrations
 import dev.houwert.argus.core.stores.loadIntegrations
 import dev.houwert.argus.core.stores.loadSlackStatus
-import dev.houwert.argus.core.stores.slackStatus
+import dev.houwert.argus.core.stores.slackWorkspaces
 import dev.houwert.argus.ui.components.LiveRefresh
 import kotlin.time.Duration.Companion.milliseconds
 import dev.houwert.argus.kit.net.Transport
@@ -51,6 +51,7 @@ import dev.houwert.argus.ui.components.StatusDot
 import dev.houwert.argus.ui.components.TextInput
 import dev.houwert.argus.ui.components.ThemedTextField
 import dev.houwert.argus.ui.integrations.IntegrationStatusRows
+import dev.houwert.argus.ui.integrations.SlackNotConnectedRow
 import dev.houwert.argus.ui.integrations.SlackStatusRows
 import dev.houwert.argus.ui.components.label
 import dev.houwert.argus.ui.theme.ArgusTheme
@@ -220,7 +221,7 @@ private fun ComputerContent(computer: DeviceIdentity) {
 private fun IntegrationGroups(ready: Boolean) {
   val host = LocalAppStore.current.host
   val integrations by host.integrations.collectAsState()
-  val slack by host.slackStatus.collectAsState()
+  val slack by host.slackWorkspaces.collectAsState()
   LaunchedEffect(ready) {
     if (!ready) return@LaunchedEffect
     host.loadIntegrations()
@@ -231,13 +232,14 @@ private fun IntegrationGroups(ready: Boolean) {
       IntegrationStatusRows(integrations)
     }
   }
-  slack?.let { status ->
+  slack?.let { workspaces ->
     SettingsGroup(
       title = "Slack",
-      footer = "Connect Slack and choose who may use it on the Mac: the tokens and the allowlist decide who can run agents on " +
-        "this computer, so they never leave it.",
+      footer = "Connect Slack workspaces and choose who may use them on the Mac: the tokens and the allowlists decide who " +
+        "can run agents on this computer, so they never leave it.",
     ) {
-      SlackStatusRows(status)
+      if (workspaces.isEmpty()) SlackNotConnectedRow()
+      for (workspace in workspaces) SlackStatusRows(workspace)
     }
   }
 }

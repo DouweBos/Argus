@@ -37,10 +37,18 @@ public enum RemoteAutonomy: String, Codable, Sendable, CaseIterable {
 public struct RemoteSlackChannel: Codable, Hashable, Sendable {
   public var id: String
   public var name: String
+  /// The workspace it's in; nil on automations saved before there were several.
+  public var teamId: String?
 
-  public init(id: String, name: String) {
+  enum CodingKeys: String, CodingKey {
+    case id, name
+    case teamId = "team_id"
+  }
+
+  public init(id: String, name: String, teamId: String? = nil) {
     self.id = id
     self.name = name
+    self.teamId = teamId
   }
 }
 

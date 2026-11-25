@@ -34,7 +34,7 @@ extension HostStore {
       return
     }
     if ipc.channel == "slack_status_changed" {
-      if let status = try? ProtocolCodec.convert(arg, to: ArgusProtocol.SlackStatus.self) { slackStatus = status }
+      if let overview = try? ProtocolCodec.convert(arg, to: ArgusProtocol.SlackOverview.self) { slackOverview = overview }
       return
     }
     guard followsAllAgents else { return }

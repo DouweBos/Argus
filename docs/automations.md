@@ -124,7 +124,9 @@ every automation supports regardless of its trigger.
 message, one that starts with a prefix (`deploy failed`), or one that
 mentions a keyword (`rollback`), case-insensitive. Needs
 [Slack connected](./integrations.md#slack), with the bot invited to the
-channel. Only the members allowed to drive agents from Slack can fire it;
+channel. With several workspaces connected, the channel picker names each
+channel's workspace. Only the members allowed to drive agents from that
+workspace can fire it;
 anyone else's message is ignored. Like the other event triggers, matches
 queue, fire one run each or one for the batch, and stop at a per-hour cap. Set it up in Argus for Mac; the phones and the
 web client show it but can't change the channel.

@@ -20137,19 +20137,25 @@ extension ArgusProtocol {
 
   public struct SlackChannel: Codable, Sendable {
     public var id: String
+    public var teamId: String
+    public var workspace: String
     public var name: String
     public var isPrivate: Bool
     public var isMember: Bool
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
+      case teamId = "team_id"
+      case workspace = "workspace"
       case name = "name"
       case isPrivate = "is_private"
       case isMember = "is_member"
     }
 
-    public init(id: String, name: String, isPrivate: Bool, isMember: Bool) {
+    public init(id: String, teamId: String, workspace: String, name: String, isPrivate: Bool, isMember: Bool) {
       self.id = id
+      self.teamId = teamId
+      self.workspace = workspace
       self.name = name
       self.isPrivate = isPrivate
       self.isMember = isMember
@@ -20158,6 +20164,8 @@ extension ArgusProtocol {
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(id, forKey: .id)
+      try c.encode(teamId, forKey: .teamId)
+      try c.encode(workspace, forKey: .workspace)
       try c.encode(name, forKey: .name)
       try c.encode(isPrivate, forKey: .isPrivate)
       try c.encode(isMember, forKey: .isMember)
@@ -20192,21 +20200,25 @@ extension ArgusProtocol {
   public struct SlackChannelRef: Codable, Sendable {
     public var id: String
     public var name: String
+    public var teamId: String?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
       case name = "name"
+      case teamId = "team_id"
     }
 
-    public init(id: String, name: String) {
+    public init(id: String, name: String, teamId: String? = nil) {
       self.id = id
       self.name = name
+      self.teamId = teamId
     }
 
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(id, forKey: .id)
       try c.encode(name, forKey: .name)
+      try c.encodeIfPresent(teamId, forKey: .teamId)
     }
   }
 
@@ -20227,7 +20239,29 @@ extension ArgusProtocol {
     public static let error = SlackConnectionState(rawValue: "error")
   }
 
+  public struct SlackOverview: Codable, Sendable {
+    public var workspaces: [SlackStatus]
+    public var pendingApp: SlackApp?
+
+    enum CodingKeys: String, CodingKey {
+      case workspaces = "workspaces"
+      case pendingApp = "pending_app"
+    }
+
+    public init(workspaces: [SlackStatus], pendingApp: SlackApp? = nil) {
+      self.workspaces = workspaces
+      self.pendingApp = pendingApp
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(workspaces, forKey: .workspaces)
+      try c.encode(pendingApp, forKey: .pendingApp)
+    }
+  }
+
   public struct SlackStatus: Codable, Sendable {
+    public var teamId: String?
     public var configured: Bool
     public var state: SlackConnectionState
     public var error: String?
@@ -20242,6 +20276,7 @@ extension ArgusProtocol {
     public var app: SlackApp?
 
     enum CodingKeys: String, CodingKey {
+      case teamId = "team_id"
       case configured = "configured"
       case state = "state"
       case error = "error"
@@ -20256,7 +20291,8 @@ extension ArgusProtocol {
       case app = "app"
     }
 
-    public init(configured: Bool, state: SlackConnectionState, error: String? = nil, workspace: String? = nil, botName: String? = nil, owner: SlackUser? = nil, claimCode: String? = nil, defaultProject: String? = nil, mappings: [SlackChannelMapping], allowedUsers: [SlackUser], threadCount: Double, app: SlackApp? = nil) {
+    public init(teamId: String? = nil, configured: Bool, state: SlackConnectionState, error: String? = nil, workspace: String? = nil, botName: String? = nil, owner: SlackUser? = nil, claimCode: String? = nil, defaultProject: String? = nil, mappings: [SlackChannelMapping], allowedUsers: [SlackUser], threadCount: Double, app: SlackApp? = nil) {
+      self.teamId = teamId
       self.configured = configured
       self.state = state
       self.error = error
@@ -20273,6 +20309,7 @@ extension ArgusProtocol {
 
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(teamId, forKey: .teamId)
       try c.encode(configured, forKey: .configured)
       try c.encode(state, forKey: .state)
       try c.encode(error, forKey: .error)

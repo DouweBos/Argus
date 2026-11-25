@@ -14,19 +14,21 @@ import kotlinx.coroutines.flow.StateFlow
 // Slack as the computer has it connected. Its tokens and allowlist decide who runs agents on that
 // computer, so the phone only reads them; connecting and choosing people happen on the Mac.
 
-private val slackByStore = Collections.synchronizedMap(WeakHashMap<HostStore, MutableStateFlow<SlackStatus?>>())
+private val slackByStore = Collections.synchronizedMap(WeakHashMap<HostStore, MutableStateFlow<List<SlackStatus>?>>())
 
-private val HostStore.slackFlow: MutableStateFlow<SlackStatus?>
+private val HostStore.slackFlow: MutableStateFlow<List<SlackStatus>?>
   get() = slackByStore.getOrPut(this) { MutableStateFlow(null) }
 
-/** Null until loaded, and on a computer too old to have Slack. */
-val HostStore.slackStatus: StateFlow<SlackStatus?> get() = slackFlow
+/** Every Slack workspace the computer knows; null until loaded, and on a computer too old to have Slack. */
+val HostStore.slackWorkspaces: StateFlow<List<SlackStatus>?> get() = slackFlow
 
 suspend fun HostStore.loadSlackStatus() {
   val backend = backend ?: return
   slackFlow.value =
     try {
-      backend.request(Methods.SlackStatus, MethodsTypes.SlackStatusParams()).status
+      val result = backend.request(Methods.SlackStatus, MethodsTypes.SlackStatusParams())
+      // A computer from before several workspaces sends only `status`, possibly one never connected.
+      result.workspaces ?: listOf(result.status).filter { it.configured || it.workspace != null }
     } catch (e: Exception) {
       if (HostStore.isCancellation(e)) throw e
       // An older computer has no Slack to report.

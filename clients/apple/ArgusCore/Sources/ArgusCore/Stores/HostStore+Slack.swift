@@ -1,35 +1,47 @@
 import ArgusKit
 import Foundation
 
-/// Slack as the computer has it connected. Tokens, owner and allowlist decide
-/// who runs agents here, so only this Mac's own host changes them.
+/// Slack as the computer has it connected, one entry per workspace. Tokens,
+/// owners and allowlists decide who runs agents here, so only this Mac's own
+/// host changes them.
 extension HostStore {
   public typealias SlackStatus = ArgusProtocol.SlackStatus
   public typealias SlackChannel = ArgusProtocol.SlackChannel
 
-  /// The bot's tokens are saved, whether or not the socket is up right now.
-  public var slackConfigured: Bool { slackStatus?.configured == true }
+  /// Every workspace the computer knows, connected or not.
+  public var slackWorkspaces: [SlackStatus] { slackOverview?.workspaces ?? [] }
 
-  /// The Mac asks its own host, which includes the claim code; a phone gets the redacted status.
+  /// Some workspace's tokens are saved, whether or not its socket is up right now.
+  public var slackConfigured: Bool { slackWorkspaces.contains { $0.configured } }
+
+  /// The Mac asks its own host, which includes the claim codes; a phone gets the redacted status.
   public func loadSlackStatus() async {
     guard let backend else { return }
     do {
-      slackStatus =
-        backend.kind == .local
-        ? try await backend.request(ArgusProtocol.Commands.SlackStatus.self, EmptyParams())
-        : try await backend.request(ArgusProtocol.Methods.SlackStatus.self, .init()).status
+      if backend.kind == .local {
+        slackOverview = try await backend.request(ArgusProtocol.Commands.SlackStatus.self, EmptyParams())
+      } else {
+        let result = try await backend.request(ArgusProtocol.Methods.SlackStatus.self, .init())
+        slackOverview = Self.overview(status: result.status, workspaces: result.workspaces)
+      }
     } catch {
       // An older computer has no Slack to offer.
-      slackStatus = nil
+      slackOverview = nil
     }
   }
 
-  /// A Settings command answered with the new status.
-  public func applySlackStatus(_ status: SlackStatus) {
-    slackStatus = status
+  /// A computer from before several workspaces sends only `status`, possibly one never connected.
+  static func overview(status: SlackStatus, workspaces: [SlackStatus]?) -> ArgusProtocol.SlackOverview {
+    let known = status.configured || status.workspace != nil
+    return .init(workspaces: workspaces ?? (known ? [status] : []))
   }
 
-  /// Channels the bot can see, for the Mac's pickers; empty elsewhere or when Slack is down.
+  /// A Settings command answered with the new overview.
+  public func applySlackOverview(_ overview: ArgusProtocol.SlackOverview) {
+    slackOverview = overview
+  }
+
+  /// Every connected workspace's channels, for the Mac's pickers; empty elsewhere or when Slack is down.
   public func slackChannels() async -> [SlackChannel] {
     guard let backend, backend.kind == .local, slackConfigured else { return [] }
     return (try? await backend.request(ArgusProtocol.Commands.SlackListChannels.self, EmptyParams())) ?? []

@@ -17,6 +17,7 @@ import { isAllowed } from "./access";
 import { markdownToMrkdwn, truncateMrkdwn } from "./mrkdwn";
 
 export interface ChannelMessage {
+  teamId: string;
   channel: string;
   user: string;
   text: string;
@@ -90,7 +91,8 @@ export class ReportPoster {
 
   constructor(
     private readonly deps: {
-      api: () => Pick<SlackApi, "postMessage"> | null;
+      /** The workspace's bot; a null team (an older automation) means the first one connected. */
+      api: (teamId: string | null) => Pick<SlackApi, "postMessage"> | null;
       automation: (id: string) => Automation | null;
       onPosted: (success: boolean) => void;
       now: () => number;
@@ -107,7 +109,7 @@ export class ReportPoster {
     }
     const automation = this.deps.automation(run.automation_id);
     const channel = automation?.report_slack_channel;
-    const api = this.deps.api();
+    const api = channel ? this.deps.api(channel.team_id ?? null) : null;
     if (!automation || !channel || !api) {
       return;
     }

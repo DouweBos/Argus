@@ -8752,18 +8752,22 @@ extension ArgusProtocol {
 
     public struct SlackStatusResult: Codable, Sendable {
       public var status: SlackStatus
+      public var workspaces: [SlackStatus]?
 
       enum CodingKeys: String, CodingKey {
         case status = "status"
+        case workspaces = "workspaces"
       }
 
-      public init(status: SlackStatus) {
+      public init(status: SlackStatus, workspaces: [SlackStatus]? = nil) {
         self.status = status
+        self.workspaces = workspaces
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(status, forKey: .status)
+        try c.encodeIfPresent(workspaces, forKey: .workspaces)
       }
     }
 
