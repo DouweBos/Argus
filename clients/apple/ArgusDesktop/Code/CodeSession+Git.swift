@@ -22,16 +22,47 @@ extension CodeSession {
     model?.git.workspace(sessionId)?.workingCopy.statusEntries ?? []
   }
 
-  /// Reads `HEAD`'s copy for the gutter: empty for a file `HEAD` doesn't have yet.
+  /// Reads `HEAD`'s copy for the gutter, and its blame: empty for a file `HEAD` doesn't have yet.
   func refreshGitBase(_ file: CodeFile) async {
     guard let workspace = await gitWorkspace() else { return }
     let entry = workspace.workingCopy.statusEntries.first { $0.path == file.path }
+    // One commit for the base and the blame, so their lines agree even if `HEAD` moves in between.
+    let head = try? await workspace.repository.log(maxCount: 1, skip: 0, revisions: ["HEAD"]).first?.id
     if entry?.workdirStatus == .untracked || entry?.indexStatus == .added {
       file.gitBase = ""
     } else {
-      file.gitBase = try? await workspace.repository.fileContents(path: file.path, revision: "HEAD")
+      file.gitBase = try? await workspace.repository.fileContents(path: file.path, revision: head ?? "HEAD")
     }
     recomputeGutter(file)
+    await loadBlame(file, at: file.gitBase?.isEmpty == false ? head : nil)
+  }
+
+  /// `git_blame_file` at `commit`, cached per file and commit: a commit's blame never changes.
+  private func loadBlame(_ file: CodeFile, at commit: String?) async {
+    guard let commit, let store else {
+      file.blame = nil
+      file.document?.refreshLineAnnotation()
+      return
+    }
+    let key = "\(commit):\(file.path)"
+    if let cached = blameCache[key] {
+      file.blame = cached
+    } else {
+      guard
+        let chunks = try? await store.request(
+          ArgusProtocol.Commands.GitBlameFile.self, .init(id: sessionId, path: file.path, ref: commit),
+          session: sessionId)
+      else {
+        file.blame = nil
+        file.document?.refreshLineAnnotation()
+        return
+      }
+      let index = BlameIndex(chunks: chunks)
+      if blameCache.count >= 64 { blameCache.removeAll() }
+      blameCache[key] = index
+      file.blame = index
+    }
+    file.document?.refreshLineAnnotation()
   }
 
   /// 300 ms after the last edit.
@@ -53,8 +84,10 @@ extension CodeSession {
     }
     let hunks = CodeHunks(base: base, current: document.text)
     file.hunks = hunks
+    file.hunksVersion = document.version
     let marks = hunks.marks
     if marks != document.gitMarks { document.gitMarks = marks }
+    document.refreshLineAnnotation()
   }
 
   /// `git_status_changed` and friends: `HEAD` may have moved, files appeared or went.

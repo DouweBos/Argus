@@ -173,6 +173,9 @@ A real git workflow lives inside Argus:
   its revisions, ⌥-click a line to open it in the code view, ⌘C copies the
   selected lines, and a line's menu shows its commit in History. File
   History and Compare open Blame at any revision.
+  In the Mac code view, the status bar names who last changed the line
+  you're on, when, and why; click it for the commit in History. Inline
+  blame (Settings → Editor) shows the same at the end of the line.
 - **Merge & rebase** — Argus runs them for you and surfaces conflicts
   where you commit: both versions side by side above the merged result,
   which you can edit and save as the resolution, or keep one side whole.

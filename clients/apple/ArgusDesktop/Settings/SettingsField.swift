@@ -56,6 +56,7 @@ enum SettingsField: String {
   case editorInsertSpaces = "editor_insert_spaces"
   case editorWrapLines = "editor_wrap_lines"
   case editorShowInvisibles = "editor_show_invisibles"
+  case editorInlineBlame = "editor_inline_blame"
   case editorFormatOnSave = "editor_format_on_save"
   case openFileLinksIn = "open_file_links_in"
   case markdownOpensIn = "markdown_opens_in"
@@ -87,7 +88,7 @@ enum SettingsField: String {
     case .linearMarkStarted, .linearReport: .integrations
     case .commitMessageStyle, .commitMessageInstructions: .git
     case .editorFont, .editorFontSize, .editorTabWidth, .editorInsertSpaces, .editorWrapLines,
-      .editorShowInvisibles, .editorFormatOnSave, .openFileLinksIn, .markdownOpensIn, .languageServers:
+      .editorShowInvisibles, .editorInlineBlame, .editorFormatOnSave, .openFileLinksIn, .markdownOpensIn, .languageServers:
       .editor
     }
   }

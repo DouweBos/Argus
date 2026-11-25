@@ -730,6 +730,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_editor_ask_agent` | Code was handed to the session's agent to look at | `source` (`diagnostic`, `selection`), `started_agent` (no agent was live, so one was started) |
 | `mac_editor_completion_accepted` | A completion was accepted in the code view | `language` |
 | `mac_editor_command` | An editor command ran from its key, a menu or the gutter's fold chevrons; once per command per open file | `command` (`toggle_line_comment`, `toggle_block_comment`, `move_lines_up`, `move_lines_down`, `copy_lines_up`, `copy_lines_down`, `delete_lines`, `insert_line_below`, `insert_line_above`, `indent_lines`, `outdent_lines`, `select_line`, `add_next_occurrence`, `select_all_occurrences`, `add_cursor_above`, `add_cursor_below`, `jump_to_bracket`, `go_to_line`, `next_problem`, `previous_problem`, `go_to_definition`, `trigger_completion`, `fold`, `unfold`, `fold_all`, `unfold_all`) |
+| `mac_editor_blame_commit_opened` | The caret line's blame in the code view was clicked to show its commit in the git view's History | `source` (`status_bar`, `inline` — the end-of-line annotation) |
 | `mac_preview_opened` | A file showed rendered in the code view, once per tab: a Markdown file's Preview or Split, a PDF, an image | `kind` (`markdown`, `pdf`, `image`) |
 | `mac_mermaid_rendered` | A Mermaid diagram in a transcript or a Markdown preview was drawn, or Mermaid couldn't draw it; a diagram already drawn this launch isn't counted again | `failed` |
 | `mac_editor_quick_open_used` | Quick open closed | `mode` (`files`, `mixed`, `symbols`, `file_symbols`, `line`), `result` (`opened`, `dismissed`) |
@@ -761,7 +762,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 `custom_runner_deleted`, `mcp_servers`, `mcp_tested`, `mcp_signed_in`,
 `mcp_signed_out`, `tool_toggled`, `prereq_fixed`, `conductor_version`,
 `update_channel`, `editor_font`, `editor_font_size`, `editor_tab_width`,
-`editor_insert_spaces`, `editor_wrap_lines`, `editor_show_invisibles`,
+`editor_insert_spaces`, `editor_wrap_lines`, `editor_show_invisibles`, `editor_inline_blame`,
 `editor_format_on_save`, `open_file_links_in`, `markdown_opens_in`, `language_servers`,
 `linear_mark_started`, `linear_report`, `commit_message_style`, `commit_message_instructions`, `usage_limits_in_details` or `usage_model_filter`. `mcp_tested` also fires when a server is tested from Project
 Settings.

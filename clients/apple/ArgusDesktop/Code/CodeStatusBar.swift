@@ -3,8 +3,8 @@ import ArgusSyntax
 import ArgusUI
 import SwiftUI
 
-/// Under the editor: what the file is highlighted as (or why it isn't), where
-/// the caret is, indentation and line endings, then whatever the language-server
+/// Under the editor: what the file is highlighted as (or why it isn't), who last
+/// changed the caret's line, where the caret is, indentation and line endings, then whatever the language-server
 /// layer adds through `CodeStore.statusBarAccessory`.
 struct CodeStatusBar: View {
   @Environment(DesktopModel.self) private var model
@@ -16,6 +16,9 @@ struct CodeStatusBar: View {
   var body: some View {
     HStack(spacing: 14) {
       Text(language).help(languageHelp)
+      if let blame = file.lineBlame(document.caret.line) {
+        CodeBlameItem(code: code, blame: blame).layoutPriority(-1)
+      }
       if file.isSaving { ProgressView().controlSize(.mini) }
       Spacer(minLength: 8)
       if let accessory = model.code.statusBarAccessory { accessory(code, file) }

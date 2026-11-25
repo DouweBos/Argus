@@ -7,6 +7,7 @@ import AppKit
   let scrollView: NSScrollView
   let textView: ArgusTextView
   let decorations = DecorationView()
+  let annotation = LineAnnotationView()
   private(set) var theme = EditorTheme.default
   private(set) var configuration: EditorConfiguration
   private let invisibles = InvisiblesProvider()
@@ -44,6 +45,8 @@ import AppKit
     textView.installGestures()
     decorations.textView = textView
     textView.addSubview(decorations, positioned: .below, relativeTo: nil)
+    annotation.isHidden = true
+    textView.addSubview(annotation)
     apply(theme)
     observers.append(
       NotificationCenter.default.addObserver(

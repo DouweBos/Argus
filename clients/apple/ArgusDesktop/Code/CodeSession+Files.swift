@@ -49,6 +49,7 @@ extension CodeSession {
         guard let self, let file else { return }
         self.textChanged(file, change)
       }
+      document.lineAnnotation = inlineBlame(file)
       file.disk = CodeDiskState(baseHash: read.hash)
       file.phase = .ready(document)
       reportHighlighting(document, language: language)
@@ -298,6 +299,7 @@ extension CodeSession {
     let settings = AppPreferences.shared.editorSettings
     for file in files.values {
       file.document?.configuration = settings.configuration(applying: file.editorConfig)
+      file.document?.refreshLineAnnotation()
     }
   }
 

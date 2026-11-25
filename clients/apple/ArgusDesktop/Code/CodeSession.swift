@@ -58,6 +58,8 @@ final class CodeSession {
   @ObservationIgnored var watched: Set<String> = []
   @ObservationIgnored var subscribed = false
   @ObservationIgnored var gitRefresh: Task<Void, Never>?
+  /// `HEAD` blames by `commit:path`.
+  @ObservationIgnored var blameCache: [String: BlameIndex] = [:]
   @ObservationIgnored private var worktree: String?
 
   init(sessionId: String, store: CodeStore) {

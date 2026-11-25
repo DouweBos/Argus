@@ -37,7 +37,11 @@ final class CodeFile {
   var comparison: CodeHunks?
   /// `HEAD`'s text, for the gutter; nil when unknown, `""` for a file `HEAD` doesn't have.
   @ObservationIgnored var gitBase: String?
-  @ObservationIgnored var hunks: CodeHunks?
+  /// The buffer against `gitBase`, as of `hunksVersion` of the document.
+  var hunks: CodeHunks?
+  @ObservationIgnored var hunksVersion: Int?
+  /// `gitBase`'s blame; nil until it arrives, or for a file `HEAD` doesn't have.
+  var blame: BlameIndex?
   @ObservationIgnored var editorConfig = EditorConfig.Properties()
   @ObservationIgnored var gutterTask: Task<Void, Never>?
   /// The buffer holds its actions weakly.
@@ -59,5 +63,12 @@ final class CodeFile {
   }
 
   var isDirty: Bool { document?.isDirty ?? false }
+
+  /// Who last changed `line`, for the status bar and the inline annotation. Nil while unknown, and
+  /// between an edit and the gutter catching up with it.
+  func lineBlame(_ line: Int) -> LineBlame? {
+    guard let document, let hunks, hunksVersion == document.version else { return nil }
+    return LineBlame.of(line: line, hunks: hunks.hunks, index: blame)
+  }
   var name: String { (path as NSString).lastPathComponent }
 }

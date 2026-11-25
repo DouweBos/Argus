@@ -239,3 +239,16 @@ public struct EditorLocation: Hashable, Sendable {
 extension EditorActions {
   public func commandPerformed(_ command: EditorCommand) {}
 }
+
+/// Muted text after the end of the caret's line (blame), clickable when it has an action.
+public struct EditorLineAnnotation {
+  public var text: String
+  public var help: String?
+  public var action: (@MainActor () -> Void)?
+
+  public init(text: String, help: String? = nil, action: (@MainActor () -> Void)? = nil) {
+    self.text = text
+    self.help = help
+    self.action = action
+  }
+}

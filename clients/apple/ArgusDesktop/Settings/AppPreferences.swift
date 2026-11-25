@@ -24,6 +24,7 @@ final class AppPreferences {
     static let editorInsertSpaces = "argus:editor.insertSpaces"
     static let editorWrapLines = "argus:editor.wrapLines"
     static let editorShowInvisibles = "argus:editor.showInvisibles"
+    static let editorInlineBlame = "argus:editor.inlineBlame"
     static let openFileLinksIn = "argus:editor.openFileLinksIn"
     static let markdownOpensIn = "argus:editor.markdownOpensIn"
     /// The boolean before the tri-state; read once to migrate.
@@ -126,6 +127,11 @@ final class AppPreferences {
     didSet { defaults.set(editorShowInvisibles, forKey: Key.editorShowInvisibles) }
   }
 
+  /// Who last changed the caret's line, after its last character.
+  var editorInlineBlame: Bool {
+    didSet { defaults.set(editorInlineBlame, forKey: Key.editorInlineBlame) }
+  }
+
   /// Format before each save: with the project's formatter, else (Always) the language server's.
   var editorFormatOnSave: FormatOnSave {
     didSet { defaults.set(editorFormatOnSave.rawValue, forKey: Key.editorFormatOnSave) }
@@ -179,6 +185,7 @@ final class AppPreferences {
     editorInsertSpaces = defaults.object(forKey: Key.editorInsertSpaces) as? Bool ?? true
     editorWrapLines = defaults.bool(forKey: Key.editorWrapLines)
     editorShowInvisibles = defaults.bool(forKey: Key.editorShowInvisibles)
+    editorInlineBlame = defaults.bool(forKey: Key.editorInlineBlame)
     editorFormatOnSave = Self.formatOnSave(in: defaults)
     openFileLinksIn = FileLinkTarget(rawValue: defaults.string(forKey: Key.openFileLinksIn) ?? "") ?? .argus
     markdownOpensIn = MarkdownViewMode(rawValue: defaults.string(forKey: Key.markdownOpensIn) ?? "") ?? .preview

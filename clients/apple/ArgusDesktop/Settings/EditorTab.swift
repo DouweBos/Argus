@@ -39,6 +39,11 @@ struct EditorTab: View {
         SettingsToggleRow("Insert spaces for tabs", isOn: $prefs.editorInsertSpaces.tracked(.editorInsertSpaces))
         SettingsToggleRow("Wrap lines", isOn: $prefs.editorWrapLines.tracked(.editorWrapLines))
         SettingsToggleRow("Show invisibles", isOn: $prefs.editorShowInvisibles.tracked(.editorShowInvisibles))
+        SettingsToggleRow(
+          "Inline blame",
+          description: "Who last changed the caret's line, and when, after its last character. The status bar "
+            + "always shows it.",
+          isOn: $prefs.editorInlineBlame.tracked(.editorInlineBlame))
         SettingsRow(
           "Format on save",
           description: "Automatic formats on save only when the project has a formatter (Prettier, SwiftFormat, "
@@ -85,6 +90,7 @@ struct EditorTab: View {
     }
     .task { fonts = Self.monospacedFonts() }
     .onChange(of: prefs.editorSettings) { model.code.applySettings() }
+    .onChange(of: prefs.editorInlineBlame) { model.code.applySettings() }
   }
 
   private func serverBinding(_ language: SyntaxLanguage) -> Binding<Bool> {

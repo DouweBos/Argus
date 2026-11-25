@@ -83,7 +83,7 @@
     static var all: [GalleryStory] {
       AutomationStories.all + TeammateStories.all + ComposerStories.all + SessionStories.all + DiffReviewStories.all + DiffStories.all + ReviewGuideStories.all
         + SettingsStories.all + DeviceStories.all + FileStories.all + HomeStories.all + RuntimeStories.all + GitStories.all + GitDialogStories.all + GitWorkingCopyStories.all + GitCompactStories.all + GitHistoryStories.all + GitBlameStories.all + GitRefsStories.all + GitShellStories.all
-        + TranscriptStories.all + CompareStories.all + BlueprintStories.all + PaletteStories.all
+        + TranscriptStories.all + CompareStories.all + BlueprintStories.all + PaletteStories.all + CodeStories.all
     }
   }
 #endif

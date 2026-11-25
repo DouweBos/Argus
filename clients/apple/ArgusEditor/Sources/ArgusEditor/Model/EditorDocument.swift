@@ -23,6 +23,10 @@ import Observation
   public var diagnostics: [EditorDiagnostic] = [] {
     didSet { onDecorationsChange?() }
   }
+  /// The caret line's end-of-line annotation, asked again whenever the caret, the text or the view moves.
+  @ObservationIgnored public var lineAnnotation: ((Int) -> EditorLineAnnotation?)? {
+    didSet { onDecorationsChange?() }
+  }
   /// The file's session-relative path; a definition in the same file is revealed in place.
   public var relativePath: String?
   public var isEditable = true {
@@ -166,6 +170,27 @@ import Observation
     let ns = nsRange(range)
     engine.textView.selectionManager.setSelectedRange(ns)
     engine.center(ns)
+  }
+
+  /// Something `lineAnnotation` reads changed.
+  public func refreshLineAnnotation() {
+    onDecorationsChange?()
+  }
+
+  /// Only for a plain caret: a selection or several cursors hide it.
+  func updateLineAnnotation() {
+    let view = engine.annotation
+    let selections = engine.textView.selectionManager.textSelections
+    guard let provider = lineAnnotation, selections.count == 1, selections[0].range.length == 0,
+      let annotation = provider(caret.line)
+    else { return view.show(nil, after: nil, maxX: 0, font: .systemFont(ofSize: 1), color: .clear) }
+    let range = lineIndex.lineRange(caret.line)
+    let end = range.location + lineIndex.contentLength(ofLine: caret.line, in: storage)
+    let font = EditorEngine.font(for: configuration)
+    view.show(
+      annotation, after: engine.textView.layoutManager.rectForOffset(end),
+      maxX: engine.textView.frame.width - engine.textView.edgeInsets.right, font: font,
+      color: engine.theme.lineNumber)
   }
 
   func viewportChanged() {

@@ -56,6 +56,7 @@ final class EditorContainerView: NSView {
     document.engine.decorations.squiggles = document.diagnostics.map { diagnostic in
       .init(range: document.nsRange(diagnostic.range), color: document.engine.theme.severity(diagnostic.severity))
     }
+    document.updateLineAnnotation()
   }
 
   /// Editor keys, ahead of the app's menus (⌘[ indents here, it's Back elsewhere). Only while

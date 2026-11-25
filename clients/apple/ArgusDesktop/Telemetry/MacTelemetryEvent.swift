@@ -454,6 +454,8 @@ enum MacTelemetryEvent {
   case editorCommand(command: String)
   /// Quick open closed: what it was asked for, and whether something was opened.
   case editorQuickOpenUsed(mode: EditorQuickOpenMode, result: EditorQuickOpenResult)
+  /// The caret line's blame was clicked to show its commit in History.
+  case editorBlameCommitOpened(source: EditorBlameSource)
   /// A file showed rendered in the code view: Markdown's preview, a PDF, an image; once per tab.
   case previewOpened(kind: FilePreviewKind)
   /// A Mermaid diagram was drawn (or couldn't be), in a transcript or a preview; never a cached one.
@@ -576,6 +578,7 @@ enum MacTelemetryEvent {
     case .editorCompletionAccepted: "mac_editor_completion_accepted"
     case .editorCommand: "mac_editor_command"
     case .editorQuickOpenUsed: "mac_editor_quick_open_used"
+    case .editorBlameCommitOpened: "mac_editor_blame_commit_opened"
     case .previewOpened: "mac_preview_opened"
     case .mermaidRendered: "mac_mermaid_rendered"
     }
@@ -811,6 +814,8 @@ enum MacTelemetryEvent {
       ["command": command]
     case .editorQuickOpenUsed(let mode, let result):
       ["mode": mode.rawValue, "result": result.rawValue]
+    case .editorBlameCommitOpened(let source):
+      ["source": source.rawValue]
     case .previewOpened(let kind):
       ["kind": kind.rawValue]
     case .mermaidRendered(let failed):
