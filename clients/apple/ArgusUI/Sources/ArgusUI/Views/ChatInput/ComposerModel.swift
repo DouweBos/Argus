@@ -71,14 +71,24 @@ public final class ComposerModel {
   public var offersImagesAndEffort = true
   public internal(set) var starting = false
   public internal(set) var dictation: DictationPhase = .idle
-  @ObservationIgnored let makeDictationEngine: @MainActor () -> any DictationEngine
+  @ObservationIgnored let makeDictationEngine: @MainActor (_ handsFree: Bool) -> any DictationEngine
   @ObservationIgnored var dictationRun: DictationRun?
+  /// Hands-free: replies read aloud, then the microphone opens and a pause sends.
+  public internal(set) var voiceMode: Bool
+  public internal(set) var speaking = false
+  @ObservationIgnored let voice: VoiceEnvironment
+  @ObservationIgnored var voiceSynthesizer: (any SpeechSynthesizer)?
+  @ObservationIgnored var voiceHandledCue: String?
+  @ObservationIgnored var voiceArmed = false
+  @ObservationIgnored var voiceTask: Task<Void, Never>?
+  @ObservationIgnored var voiceTimer: Task<Void, Never>?
 
   public init(
     agentId: String, sessionId: String?, host: any ComposerHost, starter: ComposerStarter? = nil,
     style: Style, editor: (any ComposerEditor)? = nil, preferences: Preferences = Preferences(),
     draftImages: DraftAttachments = DraftAttachments(),
-    dictationEngine: @escaping @MainActor () -> any DictationEngine = DictationEngines.live
+    dictationEngine: @escaping @MainActor (_ handsFree: Bool) -> any DictationEngine = DictationEngines.live,
+    voice: VoiceEnvironment = .live
   ) {
     self.agentId = agentId
     self.sessionId = sessionId
@@ -90,6 +100,8 @@ public final class ComposerModel {
     self.preferences = preferences
     self.draftImages = draftImages
     self.makeDictationEngine = dictationEngine
+    self.voice = voice
+    voiceMode = starter == nil && VoiceSettings.isModeOn(preferences)
   }
 
   // MARK: Agent

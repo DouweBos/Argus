@@ -70,6 +70,7 @@ fun PhoneChatInputView(
   // Which affordances the agent's runner supports.
   LaunchedEffect(host) { host.loadRunners() }
   DisposableEffect(composer) { onDispose { composer.stopDictation() } }
+  VoiceLoop(composer)
   LaunchedEffect(composer, text.isEmpty()) { if (composer.starter == null) typing?.invoke(composer.agentId, text.isNotEmpty()) }
   val wantsModelPicker by composer.showingModelPicker.collectAsState()
   LaunchedEffect(wantsModelPicker) {
@@ -166,6 +167,10 @@ private fun ComposerActions(composer: ComposerModel, redirect: ComposerStarter?)
   Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
     val tokens = composer.contextTokens
     if (tokens > 0) ContextMeter(tokens, composer.contextLimit)
+    // Voice mode talks to a live agent; a start composer has none yet.
+    if (composer.voice != null && composer.dictationEngine != null && composer.starter == null) {
+      VoiceModeButton(composer.voiceMode.value, composer.speaking.value, enabled = composer.isEnabled) { composer.toggleVoiceMode() }
+    }
     if (composer.dictationEngine != null) {
       DictationButton(composer.dictation.value, enabled = composer.isEnabled) { composer.toggleDictation() }
     }

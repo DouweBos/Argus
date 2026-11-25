@@ -24,6 +24,12 @@ enum class ChatInputAffordance(val rawValue: String) {
   Dictation("dictation"),
   /** Dictated words landed in the draft, from a hold-to-talk key. */
   DictationShortcut("dictation_shortcut"),
+  /** Voice mode was turned on. */
+  VoiceMode("voice_mode"),
+  /** A prompt was sent by pausing after speaking it, in voice mode. */
+  VoiceSend("voice_send"),
+  /** A permission prompt was answered aloud, in voice mode. */
+  VoiceAnswer("voice_answer"),
   /** `/usage-limits` opened the composer's limits panel. */
   UsageLimits("usage_limits"),
 }

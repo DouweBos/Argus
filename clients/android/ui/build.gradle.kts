@@ -27,9 +27,11 @@ dependencies {
   api(libs.compose.ui.tooling.preview)
   api(libs.lifecycle.runtime.compose)
   implementation(libs.activity.compose)
+  implementation(libs.lifecycle.process)
   implementation(libs.coil.compose)
   implementation(libs.coil.network.okhttp)
   implementation(libs.okhttp)
   debugImplementation(libs.compose.ui.tooling)
   testImplementation(libs.junit)
+  testImplementation(libs.kotlinx.coroutines.test)
 }

@@ -23,6 +23,12 @@ public enum ChatInputAffordance: String, Sendable {
   case dictation
   /// Dictated words landed in the draft, from the Mac's hold-to-talk key.
   case dictationShortcut = "dictation_shortcut"
+  /// Voice mode was turned on.
+  case voiceMode = "voice_mode"
+  /// A prompt was sent by pausing after speaking it, in voice mode.
+  case voiceSend = "voice_send"
+  /// A permission prompt was answered aloud, in voice mode.
+  case voiceAnswer = "voice_answer"
   /// `/usage-limits` opened the composer's limits panel.
   case usageLimits = "usage_limits"
 }

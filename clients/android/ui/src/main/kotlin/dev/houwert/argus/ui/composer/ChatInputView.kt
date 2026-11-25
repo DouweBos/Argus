@@ -59,10 +59,11 @@ fun rememberComposerModel(
   preferences: Preferences = ComposerDrafts.preferences,
   draftImages: DraftAttachments = ComposerDrafts.images,
   onAffordance: ((ChatInputAffordance) -> Unit)? = null,
-  dictation: (() -> DictationEngine)? = rememberRecognizerDictation(),
+  dictation: ((Boolean) -> DictationEngine)? = rememberRecognizerDictation(),
+  voice: VoiceEnvironment? = rememberVoiceEnvironment(),
 ): ComposerModel {
   val composer = remember(host, agentId, sessionId, starter == null) {
-    ComposerModel(agentId, sessionId, host, ComposerScope, starter, preferences, draftImages, dictation, onAffordance)
+    ComposerModel(agentId, sessionId, host, ComposerScope, starter, preferences, draftImages, dictation, onAffordance, voice)
   }
   SideEffect {
     composer.onAffordance = onAffordance

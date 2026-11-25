@@ -21,12 +21,14 @@ import dev.houwert.argus.ui.components.SettingsLinkRow
 import dev.houwert.argus.ui.components.SettingsPage
 import dev.houwert.argus.ui.components.label
 import dev.houwert.argus.ui.icons.Icon
+import dev.houwert.argus.ui.icons.voice
 
 /** A settings sub-page: the phone's own first, then the connected computer's. */
 enum class SettingsPane(val raw: String, val title: String, val icon: ImageVector) {
   Name("name", "Name", Icon.textCursor),
   Appearance("appearance", "Appearance", Icon.palette),
   Alerts("alerts", "Alerts", Icon.alerts),
+  Voice("voice", "Voice", Icon.voice),
   Privacy("privacy", "Privacy", Icon.privacy),
   Connection("connection", "Connection", Icon.connection),
   Agents("agents", "Agents", Icon.agents),
@@ -72,6 +74,7 @@ fun SettingsScreen() {
         PaneRow(SettingsPane.Name, deviceName)
         PaneRow(SettingsPane.Appearance, theme.label)
         PaneRow(SettingsPane.Alerts)
+        PaneRow(SettingsPane.Voice)
         PaneRow(SettingsPane.Privacy, if (telemetry == TelemetryMode.Full) "Sharing" else "Minimal")
       }
 
@@ -113,6 +116,7 @@ fun SettingsPaneScreen(raw: String) {
       SettingsPane.Name -> NameSettingsPage()
       SettingsPane.Appearance -> AppearanceSettingsPage()
       SettingsPane.Alerts -> AlertsSettingsPage()
+      SettingsPane.Voice -> VoiceSettingsPage()
       SettingsPane.Privacy -> PrivacySettingsPage()
       SettingsPane.Connection -> ConnectionSettingsPage()
       SettingsPane.Agents -> AgentsSettingsPage()

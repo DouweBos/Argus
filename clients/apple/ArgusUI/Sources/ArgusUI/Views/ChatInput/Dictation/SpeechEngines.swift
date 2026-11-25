@@ -5,13 +5,17 @@ import Foundation
 /// `SpeechAnalyzer`'s transcriber: on-device only, no time limit.
 @available(iOS 26, macOS 26, *)
 final class AnalyzerDictationEngine: DictationEngine, @unchecked Sendable {
-  private let microphone = MicrophoneCapture()
+  private let microphone: MicrophoneCapture
   private let lock = NSLock()
   private var analyzer: SpeechAnalyzer?
   private var input: AsyncStream<AnalyzerInput>.Continuation?
   private var results: Task<Void, Never>?
   private var finalized = ""
   private var volatile = ""
+
+  init(handsFree: Bool = false) {
+    microphone = MicrophoneCapture(handsFree: handsFree)
+  }
 
   private var transcript: String { lock.withLock { finalized + volatile } }
 
@@ -86,13 +90,17 @@ final class AnalyzerDictationEngine: DictationEngine, @unchecked Sendable {
 /// `SFSpeechRecognizer` held to its on-device model, for systems before `SpeechAnalyzer`
 /// and languages it doesn't cover yet.
 final class RecognizerDictationEngine: DictationEngine, @unchecked Sendable {
-  private let microphone = MicrophoneCapture()
+  private let microphone: MicrophoneCapture
   private let lock = NSLock()
   private var request: SFSpeechAudioBufferRecognitionRequest?
   private var task: SFSpeechRecognitionTask?
   private var latest = ""
   private var done: CheckedContinuation<Void, Never>?
   private var finished = false
+
+  init(handsFree: Bool = false) {
+    microphone = MicrophoneCapture(handsFree: handsFree)
+  }
 
   func start(onTranscript: @escaping @Sendable (String) -> Void) async throws {
     try await Self.requestAuthorization()

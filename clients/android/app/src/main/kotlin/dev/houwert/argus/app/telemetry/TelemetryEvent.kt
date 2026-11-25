@@ -440,7 +440,7 @@ sealed interface TelemetryEvent {
   enum class InputAffordance(val wire: String) {
     UsageLimits("usage_limits"), SlashCommand("slash_command"), Mention("mention"), ImagePaste("image_paste"),
     ImageAttach("image_attach"), FileAttach("file_attach"), SideAnswerSent("side_answer_sent"), Dictation("dictation"),
-    OverflowMenu("overflow_menu"),
+    OverflowMenu("overflow_menu"), VoiceMode("voice_mode"), VoiceSend("voice_send"), VoiceAnswer("voice_answer"),
   }
 
   enum class Setting(val wire: String) { AutoExpandImageReads("auto_expand_image_reads") }

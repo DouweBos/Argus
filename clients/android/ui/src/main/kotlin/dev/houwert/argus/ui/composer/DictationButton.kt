@@ -53,7 +53,7 @@ fun DictationButton(phase: DictationPhase, modifier: Modifier = Modifier, size: 
  * recognizer dialog, which brings its own microphone UI, where in-app recognition isn't available.
  */
 @Composable
-fun rememberRecognizerDictation(): () -> DictationEngine {
+fun rememberRecognizerDictation(): (handsFree: Boolean) -> DictationEngine {
   val context = LocalContext.current
   val pending = remember { PendingResult() }
   val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -69,9 +69,9 @@ fun rememberRecognizerDictation(): () -> DictationEngine {
   val current by rememberUpdatedState(launcher)
   val currentPermission by rememberUpdatedState(permission)
   return remember {
-    {
+    { handsFree ->
       if (SpeechRecognizer.isRecognitionAvailable(context)) {
-        SpeechDictationEngine(context) {
+        SpeechDictationEngine(context, handsFree) {
           if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             true
           } else {

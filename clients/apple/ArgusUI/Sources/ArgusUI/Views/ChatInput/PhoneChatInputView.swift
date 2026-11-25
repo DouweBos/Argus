@@ -77,6 +77,7 @@
       .background(theme.bg.ignoresSafeArea(edges: .bottom))
       .task(id: composer.agentId) { await composer.load() }
       .onDisappear { composer.stopDictation() }
+      .voiceLoop(composer)
       // Which affordances the agent's runner supports.
       .task { await host.loadRunners() }
       .limitHandoffOffer(agentId: composer.agentId, status: composer.status, into: $handoffAccounts)
@@ -137,6 +138,12 @@
       HStack(spacing: 6) {
         if composer.contextTokens > 0 {
           ContextMeter(tokens: composer.contextTokens, limit: composer.contextLimit)
+        }
+        if composer.starter == nil {
+          VoiceModeButton(isOn: composer.voiceMode, speaking: composer.speaking, size: 34) {
+            composer.toggleVoiceMode()
+          }
+          .disabled(!composer.isEnabled)
         }
         DictationButton(phase: composer.dictation, size: 34) { composer.toggleDictation() }
           .disabled(!composer.isEnabled)

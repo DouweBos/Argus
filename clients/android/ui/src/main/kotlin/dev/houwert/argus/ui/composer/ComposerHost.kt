@@ -21,6 +21,7 @@ import dev.houwert.argus.core.stores.loadSessions
 import dev.houwert.argus.core.stores.loadStartOptions
 import dev.houwert.argus.core.stores.queueMessage
 import dev.houwert.argus.core.stores.resolveMentionPath
+import dev.houwert.argus.core.stores.respond
 import dev.houwert.argus.core.stores.sendMessage
 import dev.houwert.argus.core.stores.sendSideToAgent
 import dev.houwert.argus.core.stores.setEffort
@@ -28,6 +29,7 @@ import dev.houwert.argus.core.stores.setModel
 import dev.houwert.argus.core.stores.setPermissionMode
 import dev.houwert.argus.core.stores.supportsSideQuestion
 import dev.houwert.argus.core.stores.visibleMessages
+import dev.houwert.argus.core.transcript.PendingPrompts
 import dev.houwert.argus.kit.protocol.generated.LimitHandoffAccount
 import dev.houwert.argus.kit.protocol.generated.Methods
 import dev.houwert.argus.kit.protocol.generated.MethodsTypes
@@ -42,6 +44,7 @@ import dev.houwert.argus.kit.protocol.generated.RemotePermissionMode
 import dev.houwert.argus.kit.protocol.generated.RemoteProject
 import dev.houwert.argus.kit.protocol.generated.RemoteRunner
 import dev.houwert.argus.kit.protocol.generated.RemoteSession
+import dev.houwert.argus.kit.protocol.generated.RemoteToolCall
 import java.util.Base64
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,6 +75,8 @@ interface ComposerHost {
   fun claudeAccountId(sessionId: String): String?
   fun repoRoot(sessionId: String): String?
   fun visibleMessages(key: String): List<RemoteMessage>
+  /** Top-level calls in `messages` the agent is waiting on. */
+  fun pendingCalls(agentKey: String, messages: List<RemoteMessage>): List<RemoteToolCall>
   fun lastKnownModels(runnerId: String?): List<RemoteModelInfo>
   fun supportsSideQuestion(agentId: String): Boolean
   fun continueRunners(agentId: String): List<RemoteRunner>
@@ -80,6 +85,8 @@ interface ComposerHost {
   suspend fun sendMessage(agentId: String, message: String, images: List<RemoteImageAttachment>, displayText: String?)
   suspend fun queueMessage(agentId: String, message: String, images: List<RemoteImageAttachment>, displayText: String)
   suspend fun interrupt(agentId: String)
+  /** Answers a permission prompt; voice mode's spoken allow or deny. */
+  suspend fun respond(agentId: String, toolUseId: String, decision: String)
   suspend fun dismissLimitResume(agentId: String)
   suspend fun setModel(agentId: String, model: String)
   suspend fun setPermissionMode(agentId: String, mode: RemotePermissionMode)
@@ -140,7 +147,7 @@ private class HostComposerHost(private val host: HostStore) : ComposerHost {
   override val observed: List<StateFlow<*>> = listOf(
     host.statusByAgent, host.capabilitiesByAgent, host.startOptionsBySession, host.followUpsByAgent, host.effortByAgent,
     host.claudeAccounts, host.activeClaudeAccountId, host.projects, host.runners, host.sessionsByRepo,
-    host.sideQuestionsByAgent, host.messagesByAgent, host.optimisticByAgent, host.capabilities,
+    host.sideQuestionsByAgent, host.messagesByAgent, host.optimisticByAgent, host.capabilities, host.prompts, host.answered,
     fetchedAccounts, fetchedActive, accountPins,
   )
   override val hasControl get() = host.hasControl
@@ -151,6 +158,9 @@ private class HostComposerHost(private val host: HostStore) : ComposerHost {
   }
   override fun repoRoot(sessionId: String) = host.repoRoot(forSessionId = sessionId)
   override fun visibleMessages(key: String) = host.visibleMessages(key)
+  override fun pendingCalls(agentKey: String, messages: List<RemoteMessage>) = PendingPrompts.pendingCalls(
+    agentKey, messages, host.prompts.value.keys, host.answered.value, host.statusByAgent.value[agentKey]?.status,
+  )
   override fun lastKnownModels(runnerId: String?) = host.lastKnownModels(runnerId)
   override fun supportsSideQuestion(agentId: String) = host.supportsSideQuestion(agentId)
   override fun continueRunners(agentId: String) = host.continueRunners(agentId)
@@ -161,6 +171,7 @@ private class HostComposerHost(private val host: HostStore) : ComposerHost {
   override suspend fun queueMessage(agentId: String, message: String, images: List<RemoteImageAttachment>, displayText: String) =
     host.queueMessage(agentId, message, images, displayText)
   override suspend fun interrupt(agentId: String) = host.interrupt(agentId)
+  override suspend fun respond(agentId: String, toolUseId: String, decision: String) = host.respond(agentId, toolUseId, decision)
   override suspend fun dismissLimitResume(agentId: String) = host.dismissLimitResume(agentId)
   override suspend fun setModel(agentId: String, model: String) = host.setModel(agentId, model)
   override suspend fun setPermissionMode(agentId: String, mode: RemotePermissionMode) = host.setPermissionMode(agentId, mode)

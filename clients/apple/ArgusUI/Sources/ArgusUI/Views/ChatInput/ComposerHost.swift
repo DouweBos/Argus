@@ -22,12 +22,16 @@ public protocol ComposerHost: AnyObject {
   func repoRoot(forSessionId id: String) -> String?
   func visibleMessages(for key: String) -> [RemoteMessage]
   func lastKnownModels(runnerId: String?) -> [RemoteModelInfo]
+  func pendingCalls(agentKey: String, in messages: [RemoteMessage]) -> [RemoteToolCall]
 
   func sendMessage(
     agentId: String, message: String, images: [RemoteImageAttachment], displayText: String?, isRetry: Bool
   ) async
   func queueMessage(agentId: String, message: String, images: [RemoteImageAttachment], displayText: String) async
   func interrupt(agentId: String) async
+  func respond(
+    agentId: String, toolUseId: String, decision: String, message: String?, alwaysAllow: String?,
+    fromNotification: Bool) async
   func setModel(agentId: String, model: String) async
   func setPermissionMode(agentId: String, mode: RemotePermissionMode) async
   func setEffort(agentId: String, level: String?) async

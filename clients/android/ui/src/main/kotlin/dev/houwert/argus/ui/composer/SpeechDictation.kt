@@ -36,6 +36,8 @@ internal class SpeechTranscript {
  */
 internal class SpeechDictationEngine(
   private val context: Context,
+  /** Voice mode: silence doesn't end it; the composer decides when a pause means send. */
+  private val handsFree: Boolean = false,
   private val requestMicrophone: suspend () -> Boolean,
 ) : DictationEngine {
   private var recognizer: SpeechRecognizer? = null
@@ -91,10 +93,10 @@ internal class SpeechDictationEngine(
           )
           return
         }
-        // Silence after words is the natural end; anything else keeps what was heard too.
+        // Silence after words is the natural end (hands-free listens on); anything else keeps what was heard too.
         transcript.finish(null)
         onTranscript(transcript.text)
-        end()
+        if (handsFree && stopping == null && error in SILENCE) speech.startListening(intent()) else end()
       }
       override fun onBeginningOfSpeech() = Unit
       override fun onRmsChanged(rmsdB: Float) = Unit
@@ -141,6 +143,7 @@ internal class SpeechDictationEngine(
     const val STOP_GRACE_MS = 3_000L
     const val MAX_RETRIES = 2
     const val RETRY_DELAY_MS = 300L
+    val SILENCE = setOf(SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT)
     val TRANSIENT = setOf(SpeechRecognizer.ERROR_SERVER_DISCONNECTED, SpeechRecognizer.ERROR_RECOGNIZER_BUSY)
 
     /** Learnt once per process: a device without the offline model keeps going online. */

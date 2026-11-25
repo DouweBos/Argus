@@ -42,6 +42,7 @@ import dev.houwert.argus.ui.components.SettingsToggleRow
 import dev.houwert.argus.ui.components.TextInput
 import dev.houwert.argus.ui.components.ThemedTextField
 import dev.houwert.argus.ui.components.OnResume
+import dev.houwert.argus.ui.composer.VoiceSettingsGroup
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -150,6 +151,13 @@ fun AlertsSettingsPage() {
       onFinished = { on -> finished = on; scope.launch { push.setAlert(finished = on) } },
     )
   }
+}
+
+/** Voice mode's voice, speed and when it speaks; read and written on this device only. */
+@Composable
+fun VoiceSettingsPage() {
+  val preferences = LocalAppStore.current.preferences
+  SettingsPage { VoiceSettingsGroup(preferences) }
 }
 
 @Composable

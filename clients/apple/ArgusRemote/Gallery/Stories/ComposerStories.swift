@@ -131,6 +131,13 @@
           DictationButton(phase: .idle, size: size) {}.disabled(true)
           Text("Agent not running").font(.scaled(size: 13)).foregroundStyle(theme.textSecondary)
         }
+        ForEach([("Voice mode off", false, false), ("Voice mode on", true, false), ("Reading a reply", true, true)], id: \.0) {
+          name, isOn, speaking in
+          HStack(spacing: 10) {
+            VoiceModeButton(isOn: isOn, speaking: speaking, size: size) {}
+            Text(name).font(.scaled(size: 13)).foregroundStyle(theme.textSecondary)
+          }
+        }
       }
       .padding(16)
     }

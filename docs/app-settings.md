@@ -200,6 +200,26 @@ a proposal that waits for you.
 flight at once. Once the cap is reached, further proposals land in the inbox
 instead of starting, and you can start them by hand.
 
+### Voice mode
+
+The waveform button next to the microphone in the message field turns on voice
+mode. When an agent finishes a turn, its reply is read aloud, with code blocks
+and tables skipped, and the microphone opens; stop talking for a moment and
+what you said is sent. Start talking while a reply is being read and it stops.
+Permission prompts are read too: say "allow" or "deny" to answer. Questions,
+plans and secrets are announced and left on screen. Nothing leaves the device:
+speech and recognition both run on it. Voice mode is one switch for the whole
+app and stays on until you turn it off.
+
+Each device keeps its own voice settings, under **Settings → Agents → Voice
+mode** on the Mac and **Settings → Voice** on the phone.
+
+| Setting                          | Default      | Description                                                                                                                  |
+| -------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| **Voice**                        | System voice | Which installed voice reads replies. More voices download in the system's Spoken Content settings.                           |
+| **Speed**                        | 1.0×         | How fast replies are read, from 0.5× to 2×. **Preview** plays a sample.                                                      |
+| **Only speak in the background** | Off          | While Argus is the app in front, replies stay on screen and aren't read; the microphone still opens so you can answer aloud. |
+
 ---
 
 ## LLM

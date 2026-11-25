@@ -7,6 +7,12 @@ final class MicrophoneCapture: @unchecked Sendable {
   private let engine = AVAudioEngine()
   private let lock = NSLock()
   private var running = false
+  /// Voice mode: echo cancellation, and a session that also plays, so the reply can be heard and talked over.
+  private let handsFree: Bool
+
+  init(handsFree: Bool = false) {
+    self.handsFree = handsFree
+  }
 
   static func requestAccess() async throws {
     guard await AVAudioApplication.requestRecordPermission() else { throw DictationError.microphoneDenied }
@@ -16,12 +22,27 @@ final class MicrophoneCapture: @unchecked Sendable {
   func start(convertingTo format: AVAudioFormat?, onBuffer: @escaping @Sendable (AVAudioPCMBuffer) -> Void) throws {
     #if os(iOS)
       let session = AVAudioSession.sharedInstance()
-      try session.setCategory(.record, mode: .measurement, options: .duckOthers)
+      if handsFree {
+        try session.setCategory(
+          .playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
+      } else {
+        try session.setCategory(.record, mode: .measurement, options: .duckOthers)
+      }
       try session.setActive(true, options: .notifyOthersOnDeactivation)
     #endif
     let input = engine.inputNode
+    if handsFree {
+      // Best effort: without it the reply's own words are filtered out of the transcript instead.
+      try? input.setVoiceProcessingEnabled(true)
+      input.voiceProcessingOtherAudioDuckingConfiguration = .init(enableAdvancedDucking: false, duckingLevel: .min)
+    }
     let source = input.outputFormat(forBus: 0)
     guard source.sampleRate > 0, source.channelCount > 0 else { throw DictationError.failed("No microphone is connected.") }
+    // Voice processing can hand over several channels; a recognizer wants one.
+    let format =
+      format
+      ?? (handsFree && source.channelCount > 1
+        ? AVAudioFormat(standardFormatWithSampleRate: source.sampleRate, channels: 1) : nil)
     let converter = format.flatMap { $0 == source ? nil : AVAudioConverter(from: source, to: $0) }
     input.installTap(onBus: 0, bufferSize: 4096, format: source) { buffer, _ in
       guard let converter, let format else { return onBuffer(buffer) }
@@ -44,8 +65,9 @@ final class MicrophoneCapture: @unchecked Sendable {
     }) else { return }
     engine.stop()
     engine.inputNode.removeTap(onBus: 0)
+    // Voice mode keeps the session: the reply may still be speaking through it.
     #if os(iOS)
-      try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+      if !handsFree { try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation) }
     #endif
   }
 

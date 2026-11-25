@@ -541,6 +541,16 @@ final class FakeComposerHost: ComposerHost {
   }
 
   func interrupt(agentId: String) async {}
+  var pending: [RemoteToolCall] = []
+  private(set) var decisions: [(toolUseId: String, decision: String)] = []
+  func pendingCalls(agentKey: String, in messages: [RemoteMessage]) -> [RemoteToolCall] { pending }
+  func respond(
+    agentId: String, toolUseId: String, decision: String, message: String?, alwaysAllow: String?,
+    fromNotification: Bool
+  ) async {
+    decisions.append((toolUseId, decision))
+    pending.removeAll { $0.id == toolUseId }
+  }
   func setModel(agentId: String, model: String) async { models.append(model) }
   func setPermissionMode(agentId: String, mode: RemotePermissionMode) async { modes.append(mode) }
   func setEffort(agentId: String, level: String?) async {}

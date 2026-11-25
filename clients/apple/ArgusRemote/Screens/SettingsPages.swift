@@ -5,7 +5,7 @@ import UserNotifications
 
 /// A settings sub-page. The phone's own pages first, then the computer's.
 enum SettingsPane: String, Hashable {
-  case name, appearance, alerts, privacy
+  case name, appearance, alerts, voice, privacy
   case connection, agents, automations, worktrees
   case deviceHosts = "device_hosts"
 
@@ -14,6 +14,7 @@ enum SettingsPane: String, Hashable {
     case .name: "Name"
     case .appearance: "Appearance"
     case .alerts: "Alerts"
+    case .voice: "Voice"
     case .privacy: "Privacy"
     case .connection: "Connection"
     case .agents: "Agents"
@@ -28,6 +29,7 @@ enum SettingsPane: String, Hashable {
     case .name: "character.cursor.ibeam"
     case .appearance: "paintpalette"
     case .alerts: "app.badge"
+    case .voice: Icon.voiceMode
     case .privacy: "hand.raised"
     case .connection: "antenna.radiowaves.left.and.right"
     case .agents: Icon.agents
@@ -43,6 +45,7 @@ enum SettingsPane: String, Hashable {
     case .name: NameSettingsPage()
     case .appearance: AppearanceSettingsPage()
     case .alerts: AlertsSettingsPage()
+    case .voice: VoiceSettingsPage()
     case .privacy: PrivacySettingsPage()
     case .connection: ConnectionSettingsPage()
     case .agents: AgentsSettingsPage()
@@ -201,6 +204,13 @@ struct AlertsSettingsPage: View {
       await app.setPushEnabled(true)
       status = await NotificationRouter.shared.authorizationStatus()
     }
+  }
+}
+
+struct VoiceSettingsPage: View {
+  var body: some View {
+    SettingsPage { VoiceSettingsGroup() }
+      .settingsPage(.voice)
   }
 }
 

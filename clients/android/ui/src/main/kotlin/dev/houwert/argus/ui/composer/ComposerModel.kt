@@ -9,6 +9,7 @@ import dev.houwert.argus.kit.storage.PreferenceKey
 import dev.houwert.argus.kit.storage.Preferences
 import dev.houwert.argus.kit.util.ContextWindow
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,8 +31,11 @@ class ComposerModel(
   starter: ComposerStarter? = null,
   internal val preferences: Preferences = ComposerDrafts.preferences,
   internal val draftImages: DraftAttachments = ComposerDrafts.images,
-  internal val dictationEngine: (() -> DictationEngine)? = null,
+  /** Takes `handsFree`: voice mode's listening, which keeps going through silences. */
+  internal val dictationEngine: ((Boolean) -> DictationEngine)? = null,
   var onAffordance: ((ChatInputAffordance) -> Unit)? = null,
+  /** Null: no voice mode here. */
+  internal val voice: VoiceEnvironment? = null,
 ) {
   init {
     require(agentId != null || starter != null) { "A composer without an agent needs a starter" }
@@ -90,12 +94,22 @@ class ComposerModel(
   internal val _dictation = MutableStateFlow<DictationPhase>(DictationPhase.Idle)
   val dictation: StateFlow<DictationPhase> = _dictation.asStateFlow()
   internal var dictationRun: DictationRun? = null
+  /** Hands-free: replies read aloud, then the microphone opens and a pause sends. */
+  internal val _voiceMode = MutableStateFlow(voice != null && starter == null && VoiceSettings.isModeOn(preferences))
+  val voiceMode: StateFlow<Boolean> = _voiceMode.asStateFlow()
+  internal val _speaking = MutableStateFlow(false)
+  val speaking: StateFlow<Boolean> = _speaking.asStateFlow()
+  internal var voiceSynthesizer: SpeechSynthesizer? = null
+  internal var voiceHandledCue: String? = null
+  internal var voiceArmed = false
+  internal var voiceJob: Job? = null
+  internal var voiceTimer: Job? = null
 
   /** Everything the getters read, the host's and the model's own. */
   val observed: List<StateFlow<*>> = host.observed + listOf(
     _text, _caret, _images, _files, _elements, _linkedProjects, dismissedText, _menuIndex, mentionFiles,
     mentionDirectories, browseDirectory, browseEntries, _showingModelPicker, draftMode, draftModel, draftEffort,
-    draftAccount, _runner, offersImagesAndEffort, _starting, _dictation,
+    draftAccount, _runner, offersImagesAndEffort, _starting, _dictation, _voiceMode, _speaking,
   )
 
   // Agent

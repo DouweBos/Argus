@@ -45,6 +45,7 @@ public enum Icon {
   public static let paperclip = "paperclip"
   public static let mic = "mic"
   public static let micActive = "mic.fill"
+  public static let voiceMode = "waveform"
   public static let camera = "camera"
   public static let qrCode = "qrcode.viewfinder"
   public static let plus = "plus"

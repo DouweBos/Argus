@@ -43,7 +43,7 @@ struct ComposerDictationTests {
     host.statusByAgent["a1"] = nil
     return ComposerModel(
       agentId: "a1", sessionId: "s1", host: host, style: .phone,
-      preferences: Preferences(suiteName: "dictation-\(UUID().uuidString)"), dictationEngine: { engine })
+      preferences: Preferences(suiteName: "dictation-\(UUID().uuidString)"), dictationEngine: { _ in engine })
   }
 
   @Test("partials fill the draft, the final transcript stays for review and nothing is sent")
@@ -105,25 +105,34 @@ struct ComposerDictationTests {
 }
 
 final class FakeDictationEngine: DictationEngine, @unchecked Sendable {
-  private let final: String
+  /// Nil: the last thing said is the final transcript.
+  private let final: String?
   private let error: DictationError?
   private var onTranscript: (@Sendable (String) -> Void)?
+  private var said = ""
+  private(set) var starts = 0
   private(set) var stops = 0
 
-  init(final: String, error: DictationError? = nil) {
+  init(final: String?, error: DictationError? = nil) {
     self.final = final
     self.error = error
   }
 
   func start(onTranscript: @escaping @Sendable (String) -> Void) async throws {
     if let error { throw error }
+    starts += 1
+    said = ""
     self.onTranscript = onTranscript
   }
 
-  func say(_ words: String) { onTranscript?(words) }
+  func say(_ words: String) {
+    said = words
+    onTranscript?(words)
+  }
 
   func stop() async -> String {
     stops += 1
-    return final
+    onTranscript = nil
+    return final ?? said
   }
 }

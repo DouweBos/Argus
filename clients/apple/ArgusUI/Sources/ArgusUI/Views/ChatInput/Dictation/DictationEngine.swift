@@ -42,11 +42,13 @@ public enum DictationError: LocalizedError, Equatable {
 
 /// The engines this device can run, best first.
 public enum DictationEngines {
-  public static func live() -> any DictationEngine {
+  /// `handsFree`: voice mode's capture, which hears the user over the reply being spoken.
+  public static func live(handsFree: Bool) -> any DictationEngine {
     if #available(iOS 26, macOS 26, *) {
-      return FallbackDictationEngine(primary: AnalyzerDictationEngine(), fallback: RecognizerDictationEngine())
+      return FallbackDictationEngine(
+        primary: AnalyzerDictationEngine(handsFree: handsFree), fallback: RecognizerDictationEngine(handsFree: handsFree))
     }
-    return RecognizerDictationEngine()
+    return RecognizerDictationEngine(handsFree: handsFree)
   }
 }
 

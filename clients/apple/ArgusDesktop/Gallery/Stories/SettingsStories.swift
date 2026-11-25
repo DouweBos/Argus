@@ -24,6 +24,9 @@
         GalleryStory("settings/agents", size: CGSize(width: 760, height: 1000), fixtures: GalleryFixtures.runnerAccounts) {
           AgentsStage()
         },
+        GalleryStory("settings/voice", size: CGSize(width: 760, height: 420)) {
+          SettingsPage { VoiceSettingsGroup() }
+        },
         GalleryStory("settings/drafted-messages/conventions", size: CGSize(width: 760, height: 300)) {
           DraftedMessagesStage(style: .conventions)
         },

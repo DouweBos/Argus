@@ -171,6 +171,8 @@ struct AgentsSettingsTab: View {
 
       AutomationAllowlistSection()
 
+      VoiceSettingsGroup()
+
       SettingsError(text: host.error)
     }
   }

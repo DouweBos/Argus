@@ -35,7 +35,7 @@ class ComposerModelTest {
   private fun model(
     status: RemoteAgentStatusStatus? = RemoteAgentStatusStatus.idle,
     starter: ComposerStarter? = null,
-    engine: (() -> DictationEngine)? = null,
+    engine: ((Boolean) -> DictationEngine)? = null,
   ): ComposerModel {
     status?.let { host.status("a1", it) }
     return ComposerModel(

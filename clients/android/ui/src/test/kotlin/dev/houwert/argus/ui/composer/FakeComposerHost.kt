@@ -15,6 +15,7 @@ import dev.houwert.argus.kit.protocol.generated.RemotePermissionMode
 import dev.houwert.argus.kit.protocol.generated.RemoteProject
 import dev.houwert.argus.kit.protocol.generated.RemoteRunner
 import dev.houwert.argus.kit.protocol.generated.RemoteSession
+import dev.houwert.argus.kit.protocol.generated.RemoteToolCall
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,6 +51,8 @@ class FakeComposerHost : ComposerHost {
   val interrupted = mutableListOf<String>()
   var failingAttachments = emptySet<String>()
   var attachmentGate: CompletableDeferred<Unit>? = null
+  var pending = emptyList<RemoteToolCall>()
+  val decisions = mutableListOf<Pair<String, String>>()
 
   fun status(agentId: String, state: RemoteAgentStatusStatus, accountId: String? = null) {
     statusByAgent.value += agentId to RemoteAgentStatus(agentId = agentId, sessionId = "s1", status = state, accountId = accountId)
@@ -58,6 +61,7 @@ class FakeComposerHost : ComposerHost {
   override fun claudeAccountId(sessionId: String) = pins[sessionId]
   override fun repoRoot(sessionId: String): String? = null
   override fun visibleMessages(key: String) = messagesByAgent.value[key].orEmpty()
+  override fun pendingCalls(agentKey: String, messages: List<RemoteMessage>) = pending
   override fun lastKnownModels(runnerId: String?) = emptyList<RemoteModelInfo>()
   override fun supportsSideQuestion(agentId: String) = true
   override fun continueRunners(agentId: String) = runners.value
@@ -70,6 +74,7 @@ class FakeComposerHost : ComposerHost {
     queued += Sent(message, displayText, images)
   }
   override suspend fun interrupt(agentId: String) { interrupted += agentId }
+  override suspend fun respond(agentId: String, toolUseId: String, decision: String) { decisions += toolUseId to decision }
   override suspend fun dismissLimitResume(agentId: String) = Unit
   override suspend fun setModel(agentId: String, model: String) { models += model }
   override suspend fun setPermissionMode(agentId: String, mode: RemotePermissionMode) { modes += mode }

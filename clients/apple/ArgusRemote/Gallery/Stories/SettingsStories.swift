@@ -17,6 +17,7 @@
         GalleryStory("settings/alerts/needs-you-only", setup: { stage in stage.app.alertFinished = false }) {
           AlertsSettingsPage()
         },
+        GalleryStory("settings/voice") { VoiceSettingsPage() },
         GalleryStory("settings/privacy") { PrivacySettingsPage() },
         GalleryStory("settings/connection", fixtures: GalleryFixtures.deviceHosts, setup: connect) { ConnectionSettingsPage() },
         GalleryStory("settings/agents") { AgentsSettingsPage() },

@@ -11,6 +11,7 @@ import dev.houwert.argus.kit.protocol.generated.RemoteImageAttachment
 import dev.houwert.argus.kit.protocol.generated.RemoteMentionEntry
 import dev.houwert.argus.kit.protocol.generated.RemoteMentionPathResult
 import dev.houwert.argus.kit.protocol.generated.RemoteMessage
+import dev.houwert.argus.kit.protocol.generated.RemoteToolCall
 import dev.houwert.argus.kit.protocol.generated.RemoteMessageRole
 import dev.houwert.argus.kit.protocol.generated.RemoteModelInfo
 import dev.houwert.argus.kit.protocol.generated.RemotePermissionMode
@@ -66,6 +67,7 @@ internal class GalleryComposerHost(
   override fun claudeAccountId(sessionId: String): String? = null
   override fun repoRoot(sessionId: String) = "/Users/me/Work/argus"
   override fun visibleMessages(key: String) = messages.value[key].orEmpty()
+  override fun pendingCalls(agentKey: String, messages: List<RemoteMessage>) = emptyList<RemoteToolCall>()
   override fun lastKnownModels(runnerId: String?) = capabilities.models
   override fun supportsSideQuestion(agentId: String) = true
   override fun continueRunners(agentId: String) = runners.value
@@ -74,6 +76,7 @@ internal class GalleryComposerHost(
   override suspend fun sendMessage(agentId: String, message: String, images: List<RemoteImageAttachment>, displayText: String?) = Unit
   override suspend fun queueMessage(agentId: String, message: String, images: List<RemoteImageAttachment>, displayText: String) = Unit
   override suspend fun interrupt(agentId: String) = Unit
+  override suspend fun respond(agentId: String, toolUseId: String, decision: String) = Unit
   override suspend fun dismissLimitResume(agentId: String) = Unit
   override suspend fun setModel(agentId: String, model: String) = update { it.copy(model = model) }
   override suspend fun setPermissionMode(agentId: String, mode: RemotePermissionMode) = update { it.copy(permissionMode = mode.rawValue) }

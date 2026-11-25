@@ -90,6 +90,7 @@
       .limitHandoffOffer(agentId: composer.agentId, status: composer.status, into: $handoffAccounts)
       .onChange(of: focusRequest) { _, _ in controller.focus() }
       .onDisappear { composer.stopDictation() }
+      .voiceLoop(composer)
       .onChange(of: composer.text) { _, value in
         if value.isEmpty { height = ComposerField.minHeight }
         if composer.starter == nil { composerTyping?(composer.agentId, !value.isEmpty) }
@@ -169,6 +170,12 @@
       HStack(spacing: 6) {
         if composer.contextTokens > 0 {
           ContextMeter(tokens: composer.contextTokens, limit: composer.contextLimit)
+        }
+        if composer.starter == nil {
+          VoiceModeButton(isOn: composer.voiceMode, speaking: composer.speaking, size: 26) {
+            composer.toggleVoiceMode()
+          }
+          .disabled(!composer.isEnabled)
         }
         DictationButton(phase: composer.dictation, size: 26, help: "Dictate (hold ⌥Space)") {
           composer.toggleDictation()

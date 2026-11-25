@@ -30,6 +30,7 @@ struct SettingsView: View {
         row(.name, value: app.deviceName)
         row(.appearance, value: app.themePreference.label)
         row(.alerts)
+        row(.voice)
         row(.privacy, value: app.telemetryMode == .full ? "Sharing" : "Minimal")
       }
 

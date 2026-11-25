@@ -85,6 +85,8 @@ fun FlatIconButton(
   selected: Boolean = false,
   enabled: Boolean = true,
   size: Dp = 32.dp,
+  /** Overrides the icon's colour while enabled, e.g. the accent for a mode that's on. */
+  tint: Color? = null,
   onClick: () -> Unit,
 ) {
   val theme = ArgusTheme.colors
@@ -104,8 +106,8 @@ fun FlatIconButton(
       .background(fill, shape),
     contentAlignment = Alignment.Center,
   ) {
-    val tint = if (!enabled) theme.textMuted else if (selected || interaction.hovered) theme.text else theme.textSecondary
-    Icon(icon, label, Modifier.size(16.dp), tint = tint)
+    val color = if (!enabled) theme.textMuted else tint ?: if (selected || interaction.hovered) theme.text else theme.textSecondary
+    Icon(icon, label, Modifier.size(16.dp), tint = color)
   }
 }
 
