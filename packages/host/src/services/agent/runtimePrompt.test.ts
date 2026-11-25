@@ -70,7 +70,6 @@ describe("buildRuntimeSection", () => {
       "install-app",
       "inspect",
       "xcrun simctl",
-      "devices you create yourself",
     ]) {
       expect(CONDUCTOR_GUIDE).toContain(needle);
     }

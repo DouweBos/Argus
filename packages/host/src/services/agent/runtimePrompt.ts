@@ -25,9 +25,9 @@ export interface RuntimeContext {
 }
 
 export const CONDUCTOR_GUIDE = [
-  "### Device work goes through conductor",
+  "### conductor",
   "",
-  "- Only when the task needs a running app. Use `conductor` rather than `xcrun simctl`, `adb`, AppleScript or your own Playwright script, including for devices you create yourself. `conductor workspace info` shows the project's bundle IDs and devices; `conductor <command> --help` before deciding something can't be done.",
+  "- When a task needs a running app and the project's own tools (an MCP server, its scripts) don't already cover it, `conductor` is available. It drives everything `xcrun simctl`, `adb` and Playwright do from one CLI. `conductor workspace info` shows the project's bundle IDs and devices; `conductor <command> --help` lists the options.",
   "- Look: `capture-ui` (screenshot + hierarchy) or `inspect`, whose `@eN` refs `tap-on` accepts. Act: `tap-on` (`--long-press`, `--at x,y`), `input-text`, `swipe`, `scroll-until-visible`, `press-key`, `open-link`, `set-orientation`, `set-permissions`, `gesture`; several steps at once with `run-sequence`. Check: `assert-visible`, `assert-screenshot`.",
   "- Setup: `start-device`, `install-app`, `launch-app`. Diagnose: `logs`, `crashes`, `network logs`, `debug evaluate` (React Native or the web page), `profile`. On an iOS simulator, `launch-app --inject` unlocks `native-*` inspection (real view properties, constraints, live edits). macOS apps work too (`--platform macos`: `menu`, `window`, `press-key cmd+s`).",
   "- The devices below are the user's live views: don't erase or shut them down, don't use `--clear-state` / `--clear-keychain` / `clear-state` (they sign the user out), and never touch another agent's device.",
@@ -90,7 +90,7 @@ export function buildRuntimeSection(ctx: RuntimeContext): string | null {
   const lines = [
     "## Runtime Environment",
     "",
-    "The user watches this project's simulators, emulators and browser next to the chat; Argus ships the `conductor` CLI to drive them.",
+    "The user watches this project's simulators, emulators and browser next to the chat.",
     "",
     CONDUCTOR_GUIDE,
   ];
