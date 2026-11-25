@@ -27,9 +27,10 @@ export interface RuntimeContext {
 export const CONDUCTOR_GUIDE = [
   "### Device work goes through conductor",
   "",
-  "- Only when the task needs a running app. Use `conductor` rather than `xcrun simctl`, `adb` or AppleScript, including for devices you create yourself; `conductor workspace info` shows the project's bundle IDs and devices.",
-  "- It covers `start-device`, `install-app`, `launch-app`, `tap-on` (`--long-press`, `--at x,y`), `swipe`, `input-text`, `set-orientation`, `open-link`, `capture-ui` (screenshot + `inspect` hierarchy), `run-sequence`, `logs`. Check `conductor <command> --help` before deciding something can't be done.",
-  "- The devices below are the user's live views: don't erase or shut them down or clear their state, and never touch another agent's device.",
+  "- Only when the task needs a running app. Use `conductor` rather than `xcrun simctl`, `adb`, AppleScript or your own Playwright script, including for devices you create yourself. `conductor workspace info` shows the project's bundle IDs and devices; `conductor <command> --help` before deciding something can't be done.",
+  "- Look: `capture-ui` (screenshot + hierarchy) or `inspect`, whose `@eN` refs `tap-on` accepts. Act: `tap-on` (`--long-press`, `--at x,y`), `input-text`, `swipe`, `scroll-until-visible`, `press-key`, `open-link`, `set-orientation`, `set-permissions`, `gesture`; several steps at once with `run-sequence`. Check: `assert-visible`, `assert-screenshot`.",
+  "- Setup: `start-device`, `install-app`, `launch-app`. Diagnose: `logs`, `crashes`, `network logs`, `debug evaluate` (React Native or the web page), `profile`. On an iOS simulator, `launch-app --inject` unlocks `native-*` inspection (real view properties, constraints, live edits). macOS apps work too (`--platform macos`: `menu`, `window`, `press-key cmd+s`).",
+  "- The devices below are the user's live views: don't erase or shut them down, don't use `--clear-state` / `--clear-keychain` / `clear-state` (they sign the user out), and never touch another agent's device.",
 ].join("\n");
 
 /** The guide ships unless device control is off in Tools — app-wide, for this project, or for this agent. */

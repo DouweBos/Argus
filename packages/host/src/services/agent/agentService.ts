@@ -213,7 +213,7 @@ export async function ensureWebBrowserForAgent(
 // What Claude can't see for itself; everything else is its own default.
 const ARGUS_PROMPT = `## Argus
 
-The user watches this project's dev server and devices in Argus. Never start long-running processes (dev servers, watchers, \`vite\`, \`expo start\`) from Bash: they collide with the one Argus runs. Use \`list_run_commands\`, \`trigger_run\` and \`wait_for_terminal\` instead.`;
+The user watches this project's dev servers and devices in Argus. When \`list_run_commands\` has a command for what you need, start it with \`trigger_run\` (and \`wait_for_terminal\`) so it shows there. Other long-running processes are fine, as long as they don't take a port or device that a run command or the user is already using.`;
 
 // Read-only runs sit in plan mode so the CLI refuses writes, but its reminder
 // also talks the model out of the reporting tools the run exists to call.
