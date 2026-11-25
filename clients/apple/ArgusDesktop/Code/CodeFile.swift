@@ -12,6 +12,8 @@ final class CodeFile {
   enum Phase {
     case loading
     case ready(EditorDocument)
+    /// A PDF or an image, shown rather than edited.
+    case binary(Data)
     /// Too large, binary, or not UTF-8: offered to another app instead.
     case readOnly(ArgusProtocol.CodeReadOnlyReason)
     case failed(String)
@@ -19,6 +21,12 @@ final class CodeFile {
 
   let path: String
   var phase: Phase = .loading
+  /// What renders instead of the text: Markdown next to it, a PDF or an image in its place.
+  let preview: FilePreviewKind?
+  /// A Markdown tab's text, page, or both.
+  var markdownMode: MarkdownViewMode
+  /// `mac_preview_opened` once per tab.
+  @ObservationIgnored var reportedPreview = false
   var disk = CodeDiskState(baseHash: nil)
   var eol: ArgusProtocol.CodeFileEol = .lf
   var language: SyntaxLanguage?
@@ -41,6 +49,8 @@ final class CodeFile {
 
   init(path: String) {
     self.path = path
+    preview = FilePreviewKind.of(path: path)
+    markdownMode = AppPreferences.shared.markdownOpensIn
   }
 
   var document: EditorDocument? {

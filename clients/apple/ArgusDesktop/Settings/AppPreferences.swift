@@ -25,6 +25,7 @@ final class AppPreferences {
     static let editorWrapLines = "argus:editor.wrapLines"
     static let editorShowInvisibles = "argus:editor.showInvisibles"
     static let openFileLinksIn = "argus:editor.openFileLinksIn"
+    static let markdownOpensIn = "argus:editor.markdownOpensIn"
     /// The boolean before the tri-state; read once to migrate.
     static let legacyEditorFormatOnSave = "argus:editor.formatOnSave"
     static let editorFormatOnSave = "argus:editor.formatOnSaveMode"
@@ -135,6 +136,11 @@ final class AppPreferences {
     didSet { defaults.set(openFileLinksIn.rawValue, forKey: Key.openFileLinksIn) }
   }
 
+  /// How a Markdown file first shows in the code view; each tab can switch.
+  var markdownOpensIn: MarkdownViewMode {
+    didSet { defaults.set(markdownOpensIn.rawValue, forKey: Key.markdownOpensIn) }
+  }
+
   /// Language servers for the code view, all at once; `disabledLanguageServers` turns single ones off.
   var languageServersEnabled: Bool {
     didSet { defaults.set(languageServersEnabled, forKey: Key.languageServers) }
@@ -175,6 +181,7 @@ final class AppPreferences {
     editorShowInvisibles = defaults.bool(forKey: Key.editorShowInvisibles)
     editorFormatOnSave = Self.formatOnSave(in: defaults)
     openFileLinksIn = FileLinkTarget(rawValue: defaults.string(forKey: Key.openFileLinksIn) ?? "") ?? .argus
+    markdownOpensIn = MarkdownViewMode(rawValue: defaults.string(forKey: Key.markdownOpensIn) ?? "") ?? .preview
     languageServersEnabled = defaults.object(forKey: Key.languageServers) as? Bool ?? true
     disabledLanguageServers = Set(defaults.stringArray(forKey: Key.disabledLanguageServers) ?? [])
   }
@@ -260,6 +267,19 @@ enum FormatOnSave: String, CaseIterable {
 }
 
 /// Where a chat file link opens.
+/// A Markdown file in the code view: its text, the rendered page, or both side by side.
+enum MarkdownViewMode: String, CaseIterable {
+  case source, preview, split
+
+  var title: String {
+    switch self {
+    case .source: "Source"
+    case .preview: "Preview"
+    case .split: "Split"
+    }
+  }
+}
+
 enum FileLinkTarget: String, CaseIterable {
   /// The session's code view, at the line.
   case argus

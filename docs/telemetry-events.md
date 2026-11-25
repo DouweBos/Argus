@@ -688,7 +688,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_diff_scope_changed` | A session's diff was switched to cover the uncommitted changes, the last agent turn, an earlier turn or the whole branch | `scope` (`uncommitted`, `last_turn`, `turn`, `branch`) |
 | `mac_timeline_opened` | A session's timeline of agent turns was opened | `turn_count` (turns it lists) |
 | `mac_review_guide_used` | A review guide was shown, or every stop on it looked at | `action` (`open`, `completed`), `stop_count` |
-| `mac_editor_file_opened` | The code view read a file into a tab | `source` (`chat_link`, `diff`, `blame`, `changes`, `tree`, `quick_open`, `search`, `diagnostic`, `definition`, `symbol`, `history`), `language` (a bundled grammar or `other`), `size_bucket` (`<10k`, `<100k`, `<1m`, `1m+`), `read_only` |
+| `mac_editor_file_opened` | The code view read a file into a tab | `source` (`chat_link`, `diff`, `blame`, `changes`, `tree`, `quick_open`, `search`, `diagnostic`, `definition`, `symbol`, `history`, `markdown_link` — a link in a Markdown preview), `language` (a bundled grammar or `other`), `size_bucket` (`<10k`, `<100k`, `<1m`, `1m+`), `read_only` |
 | `mac_editor_file_saved` | A file was saved from the code view | `formatted`, `formatter` (`prettier`, `swiftformat`, `swift_format`, `lsp`, `other`, `none`: what ran on the save), `had_conflict` (the file had changed on disk since it was read) |
 | `mac_editor_conflict_resolved` | The "changed on disk" banner was answered | `action` (`compare`, `keep_mine`, `reload`) |
 | `mac_editor_external_reload` | An open file with no unsaved edits took a change from disk; once per file per session | `agent_running` |
@@ -697,6 +697,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_editor_ask_agent` | Code was handed to the session's agent to look at | `source` (`diagnostic`, `selection`), `started_agent` (no agent was live, so one was started) |
 | `mac_editor_completion_accepted` | A completion was accepted in the code view | `language` |
 | `mac_editor_command` | An editor command ran from its key, a menu or the gutter's fold chevrons; once per command per open file | `command` (`toggle_line_comment`, `toggle_block_comment`, `move_lines_up`, `move_lines_down`, `copy_lines_up`, `copy_lines_down`, `delete_lines`, `insert_line_below`, `insert_line_above`, `indent_lines`, `outdent_lines`, `select_line`, `add_next_occurrence`, `select_all_occurrences`, `add_cursor_above`, `add_cursor_below`, `jump_to_bracket`, `go_to_line`, `next_problem`, `previous_problem`, `go_to_definition`, `trigger_completion`, `fold`, `unfold`, `fold_all`, `unfold_all`) |
+| `mac_preview_opened` | A file showed rendered in the code view, once per tab: a Markdown file's Preview or Split, a PDF, an image | `kind` (`markdown`, `pdf`, `image`) |
 | `mac_mermaid_rendered` | A Mermaid diagram in a transcript or a Markdown preview was drawn, or Mermaid couldn't draw it; a diagram already drawn this launch isn't counted again | `failed` |
 | `mac_editor_quick_open_used` | Quick open closed | `mode` (`files`, `mixed`, `symbols`, `file_symbols`, `line`), `result` (`opened`, `dismissed`) |
 | `mac_sidebar_project_toggled` | A project in the sidebar was collapsed or expanded | `collapsed` |
@@ -728,7 +729,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 `mcp_signed_out`, `tool_toggled`, `prereq_fixed`, `conductor_version`,
 `update_channel`, `editor_font`, `editor_font_size`, `editor_tab_width`,
 `editor_insert_spaces`, `editor_wrap_lines`, `editor_show_invisibles`,
-`editor_format_on_save`, `open_file_links_in`, `language_servers`,
+`editor_format_on_save`, `open_file_links_in`, `markdown_opens_in`, `language_servers`,
 `linear_mark_started`, `linear_report`, `commit_message_style`, `commit_message_instructions`, `usage_limits_in_details` or `usage_model_filter`. `mcp_tested` also fires when a server is tested from Project
 Settings.
 

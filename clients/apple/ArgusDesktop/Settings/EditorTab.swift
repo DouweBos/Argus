@@ -49,6 +49,17 @@ struct EditorTab: View {
           }
         }
       }
+      SettingsGroup("Previews") {
+        SettingsRow(
+          "Markdown files open in",
+          description: "Preview renders tables, task lists, images and Mermaid diagrams; each tab can switch."
+        ) {
+          Picker("Markdown files open in", selection: $prefs.markdownOpensIn.tracked(.markdownOpensIn)) {
+            ForEach(MarkdownViewMode.allCases, id: \.self) { Text($0.title).tag($0) }
+          }
+          .pickerStyle(.segmented)
+        }
+      }
       SettingsGroup("Chat links") {
         SettingsRow(
           "Open file links in",
