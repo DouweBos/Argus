@@ -1,20 +1,26 @@
-/** `/teammates`: the named agents on the computer — who, their duties, when they last did something, their switch. */
+/** `/teammates`: the named agents on the computer, read like a chat inbox — who, what they are on, when. */
 
 import { useCallback } from "react";
 import { formatRelative, loadPhase } from "@argus/client-core";
 import {
+  Badge,
   Banner,
   Button,
   EmptyState,
   Icons,
+  InboxItemRow,
+  OverflowMenu,
   Spinner,
-  TeammateRow,
+  StatusDot,
+  TeammateAvatar,
 } from "@argus/peacock";
 import { appNavigate } from "../../routing/router";
 import { useConnectionStore } from "../../stores/connection";
 import { useTeammatesStore } from "../../stores/teammates";
 import { useLiveRefresh } from "../useLiveRefresh";
 import { INBOX_REFRESH_MS } from "../automations/useInbox";
+import { showTeammatePage } from "./teammateNav";
+import { teammateLastActivityAt, teammatePreview } from "./teammateRowText";
 
 /** The list, polled like the automations list: duties run without telling the browser. */
 export function useTeammatesRefresh(ready: boolean): void {
@@ -81,33 +87,68 @@ export function TeammatesScreen() {
   } else {
     body = summaries.map((summary) => {
       const { teammate } = summary;
+      const lastActivity = teammateLastActivityAt(summary);
 
       return (
-        <TeammateRow
+        <InboxItemRow
           actions={
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => open(teammate.id)}
-            >
-              Talk
-            </Button>
+            <OverflowMenu
+              items={[
+                {
+                  label: "Profile",
+                  icon: <Icons.PersonIcon size={12} />,
+                  onClick: () => showTeammatePage(teammate.id, "profile"),
+                },
+                // Paused stops its duties and surfaces; talking to it directly still works.
+                ...(hasControl
+                  ? [
+                      {
+                        label: teammate.enabled ? "Pause" : "Resume",
+                        disabled: !ready,
+                        onClick: () =>
+                          void setEnabled(teammate.id, !teammate.enabled),
+                      },
+                    ]
+                  : []),
+              ]}
+              title={`${teammate.name} actions`}
+            />
           }
-          avatar={teammate.avatar}
-          color={teammate.color}
-          dutyCount={summary.duty_count}
-          enableDisabled={!hasControl}
-          enabled={teammate.enabled}
-          handle={teammate.handle}
           key={teammate.id}
-          lastRunLabel={
-            summary.last_run_at ? formatRelative(summary.last_run_at) : "Never"
+          leading={
+            <TeammateAvatar
+              avatar={teammate.avatar}
+              color={teammate.color}
+              name={teammate.name}
+              size={40}
+            />
           }
-          name={teammate.name}
-          tagline={teammate.tagline}
-          unread={summary.has_unread_report}
+          meta={
+            <>
+              {lastActivity !== null && formatRelative(lastActivity)}
+              {summary.has_unread_report && (
+                <StatusDot aria-label="New report" tone="accent" />
+              )}
+            </>
+          }
+          subtitle={
+            summary.working ? (
+              <StatusDot label={teammatePreview(summary)} pulse tone="accent" />
+            ) : (
+              teammatePreview(summary)
+            )
+          }
+          title={
+            <>
+              {teammate.name}{" "}
+              {!teammate.enabled && (
+                <Badge size="tag" tone="neutral">
+                  Paused
+                </Badge>
+              )}
+            </>
+          }
           onOpen={() => open(teammate.id)}
-          onToggleEnabled={(enabled) => void setEnabled(teammate.id, enabled)}
         />
       );
     });

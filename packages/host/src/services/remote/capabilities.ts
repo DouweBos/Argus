@@ -264,10 +264,10 @@ import {
   promoteAutomation,
   saveTeammateMemory,
   saveTeammateSoul,
-  teammateSummaries,
   updateTeammate,
 } from "../teammate/manager";
 import { reviseSoul } from "../teammate/revise";
+import { teammateSummaries } from "../teammate/summaries";
 import {
   archiveThread,
   deleteTeammateWithThreads,

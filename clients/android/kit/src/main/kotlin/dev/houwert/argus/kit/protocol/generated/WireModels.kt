@@ -7617,6 +7617,8 @@ data class TeammateSummary(
   @SerialName("duty_count") val dutyCount: Double,
   @SerialName("last_run_at") @EncodeDefault val lastRunAt: Double? = null,
   @SerialName("has_unread_report") val hasUnreadReport: Boolean,
+  @SerialName("latest_thread") val latestThread: TeammateThread? = null,
+  @SerialName("working") val working: Boolean? = null,
 )
 
 @Serializable

@@ -21,16 +21,17 @@ object TeammateText {
     return letters.uppercase()
   }
 
-  /** "Fixes CI · 3 duties · paused", the row's second line. */
-  fun subtitle(summary: TeammateSummary): String {
-    val count = summary.dutyCount.toInt()
-    val parts = listOfNotNull(
-      summary.teammate.tagline.takeIf { it.isNotBlank() },
-      if (count == 1) "1 duty" else "$count duties",
-      "paused".takeIf { !summary.teammate.enabled },
-    )
-    return parts.joinToString(" · ")
+  /** The inbox row's second line: what it is doing, else the conversation touched last, else who it is. */
+  fun preview(summary: TeammateSummary): String = when {
+    summary.working == true -> "Working on a duty"
+    !summary.latestThread?.title.isNullOrBlank() -> summary.latestThread!!.title
+    summary.teammate.tagline.isNotBlank() -> summary.teammate.tagline
+    else -> "No conversations yet"
   }
+
+  /** When it last did anything: a duty ran or a conversation was opened. */
+  fun lastActivityAt(summary: TeammateSummary): Double? =
+    listOfNotNull(summary.lastRunAt, summary.latestThread?.lastOpenedAt).maxOrNull()
 
   fun handle(handle: String): String = "@$handle"
 

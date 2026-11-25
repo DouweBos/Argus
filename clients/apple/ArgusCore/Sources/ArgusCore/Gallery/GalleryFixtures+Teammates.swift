@@ -18,21 +18,24 @@ extension GalleryFixtures {
     var lastRunMinutes: Double? = 90
     var unread = false
     var autonomy: String? = "propose"
+    var lastTalk: (String, Double)? = nil
+    var working = false
   }
 
   private static let mates: [Mate] = [
     Mate(
       id: ciFixerId, name: "CI Fixer", handle: "ci-fixer",
       tagline: "Turns red CI on your pull requests green again.", color: "red", symbol: "wrench",
-      duties: 2, lastRunMinutes: 12, unread: true, autonomy: "draft"),
+      duties: 2, lastRunMinutes: 12, unread: true, autonomy: "draft",
+      lastTalk: ("Why does the iOS job keep timing out on main?", 8)),
     Mate(
       id: "reviewer", name: "PR Reviewer", handle: "reviewer",
       tagline: "Drafts the review when someone asks for yours.", color: "purple", symbol: "eye",
-      lastRunMinutes: 45),
+      lastRunMinutes: 45, working: true),
     Mate(
       id: "triager", name: "Issue Triager", handle: "triager",
       tagline: "Sorts new issues and picks what to work on next.", color: "orange", symbol: "tray",
-      duties: 2, lastRunMinutes: 300, unread: true),
+      duties: 2, lastRunMinutes: 300, unread: true, lastTalk: ("Which of the new issues are worth a branch?", 200)),
     Mate(
       id: "deps", name: "Dependency Bumper", handle: "deps",
       tagline: "Says what is behind and which upgrades are worth a branch.", color: "green",
@@ -55,7 +58,7 @@ extension GalleryFixtures {
       lastRunMinutes: 2000),
     Mate(
       id: "maya", name: "Maya", handle: "maya", tagline: "", color: "purple", duties: 0,
-      lastRunMinutes: nil, autonomy: nil),
+      lastRunMinutes: nil, autonomy: nil, lastTalk: ("Sketch the onboarding flow for the web client", 60 * 30)),
     Mate(
       id: "docs", name: "Docs Gardener", handle: "docs",
       tagline: "Finds docs that drifted from the code.", color: "green", symbol: "sparkles", enabled: false,
@@ -99,6 +102,8 @@ extension GalleryFixtures {
     [
       "teammate": teammateJSON(m), "duty_count": m.duties,
       "last_run_at": m.lastRunMinutes.map(ago) as Any, "has_unread_report": m.unread,
+      "latest_thread": m.lastTalk.map { thread("\(m.id)-latest", $0.0, minutes: $0.1, teammate: m.id) } as Any,
+      "working": m.working,
     ]
   }
 
@@ -133,10 +138,10 @@ extension GalleryFixtures {
   }
 
   private static func thread(
-    _ id: String, _ title: String, minutes: Double, surface: String = "direct"
+    _ id: String, _ title: String, minutes: Double, surface: String = "direct", teammate: String = ciFixerId
   ) -> [String: Any] {
     [
-      "id": id, "teammate_id": ciFixerId, "surface": surface, "title": title,
+      "id": id, "teammate_id": teammate, "surface": surface, "title": title,
       "agent_id": "teammate-\(id)", "created_at": ago(minutes + 30), "last_opened_at": ago(minutes),
       "archived": false,
     ]

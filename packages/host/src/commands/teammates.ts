@@ -7,10 +7,10 @@ import {
   removeDuty,
   saveTeammateSoul,
   teammateDetail,
-  teammateSummaries,
   updateTeammate,
 } from "../services/teammate/manager";
 import { reviseSoul } from "../services/teammate/revise";
+import { teammateSummaries } from "../services/teammate/summaries";
 import { TEAMMATE_TEMPLATES } from "../services/teammate/templates";
 import {
   archiveThread,

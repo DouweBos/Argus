@@ -74,38 +74,67 @@ public struct TeammateAvatar: View {
   }
 }
 
-/// One teammate in a list: avatar, name, tagline, and when it last did anything.
+/// One teammate in a list, read like a chat: who, what you last talked about, and when.
 public struct TeammateRow: View {
+  @Environment(\.theme) private var theme
   let summary: ArgusProtocol.TeammateSummary
+  let avatarSize: CGFloat
 
-  public init(summary: ArgusProtocol.TeammateSummary) {
+  public init(summary: ArgusProtocol.TeammateSummary, avatarSize: CGFloat = 40) {
     self.summary = summary
+    self.avatarSize = avatarSize
   }
 
   public var body: some View {
     let teammate = summary.teammate
-    HStack(spacing: 10) {
-      TeammateAvatar(teammate: teammate, size: 30)
-      VStack(alignment: .leading, spacing: 2) {
+    HStack(spacing: 12) {
+      TeammateAvatar(teammate: teammate, size: avatarSize)
+        .opacity(teammate.enabled ? 1 : 0.5)
+        .overlay(alignment: .bottomTrailing) {
+          if summary.working == true {
+            StatusDot(tone: .accent, pulse: true, accessibilityLabel: "Working")
+              .padding(2)
+              .background(Circle().fill(theme.bgSecondary))
+          }
+        }
+      VStack(alignment: .leading, spacing: 3) {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+          Text(teammate.name).fontWeight(.medium).lineLimit(1)
+          if !teammate.enabled {
+            Text("Paused").font(.scaled(.caption)).foregroundStyle(.tertiary)
+          }
+          Spacer(minLength: 6)
+          if let at = TeammateSummaryText.lastActivity(summary) {
+            Text(Labels.timeAgo(at)).font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
+          }
+        }
         HStack(spacing: 6) {
-          Text(teammate.name).lineLimit(1)
+          Text(TeammateSummaryText.preview(summary))
+            .font(.scaled(.subheadline))
+            .foregroundStyle(summary.working == true ? AnyShapeStyle(theme.accent) : AnyShapeStyle(.secondary))
+            .lineLimit(1)
+          Spacer(minLength: 6)
           if summary.hasUnreadReport {
             StatusDot(tone: .accent, accessibilityLabel: "New report")
           }
         }
-        Text(subtitle).font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
-      }
-      Spacer(minLength: 6)
-      if let lastRunAt = summary.lastRunAt {
-        Text(Labels.timeAgo(lastRunAt))
-          .font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
       }
     }
+    .padding(.vertical, 2)
+  }
+}
+
+/// The chat-list wording for a teammate, shared by every list of them.
+public enum TeammateSummaryText {
+  public static func preview(_ summary: ArgusProtocol.TeammateSummary) -> String {
+    if summary.working == true { return "Working on a duty" }
+    if let title = summary.latestThread?.title, !title.isEmpty { return title }
+    if !summary.teammate.tagline.isEmpty { return summary.teammate.tagline }
+    return "No conversations yet"
   }
 
-  private var subtitle: String {
-    let duties = summary.dutyCount == 1 ? "1 duty" : "\(Int(summary.dutyCount)) duties"
-    let state = summary.teammate.enabled ? duties : "\(duties) · paused"
-    return summary.teammate.tagline.isEmpty ? state : "\(summary.teammate.tagline) · \(state)"
+  /// The newer of its last duty run and its last conversation.
+  public static func lastActivity(_ summary: ArgusProtocol.TeammateSummary) -> Double? {
+    [summary.lastRunAt, summary.latestThread?.lastOpenedAt].compactMap { $0 }.max()
   }
 }

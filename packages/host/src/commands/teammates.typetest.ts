@@ -1,14 +1,12 @@
 import type { Equal, Expect } from "./typeEquality";
-import type {
-  teammateDetail,
-  teammateSummaries,
-} from "../services/teammate/manager";
+import type { teammateDetail } from "../services/teammate/manager";
 import type {
   CreateTeammateInput as HostCreateTeammateInput,
   Teammate as HostTeammate,
   TeammateTemplate as HostTeammateTemplate,
   UpdateTeammateInput as HostUpdateTeammateInput,
 } from "../services/teammate/models";
+import type { teammateSummaries } from "../services/teammate/summaries";
 import type { TeammateThread as HostTeammateThread } from "../services/teammate/threads";
 import type {
   CreateTeammateInput,

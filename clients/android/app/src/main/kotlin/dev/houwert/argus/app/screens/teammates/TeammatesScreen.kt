@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,8 +39,8 @@ import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.app.navigation.Route
 import dev.houwert.argus.app.screens.AppScreen
 import dev.houwert.argus.app.screens.automations.rememberHostAccess
+import dev.houwert.argus.app.screens.home.PressableRow
 import dev.houwert.argus.kit.protocol.generated.TeammateSummary
-import dev.houwert.argus.ui.components.ArgusSwitch
 import dev.houwert.argus.ui.components.Banner
 import dev.houwert.argus.ui.components.EmptyState
 import dev.houwert.argus.ui.components.ListSection
@@ -112,18 +113,24 @@ fun TeammatesScreen() {
             ListSection(Modifier.widthIn(max = ArgusMetrics.maxReadingWidth)) {
               for (summary in teammates) {
                 val teammate = summary.teammate
-                TeammateRow(
-                  summary,
+                PressableRow(
+                  "Open ${teammate.name}",
                   onClick = { router.push(Route.Teammate(teammate.id, teammate.name)) },
-                  // Paused stops its duties and surfaces; talking to it directly still works.
-                  trailing = if (access.hasControl) {
-                    {
-                      ArgusSwitch(
-                        teammate.enabled, { on -> scope.launch { store.setEnabled(teammate.id, on) } }, enabled = access.ready,
+                  menu = { dismiss ->
+                    DropdownMenuItem(
+                      { Text("Profile") }, { dismiss(); router.push(Route.TeammateProfile(teammate.id, teammate.name)) },
+                      leadingIcon = { Icon(Icon.person, null) },
+                    )
+                    // Paused stops its duties and surfaces; talking to it directly still works.
+                    if (access.hasControl) {
+                      DropdownMenuItem(
+                        { Text(if (teammate.enabled) "Pause" else "Resume") },
+                        { dismiss(); scope.launch { store.setEnabled(teammate.id, !teammate.enabled) } },
+                        enabled = access.ready, leadingIcon = { Icon(if (teammate.enabled) Icon.stop else Icon.play, null) },
                       )
                     }
-                  } else null,
-                )
+                  },
+                ) { TeammateRow(summary) }
               }
             }
           }

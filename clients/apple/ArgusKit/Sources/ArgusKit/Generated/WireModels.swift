@@ -20643,19 +20643,25 @@ extension ArgusProtocol {
     public var dutyCount: Double
     public var lastRunAt: Double?
     public var hasUnreadReport: Bool
+    public var latestThread: TeammateThread?
+    public var working: Bool?
 
     enum CodingKeys: String, CodingKey {
       case teammate = "teammate"
       case dutyCount = "duty_count"
       case lastRunAt = "last_run_at"
       case hasUnreadReport = "has_unread_report"
+      case latestThread = "latest_thread"
+      case working = "working"
     }
 
-    public init(teammate: Teammate, dutyCount: Double, lastRunAt: Double? = nil, hasUnreadReport: Bool) {
+    public init(teammate: Teammate, dutyCount: Double, lastRunAt: Double? = nil, hasUnreadReport: Bool, latestThread: TeammateThread? = nil, working: Bool? = nil) {
       self.teammate = teammate
       self.dutyCount = dutyCount
       self.lastRunAt = lastRunAt
       self.hasUnreadReport = hasUnreadReport
+      self.latestThread = latestThread
+      self.working = working
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -20664,6 +20670,8 @@ extension ArgusProtocol {
       try c.encode(dutyCount, forKey: .dutyCount)
       try c.encode(lastRunAt, forKey: .lastRunAt)
       try c.encode(hasUnreadReport, forKey: .hasUnreadReport)
+      try c.encodeIfPresent(latestThread, forKey: .latestThread)
+      try c.encodeIfPresent(working, forKey: .working)
     }
   }
 

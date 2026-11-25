@@ -102,6 +102,22 @@ export const TeammateClearableField = z.enum([
 ]);
 export type TeammateClearableField = z.infer<typeof TeammateClearableField>;
 
+/** One conversation with a teammate. */
+export const TeammateThread = z.object({
+  id: z.string(),
+  teammate_id: z.string(),
+  /** Where it started: the app, Slack, a Linear comment, or another teammate. */
+  surface: z.enum(["direct", "handoff", "linear", "slack"]),
+  /** The first thing said in it, trimmed. */
+  title: z.string(),
+  /** Stable across restarts; open the thread before talking to it. */
+  agent_id: z.string(),
+  created_at: z.number(),
+  last_opened_at: z.number(),
+  archived: z.boolean(),
+});
+export type TeammateThread = z.infer<typeof TeammateThread>;
+
 /** One row of the teammates list. */
 export const TeammateSummary = z.object({
   teammate: Teammate,
@@ -110,6 +126,10 @@ export const TeammateSummary = z.object({
   last_run_at: z.number().nullable(),
   /** A duty has a report nobody has read. */
   has_unread_report: z.boolean(),
+  /** The conversation touched last. Absent from older hosts. */
+  latest_thread: TeammateThread.nullish(),
+  /** A duty run is queued or in flight. Absent from older hosts. */
+  working: z.boolean().optional(),
 });
 export type TeammateSummary = z.infer<typeof TeammateSummary>;
 
@@ -136,22 +156,6 @@ export const TeammateTemplate = z.object({
   duties: z.array(CreateAutomationInput),
 });
 export type TeammateTemplate = z.infer<typeof TeammateTemplate>;
-
-/** One conversation with a teammate. */
-export const TeammateThread = z.object({
-  id: z.string(),
-  teammate_id: z.string(),
-  /** Where it started: the app, Slack, a Linear comment, or another teammate. */
-  surface: z.enum(["direct", "handoff", "linear", "slack"]),
-  /** The first thing said in it, trimmed. */
-  title: z.string(),
-  /** Stable across restarts; open the thread before talking to it. */
-  agent_id: z.string(),
-  created_at: z.number(),
-  last_opened_at: z.number(),
-  archived: z.boolean(),
-});
-export type TeammateThread = z.infer<typeof TeammateThread>;
 
 export const OpenedTeammateThread = z.object({
   thread: TeammateThread,

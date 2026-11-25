@@ -28,8 +28,6 @@ import {
   createAutomation,
   deleteAutomation,
   getAutomation,
-  hasUnreadReport,
-  listAutomationRuns,
   listAutomations,
   updateAutomation,
 } from "../automation/manager";
@@ -435,33 +433,6 @@ export function createTeammateFromTemplate(
   });
 
   return getTeammate(teammate.id)!;
-}
-
-export interface TeammateSummary {
-  teammate: Teammate;
-  duty_count: number;
-  last_run_at: number | null;
-  has_unread_report: boolean;
-}
-
-export function teammateSummaries(): TeammateSummary[] {
-  return listTeammates().map((teammate) => {
-    const dutyIds = new Set(dutiesOf(teammate.id).map((d) => d.id));
-    const runs = listAutomationRuns().filter((r) =>
-      dutyIds.has(r.automation_id),
-    );
-
-    return {
-      teammate,
-      duty_count: dutyIds.size,
-      last_run_at: runs.reduce<number | null>(
-        (newest, r) =>
-          newest === null || r.started_at > newest ? r.started_at : newest,
-        null,
-      ),
-      has_unread_report: runs.some(hasUnreadReport),
-    };
-  });
 }
 
 export interface TeammateDetail {

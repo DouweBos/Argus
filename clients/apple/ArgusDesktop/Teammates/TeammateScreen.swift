@@ -85,11 +85,11 @@ private struct TeammateConversation: View {
 
   var body: some View {
     HStack(spacing: 0) {
-      threads.frame(width: 230)
+      threads.frame(width: 250)
       Divider()
       Group {
         if let opened {
-          TeammateChat(agentId: opened.agentId, sessionId: opened.sessionId).id(opened.agentId)
+          TeammateChat(teammate: teammate, agentId: opened.agentId, sessionId: opened.sessionId).id(opened.agentId)
         } else if failed {
           EmptyState(
             icon: "exclamationmark.bubble", title: "Couldn't open the conversation",
@@ -115,16 +115,13 @@ private struct TeammateConversation: View {
         Button { Task { await openFresh() } } label: { Image(systemName: "square.and.pencil") }
           .buttonStyle(.argusBorderless)
           .help("New Conversation")
+          .accessibilityLabel("New Conversation")
       }
       .padding(.horizontal, 12).padding(.vertical, 8)
       ScrollView {
-        VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: 2) {
           ForEach(list) { thread in
-            SettingsNavItem(
-              thread.title.isEmpty ? "New conversation" : thread.title,
-              systemImage: Self.icon(for: thread.surface),
-              selected: thread.id == opened?.thread.id
-            ) {
+            TeammateThreadRow(thread: thread, selected: thread.id == opened?.thread.id) {
               model.navigate(.teammate(id: teammate.id, page: .chat(threadId: thread.id)))
             }
             .contextMenu {
@@ -136,16 +133,6 @@ private struct TeammateConversation: View {
         }
         .padding(.horizontal, 8)
       }
-    }
-  }
-
-  /// Where a thread started: the app, Slack, a Linear comment, or another teammate.
-  static func icon(for surface: ArgusProtocol.TeammateThreadSurface) -> String {
-    switch surface.rawValue {
-    case "slack": "number"
-    case "linear": "text.bubble"
-    case "handoff": Icon.teammates
-    default: "bubble.left"
     }
   }
 
@@ -165,12 +152,21 @@ private struct TeammateConversation: View {
 /// session's start workspace, since a teammate's folder is not a project.
 private struct TeammateChat: View {
   @Environment(HostStore.self) private var store
+  let teammate: TeammatesStore.Teammate
   let agentId: String
   let sessionId: String
 
+  private var isEmpty: Bool {
+    store.visibleMessages(for: agentId).isEmpty && (store.queuedByAgent[agentId] ?? []).isEmpty
+      && store.transcriptErrorByAgent[agentId] == nil
+  }
+
   var body: some View {
     VStack(spacing: 0) {
-      TranscriptView(agentKey: agentId, sessionId: sessionId)
+      TranscriptView(agentKey: agentId, sessionId: sessionId, showsEmptyState: false)
+        .overlay {
+          if isEmpty { TeammateGreeting(teammate: teammate).allowsHitTesting(false) }
+        }
       ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
         MacTelemetry.capture(.inputUsed(affordance: affordance.rawValue))
       }

@@ -15,7 +15,9 @@ It has:
 - **Conversations** — talk to it directly, on the Mac or the phone,
   and come back to the same conversation later.
 
-Teammates live at **`/teammates`**.
+Teammates live at **`/teammates`**, listed like conversations: what you last
+talked about with each, whether one is busy with a duty, and when it last did
+anything. Pause or resume one from its menu.
 
 ---
 

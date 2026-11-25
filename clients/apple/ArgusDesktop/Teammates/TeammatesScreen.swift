@@ -2,12 +2,11 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// `/teammates`: the named agents on this host — who they are, their duties,
-/// when they last did something, and their switch.
+/// `/teammates`: the named agents on this host, listed like conversations —
+/// what you last talked about, whether one is busy, and when.
 struct TeammatesScreen: View {
   @Environment(DesktopModel.self) private var model
   @Environment(TeammatesStore.self) private var store
-  @State private var selection: String?
 
   var body: some View {
     let phase = store.phase
@@ -49,63 +48,30 @@ struct TeammatesScreen: View {
     }
   }
 
+  /// Read like a list of conversations: open one to talk, pause from its menu.
   private var table: some View {
-    Table(store.summaries, selection: $selection) {
-      TableColumn("") { summary in
-        Toggle(
-          "",
-          isOn: Binding(
-            get: { summary.teammate.enabled },
-            set: { on in Task { await store.setEnabled(summary.teammate.id, on) } })
-        )
-        .toggleStyle(.argusSwitch).controlSize(.mini).labelsHidden()
-        .help(summary.teammate.enabled ? "Enabled" : "Paused")
+    List(store.summaries) { summary in
+      Button { open(summary.teammate.id) } label: {
+        TeammateRow(summary: summary).padding(.vertical, 4).contentShape(.rect)
       }
-      .width(44)
-      TableColumn("Name") { summary in
-        Button { open(summary.teammate.id) } label: {
-          HStack(spacing: 10) {
-            TeammateAvatar(teammate: summary.teammate, size: 28)
-            VStack(alignment: .leading, spacing: 2) {
-              HStack(spacing: 6) {
-                Text(summary.teammate.name).fontWeight(.medium)
-                Text("@\(summary.teammate.handle)").foregroundStyle(.secondary)
-              }
-              if !summary.teammate.tagline.isEmpty {
-                Text(summary.teammate.tagline).font(.scaled(.caption)).foregroundStyle(.secondary).lineLimit(1)
-              }
-            }
-          }
-          .contentShape(.rect)
-        }
-        .buttonStyle(.argusPlain)
-        .accessibilityLabel(summary.teammate.name)
-      }
-      TableColumn("Duties") { summary in
-        Text(summary.dutyCount == 1 ? "1 duty" : "\(Int(summary.dutyCount)) duties").foregroundStyle(.secondary)
-      }
-      .width(80)
-      TableColumn("Last run") { summary in
-        HStack(spacing: 6) {
-          if summary.hasUnreadReport { StatusDot(tone: .accent, accessibilityLabel: "New report") }
-          Text(summary.lastRunAt.map { Labels.timeAgo($0) } ?? "Never").foregroundStyle(.secondary)
-        }
-      }
-      .width(min: 120)
-      TableColumn("") { summary in
-        Button("Talk") { open(summary.teammate.id) }.controlSize(.small)
-      }
-      .width(70)
+      .buttonStyle(.argusPlain)
+      .accessibilityLabel(summary.teammate.name)
+      .contextMenu { menu(summary.teammate) }
     }
+    .listStyle(.inset)
     .alternatingRowBackgrounds(.disabled)
-    .contextMenu(forSelectionType: String.self) { ids in
-      if let id = ids.first {
-        Button("Talk") { open(id) }
-        Button("Profile") { model.navigate(.teammate(id: id, page: .profile)) }
-        Button("Duties") { model.navigate(.teammate(id: id, page: .duties)) }
-      }
-    } primaryAction: { ids in
-      if let id = ids.first { open(id) }
+  }
+
+  @ViewBuilder
+  private func menu(_ teammate: TeammatesStore.Teammate) -> some View {
+    Button("Open Conversation") { open(teammate.id) }
+    Divider()
+    Button("Profile") { model.navigate(.teammate(id: teammate.id, page: .profile)) }
+    Button("Duties") { model.navigate(.teammate(id: teammate.id, page: .duties)) }
+    Button("Memory") { model.navigate(.teammate(id: teammate.id, page: .memory)) }
+    Divider()
+    Button(teammate.enabled ? "Pause" : "Resume") {
+      Task { await store.setEnabled(teammate.id, !teammate.enabled) }
     }
   }
 
