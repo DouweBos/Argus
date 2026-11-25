@@ -59,6 +59,8 @@ interface TeammatesState {
     threadId: string | null,
     fresh?: boolean,
   ) => Promise<OpenedTeammateThread>;
+  /** Pick a stopped conversation back up with a continue. Throws the computer's reason. */
+  resumeThread: (teammateId: string, threadId: string) => Promise<void>;
   archiveThread: (teammateId: string, threadId: string) => Promise<boolean>;
   setEnabled: (id: string, enabled: boolean) => Promise<void>;
   /** `clear` sets fields back to inheriting. Throws the computer's reason. */
@@ -205,6 +207,14 @@ export const useTeammatesStore = create<TeammatesState>()((set, get) => {
         .catch(() => {});
 
       return opened;
+    },
+
+    resumeThread: async (teammateId, threadId) => {
+      const opened = await request(transport(), "teammates.resume_thread", {
+        thread_id: threadId,
+      });
+      set((s) => ({ openedById: { ...s.openedById, [teammateId]: opened } }));
+      await get().loadThreads(teammateId);
     },
 
     archiveThread: async (teammateId, threadId) => {

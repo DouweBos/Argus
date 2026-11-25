@@ -21081,6 +21081,7 @@ extension ArgusProtocol {
     public var createdAt: Double
     public var lastOpenedAt: Double
     public var archived: Bool
+    public var failure: TeammateThreadFailure?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -21091,9 +21092,10 @@ extension ArgusProtocol {
       case createdAt = "created_at"
       case lastOpenedAt = "last_opened_at"
       case archived = "archived"
+      case failure = "failure"
     }
 
-    public init(id: String, teammateId: String, surface: TeammateThreadSurface, title: String, agentId: String, createdAt: Double, lastOpenedAt: Double, archived: Bool) {
+    public init(id: String, teammateId: String, surface: TeammateThreadSurface, title: String, agentId: String, createdAt: Double, lastOpenedAt: Double, archived: Bool, failure: TeammateThreadFailure? = nil) {
       self.id = id
       self.teammateId = teammateId
       self.surface = surface
@@ -21102,6 +21104,7 @@ extension ArgusProtocol {
       self.createdAt = createdAt
       self.lastOpenedAt = lastOpenedAt
       self.archived = archived
+      self.failure = failure
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -21114,7 +21117,55 @@ extension ArgusProtocol {
       try c.encode(createdAt, forKey: .createdAt)
       try c.encode(lastOpenedAt, forKey: .lastOpenedAt)
       try c.encode(archived, forKey: .archived)
+      try c.encodeIfPresent(failure, forKey: .failure)
     }
+  }
+
+  public struct TeammateThreadFailure: Codable, Sendable {
+    public var kind: TeammateThreadFailureKind
+    public var reason: String
+    public var at: Double
+    public var resetsAt: Double?
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case reason = "reason"
+      case at = "at"
+      case resetsAt = "resets_at"
+    }
+
+    public init(kind: TeammateThreadFailureKind, reason: String, at: Double, resetsAt: Double? = nil) {
+      self.kind = kind
+      self.reason = reason
+      self.at = at
+      self.resetsAt = resetsAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(reason, forKey: .reason)
+      try c.encode(at, forKey: .at)
+      try c.encode(resetsAt, forKey: .resetsAt)
+    }
+  }
+
+  public struct TeammateThreadFailureKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let auth = TeammateThreadFailureKind(rawValue: "auth")
+    public static let crashed = TeammateThreadFailureKind(rawValue: "crashed")
+    public static let error = TeammateThreadFailureKind(rawValue: "error")
+    public static let interrupted = TeammateThreadFailureKind(rawValue: "interrupted")
+    public static let limit = TeammateThreadFailureKind(rawValue: "limit")
   }
 
   public struct TeardownConfig: Codable, Sendable {

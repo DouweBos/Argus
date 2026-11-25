@@ -61,6 +61,8 @@ fun AgentView(
   label: String,
   modifier: Modifier = Modifier,
   stoppedFooter: (@Composable () -> Unit)? = null,
+  /** Between the transcript and the composer or footer, e.g. why a turn stopped. */
+  aboveFooter: (@Composable () -> Unit)? = null,
   open: (RemoteAgentStatus, String) -> Unit,
 ) {
   val host = LocalAppStore.current.host
@@ -119,6 +121,7 @@ fun AgentView(
       openFileLink = sessionId?.takeIf { hasControl }?.let { sid -> { ref -> router.push(Route.File(sid, ref.path, ref.line, "chat_link")) } },
       openDutyRun = { run -> router.push(Route.Run(run.runId, run.automationName)) },
     )
+    aboveFooter?.invoke()
     when {
       isGone && stoppedFooter != null -> stoppedFooter()
       isGone -> StoppedFooter(agentId, hasControl) { open(it, label) }

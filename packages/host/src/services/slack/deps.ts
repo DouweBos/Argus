@@ -72,6 +72,13 @@ export interface SlackBotDeps {
   startTeammate?: (
     teammateId: string,
   ) => Promise<{ sessionId: string; agentId: string; threadId: string }>;
+  /** Pick a teammate's stopped conversation back up; null when it is gone. */
+  resumeTeammate?: (
+    threadId: string,
+    author: string | null,
+  ) => Promise<{ agentId: string } | null>;
+  /** When the agent's spent usage limit resets, epoch ms, if it hit one. */
+  limitResetAt?: (agentId: string) => number | null;
   pendingPrompt: (agentId: string, toolUseId: string) => PendingPrompt | null;
   respondToPermission: (
     agentId: string,

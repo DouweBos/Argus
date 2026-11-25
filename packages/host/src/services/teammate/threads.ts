@@ -6,6 +6,7 @@
  * client holding it keeps working.
  */
 
+import type { TeammateThreadFailure } from "./failure";
 import type { Teammate } from "./models";
 import type { Session } from "../session/models";
 import crypto from "node:crypto";
@@ -52,12 +53,26 @@ export interface TeammateThread {
   created_at: number;
   last_opened_at: number;
   archived: boolean;
+  /** Why the last turn stopped short; cleared when the next one starts. */
+  failure?: TeammateThreadFailure | null;
 }
 
-let cache: TeammateThread[] | null = null;
+/** What the host keeps beside the wire shape, to notice an unfinished turn. */
+export interface StoredThread extends TeammateThread {
+  /** A turn started and hasn't ended; survives a host crash. */
+  inflight_since?: number | null;
+}
 
-function threads(): TeammateThread[] {
-  cache ??= readEnvelope<TeammateThread>(
+function toWire(thread: StoredThread): TeammateThread {
+  const { inflight_since: _inflight, ...wire } = thread;
+
+  return wire;
+}
+
+let cache: StoredThread[] | null = null;
+
+function threads(): StoredThread[] {
+  cache ??= readEnvelope<StoredThread>(
     teammateThreadsFilePath(),
     "teammate-threads.json",
     "threads",
@@ -68,7 +83,7 @@ function threads(): TeammateThread[] {
 }
 
 function persist(): void {
-  const byTeammate = new Map<string, TeammateThread[]>();
+  const byTeammate = new Map<string, StoredThread[]>();
   for (const thread of threads()) {
     const list = byTeammate.get(thread.teammate_id) ?? [];
     list.push(thread);
@@ -93,6 +108,15 @@ function persist(): void {
   emitHostEvent("teammate_threads:changed", {});
 }
 
+/** The stored record, for the turn tracking in `./recovery` to update. */
+export function threadRecord(threadId: string): StoredThread | null {
+  return threads().find((t) => t.id === threadId) ?? null;
+}
+
+export function saveThreads(): void {
+  persist();
+}
+
 /** Test seam. */
 export function resetThreadCache(): void {
   cache = null;
@@ -108,7 +132,7 @@ export function listThreads(teammateId: string): TeammateThread[] {
   return threads()
     .filter((t) => t.teammate_id === teammateId && !t.archived)
     .sort((a, b) => b.last_opened_at - a.last_opened_at)
-    .map((t) => ({ ...t }));
+    .map(toWire);
 }
 
 /** The pin applies only on the default runner. */
@@ -176,7 +200,7 @@ export async function openThread(
   } = {},
 ): Promise<OpenedThread> {
   const teammate = requireTeammate(teammateId);
-  let thread: TeammateThread | undefined;
+  let thread: StoredThread | undefined;
   if (options.threadId) {
     thread = threads().find(
       (t) => t.id === options.threadId && t.teammate_id === teammateId,
@@ -222,7 +246,7 @@ export async function openThread(
   telemetryCapture("teammate_thread_opened", { new_thread: isNew, resumed });
 
   return {
-    thread: { ...thread },
+    thread: toWire(thread),
     agent_id: thread.agent_id,
     session_id: session.id,
   };

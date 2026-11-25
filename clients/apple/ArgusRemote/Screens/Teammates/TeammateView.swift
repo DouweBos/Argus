@@ -19,12 +19,16 @@ struct TeammateView: View {
   @State private var opened: ArgusProtocol.OpenedTeammateThread?
   @State private var opening = false
   @State private var openFailed = false
+  @State private var resuming = false
 
   private var teammate: TeammatesStore.Teammate? { store.teammate(teammateId) }
   private var threads: [TeammatesStore.Thread] {
     (store.threadsById[teammateId] ?? []).filter { !$0.archived }.sorted { $0.lastOpenedAt > $1.lastOpenedAt }
   }
   private var currentThreadId: String? { opened?.thread.id ?? threadId }
+  private var failure: ArgusProtocol.TeammateThreadFailure? {
+    currentThreadId.flatMap { store.thread(teammateId: teammateId, threadId: $0)?.failure }
+  }
 
   var body: some View {
     content
@@ -75,6 +79,10 @@ struct TeammateView: View {
       .environment(\.openDutyRun) { run in
         router.push(.run(id: run.runId, label: run.automationName))
       }
+      if let failure {
+        TeammateFailureBanner(
+          failure: failure, onResume: host.hasControl && !resuming ? { Task { await resume() } } : nil)
+      }
       if !host.hasControl {
         TranscriptFooterNote("This device can read conversations but not talk to teammates.")
       } else if host.isGone(agentId) {
@@ -91,6 +99,19 @@ struct TeammateView: View {
       }
     }
     .task(id: agentId) { await host.loadAgentStatus(agentId: agentId) }
+    // A turn ending is when its failure lands on the thread.
+    .onChange(of: host.statusByAgent[agentId]?.status) {
+      Task { await store.loadThreads(teammateId: teammateId) }
+    }
+  }
+
+  private func resume() async {
+    guard let threadId = currentThreadId else { return }
+    resuming = true
+    if let resumed = await store.resumeThread(teammateId: teammateId, threadId: threadId) {
+      opened = resumed
+    }
+    resuming = false
   }
 
   /// A monitor device's view: which conversations there are.
@@ -188,6 +209,7 @@ struct TeammateView: View {
 
 /// One conversation in a list: what it was about, and when it was last open.
 private struct ThreadRow: View {
+  @Environment(\.theme) private var theme
   let thread: TeammatesStore.Thread
 
   static func title(_ thread: TeammatesStore.Thread) -> String {
@@ -199,6 +221,9 @@ private struct ThreadRow: View {
     VStack(alignment: .leading, spacing: 2) {
       Text(Self.title(thread)).lineLimit(1)
       HStack(spacing: 4) {
+        if thread.failure != nil {
+          Image(systemName: Icon.warning).foregroundStyle(theme.error).accessibilityLabel("Stopped")
+        }
         if let icon = thread.surface.icon, let label = thread.surface.label {
           Image(systemName: icon)
           Text("\(label) ·")

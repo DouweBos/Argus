@@ -16,7 +16,10 @@
           TeammatesView()
         },
         GalleryStory("teammates/gallery", fixtures: fixtures) { TeammateGalleryView() },
-        GalleryStory("teammates/chat", fixtures: chat, setup: refresh) {
+        GalleryStory("teammates/chat", fixtures: chat(), setup: refresh) {
+          TeammateView(teammateId: id, threadId: nil)
+        },
+        GalleryStory("teammates/chat/failed", fixtures: chat(failed: true), setup: refresh) {
           TeammateView(teammateId: id, threadId: nil)
         },
         GalleryStory("teammates/chat/monitor", fixtures: fixtures, setup: monitor) {
@@ -31,8 +34,8 @@
     private static var fixtures: [String: String] { GalleryFixtures.teammates() }
 
     /// The conversation opens on the transcript fixture's agent.
-    private static var chat: [String: String] {
-      var merged = GalleryFixtures.teammates().merging(GalleryFixtures.transcript(.dutyReport)) { _, new in new }
+    private static func chat(failed: Bool = false) -> [String: String] {
+      var merged = GalleryFixtures.teammates(failed: failed).merging(GalleryFixtures.transcript(.dutyReport)) { _, new in new }
       let method = ArgusProtocol.Methods.TeammatesOpenThread.name
       if let data = merged[method]?.data(using: .utf8),
         var opened = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]

@@ -62,6 +62,20 @@ suspend fun TeammatesStore.openThread(teammateId: String, threadId: String? = nu
   }
 }
 
+/** Picks a stopped conversation back up: wakes its agent and sends it a "continue". The host counts it. */
+suspend fun TeammatesStore.resumeThread(teammateId: String, threadId: String): OpenedTeammateThread? {
+  val backend = host.backend ?: return null
+  return try {
+    val opened = backend.request(Methods.TeammatesResumeThread, MethodsTypes.TeammatesResumeThreadParams(threadId))
+    _error.value = null
+    loadThreads(teammateId)
+    opened
+  } catch (e: Exception) {
+    fail("Couldn't resume the conversation", e)
+    null
+  }
+}
+
 suspend fun TeammatesStore.archiveThread(teammateId: String, threadId: String): Boolean {
   val backend = host.backend ?: return false
   return try {

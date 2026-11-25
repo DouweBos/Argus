@@ -3,6 +3,7 @@ import {
   ACTION_ALLOW,
   ACTION_DENY,
   ACTION_PICK_PROJECT,
+  ACTION_RESUME,
   projectToken,
 } from "./blocks";
 import { SlackBot } from "./bot";
@@ -408,6 +409,88 @@ describe("slackBot", () => {
         "*Fixed* the <https://x.dev|header>.",
       );
       expect(slack.threads.get("CWEB", "1.1")?.resumeRef).toBe("conv-1");
+    });
+
+    it("says why a teammate's turn stopped and resumes it from the button", async () => {
+      const slack = fakeSlack(vi.fn);
+      slack.deps.teammateByHandle = () => ({ id: "t1", name: "CI Fixer" });
+      slack.deps.startTeammate = async () => ({
+        sessionId: "teammate-thread-th1",
+        agentId: "teammate-th1",
+        threadId: "th1",
+      });
+      const resumed: (string | null)[] = [];
+      slack.deps.resumeTeammate = async (threadId, author) => {
+        resumed.push(`${threadId}:${author}`);
+
+        return { agentId: "teammate-th1" };
+      };
+      slack.deps.limitResetAt = () => 1_700_000_000_000;
+      const bot = new SlackBot(slack.deps);
+      await bot.handleEnvelope(mention("@ci-fixer why is main red?"));
+      bot.bridge.handleHostEvent(
+        "agent:event:teammate-th1",
+        JSON.stringify({
+          type: "result",
+          subtype: "success",
+          is_error: true,
+          result: "Claude AI usage limit reached",
+        }),
+      );
+      bot.bridge.handleHostEvent("agent:status:teammate-th1", "idle");
+      await vi.runAllTimersAsync();
+
+      const failure = slack.posts().at(-1)!;
+      expect(failure.text).toContain(
+        "*CI Fixer:* Stopped: Hit the usage limit.",
+      );
+      expect(failure.text).toContain("<!date^1700000000^");
+      expect(JSON.stringify(failure.blocks)).toContain(ACTION_RESUME);
+      expect(failure.text).not.toContain("Open it in Argus to see why");
+
+      const button = (
+        failure.blocks as { elements?: { value?: string }[] }[]
+      ).find((b) => b.elements?.[0]?.value)!.elements![0]!.value!;
+      await bot.handleEnvelope(
+        click({
+          actionId: ACTION_RESUME,
+          value: button,
+          messageTs: failure.ts,
+          threadTs: "1.1",
+        }),
+      );
+
+      expect(resumed).toHaveLength(1);
+      expect(resumed[0]).toMatch(/^th1:/);
+      const edited = slack.updates().find((u) => u.ts === failure.ts)!;
+      expect(JSON.stringify(edited.blocks)).toContain("Resumed by");
+      expect(JSON.stringify(edited.blocks)).not.toContain(ACTION_RESUME);
+      expect(slack.posts().at(-1)?.text).toBe("Working on it: thinking");
+    });
+
+    it("names the reason for a project session's failed turn without a Resume", async () => {
+      const slack = fakeSlack(vi.fn, { defaultProject: "/work/web" });
+      const bot = new SlackBot(slack.deps);
+      await bot.handleEnvelope(mention("fix it"));
+      bot.bridge.handleHostEvent("agent:started", {
+        agent_id: "a1",
+        session_id: "s1",
+        parent_agent_id: null,
+      });
+      bot.bridge.handleHostEvent(
+        "agent:event:a1",
+        JSON.stringify({
+          type: "result",
+          subtype: "error_during_execution",
+          result: "Tool crashed: ENOSPC\nmore detail",
+        }),
+      );
+      bot.bridge.handleHostEvent("agent:status:a1", "idle");
+      await vi.runAllTimersAsync();
+
+      const failure = slack.posts().at(-1)!;
+      expect(failure.text).toBe("Stopped: Tool crashed: ENOSPC");
+      expect(JSON.stringify(failure.blocks)).not.toContain(ACTION_RESUME);
     });
   });
 });

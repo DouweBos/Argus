@@ -102,6 +102,11 @@ function autoContinueEnabled(agentId: string): boolean {
   }
 }
 
+/** Unix ms the CLI said the spent limit resets, when this agent hit one. */
+export function limitResetAt(agentId: string): number | null {
+  return states.get(agentId)?.resetsAt ?? null;
+}
+
 /** Unix ms a continue is scheduled for, or null when none is pending. */
 export function limitResumeAt(agentId: string): number | null {
   return states.get(agentId)?.dueAt ?? null;

@@ -20,7 +20,10 @@ struct TeammateThreadRow: View {
           .lineLimit(2)
           .multilineTextAlignment(.leading)
         HStack(spacing: 4) {
-          if let icon = thread.surface.icon {
+          if thread.failure != nil {
+            Image(systemName: Icon.warning).font(.scaled(size: 10)).foregroundStyle(theme.error)
+              .accessibilityLabel("Stopped")
+          } else if let icon = thread.surface.icon {
             Image(systemName: icon).font(.scaled(size: 10))
           }
           Text(meta).lineLimit(1)

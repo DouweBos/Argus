@@ -2928,6 +2928,11 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class TeammatesResumeThreadParams(
+    @SerialName("thread_id") val threadId: String,
+  )
+
+  @Serializable
   data class TeammatesReviseSoulParams(
     @SerialName("name") val name: String,
     @SerialName("soul") val soul: String,
@@ -3556,6 +3561,8 @@ object Methods {
   object TeammatesPromote : RemoteCommand<MethodsTypes.TeammatesPromoteParams, MethodsTypes.TeammatesPromoteResult>("teammates.promote", "control", serializer(), serializer())
 
   object TeammatesRemoveDuty : RemoteCommand<MethodsTypes.TeammatesRemoveDutyParams, MethodsTypes.TeammatesRemoveDutyResult>("teammates.remove_duty", "control", serializer(), serializer())
+
+  object TeammatesResumeThread : RemoteCommand<MethodsTypes.TeammatesResumeThreadParams, OpenedTeammateThread>("teammates.resume_thread", "control", serializer(), serializer())
 
   object TeammatesReviseSoul : RemoteCommand<MethodsTypes.TeammatesReviseSoulParams, MethodsTypes.TeammatesReviseSoulResult>("teammates.revise_soul", "control", serializer(), serializer())
 

@@ -6,8 +6,14 @@
 
 import type { TeammateThread } from "@argus/remote-protocol";
 import { useEffect, useRef, useState } from "react";
-import { describeError, formatRelative } from "@argus/client-core";
 import {
+  describeError,
+  formatRelative,
+  threadFailureDetail,
+  threadFailureTitle,
+} from "@argus/client-core";
+import {
+  Banner,
   Button,
   EmptyState,
   Icons,
@@ -18,9 +24,11 @@ import {
 } from "@argus/peacock";
 import { appNavigate } from "../../routing/router";
 import type { Screen } from "../../routing/screens";
+import { useAgentsStore } from "../../stores/agents";
 import { useConnectionStore } from "../../stores/connection";
 import { useTeammatesStore } from "../../stores/teammates";
 import { AgentTranscript } from "../transcript/AgentTranscript";
+import styles from "./TeammateConversation.module.css";
 import { showTeammatePage } from "./teammateNav";
 
 /** The agent a teammate conversation on screen talks to, for the docked composer. */
@@ -65,6 +73,7 @@ export function TeammateConversation({
   const [attempt, setAttempt] = useState(0);
   const [listOpen, setListOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [resuming, setResuming] = useState(false);
   const listTrigger = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -115,6 +124,35 @@ export function TeammateConversation({
     : (threads?.find((t) => t.id === threadId) ?? threads?.[0] ?? null);
   const agentId = current?.agent_id ?? readOnlyThread?.agent_id ?? null;
   const selectedId = current?.thread.id ?? readOnlyThread?.id ?? null;
+
+  const agentStatus = useAgentsStore((s) =>
+    agentId ? s.statusByAgent[agentId]?.status : undefined,
+  );
+  // A turn ending is when its failure lands on the thread.
+  useEffect(() => {
+    if (ready && agentStatus) {
+      void store()
+        .loadThreads(teammateId)
+        .catch(() => {});
+    }
+  }, [ready, agentStatus, teammateId, store]);
+
+  const shownThread = threads?.find((t) => t.id === selectedId) ?? null;
+  const failure = shownThread?.failure ?? null;
+
+  const resume = async () => {
+    if (!selectedId) {
+      return;
+    }
+    setResuming(true);
+    try {
+      await store().resumeThread(teammateId, selectedId);
+    } catch (err) {
+      setFailed(describeError(err));
+    } finally {
+      setResuming(false);
+    }
+  };
 
   let body;
   if (agentId) {
@@ -192,6 +230,7 @@ export function TeammateConversation({
               title: t.title,
               lastOpenedLabel: formatRelative(t.last_opened_at),
               surfaceLabel: SURFACE_LABELS[t.surface],
+              failed: Boolean(t.failure),
             }))}
             onArchive={hasControl ? (id) => void archive(id) : undefined}
             onNew={hasControl ? () => void startFresh() : undefined}
@@ -203,6 +242,29 @@ export function TeammateConversation({
         </PickerPopover>
       )}
       {body}
+      {agentId && failure && (
+        <Banner
+          className={styles.failure}
+          leading={<Icons.WarningIcon size={12} />}
+          tone={failure.kind === "limit" ? "warning" : "error"}
+          trailing={
+            hasControl && (
+              <Button
+                disabled={resuming}
+                size="sm"
+                onClick={() => void resume()}
+              >
+                Resume
+              </Button>
+            )
+          }
+        >
+          <span className={styles.failureTitle}>
+            {threadFailureTitle(failure.kind)}
+          </span>
+          {threadFailureDetail(failure)}
+        </Banner>
+      )}
     </>
   );
 }

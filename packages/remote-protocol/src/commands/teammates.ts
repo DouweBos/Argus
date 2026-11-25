@@ -104,6 +104,12 @@ export const TEAMMATE_COMMANDS = {
     }),
     result: OpenedTeammateThread,
   },
+  /** Pick a conversation back up after its last turn stopped short. */
+  teammate_thread_resume: {
+    tier: "admin",
+    params: z.object({ threadId: z.string() }),
+    result: OpenedTeammateThread,
+  },
   teammate_thread_archive: {
     tier: "admin",
     params: z.object({ threadId: z.string() }),

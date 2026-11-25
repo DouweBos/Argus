@@ -82,6 +82,7 @@ import { sessionRunnerId } from "../session/models";
 import { simulatorPool } from "../simulator/pool";
 import {
   noteThreadMessage,
+  noteThreadTurn,
   teammateThreadForSession,
 } from "../teammate/threadSessions";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
@@ -141,6 +142,7 @@ import { noteLimitStallStarted } from "./limitHandoff";
 import {
   cancelLimitResume,
   forgetLimitResume,
+  limitResetAt,
   noteLimitHit,
   noteRateLimitLine,
   onTurnResult,
@@ -1133,6 +1135,11 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
 
       return;
     }
+    noteThreadTurn(agentSession.sessionId, {
+      kind: "exit",
+      code: exitCode,
+      intentional: !agentEntry || agentEntry.status === "stopped",
+    });
     if (agentEntry) {
       agentEntry.status = exitCode === 0 ? "stopped" : "error";
 
@@ -1387,6 +1394,12 @@ export function onStreamLine(agentId: string, line: string): void {
           session.inflightPrompts -= 1;
         }
         session.turnsCompleted += 1;
+        noteThreadTurn(session.sessionId, {
+          kind: "result",
+          failed: session.resultSummary.subtype === "error",
+          text: parsed.result ?? "",
+          resetsAt: limitResetAt(agentId),
+        });
         // A `result` is not the agent going idle: background tasks can keep
         // it working afterwards. Only CLIs without state events fall back here.
         if (

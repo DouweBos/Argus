@@ -4,6 +4,7 @@
  */
 
 import type { SlackBlock } from "./api";
+import type { TeammateThreadFailure } from "../teammate/failure";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { escapeText } from "./mrkdwn";
@@ -12,6 +13,7 @@ import { ACTIVITY_LABEL, type Activity } from "./progress";
 export const ACTION_PICK_PROJECT = "argus_pick_project";
 export const ACTION_ALLOW = "argus_permission_allow";
 export const ACTION_DENY = "argus_permission_deny";
+export const ACTION_RESUME = "argus_resume_thread";
 
 export interface SessionLinks {
   app: string;
@@ -218,6 +220,86 @@ export function permissionAnswered(opts: {
     text,
     blocks: [{ type: "context", elements: [{ type: "mrkdwn", text }] }],
   };
+}
+
+/** A turn that stopped short: why, and a Resume button when it can resume. */
+export function failureMessage(opts: {
+  failure: Pick<TeammateThreadFailure, "reason" | "resets_at">;
+  /** The teammate speaking, when it is one. */
+  speaker: string | null;
+  resumable: boolean;
+  links: SessionLinks | null;
+}): { text: string; blocks: SlackBlock[] } {
+  const line = failureLine(opts.failure);
+  const text = opts.speaker ? `*${escapeText(opts.speaker)}:* ${line}` : line;
+  const blocks: SlackBlock[] = [
+    { type: "section", text: { type: "mrkdwn", text } },
+  ];
+  if (opts.resumable) {
+    blocks.push({
+      type: "actions",
+      elements: [
+        {
+          type: "button",
+          action_id: ACTION_RESUME,
+          style: "primary",
+          text: { type: "plain_text", text: "Resume" },
+          value: JSON.stringify({ r: line.slice(0, 1500) }),
+        },
+      ],
+    });
+  }
+  if (opts.links) {
+    blocks.push({
+      type: "context",
+      elements: [{ type: "mrkdwn", text: linkLine(opts.links) }],
+    });
+  }
+
+  return { text, blocks };
+}
+
+function failureLine(
+  failure: Pick<TeammateThreadFailure, "reason" | "resets_at">,
+): string {
+  const reason = `Stopped: ${escapeText(failure.reason)}`;
+  if (failure.resets_at === null) {
+    return reason;
+  }
+  const seconds = Math.floor(failure.resets_at / 1000);
+  const fallback = new Date(failure.resets_at).toISOString();
+
+  return `${reason} It resets <!date^${seconds}^{date_short_pretty} at {time}|${fallback}>.`;
+}
+
+/** The failure message once someone pressed Resume on it. */
+export function resumedMessage(opts: { line: string; by: string }): {
+  text: string;
+  blocks: SlackBlock[];
+} {
+  return {
+    text: opts.line,
+    blocks: [
+      { type: "section", text: { type: "mrkdwn", text: opts.line } },
+      {
+        type: "context",
+        elements: [{ type: "mrkdwn", text: `Resumed by <@${opts.by}>` }],
+      },
+    ],
+  };
+}
+
+export function parseResumeValue(value: string): string {
+  try {
+    const parsed = JSON.parse(value) as { r?: unknown };
+    if (typeof parsed.r === "string") {
+      return parsed.r;
+    }
+  } catch {
+    // Not ours.
+  }
+
+  return "Stopped.";
 }
 
 export function parsePermissionValue(value: string): PermissionRef | null {

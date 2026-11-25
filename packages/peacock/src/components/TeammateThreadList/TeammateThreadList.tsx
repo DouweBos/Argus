@@ -1,4 +1,4 @@
-import { ChatIcon, ComposeIcon } from "../../icons/Icons";
+import { ChatIcon, ComposeIcon, WarningIcon } from "../../icons/Icons";
 import { Badge } from "../Badge/Badge";
 import { Button } from "../Button/Button";
 import { FlatIconButton } from "../FlatIconButton/FlatIconButton";
@@ -12,6 +12,8 @@ export interface TeammateThreadListItem {
   lastOpenedLabel: string;
   /** Where it started when not here: "Slack", "Linear", "Handoff". */
   surfaceLabel?: string;
+  /** Its last turn stopped short. */
+  failed?: boolean;
 }
 
 export interface TeammateThreadListProps {
@@ -65,7 +67,15 @@ export function TeammateThreadList({
             type="button"
             onClick={() => onOpen(thread.id)}
           >
-            <ChatIcon className={styles.icon} size={12} />
+            {thread.failed ? (
+              <WarningIcon
+                aria-label="Stopped"
+                className={styles.failedIcon}
+                size={12}
+              />
+            ) : (
+              <ChatIcon className={styles.icon} size={12} />
+            )}
             <span className={styles.text}>
               <span className={styles.threadTitle}>
                 {thread.title || "New conversation"}

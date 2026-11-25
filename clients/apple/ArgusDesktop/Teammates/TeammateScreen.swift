@@ -89,7 +89,10 @@ private struct TeammateConversation: View {
       Divider()
       Group {
         if let opened {
-          TeammateChat(teammate: teammate, agentId: opened.agentId, sessionId: opened.sessionId).id(opened.agentId)
+          TeammateChat(
+            teammate: teammate, threadId: opened.thread.id, agentId: opened.agentId, sessionId: opened.sessionId
+          )
+          .id(opened.agentId)
         } else if failed {
           EmptyState(
             icon: "exclamationmark.bubble", title: "Couldn't open the conversation",
@@ -153,9 +156,17 @@ private struct TeammateConversation: View {
 private struct TeammateChat: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
+  @Environment(TeammatesStore.self) private var teammates
   let teammate: TeammatesStore.Teammate
+  let threadId: String
   let agentId: String
   let sessionId: String
+
+  @State private var resuming = false
+
+  private var failure: ArgusProtocol.TeammateThreadFailure? {
+    teammates.thread(teammateId: teammate.id, threadId: threadId)?.failure
+  }
 
   private var isEmpty: Bool {
     store.visibleMessages(for: agentId).isEmpty && (store.queuedByAgent[agentId] ?? []).isEmpty
@@ -171,9 +182,19 @@ private struct TeammateChat: View {
         .environment(\.openDutyRun) { run in
           model.navigate(.automation(id: run.automationId, runId: run.runId))
         }
+      if let failure {
+        TeammateFailureBanner(failure: failure, onResume: resuming ? nil : { Task { await resume() } })
+          .clipShape(.rect(cornerRadius: 8))
+          .readingColumn()
+          .padding(.top, 8)
+      }
       ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
         MacTelemetry.capture(.inputUsed(affordance: affordance.rawValue))
       }
+    }
+    // A turn ending is when its failure lands on the thread.
+    .onChange(of: store.statusByAgent[agentId]?.status) {
+      Task { await teammates.loadThreads(teammateId: teammate.id) }
     }
     .task {
       await store.watchAgent(agentId, on: true)
@@ -184,5 +205,11 @@ private struct TeammateChat: View {
     .onDisappear {
       Task { await store.watchAgent(agentId, on: false) }
     }
+  }
+
+  private func resume() async {
+    resuming = true
+    await teammates.resumeThread(teammateId: teammate.id, threadId: threadId)
+    resuming = false
   }
 }

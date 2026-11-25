@@ -9,6 +9,7 @@ import type { SlackThread, SlackThreadStore } from "./threads";
 import type { ImageAttachment } from "@argus/remote-protocol";
 import { emitHostEvent } from "@argus/host/bus";
 import { appState } from "../../state";
+import { limitResetAt } from "../agent/limitResume";
 import { getPublicUrl, isRemoteActive } from "../remote/remoteService";
 import { startAgentWhenReady } from "../remote/startWhenReady";
 import { createSession } from "../session/manager";
@@ -166,6 +167,17 @@ export function hostDeps(
     continueSession,
     teammateByHandle,
     startTeammate,
+    resumeTeammate: async (threadId, author) => {
+      const { threadRecord } = await import("../teammate/threads");
+      if (!threadRecord(threadId)) {
+        return null;
+      }
+      const { resumeThread } = await import("../teammate/recovery");
+      const opened = await resumeThread(threadId, "slack", author ?? undefined);
+
+      return { agentId: opened.agent_id };
+    },
+    limitResetAt: (agentId) => limitResetAt(agentId),
     pendingPrompt: (agentId, toolUseId) => {
       const prompt = appState.agentPendingPermissions
         .get(agentId)

@@ -1,0 +1,9 @@
+.failure {
+  flex-shrink: 0;
+  margin: var(--space-2) var(--space-4);
+}
+
+.failureTitle {
+  font-weight: 600;
+  margin-right: var(--space-2);
+}

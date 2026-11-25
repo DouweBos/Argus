@@ -108,6 +108,7 @@ import {
   startDutyReports,
   stopDutyReports,
 } from "./services/teammate/dutyReports";
+import { stopThreadRecovery } from "./services/teammate/recovery";
 import {
   startLinearMentions,
   stopLinearMentions,
@@ -351,6 +352,7 @@ export function stopHostServices(): void {
   stopIdlePause();
   stopLinearMentions();
   stopDutyReports();
+  stopThreadRecovery();
   stopLimitAutoSwitch();
   stopUsageWarnings();
   stopSlack();

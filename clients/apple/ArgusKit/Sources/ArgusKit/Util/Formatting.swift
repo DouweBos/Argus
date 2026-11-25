@@ -73,6 +73,33 @@ public enum Labels {
     return "Usage limit reached. Continues automatically \(day)at \(time)."
   }
 
+  /// A stopped teammate conversation's headline, by why it stopped.
+  public static func threadFailureTitle(_ kind: ArgusProtocol.TeammateThreadFailureKind) -> String {
+    switch kind {
+    case .limit: "Stopped at the usage limit"
+    case .auth: "Stopped: the account needs signing in"
+    case .crashed: "The agent quit mid-turn"
+    case .interrupted: "Interrupted by a restart"
+    default: "Stopped with an error"
+    }
+  }
+
+  /// The failure's reason, plus when a spent limit resets.
+  public static func threadFailureDetail(_ failure: ArgusProtocol.TeammateThreadFailure, now: Date = Date()) -> String {
+    guard let resetsAt = failure.resetsAt else { return failure.reason }
+    return "\(failure.reason) It resets \(clockTime(resetsAt, now: now))."
+  }
+
+  /// "at 14:05", or "Tue at 14:05" when it isn't today.
+  public static func clockTime(_ millis: Double, now: Date = Date()) -> String {
+    let when = Date(timeIntervalSince1970: millis / 1000)
+    let time = when.formatted(date: .omitted, time: .shortened)
+    let day =
+      Calendar.current.isDate(when, inSameDayAs: now)
+      ? "" : "\(when.formatted(.dateTime.weekday(.abbreviated))) "
+    return "\(day)at \(time)"
+  }
+
   // MARK: Time
 
   /// Unix milliseconds to a short relative phrase.

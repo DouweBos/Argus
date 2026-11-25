@@ -967,6 +967,8 @@ export const MethodParams = {
     fresh: z.boolean().optional(),
   }),
   "teammates.archive_thread": z.object({ thread_id: z.string() }),
+  /** Sends the stopped conversation a "continue", waking its agent first. */
+  "teammates.resume_thread": z.object({ thread_id: z.string() }),
   "automations.set_enabled": z.object({
     automation_id: z.string(),
     enabled: z.boolean(),
@@ -1573,6 +1575,7 @@ export const MethodResult = {
   "teammates.threads": z.object({ threads: z.array(TeammateThread) }),
   "teammates.open_thread": OpenedTeammateThread,
   "teammates.archive_thread": z.object({ accepted: z.boolean() }),
+  "teammates.resume_thread": OpenedTeammateThread,
   "automations.set_enabled": z.object({ automation: RemoteAutomation }),
   /** The only time the secret is shown. */
   "automations.rotate_webhook": z.object({

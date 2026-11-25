@@ -8,6 +8,8 @@ import dev.houwert.argus.kit.protocol.generated.RemoteAutomationRun
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationTriggerKind
 import dev.houwert.argus.kit.protocol.generated.SlackChannelRef
 import dev.houwert.argus.kit.protocol.generated.SlackTriggerMatch
+import dev.houwert.argus.kit.protocol.generated.TeammateThreadFailure
+import dev.houwert.argus.kit.protocol.generated.TeammateThreadFailureKind
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -69,6 +71,40 @@ object Labels {
   }
 
   /** The pending auto-continue after a usage limit, phrased as a banner. */
+  /** A stopped teammate conversation's headline, by why it stopped. */
+  fun threadFailureTitle(kind: TeammateThreadFailureKind): String = when (kind) {
+    TeammateThreadFailureKind.limit -> "Stopped at the usage limit"
+    TeammateThreadFailureKind.auth -> "Stopped: the account needs signing in"
+    TeammateThreadFailureKind.crashed -> "The agent quit mid-turn"
+    TeammateThreadFailureKind.interrupted -> "Interrupted by a restart"
+    else -> "Stopped with an error"
+  }
+
+  /** The failure's reason, plus when a spent limit resets. */
+  fun threadFailureDetail(
+    failure: TeammateThreadFailure,
+    now: Instant = Instant.now(),
+    zone: ZoneId = ZoneId.systemDefault(),
+    locale: Locale = Locale.getDefault(),
+  ): String {
+    val resetsAt = failure.resetsAt ?: return failure.reason
+    return "${failure.reason} It resets ${clockTime(resetsAt, now, zone, locale)}."
+  }
+
+  /** "at 14:05", or "Tue at 14:05" when it isn't today. */
+  fun clockTime(
+    millis: Double,
+    now: Instant = Instant.now(),
+    zone: ZoneId = ZoneId.systemDefault(),
+    locale: Locale = Locale.getDefault(),
+  ): String {
+    val wh = Instant.ofEpochMilli(millis.toLong()).atZone(zone)
+    val time = wh.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale))
+    val day = if (wh.toLocalDate() == now.atZone(zone).toLocalDate()) "" else
+      wh.format(DateTimeFormatter.ofPattern("EEE", locale)) + " "
+    return "${day}at $time"
+  }
+
   fun limitResumeBanner(
     millis: Double,
     now: Instant = Instant.now(),

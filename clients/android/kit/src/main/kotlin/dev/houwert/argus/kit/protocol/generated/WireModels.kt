@@ -7812,7 +7812,31 @@ data class TeammateThread(
   @SerialName("created_at") val createdAt: Double,
   @SerialName("last_opened_at") val lastOpenedAt: Double,
   @SerialName("archived") val archived: Boolean,
+  @SerialName("failure") val failure: TeammateThreadFailure? = null,
 )
+
+@Serializable
+data class TeammateThreadFailure(
+  @SerialName("kind") val kind: TeammateThreadFailureKind,
+  @SerialName("reason") val reason: String,
+  @SerialName("at") val at: Double,
+  @SerialName("resets_at") @EncodeDefault val resetsAt: Double? = null,
+)
+
+@Serializable
+@JvmInline
+value class TeammateThreadFailureKind(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val auth = TeammateThreadFailureKind("auth")
+    val crashed = TeammateThreadFailureKind("crashed")
+    val error = TeammateThreadFailureKind("error")
+    val interrupted = TeammateThreadFailureKind("interrupted")
+    val limit = TeammateThreadFailureKind("limit")
+    val entries: List<TeammateThreadFailureKind> = listOf(auth, crashed, error, interrupted, limit)
+  }
+}
 
 @Serializable
 data class TeardownConfig(

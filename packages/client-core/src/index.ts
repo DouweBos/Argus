@@ -5,6 +5,7 @@ export * from "./automations/format";
 export * from "./automations/once";
 export * from "./automations/reportPreview";
 export * from "./automations/teammateDraft";
+export * from "./automations/teammateFailure";
 export * from "./automations/teammateOrigin";
 export * from "./baseBranch";
 export * from "./chatHistory";

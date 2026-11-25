@@ -51,6 +51,24 @@ export const Default: Story = {};
 
 export const Empty: Story = { args: { threads: [] } };
 
+export const Failed: Story = {
+  args: {
+    threads: [
+      {
+        id: "t1",
+        title: "Why does the iOS job keep timing out?",
+        lastOpenedLabel: "just now",
+        failed: true,
+      },
+      {
+        id: "t2",
+        title: "Why is the e2e suite flaky on CI?",
+        lastOpenedLabel: "3h ago",
+      },
+    ],
+  },
+};
+
 export const MonitorOnly: Story = {
   args: { onNew: undefined, onArchive: undefined },
 };

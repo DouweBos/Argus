@@ -357,6 +357,7 @@ export const REMOTE_METHODS = {
   /** Starts or wakes the conversation's agent, which spends. */
   "teammates.open_thread": "control",
   "teammates.archive_thread": "control",
+  "teammates.resume_thread": "control",
   "automations.delete_memory": "control",
   "automations.set_enabled": "control",
   /** Hands out a credential that starts runs. */

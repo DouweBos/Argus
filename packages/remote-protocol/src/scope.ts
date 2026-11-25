@@ -294,6 +294,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "teammates.threads": DENIED,
   "teammates.open_thread": DENIED,
   "teammates.archive_thread": DENIED,
+  "teammates.resume_thread": DENIED,
   "automations.delete_memory": DENIED,
   "automations.set_enabled": DENIED,
   "automations.rotate_webhook": DENIED,

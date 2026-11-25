@@ -26,6 +26,10 @@
           "teammates/chat", size: screen, chrome: true, fixtures: fixtures, setup: attach
         ) { TeammateScreen(teammateId: GalleryFixtures.ciFixerId, page: .chat(threadId: nil)) },
         GalleryStory(
+          "teammates/chat/failed", size: screen, chrome: true, fixtures: GalleryFixtures.teammates(failed: true),
+          setup: attach
+        ) { TeammateScreen(teammateId: GalleryFixtures.ciFixerId, page: .chat(threadId: nil)) },
+        GalleryStory(
           "teammates/profile", size: CGSize(width: 1000, height: 1500), chrome: true, fixtures: fixtures,
           setup: attach
         ) { TeammateScreen(teammateId: GalleryFixtures.ciFixerId, page: .profile) },

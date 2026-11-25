@@ -9,6 +9,7 @@ import {
   teammateDetail,
   updateTeammate,
 } from "../services/teammate/manager";
+import { resumeThread } from "../services/teammate/recovery";
 import { reviseSoul } from "../services/teammate/revise";
 import { teammateSummaries } from "../services/teammate/summaries";
 import { TEAMMATE_TEMPLATES } from "../services/teammate/templates";
@@ -45,6 +46,9 @@ export function registerTeammateCommands(): void {
   defineTypedCommand("teammate_threads_list", (p) => listThreads(p.id));
   defineTypedCommand("teammate_thread_open", (p) =>
     openThread(p.id, { threadId: p.threadId, fresh: p.fresh }),
+  );
+  defineTypedCommand("teammate_thread_resume", (p) =>
+    resumeThread(p.threadId, "app"),
   );
   defineTypedCommand("teammate_thread_archive", (p) =>
     archiveThread(p.threadId),

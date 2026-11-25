@@ -269,6 +269,7 @@ import {
   saveTeammateSoul,
   updateTeammate,
 } from "../teammate/manager";
+import { resumeThread } from "../teammate/recovery";
 import { reviseSoul } from "../teammate/revise";
 import { teammateSummaries } from "../teammate/summaries";
 import {
@@ -2776,6 +2777,11 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return await control(() =>
       openThread(teammate_id, { threadId: thread_id, fresh }),
     );
+  },
+  "teammates.resume_thread": async (params) => {
+    const { thread_id } = parse("teammates.resume_thread", params);
+
+    return await control(() => resumeThread(thread_id, "app"));
   },
   "teammates.archive_thread": async (params) => {
     const { thread_id } = parse("teammates.archive_thread", params);

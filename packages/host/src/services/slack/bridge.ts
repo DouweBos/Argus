@@ -10,6 +10,12 @@ import type { SlackThread } from "./threads";
 import { warn } from "@argus/host/logger";
 import { permissionActions } from "../notifications/actions";
 import {
+  crashFailure,
+  resultFailure,
+  type TeammateThreadFailure,
+} from "../teammate/failure";
+import {
+  failureMessage,
   permissionAnswered,
   permissionPrompt,
   projectName,
@@ -245,7 +251,13 @@ export class ThreadBridge {
     }
     if (status === "stopped" || status === "error") {
       turn.activity = status === "error" ? "failed" : "stopped";
-      this.settle(thread, agentId, turn).catch(() => undefined);
+      const crashed =
+        status === "error"
+          ? this.postFailure(thread, agentId, crashFailure(null, this.now()))
+          : Promise.resolve();
+      crashed
+        .then(() => this.settle(thread, agentId, turn))
+        .catch(() => undefined);
     }
   }
 
@@ -260,9 +272,21 @@ export class ThreadBridge {
     const links = thread.sessionId
       ? this.deps.links(thread.sessionId, agentId)
       : null;
-    let body = result.failed
-      ? "The agent stopped with an error. Open it in Argus to see why."
-      : "Done.";
+    if (result.failed) {
+      await this.postFailure(
+        thread,
+        agentId,
+        resultFailure(
+          result.text,
+          this.deps.limitResetAt?.(agentId) ?? null,
+          this.now(),
+        ),
+      );
+      await this.settle(thread, agentId, turn);
+
+      return;
+    }
+    let body = "Done.";
     if (result.text.trim()) {
       body = truncateMrkdwn(
         markdownToMrkdwn(result.text),
@@ -284,6 +308,30 @@ export class ThreadBridge {
       warn(`[slack] couldn't post the reply: ${String(e)}`);
     }
     await this.settle(thread, agentId, turn);
+  }
+
+  /** Why the turn stopped; a teammate's conversation also gets Resume. */
+  private async postFailure(
+    thread: SlackThread,
+    agentId: string,
+    failure: TeammateThreadFailure,
+  ): Promise<void> {
+    try {
+      await this.deps.api.postMessage({
+        channel: thread.channel,
+        threadTs: thread.threadTs,
+        ...failureMessage({
+          failure,
+          speaker: thread.teammate?.name ?? null,
+          resumable: Boolean(thread.teammate && this.deps.resumeTeammate),
+          links: thread.sessionId
+            ? this.deps.links(thread.sessionId, agentId)
+            : null,
+        }),
+      });
+    } catch (e) {
+      warn(`[slack] couldn't post why the turn stopped: ${String(e)}`);
+    }
   }
 
   /** The turn is over: final status now, and remember how to resume. */

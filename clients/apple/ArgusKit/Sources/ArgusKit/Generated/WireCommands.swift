@@ -10138,6 +10138,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct TeammateThreadResumeParams: Codable, Sendable {
+      public var threadId: String
+
+      enum CodingKeys: String, CodingKey {
+        case threadId = "threadId"
+      }
+
+      public init(threadId: String) {
+        self.threadId = threadId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(threadId, forKey: .threadId)
+      }
+    }
+
     public struct TeammateThreadsListParams: Codable, Sendable {
       public var id: String
 
@@ -14393,6 +14410,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.TeammateThreadOpenParams
       public typealias Result = ArgusProtocol.OpenedTeammateThread
       public static let name = "teammate_thread_open"
+      public static let tier = "admin"
+    }
+
+    public enum TeammateThreadResume: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.TeammateThreadResumeParams
+      public typealias Result = ArgusProtocol.OpenedTeammateThread
+      public static let name = "teammate_thread_resume"
       public static let tier = "admin"
     }
 

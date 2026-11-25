@@ -123,6 +123,27 @@ public final class TeammatesStore {
     }
   }
 
+  /// Picks a stopped conversation back up: wakes its agent and sends it a
+  /// "continue". The host counts it.
+  @discardableResult
+  public func resumeThread(teammateId: String, threadId: String) async -> ArgusProtocol.OpenedTeammateThread? {
+    guard let backend = host.backend else { return nil }
+    do {
+      let opened = try await backend.request(
+        ArgusProtocol.Methods.TeammatesResumeThread.self, .init(threadId: threadId))
+      await loadThreads(teammateId: teammateId)
+      return opened
+    } catch {
+      fail("Couldn't resume the conversation", error)
+      return nil
+    }
+  }
+
+  /// The conversation's stored record, for its failure.
+  public func thread(teammateId: String, threadId: String) -> Thread? {
+    threadsById[teammateId]?.first { $0.id == threadId }
+  }
+
   public func archiveThread(teammateId: String, threadId: String) async {
     guard let backend = host.backend else { return }
     do {

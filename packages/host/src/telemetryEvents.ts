@@ -456,6 +456,15 @@ export interface EventMap {
   teammate_soul_changed: { via: "edit" | "revise" };
   /** `resumed`: an earlier conversation was picked back up from disk. */
   teammate_thread_opened: { new_thread: boolean; resumed: boolean };
+  /** A conversation's turn stopped short, and why. */
+  teammate_thread_failed: {
+    kind: "auth" | "crashed" | "error" | "interrupted" | "limit";
+  };
+  /** `kind`: the failure it was resumed from, null when there was none. */
+  teammate_thread_resumed: {
+    source: "app" | "auto" | "slack";
+    kind: "auth" | "crashed" | "error" | "interrupted" | "limit" | null;
+  };
   /** `delivered`: the teammate's conversation was handed the run. */
   teammate_duty_reported: {
     status: "failed" | "succeeded";

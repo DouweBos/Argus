@@ -102,6 +102,28 @@ export const TeammateClearableField = z.enum([
 ]);
 export type TeammateClearableField = z.infer<typeof TeammateClearableField>;
 
+/** Why a conversation's last turn stopped short. */
+export const TeammateThreadFailureKind = z.enum([
+  "auth",
+  "crashed",
+  "error",
+  "interrupted",
+  "limit",
+]);
+export type TeammateThreadFailureKind = z.infer<
+  typeof TeammateThreadFailureKind
+>;
+
+export const TeammateThreadFailure = z.object({
+  kind: TeammateThreadFailureKind,
+  /** One short sentence, ready to show. */
+  reason: z.string(),
+  at: z.number(),
+  /** When a spent usage limit resets, epoch ms, when the runner said. */
+  resets_at: z.number().nullable(),
+});
+export type TeammateThreadFailure = z.infer<typeof TeammateThreadFailure>;
+
 /** One conversation with a teammate. */
 export const TeammateThread = z.object({
   id: z.string(),
@@ -115,6 +137,8 @@ export const TeammateThread = z.object({
   created_at: z.number(),
   last_opened_at: z.number(),
   archived: z.boolean(),
+  /** Why the last turn stopped short; absent or null when it didn't. */
+  failure: TeammateThreadFailure.nullish(),
 });
 export type TeammateThread = z.infer<typeof TeammateThread>;
 

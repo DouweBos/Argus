@@ -3,6 +3,8 @@
  * status message shows this instead of every tool call.
  */
 
+import { resultSubtype } from "../agent/models";
+
 export type Activity =
   | "browsing"
   | "done"
@@ -106,7 +108,12 @@ export function activityForStreamLine(line: string): Activity | null {
 export function resultOfStreamLine(
   line: string,
 ): { text: string; failed: boolean } | null {
-  let event: { type?: string; result?: unknown; subtype?: string };
+  let event: {
+    type?: string;
+    result?: unknown;
+    subtype?: string;
+    is_error?: boolean;
+  };
   try {
     event = JSON.parse(line) as typeof event;
   } catch {
@@ -118,6 +125,6 @@ export function resultOfStreamLine(
 
   return {
     text: typeof event.result === "string" ? event.result : "",
-    failed: event.subtype === "error",
+    failed: resultSubtype(event) === "error",
   };
 }

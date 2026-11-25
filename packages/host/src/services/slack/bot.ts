@@ -21,10 +21,13 @@ import {
   ACTION_ALLOW,
   ACTION_DENY,
   ACTION_PICK_PROJECT,
+  ACTION_RESUME,
   parsePermissionValue,
+  parseResumeValue,
   pickedProject,
   projectPicker,
   projectToken,
+  resumedMessage,
 } from "./blocks";
 import { ThreadBridge } from "./bridge";
 import { parseEnvelope, type SlackAction, type SlackMessage } from "./events";
@@ -430,6 +433,11 @@ export class SlackBot {
 
       return;
     }
+    if (action.actionId === ACTION_RESUME) {
+      await this.resume(action, where);
+
+      return;
+    }
     if (action.actionId === ACTION_ALLOW || action.actionId === ACTION_DENY) {
       await this.answerPermission(
         action,
@@ -474,6 +482,56 @@ export class SlackBot {
       pending.text,
       repoRoot,
     );
+  }
+
+  /** Resume on a stopped teammate conversation's failure message. */
+  private async resume(
+    action: SlackAction,
+    where: { channel: string; threadTs: string },
+  ): Promise<void> {
+    const thread = this.deps.threads.get(where.channel, where.threadTs);
+    if (!thread?.teammate || !this.deps.resumeTeammate) {
+      return;
+    }
+    const author = await this.deps.api.userName(action.user).catch(() => null);
+    let resumed;
+    try {
+      resumed = await this.deps.resumeTeammate(
+        thread.teammate.threadId,
+        author ? `${author} (Slack)` : "Slack",
+      );
+    } catch (e) {
+      await this.reply(
+        where,
+        `I couldn't resume it: ${typeof e === "string" ? e : String(e)}`,
+      );
+
+      return;
+    }
+    if (!resumed) {
+      await this.reply(
+        where,
+        "That conversation is gone, so there's nothing to resume.",
+      );
+
+      return;
+    }
+    try {
+      await this.deps.api.updateMessage({
+        channel: action.channel,
+        ts: action.messageTs,
+        ...resumedMessage({
+          line: parseResumeValue(action.value),
+          by: action.user,
+        }),
+      });
+    } catch (e) {
+      warn(`[slack] couldn't update the failure message: ${String(e)}`);
+    }
+    const next = this.deps.threads.put(thread.channel, thread.threadTs, {
+      agentId: resumed.agentId,
+    });
+    await this.bridge.beginTurn(next);
   }
 
   private async answerPermission(

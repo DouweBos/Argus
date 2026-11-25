@@ -3055,6 +3055,11 @@ object CommandsTypes {
   )
 
   @Serializable
+  data class TeammateThreadResumeParams(
+    @SerialName("threadId") val threadId: String,
+  )
+
+  @Serializable
   data class TeammateThreadsListParams(
     @SerialName("id") val id: String,
   )
@@ -4271,6 +4276,8 @@ object Commands {
   object TeammateThreadArchive : RemoteCommand<CommandsTypes.TeammateThreadArchiveParams, IgnoredResult>("teammate_thread_archive", "admin", serializer(), serializer())
 
   object TeammateThreadOpen : RemoteCommand<CommandsTypes.TeammateThreadOpenParams, OpenedTeammateThread>("teammate_thread_open", "admin", serializer(), serializer())
+
+  object TeammateThreadResume : RemoteCommand<CommandsTypes.TeammateThreadResumeParams, OpenedTeammateThread>("teammate_thread_resume", "admin", serializer(), serializer())
 
   object TeammateThreadsList : RemoteCommand<CommandsTypes.TeammateThreadsListParams, List<TeammateThread>>("teammate_threads_list", "admin", serializer(), serializer())
 

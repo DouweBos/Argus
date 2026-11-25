@@ -128,9 +128,16 @@ extension GalleryFixtures {
     ]
   }
 
-  private static var threads: [[String: Any]] {
-    [
-      thread("th1", "Why does the iOS job keep timing out on main?", minutes: 8),
+  private static func threads(failed: Bool) -> [[String: Any]] {
+    var first = thread("th1", "Why does the iOS job keep timing out on main?", minutes: 8)
+    if failed {
+      first["failure"] = [
+        "kind": "limit", "reason": "Hit the usage limit.", "at": ago(3),
+        "resets_at": Date().addingTimeInterval(2 * 3600).timeIntervalSince1970 * 1000,
+      ]
+    }
+    return [
+      first,
       thread("th2", "Remember that the e2e suite needs the staging token", minutes: 60 * 26, surface: "slack"),
       thread("th4", "Take over the flaky upload test from the release shepherd", minutes: 60 * 50, surface: "handoff"),
       thread("th3", "", minutes: 60 * 24 * 6),
@@ -176,8 +183,11 @@ extension GalleryFixtures {
     }
   }
 
-  public static func teammates(empty: Bool = false) -> [String: String] {
-    automations(empty: empty).merging(transcript(.dutyReport)) { old, _ in old }.merging([
+  /// `failed`: the open conversation stopped at a usage limit.
+  public static func teammates(empty: Bool = false, failed: Bool = false) -> [String: String] {
+    let threads = threads(failed: failed)
+    return
+      automations(empty: empty).merging(transcript(.dutyReport)) { old, _ in old }.merging([
       ArgusProtocol.Methods.TeammatesList.name: GalleryJSON.encode([
         "teammates": empty ? [] : mates.map(summaryJSON)
       ]),
