@@ -12,6 +12,7 @@ import type {
   RemoteAutomationRun,
   RemoteRunner,
   RemoteSignalSource,
+  UpcomingRun,
 } from "@argus/remote-protocol";
 import { create } from "zustand";
 import {
@@ -40,6 +41,8 @@ interface AutomationsState {
   load: LoadState;
   /** Ad-hoc runs only; null until the Quick Run screen asks. */
   quickRuns: RemoteAutomationRun[] | null;
+  /** Every scheduled automation and duty's next run; null until Upcoming asks. */
+  upcoming: UpcomingRun[] | null;
   detailById: Record<string, RemoteAutomationDetail>;
   memoriesById: Record<string, RemoteAutomationMemory[]>;
   calibrationById: Record<string, AutomationCalibration>;
@@ -58,6 +61,8 @@ interface AutomationsState {
   loadCalibration: (id: string) => Promise<void>;
   loadRun: (runId: string) => Promise<void>;
   loadQuickRuns: () => Promise<void>;
+  /** `viewed`: the screen just opened, rather than refreshing. */
+  loadUpcoming: (viewed: boolean) => Promise<void>;
   /** Create when `id` is null; returns the saved id. Throws the computer's reason. */
   save: (id: string | null, draft: RemoteAutomationDetail) => Promise<string>;
   /** A paused copy without memories or runs; returns its id, null on failure. */
@@ -121,6 +126,7 @@ const EMPTY = {
   runs: [],
   load: INITIAL_LOAD,
   quickRuns: null,
+  upcoming: null,
   detailById: {},
   memoriesById: {},
   calibrationById: {},
@@ -287,6 +293,21 @@ export const useAutomationsStore = create<AutomationsState>()((set, get) => {
         }
         // A computer too old to list them alone leaves them among the recent ones.
         set((s) => ({ quickRuns: s.runs.filter((r) => r.is_quick) }));
+      }
+    },
+
+    loadUpcoming: async (viewed) => {
+      const t = currentTransport();
+      if (!t) {
+        return;
+      }
+      try {
+        const { runs } = await request(t, "automations.upcoming", { viewed });
+        set({ upcoming: runs });
+      } catch (err) {
+        if (!isQuietError(err, true)) {
+          set({ upcoming: [], error: "Couldn't read what runs next." });
+        }
       }
     },
 

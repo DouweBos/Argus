@@ -37,6 +37,18 @@ suspend fun AutomationsStore.loadQuickRunsOverGateway() {
   }
 }
 
+/** The Upcoming screen's list. `viewed`: the screen just opened, rather than refreshing it. */
+suspend fun AutomationsStore.loadUpcoming(viewed: Boolean) {
+  val backend = host.backend ?: return
+  try {
+    _upcoming.value = backend.request(Methods.AutomationsUpcoming, MethodsTypes.AutomationsUpcomingParams(viewed)).runs
+    clearError()
+  } catch (e: Exception) {
+    if (HostStore.isQuiet(e)) return
+    fail("Couldn't read what's coming up", e)
+  }
+}
+
 /** How often its proposals were kept versus dismissed. */
 suspend fun AutomationsStore.loadCalibrationOverGateway(automationId: String) {
   val backend = host.backend ?: return

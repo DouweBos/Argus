@@ -43,6 +43,7 @@ import {
   saveScratchRunAsAutomation,
   startScratchRun,
 } from "../services/automation/scratch";
+import { viewUpcoming } from "../services/automation/upcoming";
 import {
   hasWebhookSecret,
   rotateWebhookSecret,
@@ -53,6 +54,9 @@ import { describeSignalSources } from "../services/signals/registry";
 
 export function registerAutomationCommands(): void {
   defineTypedCommand("automations_list", () => listAutomations());
+  defineTypedCommand("automations_upcoming", (p) =>
+    viewUpcoming(p.viewed === true),
+  );
   defineTypedCommand("automation_create", (p) => createAutomation(p.input));
   defineTypedCommand("automation_update", (p) =>
     updateAutomation(p.id, p.patch),

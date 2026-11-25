@@ -12,6 +12,7 @@ const meta: Meta<typeof AutomationsListView> = {
   args: {
     header: true,
     onQuickRun: noop,
+    onUpcoming: noop,
     onDescribe: noop,
     onNew: noop,
     rows: [],

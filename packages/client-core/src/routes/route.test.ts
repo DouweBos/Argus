@@ -67,6 +67,10 @@ describe("parseRoute", () => {
       automationQuick: true,
       automationRunId: "r1",
     });
+    expect(parseRoute("/automations/upcoming")).toMatchObject({
+      automationUpcoming: true,
+      automationId: null,
+    });
   });
 
   it("reads the host from the query, defaulting to this machine", () => {
@@ -87,6 +91,7 @@ describe("routeToPath", () => {
     "/sessions/s1/git/working",
     "/sessions/s1/git/branches/feature%2Ffoo",
     "/automations/a1/runs/r1",
+    "/automations/upcoming",
     "/usage/cost?range=7d",
     "/usage/prices",
     "/usage/tokens/models/codex/gpt-5.1-codex?range=90d",

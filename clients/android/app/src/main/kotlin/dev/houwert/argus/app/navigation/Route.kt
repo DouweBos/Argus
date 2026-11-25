@@ -68,6 +68,8 @@ sealed interface Route {
   /** Null id creates a new automation. */
   @Serializable data class AutomationEditor(val id: String? = null, val label: String) : Route
   @Serializable data object DescribeAutomation : Route
+  /** The next runs of every automation and teammate duty. */
+  @Serializable data object UpcomingRuns : Route
   @Serializable data class Run(val id: String, val label: String) : Route
   /** The named agents on this computer; under the Automations tab. */
   @Serializable data object Teammates : Route

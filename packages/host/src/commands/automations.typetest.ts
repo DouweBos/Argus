@@ -28,6 +28,7 @@ import type {
   ProposalStatus as HostProposalStatus,
 } from "../services/automation/proposals/models";
 import type { RequestRevisionResult as HostRequestRevisionResult } from "../services/automation/proposals/revise";
+import type { UpcomingRun as HostUpcomingRun } from "../services/automation/upcoming";
 import type { SignalSourceInfo as HostSignalSourceInfo } from "../services/signals/registry";
 import type {
   AcceptProposalResult,
@@ -52,6 +53,7 @@ import type {
   SaveAutomationMemoryInput,
   SignalSourceInfo,
   StartScratchRunInput,
+  UpcomingRun,
   UpdateAutomationInput,
 } from "@argus/remote-protocol";
 
@@ -82,4 +84,5 @@ export type AutomationModelChecks = [
   Expect<Equal<AcceptProposalResult, HostAcceptProposalResult>>,
   Expect<Equal<RequestRevisionResult, HostRequestRevisionResult>>,
   Expect<Equal<ReturnType<typeof deleteAutomationMemory>, void>>,
+  Expect<Equal<UpcomingRun, HostUpcomingRun>>,
 ];

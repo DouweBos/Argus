@@ -55,6 +55,7 @@ extension PhoneDestination {
     case .automations: return PhoneDestination(section: .automations)
     case .quickRun(nil): return PhoneDestination(section: .automations, route: .quickRun)
     case .describeAutomation: return PhoneDestination(section: .automations, route: .describeAutomation)
+    case .upcomingRuns: return PhoneDestination(section: .automations, route: .upcomingRuns)
     case .automation(let id, let runId?):
       if case .teammateThread(let teammateId, let threadId) = ProposalOrigin(automationId: id, runId: runId) {
         return PhoneDestination(

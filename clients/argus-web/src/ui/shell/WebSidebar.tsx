@@ -94,6 +94,7 @@ const PRIMARY: Destination[] = [
       "automationRun",
       "quickRun",
       "quickRunDetail",
+      "upcoming",
       "describe",
     ),
   },

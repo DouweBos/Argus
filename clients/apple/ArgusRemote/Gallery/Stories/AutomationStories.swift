@@ -10,6 +10,8 @@
       [
         GalleryStory("automations/list", fixtures: fixtures, setup: loadSessions) { AutomationsView() },
         GalleryStory("automations/list/empty", fixtures: empty) { AutomationsView() },
+        GalleryStory("automations/upcoming", fixtures: fixtures) { UpcomingView() },
+        GalleryStory("automations/upcoming/empty", fixtures: empty) { UpcomingView() },
         GalleryStory("automations/detail", fixtures: fixtures, setup: loadSessions) {
           AutomationView(automationId: GalleryFixtures.triageId, label: "Triage new GitHub issues")
         },

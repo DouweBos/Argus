@@ -405,3 +405,24 @@ export const AutomationWebhookSecret = z.object({
   secret: z.string(),
 });
 export type AutomationWebhookSecret = z.infer<typeof AutomationWebhookSecret>;
+
+/** Why the next run may not start on time. */
+export const UpcomingWait = z.enum(["approval", "limit", "overlap", "paused"]);
+export type UpcomingWait = z.infer<typeof UpcomingWait>;
+
+/** One automation or teammate duty's next run, for the Upcoming view. */
+export const UpcomingRun = z.object({
+  automation_id: z.string(),
+  name: z.string(),
+  /** The teammate it is a duty of, or null for a standalone automation. */
+  teammate_id: z.string().nullable(),
+  teammate_name: z.string().nullable(),
+  trigger_kind: z.enum(["once", "schedule"]),
+  /** When it fires next, epoch ms; when it would, for a paused one. */
+  next_run_at: z.number(),
+  /** Null when nothing stands in its way. */
+  waiting: UpcomingWait.nullable(),
+  /** When the wait ends, epoch ms, when known: a usage limit's reset. */
+  waiting_until: z.number().nullable(),
+});
+export type UpcomingRun = z.infer<typeof UpcomingRun>;

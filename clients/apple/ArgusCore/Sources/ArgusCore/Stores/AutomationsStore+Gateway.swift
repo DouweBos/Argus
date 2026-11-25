@@ -38,6 +38,21 @@ extension AutomationsStore {
     }
   }
 
+  /// The Upcoming screen's list. `viewed` when a screen opens on it, so the
+  /// host counts a visit rather than every refresh.
+  public func loadUpcoming(viewed: Bool = false) async {
+    guard let backend = host.backend else { return }
+    do {
+      upcoming = try await backend.request(
+        ArgusProtocol.Methods.AutomationsUpcoming.self, .init(viewed: viewed ? true : nil)
+      ).runs
+    } catch {
+      guard !HostStore.isQuiet(error) else { return }
+      gatewayFailed("Couldn't read what runs next", error)
+      if upcoming == nil { upcoming = [] }
+    }
+  }
+
   /// How often its proposals were kept versus dismissed.
   public func loadCalibrationOverGateway(automationId: String) async {
     guard let backend = host.backend else { return }

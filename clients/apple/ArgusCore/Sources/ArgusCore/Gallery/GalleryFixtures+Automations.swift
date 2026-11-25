@@ -473,6 +473,7 @@ extension GalleryFixtures {
       ArgusProtocol.Commands.AutomationCalibration.name: GalleryJSON.encode(calibration),
       ArgusProtocol.Commands.GetSession.name: "null",
       RemoteMethod.claudeAccountsList.rawValue: claudeAccounts,
+      ArgusProtocol.Methods.AutomationsUpcoming.name: GalleryJSON.encode(["runs": upcomingRecords(empty: empty)]),
     ]) { _, new in new }
   }
 }

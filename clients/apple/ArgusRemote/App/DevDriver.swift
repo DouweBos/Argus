@@ -496,6 +496,7 @@
       case "inbox": self = .inbox
       case "proposal": self = .proposal(id: arg(1))
       case "describeAutomation": self = .describeAutomation
+      case "upcomingRuns": self = .upcomingRuns
       case "notifications": self = .notifications
       case "usage": self = .usage
       case "automations": self = .automations

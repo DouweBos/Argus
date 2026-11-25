@@ -876,6 +876,16 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class AutomationsUpcomingParams(
+    @SerialName("viewed") val viewed: Boolean? = null,
+  )
+
+  @Serializable
+  data class AutomationsUpcomingResult(
+    @SerialName("runs") val runs: List<UpcomingRun>,
+  )
+
+  @Serializable
   @JvmInline
   value class AutomationsUpdateParamsPatchAutonomy(val rawValue: String) {
     override fun toString(): String = rawValue
@@ -3243,6 +3253,8 @@ object Methods {
   object AutomationsSetEnabled : RemoteCommand<MethodsTypes.AutomationsSetEnabledParams, MethodsTypes.AutomationsSetEnabledResult>("automations.set_enabled", "control", serializer(), serializer())
 
   object AutomationsSources : RemoteCommand<MethodsTypes.AutomationsSourcesParams, MethodsTypes.AutomationsSourcesResult>("automations.sources", "control", serializer(), serializer())
+
+  object AutomationsUpcoming : RemoteCommand<MethodsTypes.AutomationsUpcomingParams, MethodsTypes.AutomationsUpcomingResult>("automations.upcoming", "control", serializer(), serializer())
 
   object AutomationsUpdate : RemoteCommand<MethodsTypes.AutomationsUpdateParams, MethodsTypes.AutomationsUpdateResult>("automations.update", "control", serializer(), serializer())
 

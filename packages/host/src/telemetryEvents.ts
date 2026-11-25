@@ -456,6 +456,11 @@ export interface EventMap {
   teammate_soul_changed: { via: "edit" | "revise" };
   /** `resumed`: an earlier conversation was picked back up from disk. */
   teammate_thread_opened: { new_thread: boolean; resumed: boolean };
+  /** The Upcoming screen read the next runs; `waiting`: one is held up. */
+  upcoming_viewed: {
+    count_bucket: "0" | "1-5" | "6-20" | "21+";
+    waiting: boolean;
+  };
   /** A conversation's turn stopped short, and why. */
   teammate_thread_failed: {
     kind: "auth" | "crashed" | "error" | "interrupted" | "limit";

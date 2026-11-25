@@ -24,9 +24,12 @@ struct AutomationsView: View {
         if let error = store.error {
           Banner(text: error, tone: .danger).listRowBackground(Color.clear)
         }
-        if showsTeammates {
-          Section {
+        Section {
+          if showsTeammates {
             NavigationLink(value: Route.teammates) { TeammatesEntryRow(summaries: teammates.summaries) }
+          }
+          NavigationLink(value: Route.upcomingRuns) {
+            Label("Upcoming", systemImage: Icon.clock)
           }
         }
         if !automations.isEmpty {
@@ -172,5 +175,34 @@ private struct TeammatesEntryRow: View {
     let active = summaries.filter(\.teammate.enabled).count
     let count = summaries.count == 1 ? "1 teammate" : "\(summaries.count) teammates"
     return active == summaries.count ? count : "\(count) · \(summaries.count - active) paused"
+  }
+}
+
+/// `/automations/upcoming`: every automation and duty's next run, soonest
+/// first, with what each is waiting on.
+struct UpcomingView: View {
+  @Environment(AutomationsStore.self) private var store
+
+  var body: some View {
+    let runs = store.upcoming ?? []
+    List {
+      ForEach(runs, id: \.automationId) { run in
+        NavigationLink(value: Route.automation(id: run.automationId, label: run.name)) {
+          UpcomingRunRow(run: run)
+        }
+      }
+    }
+    .overlay {
+      if store.upcoming == nil {
+        Loading(label: "Reading the schedule")
+      } else if runs.isEmpty {
+        EmptyState(
+          icon: Icon.clock, title: "Nothing scheduled",
+          body: "Automations and teammate duties on a schedule show up here.")
+      }
+    }
+    .navigationTitle("Upcoming")
+    .task { await store.loadUpcoming(viewed: true) }
+    .refreshable { await store.loadUpcoming() }
   }
 }

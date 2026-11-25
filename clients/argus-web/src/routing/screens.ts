@@ -90,6 +90,7 @@ export type Screen =
   | { name: "automationRun"; automationId: string; runId: string }
   | { name: "quickRun" }
   | { name: "quickRunDetail"; runId: string }
+  | { name: "upcoming" }
   /** Web and iOS only: on the Mac this is Automations with a sheet. */
   | { name: "describe" }
   | { name: "teammates" }
@@ -290,6 +291,9 @@ export function screenFromPath(path: string): Screen {
         ? { name: "proposal", proposalId: route.proposalId }
         : { name: "inbox" };
     case "automations":
+      if (route.automationUpcoming) {
+        return { name: "upcoming" };
+      }
       if (route.automationQuick) {
         return route.automationRunId
           ? { name: "quickRunDetail", runId: route.automationRunId }
@@ -493,6 +497,8 @@ export function pathForScreen(screen: Screen): string {
       return "/automations/quick";
     case "quickRunDetail":
       return `/automations/quick/runs/${encodeURIComponent(screen.runId)}`;
+    case "upcoming":
+      return "/automations/upcoming";
     case "describe":
       return "/automations/describe";
     case "teammates":
@@ -590,6 +596,8 @@ export function screenPattern(screen: Screen): string {
       return "/automations/quick";
     case "quickRunDetail":
       return "/automations/quick/runs/:runId";
+    case "upcoming":
+      return "/automations/upcoming";
     case "describe":
       return "/automations/describe";
     case "teammates":

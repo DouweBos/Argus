@@ -318,6 +318,7 @@ export const REMOTE_METHODS = {
   /** Automations and their runs. The clock belongs to the host, so a phone
    *  reads the host's automations; firing one starts an agent, hence control. */
   "automations.list": "monitor",
+  "automations.upcoming": "monitor",
   "automations.runs": "monitor",
   /** One run with its report — the list omits it because reports are large. */
   "automations.run": "monitor",

@@ -73,7 +73,7 @@ import {
   RemoteTask,
   RemoteTodo,
 } from "./models";
-import { AutomationCalibration } from "./models/automations";
+import { AutomationCalibration, UpcomingRun } from "./models/automations";
 import {
   Blueprint,
   BlueprintDraft,
@@ -869,6 +869,9 @@ export const MethodParams = {
     is_down: z.boolean(),
   }),
   "automations.list": z.object({}),
+  /** Every scheduled automation and duty's next run, soonest first. */
+  /** `viewed`: a screen opened on it, rather than refreshing it. */
+  "automations.upcoming": z.object({ viewed: z.boolean().optional() }),
   "automations.runs": z.object({
     /** Omit for every run across every automation, newest first. */
     automation_id: z.string().optional(),
@@ -1517,6 +1520,7 @@ export const MethodResult = {
   "devices.button": z.object({ accepted: z.boolean() }),
   "devices.keyboard": z.object({ accepted: z.boolean() }),
   "automations.list": z.object({ automations: z.array(RemoteAutomation) }),
+  "automations.upcoming": z.object({ runs: z.array(UpcomingRun) }),
   "automations.runs": z.object({ runs: z.array(RemoteAutomationRun) }),
   "automations.scratch_runs": z.object({ runs: z.array(RemoteAutomationRun) }),
   "automations.run": z.object({

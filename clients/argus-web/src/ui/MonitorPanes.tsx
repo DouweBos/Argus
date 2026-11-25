@@ -18,6 +18,7 @@ import { DescribeScreen } from "./automations/DescribeScreen";
 import { InboxScreen } from "./automations/InboxScreen";
 import { ProposalScreen } from "./automations/ProposalScreen";
 import { QuickRunScreen } from "./automations/QuickRunScreen";
+import { UpcomingScreen } from "./automations/UpcomingScreen";
 import { RunScreen } from "./automations/RunScreen";
 import { ChangesView } from "./ChangesView";
 import { ChatInput } from "./ChatInput";
@@ -149,6 +150,8 @@ export function ScreenBody({ screen }: { screen: Screen }) {
       );
     case "quickRun":
       return <QuickRunScreen />;
+    case "upcoming":
+      return <UpcomingScreen />;
     case "quickRunDetail":
       return <RunScreen parent={{ name: "quickRun" }} runId={screen.runId} />;
     case "describe":

@@ -5,6 +5,7 @@ import dev.houwert.argus.app.screens.automations.AutomationEditorScreen
 import dev.houwert.argus.app.screens.automations.AutomationScreen
 import dev.houwert.argus.app.screens.automations.AutomationsScreen
 import dev.houwert.argus.app.screens.automations.DescribeAutomationScreen
+import dev.houwert.argus.app.screens.automations.UpcomingScreen
 import dev.houwert.argus.app.screens.automations.RunScreen
 import dev.houwert.argus.app.screens.blueprints.BlueprintEditorScreen
 import dev.houwert.argus.app.screens.blueprints.BlueprintsScreen
@@ -106,6 +107,7 @@ fun RouteScreen(route: Route) {
     is Route.Automation -> AutomationScreen(route.id, route.label)
     is Route.AutomationEditor -> AutomationEditorScreen(route.id, route.label)
     Route.DescribeAutomation -> DescribeAutomationScreen()
+    Route.UpcomingRuns -> UpcomingScreen()
     is Route.Run -> RunScreen(route.id, route.label)
     Route.Teammates -> TeammatesScreen()
     Route.TeammateGallery -> TeammateGalleryScreen()

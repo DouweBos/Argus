@@ -264,6 +264,7 @@ export * from "./components/AutomationRunView/RunReport";
 export * from "./components/AutomationDetailView/AutomationDetailView";
 export * from "./components/AutomationDetailView/RunHistory";
 export * from "./components/AutomationsListView/AutomationsListView";
+export * from "./components/UpcomingRunsView/UpcomingRunsView";
 export * from "./components/TeammateAvatar/TeammateAvatar";
 export * from "./components/TeammateAvatar/TeammateLookPicker";
 export * from "./components/TeammateRow/TeammateRow";

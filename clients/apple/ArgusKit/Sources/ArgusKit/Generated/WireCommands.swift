@@ -832,6 +832,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AutomationsUpcomingParams: Codable, Sendable {
+      public var viewed: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case viewed = "viewed"
+      }
+
+      public init(viewed: Bool? = nil) {
+        self.viewed = viewed
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(viewed, forKey: .viewed)
+      }
+    }
+
     public struct BlueprintCreateParams: Codable, Sendable {
       public var input: CreateBlueprintInput
 
@@ -11113,6 +11130,13 @@ extension ArgusProtocol {
       public typealias Params = EmptyParams
       public typealias Result = [ArgusProtocol.Automation]
       public static let name = "automations_list"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationsUpcoming: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.AutomationsUpcomingParams
+      public typealias Result = [ArgusProtocol.UpcomingRun]
+      public static let name = "automations_upcoming"
       public static let tier = "admin"
     }
 

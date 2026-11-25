@@ -52,6 +52,8 @@ sealed interface ArgusRoute {
   data class QuickRun(val runId: String? = null) : ArgusRoute
   /** `/automations/describe`: draft an automation from a sentence. */
   data object DescribeAutomation : ArgusRoute
+  /** `/automations/upcoming`: the next runs of every automation and teammate duty. */
+  data object UpcomingRuns : ArgusRoute
   /** `/automations/:automationId`, or one of its runs. */
   data class Automation(val id: String, val runId: String? = null) : ArgusRoute
   /** `/teammates`: the named agents on this host. */
@@ -141,6 +143,7 @@ sealed interface ArgusRoute {
       Automations -> "/automations"
       is QuickRun -> if (runId == null) "/automations/quick" else "/automations/quick/runs/:runId"
       DescribeAutomation -> "/automations/describe"
+      UpcomingRuns -> "/automations/upcoming"
       is Automation -> if (runId == null) "/automations/:automationId" else "/automations/:automationId/runs/:runId"
       Teammates -> "/teammates"
       TeammateGallery -> "/teammates/gallery"

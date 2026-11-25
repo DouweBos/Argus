@@ -112,6 +112,7 @@ import {
 import { calibrationFor } from "../automation/outcomes";
 import { cancelAutomationRun } from "../automation/runner";
 import { startAutomationRun } from "../automation/runner";
+import { viewUpcoming } from "../automation/upcoming";
 import { draftBlueprintFromProjects } from "../blueprint/draft";
 import {
   createBlueprint,
@@ -2643,6 +2644,11 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return control(() => landStack(session_id, strategy));
   },
   "automations.list": async () => remoteAutomations(),
+  "automations.upcoming": async (params) => {
+    const { viewed } = parse("automations.upcoming", params);
+
+    return { runs: viewUpcoming(viewed === true) };
+  },
   "automations.runs": async (params) =>
     remoteAutomationRuns(parse("automations.runs", params)),
   "automations.scratch_runs": async (params) =>

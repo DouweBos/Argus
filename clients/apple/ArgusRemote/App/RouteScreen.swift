@@ -226,6 +226,8 @@ struct RouteScreen: View {
       AutomationEditorView(automationId: id)
     case .describeAutomation:
       DescribeAutomationView()
+    case .upcomingRuns:
+      UpcomingView()
     case .run(let id, let label):
       RunView(runId: id, label: label)
     case .teammates:

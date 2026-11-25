@@ -142,6 +142,8 @@ export function useScreenTitle(screen: Screen): string {
       return runs.find((r) => r.id === screen.runId)?.automation_name ?? "Run";
     case "quickRun":
       return "Quick Run";
+    case "upcoming":
+      return "Upcoming";
     case "describe":
       return "Describe an Automation";
     case "teammates":

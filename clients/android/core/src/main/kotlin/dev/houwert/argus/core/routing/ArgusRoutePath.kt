@@ -55,6 +55,7 @@ internal fun parseRoute(raw: String): ArgusRoute? {
       count == 1 -> ArgusRoute.Automations
       count == 2 && parts[1] == "quick" -> ArgusRoute.QuickRun(null)
       count == 2 && parts[1] == "describe" -> ArgusRoute.DescribeAutomation
+      count == 2 && parts[1] == "upcoming" -> ArgusRoute.UpcomingRuns
       count == 4 && parts[1] == "quick" && parts[2] == "runs" -> ArgusRoute.QuickRun(parts[3])
       count == 2 -> ArgusRoute.Automation(parts[1], null)
       count == 4 && parts[2] == "runs" -> ArgusRoute.Automation(parts[1], parts[3])
@@ -223,6 +224,7 @@ internal fun routePath(route: ArgusRoute): String {
     ArgusRoute.Automations -> "/automations"
     is ArgusRoute.QuickRun -> route.runId?.let { "/automations/quick/runs/${e(it)}" } ?: "/automations/quick"
     ArgusRoute.DescribeAutomation -> "/automations/describe"
+    ArgusRoute.UpcomingRuns -> "/automations/upcoming"
     is ArgusRoute.Automation -> "/automations/${e(route.id)}" + (route.runId?.let { "/runs/${e(it)}" } ?: "")
     is ArgusRoute.Session -> "/sessions/${e(route.id)}/agents" + (route.agentId?.let { "/${e(it)}" } ?: "")
     is ArgusRoute.SessionGit -> "/sessions/${e(route.id)}/git/${route.view.pathSuffix}"

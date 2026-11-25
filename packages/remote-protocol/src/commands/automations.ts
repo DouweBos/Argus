@@ -17,6 +17,7 @@ import {
   SaveAutomationMemoryInput,
   SignalSourceInfo,
   StartScratchRunInput,
+  UpcomingRun,
   UpdateAutomationInput,
 } from "../models/automations";
 import { type CommandSpec, NoParams, Void } from "./spec";
@@ -34,6 +35,13 @@ export const AUTOMATION_COMMANDS = {
     tier: "admin",
     params: NoParams,
     result: z.array(Automation),
+  },
+  /** Every scheduled automation and duty's next run, soonest first. */
+  automations_upcoming: {
+    tier: "admin",
+    /** `viewed`: a screen opened on it, rather than refreshing it. */
+    params: z.object({ viewed: z.boolean().optional() }),
+    result: z.array(UpcomingRun),
   },
   automation_create: {
     tier: "admin",

@@ -21414,6 +21414,83 @@ extension ArgusProtocol {
     }
   }
 
+  public struct UpcomingRunTriggerKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let once = UpcomingRunTriggerKind(rawValue: "once")
+    public static let schedule = UpcomingRunTriggerKind(rawValue: "schedule")
+  }
+
+  public struct UpcomingRun: Codable, Sendable {
+    public var automationId: String
+    public var name: String
+    public var teammateId: String?
+    public var teammateName: String?
+    public var triggerKind: UpcomingRunTriggerKind
+    public var nextRunAt: Double
+    public var waiting: UpcomingWait?
+    public var waitingUntil: Double?
+
+    enum CodingKeys: String, CodingKey {
+      case automationId = "automation_id"
+      case name = "name"
+      case teammateId = "teammate_id"
+      case teammateName = "teammate_name"
+      case triggerKind = "trigger_kind"
+      case nextRunAt = "next_run_at"
+      case waiting = "waiting"
+      case waitingUntil = "waiting_until"
+    }
+
+    public init(automationId: String, name: String, teammateId: String? = nil, teammateName: String? = nil, triggerKind: UpcomingRunTriggerKind, nextRunAt: Double, waiting: UpcomingWait? = nil, waitingUntil: Double? = nil) {
+      self.automationId = automationId
+      self.name = name
+      self.teammateId = teammateId
+      self.teammateName = teammateName
+      self.triggerKind = triggerKind
+      self.nextRunAt = nextRunAt
+      self.waiting = waiting
+      self.waitingUntil = waitingUntil
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(automationId, forKey: .automationId)
+      try c.encode(name, forKey: .name)
+      try c.encode(teammateId, forKey: .teammateId)
+      try c.encode(teammateName, forKey: .teammateName)
+      try c.encode(triggerKind, forKey: .triggerKind)
+      try c.encode(nextRunAt, forKey: .nextRunAt)
+      try c.encode(waiting, forKey: .waiting)
+      try c.encode(waitingUntil, forKey: .waitingUntil)
+    }
+  }
+
+  public struct UpcomingWait: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let approval = UpcomingWait(rawValue: "approval")
+    public static let limit = UpcomingWait(rawValue: "limit")
+    public static let overlap = UpcomingWait(rawValue: "overlap")
+    public static let paused = UpcomingWait(rawValue: "paused")
+  }
+
   public struct UpdateAutomationInputScope: Codable, Sendable {
     public var repoRoots: [String]
 

@@ -263,6 +263,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   // Automations are the host's own surface, not an agent's. A huddle guest is
   // handed one agent and nothing else — least of all the clock behind it.
   "automations.list": DENIED,
+  "automations.upcoming": DENIED,
   "automations.runs": DENIED,
   "automations.run": DENIED,
   "automations.scratch_runs": DENIED,

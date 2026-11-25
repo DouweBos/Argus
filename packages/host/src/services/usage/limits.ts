@@ -249,6 +249,11 @@ export function noteUsageRateLimitLine(accountId: string, line: string): void {
   }
 }
 
+/** The last probe's limits for an account, without probing. */
+export function cachedAccountLimits(id: string): ClaudeAccountLimits | null {
+  return cache.get(id) ?? null;
+}
+
 /** One account's plan limits through the same cache and probe as the usage view. */
 export function getAccountLimits(
   id: string,

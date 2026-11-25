@@ -15,6 +15,7 @@ import dev.houwert.argus.kit.protocol.generated.RemoteAutomationMemory
 import dev.houwert.argus.kit.protocol.generated.RemoteAutomationRun
 import dev.houwert.argus.kit.protocol.generated.RemoteRunner
 import dev.houwert.argus.kit.protocol.generated.RemoteSignalSource
+import dev.houwert.argus.kit.protocol.generated.UpcomingRun
 import java.util.TimeZone
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -47,6 +48,9 @@ class AutomationsStore(val host: HostStore) {
   /** Ad-hoc runs only, newest first; null until the Quick Run screen asks. */
   internal val _quickRuns = MutableStateFlow<List<RemoteAutomationRun>?>(null)
   val quickRuns: StateFlow<List<RemoteAutomationRun>?> = _quickRuns.asStateFlow()
+  /** Every scheduled automation and duty's next run, soonest first; null until the Upcoming screen asks. */
+  internal val _upcoming = MutableStateFlow<List<UpcomingRun>?>(null)
+  val upcoming: StateFlow<List<UpcomingRun>?> = _upcoming.asStateFlow()
   internal val _detailByRun = MutableStateFlow(emptyMap<String, MethodsTypes.AutomationsRunResult>())
   val detailByRun: StateFlow<Map<String, MethodsTypes.AutomationsRunResult>> = _detailByRun.asStateFlow()
   internal val _triggering = MutableStateFlow(emptySet<String>())
@@ -67,6 +71,7 @@ class AutomationsStore(val host: HostStore) {
     _runners.value = emptyList()
     _runs.value = emptyList()
     _quickRuns.value = null
+    _upcoming.value = null
     _detailByRun.value = emptyMap()
     _triggering.value = emptySet()
     _calibrationById.value = emptyMap()

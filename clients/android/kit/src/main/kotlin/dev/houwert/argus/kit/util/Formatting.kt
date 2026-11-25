@@ -10,6 +10,9 @@ import dev.houwert.argus.kit.protocol.generated.SlackChannelRef
 import dev.houwert.argus.kit.protocol.generated.SlackTriggerMatch
 import dev.houwert.argus.kit.protocol.generated.TeammateThreadFailure
 import dev.houwert.argus.kit.protocol.generated.TeammateThreadFailureKind
+import dev.houwert.argus.kit.protocol.generated.UpcomingRun
+import dev.houwert.argus.kit.protocol.generated.UpcomingRunTriggerKind
+import dev.houwert.argus.kit.protocol.generated.UpcomingWait
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -70,7 +73,6 @@ object Labels {
     return if (rank > 0) "$UNTITLED_AGENT ${rank + 1}" else name
   }
 
-  /** The pending auto-continue after a usage limit, phrased as a banner. */
   /** A stopped teammate conversation's headline, by why it stopped. */
   fun threadFailureTitle(kind: TeammateThreadFailureKind): String = when (kind) {
     TeammateThreadFailureKind.limit -> "Stopped at the usage limit"
@@ -105,6 +107,38 @@ object Labels {
     return "${day}at $time"
   }
 
+  /** What an upcoming run waits on, or null when nothing stands in its way. */
+  fun upcomingWaitLabel(
+    run: UpcomingRun,
+    now: Instant = Instant.now(),
+    zone: ZoneId = ZoneId.systemDefault(),
+    locale: Locale = Locale.getDefault(),
+  ): String? = when (run.waiting) {
+    null -> null
+    UpcomingWait.limit -> run.waitingUntil
+      ?.let { "Waits for the usage limit to reset ${clockTime(it, now, zone, locale)}" }
+      ?: "Waits for the usage limit to reset"
+    UpcomingWait.approval -> "Waits for your approval on the run still going"
+    UpcomingWait.overlap -> "Skipped if the run still going hasn't finished"
+    UpcomingWait.paused -> "Paused"
+    else -> null
+  }
+
+  /** "in 2h · at 14:00": when an upcoming run fires. */
+  fun upcomingWhen(
+    run: UpcomingRun,
+    now: Instant = Instant.now(),
+    zone: ZoneId = ZoneId.systemDefault(),
+    locale: Locale = Locale.getDefault(),
+  ): String = "${until(run.nextRunAt, now.toEpochMilli().toDouble())} · ${clockTime(run.nextRunAt, now, zone, locale)}"
+
+  /** Whose run it is: a teammate's duty or a standalone automation. */
+  fun upcomingSubtitle(run: UpcomingRun): String {
+    val owner = run.teammateName?.let { "$it's duty" } ?: "Automation"
+    return if (run.triggerKind == UpcomingRunTriggerKind.once) "Once · $owner" else owner
+  }
+
+  /** The pending auto-continue after a usage limit, phrased as a banner. */
   fun limitResumeBanner(
     millis: Double,
     now: Instant = Instant.now(),

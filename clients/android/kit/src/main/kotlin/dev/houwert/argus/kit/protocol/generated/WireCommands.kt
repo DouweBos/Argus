@@ -260,6 +260,11 @@ object CommandsTypes {
   )
 
   @Serializable
+  data class AutomationsUpcomingParams(
+    @SerialName("viewed") val viewed: Boolean? = null,
+  )
+
+  @Serializable
   data class BlueprintCreateParams(
     @SerialName("input") val input: CreateBlueprintInput,
   )
@@ -3334,6 +3339,8 @@ object Commands {
   object AutomationWebhookRotate : RemoteCommand<CommandsTypes.AutomationWebhookRotateParams, AutomationWebhookSecret>("automation_webhook_rotate", "admin", serializer(), serializer())
 
   object AutomationsList : RemoteCommand<EmptyParams, List<Automation>>("automations_list", "admin", serializer(), serializer())
+
+  object AutomationsUpcoming : RemoteCommand<CommandsTypes.AutomationsUpcomingParams, List<UpcomingRun>>("automations_upcoming", "admin", serializer(), serializer())
 
   object BlueprintCreate : RemoteCommand<CommandsTypes.BlueprintCreateParams, Blueprint>("blueprint_create", "admin", serializer(), serializer())
 

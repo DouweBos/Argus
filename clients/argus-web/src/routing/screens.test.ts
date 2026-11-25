@@ -52,6 +52,7 @@ describe("screenFromPath", () => {
       { name: "automationRun", automationId: "a1", runId: "r1" },
     ],
     ["/automations/quick", { name: "quickRun" }],
+    ["/automations/upcoming", { name: "upcoming" }],
     ["/automations/quick/runs/r1", { name: "quickRunDetail", runId: "r1" }],
     ["/automations/describe", { name: "describe" }],
     ["/teammates", { name: "teammates" }],

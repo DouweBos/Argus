@@ -7914,6 +7914,44 @@ data class TimelineTurn(
 )
 
 @Serializable
+@JvmInline
+value class UpcomingRunTriggerKind(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val once = UpcomingRunTriggerKind("once")
+    val schedule = UpcomingRunTriggerKind("schedule")
+    val entries: List<UpcomingRunTriggerKind> = listOf(once, schedule)
+  }
+}
+
+@Serializable
+data class UpcomingRun(
+  @SerialName("automation_id") val automationId: String,
+  @SerialName("name") val name: String,
+  @SerialName("teammate_id") @EncodeDefault val teammateId: String? = null,
+  @SerialName("teammate_name") @EncodeDefault val teammateName: String? = null,
+  @SerialName("trigger_kind") val triggerKind: UpcomingRunTriggerKind,
+  @SerialName("next_run_at") val nextRunAt: Double,
+  @SerialName("waiting") @EncodeDefault val waiting: UpcomingWait? = null,
+  @SerialName("waiting_until") @EncodeDefault val waitingUntil: Double? = null,
+)
+
+@Serializable
+@JvmInline
+value class UpcomingWait(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val approval = UpcomingWait("approval")
+    val limit = UpcomingWait("limit")
+    val overlap = UpcomingWait("overlap")
+    val paused = UpcomingWait("paused")
+    val entries: List<UpcomingWait> = listOf(approval, limit, overlap, paused)
+  }
+}
+
+@Serializable
 data class UpdateAutomationInputScope(
   @SerialName("repo_roots") val repoRoots: List<String>,
 )

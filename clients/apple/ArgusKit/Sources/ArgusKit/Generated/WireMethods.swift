@@ -2738,6 +2738,40 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AutomationsUpcomingParams: Codable, Sendable {
+      public var viewed: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case viewed = "viewed"
+      }
+
+      public init(viewed: Bool? = nil) {
+        self.viewed = viewed
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(viewed, forKey: .viewed)
+      }
+    }
+
+    public struct AutomationsUpcomingResult: Codable, Sendable {
+      public var runs: [UpcomingRun]
+
+      enum CodingKeys: String, CodingKey {
+        case runs = "runs"
+      }
+
+      public init(runs: [UpcomingRun]) {
+        self.runs = runs
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(runs, forKey: .runs)
+      }
+    }
+
     public struct AutomationsUpdateParamsPatchAutonomy: RawRepresentable, Codable, Hashable, Sendable {
       public var rawValue: String
       public init(rawValue: String) { self.rawValue = rawValue }
@@ -10294,6 +10328,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AutomationsSourcesParams
       public typealias Result = ArgusProtocol.MethodsTypes.AutomationsSourcesResult
       public static let name = "automations.sources"
+    }
+
+    public enum AutomationsUpcoming: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsUpcomingParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsUpcomingResult
+      public static let name = "automations.upcoming"
     }
 
     public enum AutomationsUpdate: RemoteCommand {

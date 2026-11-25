@@ -69,6 +69,8 @@ enum Route: Hashable {
   case automationEditor(id: String?, label: String)
   /// "Describe it": a sentence in, a draft to review and create.
   case describeAutomation
+  /// What runs next across every automation and duty.
+  case upcomingRuns
   case run(id: String, label: String)
   /// The named agents on this computer; under the Automations tab.
   case teammates
@@ -162,6 +164,7 @@ enum Route: Hashable {
     case .commit: "/sessions/:sessionId/git/commits/:hash"
     case .automationEditor(let id, _): id == nil ? "/automations/new" : "/automations/:automationId/edit"
     case .describeAutomation: ArgusRoute.describeAutomation.pattern
+    case .upcomingRuns: ArgusRoute.upcomingRuns.pattern
     case .pair: "/pair"
     case .settings: "/settings"
     case .settingsPage(let page): "/settings/\(page.rawValue.replacingOccurrences(of: "_", with: "-"))"

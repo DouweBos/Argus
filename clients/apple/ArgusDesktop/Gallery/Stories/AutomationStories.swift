@@ -19,6 +19,14 @@
           fixtures: GalleryFixtures.automations(empty: true), setup: attachModel
         ) { AutomationsScreen() },
         GalleryStory(
+          "automations/upcoming", size: CGSize(width: 1100, height: 640), chrome: true, fixtures: fixtures,
+          setup: attachModel
+        ) { UpcomingScreen() },
+        GalleryStory(
+          "automations/upcoming/empty", size: CGSize(width: 1000, height: 480), chrome: true,
+          fixtures: GalleryFixtures.automations(empty: true), setup: attachModel
+        ) { UpcomingScreen() },
+        GalleryStory(
           "automations/detail", size: CGSize(width: 1000, height: 2400), chrome: true, fixtures: fixtures,
           setup: attachModel
         ) { AutomationScreen(automationId: GalleryFixtures.triageId, runId: nil) },

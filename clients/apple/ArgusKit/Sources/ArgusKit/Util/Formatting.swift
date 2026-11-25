@@ -90,6 +90,31 @@ public enum Labels {
     return "\(failure.reason) It resets \(clockTime(resetsAt, now: now))."
   }
 
+  /// What an upcoming run is held up by, or nil when nothing is.
+  public static func upcomingWaitLabel(_ run: ArgusProtocol.UpcomingRun, now: Date = Date()) -> String? {
+    switch run.waiting {
+    case .limit?:
+      guard let until = run.waitingUntil else { return "Waits for the usage limit to reset" }
+      return "Waits for the usage limit to reset \(clockTime(until, now: now))"
+    case .approval?: return "Waits for your approval on the run still going"
+    case .overlap?: return "Skipped if the run still going hasn't finished"
+    case .paused?: return "Paused"
+    default: return nil
+    }
+  }
+
+  /// "in 2h · at 14:00".
+  public static func upcomingWhen(_ run: ArgusProtocol.UpcomingRun, now: Date = Date()) -> String {
+    let relative = until(run.nextRunAt, now: now) ?? "now"
+    return "\(relative) · \(clockTime(run.nextRunAt, now: now))"
+  }
+
+  /// Whose it is: a teammate's duty or a plain automation, and "Once" for a one-time trigger.
+  public static func upcomingSubtitle(_ run: ArgusProtocol.UpcomingRun) -> String {
+    let owner = run.teammateName.map { "\($0)'s duty" } ?? "Automation"
+    return run.triggerKind == .once ? "Once · \(owner)" : owner
+  }
+
   /// "at 14:05", or "Tue at 14:05" when it isn't today.
   public static func clockTime(_ millis: Double, now: Date = Date()) -> String {
     let when = Date(timeIntervalSince1970: millis / 1000)

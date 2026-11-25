@@ -94,7 +94,7 @@ extension DesktopModel {
     case .pullRequest(let repo, let number), .pullRequestGuide(let repo, let number): screen = "\(repo)#\(number)"
     case .issues: screen = "Issues"
     case .design: screen = "Design"
-    case .automations, .automation, .quickRun, .describeAutomation: screen = "Automations"
+    case .automations, .automation, .quickRun, .describeAutomation, .upcomingRuns: screen = "Automations"
     case .teammates, .teammateGallery: screen = "Teammates"
     case .teammate(let id, _): screen = teammates.teammate(id)?.name ?? "Teammate"
     case .blueprints, .blueprint, .generateBlueprint, .newProject: screen = "Blueprints"

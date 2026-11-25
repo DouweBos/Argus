@@ -40,6 +40,8 @@ public enum ArgusRoute: Hashable, Sendable {
   case quickRun(runId: String?)
   /// `/automations/describe`: draft an automation from a sentence.
   case describeAutomation
+  /// `/automations/upcoming`: the next runs of every automation and duty.
+  case upcomingRuns
   /// `/automations/:automationId`, or one of its runs.
   case automation(id: String, runId: String?)
   /// `/teammates`: the named agents on this host.
@@ -152,6 +154,7 @@ public enum ArgusRoute: Hashable, Sendable {
     case .automations: "/automations"
     case .quickRun(let runId): runId == nil ? "/automations/quick" : "/automations/quick/runs/:runId"
     case .describeAutomation: "/automations/describe"
+    case .upcomingRuns: "/automations/upcoming"
     case .automation(_, let runId):
       runId == nil ? "/automations/:automationId" : "/automations/:automationId/runs/:runId"
     case .teammates: "/teammates"

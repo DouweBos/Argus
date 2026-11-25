@@ -38,6 +38,7 @@ object RouteLink {
     is ArgusRoute.Design -> PhoneDestination(AppSection.Home, Route.Design(route.url, route.session))
     ArgusRoute.Automations -> PhoneDestination(AppSection.Automations)
     ArgusRoute.DescribeAutomation -> PhoneDestination(AppSection.Automations, Route.DescribeAutomation)
+    ArgusRoute.UpcomingRuns -> PhoneDestination(AppSection.Automations, Route.UpcomingRuns)
     is ArgusRoute.QuickRun ->
       PhoneDestination(AppSection.Automations, route.runId?.let { Route.Run(it, "Run") } ?: Route.QuickRun)
     is ArgusRoute.Automation ->

@@ -122,6 +122,8 @@ export interface ParsedRoute extends DesignRouteFields {
    * synthetic id the host runs them under.
    */
   automationQuick: boolean;
+  /** `/automations/upcoming`: every scheduled automation and duty's next run. */
+  automationUpcoming: boolean;
   /** Which run of that automation is open, if any. */
   automationRunId: string | null;
   /**
@@ -261,8 +263,9 @@ function parsePathname(pathname: string): Omit<ParsedRoute, NonPathFields> {
 
   if (segments[0] === "automations") {
     const quick = segments[1] === "quick";
+    const upcoming = segments[1] === "upcoming" && segments.length === 2;
     const automationId =
-      !quick && segments[1] ? decodeSegment(segments[1]) : null;
+      !quick && !upcoming && segments[1] ? decodeSegment(segments[1]) : null;
     const runId =
       (quick || automationId) && segments[2] === "runs" && segments[3]
         ? decodeSegment(segments[3])
@@ -272,6 +275,7 @@ function parsePathname(pathname: string): Omit<ParsedRoute, NonPathFields> {
       ...emptyRoute("automations"),
       automationId,
       automationQuick: quick,
+      automationUpcoming: upcoming,
       automationRunId: runId,
     };
   }
@@ -402,6 +406,7 @@ function emptyRoute(view: AppView): Omit<ParsedRoute, NonPathFields> {
     agentId: null,
     automationId: null,
     automationQuick: false,
+    automationUpcoming: false,
     automationRunId: null,
     sessionId: null,
     panel: "agents",
@@ -461,6 +466,9 @@ export function routePattern(pathname: string): string {
     case "home":
       return "/";
     case "automations":
+      if (route.automationUpcoming) {
+        return "/automations/upcoming";
+      }
       if (route.automationQuick) {
         return route.automationRunId
           ? "/automations/quick/runs/:runId"
@@ -563,6 +571,9 @@ function routePathname(route: Partial<ParsedRoute>): string {
     return `/sessions/${route.sessionId}${panel}${agent}${gitView}${gitRef}`;
   }
   if (route.view === "automations") {
+    if (route.automationUpcoming) {
+      return "/automations/upcoming";
+    }
     if (route.automationQuick) {
       return route.automationRunId
         ? `/automations/quick/runs/${encodeURIComponent(route.automationRunId)}`

@@ -19,6 +19,8 @@ public final class AutomationsStore {
   public internal(set) var runs: [RemoteAutomationRun] = []
   /// Ad-hoc runs only, newest first; nil until the Quick Run screen asks.
   public internal(set) var quickRuns: [RemoteAutomationRun]?
+  /// The Upcoming screen: every scheduled run, soonest first. Nil until read.
+  public internal(set) var upcoming: [ArgusProtocol.UpcomingRun]?
   public internal(set) var detailByRun: [String: RemoteAutomationRunDetail] = [:]
   public internal(set) var triggering: Set<String> = []
   /// Each automation's track record, keyed by automation id. Catalog-only.
@@ -41,6 +43,7 @@ public final class AutomationsStore {
     runners = []
     runs = []
     quickRuns = nil
+    upcoming = nil
     detailByRun = [:]
     triggering = []
     calibrationById = [:]

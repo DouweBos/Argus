@@ -131,6 +131,7 @@ export function AutomationsScreen() {
         }
         onNew={hasControl ? () => void create() : undefined}
         onQuickRun={() => appNavigate({ name: "quickRun" })}
+        onUpcoming={() => appNavigate({ name: "upcoming" })}
         onRetry={() => void refresh().catch(() => {})}
       />
     </div>

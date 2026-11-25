@@ -39,6 +39,7 @@ import dev.houwert.argus.ui.components.AccentLink
 import dev.houwert.argus.ui.components.Banner
 import dev.houwert.argus.ui.components.EmptyState
 import dev.houwert.argus.ui.components.IconBtn
+import dev.houwert.argus.ui.components.ListRow
 import dev.houwert.argus.ui.components.ListSection
 import dev.houwert.argus.ui.components.LiveRefresh
 import dev.houwert.argus.ui.components.LoadPhaseBox
@@ -114,6 +115,14 @@ fun AutomationsScreen() {
               ListSection(Modifier.widthIn(max = ArgusMetrics.maxReadingWidth)) {
                 TeammatesEntryRow(teammates) { router.push(Route.Teammates) }
               }
+            }
+          }
+          item(key = "upcoming") {
+            ListSection(Modifier.widthIn(max = ArgusMetrics.maxReadingWidth)) {
+              ListRow(
+                "Upcoming", subtitle = "What runs next, and what it waits on", icon = Icon.clock,
+                onClick = { router.push(Route.UpcomingRuns) },
+              )
             }
           }
           if (automations.isNotEmpty()) {

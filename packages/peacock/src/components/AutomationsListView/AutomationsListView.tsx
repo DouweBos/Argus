@@ -1,5 +1,11 @@
 import type { LoadPhase } from "@argus/client-core";
-import { ClockIcon, PlayIcon, PlusIcon, SparklesIcon } from "../../icons/Icons";
+import {
+  CalendarIcon,
+  ClockIcon,
+  PlayIcon,
+  PlusIcon,
+  SparklesIcon,
+} from "../../icons/Icons";
 import {
   AutomationRow,
   type AutomationRowProps,
@@ -20,6 +26,8 @@ export interface AutomationsListViewProps {
   /** Quick runs so far, for the button's count. */
   quickRunCount?: number;
   onQuickRun: () => void;
+  /** Every scheduled automation and duty's next run. */
+  onUpcoming?: () => void;
   /** Omit both where this client may not create automations. */
   onDescribe?: () => void;
   onNew?: () => void;
@@ -37,6 +45,7 @@ export function AutomationsListView({
   onNew,
   onQuickRun,
   onRetry,
+  onUpcoming,
   phase,
   quickRunCount = 0,
   rows,
@@ -51,6 +60,16 @@ export function AutomationsListView({
       >
         Quick run{quickRunCount > 0 ? ` (${quickRunCount})` : ""}
       </Button>
+      {onUpcoming && (
+        <Button
+          leading={<CalendarIcon size={11} />}
+          size="sm"
+          variant="secondary"
+          onClick={onUpcoming}
+        >
+          Upcoming
+        </Button>
+      )}
       {onDescribe && (
         <Button
           leading={<SparklesIcon size={11} />}

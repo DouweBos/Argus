@@ -50,6 +50,8 @@ struct AutomationsScreen: View {
   @ToolbarContentBuilder
   private var toolbar: some ToolbarContent {
     ToolbarItemGroup {
+      Button { model.navigate(.upcomingRuns) } label: { Label("Upcoming", systemImage: "calendar.badge.clock") }
+        .labelStyle(.titleAndIcon)
       Button {
         model.navigate(.quickRun(runId: nil))
       } label: {

@@ -28,6 +28,7 @@ function listOf(screen: Screen): Screen | null {
     case "automationRun":
     case "quickRun":
     case "quickRunDetail":
+    case "upcoming":
     case "describe":
       return { name: "automations" };
     case "teammateGallery":
