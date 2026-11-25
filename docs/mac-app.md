@@ -463,6 +463,9 @@ Debug builds carry the Sign in with Apple entitlement through Xcode's automatic
 signing (your Mac has to be registered with the team). Release builds are
 signed with Developer ID and no profile: Apple doesn't support Sign in with
 Apple for Developer ID apps, so Release signs in with Apple on the web instead.
+Release signs with `ArgusDesktop-Release.entitlements`, which keeps the
+microphone and camera entitlements: without them the hardened runtime denies
+both without ever asking.
 
 Telemetry needs a PostHog key at build time:
 `POSTHOG_KEY` in the environment `xcodebuild` runs in, or `POSTHOG_KEY = …` in
