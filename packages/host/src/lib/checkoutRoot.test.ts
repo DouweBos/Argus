@@ -9,17 +9,12 @@ describe("checkoutRoot", () => {
     vi.resetModules();
   });
 
-  it("finds the agent prompts when the host runs from another directory", async () => {
+  it("finds the checkout when the host runs from another directory", async () => {
     vi.spyOn(process, "cwd").mockReturnValue(os.tmpdir());
     const { checkoutRoot } = await import("./checkoutRoot");
 
-    const prompt = path.join(
-      checkoutRoot(),
-      "packages",
-      "host",
-      "prompts",
-      "worktree-agent-system-prompt.md",
-    );
-    expect(fs.existsSync(prompt)).toBe(true);
+    expect(
+      fs.existsSync(path.join(checkoutRoot(), "pnpm-workspace.yaml")),
+    ).toBe(true);
   });
 });

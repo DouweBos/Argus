@@ -1,14 +1,14 @@
 /**
  * Root of the repo checkout an unpackaged host runs from. Found from this
  * module's own location — the source tree or `dist-host/` — so a host started
- * from any working directory still reads its prompts and assets.
+ * from any working directory still finds its assets.
  */
 
 import fs from "node:fs";
 import path from "node:path";
 
 /** Present in every checkout, wherever the code itself is loaded from. */
-const MARKER = path.join("packages", "host", "prompts");
+const MARKER = path.join("packages", "host", "package.json");
 
 let cached: string | null = null;
 

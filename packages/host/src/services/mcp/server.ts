@@ -471,7 +471,7 @@ const spawnAgentShape = {
   prompt: z
     .string()
     .describe(
-      "Initial message/instructions to send to the agent. When resuming, this is the next message in its restored conversation — e.g. tell it to carry on where it stopped.",
+      "Initial message/instructions to send to the agent. When resuming, this is the next message in its restored conversation — e.g. tell it to carry on where it stopped. The agent starts with none of your context: make it self-contained (what to do, which files it owns, what not to touch). Never put a secret in it — pass the file path `request_secret` gave you.",
     ),
   resume: z
     .string()
@@ -1103,7 +1103,11 @@ export function createMcpServer(
               .string()
               .optional()
               .describe("What this agent/session is for"),
-            prompt: z.string().describe("Initial instructions for the agent"),
+            prompt: z
+              .string()
+              .describe(
+                "Initial instructions for the agent. The agent starts with none of your context: make it self-contained (what to do, which files it owns, what not to touch). Never put a secret in it — pass the file path `request_secret` gave you.",
+              ),
             project_path: z
               .string()
               .optional()

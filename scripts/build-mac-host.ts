@@ -108,19 +108,6 @@ const RESOURCES: { from: string; to: string; optional?: boolean }[] = [
     from: "native/emulator-proto/emulator_controller.proto",
     to: "emulator_controller.proto",
   },
-  {
-    from: "packages/host/prompts/worktree-agent-system-prompt.md",
-    to: "worktree-agent-system-prompt.md",
-  },
-  {
-    from: "packages/host/prompts/root-agent-system-prompt.md",
-    to: "root-agent-system-prompt.md",
-  },
-  {
-    from: "packages/host/prompts/org-host-agent-system-prompt.md",
-    to: "org-host-agent-system-prompt.md",
-    optional: true,
-  },
   { from: "docs/project-settings.md", to: "docs/project-settings.md" },
   { from: "native/conductor", to: "conductor" },
   { from: "clients/argus-web/dist", to: "argus-web", optional: true },

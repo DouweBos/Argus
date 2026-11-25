@@ -36,14 +36,12 @@ import type { NewSpare } from "./spares";
 import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
 import type { LlmRunner, PermissionPreHook } from "../llm/runners/types";
 import type { RuntimePlatform, Session, SessionKind } from "../session/models";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { emitHostEvent } from "@argus/host/bus";
 import { info, warn } from "@argus/host/logger";
-import { hostPlatform } from "@argus/host/platform";
 import { argusHomeDir } from "../../lib/argusHome";
-import { checkoutRoot } from "../../lib/checkoutRoot";
 import { appState } from "../../state";
 import { TELEMETRY_RUNNERS, type TelemetryRunner } from "../../telemetryEvents";
 import {
@@ -212,28 +210,10 @@ export async function ensureWebBrowserForAgent(
   return reservation.deviceId;
 }
 
-// ---------------------------------------------------------------------------
-// System-prompt loading
-// ---------------------------------------------------------------------------
+// What Claude can't see for itself; everything else is its own default.
+const ARGUS_PROMPT = `## Argus
 
-const cachedPrompts: Record<string, string | null> = {
-  worktree: null,
-  repo_root: null,
-};
-
-function loadPromptFile(filename: string): string {
-  try {
-    const promptPath = hostPlatform().isPackaged()
-      ? path.join(hostPlatform().resourcesPath(), filename)
-      : path.join(checkoutRoot(), "packages", "host", "prompts", filename);
-
-    return readFileSync(promptPath, "utf-8");
-  } catch (e) {
-    warn(`Failed to load prompt ${filename}: ${String(e)}`);
-
-    return "";
-  }
-}
+The user watches this project's dev server and devices in Argus. Never start long-running processes (dev servers, watchers, \`vite\`, \`expo start\`) from Bash: they collide with the one Argus runs. Use \`list_run_commands\`, \`trigger_run\` and \`wait_for_terminal\` instead.`;
 
 // Read-only runs sit in plan mode so the CLI refuses writes, but its reminder
 // also talks the model out of the reporting tools the run exists to call.
@@ -264,14 +244,8 @@ function getSystemPromptForKind(kind: SessionKind): string {
   if (kind === "scratch_pad") {
     return SCRATCH_PAD_PROMPT;
   }
-  if (cachedPrompts[kind] === null) {
-    cachedPrompts[kind] =
-      kind === "project_root"
-        ? loadPromptFile("root-agent-system-prompt.md")
-        : loadPromptFile("worktree-agent-system-prompt.md");
-  }
 
-  return cachedPrompts[kind] ?? "";
+  return ARGUS_PROMPT;
 }
 
 // ---------------------------------------------------------------------------
@@ -804,7 +778,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   const systemPrompt = teammateThreadForSession(argusSession.id)
     ? TEAMMATE_PROMPT
     : getSystemPromptForKind(argusSession.kind);
-  const projectContext = `## Current Project\n\nYou are working in **${argusSession.repo_root}**. When using MCP tools that accept a \`project_path\` parameter, always pass \`${argusSession.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.\n\nYour own agent ID is \`${agentId}\`. The Argus MCP already knows who you are, so you normally don't need to pass it — \`parent_agent_id\` on \`spawn_agent\`/\`create_session\`/\`send_agent_message\` defaults to you automatically.`;
+  const projectContext = `## Current Project\n\nYou are working in **${argusSession.repo_root}**; pass it as \`project_path\` to Argus MCP tools that take one. Your agent ID is \`${agentId}\`. Other agents only see what you send them with \`send_agent_message\`.`;
   const combinedPrompt = [
     systemPrompt,
     projectContext,
