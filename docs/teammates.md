@@ -58,6 +58,13 @@ what was missing and what it would do next, with **Open Report** for the full
 run. Reply right there; it has the report in front of it. Runs with nothing to
 report stay out of the conversation, and a paused teammate doesn't report.
 
+When a turn stops short, the conversation says why above the composer — a
+spent usage limit (with when it resets), an account that needs signing in, the
+agent quitting, or an error — with **Resume** to send it a "continue". A
+conversation the host went down in the middle of (a crash, an update, a
+restart) resumes on its own once Argus starts again; after two restarts in a
+row on the same turn it stops trying and says it was interrupted by a restart.
+
 Tell it to remember something and it saves a memory. Its memory page lists
 them: read, edit, delete or add your own.
 
@@ -68,7 +75,8 @@ them: read, edit, delete or add your own.
 With [Slack connected](./integrations.md#slack), start a message to Argus
 with the teammate's handle — `@Argus @ci-fixer why is main red?` — and the
 Slack thread becomes a conversation with it. It answers in the thread under
-its name, and the conversation is also listed on its page here.
+its name, and the conversation is also listed on its page here. When a turn
+stops short it posts why, with a **Resume** button that picks it back up.
 
 ---
 

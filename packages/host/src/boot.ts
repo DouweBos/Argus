@@ -105,6 +105,10 @@ import {
 } from "./services/session/volumeWatcher";
 import { startSlack, stopSlack } from "./services/slack/service";
 import {
+  defaultAutoResumeDeps,
+  resumeInterruptedThreads,
+} from "./services/teammate/autoResume";
+import {
   startDutyReports,
   stopDutyReports,
 } from "./services/teammate/dutyReports";
@@ -294,6 +298,10 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   startUsageWarnings();
   // Pinned chats come back idle once the MCP server is listening.
   startPinnedChats();
+  // Teammate conversations a crash or restart cut off mid-turn.
+  resumeInterruptedThreads(defaultAutoResumeDeps).catch((err) => {
+    log.error("resumeInterruptedThreads failed:", err);
+  });
   // Outbound only (Socket Mode); a no-op until Slack is connected.
   startSlack();
 

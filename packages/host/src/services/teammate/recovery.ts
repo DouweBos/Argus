@@ -28,13 +28,17 @@ export function resetThreadRecovery(): void {
   stopping = false;
 }
 
-function fail(threadId: string, failure: TeammateThreadFailure): void {
+export function failThread(
+  threadId: string,
+  failure: TeammateThreadFailure,
+): void {
   const thread = threadRecord(threadId);
   if (!thread) {
     return;
   }
   thread.failure = failure;
   thread.inflight_since = null;
+  thread.auto_resumes = 0;
   saveThreads();
   telemetryCapture("teammate_thread_failed", { kind: failure.kind });
 }
@@ -57,13 +61,14 @@ export function handleThreadTurn(
       return;
     case "result":
       if (event.failed) {
-        fail(threadId, resultFailure(event.text, event.resetsAt, now));
+        failThread(threadId, resultFailure(event.text, event.resetsAt, now));
 
         return;
       }
-      if (thread.inflight_since || thread.failure) {
+      if (thread.inflight_since || thread.failure || thread.auto_resumes) {
         thread.inflight_since = null;
         thread.failure = null;
+        thread.auto_resumes = 0;
         saveThreads();
       }
 
@@ -74,11 +79,12 @@ export function handleThreadTurn(
       }
       if (event.intentional) {
         thread.inflight_since = null;
+        thread.auto_resumes = 0;
         saveThreads();
 
         return;
       }
-      fail(threadId, crashFailure(event.code, now));
+      failThread(threadId, crashFailure(event.code, now));
   }
 }
 

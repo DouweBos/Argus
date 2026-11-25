@@ -40,6 +40,8 @@ const { listThreads, openThread, resetThreadCache, threadRecord } =
 const { resetThreadRecovery, resumeThread, stopThreadRecovery } =
   await import("./recovery");
 const { noteThreadMessage, noteThreadTurn } = await import("./threadSessions");
+const { MAX_AUTO_RESUMES, resetAutoResume, resumeInterruptedThreads } =
+  await import("./autoResume");
 
 let home: string;
 let previousHome: string | undefined;
@@ -53,6 +55,7 @@ describe("teammate thread failures", () => {
     resetTeammateCache();
     resetThreadCache();
     resetThreadRecovery();
+    resetAutoResume();
     appState.agents.clear();
     appState.sessions.clear();
     submitted.length = 0;
@@ -164,5 +167,80 @@ describe("teammate thread failures", () => {
       kind: "error",
     });
     await expect(resumeThread("nope", "app")).rejects.toContain("not found");
+  });
+
+  describe("after a restart", () => {
+    const resumes: string[] = [];
+    const deps = {
+      ready: async () => undefined,
+      resume: async (threadId: string) => {
+        resumes.push(threadId);
+      },
+      sleep: async () => undefined,
+      now: () => 9,
+    };
+
+    /** A new host process: caches and the once-per-boot guard start over. */
+    function reboot() {
+      resetThreadCache();
+      resetAutoResume();
+      appState.agents.clear();
+    }
+
+    beforeEach(() => {
+      resumes.length = 0;
+    });
+
+    it("resumes a thread left mid-turn once per boot", async () => {
+      const { opened } = await started();
+      reboot();
+
+      await expect(resumeInterruptedThreads(deps)).resolves.toEqual({
+        resumed: 1,
+        failed: 0,
+      });
+      await expect(resumeInterruptedThreads(deps)).resolves.toEqual({
+        resumed: 0,
+        failed: 0,
+      });
+      expect(resumes).toEqual([opened.thread.id]);
+      expect(threadRecord(opened.thread.id)?.auto_resumes).toBe(1);
+    });
+
+    it("gives up with a reason once a turn keeps taking the host down", async () => {
+      const { teammate } = await started();
+      for (let boot = 0; boot < MAX_AUTO_RESUMES; boot++) {
+        reboot();
+        await resumeInterruptedThreads(deps);
+      }
+      reboot();
+
+      await expect(resumeInterruptedThreads(deps)).resolves.toEqual({
+        resumed: 0,
+        failed: 1,
+      });
+      expect(resumes).toHaveLength(MAX_AUTO_RESUMES);
+      expect(listThreads(teammate.id)[0]?.failure).toMatchObject({
+        kind: "interrupted",
+        reason: "Interrupted by a restart.",
+      });
+      reboot();
+      expect((await resumeInterruptedThreads(deps)).failed).toBe(0);
+    });
+
+    it("starts the count over once a turn gets through", async () => {
+      const { opened } = await started();
+      reboot();
+      await resumeInterruptedThreads(deps);
+      noteThreadTurn(opened.session_id, {
+        kind: "result",
+        failed: false,
+        text: "done",
+        resetsAt: null,
+      });
+
+      expect(threadRecord(opened.thread.id)?.auto_resumes).toBe(0);
+      expect(threadRecord(opened.thread.id)?.inflight_since).toBeNull();
+    });
   });
 });

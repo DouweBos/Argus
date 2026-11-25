@@ -61,10 +61,16 @@ export interface TeammateThread {
 export interface StoredThread extends TeammateThread {
   /** A turn started and hasn't ended; survives a host crash. */
   inflight_since?: number | null;
+  /** Restarts that picked this turn back up; reset once a turn ends. */
+  auto_resumes?: number;
 }
 
 function toWire(thread: StoredThread): TeammateThread {
-  const { inflight_since: _inflight, ...wire } = thread;
+  const {
+    inflight_since: _inflight,
+    auto_resumes: _autoResumes,
+    ...wire
+  } = thread;
 
   return wire;
 }
@@ -111,6 +117,11 @@ function persist(): void {
 /** The stored record, for the turn tracking in `./recovery` to update. */
 export function threadRecord(threadId: string): StoredThread | null {
   return threads().find((t) => t.id === threadId) ?? null;
+}
+
+/** Threads a crash or restart left mid-turn. */
+export function interruptedThreads(): StoredThread[] {
+  return threads().filter((t) => !t.archived && t.inflight_since);
 }
 
 export function saveThreads(): void {
