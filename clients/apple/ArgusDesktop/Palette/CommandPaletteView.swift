@@ -10,7 +10,6 @@ struct CommandPaletteView: View {
   @State private var query = ""
   @State private var selected = 0
   @State private var contentHeight: CGFloat = 0
-  @FocusState private var focused: Bool
 
   /// With nothing typed, what you can do here comes before where you can go.
   private static let sectionOrder = ["Session", "App", "Project", "Navigate", "Settings"]
@@ -22,19 +21,21 @@ struct CommandPaletteView: View {
     ) { $0.section }
     let results = groups.flatMap(\.items)
     CommandPanel {
-      CommandPanelField(placeholder, text: $query, focus: $focused)
-        .onSubmit { run(results) }
-        .onKeyPress(.downArrow) { move(1, in: results) }
-        .onKeyPress(.upArrow) { move(-1, in: results) }
-        .onKeyPress(.escape) {
-          close()
-          return .handled
-        }
+      HStack(spacing: 8) {
+        Image(systemName: Icon.search)
+          .font(.scaled(size: 13))
+          .foregroundStyle(theme.textMuted)
+        // AppKit's field takes first responder from a focused terminal or web view; @FocusState doesn't.
+        QuickOpenField(
+          text: $query, placeholder: placeholder, fontSize: 14 * AppPreferences.shared.textScale,
+          move: { selected = QuickOpenModel.moved(selected, $0, count: results.count) },
+          submit: { run(results) }, cancel: close
+        )
         .accessibilityLabel("Command palette")
+      }
     } content: {
       list(groups)
     }
-    .onAppear { focused = true }
     .onChange(of: query) { selected = 0 }
   }
 
@@ -92,12 +93,6 @@ struct CommandPaletteView: View {
   /// The header a section reads as; the section name itself is what telemetry sees.
   private static func title(_ section: String) -> String {
     section == "App" ? "Actions" : section
-  }
-
-  private func move(_ delta: Int, in results: [PaletteCommand]) -> KeyPress.Result {
-    guard !results.isEmpty else { return .handled }
-    selected = (selected + delta + results.count) % results.count
-    return .handled
   }
 
   private func run(_ results: [PaletteCommand]) {
