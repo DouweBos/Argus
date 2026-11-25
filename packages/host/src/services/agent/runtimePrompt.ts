@@ -27,7 +27,7 @@ export interface RuntimeContext {
 export const CONDUCTOR_GUIDE = [
   "### conductor",
   "",
-  "- When a task needs a running app and the project's own tools (an MCP server, its scripts) don't already cover it, `conductor` is available. It drives everything `xcrun simctl`, `adb` and Playwright do from one CLI. `conductor workspace info` shows the project's bundle IDs and devices; `conductor <command> --help` lists the options.",
+  "- `conductor` is a CLI that drives the simulators, emulators, browser and macOS apps (like `xcrun simctl`, `adb` and Playwright in one). `conductor workspace info` shows the project's bundle IDs and devices; `conductor <command> --help` lists the options.",
   "- Look: `capture-ui` (screenshot + hierarchy) or `inspect`, whose `@eN` refs `tap-on` accepts. Act: `tap-on` (`--long-press`, `--at x,y`), `input-text`, `swipe`, `scroll-until-visible`, `press-key`, `open-link`, `set-orientation`, `set-permissions`, `gesture`; several steps at once with `run-sequence`. Check: `assert-visible`, `assert-screenshot`.",
   "- Setup: `start-device`, `install-app`, `launch-app`. Diagnose: `logs`, `crashes`, `network logs`, `debug evaluate` (React Native or the web page), `profile`. On an iOS simulator, `launch-app --inject` unlocks `native-*` inspection (real view properties, constraints, live edits). macOS apps work too (`--platform macos`: `menu`, `window`, `press-key cmd+s`).",
   "- The devices below are the user's live views: don't erase or shut them down, don't use `--clear-state` / `--clear-keychain` / `clear-state` (they sign the user out), and never touch another agent's device.",
