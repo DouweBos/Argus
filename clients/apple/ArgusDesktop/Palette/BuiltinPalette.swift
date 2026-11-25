@@ -10,6 +10,7 @@ enum BuiltinPalette {
 
   static func register(in palette: CommandPaletteModel) {
     palette.register("navigate", navigate)
+    palette.register("jumps", jumps)
     palette.register("session", session)
     palette.register("projects", projects)
     palette.register("app", app)

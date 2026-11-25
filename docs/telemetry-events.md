@@ -695,7 +695,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_hosts_used` | Another host was paired, attached, detached, forgotten, renamed or shown from the Hosts settings or the machines menu | `action` (`pair`, `attach`, `detach`, `forget`, `rename`, `focus`), `success` |
 | `mac_port_forwarded` | A paired host's port was forwarded to this Mac's localhost, opened in the browser, or stopped, from Runtimes or the session browser's toolbar | `action` (`start`, `open`, `stop`), `via` (`runtimes`, `browser`), `success` (the host had something listening and a local port was bound; always true for `open` and `stop`) |
 | --- | --- | --- |
-| `mac_palette_command_run` | A command palette entry was run | `section` (`navigate`, `sessions`, `session`, `project`, `app`, `git`, `settings`, `automations`) |
+| `mac_palette_command_run` | A command palette entry was run | `section` (`navigate`, `sessions`, `chats`, `terminals`, `files`, `session`, `project`, `app`, `git`, `settings`, `automations`) |
 | `mac_handoff_continued` | The phone handed a session over through Handoff | `matched` (it named this computer, so the session opened) |
 | `mac_onboarding_step` | A first-run step was finished or skipped | `step` (`welcome`, `privacy`, `setup`, `project`), `skipped` |
 | `mac_prereq_fixed` | A one-click environment fixer ran (first run or a home-screen card) | `prereq` (the check's id, e.g. `claude_cli`, `git_identity`), `success` |

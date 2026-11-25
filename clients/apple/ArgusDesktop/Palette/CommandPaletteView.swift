@@ -7,17 +7,22 @@ struct CommandPaletteView: View {
   @Environment(DesktopModel.self) private var model
   @Environment(\.theme) private var theme
   @Environment(\.openSettings) private var openSettings
-  @State private var query = ""
+  @State private var query: String
   @State private var selected = 0
   @State private var contentHeight: CGFloat = 0
 
   /// With nothing typed, what you can do here comes before where you can go.
-  private static let sectionOrder = ["Session", "App", "Project", "Navigate", "Settings"]
+  private static let sectionOrder = ["Session", "App", "Project", "Navigate"] + PaletteJumps.sections + ["Settings"]
   private static let maxListHeight: CGFloat = 360
+
+  /// `query` prefills the field; the gallery shows a search with it.
+  init(query: String = "") {
+    _query = State(initialValue: query)
+  }
 
   var body: some View {
     let groups = PaletteMatch.grouped(
-      model.palette.matching(query, for: model), order: query.isEmpty ? Self.sectionOrder : []
+      model.palette.matching(query, for: model), order: order
     ) { $0.section }
     let results = groups.flatMap(\.items)
     CommandPanel {
@@ -37,10 +42,17 @@ struct CommandPaletteView: View {
       list(groups)
     }
     .onChange(of: query) { selected = 0 }
+    .task { await BuiltinPalette.loadSavedChats(model) }
+  }
+
+  /// The switcher lists sessions before chats; typing orders sections by their best match.
+  private var order: [String] {
+    guard query.isEmpty else { return [] }
+    return model.palette.switcher ? [CommandPaletteModel.sessionsSection, PaletteJumps.chatsSection] : Self.sectionOrder
   }
 
   private var placeholder: String {
-    model.palette.switcher ? "Open a session" : "Search commands, projects and sessions"
+    model.palette.switcher ? "Open a session or chat" : "Search commands, sessions, chats and files"
   }
 
   private func list(_ groups: [(section: String, items: [PaletteCommand])]) -> some View {
@@ -48,7 +60,7 @@ struct CommandPaletteView: View {
       ScrollView {
         LazyVStack(spacing: 0) {
           if groups.isEmpty {
-            Text(model.palette.switcher ? "No matching sessions" : "No matching commands")
+            Text(model.palette.switcher ? "No matching sessions or chats" : "No matching commands")
               .font(.scaled(size: 13))
               .foregroundStyle(theme.textMuted)
               .frame(maxWidth: .infinity, alignment: .leading)

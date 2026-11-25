@@ -121,8 +121,11 @@ go through the host.
   **Notifications**, the warnings and errors list.
 - Hosting a huddle from a session, with guest approval and side chat.
 - The command palette (⇧⌘P), its results grouped by kind with their
-  shortcuts, and Handoff of the session on screen to your
-  phone.
+  shortcuts. Besides commands, screens and sessions it jumps straight to a
+  chat (live or saved, a saved one resumes), a terminal or run, or a file
+  open in the code view, in any session; the current session's come first,
+  and with nothing typed each of those lists shows its few most recent.
+- Handoff of the session on screen to your phone.
 - Updates: the app checks hourly on the channel picked in Settings →
   Advanced, and **Check for Updates** in the Argus menu checks now. It
   asks before downloading and before restarting, and quitting to install
@@ -162,7 +165,7 @@ except where macOS or the Mac app's own layout already uses the keys.
 | Shortcut              | Does                                                       | Menu  |
 | --------------------- | ---------------------------------------------------------- | ----- |
 | ⌘N                    | New session                                                | File  |
-| ⇧⌘O                   | Open a session (quick switcher)                            | File  |
+| ⇧⌘O                   | Open a session or chat (quick switcher)                    | File  |
 | ⌘O                    | Add project                                                | File  |
 | ⇧⌘P                   | Command palette (Pull in the git view and Diff tab)        | File  |
 | ⌘⌫                    | Delete session                                             | File  |
