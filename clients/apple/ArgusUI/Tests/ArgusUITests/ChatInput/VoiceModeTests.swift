@@ -82,10 +82,11 @@ struct ComposerVoiceTests {
   private let clock = ManualClock()
 
   private func model(
-    foreground: Bool = false, onlyInBackground: Bool = false, giveUp: Duration = .seconds(30)
+    foreground: Bool = false, onlyInBackground: Bool = false, giveUp: Duration = .seconds(30),
+    pause: Duration? = .seconds(1), sendAfter: Double = 2.5
   ) -> ComposerModel {
     let preferences = Preferences(suiteName: "voice-\(UUID().uuidString)")
-    VoiceSettings(voiceId: nil, speed: 1, onlyInBackground: onlyInBackground).save(preferences)
+    VoiceSettings(voiceId: nil, speed: 1, onlyInBackground: onlyInBackground, sendAfter: sendAfter).save(preferences)
     host.statusByAgent["a1"] = status(.idle)
     let engine = engine
     let speaker = speaker
@@ -94,7 +95,7 @@ struct ComposerVoiceTests {
       agentId: "a1", sessionId: "s1", host: host, style: .phone, preferences: preferences,
       dictationEngine: { _ in engine },
       voice: VoiceEnvironment(
-        synthesizer: { speaker }, isForeground: { foreground }, pause: .seconds(1), giveUp: giveUp,
+        synthesizer: { speaker }, isForeground: { foreground }, pause: pause, giveUp: giveUp,
         sleep: { await clock.sleep($0) }))
   }
 
@@ -123,6 +124,32 @@ struct ComposerVoiceTests {
     #expect(host.sent.map(\.message) == ["run the tests"])
     #expect(composer.text.isEmpty)
     #expect(affordances == [.voiceMode, .voiceSend])
+  }
+
+  @Test("the pause that sends is the user's setting")
+  func pauseSetting() async {
+    let composer = model(pause: nil, sendAfter: 3)
+    composer.setVoiceMode(true)
+    await settle()
+    engine.say("run the tests")
+    await settle()
+    await clock.advance(by: .seconds(2))
+    #expect(host.sent.isEmpty)
+    await clock.advance(by: .seconds(1))
+    #expect(host.sent.map(\.message) == ["run the tests"])
+  }
+
+  @Test("settings saved before the pause setting keep their voice and speed")
+  func oldSettings() throws {
+    let preferences = Preferences(suiteName: "voice-\(UUID().uuidString)")
+    struct Saved: Encodable {
+      let voiceId = "v1"
+      let speed = 1.5
+      let onlyInBackground = true
+    }
+    preferences.encode(Saved(), for: VoiceSettings.key)
+    let settings = VoiceSettings.load(preferences)
+    #expect(settings == VoiceSettings(voiceId: "v1", speed: 1.5, onlyInBackground: true, sendAfter: 2.5))
   }
 
   @Test("a finished turn's reply is read aloud, then the microphone opens again")

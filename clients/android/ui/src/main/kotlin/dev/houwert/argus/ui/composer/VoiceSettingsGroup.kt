@@ -51,7 +51,7 @@ fun VoiceSettingsGroup(preferences: Preferences) {
   SettingsGroup(
     title = "Voice mode",
     footer = "Turn voice mode on with the waveform button in the message field. Replies are read aloud and " +
-      "the microphone opens; stop talking to send. Answer permission prompts with “allow” " +
+      "the microphone opens; pause to send. Answer permission prompts with “allow” " +
       "or “deny”. Speech stays on this device.",
   ) {
     SettingsRow("Voice", description = "Download more voices in Android's text-to-speech settings.") {
@@ -80,6 +80,26 @@ fun VoiceSettingsGroup(preferences: Preferences) {
           val current = settings
           scope.launch { preview.value.speak("The tests pass. Want me to open a pull request?", current) }
         }
+      }
+    }
+    SettingsRow("Send after a pause of", description = "Longer gives you time to think mid-sentence.", stacked = true) {
+      Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        val range = VoiceSettings.SEND_AFTER
+        Slider(
+          settings.sendAfter.toFloat(),
+          { update(settings.copy(sendAfter = (it * 2).roundToInt() / 2.0)) },
+          Modifier.weight(1f),
+          valueRange = range.start.toFloat()..range.endInclusive.toFloat(),
+          steps = ((range.endInclusive - range.start) * 2).roundToInt() - 1,
+          colors = SliderDefaults.colors(
+            thumbColor = theme.accent,
+            activeTrackColor = theme.accent,
+            inactiveTrackColor = theme.border,
+            activeTickColor = theme.accent,
+            inactiveTickColor = theme.border,
+          ),
+        )
+        Text(String.format(Locale.getDefault(), "%.1f s", settings.sendAfter), color = theme.textSecondary, style = argusFont(12))
       }
     }
     SettingsToggleRow(

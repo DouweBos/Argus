@@ -10,14 +10,28 @@ public struct VoiceSettings: Codable, Equatable, Sendable {
   public var speed: Double
   /// Stay quiet while Argus is in front, and only listen.
   public var onlyInBackground: Bool
+  /// Seconds of silence after speech that send it.
+  public var sendAfter: Double
 
   public static let `default` = VoiceSettings(voiceId: nil, speed: 1, onlyInBackground: false)
   public static let speeds: ClosedRange<Double> = 0.5...2
+  public static let sendAfterRange: ClosedRange<Double> = 1...5
 
-  public init(voiceId: String?, speed: Double, onlyInBackground: Bool) {
+  public init(voiceId: String?, speed: Double, onlyInBackground: Bool, sendAfter: Double = 2.5) {
     self.voiceId = voiceId
     self.speed = speed
     self.onlyInBackground = onlyInBackground
+    self.sendAfter = sendAfter
+  }
+
+  // Settings saved before a field existed keep the rest of what was chosen.
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    let fallback = Self.default
+    voiceId = try container.decodeIfPresent(String.self, forKey: .voiceId)
+    speed = try container.decodeIfPresent(Double.self, forKey: .speed) ?? fallback.speed
+    onlyInBackground = try container.decodeIfPresent(Bool.self, forKey: .onlyInBackground) ?? fallback.onlyInBackground
+    sendAfter = try container.decodeIfPresent(Double.self, forKey: .sendAfter) ?? fallback.sendAfter
   }
 
   static let key = "voice.settings"

@@ -14,6 +14,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -92,14 +93,19 @@ class ComposerVoiceTest {
   private val speaker = FakeSpeaker()
   private val scheduler = TestCoroutineScheduler()
 
-  private fun model(foreground: Boolean = false, onlyInBackground: Boolean = false): ComposerModel {
+  private fun model(
+    foreground: Boolean = false,
+    onlyInBackground: Boolean = false,
+    pauseMs: Long? = 40,
+    sendAfter: Double = 2.5,
+  ): ComposerModel {
     val preferences = Preferences(InMemoryKeyValueStore())
-    VoiceSettings(onlyInBackground = onlyInBackground).save(preferences)
+    VoiceSettings(onlyInBackground = onlyInBackground, sendAfter = sendAfter).save(preferences)
     host.status("a1", RemoteAgentStatusStatus.idle)
     return ComposerModel(
       "a1", "s1", host, CoroutineScope(UnconfinedTestDispatcher(scheduler)), preferences = preferences,
       dictationEngine = { engine },
-      voice = VoiceEnvironment({ speaker }, { foreground }, pauseMs = 40, giveUpMs = 400),
+      voice = VoiceEnvironment({ speaker }, { foreground }, pauseMs = pauseMs, giveUpMs = 400),
     )
   }
 
@@ -134,6 +140,25 @@ class ComposerVoiceTest {
     assertEquals(listOf("run the tests"), host.sent.map { it.message })
     assertTrue(composer.text.value.isEmpty())
     assertEquals(listOf(ChatInputAffordance.VoiceMode, ChatInputAffordance.VoiceSend), affordances)
+  }
+
+  @Test fun `the pause that sends is the user's setting`() {
+    val composer = model(pauseMs = null, sendAfter = 3.0)
+    composer.setVoiceMode(true)
+    settle()
+    engine.say("run the tests")
+    settle()
+    pass(2_000)
+    assertTrue(host.sent.isEmpty())
+    pass(1_000)
+    assertEquals(listOf("run the tests"), host.sent.map { it.message })
+  }
+
+  @Test fun `settings saved before the pause setting keep their voice and speed`() {
+    val preferences = Preferences(InMemoryKeyValueStore())
+    val saved = JsonObject(mapOf("voiceId" to JsonPrimitive("v1"), "speed" to JsonPrimitive(1.5)))
+    preferences.encode(saved, JsonObject.serializer(), VoiceSettings.KEY)
+    assertEquals(VoiceSettings(voiceId = "v1", speed = 1.5), VoiceSettings.load(preferences))
   }
 
   @Test fun `a finished turn's reply is read aloud, then the microphone opens again`() {

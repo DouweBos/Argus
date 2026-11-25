@@ -28,15 +28,15 @@ enum VoiceListen: Equatable {
 public struct VoiceEnvironment {
   let synthesizer: @MainActor () -> any SpeechSynthesizer
   let isForeground: @MainActor () -> Bool
-  /// Silence after speech that sends it.
-  let pause: Duration
+  /// Silence after speech that sends it; nil is the user's setting.
+  let pause: Duration?
   /// Silence with nothing said that closes the microphone.
   let giveUp: Duration
   let sleep: @MainActor (Duration) async -> Void
 
   public init(
     synthesizer: @escaping @MainActor () -> any SpeechSynthesizer, isForeground: @escaping @MainActor () -> Bool,
-    pause: Duration = .milliseconds(1600), giveUp: Duration = .seconds(30),
+    pause: Duration? = nil, giveUp: Duration = .seconds(30),
     sleep: @escaping @MainActor (Duration) async -> Void = { try? await Task.sleep(for: $0) }
   ) {
     self.synthesizer = synthesizer
@@ -174,7 +174,7 @@ extension ComposerModel {
     let transcript = SpokenText.dropping(run.echoWords, wordsOf: transcript)
     guard !transcript.isEmpty else { return nil }
     run.heard = true
-    armVoiceTimer(run, after: voice.pause)
+    armVoiceTimer(run, after: voice.pause ?? .seconds(VoiceSettings.load(preferences).sendAfter))
     return transcript
   }
 

@@ -15,12 +15,15 @@ data class VoiceSettings(
   val speed: Double = 1.0,
   /** Stay quiet while Argus is in front, and only listen. */
   val onlyInBackground: Boolean = false,
+  /** Seconds of silence after speech that send it. */
+  val sendAfter: Double = 2.5,
 ) {
   fun save(preferences: Preferences) {
     val fields = buildMap {
       voiceId?.let { put("voiceId", JsonPrimitive(it)) }
       put("speed", JsonPrimitive(speed))
       put("onlyInBackground", JsonPrimitive(onlyInBackground))
+      put("sendAfter", JsonPrimitive(sendAfter))
     }
     preferences.encode(JsonObject(fields), JsonObject.serializer(), KEY)
   }
@@ -28,6 +31,7 @@ data class VoiceSettings(
   companion object {
     val DEFAULT = VoiceSettings()
     val SPEEDS = 0.5..2.0
+    val SEND_AFTER = 1.0..5.0
 
     internal const val KEY = "voice.settings"
     internal const val MODE_KEY = "voice.mode"
@@ -38,6 +42,7 @@ data class VoiceSettings(
         voiceId = (json["voiceId"] as? JsonPrimitive)?.takeIf { it.isString }?.content,
         speed = json["speed"]?.jsonPrimitive?.doubleOrNull ?: DEFAULT.speed,
         onlyInBackground = json["onlyInBackground"]?.jsonPrimitive?.booleanOrNull ?: DEFAULT.onlyInBackground,
+        sendAfter = json["sendAfter"]?.jsonPrimitive?.doubleOrNull ?: DEFAULT.sendAfter,
       )
     }
 

@@ -32,8 +32,8 @@ internal sealed interface VoiceListen {
 class VoiceEnvironment(
   val synthesizer: () -> SpeechSynthesizer,
   val isForeground: () -> Boolean,
-  /** Silence after speech that sends it. */
-  val pauseMs: Long = 1_600,
+  /** Silence after speech that sends it; null is the user's setting. */
+  val pauseMs: Long? = null,
   /** Silence with nothing said that closes the microphone. */
   val giveUpMs: Long = 30_000,
 )
@@ -165,7 +165,7 @@ internal fun ComposerModel.voiceHeard(transcript: String, run: DictationRun): St
   val words = SpokenText.dropping(run.echoWords, transcript)
   if (words.isEmpty()) return null
   run.heard = true
-  armVoiceTimer(run, voice.pauseMs)
+  armVoiceTimer(run, voice.pauseMs ?: (VoiceSettings.load(preferences).sendAfter * 1000).toLong())
   return words
 }
 

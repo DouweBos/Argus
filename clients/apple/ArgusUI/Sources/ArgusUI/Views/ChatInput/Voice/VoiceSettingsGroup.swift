@@ -18,7 +18,7 @@ public struct VoiceSettingsGroup: View {
     SettingsGroup(
       "Voice mode",
       footer: "Turn voice mode on with the waveform button in the message field. Replies are read aloud and "
-        + "the microphone opens; stop talking to send. Answer permission prompts with \u{201C}allow\u{201D} "
+        + "the microphone opens; pause to send. Answer permission prompts with \u{201C}allow\u{201D} "
         + "or \u{201C}deny\u{201D}. Speech stays on this device."
     ) {
       SettingsRow("Voice", description: "Download more voices in the system's Spoken Content settings.") {
@@ -35,6 +35,16 @@ public struct VoiceSettingsGroup: View {
             .font(.scaled(size: 12).monospacedDigit())
             .foregroundStyle(theme.textSecondary)
           Btn(label: "Preview", tone: .secondary, small: true, hugs: true, action: play)
+        }
+      }
+      SettingsRow(
+        "Send after a pause of", description: "Longer gives you time to think mid-sentence.", stacked: true
+      ) {
+        HStack(spacing: 12) {
+          Slider(value: $settings.sendAfter, in: VoiceSettings.sendAfterRange, step: 0.5)
+          Text(settings.sendAfter.formatted(.number.precision(.fractionLength(1))) + " s")
+            .font(.scaled(size: 12).monospacedDigit())
+            .foregroundStyle(theme.textSecondary)
         }
       }
       SettingsToggleRow(

@@ -218,6 +218,7 @@ mode** on the Mac and **Settings → Voice** on the phone.
 | -------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
 | **Voice**                        | System voice | Which installed voice reads replies. More voices download in the system's Spoken Content settings.                           |
 | **Speed**                        | 1.0×         | How fast replies are read, from 0.5× to 2×. **Preview** plays a sample.                                                      |
+| **Send after a pause of**        | 2.5 s        | How long you stay quiet before what you said is sent, from 1 to 5 seconds. Longer gives you time to think mid-sentence.      |
 | **Only speak in the background** | Off          | While Argus is the app in front, replies stay on screen and aren't read; the microphone still opens so you can answer aloud. |
 
 ---
