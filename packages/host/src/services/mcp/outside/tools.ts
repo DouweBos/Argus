@@ -43,6 +43,7 @@ export const OUTSIDE_TOOL_ACCESS: Record<string, McpAccess | null> = {
   trigger_run: "control",
   stop_terminal: "control",
   push_notification: "control",
+  set_session_status: "control",
 
   // No per-agent permission mode, so it would run at the app's default.
   spawn_agents_batch: "admin",

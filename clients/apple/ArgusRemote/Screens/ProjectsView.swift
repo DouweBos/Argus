@@ -14,7 +14,7 @@ struct ProjectsView: View {
   @State private var openingPad = false
   @State private var padToDelete: RemoteSession?
   @State private var projectToRemove: RemoteProject?
-  @State private var snoozing: RemoteSession?
+  @State private var triageSheet: SessionTriageSheet?
   @State private var width: CGFloat = 0
 
   /// As wide as the Mac's home column gets; past that the margins grow.
@@ -109,9 +109,7 @@ struct ProjectsView: View {
     } message: {
       Text("Its agents and terminals stop. The repository and its worktrees stay on \(hostName).")
     }
-    .sheet(item: $snoozing) { session in
-      NavigationStack { SnoozeUntilForm(session: session) }
-    }
+    .sessionTriageSheet($triageSheet)
     .refreshable { await refresh() }
     .liveRefresh(enabled: app.identity != nil && host.connection == .ready) { await refresh() }
     .liveRefresh(enabled: app.identity != nil && host.connection == .ready, every: .seconds(60)) {
@@ -150,7 +148,7 @@ struct ProjectsView: View {
     } else {
       ForEach(host.projects) { project in
         HomeProjectSection(
-          project: project, newSession: { newSession(in: project) }, snooze: { snoozing = $0 },
+          project: project, newSession: { newSession(in: project) }, present: { triageSheet = $0 },
           remove: { projectToRemove = project }
         ) {
           if project.id == host.projects.first?.id { projectsHeader }

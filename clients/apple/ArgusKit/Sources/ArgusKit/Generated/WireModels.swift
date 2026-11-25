@@ -17488,6 +17488,8 @@ extension ArgusProtocol {
     public var pullRequest: SessionPullRequest?
     public var pullRequestWatched: Bool?
     public var settled: Bool?
+    public var workflowStatus: SessionWorkflowStatus?
+    public var statusNote: String?
     public var snoozedUntil: Double?
     public var unread: Bool?
     public var lastMessageAt: Double?
@@ -17517,6 +17519,8 @@ extension ArgusProtocol {
       case pullRequest = "pull_request"
       case pullRequestWatched = "pull_request_watched"
       case settled = "settled"
+      case workflowStatus = "workflow_status"
+      case statusNote = "status_note"
       case snoozedUntil = "snoozed_until"
       case unread = "unread"
       case lastMessageAt = "last_message_at"
@@ -17525,7 +17529,7 @@ extension ArgusProtocol {
       case mergeLocked = "merge_locked"
     }
 
-    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, deleteFailed: RemoteSessionDeleteFailed? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, settled: Bool? = nil, snoozedUntil: Double? = nil, unread: Bool? = nil, lastMessageAt: Double? = nil, compareGroup: SessionCompareGroup? = nil, pushLocked: Bool? = nil, mergeLocked: Bool? = nil) {
+    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, deleteFailed: RemoteSessionDeleteFailed? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, settled: Bool? = nil, workflowStatus: SessionWorkflowStatus? = nil, statusNote: String? = nil, snoozedUntil: Double? = nil, unread: Bool? = nil, lastMessageAt: Double? = nil, compareGroup: SessionCompareGroup? = nil, pushLocked: Bool? = nil, mergeLocked: Bool? = nil) {
       self.id = id
       self.repoRoot = repoRoot
       self.kind = kind
@@ -17547,6 +17551,8 @@ extension ArgusProtocol {
       self.pullRequest = pullRequest
       self.pullRequestWatched = pullRequestWatched
       self.settled = settled
+      self.workflowStatus = workflowStatus
+      self.statusNote = statusNote
       self.snoozedUntil = snoozedUntil
       self.unread = unread
       self.lastMessageAt = lastMessageAt
@@ -17578,6 +17584,8 @@ extension ArgusProtocol {
       try c.encodeIfPresent(pullRequest, forKey: .pullRequest)
       try c.encodeIfPresent(pullRequestWatched, forKey: .pullRequestWatched)
       try c.encodeIfPresent(settled, forKey: .settled)
+      try c.encodeIfPresent(workflowStatus, forKey: .workflowStatus)
+      try c.encodeIfPresent(statusNote, forKey: .statusNote)
       try c.encodeIfPresent(snoozedUntil, forKey: .snoozedUntil)
       try c.encodeIfPresent(unread, forKey: .unread)
       try c.encodeIfPresent(lastMessageAt, forKey: .lastMessageAt)
@@ -19912,6 +19920,23 @@ extension ArgusProtocol {
       try c.encode(restores, forKey: .restores)
       try c.encode(turns, forKey: .turns)
     }
+  }
+
+  public struct SessionWorkflowStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let todo = SessionWorkflowStatus(rawValue: "todo")
+    public static let inProgress = SessionWorkflowStatus(rawValue: "in_progress")
+    public static let inReview = SessionWorkflowStatus(rawValue: "in_review")
+    public static let done = SessionWorkflowStatus(rawValue: "done")
   }
 
   public typealias SetupCopyEntry = JSONValue

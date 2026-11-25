@@ -450,26 +450,29 @@ extension HostStore {
 
   // MARK: Triage
 
-  /// Mark done (true), keep active (false), or follow its pull request again (nil).
+  /// Set its workflow status, nil following its pull request again. `note` nil keeps the note, empty clears it.
   /// The computer records it, so the phone sends no telemetry.
-  public func setSessionSettled(_ session: RemoteSession, settled: Bool?) async {
+  public func setSessionStatus(_ session: RemoteSession, status: RemoteSessionWorkflowStatus?, note: String? = nil) async {
     guard let backend else { return }
     struct Params: Encodable {
       let session_id: String
-      let settled: Bool?
+      let status: String?
+      let note: String?
 
       func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(session_id, forKey: .session_id)
-        try c.encode(settled, forKey: .settled)
+        try c.encode(status, forKey: .status)
+        try c.encodeIfPresent(note, forKey: .note)
       }
-      enum CodingKeys: String, CodingKey { case session_id, settled }
+      enum CodingKeys: String, CodingKey { case session_id, status, note }
     }
     do {
       try await backend.request(
-        .sessionsSettle, Params(session_id: session.id, settled: settled), as: IgnoredResult.self)
+        .sessionsSetStatus, Params(session_id: session.id, status: status?.rawValue, note: note),
+        as: IgnoredResult.self)
       await reloadTriaged(session)
-    } catch { report(error, scope: "session:settle") }
+    } catch { report(error, scope: "session:set_status") }
   }
 
   /// Hide it until `until`, when the computer brings it back with a notification; nil unsnoozes.

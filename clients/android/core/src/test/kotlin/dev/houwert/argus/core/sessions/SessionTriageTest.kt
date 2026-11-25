@@ -5,6 +5,7 @@ import dev.houwert.argus.kit.protocol.generated.RemoteAgentStatusAwaiting
 import dev.houwert.argus.kit.protocol.generated.RemoteAgentStatusStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteSessionKind
 import dev.houwert.argus.kit.protocol.generated.SessionPullRequestState
+import dev.houwert.argus.kit.protocol.generated.SessionWorkflowStatus
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.ZoneOffset
@@ -73,6 +74,18 @@ class SessionTriageTest {
     assertFalse(session("a", pullRequest = SessionPullRequestState.merged, settled = false).isDone)
     assertTrue(session("b", pullRequest = SessionPullRequestState.open, settled = true).isDone)
     assertTrue(session("c", pullRequest = SessionPullRequestState.closed).isDone)
+  }
+
+  @Test
+  fun aSetStatusBeatsThePullRequestAndAnOlderSettle() {
+    val review = session("a", pullRequest = SessionPullRequestState.merged, workflowStatus = SessionWorkflowStatus.inReview, settled = false)
+    assertEquals(SessionWorkflowStatus.inReview, review.effectiveStatus)
+    assertFalse(review.isDone)
+    assertTrue(session("b", workflowStatus = SessionWorkflowStatus.done, settled = true).isDone)
+    assertEquals(SessionWorkflowStatus.inReview, session("c", pullRequest = SessionPullRequestState.open).effectiveStatus)
+    assertEquals(SessionWorkflowStatus.inProgress, session("d", settled = false).effectiveStatus)
+    assertEquals(null, session("e", workflowStatus = SessionWorkflowStatus("someday")).effectiveStatus)
+    assertEquals(null, session("f").effectiveStatus)
   }
 
   @Test

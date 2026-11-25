@@ -8200,6 +8200,48 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsSetStatusParams: Codable, Sendable {
+      public var sessionId: String
+      public var status: SessionWorkflowStatus?
+      public var note: String?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case status = "status"
+        case note = "note"
+      }
+
+      public init(sessionId: String, status: SessionWorkflowStatus? = nil, note: String? = nil) {
+        self.sessionId = sessionId
+        self.status = status
+        self.note = note
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(status, forKey: .status)
+        try c.encodeIfPresent(note, forKey: .note)
+      }
+    }
+
+    public struct SessionsSetStatusResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
     public struct SessionsSettleParams: Codable, Sendable {
       public var sessionId: String
       public var settled: Bool?
@@ -10933,6 +10975,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsSetFileViewedParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsSetFileViewedResult
       public static let name = "sessions.set_file_viewed"
+    }
+
+    public enum SessionsSetStatus: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsSetStatusParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsSetStatusResult
+      public static let name = "sessions.set_status"
     }
 
     public enum SessionsSettle: RemoteCommand {

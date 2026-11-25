@@ -29,6 +29,11 @@
         ) {
           NavigationStack { SnoozeUntilForm(session: GalleryFixtures.argusSession("s-long")) }
         },
+        GalleryStory(
+          "sessions/note-sheet", size: CGSize(width: 340, height: 220), fixtures: GalleryFixtures.home, setup: load
+        ) {
+          NavigationStack { SessionNoteForm(session: GalleryFixtures.argusSession("s-long")) }
+        },
         setup("sessions/setup/progress", "s-setup"),
         setup("sessions/setup/failed", "s-failed"),
         setup("sessions/delete/teardown", "s-teardown"),

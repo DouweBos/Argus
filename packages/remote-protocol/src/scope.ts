@@ -216,6 +216,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.watch_pull_request": DENIED,
   // Sorting the engineer's own list.
   "sessions.settle": DENIED,
+  "sessions.set_status": DENIED,
   "sessions.snooze": DENIED,
   "sessions.checkout": DENIED,
   // Landing work is the engineer's call too — a guest reviews, never ships.

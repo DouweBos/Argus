@@ -10,7 +10,7 @@ struct SessionSidebar: View {
   @Environment(Router.self) private var router
   @Environment(ProposalsStore.self) private var proposals
   @Environment(AutomationsStore.self) private var automations
-  @State private var snoozing: RemoteSession?
+  @State private var triageSheet: SessionTriageSheet?
 
   var body: some View {
     List(selection: selection) {
@@ -54,9 +54,7 @@ struct SessionSidebar: View {
         }
       }
     }
-    .sheet(item: $snoozing) { session in
-      NavigationStack { SnoozeUntilForm(session: session) }
-    }
+    .sessionTriageSheet($triageSheet)
     .listStyle(.sidebar)
     // The selection fill is the tint, under white labels: never the near-white muted accent.
     .tint(theme.tint)
@@ -111,7 +109,7 @@ struct SessionSidebar: View {
       .contextMenu {
         if let session = group.session {
           PullRequestWatchButton(session: session)
-          SessionTriageMenu(session: session) { snoozing = session }
+          SessionTriageMenu(session: session) { triageSheet = $0 }
         }
       }
   }

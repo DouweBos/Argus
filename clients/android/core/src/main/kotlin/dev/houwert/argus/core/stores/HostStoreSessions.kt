@@ -10,6 +10,7 @@ import dev.houwert.argus.kit.protocol.generated.RemoteMentionPathResult
 import dev.houwert.argus.kit.protocol.generated.RemotePermissionMode
 import dev.houwert.argus.kit.protocol.generated.RemoteSession
 import dev.houwert.argus.kit.protocol.generated.RemoteSessionKind
+import dev.houwert.argus.kit.protocol.generated.SessionWorkflowStatus
 import kotlinx.coroutines.flow.update
 
 // Control-scoped session actions: create, rename, delete, land work.
@@ -300,14 +301,14 @@ suspend fun HostStore.setPullRequestWatched(sessionId: String, repoRoot: String,
   }
 }
 
-/** Mark done (true), keep active (false), or follow its pull request again (null). */
-suspend fun HostStore.setSessionSettled(session: RemoteSession, settled: Boolean?) {
+/** Set its workflow status, null following its pull request again. [note] null keeps the note, empty clears it. */
+suspend fun HostStore.setSessionStatus(session: RemoteSession, status: SessionWorkflowStatus?, note: String? = null) {
   val backend = backend ?: return
   try {
-    backend.request(Methods.SessionsSettle, MethodsTypes.SessionsSettleParams(session.id, settled))
+    backend.request(Methods.SessionsSetStatus, MethodsTypes.SessionsSetStatusParams(session.id, status, note))
     reloadTriaged(session)
   } catch (e: Exception) {
-    report(e, "session:settle")
+    report(e, "session:set_status")
   }
 }
 

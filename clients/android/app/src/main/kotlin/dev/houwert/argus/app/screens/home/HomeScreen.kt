@@ -59,7 +59,8 @@ import dev.houwert.argus.ui.components.MutedText
 import dev.houwert.argus.ui.components.TopBarScreen
 import dev.houwert.argus.ui.icons.Icon
 import dev.houwert.argus.ui.sessions.AgentStatusRow
-import dev.houwert.argus.ui.sessions.SnoozeUntilDialog
+import dev.houwert.argus.ui.sessions.SessionTriageSheet
+import dev.houwert.argus.ui.sessions.SessionTriageSheetDialog
 import dev.houwert.argus.ui.theme.ArgusTheme
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -97,7 +98,7 @@ fun HomeScreen() {
   var refreshing by remember { mutableStateOf(false) }
   var padToDelete by remember { mutableStateOf<RemoteSession?>(null) }
   var projectToRemove by remember { mutableStateOf<RemoteProject?>(null) }
-  var snoozing by remember { mutableStateOf<RemoteSession?>(null) }
+  var triageSheet by remember { mutableStateOf<SessionTriageSheet?>(null) }
   var openingPad by remember { mutableStateOf(false) }
   val hostName = identity?.label ?: "Argus"
   val ready = connection == Transport.State.Ready
@@ -175,7 +176,7 @@ fun HomeScreen() {
               else -> router.push(route)
             }
           }
-          val actions = HomeProjectActions(push, ::newSession, { snoozing = it }, { projectToRemove = it })
+          val actions = HomeProjectActions(push, ::newSession, { triageSheet = it }, { projectToRemove = it })
           for (project in projects) {
             homeProjectSection(
               host, project, sessionsByRepo[project.repoRoot].orEmpty(), grouping.sessionGroups(project.repoRoot), all, gitStatus,
@@ -229,7 +230,7 @@ fun HomeScreen() {
       dismissButton = { TextButton({ projectToRemove = null }) { Text("Cancel") } },
     )
   }
-  snoozing?.let { SnoozeUntilDialog(host, it) { snoozing = null } }
+  triageSheet?.let { SessionTriageSheetDialog(host, it) { triageSheet = null } }
 }
 
 @Composable

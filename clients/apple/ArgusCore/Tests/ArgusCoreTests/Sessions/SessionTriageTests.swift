@@ -66,6 +66,17 @@ struct SessionTriageTests {
     #expect(session("c", extra: ["pull_request": pr("closed")]).isDone)
   }
 
+  @Test func aSetStatusBeatsThePullRequestAndAnOlderSettle() {
+    let review = session("a", extra: ["pull_request": pr("merged"), "workflow_status": "in_review", "settled": false])
+    #expect(review.effectiveStatus == .inReview)
+    #expect(review.isDone == false)
+    #expect(session("b", extra: ["workflow_status": "done", "settled": true]).isDone)
+    #expect(session("c", extra: ["pull_request": pr("open")]).effectiveStatus == .inReview)
+    #expect(session("d", extra: ["settled": false]).effectiveStatus == .inProgress)
+    #expect(session("e", extra: ["workflow_status": "someday"]).effectiveStatus == nil)
+    #expect(session("f").effectiveStatus == nil)
+  }
+
   @Test func needingYouOutranksASnoozeAndDone() {
     let s = session("s", extra: ["settled": true, "snoozed_until": (now.timeIntervalSince1970 + 60) * 1000])
     let activity = SessionActivity(session: s, agents: [agent("s", status: "requires_action", awaiting: "permission")])

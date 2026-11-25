@@ -49,6 +49,7 @@ export type {
   RemoteTodo,
   RemoteTokenUsage,
   RemoteToolCall,
+  SessionWorkflowStatus,
 } from "@argus/remote-protocol";
 export type { EventEnvelope } from "@argus/remote-client";
 export type { RemoteTranscriptDelta } from "@argus/client-core";

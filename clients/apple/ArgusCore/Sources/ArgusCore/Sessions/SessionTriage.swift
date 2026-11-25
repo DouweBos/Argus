@@ -26,12 +26,18 @@ extension RemoteSession {
 
   public var snoozedUntilDate: Date? { snoozedUntil.map { Date(timeIntervalSince1970: $0 / 1000) } }
 
-  /// Marked done, or its pull request merged or closed and not kept active.
-  public var isDone: Bool {
-    if let settled { return settled }
-    guard let state = pullRequest?.state else { return false }
-    return state == .merged || state == .closed
+  /// Its set status, or else what its pull request says: open is In Review, merged or closed is Done.
+  public var effectiveStatus: RemoteSessionWorkflowStatus? {
+    if let workflowStatus { return workflowStatus }
+    switch pullRequest?.state {
+    case .merged?, .closed?: return .done
+    case .open?, .draft?: return .inReview
+    case nil: return nil
+    }
   }
+
+  /// Set to Done, or its pull request merged or closed and no other status set.
+  public var isDone: Bool { effectiveStatus == .done }
 }
 
 extension SessionActivity {

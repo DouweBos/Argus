@@ -79,8 +79,8 @@ final class DesktopModel {
   var deletingSession: RemoteSession?
   /// The session the sidebar's Rename… alert is naming.
   var renamingSession: RemoteSession?
-  /// The session whose Snooze › Custom… sheet is open.
-  var snoozingSession: RemoteSession?
+  /// The session triage sheet open: Snooze › Custom, or its status note.
+  var triageSheet: SessionTriageSheet?
   /// Bumped to put the caret in the chat input in front (⌘L).
   var composerFocusRequest = 0
   /// Elements picked in the runtime panel, by session, until its composer takes them.

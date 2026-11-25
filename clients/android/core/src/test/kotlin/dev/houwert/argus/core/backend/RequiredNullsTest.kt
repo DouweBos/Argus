@@ -2,7 +2,7 @@ package dev.houwert.argus.core.backend
 
 import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.setSessionClaudeAccount
-import dev.houwert.argus.core.stores.setSessionSettled
+import dev.houwert.argus.core.stores.setSessionStatus
 import dev.houwert.argus.core.stores.snoozeSession
 import dev.houwert.argus.core.support.FakeBackend
 import dev.houwert.argus.core.support.attach
@@ -46,12 +46,14 @@ class RequiredNullsTest {
     val backend = FakeBackend()
     attach(store, backend)
 
-    store.setSessionSettled(session, null)
+    store.setSessionStatus(session, null)
     store.snoozeSession(session, null)
 
-    assertEquals(JsonNull, backend.params(Methods.SessionsSettle)?.get("settled"))
+    assertEquals(JsonNull, backend.params(Methods.SessionsSetStatus)?.get("status"))
+    // No note means keep it: the key stays off the wire.
+    assertEquals(null, backend.params(Methods.SessionsSetStatus)?.get("note"))
     assertEquals(JsonNull, backend.params(Methods.SessionsSnooze)?.get("until"))
-    assertEquals(1, backend.count(Methods.SessionsSettle))
+    assertEquals(1, backend.count(Methods.SessionsSetStatus))
   }
 
   @Test fun followingTheActiveAccountSendsNull() = runTest {

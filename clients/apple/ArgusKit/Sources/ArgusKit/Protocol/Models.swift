@@ -33,6 +33,23 @@ public enum RemoteSessionStatus: String, Codable, Sendable {
   case deleting, initializing, ready, error
 }
 
+/// Where a session's work stands. Done folds it away under Done.
+public enum RemoteSessionWorkflowStatus: String, Codable, Sendable, CaseIterable {
+  case todo
+  case inProgress = "in_progress"
+  case inReview = "in_review"
+  case done
+
+  public var title: String {
+    switch self {
+    case .todo: "To Do"
+    case .inProgress: "In Progress"
+    case .inReview: "In Review"
+    case .done: "Done"
+    }
+  }
+}
+
 public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var id: String
   public var repoRoot: String
@@ -74,8 +91,13 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var pullRequest: RemoteSessionPullRequest?
   /// An agent is woken on the PR's CI results, conflicts and comments. Nil on older computers.
   public var pullRequestWatched: Bool?
-  /// Marked done (true) or kept active (false); nil follows the pull request, and on older computers.
+  /// Done (true) or another set status (false); nil follows the pull request. Read only by older computers'
+  /// sessions, which send no `workflow_status`.
   public var settled: Bool?
+  /// The workflow status as sent; unknown values read as none. Nil follows the pull request, and on older computers.
+  public var workflowStatusValue: String?
+  /// A one-line note on where it stands. Nil on older computers.
+  public var statusNote: String?
   /// Hidden until then, in epoch milliseconds. Nil on older computers.
   public var snoozedUntil: Double?
   /// A turn finished while nobody had it open. Nil on older computers.
@@ -90,6 +112,11 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var mergeLocked: Bool?
 
   public var isUnavailable: Bool { availability == .unavailable }
+  /// Set by the user or an agent; an older computer's done or kept-active reads as Done or In progress.
+  public var workflowStatus: RemoteSessionWorkflowStatus? {
+    if let workflowStatusValue { return RemoteSessionWorkflowStatus(rawValue: workflowStatusValue) }
+    return settled.map { $0 ? .done : .inProgress }
+  }
   /// A scratch pad or automation run: its own folder, no project, no git.
   public var isOutsideProjects: Bool { kind == .scratchPad || kind == .automationHost }
 
@@ -112,6 +139,8 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case pullRequest = "pull_request"
     case pullRequestWatched = "pull_request_watched"
     case settled
+    case workflowStatusValue = "workflow_status"
+    case statusNote = "status_note"
     case snoozedUntil = "snoozed_until"
     case unread
     case lastMessageAt = "last_message_at"

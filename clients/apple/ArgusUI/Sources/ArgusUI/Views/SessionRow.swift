@@ -2,7 +2,7 @@ import ArgusCore
 import SwiftUI
 
 /// One session as a row: a dot when something's happening, its title, a line
-/// for setup or errors, and how long ago its agents were last active. The Mac
+/// for setup, errors or its status note, its set status, and how long ago its agents were last active. The Mac
 /// sidebar and the phone's project list and iPad sidebar all draw it.
 public struct SessionRow: View {
   @Environment(\.theme) private var theme
@@ -88,6 +88,10 @@ public struct SessionRow: View {
             .foregroundStyle(theme.textMuted)
             .accessibilityLabel("Snoozed")
         }
+        if let status = session.workflowStatus {
+          SessionStatusGlyph(status, size: Self.prIconSize)
+            .help(status.title)
+        }
         if let git { SyncCounts(status: git, font: Self.detailFont) }
         if let pullRequest = session.pullRequest {
           PullRequestStateIcon(pullRequest, size: Self.prIconSize, watching: session.pullRequestWatched == true)
@@ -113,8 +117,9 @@ public struct SessionRow: View {
   private var detail: String? {
     if session.isUnavailable { return "\(session.unavailableVolume ?? "Drive") unavailable" }
     if session.status != .ready { return activity.statusText }
-    guard detailed else { return caption }
-    let parts = [caption, activity.subtitle, activity.statusText].compactMap { $0 }
+    let note = session.statusNote
+    guard detailed else { return [caption, note].compactMap { $0 }.joined(separator: " · ").nilIfEmpty }
+    let parts = [caption, note, activity.subtitle, activity.statusText].compactMap { $0 }
     return parts.isEmpty ? nil : parts.joined(separator: " · ")
   }
 

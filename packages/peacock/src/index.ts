@@ -164,6 +164,7 @@ export * from "./components/IssueFilterBar/IssueFilterBar";
 export * from "./components/IssueFilterBar/IssueSearchField";
 export * from "./components/IssuePicker/IssuePicker";
 export * from "./components/IssueStatusIcon/IssueStatusIcon";
+export * from "./components/SessionStatusIcon/SessionStatusIcon";
 export * from "./components/Input/Input";
 export * from "./components/InviteMessage/InviteMessage";
 export * from "./components/Kbd/Kbd";

@@ -228,6 +228,7 @@ import { landStack } from "../session/stackLand";
 import {
   sessionTriage,
   setSessionSettled,
+  setSessionStatus,
   snoozeSession,
 } from "../session/triage";
 import {
@@ -2046,6 +2047,14 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const { session_id, settled } = parse("sessions.settle", params);
     requireSession(session_id);
     await control(() => setSessionSettled(session_id, settled));
+
+    return { accepted: true };
+  },
+
+  "sessions.set_status": async (params) => {
+    const { session_id, status, note } = parse("sessions.set_status", params);
+    requireSession(session_id);
+    await control(() => setSessionStatus(session_id, status, note, "user"));
 
     return { accepted: true };
   },

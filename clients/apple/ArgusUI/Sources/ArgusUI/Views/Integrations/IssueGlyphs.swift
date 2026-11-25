@@ -32,6 +32,16 @@ public struct IssueStatusGlyph: View {
           startAngle: .degrees(-90), endAngle: .degrees(90), clockwise: false)
         half.closeSubpath()
         context.fill(half, with: .color(color))
+      case "review":
+        // A session's In Review: three quarters filled, between started and done.
+        context.stroke(ring, with: .color(color), lineWidth: 1.5 * unit)
+        var pie = Path()
+        pie.move(to: CGPoint(x: 7 * unit, y: 7 * unit))
+        pie.addArc(
+          center: CGPoint(x: 7 * unit, y: 7 * unit), radius: 3.5 * unit,
+          startAngle: .degrees(-90), endAngle: .degrees(180), clockwise: false)
+        pie.closeSubpath()
+        context.fill(pie, with: .color(color))
       case "completed", "canceled":
         context.fill(Path(ellipseIn: CGRect(x: 0.75, y: 0.75, width: 12.5, height: 12.5).scaled(unit)), with: .color(color))
         var mark = Path()
@@ -55,6 +65,7 @@ public struct IssueStatusGlyph: View {
     return switch type {
     case "triage": theme.error
     case "started": theme.warning
+    case "review": theme.accent
     case "completed": theme.success
     default: theme.textMuted
     }

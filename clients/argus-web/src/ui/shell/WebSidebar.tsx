@@ -14,6 +14,7 @@ import {
 import {
   sessionActivity,
   sessionTitle,
+  setWorkflowStatus,
   shortAge,
   sortSessionsByRecency,
 } from "@argus/client-core";
@@ -28,7 +29,11 @@ import {
   Icons,
   SidebarSearchField,
 } from "@argus/peacock";
-import type { RemoteProject, RemoteSession } from "../../lib/protocol";
+import type {
+  RemoteAgentStatus,
+  RemoteProject,
+  RemoteSession,
+} from "../../lib/protocol";
 import { appNavigate } from "../../routing/router";
 import {
   projectKey,
@@ -45,6 +50,7 @@ import { useInboxBadge } from "../automations/useInbox";
 import { ConnectionBadge } from "../ConnectionBadge";
 import { capture } from "../../telemetry/telemetry";
 import { PUSHED_LIST_REFRESH_MS, useLiveRefresh } from "../useLiveRefresh";
+import { useSessionTriageMenu } from "./SessionTriageMenu";
 import { useShellPrefs } from "./shellPrefs";
 
 interface Destination {
@@ -123,6 +129,48 @@ function useProjectLists(ready: boolean, projects: RemoteProject[]) {
     }
   }, [loadAgents, loadSessions, refreshProjects, roots]);
   useLiveRefresh(ready, refresh, PUSHED_LIST_REFRESH_MS);
+}
+
+/** A session under its project, with its status, note and right-click menu. */
+function SidebarSessionRow({
+  agents,
+  selected,
+  session,
+  onOpen,
+}: {
+  agents: RemoteAgentStatus[];
+  selected: boolean;
+  session: RemoteSession;
+  onOpen: () => void;
+}) {
+  const activity = sessionActivity(session, agents);
+  const triage = useSessionTriageMenu(session);
+
+  return (
+    <>
+      <AppSidebarSessionRow
+        age={activity.lastActive ? shortAge(activity.lastActive) : undefined}
+        busy={activity.busy}
+        note={
+          session.status === "ready"
+            ? undefined
+            : (activity.statusText ?? undefined)
+        }
+        selected={selected}
+        status={activity.showsDot ? activity.tone : undefined}
+        subtitle={session.status_note ?? undefined}
+        title={sessionTitle(session)}
+        tooltip={[session.branch, activity.statusText, session.status_note]
+          .filter(Boolean)
+          .join(" · ")}
+        unavailable={session.availability === "unavailable"}
+        workflowStatus={setWorkflowStatus(session) ?? undefined}
+        onClick={onOpen}
+        onContextMenu={triage.onContextMenu}
+      />
+      {triage.overlay}
+    </>
+  );
 }
 
 /** A project's root checkout: the header that opens it, with its branch and sync counts. */
@@ -204,32 +252,15 @@ function ProjectSection({
         }
         onToggleCollapsed={() => toggleCollapsed(project.repo_root)}
       />
-      {shown.map((session) => {
-        const activity = sessionActivity(session, agentsIn(session));
-
-        return (
-          <AppSidebarSessionRow
-            key={session.id}
-            age={
-              activity.lastActive ? shortAge(activity.lastActive) : undefined
-            }
-            busy={activity.busy}
-            note={
-              session.status === "ready"
-                ? undefined
-                : (activity.statusText ?? undefined)
-            }
-            selected={current === session.id}
-            status={activity.showsDot ? activity.tone : undefined}
-            title={sessionTitle(session)}
-            tooltip={[session.branch, activity.statusText]
-              .filter(Boolean)
-              .join(" · ")}
-            unavailable={session.availability === "unavailable"}
-            onClick={() => go({ name: "session", sessionId: session.id })}
-          />
-        );
-      })}
+      {shown.map((session) => (
+        <SidebarSessionRow
+          key={session.id}
+          agents={agentsIn(session)}
+          selected={current === session.id}
+          session={session}
+          onOpen={() => go({ name: "session", sessionId: session.id })}
+        />
+      ))}
     </AppSidebarGroup>
   );
 }

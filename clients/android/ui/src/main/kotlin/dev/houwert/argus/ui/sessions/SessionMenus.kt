@@ -22,26 +22,35 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.houwert.argus.core.sessions.SessionActivity
 import dev.houwert.argus.core.sessions.SnoozePreset
+import dev.houwert.argus.core.sessions.effectiveStatus
 import dev.houwert.argus.core.sessions.isDone
 import dev.houwert.argus.core.sessions.isSnoozed
+import dev.houwert.argus.core.sessions.setStatus
+import dev.houwert.argus.core.sessions.title
 import dev.houwert.argus.core.stores.ChatHistoryMatch
 import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.parts
 import dev.houwert.argus.core.stores.setPullRequestWatched
-import dev.houwert.argus.core.stores.setSessionSettled
+import dev.houwert.argus.core.stores.setSessionStatus
 import dev.houwert.argus.core.stores.snoozeSession
 import dev.houwert.argus.kit.protocol.generated.RemoteSession
 import dev.houwert.argus.kit.protocol.generated.RemoteSessionKind
 import dev.houwert.argus.kit.protocol.generated.RemoteStoppedAgent
+import dev.houwert.argus.kit.protocol.generated.SessionWorkflowStatus
 import dev.houwert.argus.kit.protocol.isImported
 import dev.houwert.argus.kit.protocol.isOpen
 import dev.houwert.argus.kit.protocol.isPinned
 import dev.houwert.argus.kit.util.Labels
 import dev.houwert.argus.ui.components.Badge
 import dev.houwert.argus.ui.components.DateTimePickerDialog
+import dev.houwert.argus.ui.components.TextPromptDialog
+import dev.houwert.argus.ui.integrations.IssueStatusGlyph
 import dev.houwert.argus.ui.icons.Icon
 import dev.houwert.argus.ui.theme.ArgusTheme
 import java.time.Instant
@@ -91,19 +100,44 @@ fun MatchSnippet(match: ChatHistoryMatch, modifier: Modifier = Modifier) {
   )
 }
 
+/** A dialog a session row's menu opens; the screen holding the list shows it. */
+sealed class SessionTriageSheet {
+  abstract val session: RemoteSession
+
+  data class Snooze(override val session: RemoteSession) : SessionTriageSheet()
+  data class Note(override val session: RemoteSession) : SessionTriageSheet()
+}
+
+/** The dialog for a [SessionTriageSheet]. */
+@Composable
+fun SessionTriageSheetDialog(host: HostStore, sheet: SessionTriageSheet, onDismiss: () -> Unit) {
+  when (sheet) {
+    is SessionTriageSheet.Snooze -> SnoozeUntilDialog(host, sheet.session, onDismiss)
+    is SessionTriageSheet.Note -> SessionNoteDialog(host, sheet.session, onDismiss)
+  }
+}
+
 /**
- * Mark as Done / Move Back to Active, Snooze with its presets, and Watch Pull Request: the items
- * of a session row's long-press menu. [customSnooze] opens the time picker the caller shows.
+ * Mark as Done / Move Back to Active, its status and note, Snooze with its presets, and Watch Pull
+ * Request: the items of a session row's long-press menu. [present] opens a dialog the caller shows.
  */
 @Composable
-fun SessionRowMenuItems(host: HostStore, session: RemoteSession, dismiss: () -> Unit, customSnooze: () -> Unit) {
+fun SessionRowMenuItems(host: HostStore, session: RemoteSession, dismiss: () -> Unit, present: (SessionTriageSheet) -> Unit) {
   val scope = rememberCoroutineScope()
+  var statusPage by remember { mutableStateOf(false) }
   fun run(action: suspend () -> Unit) {
     dismiss()
     scope.launch { action() }
   }
   val theme = ArgusTheme.colors
   val pr = session.pullRequest
+  if (statusPage) {
+    SessionStatusItems(session, back = { statusPage = false }, set = { run { host.setSessionStatus(session, it) } }) {
+      dismiss()
+      present(SessionTriageSheet.Note(session))
+    }
+    return
+  }
   if (pr != null && pr.isOpen && host.hasControl) {
     val watching = session.pullRequestWatched == true
     DropdownMenuItem(
@@ -114,14 +148,25 @@ fun SessionRowMenuItems(host: HostStore, session: RemoteSession, dismiss: () -> 
   }
   if (!host.hasControl || (session.kind != RemoteSessionKind.worktree && session.kind != RemoteSessionKind.scratchPad)) return
   if (session.isDone) {
-    // A merged PR would settle it again; only an explicit "keep" holds it open.
+    // A merged PR would make it done again; only a set status holds it open.
     DropdownMenuItem(
-      { Text("Move Back to Active") }, { run { host.setSessionSettled(session, if (pr != null && !pr.isOpen) false else null) } },
+      { Text("Move Back to Active") },
+      { run { host.setSessionStatus(session, if (pr != null && !pr.isOpen) SessionWorkflowStatus.inProgress else null) } },
       leadingIcon = { Icon(Icon.reopen, null, tint = theme.textSecondary) },
     )
   } else {
-    DropdownMenuItem({ Text("Mark as Done") }, { run { host.setSessionSettled(session, true) } }, leadingIcon = { Icon(Icon.done, null, tint = theme.textSecondary) })
+    DropdownMenuItem(
+      { Text("Mark as Done") }, { run { host.setSessionStatus(session, SessionWorkflowStatus.done) } },
+      leadingIcon = { Icon(Icon.done, null, tint = theme.textSecondary) },
+    )
   }
+  DropdownMenuItem(
+    { Text("Status") }, { statusPage = true },
+    leadingIcon = { Icon(Icon.workflowStatus, null, tint = theme.textSecondary) },
+    trailingIcon = {
+      Text(session.effectiveStatus?.title ?: "None", color = theme.textMuted, style = ArgusTheme.typography.footnote)
+    },
+  )
   if (session.isSnoozed()) {
     DropdownMenuItem({ Text("Unsnooze") }, { run { host.snoozeSession(session, null) } }, leadingIcon = { Icon(Icon.unsnooze, null, tint = theme.textSecondary) })
   }
@@ -134,7 +179,62 @@ fun SessionRowMenuItems(host: HostStore, session: RemoteSession, dismiss: () -> 
       leadingIcon = { Icon(Icon.snooze, null, tint = theme.textSecondary) },
     )
   }
-  DropdownMenuItem({ Text("Snooze Until") }, { dismiss(); customSnooze() }, leadingIcon = { Icon(Icon.clock, null, tint = theme.textSecondary) })
+  DropdownMenuItem(
+    { Text("Snooze Until") }, { dismiss(); present(SessionTriageSheet.Snooze(session)) },
+    leadingIcon = { Icon(Icon.clock, null, tint = theme.textSecondary) },
+  )
+}
+
+/** The menu's status page: back, the four statuses with the current one checked, clear, and the note. */
+@Composable
+private fun SessionStatusItems(
+  session: RemoteSession,
+  back: () -> Unit,
+  set: (SessionWorkflowStatus?) -> Unit,
+  editNote: () -> Unit,
+) {
+  val theme = ArgusTheme.colors
+  val current = session.effectiveStatus
+  DropdownMenuItem({ Text("Status", color = theme.textSecondary) }, back, leadingIcon = { Icon(Icon.arrowBack, "Back", tint = theme.textSecondary) })
+  HorizontalDivider()
+  for (status in SessionWorkflowStatus.entries) {
+    DropdownMenuItem(
+      { Text(status.title) }, { set(status) },
+      leadingIcon = { SessionStatusGlyph(status) },
+      trailingIcon = if (status == current) ({ Icon(Icon.check, "Current", tint = theme.accent) }) else null,
+    )
+  }
+  if (session.setStatus != null) {
+    DropdownMenuItem({ Text(if (session.pullRequest == null) "Clear Status" else "Follow Pull Request") }, { set(null) })
+  }
+  HorizontalDivider()
+  DropdownMenuItem(
+    { Text(if (session.statusNote == null) "Add Note" else "Edit Note") }, editNote,
+    leadingIcon = { Icon(Icon.chat, null, tint = theme.textSecondary) },
+  )
+}
+
+/** A workflow status as the issue-status circle: empty, half, three quarters, checked. */
+@Composable
+fun SessionStatusGlyph(status: SessionWorkflowStatus, modifier: Modifier = Modifier, size: Dp = 14.dp) {
+  val type = when (status) {
+    SessionWorkflowStatus.inProgress -> "started"
+    SessionWorkflowStatus.inReview -> "review"
+    SessionWorkflowStatus.done -> "completed"
+    else -> "unstarted"
+  }
+  IssueStatusGlyph(type, modifier.semantics { contentDescription = status.title }, size = size)
+}
+
+/** A one-line note on where a session stands, shown under its title in the lists. Empty clears it. */
+@Composable
+fun SessionNoteDialog(host: HostStore, session: RemoteSession, onDismiss: () -> Unit) {
+  val scope = rememberCoroutineScope()
+  TextPromptDialog(
+    if (session.statusNote == null) "Add Note" else "Edit Note", session.statusNote ?: "", "Save",
+    { note -> scope.launch { host.setSessionStatus(session, session.setStatus, note.trim()) } }, onDismiss,
+    placeholder = "Waiting on CI", allowEmpty = true,
+  )
 }
 
 /** Snooze until a day and time of your choosing. */

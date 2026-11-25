@@ -15,6 +15,10 @@
   color: var(--warning);
 }
 
+.review {
+  color: var(--accent);
+}
+
 .completed {
   color: var(--success);
 }

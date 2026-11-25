@@ -20,6 +20,7 @@ import {
 } from "./huddle";
 import {
   RemoteAgentCapabilities,
+  SessionWorkflowStatus,
   RemoteAgentStatus,
   RemoteAutomation,
   RemoteAutomationDetail,
@@ -620,6 +621,12 @@ export const MethodParams = {
   "sessions.settle": z.object({
     session_id: z.string(),
     settled: z.boolean().nullable(),
+  }),
+  /** Set its workflow status (null follows the pull request); `note` omitted keeps the note, null clears it. */
+  "sessions.set_status": z.object({
+    session_id: z.string(),
+    status: SessionWorkflowStatus.nullable(),
+    note: z.string().max(500).nullable().optional(),
   }),
   /** Hide until `until` (epoch ms), then notify; null brings it back now. */
   "sessions.snooze": z.object({
@@ -1379,6 +1386,7 @@ export const MethodResult = {
   "sessions.mark_ready": z.object({ accepted: z.boolean() }),
   "sessions.watch_pull_request": z.object({ watching: z.boolean() }),
   "sessions.settle": z.object({ accepted: z.boolean() }),
+  "sessions.set_status": z.object({ accepted: z.boolean() }),
   "sessions.snooze": z.object({ accepted: z.boolean() }),
   "sessions.git_status": z.object({ status: RemoteGitStatus }),
   "terminals.list": z.object({ terminals: z.array(RemoteTerminal) }),

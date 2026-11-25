@@ -66,6 +66,8 @@ fun TextPromptDialog(
   onConfirm: (String) -> Unit,
   onDismiss: () -> Unit,
   placeholder: String = "Name",
+  /** Empty is an answer too, as clearing a note. */
+  allowEmpty: Boolean = false,
 ) {
   val theme = ArgusTheme.colors
   var value by remember { mutableStateOf(initial) }
@@ -78,7 +80,7 @@ fun TextPromptDialog(
     containerColor = theme.surface,
     title = { Text(title, color = theme.text, style = argusFont(18, FontWeight.SemiBold)) },
     text = { ThemedTextField(value, { value = it }, placeholder, input = TextInput.Name, onSubmit = submit) },
-    confirmButton = { Btn(confirmLabel, small = true, hugs = true, enabled = value.isNotBlank(), onClick = submit) },
+    confirmButton = { Btn(confirmLabel, small = true, hugs = true, enabled = allowEmpty || value.isNotBlank(), onClick = submit) },
     dismissButton = { Btn("Cancel", tone = ButtonTone.Ghost, small = true, hugs = true, onClick = onDismiss) },
   )
 }

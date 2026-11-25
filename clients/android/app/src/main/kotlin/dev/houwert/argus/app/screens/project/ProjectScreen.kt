@@ -64,7 +64,8 @@ import dev.houwert.argus.ui.components.TopBarScreen
 import dev.houwert.argus.ui.icons.Icon
 import dev.houwert.argus.ui.sessions.ChatSearchSheet
 import dev.houwert.argus.ui.sessions.FoldedSessionsLabel
-import dev.houwert.argus.ui.sessions.SnoozeUntilDialog
+import dev.houwert.argus.ui.sessions.SessionTriageSheet
+import dev.houwert.argus.ui.sessions.SessionTriageSheetDialog
 import dev.houwert.argus.ui.sessions.StoppedAgentRow
 import dev.houwert.argus.ui.theme.ArgusTheme
 import kotlinx.coroutines.launch
@@ -91,7 +92,7 @@ fun ProjectScreen(repoRoot: String, name: String) {
   val hasControl = "control" in capabilities
   val scope = rememberCoroutineScope()
   var refreshing by remember { mutableStateOf(false) }
-  var snoozing by remember { mutableStateOf<RemoteSession?>(null) }
+  var triageSheet by remember { mutableStateOf<SessionTriageSheet?>(null) }
   var stackingOn by remember { mutableStateOf<RemoteSession?>(null) }
   var searchingChats by remember { mutableStateOf(false) }
   var showingStopped by remember { mutableStateOf(false) }
@@ -141,17 +142,17 @@ fun ProjectScreen(repoRoot: String, name: String) {
         LazyColumn(Modifier.fillMaxSize()) {
           if (triage.needsYou.isNotEmpty()) {
             item("needs") { HomeSectionHeader("Needs you") }
-            sessionRows("n", host, triage.needsYou, sessions, gitStatus, hasControl, repoRoot, router::push, { snoozing = it }, { stackingOn = it })
+            sessionRows("n", host, triage.needsYou, sessions, gitStatus, hasControl, repoRoot, router::push, { triageSheet = it }, { stackingOn = it })
             item("active") { HomeSectionHeader("Sessions") }
           }
-          sessionRows("a", host, triage.active, sessions, gitStatus, hasControl, repoRoot, router::push, { snoozing = it }, { stackingOn = it })
+          sessionRows("a", host, triage.active, sessions, gitStatus, hasControl, repoRoot, router::push, { triageSheet = it }, { stackingOn = it })
           if (triage.folded.isNotEmpty()) {
             item("fold") {
               HomeRow(triage.foldedLabel, onClick = { ProjectFolds.toggle(ProjectFolds.unfolded, repoRoot) }) {
                 FoldedSessionsLabel(triage.foldedLabel, showingFolded)
               }
             }
-            if (showingFolded) sessionRows("f", host, triage.folded, sessions, gitStatus, hasControl, repoRoot, router::push, { snoozing = it }, { stackingOn = it })
+            if (showingFolded) sessionRows("f", host, triage.folded, sessions, gitStatus, hasControl, repoRoot, router::push, { triageSheet = it }, { stackingOn = it })
           }
           if (orphaned.isNotEmpty()) {
             item("stopped") {
@@ -180,7 +181,7 @@ fun ProjectScreen(repoRoot: String, name: String) {
     }
   }
 
-  snoozing?.let { SnoozeUntilDialog(host, it) { snoozing = null } }
+  triageSheet?.let { SessionTriageSheetDialog(host, it) { triageSheet = null } }
   stackingOn?.let { parent ->
     StackedSessionSheet(parent, onDismiss = { stackingOn = null }) { router.push(Route.Session(it.id, it.displayName ?: it.branch, repoRoot)) }
   }
@@ -202,7 +203,7 @@ private fun LazyListScope.sessionRows(
   hasControl: Boolean,
   repoRoot: String,
   push: (Route) -> Unit,
-  snooze: (RemoteSession) -> Unit,
+  present: (SessionTriageSheet) -> Unit,
   stack: (RemoteSession) -> Unit,
 ) {
   items(SessionListRow.make(groups, all), key = { "$prefix:${it.key}" }) { row ->
@@ -210,7 +211,7 @@ private fun LazyListScope.sessionRows(
       host, row,
       open = { push(Route.Session(it.group.id, it.group.label, repoRoot)) },
       openCompare = { push(Route.CompareRun(it)) },
-      snooze = snooze,
+      present = present,
       git = (row as? SessionListRow.Session)?.group?.id?.let { git[it] },
       detailed = true,
       extraMenu = { session, dismiss ->

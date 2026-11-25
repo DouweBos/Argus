@@ -7,6 +7,8 @@ export type IssueStatusType =
   | "canceled"
   | "completed"
   | "duplicate"
+  /** Not Linear's: a session's In review, three quarters filled. */
+  | "review"
   | "started"
   | "triage"
   | "unstarted";
@@ -25,6 +27,7 @@ const KNOWN = new Set<IssueStatusType>([
   "canceled",
   "completed",
   "duplicate",
+  "review",
   "started",
   "triage",
   "unstarted",
@@ -88,6 +91,19 @@ export function IssueStatusIcon({
             strokeWidth="1.5"
           />
           <path d="M7 3.5a3.5 3.5 0 0 1 0 7Z" fill="currentColor" />
+        </>
+      )}
+      {kind === "review" && (
+        <>
+          <circle
+            cx="7"
+            cy="7"
+            fill="none"
+            r="5.5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M7 3.5a3.5 3.5 0 1 1-3.5 3.5H7Z" fill="currentColor" />
         </>
       )}
       {kind === "completed" && (

@@ -31,6 +31,7 @@ fun IssueStatusGlyph(type: String, modifier: Modifier = Modifier, color: String?
   val tint = linearColor(color) ?: when (type) {
     "triage" -> theme.error
     "started" -> theme.warning
+    "review" -> theme.accent
     "completed" -> theme.success
     else -> theme.textMuted
   }
@@ -46,6 +47,11 @@ fun IssueStatusGlyph(type: String, modifier: Modifier = Modifier, color: String?
       "started" -> {
         drawOval(tint, ringTopLeft, ringSize, style = Stroke(line))
         drawArc(tint, -90f, 180f, useCenter = true, topLeft = Offset(3.5f * unit, 3.5f * unit), size = Size(7f * unit, 7f * unit))
+      }
+      "review" -> {
+        // A session's In review: three quarters filled, between started and done.
+        drawOval(tint, ringTopLeft, ringSize, style = Stroke(line))
+        drawArc(tint, -90f, 270f, useCenter = true, topLeft = Offset(3.5f * unit, 3.5f * unit), size = Size(7f * unit, 7f * unit))
       }
       "completed", "canceled" -> {
         drawOval(tint, Offset(0.75f * unit, 0.75f * unit), Size(12.5f * unit, 12.5f * unit))

@@ -691,9 +691,15 @@ export interface EventMap {
   };
   session_started_from_issue: { source: "linear" };
   session_triaged: {
-    action: "settled" | "snoozed" | "unsettled" | "unsnoozed" | "woke";
+    action: "snoozed" | "status_set" | "unsnoozed" | "woke";
     /** Only on `snoozed`. */
     duration_bucket?: "<1d" | "<1w" | "<4h" | "1w+";
+    /** Only on `status_set`; `cleared` goes back to following the pull request. */
+    status?: "cleared" | "done" | "in_progress" | "in_review" | "todo";
+    /** Only on `status_set`. */
+    has_note?: boolean;
+    /** Who did it; absent on `woke`. */
+    actor?: "agent" | "user";
   };
   simulator_boot_failed: {
     reason:

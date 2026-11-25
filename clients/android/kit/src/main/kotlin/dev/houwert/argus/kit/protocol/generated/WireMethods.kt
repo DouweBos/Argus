@@ -2595,6 +2595,18 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class SessionsSetStatusParams(
+    @SerialName("session_id") val sessionId: String,
+    @SerialName("status") @EncodeDefault val status: SessionWorkflowStatus? = null,
+    @SerialName("note") val note: String? = null,
+  )
+
+  @Serializable
+  data class SessionsSetStatusResult(
+    @SerialName("accepted") val accepted: Boolean,
+  )
+
+  @Serializable
   data class SessionsSettleParams(
     @SerialName("session_id") val sessionId: String,
     @SerialName("settled") @EncodeDefault val settled: Boolean? = null,
@@ -3462,6 +3474,8 @@ object Methods {
   object SessionsSetBaseBranch : RemoteCommand<MethodsTypes.SessionsSetBaseBranchParams, MethodsTypes.SessionsSetBaseBranchResult>("sessions.set_base_branch", "control", serializer(), serializer())
 
   object SessionsSetFileViewed : RemoteCommand<MethodsTypes.SessionsSetFileViewedParams, MethodsTypes.SessionsSetFileViewedResult>("sessions.set_file_viewed", "control", serializer(), serializer())
+
+  object SessionsSetStatus : RemoteCommand<MethodsTypes.SessionsSetStatusParams, MethodsTypes.SessionsSetStatusResult>("sessions.set_status", "control", serializer(), serializer())
 
   object SessionsSettle : RemoteCommand<MethodsTypes.SessionsSettleParams, MethodsTypes.SessionsSettleResult>("sessions.settle", "control", serializer(), serializer())
 

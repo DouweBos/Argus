@@ -6421,6 +6421,8 @@ data class RemoteSession(
   @SerialName("pull_request") val pullRequest: SessionPullRequest? = null,
   @SerialName("pull_request_watched") val pullRequestWatched: Boolean? = null,
   @SerialName("settled") val settled: Boolean? = null,
+  @SerialName("workflow_status") val workflowStatus: SessionWorkflowStatus? = null,
+  @SerialName("status_note") val statusNote: String? = null,
   @SerialName("snoozed_until") val snoozedUntil: Double? = null,
   @SerialName("unread") val unread: Boolean? = null,
   @SerialName("last_message_at") val lastMessageAt: Double? = null,
@@ -7316,6 +7318,20 @@ data class SessionTimeline(
   @SerialName("restores") val restores: List<TimelineRestore>,
   @SerialName("turns") val turns: List<TimelineTurn>,
 )
+
+@Serializable
+@JvmInline
+value class SessionWorkflowStatus(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val todo = SessionWorkflowStatus("todo")
+    val inProgress = SessionWorkflowStatus("in_progress")
+    val inReview = SessionWorkflowStatus("in_review")
+    val done = SessionWorkflowStatus("done")
+    val entries: List<SessionWorkflowStatus> = listOf(todo, inProgress, inReview, done)
+  }
+}
 
 typealias SetupCopyEntry = JsonElement
 

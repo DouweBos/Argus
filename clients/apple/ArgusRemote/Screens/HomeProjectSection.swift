@@ -11,7 +11,7 @@ struct HomeProjectSection<Header: View>: View {
 
   let project: RemoteProject
   let newSession: () -> Void
-  let snooze: (RemoteSession) -> Void
+  let present: (SessionTriageSheet) -> Void
   let remove: () -> Void
   /// The list's own header, above the first card.
   @ViewBuilder let header: Header
@@ -202,7 +202,7 @@ struct HomeProjectSection<Header: View>: View {
     .contextMenu {
       if let session = group.session {
         PullRequestWatchButton(session: session)
-        SessionTriageMenu(session: session) { snooze(session) }
+        SessionTriageMenu(session: session, present: present)
       }
     }
   }

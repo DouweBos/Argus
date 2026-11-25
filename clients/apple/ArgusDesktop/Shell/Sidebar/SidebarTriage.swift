@@ -18,7 +18,7 @@ struct SidebarSessionMenu: View {
     }
     PullRequestWatchButton(session: session)
     Divider()
-    SessionTriageMenu(session: session) { model.snoozingSession = session }
+    SessionTriageMenu(session: session) { model.triageSheet = $0 }
     Divider()
     if session.kind == .worktree, session.status == .ready, !session.isUnavailable, session.compareGroup == nil {
       Button("New Session on Top of This One") { model.newSessionParent = session }
@@ -117,22 +117,15 @@ struct FoldedSessions: View {
   }
 }
 
-/// Snooze › Custom…: a day and time picker in a sheet.
-private struct SnoozeSessionSheet: ViewModifier {
+/// Snooze › Custom's day and time picker, or the status note, in a sheet.
+private struct SessionTriageSheets: ViewModifier {
   @Environment(DesktopModel.self) private var model
 
   func body(content: Content) -> some View {
-    content.argusSheet(item: snoozing) { session in
-      NavigationStack { SnoozeUntilForm(session: session) }
-        .frame(width: 340, height: 440)
-    }
-  }
-
-  private var snoozing: Binding<RemoteSession?> {
-    Binding(get: { model.snoozingSession }, set: { model.snoozingSession = $0 })
+    content.sessionTriageSheet(Binding(get: { model.triageSheet }, set: { model.triageSheet = $0 }))
   }
 }
 
 extension View {
-  func snoozeSessionSheet() -> some View { modifier(SnoozeSessionSheet()) }
+  func sessionTriageSheets() -> some View { modifier(SessionTriageSheets()) }
 }

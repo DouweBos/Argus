@@ -369,6 +369,20 @@ See [Blueprints](/argus/docs/blueprints).
 
 ---
 
+## Triaging sessions
+
+Every session in the sidebar, on the phone and in the browser has a menu
+(right-click on the Mac and in the browser, long-press on the phone) for
+keeping the list in order:
+
+- **Status** — To Do, In Progress, In Review or Done, shown as a small circle
+  on the row, with an optional one-line note under the title ("Waiting on
+  CI"). Without a set status a session follows its pull request: open reads as
+  In Review, merged or closed as Done. **Mark as Done** folds it away under
+  Done; **Move Back to Active** brings it back. Agents set it too, through the
+  `set_session_status` MCP tool.
+- **Snooze** — hide it until a time, when it comes back with a notification.
+
 ## Scratch pads
 
 An agent for one-off work that belongs to no project — a quick script, a
@@ -462,6 +476,13 @@ An orchestrator can hand a child agent its own devices for the run —
 (simulator UDIDs or names, Android serials), so one child can test on an
 iPhone and an iPad at once. The child's system prompt lists every device it
 holds, and no other agent is given them until it ends.
+
+### Setting a session's status
+
+An agent can call `set_session_status` to say where its session's work
+stands — `todo`, `in_progress`, `in_review` or `done` — with a one-line
+`note`. It sets its own session unless it names another one. The status and
+note show on the session's row everywhere, and Done folds it away.
 
 ### Watching a pull request
 

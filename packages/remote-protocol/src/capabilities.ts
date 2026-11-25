@@ -200,6 +200,7 @@ export const REMOTE_METHODS = {
   "sessions.mark_ready": "control",
   "sessions.watch_pull_request": "control",
   "sessions.settle": "control",
+  "sessions.set_status": "control",
   "sessions.snooze": "control",
   /** List a session's files for the @-mention picker. */
   "sessions.files": "control",

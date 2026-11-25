@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import dev.houwert.argus.core.compare.CompareGroup
 import dev.houwert.argus.core.sessions.SessionActivity
 import dev.houwert.argus.core.sessions.isSnoozed
+import dev.houwert.argus.core.sessions.setStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteAgentStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteGitStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteSession
@@ -57,8 +58,8 @@ val SessionActivity.tone: Tone get() = state.tone
 private const val INDENT_STEP = 16
 
 /**
- * One session as a row: a dot when something's happening, its title, a line for setup or errors,
- * and how long ago its agents were last active. [detailed] also names the branch and agent count.
+ * One session as a row: a dot when something's happening, its title, a line for setup, errors or its
+ * status note, its set status, and how long ago its agents were last active. [detailed] also names the branch and agent count.
  */
 @Composable
 fun SessionRow(
@@ -77,8 +78,8 @@ fun SessionRow(
   val detail = when {
     session.isUnavailable -> "${session.unavailableVolume ?: "Drive"} unavailable"
     session.status != RemoteSessionStatus.ready -> activity.statusText
-    !detailed -> caption
-    else -> listOfNotNull(caption, activity.subtitle, activity.statusText).joinToString(" · ").ifEmpty { null }
+    !detailed -> listOfNotNull(caption, session.statusNote).joinToString(" · ").ifEmpty { null }
+    else -> listOfNotNull(caption, session.statusNote, activity.subtitle, activity.statusText).joinToString(" · ").ifEmpty { null }
   }
   Row(
     modifier.fillMaxWidth().alpha(if (session.isUnavailable) 0.5f else 1f).padding(start = (indent * INDENT_STEP).dp)
@@ -116,6 +117,7 @@ private fun SessionRowTrailing(session: RemoteSession, activity: SessionActivity
     session.isUnavailable -> Icon(Icon.drive, null, Modifier.size(14.dp), tint = theme.textMuted)
     else -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
       if (session.isSnoozed()) Icon(Icon.snooze, "Snoozed", Modifier.size(13.dp), tint = theme.textMuted)
+      session.setStatus?.let { SessionStatusGlyph(it, size = 14.dp) }
       if (git != null) SyncCounts(git)
       session.pullRequest?.let { pr ->
         val watching = session.pullRequestWatched == true

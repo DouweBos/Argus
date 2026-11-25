@@ -25,6 +25,7 @@ import dev.houwert.argus.kit.protocol.isUnavailable
 import dev.houwert.argus.ui.sessions.CompareRunHeaderRow
 import dev.houwert.argus.ui.sessions.SessionRow
 import dev.houwert.argus.ui.sessions.SessionRowMenuItems
+import dev.houwert.argus.ui.sessions.SessionTriageSheet
 import dev.houwert.argus.ui.theme.ArgusTheme
 
 /** A row that opens on tap and shows its menu on long press, as iOS rows' context menus do. */
@@ -62,7 +63,7 @@ fun SessionListRowView(
   row: SessionListRow,
   open: (SessionListRow.Session) -> Unit,
   openCompare: (String) -> Unit,
-  snooze: (RemoteSession) -> Unit,
+  present: (SessionTriageSheet) -> Unit,
   git: RemoteGitStatus? = null,
   detailed: Boolean = false,
   extraMenu: (@Composable ColumnScope.(RemoteSession, () -> Unit) -> Unit)? = null,
@@ -78,7 +79,7 @@ fun SessionListRowView(
         "Open ${row.group.label}", padding, enabled = session?.isUnavailable != true, onClick = { open(row) },
         menu = session?.let { s ->
           { dismiss ->
-            SessionRowMenuItems(host, s, dismiss) { snooze(s) }
+            SessionRowMenuItems(host, s, dismiss, present)
             extraMenu?.invoke(this, s, dismiss)
           }
         },

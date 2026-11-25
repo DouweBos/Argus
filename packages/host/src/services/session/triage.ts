@@ -1,11 +1,14 @@
 /**
- * How a session sorts in the clients' lists: marked done (or back from done),
- * snoozed until a time, and whether a turn finished while nobody was looking.
+ * How a session sorts in the clients' lists: its workflow status (to do, in
+ * progress, in review, done) with a note, snoozed until a time, and whether a
+ * turn finished while nobody was looking.
  * `$ARGUS_HOME/session-triage.json`, keyed by session id. A snooze that runs
  * out clears itself and notifies, so the session comes back on its own.
  * Also when its last message went either way, so the lists sort by recency.
  */
 
+import type { SessionWorkflowStatus } from "@argus/remote-protocol";
+import fs from "node:fs";
 import path from "node:path";
 import { addHostEventSink, emitHostEvent } from "@argus/host/bus";
 import { warn } from "@argus/host/logger";
@@ -15,16 +18,21 @@ import { loadHistoryIndex } from "../agent/chatHistory";
 import { readEnvelope, writeJson } from "../automation/jsonFile";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 
-const SCHEMA_VERSION = 1;
+/** 2 replaced v1's `settled` with `workflow_status`. */
+const SCHEMA_VERSION = 2;
+const NOTE_MAX = 140;
 /** setTimeout's ceiling; a longer snooze re-arms when this one fires. */
 const MAX_TIMER_MS = 2 ** 31 - 1;
 const MISSING_RETRY_MS = 30_000;
 const MISSING_RETRIES = 10;
 
+export type TriageActor = "agent" | "user";
+
 interface TriageRecord {
   id: string;
-  /** Overrides the PR-derived default: true done, false kept active. */
-  settled?: boolean;
+  /** Overrides the PR-derived default. */
+  workflow_status?: SessionWorkflowStatus;
+  status_note?: string;
   /** Epoch ms the session comes back. */
   snoozed_until?: number;
   unread?: boolean;
@@ -34,7 +42,10 @@ interface TriageRecord {
 
 /** What a session listing carries. */
 export interface SessionTriage {
+  /** `workflow_status` as older clients read it: done or kept active. */
   settled: boolean | null;
+  workflow_status: SessionWorkflowStatus | null;
+  status_note: string | null;
   snoozed_until: number | null;
   unread: boolean;
   last_message_at: number | null;
@@ -52,15 +63,43 @@ function filePath(): string {
   return path.join(argusHomeDir(), "session-triage.json");
 }
 
+type V1Record = Omit<TriageRecord, "workflow_status"> & { settled?: boolean };
+
+/** v1 marked done or kept active; those are Done and In progress now. */
+export function migrateV1(r: V1Record): TriageRecord {
+  const { settled, ...rest } = r;
+  if (settled === undefined) {
+    return rest;
+  }
+
+  return { ...rest, workflow_status: settled ? "done" : "in_progress" };
+}
+
+function fileVersion(): unknown {
+  try {
+    return (
+      JSON.parse(fs.readFileSync(filePath(), "utf8")) as { version?: unknown }
+    ).version;
+  } catch {
+    return undefined;
+  }
+}
+
 function load(): Map<string, TriageRecord> {
-  records ??= new Map(
-    readEnvelope<TriageRecord>(
-      filePath(),
-      "session triage",
-      "sessions",
-      SCHEMA_VERSION,
-    ).map((r) => [r.id, r]),
+  if (records) {
+    return records;
+  }
+  const v1 = fileVersion() === 1;
+  const rows = readEnvelope<V1Record>(
+    filePath(),
+    "session triage",
+    "sessions",
+    v1 ? 1 : SCHEMA_VERSION,
   );
+  records = new Map(rows.map((r) => [r.id, v1 ? migrateV1(r) : r]));
+  if (v1) {
+    save();
+  }
 
   return records;
 }
@@ -68,7 +107,8 @@ function load(): Map<string, TriageRecord> {
 function save(): void {
   const all = [...load().values()].filter(
     (r) =>
-      r.settled !== undefined ||
+      r.workflow_status !== undefined ||
+      r.status_note !== undefined ||
       r.snoozed_until !== undefined ||
       r.unread ||
       r.last_message_at !== undefined,
@@ -92,8 +132,12 @@ function patch(id: string, change: Partial<Omit<TriageRecord, "id">>): void {
 export function sessionTriage(id: string): SessionTriage {
   const r = load().get(id);
 
+  const status = r?.workflow_status ?? null;
+
   return {
-    settled: r?.settled ?? null,
+    settled: status === null ? null : status === "done",
+    workflow_status: status,
+    status_note: r?.status_note ?? null,
     snoozed_until: r?.snoozed_until ?? null,
     unread: r?.unread === true,
     last_message_at: r?.last_message_at ?? backfilledLastMessage(id),
@@ -149,17 +193,49 @@ function requireSession(id: string): void {
   }
 }
 
-/** Mark done, keep active, or (null) go back to following the pull request. */
-export function setSessionSettled(id: string, settled: boolean | null): void {
+/** One line, trimmed and capped; empty clears it. */
+export function normalizeStatusNote(note: string): string | undefined {
+  const line = note.replace(/\s+/g, " ").trim();
+
+  return line ? line.slice(0, NOTE_MAX) : undefined;
+}
+
+/**
+ * Set its workflow status, or (null) go back to following the pull request.
+ * `note` undefined keeps the note; null or blank clears it.
+ */
+export function setSessionStatus(
+  id: string,
+  status: SessionWorkflowStatus | null,
+  note: string | null | undefined,
+  actor: TriageActor,
+): void {
   requireSession(id);
+  const nextNote =
+    note === undefined
+      ? load().get(id)?.status_note
+      : normalizeStatusNote(note ?? "");
   patch(id, {
-    settled: settled ?? undefined,
+    workflow_status: status ?? undefined,
+    status_note: nextNote,
     // Done is a decision about it: nothing left to read.
-    ...(settled === true ? { unread: undefined } : {}),
+    ...(status === "done" ? { unread: undefined } : {}),
   });
   telemetryCapture("session_triaged", {
-    action: settled === true ? "settled" : "unsettled",
+    action: "status_set",
+    status: status ?? "cleared",
+    has_note: nextNote !== undefined,
+    actor,
   });
+}
+
+/** Older clients' Mark as Done (true) / keep active (false) / follow the PR (null). */
+export function setSessionSettled(id: string, settled: boolean | null): void {
+  let status: SessionWorkflowStatus | null = null;
+  if (settled !== null) {
+    status = settled ? "done" : "in_progress";
+  }
+  setSessionStatus(id, status, undefined, "user");
 }
 
 /** Hide it until `until` (epoch ms), or bring it back now with null. */
@@ -173,8 +249,12 @@ export function snoozeSession(id: string, until: number | null): void {
   telemetryCapture(
     "session_triaged",
     until === null
-      ? { action: "unsnoozed" }
-      : { action: "snoozed", duration_bucket: durationBucket(until) },
+      ? { action: "unsnoozed", actor: "user" }
+      : {
+          action: "snoozed",
+          duration_bucket: durationBucket(until),
+          actor: "user",
+        },
   );
 }
 

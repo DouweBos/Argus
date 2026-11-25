@@ -18,6 +18,7 @@ export const AllTypes: Story = {
         "backlog",
         "unstarted",
         "started",
+        "review",
         "completed",
         "canceled",
         "duplicate",

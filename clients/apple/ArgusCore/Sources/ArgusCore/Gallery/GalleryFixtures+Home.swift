@@ -43,16 +43,20 @@ extension GalleryFixtures {
   public static var argusSessions: [[String: Any]] {
     [
       session("s-root", branch: "main", kind: "project_root"),
-      session("s-pr", branch: "watch-pr-tool", name: "Watch pull request tool", pr: (412, "open")),
+      session(
+        "s-pr", branch: "watch-pr-tool", name: "Watch pull request tool", pr: (412, "open"),
+        extra: ["workflow_status": "in_review", "status_note": "Waiting on CI"]),
       session(
         "s-long", branch: "douwe/rework-the-onboarding-flow-for-new-machines",
         name: "Rework the onboarding flow so a brand new machine gets from download to first agent in one go",
-        pr: (415, "draft")),
+        pr: (415, "draft"), extra: ["workflow_status": "in_progress", "status_note": "Needs a call on the sign-in step"]),
       session("s-merged", branch: "linear-picker", name: "Linear issue picker", pr: (398, "merged")),
       session("s-unread", branch: "toolbar-spacing", name: "Tighten the toolbar spacing", extra: ["unread": true]),
       session(
-        "s-snoozed", branch: "release-notes", name: "Draft the release notes", extra: ["snoozed_until": ago(-18 * 60)]),
-      session("s-done", branch: "spike-tabs", name: "Spike: tab overflow", extra: ["settled": true]),
+        "s-snoozed", branch: "release-notes", name: "Draft the release notes", extra: ["snoozed_until": ago(-18 * 60), "workflow_status": "todo"]),
+      session(
+        "s-done", branch: "spike-tabs", name: "Spike: tab overflow",
+        extra: ["workflow_status": "done", "settled": true, "status_note": "Folded into the tab strip rework"]),
       // A stack of three: each branches from the one before, its PR against that branch.
       session("s-stack-1", branch: "stack-protocol", name: "Stack: wire protocol", pr: (420, "open")),
       session(

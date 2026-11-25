@@ -15,6 +15,7 @@ import type {
   RemoteAgentStatus,
   RemoteProject,
   RemoteSession,
+  SessionWorkflowStatus,
 } from "../lib/protocol";
 import { request } from "../lib/request";
 import { currentTransport } from "./connection";
@@ -52,6 +53,12 @@ interface ProjectsState {
     deleteBranch?: boolean,
   ) => Promise<void>;
   renameSession: (id: string, repoRoot: string, name: string) => Promise<void>;
+  /** Null follows the pull request again; `note` undefined keeps it, empty clears it. */
+  setSessionStatus: (
+    session: RemoteSession,
+    status: SessionWorkflowStatus | null,
+    note?: string,
+  ) => Promise<void>;
   renameSessionBranch: (
     id: string,
     repoRoot: string,
@@ -163,6 +170,21 @@ export const useProjectsStore = create<ProjectsState>()((set, get) => ({
     await request(t, "sessions.rename", { id, display_name: name });
     await get()
       .loadSessions(repoRoot)
+      .catch(() => {});
+  },
+
+  setSessionStatus: async (session, status, note) => {
+    const t = currentTransport();
+    if (!t) {
+      return;
+    }
+    await request(t, "sessions.set_status", {
+      session_id: session.id,
+      status,
+      ...(note === undefined ? {} : { note }),
+    });
+    await get()
+      .loadSessions(session.repo_root)
       .catch(() => {});
   },
 

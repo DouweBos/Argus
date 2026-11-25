@@ -59,6 +59,9 @@ public enum Icon {
   public static let snooze = "moon.zzz"
   public static let unsnooze = "sun.max"
   public static let reopen = "arrow.uturn.backward.circle"
+  /// A session's workflow status menu.
+  public static let workflowStatus = "circle.lefthalf.filled"
+  public static let note = "text.bubble"
   public static let history = "clock.arrow.circlepath"
   public static let search = "magnifyingglass"
   public static let filter = "line.3.horizontal.decrease"

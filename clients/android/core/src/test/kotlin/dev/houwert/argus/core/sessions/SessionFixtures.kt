@@ -11,6 +11,7 @@ import dev.houwert.argus.kit.protocol.generated.RemoteSessionStatus
 import dev.houwert.argus.kit.protocol.generated.SessionCompareGroup
 import dev.houwert.argus.kit.protocol.generated.SessionPullRequest
 import dev.houwert.argus.kit.protocol.generated.SessionPullRequestState
+import dev.houwert.argus.kit.protocol.generated.SessionWorkflowStatus
 
 // The minimal wire shapes the Swift tests decode from JSON, built directly.
 
@@ -28,6 +29,8 @@ fun session(
   pullRequest: SessionPullRequestState? = null,
   pullRequestWatched: Boolean? = null,
   settled: Boolean? = null,
+  workflowStatus: SessionWorkflowStatus? = null,
+  statusNote: String? = null,
   snoozedUntil: Double? = null,
   unread: Boolean? = null,
   lastMessageAt: Double? = null,
@@ -45,6 +48,8 @@ fun session(
   pullRequest = pullRequest?.let { SessionPullRequest(1.0, it, "u") },
   pullRequestWatched = pullRequestWatched,
   settled = settled,
+  workflowStatus = workflowStatus,
+  statusNote = statusNote,
   snoozedUntil = snoozedUntil,
   unread = unread,
   lastMessageAt = lastMessageAt,

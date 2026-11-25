@@ -37,6 +37,7 @@ import dev.houwert.argus.ui.icons.Icon
 import dev.houwert.argus.ui.sessions.FoldedSessionsLabel
 import dev.houwert.argus.ui.sessions.ProjectRootState
 import dev.houwert.argus.ui.sessions.SidebarSectionHeader
+import dev.houwert.argus.ui.sessions.SessionTriageSheet
 import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.ui.theme.argusFont
 
@@ -44,7 +45,7 @@ import dev.houwert.argus.ui.theme.argusFont
 class HomeProjectActions(
   val push: (Route) -> Unit,
   val newSession: (RemoteProject) -> Unit,
-  val snooze: (RemoteSession) -> Unit,
+  val present: (SessionTriageSheet) -> Unit,
   val remove: (RemoteProject) -> Unit,
 )
 
@@ -85,7 +86,7 @@ fun LazyListScope.homeProjectSection(
           host, row,
           open = { s -> actions.push(Route.Session(s.group.id, s.group.label, key)) },
           openCompare = { actions.push(Route.CompareRun(it)) },
-          snooze = actions.snooze,
+          present = actions.present,
         )
       }
     }

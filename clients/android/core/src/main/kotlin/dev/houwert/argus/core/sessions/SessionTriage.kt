@@ -5,6 +5,7 @@ import dev.houwert.argus.kit.protocol.generated.RemoteAgentStatusStatus
 import dev.houwert.argus.kit.protocol.generated.RemoteSession
 import dev.houwert.argus.kit.protocol.generated.RemoteSessionStatus
 import dev.houwert.argus.kit.protocol.generated.SessionPullRequestState
+import dev.houwert.argus.kit.protocol.generated.SessionWorkflowStatus
 import dev.houwert.argus.kit.protocol.isOpen
 import dev.houwert.argus.kit.protocol.isUnavailable
 import java.time.DayOfWeek
@@ -30,12 +31,34 @@ fun RemoteSession.isSnoozed(nowMillis: Long = System.currentTimeMillis()): Boole
 
 val RemoteSession.snoozedUntilInstant: Instant? get() = snoozedUntil?.let { Instant.ofEpochMilli(it.toLong()) }
 
-/** Marked done, or its pull request merged or closed and not kept active. */
-val RemoteSession.isDone: Boolean
+/** Set by the user or an agent; an older computer's done or kept-active reads as Done or In progress. */
+val RemoteSession.setStatus: SessionWorkflowStatus?
   get() {
-    settled?.let { return it }
-    val state = pullRequest?.state ?: return false
-    return state == SessionPullRequestState.merged || state == SessionPullRequestState.closed
+    workflowStatus?.let { return if (it in SessionWorkflowStatus.entries) it else null }
+    return settled?.let { if (it) SessionWorkflowStatus.done else SessionWorkflowStatus.inProgress }
+  }
+
+/** Its set status, or else what its pull request says: open is In review, merged or closed is Done. */
+val RemoteSession.effectiveStatus: SessionWorkflowStatus?
+  get() {
+    setStatus?.let { return it }
+    return when (pullRequest?.state) {
+      SessionPullRequestState.merged, SessionPullRequestState.closed -> SessionWorkflowStatus.done
+      null -> null
+      else -> SessionWorkflowStatus.inReview
+    }
+  }
+
+/** Set to Done, or its pull request merged or closed and no other status set. */
+val RemoteSession.isDone: Boolean get() = effectiveStatus == SessionWorkflowStatus.done
+
+val SessionWorkflowStatus.title: String
+  get() = when (this) {
+    SessionWorkflowStatus.todo -> "To Do"
+    SessionWorkflowStatus.inProgress -> "In Progress"
+    SessionWorkflowStatus.inReview -> "In Review"
+    SessionWorkflowStatus.done -> "Done"
+    else -> rawValue
   }
 
 /**

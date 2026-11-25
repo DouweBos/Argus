@@ -44,7 +44,7 @@ struct SidebarView: View {
       }
     }
     .renameSessionAlert()
-    .snoozeSessionSheet()
+    .sessionTriageSheets()
   }
 
   private var sessionList: some View {

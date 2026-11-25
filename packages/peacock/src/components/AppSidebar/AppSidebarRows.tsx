@@ -1,8 +1,12 @@
-import type { KeyboardEvent, ReactNode } from "react";
+import type { KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { ChevronDownIcon, ChevronRightIcon, PlusIcon } from "../../icons/Icons";
 import { StatusDot, type StatusTone } from "../Badge/Badge";
 import { FlatIconButton } from "../FlatIconButton/FlatIconButton";
 import { ProjectBadge } from "../ProjectBadge/ProjectBadge";
+import {
+  SessionStatusIcon,
+  type SessionWorkflowStatus,
+} from "../SessionStatusIcon/SessionStatusIcon";
 import styles from "./AppSidebar.module.css";
 
 /** Enter and Space activate a row that holds buttons of its own. */
@@ -133,8 +137,10 @@ export function AppSidebarProjectHeader({
 
 export interface AppSidebarSessionRowProps {
   title: string;
-  /** The branch, when the title doesn't already say it. */
+  /** A line under the title: the branch when the title doesn't say it, or its status note. */
   subtitle?: string;
+  /** Its set workflow status, a small circle before the age. */
+  workflowStatus?: SessionWorkflowStatus;
   status?: StatusTone;
   busy?: boolean;
   /** "now", "5m", "3d": how long since anything happened. */
@@ -144,6 +150,8 @@ export interface AppSidebarSessionRowProps {
   /** A trailing note instead of the age, e.g. "Waiting" or "Setting up". */
   note?: string;
   onClick?: () => void;
+  /** Right-click: the caller opens its menu at the pointer. */
+  onContextMenu?: (event: MouseEvent<HTMLButtonElement>) => void;
   tooltip?: string;
 }
 
@@ -157,7 +165,9 @@ export function AppSidebarSessionRow({
   selected,
   unavailable,
   note,
+  workflowStatus,
   onClick,
+  onContextMenu,
   tooltip,
 }: AppSidebarSessionRowProps) {
   return (
@@ -170,6 +180,7 @@ export function AppSidebarSessionRow({
       title={tooltip ?? title}
       type="button"
       onClick={onClick}
+      onContextMenu={onContextMenu}
     >
       <span className={styles.lead}>
         {status ? (
@@ -182,6 +193,7 @@ export function AppSidebarSessionRow({
         <span className={styles.sessionTitle}>{title}</span>
         {subtitle && <span className={styles.sessionSubtitle}>{subtitle}</span>}
       </span>
+      {workflowStatus && <SessionStatusIcon status={workflowStatus} />}
       {(note ?? age) && <span className={styles.age}>{note ?? age}</span>}
     </button>
   );

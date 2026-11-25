@@ -1,30 +1,31 @@
 import ArgusCore
 import SwiftUI
 
-/// Mark as Done / Move Back to Active, and Snooze with its presets. Menu items:
+/// Mark as Done / Move Back to Active, its status and note, and Snooze with its presets. Menu items:
 /// the Mac sidebar's session menu and the phone's session rows.
 public struct SessionTriageMenu: View {
   @Environment(HostStore.self) private var host
   let session: RemoteSession
-  /// Opens the custom time picker, which the caller presents.
-  let customSnooze: () -> Void
+  /// Opens the snooze time picker or the note editor, which the caller presents.
+  let present: (SessionTriageSheet) -> Void
 
-  public init(session: RemoteSession, customSnooze: @escaping () -> Void) {
+  public init(session: RemoteSession, present: @escaping (SessionTriageSheet) -> Void) {
     self.session = session
-    self.customSnooze = customSnooze
+    self.present = present
   }
 
   public var body: some View {
     if host.hasControl, session.kind == .worktree || session.kind == .scratchPad {
       if session.isDone {
         Button("Move Back to Active", systemImage: Icon.reopen) {
-          // A merged PR would settle it again; only an explicit "keep" holds it open.
-          settle(session.pullRequest.map { !$0.isOpen } == true ? false : nil)
+          // A merged PR would make it done again; only a set status holds it open.
+          setStatus(session.pullRequest.map { !$0.isOpen } == true ? .inProgress : nil)
         }
       } else {
-        Button("Mark as Done", systemImage: Icon.done) { settle(true) }
+        Button("Mark as Done", systemImage: Icon.done) { setStatus(.done) }
           .help("Fold it away under Done. A merged or closed pull request does this on its own")
       }
+      statusMenu
       if session.isSnoozed() {
         Button("Unsnooze", systemImage: Icon.unsnooze) { snooze(nil) }
       }
@@ -35,13 +36,36 @@ public struct SessionTriageMenu: View {
           }
         }
         Divider()
-        Button("Custom", action: customSnooze)
+        Button("Custom") { present(.snooze(session)) }
       }
     }
   }
 
-  private func settle(_ settled: Bool?) {
-    Task { await host.setSessionSettled(session, settled: settled) }
+  private var statusMenu: some View {
+    Menu("Status", systemImage: Icon.workflowStatus) {
+      Picker("Status", selection: statusBinding) {
+        ForEach(RemoteSessionWorkflowStatus.allCases, id: \.self) { status in
+          Text(status.title).tag(Optional(status))
+        }
+      }
+      .pickerStyle(.inline)
+      .labelsHidden()
+      if session.workflowStatus != nil {
+        Button(session.pullRequest == nil ? "Clear Status" : "Follow Pull Request") { setStatus(nil) }
+      }
+      Divider()
+      Button(session.statusNote == nil ? "Add Note" : "Edit Note", systemImage: Icon.note) {
+        present(.note(session))
+      }
+    }
+  }
+
+  private var statusBinding: Binding<RemoteSessionWorkflowStatus?> {
+    Binding(get: { session.effectiveStatus }, set: { setStatus($0) })
+  }
+
+  private func setStatus(_ status: RemoteSessionWorkflowStatus?) {
+    Task { await host.setSessionStatus(session, status: status) }
   }
 
   private func snooze(_ until: Date?) {

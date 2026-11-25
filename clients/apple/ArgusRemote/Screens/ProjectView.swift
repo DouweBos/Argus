@@ -14,7 +14,7 @@ struct ProjectView: View {
 
   @State private var showingStopped = false
   @State private var searchingChats = false
-  @State private var snoozing: RemoteSession?
+  @State private var triageSheet: SessionTriageSheet?
   /// The session the stacked-session sheet is open for.
   @State private var stackingOn: RemoteSession?
 
@@ -90,10 +90,7 @@ struct ProjectView: View {
         }
       }
     }
-    .sheet(item: $snoozing) { session in
-      NavigationStack { SnoozeUntilForm(session: session) }
-        .presentationDetents([.large])
-    }
+    .sessionTriageSheet($triageSheet)
     .sheet(item: $stackingOn) { parent in
       StackedSessionSheet(parent: parent) { session in
         router.push(.session(id: session.id, label: session.displayName ?? session.branch, repoRoot: repoRoot))
@@ -140,7 +137,7 @@ struct ProjectView: View {
     .contextMenu {
       if let session = group.session {
         PullRequestWatchButton(session: session)
-        SessionTriageMenu(session: session) { snoozing = session }
+        SessionTriageMenu(session: session) { triageSheet = $0 }
         if host.hasControl, session.kind == .worktree, session.status == .ready, session.compareGroup == nil {
           Button("New session on top", systemImage: Icon.stacked) {
             Telemetry.capture(.newSessionOpened(source: .stack))

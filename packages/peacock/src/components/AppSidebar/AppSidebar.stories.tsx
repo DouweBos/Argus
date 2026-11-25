@@ -160,6 +160,17 @@ function Sidebar({ withSessions = true }: { withSessions?: boolean }) {
               title="Fix the connection badge"
               onClick={() => setScreen("s2")}
             />
+            <AppSidebarSessionRow
+              age="5h"
+              subtitle="Waiting on CI"
+              title="Watch pull request tool"
+              workflowStatus="in_review"
+            />
+            <AppSidebarSessionRow
+              age="1d"
+              title="Draft the release notes"
+              workflowStatus="todo"
+            />
             <AppSidebarSessionRow age="3d" title="Settings cleanup" />
             <AppSidebarSessionRow
               unavailable

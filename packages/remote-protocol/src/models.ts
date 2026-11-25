@@ -17,6 +17,15 @@ export const RemoteProject = z.object({
 });
 export type RemoteProject = z.infer<typeof RemoteProject>;
 
+/** Where a session's work stands. Done folds it away under Done. */
+export const SessionWorkflowStatus = z.enum([
+  "todo",
+  "in_progress",
+  "in_review",
+  "done",
+]);
+export type SessionWorkflowStatus = z.infer<typeof SessionWorkflowStatus>;
+
 export const RemoteSession = z.object({
   id: z.string(),
   repo_root: z.string(),
@@ -73,8 +82,12 @@ export const RemoteSession = z.object({
   pull_request: SessionPullRequest.nullable().optional(),
   /** An agent is woken on this PR's CI results, conflicts and comments. Absent on older hosts. */
   pull_request_watched: z.boolean().optional(),
-  /** Marked done (true) or kept active (false); null follows the pull request. Absent on older hosts. */
+  /** Done (true) or any other set status (false); null follows the pull request. Kept for older clients. */
   settled: z.boolean().nullable().optional(),
+  /** Its workflow status as set by the user or an agent; null follows the pull request. Absent on older hosts. */
+  workflow_status: SessionWorkflowStatus.nullable().optional(),
+  /** A one-line note on where it stands. Absent on older hosts. */
+  status_note: z.string().nullable().optional(),
   /** Hidden until this epoch ms. Absent on older hosts. */
   snoozed_until: z.number().nullable().optional(),
   /** A turn finished while no client had it open. Absent on older hosts. */

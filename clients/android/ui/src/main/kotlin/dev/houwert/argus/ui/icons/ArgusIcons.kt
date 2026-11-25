@@ -200,6 +200,8 @@ object Icon {
   val snooze = Icons.Outlined.Snooze
   val unsnooze = Icons.Outlined.WbSunny
   val reopen = Icons.Outlined.Replay
+  /** A session's workflow status menu. */
+  val workflowStatus = Icons.Outlined.Contrast
   val history = Icons.Outlined.History
   val search = Icons.Outlined.Search
   val filter = Icons.Outlined.FilterList

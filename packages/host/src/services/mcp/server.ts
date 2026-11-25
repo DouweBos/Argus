@@ -86,6 +86,7 @@ import { isGitRepo, collectAllProjects } from "./projectDiscovery";
 import { ensureRepoRegistered } from "./projects";
 import { registerSecretTools } from "./secretTools";
 import { registerSessionListTools } from "./sessionListTools";
+import { registerSessionStatusTools } from "./sessionStatusTools";
 import {
   addMcpSession,
   closeAllMcpSessions,
@@ -3097,6 +3098,7 @@ export function createMcpServer(
   registerTranscriptTools(server);
   registerSecretTools(server, callerAgentId);
   registerPrWatchTools(server, callerAgentId, resolveSession);
+  registerSessionStatusTools(server, callerAgentId, resolveSession);
   registerIntegrationTools(server, callerAgentId);
 
   return server;
