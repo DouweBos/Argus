@@ -11,6 +11,7 @@ public struct MarkdownView: View {
   @Environment(\.theme) private var theme
   @Environment(\.openFileLink) private var openFileLink
   @Environment(\.linearMedia) private var linearMedia
+  @Environment(\.markdownDocument) private var document
   let text: String
   var baseSize: CGFloat = 15
   /// What a person typed: only `@paths` link as files, as on the Mac.
@@ -29,7 +30,7 @@ public struct MarkdownView: View {
         view(for: block).fixedSize(horizontal: false, vertical: true)
       }
     }
-    .modifier(FileLinkHandling())
+    .modifier(LinkHandling(document: document))
   }
 
   @ViewBuilder
@@ -39,8 +40,11 @@ public struct MarkdownView: View {
       inline(text)
         .font(.scaled(size: headingSize(level), weight: .bold))
         .padding(.top, 2)
+        .id(document == nil ? nil : MarkdownTarget.anchor(for: text))
     case .paragraph(let text):
-      if linearMedia != nil, text.contains("uploads.linear.app") {
+      if document != nil, let images = MarkdownImageLine.images(in: text) {
+        FlowImages(images: images)
+      } else if linearMedia != nil, text.contains("uploads.linear.app") {
         VStack(alignment: .leading, spacing: 8) {
           ForEach(Array(LinearMediaLink.segments(text).enumerated()), id: \.offset) { _, segment in
             switch segment {
@@ -53,7 +57,12 @@ public struct MarkdownView: View {
         inline(text).font(.scaled(size: baseSize))
       }
     case .code(let language, let body):
-      CodeBlockView(language: language, code: body)
+      // What a person typed stays as written; a diagram is something an agent or a file drew.
+      if !mentions, language?.lowercased() == "mermaid" {
+        MermaidDiagramView(source: body)
+      } else {
+        CodeBlockView(language: language, code: body)
+      }
     case .quote(let text):
       HStack(alignment: .top, spacing: 8) {
         Rectangle().fill(theme.borderStrong).frame(width: 3)
@@ -64,10 +73,18 @@ public struct MarkdownView: View {
       VStack(alignment: .leading, spacing: 4) {
         ForEach(Array(items.enumerated()), id: \.offset) { index, item in
           HStack(alignment: .top, spacing: 6) {
-            Text(ordered ? "\(index + 1)." : "•")
-              .font(.scaled(size: baseSize))
-              .foregroundStyle(theme.textMuted)
-            inline(item).font(.scaled(size: baseSize))
+            if let task = MarkdownTask.split(item) {
+              Image(systemName: task.checked ? "checkmark.square.fill" : "square")
+                .font(.scaled(size: baseSize))
+                .foregroundStyle(task.checked ? theme.accent : theme.textMuted)
+                .accessibilityLabel(task.checked ? "Done" : "To do")
+              inline(task.text).font(.scaled(size: baseSize))
+            } else {
+              Text(ordered ? "\(index + 1)." : "•")
+                .font(.scaled(size: baseSize))
+                .foregroundStyle(theme.textMuted)
+              inline(item).font(.scaled(size: baseSize))
+            }
           }
           // Wraps rather than truncating when a lazy stack offers it one line's height.
           .fixedSize(horizontal: false, vertical: true)
@@ -102,6 +119,38 @@ public struct MarkdownView: View {
       attributed[run.range].underlineStyle = .single
     }
     return Text(attributed).foregroundColor(theme.text)
+  }
+}
+
+/// A previewed document's links resolve against its own path; elsewhere, file links as before.
+private struct LinkHandling: ViewModifier {
+  let document: MarkdownDocument?
+
+  func body(content: Content) -> some View {
+    if let document {
+      content.environment(\.openURL, OpenURLAction { url in
+        guard let target = MarkdownTarget.resolve(url.absoluteString, from: document.path) else { return .discarded }
+        document.open(target)
+        return .handled
+      })
+    } else {
+      content.modifier(FileLinkHandling())
+    }
+  }
+}
+
+/// Images in a row that wraps, as badges sit in a README.
+private struct FlowImages: View {
+  let images: [MarkdownImageLine.Image]
+
+  var body: some View {
+    if images.count == 1 {
+      MarkdownImageView(image: images[0])
+    } else {
+      FlowRow(spacing: 4, rowSpacing: 4, packed: true) {
+        ForEach(Array(images.enumerated()), id: \.offset) { _, image in MarkdownImageView(image: image) }
+      }
+    }
   }
 }
 

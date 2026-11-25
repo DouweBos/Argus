@@ -19,6 +19,8 @@ extension MacTelemetryEvent {
     case symbol
     /// Back/forward, a restored tab, a deep link: no click opened it.
     case history
+    /// A link followed in a Markdown preview.
+    case markdownLink = "markdown_link"
   }
 
   enum EditorQuickOpenMode: String {

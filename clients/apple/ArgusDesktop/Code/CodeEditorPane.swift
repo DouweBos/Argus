@@ -48,15 +48,13 @@ struct CodeEditorPane: View {
     case .loading:
       ProgressView().controlSize(.small)
     case .ready(let document):
-      CodeEditorView(document: document)
-        .onChange(of: document.find.isVisible) { wasVisible, visible in
-          // In-file find, counted when the bar closes after a search.
-          guard wasVisible, !visible, !document.find.query.text.isEmpty else { return }
-          MacTelemetry.capture(
-            .editorSearchRun(
-              scope: .file, regex: document.find.query.isRegex,
-              resultBucket: MacTelemetryEvent.countBucket(document.find.matches.count), truncated: false))
-        }
+      if file.preview == .markdown {
+        CodeMarkdownContent(code: code, file: file, document: document, editor: AnyView(editor(document)))
+      } else {
+        editor(document)
+      }
+    case .binary(let data):
+      CodeBinaryContent(file: file, data: data)
     case .readOnly(let reason):
       EmptyState(
         icon: "doc.questionmark", title: Self.title(reason), body: "Argus only edits UTF-8 text files up to 5 MB."
@@ -65,9 +63,24 @@ struct CodeEditorPane: View {
       }
     case .failed(let message):
       EmptyState(icon: "exclamationmark.triangle", title: "Couldn't open \(file.name)", body: message) {
+        if file.preview?.isBinary == true {
+          Button("Open Externally") { Task { await code.openExternally(file.path) } }
+        }
         Button("Try Again") { code.retry(file.path) }
       }
     }
+  }
+
+  private func editor(_ document: EditorDocument) -> some View {
+    CodeEditorView(document: document)
+      .onChange(of: document.find.isVisible) { wasVisible, visible in
+        // In-file find, counted when the bar closes after a search.
+        guard wasVisible, !visible, !document.find.query.text.isEmpty else { return }
+        MacTelemetry.capture(
+          .editorSearchRun(
+            scope: .file, regex: document.find.query.isRegex,
+            resultBucket: MacTelemetryEvent.countBucket(document.find.matches.count), truncated: false))
+      }
   }
 
   private var comparing: Binding<Bool> {

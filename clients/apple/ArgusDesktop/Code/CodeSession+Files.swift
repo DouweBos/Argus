@@ -16,6 +16,10 @@ extension CodeSession {
 
   private func load(_ file: CodeFile, source: MacTelemetryEvent.EditorOpenSource) async {
     guard let store else { return }
+    if file.preview?.isBinary == true {
+      await loadBinary(file, source: source)
+      return
+    }
     do {
       let read = try await store.request(
         ArgusProtocol.Commands.CodeReadFile.self, .init(id: sessionId, relativePath: file.path), session: sessionId)
@@ -57,6 +61,30 @@ extension CodeSession {
       Task { await detectFormatter(file) }
       await watch(file.path)
       await refreshGitBase(file)
+    } catch {
+      file.phase = .failed(HostStore.describe(error))
+    }
+  }
+
+  /// A PDF's or an image's bytes, shown by the pane; the host refuses past 8 MB.
+  private func loadBinary(_ file: CodeFile, source: MacTelemetryEvent.EditorOpenSource?) async {
+    guard let store else { return }
+    do {
+      let base64 = try await store.request(
+        ArgusProtocol.Commands.ReadFileBytes.self, .init(id: sessionId, relativePath: file.path), session: sessionId)
+      guard files[file.path] === file else { return }
+      guard let data = Data(base64Encoded: base64) else {
+        file.phase = .failed("The file's contents didn't arrive intact.")
+        return
+      }
+      if let source {
+        MacTelemetry.capture(
+          .editorFileOpened(
+            source: source, language: "other", sizeBucket: MacTelemetryEvent.fileSizeBucket(data.count),
+            readOnly: true))
+      }
+      file.phase = .binary(data)
+      await watch(file.path)
     } catch {
       file.phase = .failed(HostStore.describe(error))
     }
@@ -171,6 +199,10 @@ extension CodeSession {
   // MARK: Disk changes
 
   func fileChanged(_ change: ArgusProtocol.CodeFileChanged) {
+    if let file = files[change.relativePath], case .binary = file.phase {
+      Task { await loadBinary(file, source: nil) }
+      return
+    }
     guard let file = files[change.relativePath], let document = file.document else { return }
     switch file.disk.diskChanged(hash: change.hash, isDirty: document.isDirty) {
     case .reload: Task { await reloadFromDisk(file, external: true) }
