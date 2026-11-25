@@ -14,12 +14,14 @@ import {
   codeSearchSession,
   startCodeSearch,
 } from "../code/search";
+import { readFileBytes } from "../file/bytes";
 import { resolveContainedPath } from "../file/operations";
 
-export async function readSessionFile(
+/** `requested` as a path inside the session's worktree, or a thrown reason. */
+async function sessionRelative(
   sessionId: string,
   requested: string,
-): Promise<CodeFile> {
+): Promise<string> {
   if (path.isAbsolute(requested)) {
     throw "Path must be relative to the session";
   }
@@ -31,7 +33,27 @@ export async function readSessionFile(
     throw "Path is outside this session";
   }
 
-  return readCodeFile(sessionId, rel);
+  return rel;
+}
+
+export async function readSessionFile(
+  sessionId: string,
+  requested: string,
+): Promise<CodeFile> {
+  return readCodeFile(sessionId, await sessionRelative(sessionId, requested));
+}
+
+/** A PDF's or an image's bytes, base64, under the same confinement. */
+export async function readSessionFileBytes(
+  sessionId: string,
+  requested: string,
+): Promise<{ data: string; size: number }> {
+  const data = await readFileBytes(
+    sessionId,
+    await sessionRelative(sessionId, requested),
+  );
+
+  return { data, size: Buffer.byteLength(data, "base64") };
 }
 
 export function searchSessionFiles(

@@ -311,6 +311,10 @@ enum TelemetryEvent {
   case chatHistoryUsed(action: ChatHistoryAction)
   /// A session file opened in the read-only viewer.
   case fileViewed(source: FileViewSource, language: String)
+  /// A session file showed rendered: a Markdown file's preview, a PDF, an image.
+  case previewOpened(kind: FilePreviewKind)
+  /// A Mermaid diagram was drawn (or couldn't be); never one already drawn this launch.
+  case mermaidRendered(failed: Bool)
   /// A Figma frame opened in the design viewer.
   case designOpened(source: DesignSource)
   /// The first layer picked in a design viewer frame, on its render or in its layer list.
@@ -414,6 +418,8 @@ enum TelemetryEvent {
     case .messageAction: "ios_message_action"
     case .chatHistoryUsed: "ios_chat_history_used"
     case .fileViewed: "ios_file_viewed"
+    case .previewOpened: "ios_preview_opened"
+    case .mermaidRendered: "ios_mermaid_rendered"
     case .designOpened: "ios_design_opened"
     case .designLayerSelected: "ios_design_layer_selected"
     case .fileSearchRun: "ios_file_search_run"
@@ -568,6 +574,10 @@ enum TelemetryEvent {
       ["action": action.rawValue]
     case .fileViewed(let source, let language):
       ["source": source.rawValue, "language": language]
+    case .previewOpened(let kind):
+      ["kind": kind.rawValue]
+    case .mermaidRendered(let failed):
+      ["failed": failed]
     case .designOpened(let source):
       ["source": source.rawValue]
     case .designLayerSelected(let source):

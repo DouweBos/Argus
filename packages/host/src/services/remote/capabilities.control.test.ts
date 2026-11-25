@@ -268,6 +268,7 @@ const CONTROL_METHODS = [
   "sessions.files",
   "sessions.resolve_mention_path",
   "files.read",
+  "files.read_bytes",
   "files.search",
   "files.search_cancel",
   "agents.capabilities",

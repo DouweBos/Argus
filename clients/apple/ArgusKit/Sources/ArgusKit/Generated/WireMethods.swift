@@ -4398,6 +4398,48 @@ extension ArgusProtocol {
       }
     }
 
+    public struct FilesReadBytesParams: Codable, Sendable {
+      public var sessionId: String
+      public var path: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case path = "path"
+      }
+
+      public init(sessionId: String, path: String) {
+        self.sessionId = sessionId
+        self.path = path
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(path, forKey: .path)
+      }
+    }
+
+    public struct FilesReadBytesResult: Codable, Sendable {
+      public var data: String
+      public var size: Int
+
+      enum CodingKeys: String, CodingKey {
+        case data = "data"
+        case size = "size"
+      }
+
+      public init(data: String, size: Int) {
+        self.data = data
+        self.size = size
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(data, forKey: .data)
+        try c.encode(size, forKey: .size)
+      }
+    }
+
     public struct FilesSearchParams: Codable, Sendable {
       public var sessionId: String
       public var searchId: String
@@ -9568,6 +9610,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.FilesReadParams
       public typealias Result = ArgusProtocol.CodeFile
       public static let name = "files.read"
+    }
+
+    public enum FilesReadBytes: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.FilesReadBytesParams
+      public typealias Result = ArgusProtocol.MethodsTypes.FilesReadBytesResult
+      public static let name = "files.read_bytes"
     }
 
     public enum FilesSearch: RemoteCommand {

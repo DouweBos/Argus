@@ -205,6 +205,7 @@ export const REMOTE_METHODS = {
    *  File contents are more sensitive than the transcript, so control — the
    *  same tier as listing them. */
   "files.read": "control",
+  "files.read_bytes": "control",
   "files.search": "control",
   "files.search_cancel": "control",
   /** Resolve a directory path for the @-mention browse mode. */

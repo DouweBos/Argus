@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import Foundation
 import MetricKit
 import PostHog
@@ -47,6 +48,7 @@ enum Telemetry {
 
   static func start() {
     guard client == nil else { return }
+    MermaidRenderer.shared.onRender = { capture(.mermaidRendered(failed: $0)) }
     distinctId = anonymousId()
     mode = TelemetryMode(rawValue: preferences.string(PreferenceKey.telemetryMode) ?? "")
       ?? .presence

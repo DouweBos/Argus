@@ -33,6 +33,7 @@ public enum RemoteMethod: String, Codable, Sendable {
   case sessionsResolveMentionPath = "sessions.resolve_mention_path"
   case sessionsUploadAttachment = "sessions.upload_attachment"
   case filesRead = "files.read"
+  case filesReadBytes = "files.read_bytes"
   case filesSearch = "files.search"
   case filesSearchCancel = "files.search_cancel"
   case sessionsGitStatus = "sessions.git_status"

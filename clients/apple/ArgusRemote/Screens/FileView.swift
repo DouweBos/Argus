@@ -1,5 +1,6 @@
 import ArgusSyntax
 import ArgusUI
+import PDFKit
 import SwiftUI
 
 /// Where a file was opened from, for `ios_file_viewed`.
@@ -10,6 +11,8 @@ enum FileViewSource: String, Hashable {
   case search
   /// An `argus://` link or the dev driver.
   case link
+  /// A link followed in a Markdown preview.
+  case markdownLink = "markdown_link"
 }
 
 /// One session file, read-only and highlighted. `path` is as the link had it: an
@@ -17,6 +20,7 @@ enum FileViewSource: String, Hashable {
 struct FileView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
+  @Environment(Router.self) private var router
 
   let sessionId: String
   let path: String
@@ -30,8 +34,14 @@ struct FileView: View {
   @State private var jumping = false
   @State private var jumpText = ""
   @State private var reported = false
+  /// A PDF's or an image's bytes.
+  @State private var bytes: Data?
+  /// A Markdown file's text rather than its rendered page.
+  @State private var showSource = false
+  @State private var reportedPreview = false
 
   private var shownPath: String { relativePath ?? path }
+  private var preview: FilePreviewKind? { FilePreviewKind.of(path: path) }
   private var language: SyntaxLanguage? {
     let firstLine = file?.content.prefix { $0 != "\n" }.description
     return SyntaxLanguage.detect(path: shownPath, firstLine: firstLine)
@@ -43,7 +53,19 @@ struct FileView: View {
       .background(theme.bg.ignoresSafeArea())
       .navigationTitle(SessionFilePaths.fileName(shownPath))
       .navigationBarTitleDisplayMode(.inline)
-      .screenBar { title } trailing: { menu }
+      .screenBar { title } trailing: {
+        HStack(spacing: 14) {
+          if preview == .markdown, file?.readOnlyReason == nil, file != nil {
+            Button {
+              showSource.toggle()
+            } label: {
+              Image(systemName: showSource ? "doc.richtext" : "chevron.left.forwardslash.chevron.right")
+            }
+            .accessibilityLabel(showSource ? "Show Preview" : "Show Source")
+          }
+          menu
+        }
+      }
       .alert("Go to line", isPresented: $jumping) {
         TextField("Line", text: $jumpText).keyboardType(.numberPad)
         Button("Go") { jump() }
@@ -52,7 +74,7 @@ struct FileView: View {
         Text("1–\(lineCount)")
       }
       .task(id: host.connection == .ready) {
-        guard file == nil, host.connection == .ready else { return }
+        guard file == nil, bytes == nil, host.connection == .ready else { return }
         focusLine = line
         await load()
       }
@@ -74,12 +96,53 @@ struct FileView: View {
         EmptyState(icon: Icon.file, title: "Nothing to show", body: Self.message(for: reason, size: file.size))
       }
       .refreshable { await load() }
+    } else if let bytes {
+      binary(bytes)
+        .onAppear { reportPreview() }
+    } else if let file, preview == .markdown, !showSource {
+      MarkdownPreview(text: file.content, document: markdownDocument)
+        .refreshable { await load() }
+        .onAppear { reportPreview() }
     } else if let file {
       CodeView(text: file.content, language: language, focusLine: focusLine)
         .refreshable { await load() }
     } else {
       Screen { Loading(label: "Opening file") }
     }
+  }
+
+  @ViewBuilder
+  private func binary(_ data: Data) -> some View {
+    if preview == .pdf {
+      if let document = PDFDocument(data: data) {
+        PDFDocumentView(document: document)
+      } else {
+        Screen { EmptyState(icon: Icon.file, title: "Can't open this PDF", body: "It may be damaged or encrypted.") }
+      }
+    } else {
+      ImageFilePreview(data: data, path: shownPath)
+    }
+  }
+
+  /// Relative images and links in the file lead into the same worktree.
+  private var markdownDocument: MarkdownDocument {
+    MarkdownDocument(
+      path: shownPath,
+      loadFile: { [host, sessionId] relative in try? await host.readFileBytes(sessionId: sessionId, path: relative) },
+      open: { [router, sessionId] target in
+        switch target {
+        case .file(let path, let line):
+          router.push(.file(sessionId: sessionId, path: path, line: line, source: .markdownLink))
+        case .external(let url): UIApplication.shared.open(url)
+        case .anchor: break
+        }
+      })
+  }
+
+  private func reportPreview() {
+    guard !reportedPreview, let preview else { return }
+    reportedPreview = true
+    Telemetry.capture(.previewOpened(kind: preview))
   }
 
   private var title: some View {
@@ -105,9 +168,11 @@ struct FileView: View {
   private var menu: some View {
     Menu {
       if let file, file.readOnlyReason == nil {
-        Button("Go to Line", systemImage: "arrow.down.to.line") {
-          jumpText = focusLine.map(String.init) ?? ""
-          jumping = true
+        if preview != .markdown || showSource {
+          Button("Go to Line", systemImage: "arrow.down.to.line") {
+            jumpText = focusLine.map(String.init) ?? ""
+            jumping = true
+          }
         }
         Button("Copy Contents", systemImage: "doc.on.doc") { Clipboard.copy(file.content) }
         ShareLink(item: file.content, subject: Text(SessionFilePaths.fileName(shownPath))) {
@@ -138,7 +203,11 @@ struct FileView: View {
         }
         relativePath = resolved
       }
-      file = try await host.readFile(sessionId: sessionId, path: relativePath ?? path)
+      if preview?.isBinary == true {
+        bytes = try await host.readFileBytes(sessionId: sessionId, path: relativePath ?? path)
+      } else {
+        file = try await host.readFile(sessionId: sessionId, path: relativePath ?? path)
+      }
       failure = nil
     } catch {
       failure = HostStore.describe(error)
