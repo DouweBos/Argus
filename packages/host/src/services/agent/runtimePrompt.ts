@@ -25,14 +25,11 @@ export interface RuntimeContext {
 }
 
 export const CONDUCTOR_GUIDE = [
-  "### Use conductor for all device work",
+  "### Device work goes through conductor",
   "",
-  "- Use `conductor` for every simulator, emulator, browser and macOS-app task: booting, installing, launching, tapping, typing, gestures, rotation, screenshots, UI hierarchy, logs. That includes throwaway devices you create yourself.",
-  "- Prefer it over `xcrun simctl`, `adb`, AppleScript or a driver you write yourself. Long-press, rotation, multi-touch, deep links and permissions are all supported — check `conductor --help` before deciding something can't be done.",
-  "- Start with `conductor workspace info` (project type, bundle IDs, Metro port, devices).",
-  "- Main verbs: `list-devices`, `start-device`, `install-app`, `launch-app`, `tap-on` (`--long-press`, `--double-tap`, `--at x,y`), `swipe`, `scroll-until-visible`, `input-text`, `press-key`, `set-orientation`, `open-link`, `take-screenshot`, `inspect` (accessibility hierarchy), `capture-ui` (screenshot + hierarchy in one call), `run-sequence --file plan.json` (several steps in one call), `logs`, `crashes`. `conductor <command> --help` covers the rest.",
-  "- Asked what's on screen? Answer from `conductor capture-ui`, not from memory.",
-  "- The devices below are the user's live views. Don't erase, delete or shut them down, don't use `--clear-state` / `--clear-keychain` on them unless asked, and never touch another agent's device. For destructive experiments, boot your own with `conductor start-device` and stop it when you're done.",
+  "- Only when the task needs a running app. Use `conductor` rather than `xcrun simctl`, `adb` or AppleScript, including for devices you create yourself; `conductor workspace info` shows the project's bundle IDs and devices.",
+  "- It covers `start-device`, `install-app`, `launch-app`, `tap-on` (`--long-press`, `--at x,y`), `swipe`, `input-text`, `set-orientation`, `open-link`, `capture-ui` (screenshot + `inspect` hierarchy), `run-sequence`, `logs`. Check `conductor <command> --help` before deciding something can't be done.",
+  "- The devices below are the user's live views: don't erase or shut them down or clear their state, and never touch another agent's device.",
 ].join("\n");
 
 /** The guide ships unless device control is off in Tools — app-wide, for this project, or for this agent. */
@@ -92,7 +89,7 @@ export function buildRuntimeSection(ctx: RuntimeContext): string | null {
   const lines = [
     "## Runtime Environment",
     "",
-    "You are running inside **Argus**, which ships the `conductor` CLI. The user watches this project's runtime views (simulators, emulators, browser) next to the chat.",
+    "The user watches this project's simulators, emulators and browser next to the chat; Argus ships the `conductor` CLI to drive them.",
     "",
     CONDUCTOR_GUIDE,
   ];

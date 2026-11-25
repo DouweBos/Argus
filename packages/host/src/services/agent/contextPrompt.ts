@@ -33,24 +33,23 @@ export function buildIntegrationsSection(
     .filter(Boolean)
     .join(" and ");
   let read =
-    "Before coding, read the ticket with `linear_get_issue` and open every Figma frame it links with `figma_get_frame`.";
+    "When the task names a ticket, read it with `linear_get_issue` and open the Figma frames it links with `figma_get_frame`.";
   if (!ctx.figma) {
     read =
-      "Before coding, read the ticket with `linear_get_issue`, comments and screenshots included.";
+      "When the task names a ticket, read it with `linear_get_issue`, comments and screenshots included.";
   } else if (!ctx.linear) {
-    read =
-      "Before coding, open every Figma frame the task links with `figma_get_frame`.";
+    read = "When the task links a Figma frame, open it with `figma_get_frame`.";
   }
   const lines = [
     "## Tickets and designs",
     "",
-    `Argus is signed in to ${services} for you; use its MCP tools over any other route.`,
+    `Argus is signed in to ${services}; use its MCP tools over any other route.`,
     "",
     `- ${read}`,
   ];
   if (ctx.figma && ctx.deviceControl) {
     lines.push(
-      "- After your last code change, compare each screen you touched with its frame using `design_compare` and fix what differs. A comparison made before your last edit doesn't count.",
+      "- When you built a screen from a Figma frame, compare it with `design_compare` after your last code change and fix what differs.",
     );
   }
 
