@@ -8,6 +8,8 @@ public struct ZoomPanImage<Overlay: View>: View {
   let data: Data?
   let label: String
   let overlay: (CGSize, CGFloat) -> Overlay
+  /// Zoom buttons in a strip under the picture rather than over its corner, where they'd hide part of it.
+  var controlsBelow = false
   @State private var image: PlatformImage?
   @State private var scale: CGFloat = 1
   @State private var baseScale: CGFloat = 1
@@ -48,7 +50,10 @@ public struct ZoomPanImage<Overlay: View>: View {
     }
     .clipped()
     .background(theme.bgSecondary)
-    .overlay(alignment: .bottomTrailing) { controls.padding(8) }
+    .overlay(alignment: .bottomTrailing) { if !controlsBelow { controls.padding(8) } }
+    .safeAreaInset(edge: .bottom, spacing: 0) {
+      if controlsBelow { HStack { Spacer(); controls }.padding(.horizontal, 8).padding(.bottom, 8) }
+    }
     .task(id: data) {
       image = data.flatMap(PlatformImage.init(data:))
       fit()
@@ -119,7 +124,8 @@ public struct ZoomPanImage<Overlay: View>: View {
 }
 
 extension ZoomPanImage where Overlay == EmptyView {
-  public init(data: Data?, label: String) {
+  public init(data: Data?, label: String, controlsBelow: Bool = false) {
     self.init(data: data, label: label) { _, _ in EmptyView() }
+    self.controlsBelow = controlsBelow
   }
 }

@@ -428,6 +428,8 @@ enum MacTelemetryEvent {
   case editorCommand(command: String)
   /// Quick open closed: what it was asked for, and whether something was opened.
   case editorQuickOpenUsed(mode: EditorQuickOpenMode, result: EditorQuickOpenResult)
+  /// A Mermaid diagram was drawn (or couldn't be), in a transcript or a preview; never a cached one.
+  case mermaidRendered(failed: Bool)
 
   var name: String {
     switch self {
@@ -541,6 +543,7 @@ enum MacTelemetryEvent {
     case .editorCompletionAccepted: "mac_editor_completion_accepted"
     case .editorCommand: "mac_editor_command"
     case .editorQuickOpenUsed: "mac_editor_quick_open_used"
+    case .mermaidRendered: "mac_mermaid_rendered"
     }
   }
 
@@ -764,6 +767,8 @@ enum MacTelemetryEvent {
       ["command": command]
     case .editorQuickOpenUsed(let mode, let result):
       ["mode": mode.rawValue, "result": result.rawValue]
+    case .mermaidRendered(let failed):
+      ["failed": failed]
     }
   }
 

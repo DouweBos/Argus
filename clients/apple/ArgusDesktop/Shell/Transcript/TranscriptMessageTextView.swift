@@ -1,4 +1,5 @@
 import AppKit
+import ArgusUI
 import SwiftUI
 
 /// One message's text: its prose runs as wrapping text views and each fenced
@@ -19,6 +20,7 @@ final class TranscriptMessageTextView: NSView {
   private var unit: String?
   private var proseViews: [TranscriptProseView] = []
   private var codeViews: [TranscriptCodeBlockView] = []
+  private var diagramViews: [TranscriptDiagramView] = []
   /// The part views in order, prose or code.
   private var partViews: [NSView] = []
   var lastReveal = 0
@@ -28,7 +30,12 @@ final class TranscriptMessageTextView: NSView {
 
   /// Every text view, in reading order.
   var textViews: [TranscriptNSTextView] {
-    partViews.compactMap { ($0 as? TranscriptProseView)?.text ?? ($0 as? TranscriptCodeBlockView)?.text }
+    partViews.compactMap(Self.textView(of:))
+  }
+
+  /// A diagram has none: it's a picture.
+  private static func textView(of view: NSView) -> TranscriptNSTextView? {
+    (view as? TranscriptProseView)?.text ?? (view as? TranscriptCodeBlockView)?.text
   }
 
   func setContent(_ rendered: TranscriptRendered, unit: String?) {
@@ -37,9 +44,15 @@ final class TranscriptMessageTextView: NSView {
       rebuild(rendered)
     }
     self.unit = unit
-    for (view, offset) in zip(textViews, rendered.offsets) {
-      view.setUnit(unit, base: offset, messageLength: rendered.length)
+    for (view, offset) in zip(partViews, rendered.offsets) {
+      Self.textView(of: view)?.setUnit(unit, base: offset, messageLength: rendered.length)
     }
+    needsLayout = true
+  }
+
+  /// A diagram drew: its part takes its own height now.
+  @objc private func diagramRendered() {
+    guard !diagramViews.isEmpty else { return }
     needsLayout = true
   }
 
@@ -47,6 +60,7 @@ final class TranscriptMessageTextView: NSView {
   private func rebuild(_ rendered: TranscriptRendered) {
     var prose = 0
     var code = 0
+    var diagram = 0
     var views: [NSView] = []
     for part in rendered.parts {
       switch part {
@@ -70,6 +84,17 @@ final class TranscriptMessageTextView: NSView {
         codeViews[code].setContent(text)
         views.append(codeViews[code])
         code += 1
+      case .diagram(let source):
+        if diagram == diagramViews.count {
+          if diagramViews.isEmpty {
+            NotificationCenter.default.addObserver(
+              self, selector: #selector(diagramRendered), name: MermaidRenderer.didRender, object: nil)
+          }
+          diagramViews.append(TranscriptDiagramView())
+        }
+        diagramViews[diagram].setContent(source)
+        views.append(diagramViews[diagram])
+        diagram += 1
       }
     }
     for view in partViews where !views.contains(where: { $0 === view }) { view.removeFromSuperview() }
@@ -102,6 +127,8 @@ final class TranscriptMessageTextView: NSView {
       return ceil(TextMeasurer.size(of: text, width: max(width, 1)).height)
     case .code(_, let text):
       return TranscriptCodeBlockView.height(of: text, width: width)
+    case .diagram(let source):
+      return MainActor.assumeIsolated { TranscriptDiagramView.height(of: source, width: width) }
     }
   }
 
@@ -114,6 +141,7 @@ final class TranscriptMessageTextView: NSView {
         switch part {
         case .prose(let text): TextMeasurer.size(of: text, width: nil).width
         case .code(_, let text): TranscriptCodeBlockView.naturalWidth(of: text)
+        case .diagram: 10_000
         }
       }
       return CGSize(width: widths.max() ?? 0, height: 0)
@@ -128,6 +156,7 @@ final class TranscriptMessageTextView: NSView {
         switch part {
         case .prose(let text): TextMeasurer.size(of: text, width: width).width
         case .code(_, let text): min(TranscriptCodeBlockView.naturalWidth(of: text), width)
+        case .diagram: width
         }
       }.max() ?? 0
     }
@@ -268,6 +297,8 @@ struct TranscriptMessageText: NSViewRepresentable {
   var revealToken = 0
   /// Take the whole proposed width rather than hugging the longest line.
   var fills = true
+  /// Diagrams drawn so far, for a message holding one: a change asks SwiftUI for the size again.
+  var diagramsDrawn = 0
   var onRevealed: (Int) -> Void = { _ in }
 
   @Environment(\.transcriptLinks) private var links

@@ -22,6 +22,11 @@ enum TranscriptMarkdown {
       prose = NSMutableAttributedString()
     }
     for block in MarkdownBlock.parse(source) {
+      if case .code(let language, let body) = block, language?.lowercased() == "mermaid" {
+        flush()
+        parts.append(.diagram(source: body))
+        continue
+      }
       if case .code(let language, let body) = block {
         flush()
         parts.append(.code(language: language.flatMap { $0.isEmpty ? nil : $0 }, text: code(body, language: language)))
@@ -258,10 +263,13 @@ final class TranscriptRendered {
   enum Part {
     case prose(NSAttributedString)
     case code(language: String?, text: NSAttributedString)
+    /// A Mermaid diagram, drawn; its source is what find and copy see.
+    case diagram(source: String)
 
     var text: NSAttributedString {
       switch self {
       case .prose(let text), .code(_, let text): text
+      case .diagram(let source): NSAttributedString(string: source)
       }
     }
   }
@@ -284,4 +292,9 @@ final class TranscriptRendered {
   }
 
   var length: Int { (string as NSString).length }
+
+  /// Whether a part's height waits on a diagram drawing.
+  var hasDiagram: Bool {
+    parts.contains { if case .diagram = $0 { true } else { false } }
+  }
 }
