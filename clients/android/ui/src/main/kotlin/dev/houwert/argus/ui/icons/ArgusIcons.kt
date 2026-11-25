@@ -169,6 +169,7 @@ object Icon {
   val push = Icons.Outlined.ArrowUpward
   val repo = Icons.Outlined.Inventory2
   val agent = Icons.Outlined.AutoAwesome
+  val teammates = Icons.Outlined.People
   /** Have Claude draft a message. */
   val draft = Icons.Outlined.AutoAwesome
   /** A chat carried on by another runner. */

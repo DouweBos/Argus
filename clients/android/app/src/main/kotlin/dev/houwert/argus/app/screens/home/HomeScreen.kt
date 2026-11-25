@@ -137,6 +137,7 @@ fun HomeScreen() {
   TopBarScreen(
     "Home",
     actions = {
+      if (identity != null) IconBtn(Icon.search, "Search") { router.push(Route.Search()) }
       if (hasControl && identity != null) {
         OverflowMenu(
           "New project",

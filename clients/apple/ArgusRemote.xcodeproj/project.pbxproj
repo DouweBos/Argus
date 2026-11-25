@@ -35,6 +35,7 @@
 		6B0F00000000000000000003 /* GroveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6B0F00000000000000000002 /* GroveKit */; };
 		6B0F00000000000000000005 /* GroveUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6B0F00000000000000000004 /* GroveUIKit */; };
 		71F924F0B3BDE15E0083BDEE /* ComputerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46E305D96C871BB99B7DB468 /* ComputerView.swift */; };
+		A13E5EB0000000000000B001 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A13E5EB0000000000000F001 /* SearchView.swift */; };
 		A12E5EB0000000000000B001 /* SlackIntegrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A12E5EB0000000000000F001 /* SlackIntegrationView.swift */; };
 		A11E5EB0000000000000B001 /* IntegrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11E5EB0000000000000F001 /* IntegrationView.swift */; };
 		774DC572A2AF220B00F3CF38 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6C14566E26586DC89C61830 /* HomeView.swift */; };
@@ -222,6 +223,7 @@
 		3E4CF7C9E04D0A1D6F57EDA5 /* LockScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen.swift; sourceTree = "<group>"; };
 		4510F50B6943CA7B6707AABE /* AutomationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationsView.swift; sourceTree = "<group>"; };
 		46E305D96C871BB99B7DB468 /* ComputerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComputerView.swift; sourceTree = "<group>"; };
+		A13E5EB0000000000000F001 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		A12E5EB0000000000000F001 /* SlackIntegrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlackIntegrationView.swift; sourceTree = "<group>"; };
 		A11E5EB0000000000000F001 /* IntegrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationView.swift; sourceTree = "<group>"; };
 		4B819AF7F05F8000A0B5D08A /* ArgusNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ArgusNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -556,6 +558,7 @@
 				5D1F0A2B3C4D5E6F70819204 /* FileDiffView.swift */,
 				7A11C0DE5EED0A1DE0000002 /* ReviewGuideView.swift */,
 				46E305D96C871BB99B7DB468 /* ComputerView.swift */,
+				A13E5EB0000000000000F001 /* SearchView.swift */,
 				A12E5EB0000000000000F001 /* SlackIntegrationView.swift */,
 				A11E5EB0000000000000F001 /* IntegrationView.swift */,
 				AC0A00000000000000000004 /* AddComputerView.swift */,
@@ -1156,6 +1159,7 @@
 				5D1F0A2B3C4D5E6F70819203 /* FileDiffView.swift in Sources */,
 				7A11C0DE5EED0A1DE0000001 /* ReviewGuideView.swift in Sources */,
 				71F924F0B3BDE15E0083BDEE /* ComputerView.swift in Sources */,
+				A13E5EB0000000000000B001 /* SearchView.swift in Sources */,
 				A12E5EB0000000000000B001 /* SlackIntegrationView.swift in Sources */,
 				A11E5EB0000000000000B001 /* IntegrationView.swift in Sources */,
 				AC0A00000000000000000003 /* AddComputerView.swift in Sources */,

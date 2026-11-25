@@ -86,6 +86,8 @@ sealed interface Route {
   @Serializable data class NewProject(val blueprintId: String? = null) : Route
   /** Clone a repository from a URL into a new project on the computer. */
   @Serializable data object CloneRepository : Route
+  /** Agents, sessions and teammates by name. */
+  @Serializable data class Search(val query: String = "") : Route
   @Serializable data object Settings : Route
   /** One Settings sub-page, by its `SettingsPane` raw value. */
   @Serializable data class SettingsPage(val pane: String) : Route

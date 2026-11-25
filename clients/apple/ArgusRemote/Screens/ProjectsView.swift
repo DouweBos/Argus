@@ -63,6 +63,15 @@ struct ProjectsView: View {
     .contentMargins(.horizontal, width > Self.maxWidth + 80 ? (width - Self.maxWidth) / 2 : nil, for: .scrollContent)
     .navigationTitle("Home")
     .toolbar {
+      if app.identity != nil {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button {
+            router.push(.search(query: ""))
+          } label: {
+            Label("Search", systemImage: Icon.search)
+          }
+        }
+      }
       if host.hasControl, app.identity != nil {
         ToolbarItem(placement: .topBarTrailing) {
           Menu {

@@ -327,6 +327,8 @@ enum TelemetryEvent {
   case fileSearchRun(regex: Bool, results: Int, truncated: Bool)
   /// A workspace issue search settled; once per term, never the term itself.
   case issueSearched(results: Int)
+  /// Search was used: the kind of result tapped, or nil when left without one.
+  case searchUsed(kind: HostSearchResult.Kind?, results: Int)
   /// An integration connected or disconnected from this phone, or the attempt failed.
   case integrationChanged(provider: IntegrationKind, action: IntegrationAction, success: Bool)
   /// `message` is scrubbed and truncated by `Telemetry` before it is sent.
@@ -430,6 +432,7 @@ enum TelemetryEvent {
     case .designLayerSelected: "ios_design_layer_selected"
     case .fileSearchRun: "ios_file_search_run"
     case .integrationChanged: "ios_integration_changed"
+    case .searchUsed: "ios_search_used"
     case .issueSearched: "ios_issue_searched"
     case .appError: "ios_app_error"
     case .hostFeatureUnsupported: "ios_host_feature_unsupported"
@@ -589,6 +592,8 @@ enum TelemetryEvent {
       ["source": source.rawValue]
     case .designLayerSelected(let source):
       ["source": source.rawValue]
+    case .searchUsed(let kind, let results):
+      ["kind": kind?.rawValue ?? "none", "result_bucket": Self.resultBucket(results)]
     case .integrationChanged(let provider, let action, let success):
       ["provider": provider.rawValue, "action": action.rawValue, "success": success]
     case .fileSearchRun(let regex, let results, let truncated):

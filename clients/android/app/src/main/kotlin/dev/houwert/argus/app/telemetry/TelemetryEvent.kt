@@ -1,6 +1,7 @@
 package dev.houwert.argus.app.telemetry
 
 import dev.houwert.argus.core.files.FilePreviewKind
+import dev.houwert.argus.core.search.HostSearchResult
 import dev.houwert.argus.core.stores.IntegrationKind
 import dev.houwert.argus.core.stores.StoreEvent
 import dev.houwert.argus.kit.storage.RemoteEndpoint
@@ -347,6 +348,12 @@ sealed interface TelemetryEvent {
   }
 
   /** Once per settled term, never the term itself. */
+  /** Search was used: the kind of result tapped, or null when left without one. */
+  data class SearchUsed(val kind: HostSearchResult.Kind?, val results: Int) : TelemetryEvent {
+    override val name = "android_search_used"
+    override val properties get() = mapOf("kind" to (kind?.wire ?: "none"), "result_bucket" to resultBucket(results))
+  }
+
   /** An integration connected or disconnected from this phone, or the attempt failed. */
   data class IntegrationChanged(val provider: IntegrationKind, val action: IntegrationAction, val success: Boolean) : TelemetryEvent {
     override val name = "android_integration_changed"

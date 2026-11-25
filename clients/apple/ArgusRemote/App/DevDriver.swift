@@ -510,6 +510,7 @@
       case "generateBlueprint": self = .generateBlueprint
       case "newProject": self = .newProject(blueprintId: arg(1).isEmpty ? nil : arg(1))
       case "cloneRepository": self = .cloneRepository
+      case "search": self = .search(query: arg(1))
       case "settings": self = .settings
       case "settingsPage":
         guard let page = SettingsPane(rawValue: arg(1)) else { return nil }

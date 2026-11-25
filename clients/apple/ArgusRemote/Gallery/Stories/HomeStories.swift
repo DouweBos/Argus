@@ -12,6 +12,8 @@
         // The project cards alone, below the fold in `home/loaded`.
         GalleryStory("home/projects", fixtures: GalleryFixtures.home, setup: load) { ProjectsStory() },
         GalleryStory("home/empty", fixtures: GalleryFixtures.homeEmpty, setup: load) { ProjectsView() },
+        GalleryStory("search/results", fixtures: searchFixtures, setup: loadSearch) { SearchView(query: "fix") },
+        GalleryStory("search/empty", fixtures: searchFixtures, setup: loadSearch) { SearchView() },
         accountRemoved,
         GalleryStory("agents/overview", fixtures: GalleryFixtures.home, setup: load) { AllAgentsView() },
         GalleryStory("sessions/sidebar", fixtures: GalleryFixtures.home, setup: load) {
@@ -128,6 +130,15 @@
       ) {
         ProjectsView().safeAreaInset(edge: .top, spacing: 0) { AccountRemovedNotice() }
       }
+    }
+
+    private static var searchFixtures: [String: String] {
+      GalleryFixtures.home.merging(GalleryFixtures.teammates()) { $1 }
+    }
+
+    @MainActor static func loadSearch(_ stage: GalleryStage) async {
+      await load(stage)
+      await stage.teammates.refresh()
     }
 
     @MainActor static func load(_ stage: GalleryStage) async {

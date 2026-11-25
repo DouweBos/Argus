@@ -88,6 +88,8 @@ enum Route: Hashable {
   case newProject(blueprintId: String?)
   /// Clone a repository from a URL into a new project on the computer.
   case cloneRepository
+  /// Agents, sessions and teammates by name; the query rides along for a link.
+  case search(query: String)
   case settings
   /// One page of Settings.
   case settingsPage(SettingsPane)
@@ -170,6 +172,7 @@ enum Route: Hashable {
     case .automationEditor(let id, _): id == nil ? "/automations/new" : "/automations/:automationId/edit"
     case .describeAutomation: ArgusRoute.describeAutomation.pattern
     case .upcomingRuns: ArgusRoute.upcomingRuns.pattern
+    case .search: "/search"
     case .pair: "/pair"
     case .settings: "/settings"
     case .settingsPage(let page): "/settings/\(page.rawValue.replacingOccurrences(of: "_", with: "-"))"

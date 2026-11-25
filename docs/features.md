@@ -231,6 +231,13 @@ ciphertext.
 - **Android app** — pair an Android phone with your computer to follow
   and steer agents, answer permission prompts straight from the
   notification, and keep working agents on a home-screen widget.
+- **Search on the phones** — the iPhone and Android apps' Home has a
+  search button: type part of a name and it finds agents, sessions (by
+  name, branch or project) and teammates (by name or handle), matched the
+  way the Mac's command palette matches, and opens the one you tap.
+- **Integrations from the phones** — with Control, connect or disconnect
+  the computer's Linear and Figma with an API key and its Slack bot with
+  its tokens; see [Integrations](integrations.md).
 - **Phone or tablet** — the web client is one column on a phone and
   splits into a two-pane layout on an iPad or a desktop browser, with the
   session list beside whatever you have open.
