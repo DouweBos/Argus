@@ -11,6 +11,8 @@ struct TeammateGalleryScreen: View {
   @State private var picked: TeammatesStore.Template?
   @State private var repoRoots: [String] = []
   @State private var creating = false
+  /// The tallest card's natural height, so every card in the grid matches it.
+  @State private var cardHeight: CGFloat = 0
 
   private let columns = [GridItem(.adaptive(minimum: 260, maximum: 360), spacing: 14)]
 
@@ -18,13 +20,15 @@ struct TeammateGalleryScreen: View {
     ScrollView {
       LazyVGrid(columns: columns, alignment: .leading, spacing: 14) {
         ForEach(store.templates) { template in
-          TemplateCard(template: template) {
+          TemplateCard(template: template, height: cardHeight) {
             repoRoots = host.projects.map(\.repoRoot)
             picked = template
-          }
+          } measured: { cardHeight = max(cardHeight, $0) }
         }
       }
       .padding(20)
+      // A new width rewraps every card; measure again from scratch.
+      .onGeometryChange(for: CGFloat.self, of: \.size.width) { _, _ in cardHeight = 0 }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .overlay {
@@ -77,7 +81,9 @@ struct TeammateGalleryScreen: View {
 private struct TemplateCard: View {
   @Environment(\.theme) private var theme
   let template: TeammatesStore.Template
+  let height: CGFloat
   let pick: () -> Void
+  let measured: (CGFloat) -> Void
 
   var body: some View {
     Button(action: pick) {
@@ -103,6 +109,8 @@ private struct TemplateCard: View {
       }
       .padding(14)
       .frame(maxWidth: .infinity, alignment: .topLeading)
+      .onGeometryChange(for: CGFloat.self, of: \.size.height) { _, new in measured(new) }
+      .frame(minHeight: height, alignment: .topLeading)
       .background(theme.surface, in: .rect(cornerRadius: 10))
       .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(theme.border))
       .contentShape(.rect)
