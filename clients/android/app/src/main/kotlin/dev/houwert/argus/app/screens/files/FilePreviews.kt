@@ -29,6 +29,7 @@ import dev.houwert.argus.ui.components.EmptyState
 import dev.houwert.argus.ui.components.Loading
 import dev.houwert.argus.ui.design.ZoomPanImage
 import dev.houwert.argus.ui.files.PdfDocumentView
+import dev.houwert.argus.ui.files.NotebookView
 import dev.houwert.argus.ui.files.SandboxedHtmlView
 import dev.houwert.argus.ui.icons.Icon
 import dev.houwert.argus.ui.mermaid.MermaidRenderer
@@ -81,9 +82,25 @@ internal fun MarkdownFilePreview(host: HostStore, sessionId: String, path: Strin
 /** An HTML file in a sandboxed web view: worktree files only, unless [allowNetwork]. */
 @Composable
 internal fun HtmlFilePreview(host: HostStore, sessionId: String, path: String, text: String, allowNetwork: Boolean, onShown: () -> Unit) {
+  val document = worktreeDocument(host, sessionId, path)
+  LaunchedEffect(Unit) { onShown() }
+  SandboxedHtmlView(text, document, allowNetwork, Modifier.fillMaxSize())
+}
+
+/** A notebook's cells and saved outputs; relative images in its Markdown come from the worktree. */
+@Composable
+internal fun NotebookFilePreview(host: HostStore, sessionId: String, path: String, text: String, onShown: () -> Unit) {
+  val document = worktreeDocument(host, sessionId, path)
+  LaunchedEffect(Unit) { onShown() }
+  NotebookView(text, document)
+}
+
+/** Files a rendered page loads come from the same worktree; links open there or in the browser. */
+@Composable
+private fun worktreeDocument(host: HostStore, sessionId: String, path: String): MarkdownDocument {
   val router = LocalRouter.current
   val uri = LocalUriHandler.current
-  val document = remember(sessionId, path) {
+  return remember(sessionId, path) {
     MarkdownDocument(
       path = path,
       loadFile = { relative ->
@@ -103,8 +120,6 @@ internal fun HtmlFilePreview(host: HostStore, sessionId: String, path: String, t
       },
     )
   }
-  LaunchedEffect(Unit) { onShown() }
-  SandboxedHtmlView(text, document, allowNetwork, Modifier.fillMaxSize())
 }
 
 /** A PDF's pages or an image (an SVG drawn by the diagram renderer), from bytes the host read. */

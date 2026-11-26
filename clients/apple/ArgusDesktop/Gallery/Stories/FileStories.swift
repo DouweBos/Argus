@@ -24,6 +24,11 @@
             html: GalleryFixtures.previewHTML,
             document: MarkdownDocument(path: "site/index.html", loadFile: { GalleryFixtures.previewFile($0) }, open: { _ in }))
         },
+        GalleryStory("previews/notebook", size: CGSize(width: 820, height: 1100)) {
+          NotebookView(
+            text: GalleryFixtures.previewNotebook,
+            document: MarkdownDocument(path: "analysis/build-times.ipynb", loadFile: { GalleryFixtures.previewFile($0) }, open: { _ in }))
+        },
         GalleryStory("previews/large-file", size: CGSize(width: 900, height: 560)) {
           LargeFileView(pager: GalleryFixtures.previewLargePager(), limitation: "edit")
         },

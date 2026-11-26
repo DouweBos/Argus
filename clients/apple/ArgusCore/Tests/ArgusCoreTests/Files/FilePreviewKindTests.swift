@@ -14,6 +14,7 @@ struct FilePreviewKindTests {
     }
     #expect(FilePreviewKind.of(path: "site/index.HTML") == .html)
     #expect(FilePreviewKind.of(path: "a.htm") == .html)
+    #expect(FilePreviewKind.of(path: "analysis/Explore.ipynb") == .notebook)
     #expect(FilePreviewKind.html.isRenderedText && !FilePreviewKind.html.isBinary)
     #expect(FilePreviewKind.of(path: "main.swift") == nil)
     #expect(FilePreviewKind.of(path: "Makefile") == nil)

@@ -51,6 +51,11 @@
             document: MarkdownDocument(path: "site/index.html", loadFile: { GalleryFixtures.previewFile($0) }, open: { _ in }))
           .frame(height: 640)
         },
+        GalleryStory("previews/notebook") {
+          NotebookView(
+            text: GalleryFixtures.previewNotebook,
+            document: MarkdownDocument(path: "analysis/build-times.ipynb", loadFile: { GalleryFixtures.previewFile($0) }, open: { _ in }))
+        },
         GalleryStory("previews/large-file") {
           LargeFileView(pager: GalleryFixtures.previewLargePager(), limitation: "show in full on a phone")
         },

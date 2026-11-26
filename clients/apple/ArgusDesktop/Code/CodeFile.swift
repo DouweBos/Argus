@@ -59,8 +59,12 @@ final class CodeFile {
     self.path = path
     let kind = FilePreviewKind.of(path: path)
     preview = kind
-    // A page is usually being written, so it opens beside its source.
-    markdownMode = kind == .html ? .split : AppPreferences.shared.markdownOpensIn
+    // A page is usually being written, so it opens beside its source; a notebook's JSON is read rendered.
+    switch kind {
+    case .html: markdownMode = .split
+    case .notebook: markdownMode = .preview
+    default: markdownMode = AppPreferences.shared.markdownOpensIn
+    }
   }
 
   var document: EditorDocument? {

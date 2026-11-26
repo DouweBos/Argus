@@ -58,7 +58,9 @@ struct CodeMarkdownContent: View {
   }
 
   @ViewBuilder private var preview: some View {
-    if file.preview == .html {
+    if file.preview == .notebook {
+      CodeNotebookPreview(document: document, context: code.markdownDocument(for: file.path))
+    } else if file.preview == .html {
       CodeHTMLPreview(document: document, context: code.markdownDocument(for: file.path), allowNetwork: file.allowsNetwork)
     } else {
       CodeMarkdownPreview(document: document, context: code.markdownDocument(for: file.path))
@@ -79,6 +81,24 @@ private struct CodeMarkdownPreview: View {
         guard !Task.isCancelled else { return }
         text = document.text
       }
+  }
+}
+
+/// The notebook re-parsed a beat after typing stops.
+private struct CodeNotebookPreview: View {
+  let document: EditorDocument
+  let context: MarkdownDocument
+  @State private var text: String?
+
+  var body: some View {
+    Group {
+      if let text { NotebookView(text: text, document: context) } else { Color.clear }
+    }
+    .task(id: document.version) {
+      if text != nil { try? await Task.sleep(for: .milliseconds(400)) }
+      guard !Task.isCancelled else { return }
+      text = document.text
+    }
   }
 }
 

@@ -114,6 +114,12 @@ the full schema.
   phones) lets one preview load from the web until you close it — it is never
   remembered. Links to other worktree files open them; web links open in the
   browser.
+- **Jupyter notebooks** (`.ipynb`) open as their cells: Markdown rendered,
+  code highlighted in the kernel's language, and the outputs saved with each
+  cell — printed text, tables, charts and other images, and errors with their
+  traceback. HTML output shows as its text form (or its source), never
+  rendered. On the Mac the switch above the file shows the notebook's JSON
+  beside it or instead; the phones have a button to see the source.
 - **Large files** open read-only, a page at a time, instead of not at all:
   past 5 MB in the Mac code view (the editor's limit) and past 2 MB in the
   iPhone and Android file viewers. A banner says why it can't be edited, and

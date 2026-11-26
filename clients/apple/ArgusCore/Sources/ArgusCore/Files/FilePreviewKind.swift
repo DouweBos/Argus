@@ -7,6 +7,8 @@ public enum FilePreviewKind: String, Sendable, CaseIterable {
   case image
   /// A web page, rendered sandboxed: no network unless the viewer allows it.
   case html
+  /// A Jupyter notebook: cells and their saved outputs.
+  case notebook
   /// Too large to open whole, so paged; never from an extension.
   case large
 
@@ -15,6 +17,7 @@ public enum FilePreviewKind: String, Sendable, CaseIterable {
     case "md", "mdx", "markdown": .markdown
     case "pdf": .pdf
     case "html", "htm": .html
+    case "ipynb": .notebook
     case "png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "heic", "tif", "tiff", "ico": .image
     default: nil
     }
@@ -24,7 +27,7 @@ public enum FilePreviewKind: String, Sendable, CaseIterable {
   public var isBinary: Bool { self == .pdf || self == .image }
 
   /// Text shown rendered next to (or instead of) its source.
-  public var isRenderedText: Bool { self == .markdown || self == .html }
+  public var isRenderedText: Bool { self == .markdown || self == .html || self == .notebook }
 
   public static func isSVG(_ path: String) -> Bool {
     (path as NSString).pathExtension.lowercased() == "svg"

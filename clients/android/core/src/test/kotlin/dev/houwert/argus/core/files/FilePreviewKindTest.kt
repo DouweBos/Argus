@@ -14,6 +14,7 @@ class FilePreviewKindTest {
     }
     assertEquals(FilePreviewKind.Html, FilePreviewKind.of("site/index.HTML"))
     assertEquals(FilePreviewKind.Html, FilePreviewKind.of("a.htm"))
+    assertEquals(FilePreviewKind.Notebook, FilePreviewKind.of("analysis/Explore.ipynb"))
     assertNull(FilePreviewKind.of("Main.kt"))
     assertNull(FilePreviewKind.of("Makefile"))
     assertNull(FilePreviewKind.of(".md"))

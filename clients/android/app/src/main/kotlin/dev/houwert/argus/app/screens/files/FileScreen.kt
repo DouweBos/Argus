@@ -182,6 +182,8 @@ fun FileScreen(sessionId: String, path: String, line: Int?) {
         LaunchedEffect(Unit) { reportKind(FilePreviewKind.Large) }
         LargeFileView(pager!!)
       }
+      current != null && current.readOnlyReason == null && preview == FilePreviewKind.Notebook && !showSource ->
+        NotebookFilePreview(host, sessionId, shownPath, current.content, reportPreview)
       current != null && current.readOnlyReason == null && preview == FilePreviewKind.Html && !showSource ->
         HtmlFilePreview(host, sessionId, shownPath, current.content, allowNetwork, reportPreview)
       current != null && current.readOnlyReason == null && preview == FilePreviewKind.Markdown && !showSource ->

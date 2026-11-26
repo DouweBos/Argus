@@ -106,6 +106,10 @@ struct FileView: View {
     } else if let bytes {
       binary(bytes)
         .onAppear { reportPreview() }
+    } else if let file, preview == .notebook, !showSource {
+      NotebookView(text: file.content, document: markdownDocument)
+        .refreshable { await load() }
+        .onAppear { reportPreview() }
     } else if let file, preview == .html, !showSource {
       SandboxedHTMLView(html: file.content, document: markdownDocument, allowNetwork: allowNetwork)
         .onAppear { reportPreview() }
