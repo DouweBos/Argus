@@ -43,6 +43,16 @@ struct ChangesView: View {
         options: [("branch", "Branch"), ("working", "Uncommitted"), ("turn", "Last turn")])
       if isTurn { turnPicker }
 
+      if let session = stackSession, case let repos = host.crossProjectRepos(of: session), !repos.isEmpty {
+        // Each repository lands on its own: its changes, merge and pull request are a screen apiece.
+        SectionHeader(title: "Repositories", count: repos.count)
+        Card {
+          CrossProjectRepoList(repos: repos, currentSessionId: sessionId) { repo in
+            router.push(.changes(sessionId: repo.sessionId, label: repo.name))
+          }
+        }
+      }
+
       if let status = host.gitStatusBySession[sessionId] {
         HStack(spacing: 8) {
           StatusDot(tone: status.conflictCount > 0 ? .warning : .accent)

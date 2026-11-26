@@ -19,6 +19,8 @@
         // A staged addition, which takes hunk and line actions like an edit.
         panel("git/changes/added-file", worktree: true, view: .working, file: "src/session/strategy.test.ts"),
         panel("git/branch", worktree: true, view: .branch),
+        // A cross-project session: the sidebar lists each repository, one merged, one setting up.
+        panel("git/branch/cross-project", worktree: true, view: .branch, crossProject: true),
         // Twelve turns over two agents, one whose checkpoint is gone and one restored to.
         panel("timeline", worktree: true, view: .timeline(turn: nil)),
         panel("timeline/turn", worktree: true, view: .timeline(turn: "gallery-turn-9")),
@@ -45,13 +47,18 @@
     }
 
     private static func panel(
-      _ id: String, worktree: Bool, view: GitRoute, scope: SessionDiffScope = .uncommitted, file: String? = nil
+      _ id: String, worktree: Bool, view: GitRoute, scope: SessionDiffScope = .uncommitted, file: String? = nil,
+      crossProject: Bool = false
     ) -> GalleryStory {
       let sessionId = worktree ? GalleryGit.worktreeSessionId : GalleryGit.rootSessionId
-      let fixtures = GalleryFixtures.git(sessionId: sessionId, path: worktree ? worktreePath : rootPath)
+      let path = worktree ? worktreePath : rootPath
+      let fixtures = (crossProject
+        ? GalleryFixtures.crossProjectGit(sessionId: sessionId, path: path)
+        : GalleryFixtures.git(sessionId: sessionId, path: path))
         .merging(GalleryFixtures.pullRequests) { git, _ in git }
       return GalleryStory(id, size: screen, chrome: true, fixtures: fixtures, setup: { stage in
         await attach(stage)
+        if crossProject { await GalleryFixtures.loadCrossProject(stage.host) }
         await load(stage, sessionId: sessionId, view: view, scope: scope, file: file)
       }) {
         GitPanelStory(sessionId: sessionId, view: view)

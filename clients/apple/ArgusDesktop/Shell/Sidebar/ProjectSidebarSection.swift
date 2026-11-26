@@ -17,7 +17,7 @@ struct ProjectSidebarSection: View {
   let folds: SidebarCollapse
   @State private var confirmingRemove = false
 
-  private var sessions: [RemoteSession] { store.sessionsByRepo[project.repoRoot] ?? [] }
+  private var sessions: [RemoteSession] { store.listedSessions(project.repoRoot) }
   private var root: RemoteSession? { sessions.first { $0.kind == .projectRoot } }
   private var worktrees: [RemoteSession] { sessions.filter { $0.kind != .projectRoot } }
 

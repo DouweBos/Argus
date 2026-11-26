@@ -200,6 +200,7 @@ export * from "./components/Select/Select";
 export * from "./components/RuntimePicker/RuntimePicker";
 export * from "./components/ShortcutCheatsheet/ShortcutCheatsheet";
 export * from "./components/ShortcutsRail/ShortcutsRail";
+export * from "./components/CrossProjectRepoList/CrossProjectRepoList";
 export * from "./components/SidebarBranchRow/SidebarBranchRow";
 export * from "./components/SidebarNav/SidebarNav";
 export * from "./components/StashDialog/StashDialog";

@@ -1,7 +1,10 @@
 package dev.houwert.argus.ui.composer
 
 import dev.houwert.argus.core.stores.ContinueSource
+import dev.houwert.argus.core.stores.CrossProjectFailure
 import dev.houwert.argus.core.stores.HostStore
+import dev.houwert.argus.core.stores.crossProjectCandidates
+import dev.houwert.argus.core.stores.makeCrossProject
 import dev.houwert.argus.core.stores.SideQuestion
 import dev.houwert.argus.core.stores.askSide
 import dev.houwert.argus.core.stores.canContinueElsewhere
@@ -116,6 +119,11 @@ interface ComposerHost {
   suspend fun sendSideToAgent(agentId: String, id: String)
   fun clearSideQuestions(agentId: String)
 
+  /** Linked projects the session could span but doesn't yet. */
+  fun crossProjectCandidates(sessionId: String, linked: List<String>): List<RemoteProject> = emptyList()
+  /** The repositories that failed, or null when nothing was added (already reported). */
+  suspend fun makeCrossProject(sessionId: String, repoRoots: List<String>): List<CrossProjectFailure>? = null
+
   companion object {
     /** One gateway frame carries the upload: `MAX_BASE64_UPLOAD_BYTES` on the host. */
     const val MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024
@@ -126,6 +134,8 @@ fun HostStore.asComposerHost(): ComposerHost = HostComposerHost(this)
 
 /** `HostStore` as a [ComposerHost]; the few calls no core extension has yet go straight to the backend. */
 private class HostComposerHost(private val host: HostStore) : ComposerHost {
+  override fun crossProjectCandidates(sessionId: String, linked: List<String>) = host.crossProjectCandidates(sessionId, linked)
+  override suspend fun makeCrossProject(sessionId: String, repoRoots: List<String>) = host.makeCrossProject(sessionId, repoRoots)
   /** Fetched by [refreshClaudeAccounts] until the account store's port owns the list. */
   private val fetchedAccounts = MutableStateFlow<List<RemoteClaudeAccount>?>(null)
   private val fetchedActive = MutableStateFlow<String?>(null)

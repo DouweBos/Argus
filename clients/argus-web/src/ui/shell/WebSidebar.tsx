@@ -186,7 +186,11 @@ function ProjectSection({
   query: string;
   screen: Screen;
 }) {
-  const sessions = useProjectsStore((s) => s.sessionsByRepo[project.repo_root]);
+  const allSessions = useProjectsStore(
+    (s) => s.sessionsByRepo[project.repo_root],
+  );
+  // A cross-project session's linked repos sit under it, not on their own.
+  const sessions = allSessions?.filter((s) => !s.cross_project_of);
   const agents = useProjectsStore((s) => s.agentsByRepo[project.repo_root]);
   const collapsed = useShellPrefs((s) => s.collapsed.includes(project.repo_root));
   const toggleCollapsed = useShellPrefs((s) => s.toggleCollapsed);

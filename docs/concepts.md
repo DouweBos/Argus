@@ -38,6 +38,12 @@ and they don't share state, processes, or working trees. When a session
 finishes, you merge or PR its branch back to `main` and delete the
 worktree — Argus offers a one-click cleanup for both.
 
+A session can also span several projects — a **cross-project session** —
+with a worktree per repository on the same branch name. Its own worktree
+stays the agent's working directory; the others are opened beside it, and
+each repository is merged or opened as a pull request on its own. See
+[Cross-project sessions](features.md#cross-project-sessions).
+
 ---
 
 ## Worktree

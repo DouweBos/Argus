@@ -18,7 +18,7 @@ struct ProjectView: View {
   /// The session the stacked-session sheet is open for.
   @State private var stackingOn: RemoteSession?
 
-  private var sessions: [RemoteSession] { host.sessionsByRepo[repoRoot] ?? [] }
+  private var sessions: [RemoteSession] { host.listedSessions(repoRoot) }
   /// Shared with Home's card and the iPad sidebar, so a project's fold is the same everywhere.
   private var showingFolded: Bool { router.unfoldedProjects.contains(repoRoot) }
 

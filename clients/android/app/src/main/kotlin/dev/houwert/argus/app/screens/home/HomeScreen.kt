@@ -36,6 +36,7 @@ import dev.houwert.argus.app.telemetry.TelemetryEvent.HomeAction
 import dev.houwert.argus.core.sessions.isArchived
 import dev.houwert.argus.core.sessions.archivedSessions
 import dev.houwert.argus.core.stores.HostStore
+import dev.houwert.argus.core.stores.isLinkedRepo
 import dev.houwert.argus.core.stores.createScratchPad
 import dev.houwert.argus.core.stores.deleteScratchPad
 import dev.houwert.argus.core.stores.loadRecentAgents
@@ -193,7 +194,7 @@ fun HomeScreen() {
           val actions = HomeProjectActions(push, ::newSession, { triageSheet = it }, { projectToRemove = it })
           for (project in projects) {
             homeProjectSection(
-              host, project, sessionsByRepo[project.repoRoot].orEmpty(), grouping.sessionGroups(project.repoRoot), all, gitStatus,
+              host, project, sessionsByRepo[project.repoRoot].orEmpty().filterNot { it.isLinkedRepo }, grouping.sessionGroups(project.repoRoot), all, gitStatus,
               collapsed, unfolded, hasControl, actions,
             )
           }

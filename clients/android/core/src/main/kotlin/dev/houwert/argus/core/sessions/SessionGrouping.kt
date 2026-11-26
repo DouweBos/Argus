@@ -66,5 +66,5 @@ data class SessionGrouping(
 
   /** A project's sessions with their agents, the project root first. */
   fun sessionGroups(repoRoot: String): List<SessionGroup> =
-    SessionGroup.make(sessionsByRepo[repoRoot].orEmpty(), agentsInProject(repoRoot), statusByAgent)
+    SessionGroup.make(sessionsByRepo[repoRoot].orEmpty().filter { it.crossProjectOf == null }, agentsInProject(repoRoot), statusByAgent)
 }

@@ -5,9 +5,12 @@
  * working diff (uncommitted vs HEAD); with control, the land-work card below.
  */
 
+import type { RemoteSession } from "@argus/remote-protocol";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import {
   Button,
+  CrossProjectRepoList,
+  type CrossProjectRepoItem,
   EmptyState,
   FileDiffCard,
   Icons,
@@ -20,6 +23,7 @@ import { appNavigate } from "../routing/router";
 import type { DiffMode as Mode } from "../routing/screens";
 import { useConnectionStore } from "../stores/connection";
 import { useGitStore } from "../stores/git";
+import { useProjectsStore } from "../stores/projects";
 import { ViewFileButton } from "./FileDiffView";
 
 const LandWork = lazy(() =>
@@ -61,6 +65,79 @@ function ChangedFileActions({
   );
 }
 
+type Sessions = Record<string, RemoteSession[]>;
+
+function findSession(byRepo: Sessions, id: string): RemoteSession | undefined {
+  for (const list of Object.values(byRepo)) {
+    const found = list.find((s) => s.id === id);
+    if (found) {
+      return found;
+    }
+  }
+
+  return undefined;
+}
+
+/** Setup first, then where its pull request stands. */
+function repoState(session: RemoteSession | undefined) {
+  if (!session) {
+    return { label: "Loading", tone: "neutral" as const };
+  }
+  if (session.status === "initializing") {
+    return { label: "Setting up", tone: "neutral" as const };
+  }
+  if (session.status === "error") {
+    return { label: "Setup failed", tone: "error" as const };
+  }
+  const pr = session.pull_request;
+  if (!pr) {
+    return null;
+  }
+  if (pr.state === "merged") {
+    return { label: "Merged", tone: "success" as const };
+  }
+  if (pr.state === "closed") {
+    return { label: "Closed", tone: "neutral" as const };
+  }
+
+  return {
+    label: `${pr.state === "draft" ? "Draft" : "PR"} #${pr.number}`,
+    tone: pr.state === "draft" ? ("neutral" as const) : ("accent" as const),
+  };
+}
+
+/** Every repository of the session's cross-project session, its own first; empty for a single-repo one. */
+function crossProjectRepos(
+  byRepo: Sessions,
+  sessionId: string,
+): CrossProjectRepoItem[] {
+  const session = findSession(byRepo, sessionId);
+  const primary = session?.cross_project_of
+    ? findSession(byRepo, session.cross_project_of)
+    : session;
+  if (!primary?.linked_repos?.length) {
+    return [];
+  }
+  const name = (root: string) => root.split("/").filter(Boolean).pop() ?? root;
+
+  return [
+    {
+      sessionId: primary.id,
+      repoRoot: primary.repo_root,
+      name: name(primary.repo_root),
+      branch: primary.branch,
+      state: repoState(primary),
+    },
+    ...primary.linked_repos.map((r) => ({
+      sessionId: r.session_id,
+      repoRoot: r.repo_root,
+      name: name(r.repo_root),
+      branch: r.branch,
+      state: repoState(findSession(byRepo, r.session_id)),
+    })),
+  ];
+}
+
 /** `mode` is the route's: `/git/branch` or `/git/working`. */
 export function ChangesView({
   mode,
@@ -78,6 +155,8 @@ export function ChangesView({
   const loadDiff = useGitStore((s) => s.loadDiff);
   const [diff, setDiff] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const sessionsByRepo = useProjectsStore((s) => s.sessionsByRepo);
+  const repos = crossProjectRepos(sessionsByRepo, sessionId);
 
   const refresh = useCallback(() => {
     loadGitStatus(sessionId).catch(() => {});
@@ -119,6 +198,16 @@ export function ChangesView({
           onChange={onModeChange}
         />
       </div>
+
+      {repos.length > 0 && (
+        <CrossProjectRepoList
+          repos={repos}
+          currentSessionId={sessionId}
+          onSelect={(repo) =>
+            appNavigate({ name: "changes", sessionId: repo.sessionId, mode })
+          }
+        />
+      )}
 
       {status && (
         <div className="aw-changes-status">

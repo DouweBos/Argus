@@ -1,5 +1,6 @@
 package dev.houwert.argus.ui.composer
 
+import dev.houwert.argus.ui.sessions.CrossProjectOffer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -100,6 +101,11 @@ fun PhoneChatInputView(
           host, composer.agentId, handoffAccounts.orEmpty(), if (LimitHandoff.isStalled(status)) runners else emptyList(),
           onContinued = onOpenContinuedAgent, onHandedOff = dropOffer,
         )
+      }
+      val linked by composer.linkedProjects.collectAsState()
+      if (composer.starter == null && linked.isNotEmpty()) {
+        val branch = host.sessionsByRepo.value.values.flatten().firstOrNull { it.id == composer.sessionId }?.branch
+        CrossProjectOffer(host, composer.sessionId, branch, linked)
       }
       composer.dictation.value.failure?.let { failure ->
         Banner(failure, actionLabel = "Dismiss", onAction = { composer.dismissDictationError() })

@@ -25,6 +25,16 @@
           .inlineNavigationTitle()
         },
         GalleryStory("composer/dictation") { DictationStory(size: 34) },
+        // A message links two other projects: the offer to give the session a worktree of each.
+        GalleryStory(
+          "composer/cross-project-offer", fixtures: GalleryFixtures.crossProjectOffer,
+          setup: { await $0.host.loadSessions(repoRoot: GalleryFixtures.argusRoot) }
+        ) {
+          CrossProjectOffer(
+            sessionId: GalleryFixtures.crossProjectOfferSession, linked: GalleryFixtures.crossProjectOfferLinked
+          )
+          .padding(16)
+        },
         GalleryStory("composer/chat", fixtures: GalleryFixtures.composer) { ChatComposerStory() },
         // Two files on the computer and one still uploading.
         GalleryStory("composer/attachments") {

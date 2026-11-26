@@ -500,11 +500,13 @@ public struct Banner: View {
   var action: (() -> Void)?
   /// A close button after the action, for a banner that stays until dismissed.
   var onDismiss: (() -> Void)?
+  /// Text wraps to as many lines as it needs instead of truncating beside an action.
+  var wraps = false
 
   public init(
     text: String, tone: Tone = .warning, title: String? = nil,
     actionLabel: String? = nil, actionTone: ButtonTone = .secondary, action: (() -> Void)? = nil,
-    onDismiss: (() -> Void)? = nil
+    onDismiss: (() -> Void)? = nil, wraps: Bool = false
   ) {
     self.text = text
     self.tone = tone
@@ -513,6 +515,7 @@ public struct Banner: View {
     self.actionTone = actionTone
     self.action = action
     self.onDismiss = onDismiss
+    self.wraps = wraps
   }
 
   public var body: some View {
@@ -524,7 +527,12 @@ public struct Banner: View {
         if let title {
           Text(title).font(.scaled(size: 13, weight: .semibold)).foregroundStyle(tone.color(theme))
         }
-        Text(text).font(.scaled(size: 13)).foregroundStyle(theme.text)
+        if wraps {
+          // Not fixedSize: measured at a window's minimum width that wraps a character a line.
+          Text(text).font(.scaled(size: 13)).foregroundStyle(theme.text).lineLimit(2...5)
+        } else {
+          Text(text).font(.scaled(size: 13)).foregroundStyle(theme.text)
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       if let actionLabel, let action {

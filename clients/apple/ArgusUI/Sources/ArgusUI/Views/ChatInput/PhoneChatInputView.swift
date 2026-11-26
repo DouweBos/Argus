@@ -46,6 +46,9 @@
         {
           LimitHandoffCard(agentId: composer.agentId, accounts: handoffAccounts ?? []) { handoffAccounts = [] }
         }
+        if composer.starter == nil, !composer.linkedProjects.isEmpty {
+          CrossProjectOffer(sessionId: composer.sessionId, linked: composer.linkedProjects)
+        }
         if let failure = composer.dictation.failure {
           Banner(text: failure, actionLabel: "Dismiss") { composer.dismissDictationError() }
         }

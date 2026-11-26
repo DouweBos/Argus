@@ -69,12 +69,15 @@ struct SidebarSessionRows: View {
   private func row(
     _ session: RemoteSession, title: String? = nil, indent: Int? = nil, nesting: SessionStack.Nesting = .none
   ) -> some View {
-    SidebarRow(selected: model.route.sessionId == session.id, enabled: !session.isUnavailable) {
+    // A linked repo's git panel is still its cross-project session's.
+    let routed = model.route.sessionId
+    let selected = routed == session.id || (routed.flatMap { store.session(id: $0)?.crossProjectOf } == session.id)
+    return SidebarRow(selected: selected, enabled: !session.isUnavailable) {
       model.open(session: session.id)
     } content: {
       SidebarSessionRow(
         session: session, agents: store.agents(inSession: session),
-        caption: [caption(session), nesting.caption].compactMap { $0 }.joined(separator: " · ").nilIfEmpty,
+        caption: [caption(session), nesting.caption, session.crossProjectCaption].compactMap { $0 }.joined(separator: " · ").nilIfEmpty,
         title: title, indent: indent ?? nesting.depth, stacked: nesting.depth > 0)
     }
     .contextMenu { SidebarSessionMenu(session: session) }

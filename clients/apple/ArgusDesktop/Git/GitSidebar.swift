@@ -23,6 +23,7 @@ struct GitSidebar: View {
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
       Rectangle().fill(theme.border).frame(height: 1)
+      CrossProjectGitSection(session: session, view: view)
       GitRefsSidebar(
         model: workspace.refsModel, dialogs: actions.dialogContext, presenter: model.gitDialogs,
         selection: Binding(get: { selection }, set: select), host: host(actions)

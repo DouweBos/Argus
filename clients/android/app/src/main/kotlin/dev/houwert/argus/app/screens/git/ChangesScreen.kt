@@ -30,6 +30,7 @@ import dev.houwert.argus.core.git.SessionDiffScope
 import dev.houwert.argus.core.sessions.SessionActivity
 import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.ViewedFiles
+import dev.houwert.argus.core.stores.crossProjectRepos
 import dev.houwert.argus.core.stores.loadDiff
 import dev.houwert.argus.core.stores.loadGitStatus
 import dev.houwert.argus.core.stores.loadSessionTurns
@@ -52,12 +53,14 @@ import dev.houwert.argus.ui.components.LiveRefresh
 import dev.houwert.argus.ui.components.Loading
 import dev.houwert.argus.ui.components.MutedText
 import dev.houwert.argus.ui.components.Screen
+import dev.houwert.argus.ui.components.SectionHeader
 import dev.houwert.argus.ui.components.SegmentedControl
 import dev.houwert.argus.ui.components.StatusDot
 import dev.houwert.argus.ui.components.ViewedProgressBar
 import dev.houwert.argus.ui.components.argusClickable
 import dev.houwert.argus.ui.components.rememberInteraction
 import dev.houwert.argus.ui.icons.Icon as Icons
+import dev.houwert.argus.ui.sessions.CrossProjectRepoList
 import dev.houwert.argus.ui.theme.ArgusTheme
 import dev.houwert.argus.ui.theme.Tone
 import dev.houwert.argus.ui.theme.argusFont
@@ -151,6 +154,12 @@ fun ChangesScreen(sessionId: String, label: String, initialMode: String = "branc
         if (it != (if (isTurn) "turn" else mode)) setMode(it)
       }
       if (isTurn) TurnPicker(mode, turns) { setMode(it) }
+      val repos = host.session(sessionId)?.let { host.crossProjectRepos(it) }.orEmpty()
+      if (repos.isNotEmpty()) {
+        // Each repository lands on its own: its changes, merge and pull request are a screen apiece.
+        SectionHeader("Repositories", count = repos.size)
+        Card { CrossProjectRepoList(repos, sessionId) { router.push(Route.Changes(it.sessionId, it.name)) } }
+      }
       statuses[sessionId]?.let { status ->
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
           StatusDot(if (status.conflictCount > 0) Tone.Warning else Tone.Accent)

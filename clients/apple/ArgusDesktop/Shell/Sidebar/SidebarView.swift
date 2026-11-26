@@ -127,7 +127,7 @@ struct SidebarView: View {
         + (filter.isSearching || folds.isCollapsed(fold) ? CompareGroup.displayOrder(triage.folded) : [])
     }
     let listed = projects.flatMap { project -> [RemoteSession] in
-      let sessions = store.sessionsByRepo[project.repoRoot] ?? []
+      let sessions = store.listedSessions(project.repoRoot)
       let root = sessions.filter { $0.kind == .projectRoot }
       let worktrees = SessionSearch.visibleWorktrees(
         sessions.filter { $0.kind != .projectRoot }, shown: shownSessions,
@@ -141,7 +141,7 @@ struct SidebarView: View {
   private var needsYou: [RemoteSession] {
     let shown = shownSessions
     let worktrees = projects.flatMap { project in
-      (store.sessionsByRepo[project.repoRoot] ?? []).filter {
+      store.listedSessions(project.repoRoot).filter {
         $0.kind != .projectRoot && (shown?.contains($0.id) ?? true)
       }
     }
@@ -167,7 +167,7 @@ struct SidebarView: View {
   private var shownSessions: Set<String>? {
     guard filter.isSearching else { return nil }
     let all = store.projects.flatMap { project in
-      (store.sessionsByRepo[project.repoRoot] ?? []).filter {
+      store.listedSessions(project.repoRoot).filter {
         SessionSearch.matches($0, projectName: project.name, query: filter.query)
       }
     }
@@ -183,7 +183,7 @@ struct SidebarView: View {
       .filter { filter.project == nil || filter.project == $0.repoRoot }
       .filter { project in
         guard let shown else { return true }
-        return (store.sessionsByRepo[project.repoRoot] ?? []).contains { shown.contains($0.id) }
+        return store.listedSessions(project.repoRoot).contains { shown.contains($0.id) }
       }
     return SessionSearch.ordered(narrowed, by: hosts.machines) { model.host(ofProject: $0.repoRoot) }
   }

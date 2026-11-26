@@ -16,7 +16,7 @@ struct HomeProjectSection<Header: View>: View {
   /// The list's own header, above the first card.
   @ViewBuilder let header: Header
 
-  private var sessions: [RemoteSession] { host.sessionsByRepo[project.repoRoot] ?? [] }
+  private var sessions: [RemoteSession] { host.listedSessions(project.repoRoot) }
   private var collapsed: Bool { hasWorktrees && router.collapsedProjects.contains(project.repoRoot) }
   /// With nothing but its root checkout there is nothing to fold: the header is that checkout.
   private var hasWorktrees: Bool { sessions.contains { $0.kind != .projectRoot } }

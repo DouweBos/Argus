@@ -13,6 +13,13 @@
         GalleryStory("git/changes", fixtures: fixtures(worktree), setup: sessions) {
           ChangesView(sessionId: worktree, label: "Merge strategy")
         },
+        // A cross-project session: each repository on its own row, one merged, one setting up.
+        GalleryStory(
+          "git/changes/cross-project", fixtures: GalleryFixtures.crossProjectGit(sessionId: worktree),
+          setup: { await GalleryFixtures.loadCrossProject($0.host) }
+        ) {
+          ChangesView(sessionId: worktree, label: "Merge strategy")
+        },
         GalleryStory("git/changes/last-turn", fixtures: fixtures(worktree), setup: sessions) {
           ChangesView(sessionId: worktree, label: "Merge strategy", mode: "turn")
         },

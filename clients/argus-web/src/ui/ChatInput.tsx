@@ -51,6 +51,7 @@ import {
 } from "./AgentLimits";
 import { BusySendButton, type SendTiming } from "./BusySendButton";
 import { ComposerOverflowMenu } from "./ComposerOverflowMenu";
+import { CrossProjectOffer } from "./CrossProjectOffer";
 import { SideQuestionsDialog } from "./SideQuestionsDialog";
 import { useMentionPicker } from "./useMentionPicker";
 
@@ -546,6 +547,9 @@ export function ChatInput({
 
   const above = (
     <>
+      {linked.length > 0 && (
+        <CrossProjectOffer sessionId={sessionId} linked={linked} />
+      )}
       {usageLimits.open && (
         <AgentLimits agentId={agentId} onDismiss={usageLimits.close} />
       )}

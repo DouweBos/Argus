@@ -53,6 +53,6 @@ extension HostStore {
   /// A project's sessions with their agents, the project root first.
   public func sessionGroups(repoRoot: String) -> [SessionGroup] {
     SessionGroup.make(
-      sessions: sessionsByRepo[repoRoot] ?? [], agents: agents(inProject: repoRoot), live: statusByAgent)
+      sessions: listedSessions(repoRoot), agents: agents(inProject: repoRoot), live: statusByAgent)
   }
 }

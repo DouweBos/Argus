@@ -166,7 +166,7 @@ private struct HomeProjectCard: View {
 
   var body: some View {
     let agents = store.agentsByRepo[project.repoRoot] ?? []
-    let sessions = (store.sessionsByRepo[project.repoRoot] ?? []).filter { $0.kind == .worktree }
+    let sessions = store.listedSessions(project.repoRoot).filter { $0.kind == .worktree }
     ProjectCard(project: project, agents: agents, sessions: sessions.count, highlighted: hovering) {
       if model.host(ofProject: project.repoRoot) != Hosts.local { HostBadge(hostId: model.host(ofProject: project.repoRoot)) }
       Button {

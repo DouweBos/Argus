@@ -267,6 +267,36 @@ A real git workflow lives inside Argus:
 
 ---
 
+## Cross-project sessions
+
+One change often spans repositories — an API and the app that calls it. Link
+the other project in a message's composer and Argus offers to make the
+session a **cross-project session**: each linked project gets a git worktree
+on the session's branch name (an existing branch of that name is checked
+out), set up by that project's own `.argus.json`. A project that was only a
+related project is added to the sidebar, since it now holds a session.
+
+- **The agent works in all of them.** Its working directory stays the
+  session's own worktree, so setup, terminals, run commands and the runtime
+  views behave exactly as before; the other worktrees are opened beside it
+  (`--add-dir` for Claude Code, writable roots for Codex), and its prompt
+  lists every repository's worktree and branch. Idle agents restart onto
+  them right away; a busy one picks them up on its next start.
+- **Each repository lands on its own.** The Mac's git panel lists the
+  repositories above the refs, and the phone's Changes screen does the same;
+  picking one opens that repository's changes, commit, push, merge and pull
+  request. A merge or pull request in one never touches another.
+- **One session in the lists.** The linked repositories' worktrees sit under
+  the session rather than as sessions of their own; its sidebar row says
+  how many repositories it spans.
+- **Deleting it cleans up everywhere**: every repository's worktree (and,
+  when asked, its branch) goes with the session. Deleting one linked
+  repository's worktree on its own unlinks just that one.
+
+Single-repo sessions are unchanged on disk and on the wire; an older app sees
+a cross-project session as its first repository, and each linked repository
+as a session of its own project.
+
 ## Remote access
 
 Reach your projects and agents from a phone or any browser. Argus runs a

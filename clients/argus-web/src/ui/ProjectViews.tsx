@@ -233,7 +233,9 @@ export function Project({
 }) {
   const connection = useConnectionStore((s) => s.connection);
   const agents = useProjectsStore((s) => s.agentsByRepo[repoRoot]);
-  const sessions = useProjectsStore((s) => s.sessionsByRepo[repoRoot]);
+  const allSessions = useProjectsStore((s) => s.sessionsByRepo[repoRoot]);
+  // A cross-project session's linked repos sit under it, not on their own.
+  const sessions = allSessions?.filter((s) => !s.cross_project_of);
   const loadAgents = useProjectsStore((s) => s.loadAgents);
   const loadSessions = useProjectsStore((s) => s.loadSessions);
   const loadRecentAgents = useProjectsStore((s) => s.loadRecentAgents);

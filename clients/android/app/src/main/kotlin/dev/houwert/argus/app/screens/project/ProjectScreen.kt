@@ -43,6 +43,7 @@ import dev.houwert.argus.core.sessions.StartWorkspace
 import dev.houwert.argus.core.stores.HostStore
 import dev.houwert.argus.core.stores.deleteChatHistory
 import dev.houwert.argus.core.stores.grouping
+import dev.houwert.argus.core.stores.isLinkedRepo
 import dev.houwert.argus.core.stores.groupingFlow
 import dev.houwert.argus.core.stores.loadAgents
 import dev.houwert.argus.core.stores.loadGitStatus
@@ -96,7 +97,7 @@ fun ProjectScreen(repoRoot: String, name: String) {
   var stackingOn by remember { mutableStateOf<RemoteSession?>(null) }
   var searchingChats by remember { mutableStateOf(false) }
   var showingStopped by remember { mutableStateOf(false) }
-  val sessions = sessionsByRepo[repoRoot].orEmpty()
+  val sessions = sessionsByRepo[repoRoot].orEmpty().filterNot { it.isLinkedRepo }
   val groups = grouping.sessionGroups(repoRoot)
   val showingFolded = repoRoot in unfoldedSet
   val live = sessions.map { it.branch }.toSet()

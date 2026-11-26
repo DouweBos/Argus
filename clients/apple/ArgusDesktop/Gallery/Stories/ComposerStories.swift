@@ -69,6 +69,16 @@
           LimitHandoffCard(agentId: "a-1", accounts: handoffAccounts) {}
             .padding(12)
         },
+        // A message links two other projects: the offer to give the session a worktree of each.
+        GalleryStory(
+          "composer/cross-project-offer", size: CGSize(width: 760, height: 0), fixtures: GalleryFixtures.crossProjectOffer,
+          setup: { await $0.host.loadSessions(repoRoot: GalleryFixtures.argusRoot) }
+        ) {
+          CrossProjectOffer(
+            sessionId: GalleryFixtures.crossProjectOfferSession, linked: GalleryFixtures.crossProjectOfferLinked
+          )
+          .padding(12)
+        },
         // An agent running on Work while the computer's default is Personal; then a start composer.
         GalleryStory(
           "composer/account-menu/running", size: CGSize(width: 520, height: 0),
