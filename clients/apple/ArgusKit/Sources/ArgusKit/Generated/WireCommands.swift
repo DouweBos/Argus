@@ -9445,6 +9445,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SkillExportParams: Codable, Sendable {
+      public var path: String
+      public var dest: String
+
+      enum CodingKeys: String, CodingKey {
+        case path = "path"
+        case dest = "dest"
+      }
+
+      public init(path: String, dest: String) {
+        self.path = path
+        self.dest = dest
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(path, forKey: .path)
+        try c.encode(dest, forKey: .dest)
+      }
+    }
+
+    public struct SkillExportResult: Codable, Sendable {
+      public var path: String
+
+      enum CodingKeys: String, CodingKey {
+        case path = "path"
+      }
+
+      public init(path: String) {
+        self.path = path
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(path, forKey: .path)
+      }
+    }
+
     public struct SkillInstallParams: Codable, Sendable {
       public var input: SkillInstallInput
 
@@ -9493,6 +9531,23 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(removed, forKey: .removed)
+      }
+    }
+
+    public struct SkillShareParams: Codable, Sendable {
+      public var input: SkillShareInput
+
+      enum CodingKeys: String, CodingKey {
+        case input = "input"
+      }
+
+      public init(input: SkillShareInput) {
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(input, forKey: .input)
       }
     }
 
@@ -14374,6 +14429,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum SkillExport: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.SkillExportParams
+      public typealias Result = ArgusProtocol.CommandsTypes.SkillExportResult
+      public static let name = "skill_export"
+      public static let tier = "admin"
+    }
+
     public enum SkillInstall: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.SkillInstallParams
       public typealias Result = ArgusProtocol.SkillInstallResult
@@ -14385,6 +14447,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.SkillRemoveParams
       public typealias Result = ArgusProtocol.CommandsTypes.SkillRemoveResult
       public static let name = "skill_remove"
+      public static let tier = "admin"
+    }
+
+    public enum SkillShare: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.SkillShareParams
+      public typealias Result = ArgusProtocol.SkillShareResult
+      public static let name = "skill_share"
       public static let tier = "admin"
     }
 

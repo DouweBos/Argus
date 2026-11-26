@@ -10,6 +10,7 @@ struct SkillsScreen: View {
   @State private var skills: SkillsModel?
   @State private var installing: Bool
   @State private var removing: ArgusProtocol.Skill?
+  @State private var sharing: SkillShareModel?
   private let url: String?
 
   init(installing: Bool = false, url: String? = nil) {
@@ -48,6 +49,7 @@ struct SkillsScreen: View {
     } message: { skill in
       Text("Deletes \(skill.path). \(SkillsModel.runnerLabel(skill.runner)) stops loading it.")
     }
+    .argusSheet(item: $sharing) { SkillShareSheet(share: $0) }
     .task(id: ObjectIdentifier(model.store)) {
       if skills?.host !== model.store { skills = SkillsModel(host: model.store) }
       await skills?.refresh()
@@ -94,7 +96,10 @@ struct SkillsScreen: View {
       ForEach(skills.sections) { section in
         Section {
           ForEach(section.skills, id: \.path) { skill in
-            SkillRow(skill: skill, skills: skills) { removing = skill }
+            SkillRow(
+              skill: skill, skills: skills, local: model.hosts.focused == Hosts.local,
+              onShare: { sharing = SkillShareModel(skill: skill, host: skills.host) },
+              onRemove: { removing = skill })
           }
         } header: {
           Text(section.title)
@@ -113,6 +118,9 @@ private struct SkillRow: View {
   @Environment(\.theme) private var theme
   let skill: ArgusProtocol.Skill
   let skills: SkillsModel
+  /// Export writes the file where this Mac's save panel picks, so only for this Mac's skills.
+  let local: Bool
+  let onShare: () -> Void
   let onRemove: () -> Void
 
   var body: some View {
@@ -160,10 +168,24 @@ private struct SkillRow: View {
     }
   }
 
+  private func export() async {
+    guard let dest = await SkillPanels.chooseExportDestination(name: URL(fileURLWithPath: skill.path).lastPathComponent)
+    else { return }
+    if let error = await SkillShareModel.export(skill, to: dest.path, host: skills.host) {
+      skills.report(error)
+    } else {
+      skills.report(notice: "Saved \(dest.lastPathComponent).")
+    }
+  }
+
   @ViewBuilder
   private var actions: some View {
     Button("Update") { Task { await skills.update(skill) } }
       .disabled(!SkillsModel.canUpdate(skill))
+    Button("Share as Gist or Repository", action: onShare)
+    if local {
+      Button("Export as .skill File") { Task { await export() } }
+    }
     Button("Copy Path") {
       NSPasteboard.general.clearContents()
       NSPasteboard.general.setString(skill.path, forType: .string)

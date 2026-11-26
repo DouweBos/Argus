@@ -2894,6 +2894,11 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class SkillsShareParams(
+    @SerialName("input") val input: SkillShareInput,
+  )
+
+  @Serializable
   data class SkillsUpdateParams(
     @SerialName("path") val path: String,
   )
@@ -3693,6 +3698,8 @@ object Methods {
   object SkillsList : RemoteCommand<MethodsTypes.SkillsListParams, MethodsTypes.SkillsListResult>("skills.list", "control", serializer(), serializer())
 
   object SkillsRemove : RemoteCommand<MethodsTypes.SkillsRemoveParams, MethodsTypes.SkillsRemoveResult>("skills.remove", "control", serializer(), serializer())
+
+  object SkillsShare : RemoteCommand<MethodsTypes.SkillsShareParams, SkillShareResult>("skills.share", "control", serializer(), serializer())
 
   object SkillsUpdate : RemoteCommand<MethodsTypes.SkillsUpdateParams, SkillUpdateResult>("skills.update", "control", serializer(), serializer())
 

@@ -121,6 +121,12 @@ public final class SkillsModel {
 
   public func dismissNotice() { notice = nil }
 
+  /// An outcome the screen worked out itself, such as an export.
+  public func report(_ error: String? = nil, notice: String? = nil) {
+    self.error = error
+    self.notice = notice
+  }
+
   private func fail(_ what: String, _ error: Error) {
     self.error = "\(what): \(HostStore.describe(error))"
     host.hooks.errorReported(error, "skills")

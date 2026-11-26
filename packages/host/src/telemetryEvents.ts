@@ -777,6 +777,12 @@ export interface EventMap {
     runner: "claude-code" | "codex";
     scope: "project" | "user";
   };
+  skill_shared: {
+    /** A public gist or repository; false for a secret gist, a private repository or a file. */
+    public: boolean;
+    success: boolean;
+    target: "file" | "gist" | "repo";
+  };
   skill_updated: {
     /** False when the source had nothing new. */
     changed: boolean;

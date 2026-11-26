@@ -11,6 +11,7 @@ struct SkillsView: View {
   @Environment(Router.self) private var router
   @State private var model: SkillsModel?
   @State private var removing: ArgusProtocol.Skill?
+  @State private var sharing: SkillShareModel?
 
   var body: some View {
     let phase = model?.phase ?? .loading
@@ -24,7 +25,9 @@ struct SkillsView: View {
         ForEach(model.sections) { section in
           Section(section.title) {
             ForEach(section.skills, id: \.path) { skill in
-              SkillRowView(skill: skill, model: model, control: host.hasControl) { removing = skill }
+              SkillRowView(
+                skill: skill, model: model, control: host.hasControl,
+                onShare: { sharing = SkillShareModel(skill: skill, host: host) }, onRemove: { removing = skill })
             }
           }
         }
@@ -60,6 +63,7 @@ struct SkillsView: View {
     } message: { skill in
       Text("Deletes its folder on the computer. \(SkillsModel.runnerLabel(skill.runner)) stops loading it.")
     }
+    .sheet(item: $sharing) { SkillShareView(share: $0) }
     .refreshable { await model?.refresh() }
     .task(id: ObjectIdentifier(host)) {
       if model?.host !== host { model = SkillsModel(host: host) }
@@ -77,6 +81,7 @@ private struct SkillRowView: View {
   let skill: ArgusProtocol.Skill
   let model: SkillsModel
   let control: Bool
+  let onShare: () -> Void
   let onRemove: () -> Void
 
   var body: some View {
@@ -124,6 +129,69 @@ private struct SkillRowView: View {
   private var actions: some View {
     Button { Task { await model.update(skill) } } label: { Label("Update", systemImage: Icon.refresh) }
       .disabled(!SkillsModel.canUpdate(skill))
+    Button(action: onShare) { Label("Share", systemImage: Icon.share) }
     Button(role: .destructive, action: onRemove) { Label("Remove", systemImage: Icon.trash) }
+  }
+}
+
+/// Share a skill as a gist or a GitHub repository through the computer's `gh`,
+/// then hand its link to the share sheet. A `.skill` file is the Mac's.
+struct SkillShareView: View {
+  @Environment(\.theme) private var theme
+  @Environment(\.dismiss) private var dismiss
+  @Bindable var share: SkillShareModel
+
+  var body: some View {
+    NavigationStack {
+      List {
+        if let url = share.url {
+          Section {
+            Text(url).font(.scaled(size: 14, design: .monospaced)).textSelection(.enabled)
+            if let link = URL(string: url) {
+              ShareLink(item: link) { Label("Share Link", systemImage: Icon.share) }
+            }
+          } header: {
+            Text("Published")
+          } footer: {
+            Text("Anyone with access can install it by pasting this link into Install Skill.")
+          }
+        } else {
+          if let error = share.error {
+            Banner(text: error, tone: .danger).listRowBackground(Color.clear)
+          }
+          Section {
+            Picker("As", selection: $share.target) {
+              ForEach(SkillShareModel.Target.allCases, id: \.self) { Text($0.label).tag($0) }
+            }
+            Picker("Visibility", selection: $share.isPublic) {
+              Text(share.visibilityLabel.secret).tag(false)
+              Text(share.visibilityLabel.open).tag(true)
+            }
+            if share.target == .repo {
+              TextField("Repository", text: $share.repoName, prompt: Text(share.folderName).foregroundStyle(theme.textMuted))
+                .font(.scaled(size: 15, design: .monospaced))
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            }
+          } footer: {
+            Text(share.hint)
+          }
+        }
+      }
+      .disabled(share.sharing)
+      .navigationTitle("Share \(share.skill.name)")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button(share.url == nil ? "Cancel" : "Done") { dismiss() }
+        }
+        if share.url == nil {
+          ToolbarItem(placement: .confirmationAction) {
+            Button(share.sharing ? "Publishing" : "Publish") { Task { await share.share() } }
+              .disabled(share.sharing)
+          }
+        }
+      }
+    }
   }
 }

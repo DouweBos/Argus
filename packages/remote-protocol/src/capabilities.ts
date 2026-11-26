@@ -406,6 +406,7 @@ export const REMOTE_METHODS = {
   "skills.install": "control",
   "skills.update": "control",
   "skills.remove": "control",
+  "skills.share": "control",
   /** Which integrations the computer has connected, and as whom. */
   "integrations.list": "monitor",
   /** A key typed on the device goes to the computer's secret store and never

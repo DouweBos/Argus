@@ -20664,6 +20664,67 @@ extension ArgusProtocol {
     public static let user = SkillScope(rawValue: "user")
   }
 
+  public struct SkillShareInput: Codable, Sendable {
+    public var path: String
+    public var target: SkillShareTarget
+    public var `public`: Bool
+    public var repoName: String?
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+      case target = "target"
+      case `public` = "public"
+      case repoName = "repo_name"
+    }
+
+    public init(path: String, target: SkillShareTarget, public public_: Bool, repoName: String? = nil) {
+      self.path = path
+      self.target = target
+      self.`public` = public_
+      self.repoName = repoName
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+      try c.encode(target, forKey: .target)
+      try c.encode(`public`, forKey: .public)
+      try c.encode(repoName, forKey: .repoName)
+    }
+  }
+
+  public struct SkillShareResult: Codable, Sendable {
+    public var url: String
+
+    enum CodingKeys: String, CodingKey {
+      case url = "url"
+    }
+
+    public init(url: String) {
+      self.url = url
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(url, forKey: .url)
+    }
+  }
+
+  public struct SkillShareTarget: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let gist = SkillShareTarget(rawValue: "gist")
+    public static let repo = SkillShareTarget(rawValue: "repo")
+  }
+
   public struct SkillSource: Codable, Sendable {
     public var kind: SkillSourceKind
     public var location: String

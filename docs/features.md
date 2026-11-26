@@ -452,6 +452,14 @@ changed. A project skill's record is checked in with it, so teammates can
 update it too. **Remove** deletes the folder after asking. Installing,
 updating and removing from a phone needs control.
 
+**Share** publishes a skill through the computer's `gh` as a gist (secret or
+public; a gist holds no folders, so a skill with `scripts/` or references goes
+to a repository) or as a new GitHub repository (private or public), and hands
+back its link, which Install Skill takes as is. On the Mac, **Export as .skill
+File** saves it as a zip anyone can install from a file. The skill's `.git` and
+`.argus-skill.json` are left out of all three. Sharing from a phone needs
+control.
+
 ---
 
 ## Blueprints

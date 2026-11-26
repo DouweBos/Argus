@@ -53,4 +53,15 @@ struct SkillsModelTests {
     install.repoRoot = install.projects.first?.repoRoot
     #expect(install.canInstall)
   }
+
+  @Test("share returns the link Install Skill takes")
+  func share() async throws {
+    let skills = await model(GalleryFixtures.skillShared)
+    let share = SkillShareModel(skill: try #require(skills.skills.first), host: skills.host)
+    #expect(share.visibilityLabel.secret == "Secret")
+    share.target = .repo
+    #expect(share.visibilityLabel.secret == "Private")
+    #expect(await share.share())
+    #expect(share.url == "https://gist.github.com/houwert/aa5a315d61ae9438b18d")
+  }
 }

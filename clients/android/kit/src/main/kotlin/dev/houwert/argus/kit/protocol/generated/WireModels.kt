@@ -7657,6 +7657,31 @@ value class SkillScope(val rawValue: String) {
 }
 
 @Serializable
+data class SkillShareInput(
+  @SerialName("path") val path: String,
+  @SerialName("target") val target: SkillShareTarget,
+  @SerialName("public") val public: Boolean,
+  @SerialName("repo_name") @EncodeDefault val repoName: String? = null,
+)
+
+@Serializable
+data class SkillShareResult(
+  @SerialName("url") val url: String,
+)
+
+@Serializable
+@JvmInline
+value class SkillShareTarget(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val gist = SkillShareTarget("gist")
+    val repo = SkillShareTarget("repo")
+    val entries: List<SkillShareTarget> = listOf(gist, repo)
+  }
+}
+
+@Serializable
 data class SkillSource(
   @SerialName("kind") val kind: SkillSourceKind,
   @SerialName("location") val location: String,

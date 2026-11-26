@@ -75,4 +75,13 @@ class SkillsModelTest {
     install.repoRoot.value = "/p/tally"
     assertTrue(install.canInstall)
   }
+
+  @Test fun shareReturnsTheLink() = runTest {
+    val (model, backend) = model()
+    backend.reply(Methods.SkillsShare, """{"url":"https://gist.github.com/octo/abc1234"}""")
+    val share = SkillShareModel(model.skills.value.first { it.name == "zeta" }, model.host)
+    assertEquals("zeta", share.folderName)
+    assertTrue(share.share())
+    assertEquals("https://gist.github.com/octo/abc1234", share.url.value)
+  }
 }

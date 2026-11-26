@@ -275,6 +275,7 @@ import {
   updateSkill,
   viewSkills,
 } from "../skills/install";
+import { shareSkill } from "../skills/share";
 import { slackManifestJson } from "../slack/manifest";
 import { remoteSlackStatus, slackOverview } from "../slack/status";
 import {
@@ -3368,6 +3369,11 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const { path } = parse("skills.remove", params);
 
     return await control(() => removeSkill(path));
+  },
+  "skills.share": async (params) => {
+    const { input } = parse("skills.share", params);
+
+    return await control(() => shareSkill(input));
   },
   "blueprints.draft": async (params) => {
     const { paths } = parse("blueprints.draft", params);

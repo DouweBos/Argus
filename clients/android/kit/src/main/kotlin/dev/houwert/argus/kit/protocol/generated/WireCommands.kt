@@ -2857,6 +2857,17 @@ object CommandsTypes {
   )
 
   @Serializable
+  data class SkillExportParams(
+    @SerialName("path") val path: String,
+    @SerialName("dest") val dest: String,
+  )
+
+  @Serializable
+  data class SkillExportResult(
+    @SerialName("path") val path: String,
+  )
+
+  @Serializable
   data class SkillInstallParams(
     @SerialName("input") val input: SkillInstallInput,
   )
@@ -2869,6 +2880,11 @@ object CommandsTypes {
   @Serializable
   data class SkillRemoveResult(
     @SerialName("removed") val removed: Boolean,
+  )
+
+  @Serializable
+  data class SkillShareParams(
+    @SerialName("input") val input: SkillShareInput,
   )
 
   @Serializable
@@ -4267,9 +4283,13 @@ object Commands {
 
   object SimulatorTouch : RemoteCommand<CommandsTypes.SimulatorTouchParams, IgnoredResult>("simulator_touch", "admin", serializer(), serializer())
 
+  object SkillExport : RemoteCommand<CommandsTypes.SkillExportParams, CommandsTypes.SkillExportResult>("skill_export", "admin", serializer(), serializer())
+
   object SkillInstall : RemoteCommand<CommandsTypes.SkillInstallParams, SkillInstallResult>("skill_install", "admin", serializer(), serializer())
 
   object SkillRemove : RemoteCommand<CommandsTypes.SkillRemoveParams, CommandsTypes.SkillRemoveResult>("skill_remove", "admin", serializer(), serializer())
+
+  object SkillShare : RemoteCommand<CommandsTypes.SkillShareParams, SkillShareResult>("skill_share", "admin", serializer(), serializer())
 
   object SkillUpdate : RemoteCommand<CommandsTypes.SkillUpdateParams, SkillUpdateResult>("skill_update", "admin", serializer(), serializer())
 

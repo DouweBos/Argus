@@ -29,6 +29,7 @@ import dev.houwert.argus.app.LocalAppStore
 import dev.houwert.argus.app.LocalRouter
 import dev.houwert.argus.app.navigation.Route
 import dev.houwert.argus.app.screens.inbox.TopBarScaffold
+import dev.houwert.argus.core.skills.SkillShareModel
 import dev.houwert.argus.core.skills.SkillsModel
 import dev.houwert.argus.kit.net.Transport
 import dev.houwert.argus.kit.protocol.generated.Skill
@@ -69,6 +70,7 @@ fun SkillsScreen() {
   val notice by model.notice.collectAsState()
   val busy by model.busy.collectAsState()
   var removing by remember { mutableStateOf<Skill?>(null) }
+  var sharing by remember { mutableStateOf<SkillShareModel?>(null) }
 
   LiveRefresh(enabled = connection == Transport.State.Ready) { model.refresh() }
 
@@ -98,6 +100,7 @@ fun SkillsScreen() {
                 skill, busy = skill.path in busy,
                 actions = if (!hasControl) emptyList() else listOfNotNull(
                   if (SkillsModel.canUpdate(skill)) MenuAction("Update", ArgusIcon.refresh) { scope.launch { model.update(skill) } } else null,
+                  MenuAction("Share", ArgusIcon.share) { sharing = SkillShareModel(skill, host) },
                   MenuAction("Remove", ArgusIcon.trash, destructive = true) { removing = skill },
                 ),
               )
@@ -107,6 +110,8 @@ fun SkillsScreen() {
       }
     }
   }
+
+  sharing?.let { SkillShareDialog(it, onDismiss = { sharing = null }) }
 
   removing?.let { skill ->
     ConfirmDialog(

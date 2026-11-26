@@ -83,4 +83,13 @@ extension GalleryFixtures {
     ])
     return fixtures
   }
+
+  /// Share, published.
+  public static var skillShared: [String: String] {
+    var fixtures = skillsList
+    fixtures[ArgusProtocol.Methods.SkillsShare.name] = GalleryJSON.encode([
+      "url": "https://gist.github.com/houwert/aa5a315d61ae9438b18d"
+    ])
+    return fixtures
+  }
 }

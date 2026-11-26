@@ -85,3 +85,23 @@ export const SkillUpdateResult = z.object({
   changed: z.boolean(),
 });
 export type SkillUpdateResult = z.infer<typeof SkillUpdateResult>;
+
+/** Where Share publishes a skill: a gist, or a new GitHub repository. */
+export const SkillShareTarget = z.enum(["gist", "repo"]);
+export type SkillShareTarget = z.infer<typeof SkillShareTarget>;
+
+export const SkillShareInput = z.object({
+  path: z.string(),
+  target: SkillShareTarget,
+  /** A public gist or repository; otherwise a secret gist or a private repository. */
+  public: z.boolean(),
+  /** For a repository; empty uses the skill's folder name. */
+  repo_name: z.string().nullable(),
+});
+export type SkillShareInput = z.infer<typeof SkillShareInput>;
+
+export const SkillShareResult = z.object({
+  /** The gist or repository, a link Install Skill takes. */
+  url: z.string(),
+});
+export type SkillShareResult = z.infer<typeof SkillShareResult>;

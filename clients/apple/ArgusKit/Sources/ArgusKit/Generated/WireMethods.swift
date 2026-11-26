@@ -9205,6 +9205,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SkillsShareParams: Codable, Sendable {
+      public var input: SkillShareInput
+
+      enum CodingKeys: String, CodingKey {
+        case input = "input"
+      }
+
+      public init(input: SkillShareInput) {
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
     public struct SkillsUpdateParams: Codable, Sendable {
       public var path: String
 
@@ -11701,6 +11718,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SkillsRemoveParams
       public typealias Result = ArgusProtocol.MethodsTypes.SkillsRemoveResult
       public static let name = "skills.remove"
+    }
+
+    public enum SkillsShare: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SkillsShareParams
+      public typealias Result = ArgusProtocol.SkillShareResult
+      public static let name = "skills.share"
     }
 
     public enum SkillsUpdate: RemoteCommand {

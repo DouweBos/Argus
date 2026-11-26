@@ -16,6 +16,8 @@
         GalleryStory("skills/install/replace", fixtures: GalleryFixtures.skillInstallConflict, setup: projects) {
           InstallStory(conflict: true)
         },
+        GalleryStory("skills/share", fixtures: GalleryFixtures.skillShared) { ShareStory() },
+        GalleryStory("skills/share/published", fixtures: GalleryFixtures.skillShared) { ShareStory(published: true) },
       ]
     }
 
@@ -43,6 +45,27 @@
         }
         if conflict { await next.install() }
         install = next
+      }
+    }
+  }
+
+  /// The share sheet for the first fixture skill, published when the story asks.
+  private struct ShareStory: View {
+    @Environment(HostStore.self) private var host
+    var published = false
+    @State private var share: SkillShareModel?
+
+    var body: some View {
+      Group {
+        if let share { SkillShareView(share: share) } else { Color.clear }
+      }
+      .task {
+        let skills = SkillsModel(host: host)
+        await skills.refresh()
+        guard let skill = skills.skills.first else { return }
+        let next = SkillShareModel(skill: skill, host: host)
+        if published { await next.share() }
+        share = next
       }
     }
   }

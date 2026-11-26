@@ -44,12 +44,12 @@ export interface SkillEnv {
   repoRoots: () => Iterable<string>;
 }
 
-const realEnv = (): SkillEnv => ({
+export const skillEnv = (): SkillEnv => ({
   homes: skillHomes(),
   repoRoots: () => appState.repoRoots,
 });
 
-export function listSkills(env: SkillEnv = realEnv()): Skill[] {
+export function listSkills(env: SkillEnv = skillEnv()): Skill[] {
   return discoverSkills(allSkillRoots(env.repoRoots(), env.homes));
 }
 
@@ -326,7 +326,7 @@ function guessKind(input: SkillInstallInput): SkillSourceKind {
 
 export async function installSkill(
   input: SkillInstallInput,
-  env: SkillEnv = realEnv(),
+  env: SkillEnv = skillEnv(),
 ): Promise<SkillInstallResult> {
   const props = {
     source_kind: guessKind(input),
@@ -400,7 +400,7 @@ async function install(
 }
 
 /** A skill the list shows, so a path can't name some other folder. */
-function knownSkill(
+export function knownSkill(
   skillPath: string,
   env: SkillEnv,
 ): { skill: Skill; root: SkillRoot } {
@@ -426,7 +426,7 @@ const FROM: Record<SkillSourceKind, SkillInstallInput["from"]> = {
 
 export async function updateSkill(
   skillPath: string,
-  env: SkillEnv = realEnv(),
+  env: SkillEnv = skillEnv(),
 ): Promise<SkillUpdateResult> {
   const { root } = knownSkill(skillPath, env);
   const source = readManifest(skillPath);
@@ -487,7 +487,7 @@ async function update(
 
 export function removeSkill(
   skillPath: string,
-  env: SkillEnv = realEnv(),
+  env: SkillEnv = skillEnv(),
 ): { removed: boolean } {
   const { skill } = knownSkill(skillPath, env);
   fs.rmSync(skillPath, { recursive: true, force: true });

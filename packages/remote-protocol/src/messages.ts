@@ -116,6 +116,8 @@ import {
   Skill,
   SkillInstallInput,
   SkillInstallResult,
+  SkillShareInput,
+  SkillShareResult,
   SkillUpdateResult,
 } from "./models/skills";
 import {
@@ -1070,6 +1072,8 @@ export const MethodParams = {
   /** Fetches the recorded source again. */
   "skills.update": z.object({ path: z.string() }),
   "skills.remove": z.object({ path: z.string() }),
+  /** Publishes it as a gist or a GitHub repository through the computer's `gh`. */
+  "skills.share": z.object({ input: SkillShareInput }),
   "integrations.list": z.object({}),
   /** The key goes to the computer's secret store once the service accepts
    *  it; no answer ever carries it back. */
@@ -1675,6 +1679,7 @@ export const MethodResult = {
   "skills.install": SkillInstallResult,
   "skills.update": SkillUpdateResult,
   "skills.remove": z.object({ removed: z.boolean() }),
+  "skills.share": SkillShareResult,
   "integrations.list": z.object({ integrations: z.array(IntegrationStatus) }),
   /** `claim_code` is always null here. `status` is the first workspace, for
    *  clients from before there were several. */

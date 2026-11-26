@@ -280,6 +280,7 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `skills_viewed`   | host   | The Skills screen read the skills on the computer, from any app                     | `count_bucket` (`0`, `1-5`, `6-20`, `21+`), `installed_count` — how many were installed through Argus                                                                         |
 | `skill_installed` | host   | A skill install finished or failed (not when it stopped to ask about replacing one) | `source_kind` (`git`, `gist`, `folder`, `archive`), `scope` (`user`, `project`), `runner` (`claude-code`, `codex`), `overwrote` — it replaced a skill of that name, `success` |
 | `skill_updated`   | host   | Update fetched a skill's source again                                               | `source_kind`, `changed` — false when the source had nothing new, `success`                                                                                                   |
+| `skill_shared`    | host   | A skill was saved as a `.skill` file or published as a gist or a GitHub repository  | `target` (`file`, `gist`, `repo`), `public` — a public gist or repository, `success`                                                                                          |
 | `skill_removed`   | host   | A skill was removed                                                                 | `scope`, `runner`, `installed` — false for a skill Argus didn't install                                                                                                       |
 
 ## Simulators

@@ -333,6 +333,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "skills.install": DENIED,
   "skills.update": DENIED,
   "skills.remove": DENIED,
+  "skills.share": DENIED,
   // The host owner's Linear account; a guest has no claim on it.
   "integrations.list": DENIED,
   "integrations.connect_key": DENIED,
