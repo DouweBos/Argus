@@ -133,6 +133,8 @@ struct FileView: View {
       } else {
         Screen { EmptyState(icon: Icon.file, title: "Can't open this PDF", body: "It may be damaged or encrypted.") }
       }
+    } else if preview == .office {
+      QuickLookFileView(data: data, name: shownPath)
     } else {
       ImageFilePreview(data: data, path: shownPath)
     }

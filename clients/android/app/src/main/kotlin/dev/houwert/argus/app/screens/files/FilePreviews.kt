@@ -125,6 +125,10 @@ private fun worktreeDocument(host: HostStore, sessionId: String, path: String): 
 /** A PDF's pages or an image (an SVG drawn by the diagram renderer), from bytes the host read. */
 @Composable
 internal fun BinaryFilePreview(kind: FilePreviewKind, path: String, bytes: ByteArray, onShown: () -> Unit) {
+  if (kind == FilePreviewKind.Office) {
+    OfficeFilePreview(path, bytes, onShown)
+    return
+  }
   if (kind == FilePreviewKind.Pdf) {
     LaunchedEffect(Unit) { onShown() }
     PdfDocumentView(bytes, Modifier.fillMaxSize())

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
   <cache-path name="camera" path="camera/" />
+  <!-- Office documents from a worktree, handed to another app to open read-only. -->
+  <cache-path name="previews" path="previews/" />
 </paths>

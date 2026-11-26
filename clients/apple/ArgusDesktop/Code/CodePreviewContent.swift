@@ -121,7 +121,7 @@ private struct CodeHTMLPreview: View {
   }
 }
 
-/// A PDF or an image, in place of the editor.
+/// A PDF, an image or an Office document, in place of the editor.
 struct CodeBinaryContent: View {
   let file: CodeFile
   let data: Data
@@ -136,6 +136,8 @@ struct CodeBinaryContent: View {
         } else {
           EmptyState(icon: "doc.questionmark", title: "Can't open this PDF", body: "It may be damaged or encrypted.")
         }
+      case .office:
+        QuickLookFileView(data: data, name: file.path)
       default:
         ImageFilePreview(data: data, path: file.path)
       }

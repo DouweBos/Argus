@@ -15,6 +15,9 @@ class FilePreviewKindTest {
     assertEquals(FilePreviewKind.Html, FilePreviewKind.of("site/index.HTML"))
     assertEquals(FilePreviewKind.Html, FilePreviewKind.of("a.htm"))
     assertEquals(FilePreviewKind.Notebook, FilePreviewKind.of("analysis/Explore.ipynb"))
+    for (document in listOf("spec.docx", "Plan.XLSX", "deck.pptx", "talk.key", "notes.pages", "budget.numbers")) {
+      assertEquals(FilePreviewKind.Office, FilePreviewKind.of(document), document)
+    }
     assertNull(FilePreviewKind.of("Main.kt"))
     assertNull(FilePreviewKind.of("Makefile"))
     assertNull(FilePreviewKind.of(".md"))

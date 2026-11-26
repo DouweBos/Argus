@@ -9,6 +9,8 @@ public enum FilePreviewKind: String, Sendable, CaseIterable {
   case html
   /// A Jupyter notebook: cells and their saved outputs.
   case notebook
+  /// Word, Excel, PowerPoint, Keynote, Pages or Numbers: previewed by the system where it can.
+  case office
   /// Too large to open whole, so paged; never from an extension.
   case large
 
@@ -18,13 +20,14 @@ public enum FilePreviewKind: String, Sendable, CaseIterable {
     case "pdf": .pdf
     case "html", "htm": .html
     case "ipynb": .notebook
+    case "docx", "doc", "xlsx", "xls", "pptx", "ppt", "key", "pages", "numbers": .office
     case "png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "heic", "tif", "tiff", "ico": .image
     default: nil
     }
   }
 
   /// Read as bytes rather than text: the host calls these binary.
-  public var isBinary: Bool { self == .pdf || self == .image }
+  public var isBinary: Bool { self == .pdf || self == .image || self == .office }
 
   /// Text shown rendered next to (or instead of) its source.
   public var isRenderedText: Bool { self == .markdown || self == .html || self == .notebook }

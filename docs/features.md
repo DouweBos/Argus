@@ -120,12 +120,16 @@ the full schema.
   traceback. HTML output shows as its text form (or its source), never
   rendered. On the Mac the switch above the file shows the notebook's JSON
   beside it or instead; the phones have a button to see the source.
+- **Office documents** — Word, Excel, PowerPoint, Keynote, Pages and
+  Numbers files — open in the system's preview in the Mac code view and the
+  iPhone file viewer. Android has no system preview, so its file viewer
+  offers **Open With** to show a read-only copy in an installed app.
 - **Large files** open read-only, a page at a time, instead of not at all:
   past 5 MB in the Mac code view (the editor's limit) and past 2 MB in the
   iPhone and Android file viewers. A banner says why it can't be edited, and
   Previous / Next step through the file with its line numbers.
 
-PDFs and images up to 8 MB open in place; larger ones open in their default
+PDFs, images and Office documents up to 8 MB open in place; larger ones open in their default
 app on the Mac.
 
 **Attached documents.** A Word (`.docx`), PowerPoint (`.pptx`), Excel

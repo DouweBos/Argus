@@ -15,6 +15,10 @@ struct FilePreviewKindTests {
     #expect(FilePreviewKind.of(path: "site/index.HTML") == .html)
     #expect(FilePreviewKind.of(path: "a.htm") == .html)
     #expect(FilePreviewKind.of(path: "analysis/Explore.ipynb") == .notebook)
+    for document in ["spec.docx", "Plan.XLSX", "deck.pptx", "talk.key", "notes.pages", "budget.numbers"] {
+      #expect(FilePreviewKind.of(path: document) == .office)
+    }
+    #expect(FilePreviewKind.office.isBinary)
     #expect(FilePreviewKind.html.isRenderedText && !FilePreviewKind.html.isBinary)
     #expect(FilePreviewKind.of(path: "main.swift") == nil)
     #expect(FilePreviewKind.of(path: "Makefile") == nil)

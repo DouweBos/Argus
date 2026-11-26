@@ -56,6 +56,9 @@
             text: GalleryFixtures.previewNotebook,
             document: MarkdownDocument(path: "analysis/build-times.ipynb", loadFile: { GalleryFixtures.previewFile($0) }, open: { _ in }))
         },
+        GalleryStory("previews/office", settle: .seconds(10)) {
+          QuickLookFileView(data: GalleryFixtures.previewDocx(), name: "docs/rollout-plan.docx")
+        },
         GalleryStory("previews/large-file") {
           LargeFileView(pager: GalleryFixtures.previewLargePager(), limitation: "show in full on a phone")
         },

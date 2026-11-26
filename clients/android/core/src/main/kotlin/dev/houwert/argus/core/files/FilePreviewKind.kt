@@ -12,11 +12,13 @@ enum class FilePreviewKind(val wire: String) {
   Html("html"),
   /** A Jupyter notebook: cells and their saved outputs. */
   Notebook("notebook"),
+  /** Word, Excel, PowerPoint, Keynote, Pages or Numbers: handed to an app that can show it. */
+  Office("office"),
   /** Too large to open whole, so paged; never from an extension. */
   Large("large");
 
   /** Read as bytes rather than text: the host calls these binary. */
-  val isBinary: Boolean get() = this == Pdf || this == Image
+  val isBinary: Boolean get() = this == Pdf || this == Image || this == Office
 
   /** Text shown rendered instead of its source, with a button to see the source. */
   val isRenderedText: Boolean get() = this == Markdown || this == Html || this == Notebook
@@ -27,6 +29,7 @@ enum class FilePreviewKind(val wire: String) {
       "pdf" -> Pdf
       "html", "htm" -> Html
       "ipynb" -> Notebook
+      "docx", "doc", "xlsx", "xls", "pptx", "ppt", "key", "pages", "numbers" -> Office
       "png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "heic", "tif", "tiff", "ico" -> Image
       else -> null
     }
