@@ -73,6 +73,7 @@ import {
   RemoteTask,
   RemoteTodo,
 } from "./models";
+import { LineAttribution } from "./models/agents";
 import { AutomationCalibration, UpcomingRun } from "./models/automations";
 import {
   Blueprint,
@@ -757,6 +758,7 @@ export const MethodParams = {
   }),
   "sessions.turns": z.object({ session_id: z.string() }),
   "sessions.timeline": z.object({ session_id: z.string() }),
+  "sessions.line_attribution": z.object({ session_id: z.string() }),
   /** Files only, back to where the turn ended; the conversation stays. */
   "sessions.restore_turn": z.object({
     session_id: z.string(),
@@ -1510,6 +1512,8 @@ export const MethodResult = {
     restores: z.array(RemoteTimelineRestore),
     busy: z.boolean(),
   }),
+  /** Agent-written and human-edited lines of the session's files, as they are now. */
+  "sessions.line_attribution": LineAttribution,
   "sessions.restore_turn": z.object({ restore: RemoteTimelineRestore }),
   "sessions.undo_restore": z.object({ ok: z.literal(true) }),
   "sessions.diff_range": z.object({ from: z.string(), to: z.string() }),

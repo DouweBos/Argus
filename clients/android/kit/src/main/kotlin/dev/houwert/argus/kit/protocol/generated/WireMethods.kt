@@ -2431,6 +2431,11 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class SessionsLineAttributionParams(
+    @SerialName("session_id") val sessionId: String,
+  )
+
+  @Serializable
   data class SessionsListParams(
     @SerialName("repo_root") val repoRoot: String,
   )
@@ -3620,6 +3625,8 @@ object Methods {
   object SessionsKeepCompare : RemoteCommand<MethodsTypes.SessionsKeepCompareParams, MethodsTypes.SessionsKeepCompareResult>("sessions.keep_compare", "control", serializer(), serializer())
 
   object SessionsLandStack : RemoteCommand<MethodsTypes.SessionsLandStackParams, LandStackResult>("sessions.land_stack", "control", serializer(), serializer())
+
+  object SessionsLineAttribution : RemoteCommand<MethodsTypes.SessionsLineAttributionParams, LineAttribution>("sessions.line_attribution", "control", serializer(), serializer())
 
   object SessionsList : RemoteCommand<MethodsTypes.SessionsListParams, MethodsTypes.SessionsListResult>("sessions.list", "control", serializer(), serializer())
 

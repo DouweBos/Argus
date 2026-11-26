@@ -1,4 +1,5 @@
 import AppKit
+import ArgusCore
 @preconcurrency import CodeEditTextView
 import SwiftUI
 
@@ -51,6 +52,7 @@ final class GutterView: NSView {
     let font = numberFont(document)
     let digitWidth = ("8" as NSString).size(withAttributes: [.font: font]).width
     return ceil(CGFloat(digits) * digitWidth) + GutterRow.dotColumn + GutterRow.foldColumn + GutterRow.markColumn + 6
+      + GutterRow.attributionWidth(document.attribution)
   }
 
   func decorationsChanged() {
@@ -77,6 +79,7 @@ final class GutterView: NSView {
     let lineHeight = layout.estimateLineHeight()
     let numberRight = bounds.width - GutterRow.markColumn - GutterRow.foldColumn - 2
     let folding = document.folding
+    let lead = GutterRow.attributionWidth(document.attribution)
     for (line, y) in rows(in: dirtyRect) {
       let rowHeight = min(line.height, lineHeight)
       let isCaret = line.index == caretLine
@@ -90,13 +93,30 @@ final class GutterView: NSView {
         let folded = folding.isFolded(line: line.index)
         if folded || isHovering { drawChevron(folded: folded, y: y, rowHeight: rowHeight, theme: theme) }
       }
+      if let author = document.attribution[line.index] {
+        drawAttribution(author, y: y, rowHeight: rowHeight, theme: theme)
+      }
       if let severity = severities[line.index] {
         theme.severity(severity).setFill()
         let d: CGFloat = 6
-        NSBezierPath(ovalIn: NSRect(x: 4, y: y + (rowHeight - d) / 2, width: d, height: d)).fill()
+        NSBezierPath(ovalIn: NSRect(x: 4 + lead, y: y + (rowHeight - d) / 2, width: d, height: d)).fill()
       }
     }
     drawMarks(layout, top: top, dirtyRect: dirtyRect, theme: theme)
+  }
+
+  /// An agent's line gets a dot, a person's a bar: apart by shape, not only colour.
+  private func drawAttribution(_ author: LineAuthor, y: CGFloat, rowHeight: CGFloat, theme: EditorTheme) {
+    switch author {
+    case .agent:
+      theme.attributionAgent.setFill()
+      let d: CGFloat = 4
+      NSBezierPath(ovalIn: NSRect(x: 2, y: y + (rowHeight - d) / 2, width: d, height: d)).fill()
+    case .human:
+      theme.attributionHuman.setFill()
+      NSBezierPath(roundedRect: NSRect(x: 3, y: y + 1, width: 2, height: max(2, rowHeight - 2)), xRadius: 1, yRadius: 1)
+        .fill()
+    }
   }
 
   private func drawChevron(folded: Bool, y: CGFloat, rowHeight: CGFloat, theme: EditorTheme) {
@@ -210,6 +230,12 @@ enum GutterRow {
   static let dotColumn: CGFloat = 12
   static let markColumn: CGFloat = 5
   static let foldColumn: CGFloat = 14
+  static let attributionColumn: CGFloat = 7
+
+  /// The attribution column only takes room in a file that has marks.
+  static func attributionWidth(_ attribution: [Int: LineAuthor]) -> CGFloat {
+    attribution.isEmpty ? 0 : attributionColumn
+  }
 
   /// Between the numbers and the change bars, full height (y is ignored).
   static func foldColumnRect(width: CGFloat) -> NSRect {

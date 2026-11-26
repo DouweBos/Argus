@@ -1,3 +1,4 @@
+import ArgusCore
 import ArgusEditor
 import ArgusSyntax
 import ArgusUI
@@ -21,6 +22,10 @@ struct CodeStatusBar: View {
       }
       if file.isSaving { ProgressView().controlSize(.mini) }
       Spacer(minLength: 8)
+      if !document.attribution.isEmpty {
+        AttributionLegend(counts: AttributionCounts(document.attribution, lines: document.attribution.keys))
+          .help("Lines an agent wrote (dot) and lines a person edited since (bar), as saved")
+      }
       if let accessory = model.code.statusBarAccessory { accessory(code, file) }
       Text("Ln \(document.caret.line + 1), Col \(document.caret.utf16Column + 1)")
         .monospacedDigit()

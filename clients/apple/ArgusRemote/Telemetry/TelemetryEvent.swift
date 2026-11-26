@@ -263,6 +263,8 @@ enum TelemetryEvent {
   case diffScoped(scope: StoreEvent.DiffScopeKind)
   /// A session's timeline was opened; `turns` is how many it lists.
   case timelineOpened(turns: Int)
+  /// A diff showed who wrote its lines; `files` is how many of the session's files carry marks.
+  case lineAttributionShown(files: Int)
   case reviewGuideUsed(action: StoreEvent.ReviewGuideAction, stops: Int)
   /// The computer was out of reach and the phone showed what it had saved; `age` in seconds.
   case savedShown(age: TimeInterval)
@@ -400,6 +402,7 @@ enum TelemetryEvent {
     case .diffReviewed: "ios_diff_reviewed"
     case .diffScoped: "ios_diff_scope_changed"
     case .timelineOpened: "ios_timeline_opened"
+    case .lineAttributionShown: "ios_line_attribution_shown"
     case .reviewGuideUsed: "ios_review_guide_used"
     case .savedShown: "ios_saved_shown"
     case .offlineReply: "ios_offline_reply"
@@ -536,6 +539,8 @@ enum TelemetryEvent {
       ["scope": scope.rawValue]
     case .timelineOpened(let turns):
       ["turn_count": turns]
+    case .lineAttributionShown(let files):
+      ["files_bucket": LineAttribution.filesBucket(files)]
     case .reviewGuideUsed(let action, let stops):
       ["action": action.rawValue, "stop_count": stops]
     case .savedShown(let age):

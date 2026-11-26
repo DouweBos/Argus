@@ -260,6 +260,7 @@ export const REMOTE_METHODS = {
   "sessions.set_file_viewed": "control",
   "sessions.turns": "monitor",
   "sessions.timeline": "monitor",
+  "sessions.line_attribution": "monitor",
   /** Rewrites the worktree's files, though recoverably. */
   "sessions.restore_turn": "control",
   "sessions.undo_restore": "control",

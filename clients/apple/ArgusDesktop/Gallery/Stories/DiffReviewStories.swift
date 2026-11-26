@@ -16,6 +16,9 @@
         GalleryStory("git/diff-review/split", size: CGSize(width: 1100, height: 560), setup: seed) {
           ReviewedDiff(layout: .split)
         },
+        GalleryStory("git/diff-attribution", size: CGSize(width: 900, height: 600), setup: seed) {
+          AttributedDiff()
+        },
         GalleryStory("git/diff-review/composer", size: CGSize(width: 420, height: 0)) {
           DiffCommentComposer(
             title: "Comment on src/session/merge.ts:18-19", submitTitle: "Add Comment",
@@ -67,6 +70,19 @@
         id: "h1", header: "@@ -10,9 +10,13 @@ export async function merge", oldStart: 10, oldCount: 9, newStart: 10,
         newCount: 13, lines: lines)
       return DiffResult(filePath: "src/session/merge.ts", hunks: [hunk], stats: DiffStats(additions: 5, deletions: 1))
+    }
+  }
+
+  /// The agent wrote the strategy lines; a person rewrote the guard after.
+  private struct AttributedDiff: View {
+    @Environment(DesktopModel.self) private var model
+
+    var body: some View {
+      DiffPane(
+        diff: DiffReviewStories.diff, review: .session(
+          DiffReviewStories.sessionId, path: DiffReviewStories.diff.filePath, scope: "uncommitted changes",
+          store: model.store),
+        attribution: [12: .agent, 15: .agent, 18: .human, 19: .human, 20: .human])
     }
   }
 

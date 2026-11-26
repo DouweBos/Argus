@@ -12,14 +12,20 @@
         story("code/status-bar/blame", line: 4, inline: false),
         story("code/status-bar/blame-uncommitted", line: 7, inline: false),
         story("code/inline-blame", line: 4, inline: true),
+        story("code/attribution", line: 7, inline: false, attribution: true),
       ]
     }
 
-    private static func story(_ id: String, line: Int, inline: Bool) -> GalleryStory {
+    private static func story(_ id: String, line: Int, inline: Bool, attribution: Bool = false) -> GalleryStory {
       GalleryStory(id, size: CGSize(width: 900, height: 320)) {
-        BlameStory(line: line, inline: inline)
+        BlameStory(line: line, inline: inline, attribution: attribution)
       }
     }
+
+    /// 0-based: an agent wrote the schema, a person added `effort` afterwards.
+    static let attribution: [Int: LineAuthor] = [
+      2: .agent, 3: .agent, 4: .agent, 5: .agent, 6: .agent, 7: .human, 8: .agent, 10: .agent,
+    ]
 
     static let base = """
       import { z } from "zod";
@@ -60,6 +66,7 @@
     @Environment(DesktopModel.self) private var model
     let line: Int
     let inline: Bool
+    var attribution = false
     @State private var stage: (code: CodeSession, file: CodeFile, document: EditorDocument)?
 
     var body: some View {
@@ -86,6 +93,7 @@
       file.hunksVersion = document.version
       file.blame = BlameIndex(chunks: CodeStories.chunks())
       document.gitMarks = file.hunks?.marks ?? []
+      if attribution { document.attribution = CodeStories.attribution }
       if inline {
         // The story shows the annotation whatever this Mac's setting is.
         document.lineAnnotation = { [weak file] line in

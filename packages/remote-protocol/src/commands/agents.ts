@@ -6,6 +6,7 @@ import {
   ChatHistorySearchResult,
   Checkpoint,
   ImageAttachment,
+  LineAttribution,
   SessionTimeline,
   TimelineRestore,
   QueuedImage,
@@ -143,6 +144,12 @@ export const AGENT_COMMANDS = {
     tier: "monitor",
     params: SessionId,
     result: SessionTimeline,
+  },
+  /** Agent-written and human-edited lines of the session's files, as they are now. */
+  get_line_attribution: {
+    tier: "monitor",
+    params: SessionId,
+    result: LineAttribution,
   },
   /** Files only, back to where the turn ended; refused while an agent works. */
   restore_turn_end: {

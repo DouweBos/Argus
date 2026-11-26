@@ -8,9 +8,10 @@ import SwiftUI
 extension DiffReviewContext {
   /// AppKit hosts both, so they're handed the theme.
   @MainActor
-  func annotations(theme: Theme) -> GitDiffAnnotations {
+  func annotations(theme: Theme, extra: [GitDiffAnnotation] = []) -> GitDiffAnnotations {
     GitDiffAnnotations(
-      comments.map { annotation($0, theme: theme) }, addTitle: "Add Comment", maxWidth: DiffCommentMetrics.maxCardWidth
+      comments.map { annotation($0, theme: theme) } + extra, addTitle: "Add Comment",
+      maxWidth: DiffCommentMetrics.maxCardWidth
     ) { picked, close in
       composer(picked, theme: theme, close: close)
     }

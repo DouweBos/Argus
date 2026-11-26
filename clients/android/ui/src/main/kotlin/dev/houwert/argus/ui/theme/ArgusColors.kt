@@ -52,6 +52,10 @@ data class ArgusColors(
   val prMerged: Color get() = hex(if (isDark) 0xAB7DF8 else 0x8250DF)
   val prClosed: Color get() = hex(if (isDark) 0xF85149 else 0xD1242F)
 
+  /** Line attribution marks, twins of `--attribution-*`; always paired with a shape: an agent's dot, a person's bar. */
+  val attributionAgent: Color get() = hex(if (isDark) 0xA78BFA else 0x6B4FD1)
+  val attributionHuman: Color get() = hex(if (isDark) 0x5AA9F0 else 0x2367B8)
+
   /** Categorical chart series in fixed order, twins of `--chart-series-*`; always with a legend. */
   val chartSeries: List<Color>
     get() =

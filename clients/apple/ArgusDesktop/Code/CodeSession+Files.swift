@@ -62,6 +62,7 @@ extension CodeSession {
       Task { await detectFormatter(file) }
       await watch(file.path)
       await refreshGitBase(file)
+      await refreshAttribution()
     } catch {
       file.phase = .failed(HostStore.describe(error))
     }

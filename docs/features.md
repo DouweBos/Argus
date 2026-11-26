@@ -161,6 +161,16 @@ A real git workflow lives inside Argus:
   next turn starts. Restoring waits until no agent in the session is
   working. On the iPhone it's on the session's screen, restoring with
   control.
+- **Line attribution** — Argus remembers which lines an agent's edits wrote
+  and which a person changed afterwards. Saving in the code view, or any
+  change made between agent turns, marks the lines it touched as human;
+  marks follow their lines as the file changes around them. The code view's
+  gutter shows a dot for an agent's line and a bar for a person's, with a
+  legend and counts in the status bar; the uncommitted and branch diffs
+  label each run of added lines and show the counts in the file's header.
+  The iPhone and Android diffs mark the lines the same way. Attribution is
+  kept on your computer, never in the repository; lines changed mid-turn by
+  other means (a script, a formatter) carry no mark.
 - **Stash** — list, apply, drop, branch from a stash; stash with or without
   untracked files, keep staged changes, or stash only some files. **Save
   Snapshot** stashes a copy and leaves the changes in place.

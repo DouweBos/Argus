@@ -10,11 +10,15 @@ public struct ReviewableDiffHunksView: View {
   let onTapLine: (DiffHunk, DiffLine) -> Void
   let onEdit: (DiffReviewComment) -> Void
   let onDelete: (DiffReviewComment) -> Void
+  /// Who wrote each added line, by its new number; empty draws no mark column.
+  let attribution: [Int: LineAuthor]
 
   public init(
     file: DiffFile, comments: [DiffReviewComment], onTapLine: @escaping (DiffHunk, DiffLine) -> Void,
-    onEdit: @escaping (DiffReviewComment) -> Void, onDelete: @escaping (DiffReviewComment) -> Void
+    onEdit: @escaping (DiffReviewComment) -> Void, onDelete: @escaping (DiffReviewComment) -> Void,
+    attribution: [Int: LineAuthor] = [:]
   ) {
+    self.attribution = attribution
     self.file = file
     self.comments = comments
     self.onTapLine = onTapLine
@@ -58,6 +62,10 @@ public struct ReviewableDiffHunksView: View {
         .font(.scaled(size: 11, design: .monospaced))
         .foregroundStyle(theme.textMuted)
         .frame(minWidth: 34, alignment: .trailing)
+      if !attribution.isEmpty {
+        AttributionMark(line.kind == .add ? line.newNumber.flatMap { attribution[$0] } : nil)
+          .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 3 }
+      }
       Text(sign(line) + line.text)
         .font(.scaled(size: 11.5, design: .monospaced))
         .foregroundStyle(color(line))

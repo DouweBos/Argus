@@ -12,6 +12,7 @@ import { stopPowerAssertion } from "./serverMode";
 import { startAccount, stopAccount } from "./services/account/service";
 import { destroyAllAgents, spawnSpare } from "./services/agent/agentService";
 import { sweepAgentTmpDirs } from "./services/agent/agentTmp";
+import { startLineAttribution } from "./services/agent/attribution/attribution";
 import {
   startHostConversations,
   stopHostConversations,
@@ -291,6 +292,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   registerHostCommands();
   // Until a UI claims them, the host folds agent conversations itself.
   startHostConversations();
+  startLineAttribution();
   startLiveActivities();
   startWarmPolicy({ spawn: spawnSpare });
   startIdlePause();

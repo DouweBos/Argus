@@ -88,6 +88,7 @@ extension CodeSession {
     let marks = hunks.marks
     if marks != document.gitMarks { document.gitMarks = marks }
     document.refreshLineAnnotation()
+    applyAttribution(file)
   }
 
   /// `git_status_changed` and friends: `HEAD` may have moved, files appeared or went.
@@ -101,6 +102,7 @@ extension CodeSession {
         await workspace.workingCopy.refresh()
       }
       for file in files.values where file.document != nil { await refreshGitBase(file) }
+      await refreshAttribution()
       if navigatorMode == .files || quickOpenVisible { await loadFileList() }
     }
   }

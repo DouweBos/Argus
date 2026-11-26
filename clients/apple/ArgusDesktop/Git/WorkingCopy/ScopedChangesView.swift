@@ -106,11 +106,14 @@ struct ScopedDiffPane: View {
   @Environment(DesktopModel.self) private var model
   let workspace: GitWorkspace
   var scopedModel: ScopedDiffModel?
+  @State private var attribution: LineAttribution?
 
   private var scoped: ScopedDiffModel { scopedModel ?? workspace.scopedDiff }
 
   var body: some View {
     let current = scoped.files.first { $0.path == scoped.selected }
+    // Only the branch scope ends at the tree as it is now; a turn ended somewhere else.
+    let marks = scoped.scope == .branch ? current.flatMap { attribution?.lines($0.path) } : nil
     DiffPane(
       diff: current?.diff, path: current?.path, isLoading: scoped.isLoading && current == nil,
       openLine: current.flatMap(openLine),
@@ -120,7 +123,13 @@ struct ScopedDiffPane: View {
       },
       images: scoped.range.map {
         GitDiffImages(repository: workspace.repository, old: .commit($0.from), new: .commit($0.to))
-      })
+      },
+      attribution: marks
+    )
+    .task(id: scoped.scope == .branch ? scoped.range?.to : nil) {
+      guard scoped.scope == .branch, scoped.range != nil else { return }
+      attribution = await LineAttributionLoader.load(model.store, sessionId: workspace.sessionId, surface: .diff)
+    }
   }
 
   /// A deleted file has no lines to open.

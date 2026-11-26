@@ -22,6 +22,9 @@
         GalleryStory("git/file-diff", fixtures: fixtures(worktree), setup: sessions) {
           FileDiffView(sessionId: worktree, path: "src/session/merge.ts", mode: "working")
         },
+        GalleryStory("git/diff-attribution", fixtures: fixtures(worktree), setup: sessions) {
+          FileDiffView(sessionId: worktree, path: "src/session/merge.ts", mode: "branch")
+        },
         GalleryStory("git/branches", fixtures: fixtures(root), setup: sessions) {
           BranchesView(sessionId: root, repoRoot: GalleryGit.repoRoot, label: "luma")
         },

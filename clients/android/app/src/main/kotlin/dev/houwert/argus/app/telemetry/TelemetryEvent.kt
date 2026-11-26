@@ -1,6 +1,7 @@
 package dev.houwert.argus.app.telemetry
 
 import dev.houwert.argus.core.files.FilePreviewKind
+import dev.houwert.argus.core.git.LineAttribution
 import dev.houwert.argus.core.search.HostSearchResult
 import dev.houwert.argus.core.stores.IntegrationKind
 import dev.houwert.argus.core.stores.StoreEvent
@@ -150,6 +151,12 @@ sealed interface TelemetryEvent {
   data class TimelineOpened(val turns: Int) : TelemetryEvent {
     override val name = "android_timeline_opened"
     override val properties get() = mapOf("turn_count" to turns)
+  }
+
+  /** A diff showed who wrote its lines; `files` is how many of the session's files carry marks. */
+  data class LineAttributionShown(val files: Int) : TelemetryEvent {
+    override val name = "android_line_attribution_shown"
+    override val properties get() = mapOf("files_bucket" to LineAttribution.filesBucket(files))
   }
 
   data class ReviewGuideUsed(val action: StoreEvent.ReviewGuideAction, val stops: Int) : TelemetryEvent {

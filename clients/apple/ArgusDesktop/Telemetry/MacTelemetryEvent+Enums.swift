@@ -3,6 +3,12 @@ import Foundation
 
 /// The props' enums, kept apart from the catalog so it stays readable.
 extension MacTelemetryEvent {
+  /// Where line attribution marks were drawn.
+  enum LineAttributionSurface: String {
+    case diff
+    case code
+  }
+
   enum VideoInputOutcome: String {
     case started
     case denied

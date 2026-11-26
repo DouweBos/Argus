@@ -1,5 +1,6 @@
 import ArgusSyntax
 import AppKit
+import ArgusCore
 @preconcurrency import CodeEditTextView
 import Observation
 
@@ -19,6 +20,10 @@ import Observation
   }
   public var gitMarks: [GutterMark] = [] {
     didSet { onDecorationsChange?() }
+  }
+  /// Who wrote each line, 0-based; empty leaves the gutter without the column.
+  public var attribution: [Int: LineAuthor] = [:] {
+    didSet { if attribution != oldValue { onDecorationsChange?() } }
   }
   public var diagnostics: [EditorDiagnostic] = [] {
     didSet { onDecorationsChange?() }

@@ -2090,6 +2090,46 @@ extension ArgusProtocol {
     }
   }
 
+  public struct AttributedRangeAuthor: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let agent = AttributedRangeAuthor(rawValue: "agent")
+    public static let human = AttributedRangeAuthor(rawValue: "human")
+  }
+
+  public struct AttributedRange: Codable, Sendable {
+    public var author: AttributedRangeAuthor
+    public var end: Int
+    public var start: Int
+
+    enum CodingKeys: String, CodingKey {
+      case author = "author"
+      case end = "end"
+      case start = "start"
+    }
+
+    public init(author: AttributedRangeAuthor, end: Int, start: Int) {
+      self.author = author
+      self.end = end
+      self.start = start
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(author, forKey: .author)
+      try c.encode(end, forKey: .end)
+      try c.encode(start, forKey: .start)
+    }
+  }
+
   public struct AutomationScope: Codable, Sendable {
     public var repoRoots: [String]
 
@@ -8128,6 +8168,27 @@ extension ArgusProtocol {
     }
   }
 
+  public struct FileLineAttribution: Codable, Sendable {
+    public var path: String
+    public var ranges: [AttributedRange]
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+      case ranges = "ranges"
+    }
+
+    public init(path: String, ranges: [AttributedRange]) {
+      self.path = path
+      self.ranges = ranges
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+      try c.encode(ranges, forKey: .ranges)
+    }
+  }
+
   public struct FileStat: Codable, Sendable {
     public var isDir: Bool
     public var mtime: Double
@@ -11062,6 +11123,23 @@ extension ArgusProtocol {
       try c.encode(type, forKey: .type)
       try c.encode(position, forKey: .position)
       try c.encodeIfPresent(color, forKey: .color)
+    }
+  }
+
+  public struct LineAttribution: Codable, Sendable {
+    public var files: [FileLineAttribution]
+
+    enum CodingKeys: String, CodingKey {
+      case files = "files"
+    }
+
+    public init(files: [FileLineAttribution]) {
+      self.files = files
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(files, forKey: .files)
     }
   }
 

@@ -121,6 +121,10 @@ html[data-theme="dark"] {
   --pr-merged: #ab7df8;
   --pr-closed: #f85149;
 
+  /* ─── Line attribution ─── an agent's dot and a person's bar in a diff gutter */
+  --attribution-agent: #a78bfa;
+  --attribution-human: #5aa9f0;
+
   /* ─── Chart palette ─── data-viz roles for SeriesChart / ReportView.
      Aliases on purpose: each resolves against whichever theme block is
      active, so a chart never reaches for --accent (or a raw colour) itself.
@@ -374,6 +378,10 @@ html[data-theme="light"] {
   --pr-draft: #59636e;
   --pr-merged: #8250df;
   --pr-closed: #d1242f;
+
+  /* Line attribution — stepped for the light surface */
+  --attribution-agent: #6b4fd1;
+  --attribution-human: #2367b8;
 
   /* Chart series — the same four hues stepped for the light surface */
   --chart-series-1: #2a78d6;

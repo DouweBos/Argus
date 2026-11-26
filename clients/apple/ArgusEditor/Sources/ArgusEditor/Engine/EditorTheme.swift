@@ -16,6 +16,8 @@ struct EditorTheme {
   var added: NSColor
   var modified: NSColor
   var deleted: NSColor
+  var attributionAgent: NSColor
+  var attributionHuman: NSColor
   var error: NSColor
   var warning: NSColor
   var info: NSColor
@@ -39,6 +41,8 @@ struct EditorTheme {
     added = NSColor(theme.success)
     modified = NSColor(theme.warning)
     deleted = NSColor(theme.error)
+    attributionAgent = NSColor(theme.attributionAgent)
+    attributionHuman = NSColor(theme.attributionHuman)
     error = NSColor(theme.error)
     warning = NSColor(theme.warning)
     info = NSColor(theme.accent)

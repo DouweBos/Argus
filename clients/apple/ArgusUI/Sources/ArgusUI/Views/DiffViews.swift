@@ -89,11 +89,14 @@ public struct DiffHunksView: View {
   @Environment(\.theme) private var theme
   let file: DiffFile
   var collapsesLongHunks: Bool
+  /// Who wrote each added line, by its new number; empty draws no mark column.
+  var attribution: [Int: LineAuthor]
 
   /// `collapsesLongHunks` folds each hunk past a dozen lines, for a diff among others.
-  public init(file: DiffFile, collapsesLongHunks: Bool = true) {
+  public init(file: DiffFile, collapsesLongHunks: Bool = true, attribution: [Int: LineAuthor] = [:]) {
     self.file = file
     self.collapsesLongHunks = collapsesLongHunks
+    self.attribution = attribution
   }
 
   public var body: some View {
@@ -109,7 +112,7 @@ public struct DiffHunksView: View {
             .padding(.horizontal, 6)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(theme.bgTertiary)
-          DiffLinesView(lines: hunk.lines, collapses: collapsesLongHunks)
+          DiffLinesView(lines: hunk.lines, collapses: collapsesLongHunks, attribution: attribution)
         }
         .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
       }
@@ -122,13 +125,15 @@ public struct DiffLinesView: View {
   @Environment(\.theme) private var theme
   let lines: [DiffLine]
   var collapses: Bool
+  var attribution: [Int: LineAuthor]
   @State private var showAll = false
 
   private static let collapsedCount = 12
 
-  public init(lines: [DiffLine], collapses: Bool = true) {
+  public init(lines: [DiffLine], collapses: Bool = true, attribution: [Int: LineAuthor] = [:]) {
     self.lines = lines
     self.collapses = collapses
+    self.attribution = attribution
   }
 
   public var body: some View {
@@ -161,13 +166,23 @@ public struct DiffLinesView: View {
       var gutter = AttributedString(String(repeating: " ", count: max(0, 5 - number.count)) + number + " ")
       gutter.font = .scaled(size: 11, design: .monospaced)
       gutter.foregroundColor = theme.textMuted
+      out += gutter
+      if !attribution.isEmpty { out += mark(line) }
       var code = AttributedString("\(prefix(line))\(line.text)" + (index < visible.count - 1 ? "\n" : ""))
       code.font = .scaled(size: 11.5, design: .monospaced)
       code.foregroundColor = color(line)
-      out += gutter
       out += code
     }
     return out
+  }
+
+  /// An added line's author as a glyph in its own column; a space keeps the column for the rest.
+  private func mark(_ line: DiffLine) -> AttributedString {
+    let author = line.kind == .add ? line.newNumber.flatMap { attribution[$0] } : nil
+    var mark = AttributedString((author?.glyph ?? " ") + " ")
+    mark.font = .scaled(size: 9, design: .monospaced)
+    mark.foregroundColor = author?.color(theme) ?? .clear
+    return mark
   }
 
   private func gutter(_ line: DiffLine) -> String {

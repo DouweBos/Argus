@@ -13,6 +13,7 @@ import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
 import { generateChatTitle } from "../../llm/titleGenerator";
 import { stampUserMessage } from "../../session/lastMessage";
+import { noteTurnStarted } from "../attribution/attribution";
 import { saveConversation } from "../chatHistory";
 import { runnerCommandFor } from "../runnerCommand";
 import {
@@ -163,6 +164,7 @@ export function userMessage(
   const command = runnerCommandFor(agentId, sent ?? text);
   update(agentId, entry, (c) => withUserMessage(c, text, { ...rest, command }));
   stampUserMessage(entry.sessionId);
+  noteTurnStarted(entry.sessionId, options.checkpointId);
   maybeGenerateTitle(agentId, entry, text);
 }
 

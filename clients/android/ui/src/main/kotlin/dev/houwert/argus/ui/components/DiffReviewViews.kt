@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.houwert.argus.core.git.DiffReviewComment
 import dev.houwert.argus.core.git.DiffReviewPrompt
+import dev.houwert.argus.core.git.LineAuthor
 import dev.houwert.argus.kit.util.DiffFile
 import dev.houwert.argus.kit.util.DiffHunk
 import dev.houwert.argus.kit.util.DiffLine
@@ -42,6 +43,7 @@ fun ReviewableDiffHunksView(
   onEdit: (DiffReviewComment) -> Unit,
   onDelete: (DiffReviewComment) -> Unit,
   modifier: Modifier = Modifier,
+  attribution: Map<Int, LineAuthor> = emptyMap(),
 ) {
   val theme = ArgusTheme.colors
   Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -64,6 +66,7 @@ fun ReviewableDiffHunksView(
           ) {
             val number = (if (line.kind == DiffLineKind.REMOVE) line.oldNumber else line.newNumber)?.toString() ?: ""
             Text(number.padStart(4), Modifier.widthIn(min = 34.dp), color = theme.textMuted, style = argusFont(11, mono = true))
+            if (attribution.isNotEmpty()) AttributionMark(line.author(attribution))
             Text(
               DiffColors.sign(line.kind) + line.text, Modifier.weight(1f), color = DiffColors.text(line.kind, theme),
               style = argusFont(11.5f, mono = true),

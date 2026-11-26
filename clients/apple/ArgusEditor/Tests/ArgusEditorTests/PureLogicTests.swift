@@ -1,4 +1,5 @@
 import Foundation
+import ArgusCore
 import XCTest
 
 @testable import ArgusEditor
@@ -54,6 +55,8 @@ final class PureLogicTests: XCTestCase {
       GutterMark(kind: .added, lines: 0..<2),
     ])
     XCTAssertEqual(marks.map(\.kind), [.added, .modified, .deleted])
+    XCTAssertEqual(GutterRow.attributionWidth([:]), 0)
+    XCTAssertEqual(GutterRow.attributionWidth([4: .agent]), GutterRow.attributionColumn)
   }
 
   func testCompletionFilter() {

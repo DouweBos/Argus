@@ -176,6 +176,27 @@ export const SessionTimeline = z.object({
 });
 export type SessionTimeline = z.infer<typeof SessionTimeline>;
 
+/** Lines an agent's edit tool call wrote, or a person edited since. 1-based, inclusive. */
+export const AttributedRange = z.object({
+  author: z.enum(["agent", "human"]),
+  end: z.number().int().positive(),
+  start: z.number().int().positive(),
+});
+export type AttributedRange = z.infer<typeof AttributedRange>;
+
+export const FileLineAttribution = z.object({
+  path: z.string(),
+  ranges: z.array(AttributedRange),
+});
+export type FileLineAttribution = z.infer<typeof FileLineAttribution>;
+
+/** Who wrote the marked lines of a session's files, as the worktree has them now. */
+export const LineAttribution = z.object({
+  /** Files with at least one marked line, by path. */
+  files: z.array(FileLineAttribution),
+});
+export type LineAttribution = z.infer<typeof LineAttribution>;
+
 /** Lightweight summary stored in the history index — enough for list rendering. */
 export const ChatHistoryEntry = z.object({
   /** Agent that produced this conversation — absent on older records. */

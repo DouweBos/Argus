@@ -66,6 +66,7 @@ public enum RemoteMethod: String, Codable, Sendable {
   case sessionsTurns = "sessions.turns"
   case sessionsDiffRange = "sessions.diff_range"
   case sessionsTimeline = "sessions.timeline"
+  case sessionsLineAttribution = "sessions.line_attribution"
   case sessionsRestoreTurn = "sessions.restore_turn"
   case sessionsUndoRestore = "sessions.undo_restore"
   case sessionsCommit = "sessions.commit"

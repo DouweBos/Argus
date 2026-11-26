@@ -11,6 +11,7 @@ import { warn } from "@argus/host/logger";
 import { appState } from "../../state";
 import { git } from "../session/git";
 import { capture } from "../telemetry/telemetry";
+import { noteFilesRestored } from "./attribution/attribution";
 import { isAgentBusy } from "./busy";
 import {
   checkpointRef,
@@ -265,6 +266,7 @@ export async function restoreToTurnEnd(
   const safety = await snapshotWorktree(cwd);
   await git(cwd, ["update-ref", `${SAFETY_REF_PREFIX}${id}`, safety.sha]);
   await applyTree(cwd, end);
+  await noteFilesRestored(sessionId);
   const record: RestoreRecord = {
     id,
     checkpointId,
@@ -310,6 +312,7 @@ export async function undoTurnRestore(
   const since = await snapshotWorktree(cwd);
   await git(cwd, ["update-ref", `${ref}-undo`, since.sha]);
   await applyTree(cwd, sha);
+  await noteFilesRestored(sessionId);
   record.undoneAt = Date.now();
   await saveRecords(cwd, records);
   capture("session_turn_restore_undone");

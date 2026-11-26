@@ -2996,6 +2996,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct GetLineAttributionParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "sessionId"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
     public struct GetProjectConfigParams: Codable, Sendable {
       public var repoRoot: String
 
@@ -12152,6 +12169,13 @@ extension ArgusProtocol {
       public typealias Result = String
       public static let name = "get_last_commit_message"
       public static let tier = "admin"
+    }
+
+    public enum GetLineAttribution: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.GetLineAttributionParams
+      public typealias Result = ArgusProtocol.LineAttribution
+      public static let name = "get_line_attribution"
+      public static let tier = "monitor"
     }
 
     public enum GetProjectConfig: RemoteCommand {

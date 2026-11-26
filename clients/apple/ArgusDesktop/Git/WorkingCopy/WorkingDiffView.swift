@@ -9,6 +9,7 @@ struct WorkingDiffView: View {
   @Environment(DesktopModel.self) private var model
   let workspace: GitWorkspace
   var viewed: ViewedFiles?
+  @State private var attribution: LineAttribution?
 
   private var vm: WorkingCopyViewModel { workspace.workingCopy }
 
@@ -29,10 +30,27 @@ struct WorkingDiffView: View {
       ignoreWhitespace: Binding(
         get: { vm.ignoreWhitespace }, set: { on in Task { await vm.setIgnoreWhitespace(on) } }),
       images: images,
+      attribution: marks,
       accessory: accessory
     )
     // An edit to the shown file can turn its mark to changed.
     .task(id: vm.currentDiff?.stats) { await viewed?.load() }
+    .task(id: attributionKey) {
+      guard vm.selectedSide == .unstaged, vm.selectedEntry != nil else { return }
+      attribution = await LineAttributionLoader.load(model.store, sessionId: workspace.sessionId, surface: .diff)
+    }
+  }
+
+  /// Reloads when the file, its counts or the side change.
+  private var attributionKey: String {
+    let stats = vm.currentDiff?.stats
+    return "\(vm.selectedEntry?.path ?? ""):\(stats?.additions ?? -1):\(stats?.deletions ?? -1):\(vm.selectedSide == .staged)"
+  }
+
+  /// The unstaged side ends at the files on disk, which is what the marks number.
+  private var marks: [Int: LineAuthor]? {
+    guard vm.selectedSide == .unstaged, let path = vm.selectedEntry?.path else { return nil }
+    return attribution?.lines(path)
   }
 
   private var accessory: AnyView? {

@@ -5,13 +5,13 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.houwert.argus.core.git.LineAuthor
 import dev.houwert.argus.kit.protocol.generated.RemoteViewedFileState
 import dev.houwert.argus.kit.util.DiffFile
 import dev.houwert.argus.kit.util.DiffFileStatus
@@ -128,7 +129,12 @@ fun FileDiffCard(
 
 /** A file's hunks, each under its `@@` header; "nothing to show" for a binary. */
 @Composable
-fun DiffHunksView(file: DiffFile, modifier: Modifier = Modifier, collapsesLongHunks: Boolean = true) {
+fun DiffHunksView(
+  file: DiffFile,
+  modifier: Modifier = Modifier,
+  collapsesLongHunks: Boolean = true,
+  attribution: Map<Int, LineAuthor> = emptyMap(),
+) {
   val theme = ArgusTheme.colors
   Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
     if (file.isBinary) {
@@ -137,7 +143,7 @@ fun DiffHunksView(file: DiffFile, modifier: Modifier = Modifier, collapsesLongHu
       for (hunk in file.hunks) {
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(ArgusMetrics.radiusSmall))) {
           DiffHunkHeader(hunk.header)
-          DiffLinesView(hunk.lines, collapses = collapsesLongHunks)
+          DiffLinesView(hunk.lines, collapses = collapsesLongHunks, attribution = attribution)
         }
       }
     }
@@ -156,7 +162,12 @@ internal fun DiffHunkHeader(header: String) {
 
 /** Diff lines with a line-number gutter, scrolling sideways, collapsed past a dozen rows. */
 @Composable
-fun DiffLinesView(lines: List<DiffLine>, modifier: Modifier = Modifier, collapses: Boolean = true) {
+fun DiffLinesView(
+  lines: List<DiffLine>,
+  modifier: Modifier = Modifier,
+  collapses: Boolean = true,
+  attribution: Map<Int, LineAuthor> = emptyMap(),
+) {
   val theme = ArgusTheme.colors
   var showAll by remember(lines) { mutableStateOf(false) }
   val visible = if (showAll || !collapses) lines else lines.take(COLLAPSED_COUNT)
@@ -170,6 +181,7 @@ fun DiffLinesView(lines: List<DiffLine>, modifier: Modifier = Modifier, collapse
           Text(
             DiffColors.gutter(line).padStart(5) + " ", color = theme.textMuted, style = argusFont(11, mono = true), softWrap = false,
           )
+          if (attribution.isNotEmpty()) AttributionMark(line.author(attribution), Modifier.padding(end = 2.dp))
           Text(
             DiffColors.sign(line.kind) + line.text, Modifier.padding(end = 8.dp), color = DiffColors.text(line.kind, theme),
             style = argusFont(11.5f, mono = true), softWrap = false,
@@ -185,6 +197,10 @@ fun DiffLinesView(lines: List<DiffLine>, modifier: Modifier = Modifier, collapse
 }
 
 private const val COLLAPSED_COUNT = 12
+
+/** An added line's author; other lines carry no mark. */
+internal fun DiffLine.author(attribution: Map<Int, LineAuthor>): LineAuthor? =
+  if (kind == DiffLineKind.ADD) newNumber?.let { attribution[it] } else null
 
 /** How a diff line reads: its gutter number, sign and colours. */
 object DiffColors {

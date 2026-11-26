@@ -23,6 +23,10 @@ import {
 import { markSessionUnread } from "../../session/triage";
 import { capture as telemetryCapture } from "../../telemetry/telemetry";
 import { sendAgentMessage } from "../agentService";
+import {
+  noteTurnEnded,
+  observeAttributionEvent,
+} from "../attribution/attribution";
 import { createCheckpoint, recordTurnEnd } from "../checkpoints";
 import {
   dequeueMessage,
@@ -239,6 +243,7 @@ function streamLine(agentId: string, entry: Tracked, line: string): void {
   }
   update(agentId, entry, (c) => reduceEvent(c, event));
   observeArtifactCalls(event);
+  observeAttributionEvent(entry.sessionId, event);
   if (event.type === "assistant") {
     stampAgentMessage(entry.sessionId);
     for (const block of event.message.content ?? []) {
@@ -319,6 +324,7 @@ function statusChanged(agentId: string, entry: Tracked, status: string): void {
 
 /** Snapshot the tree as the end of the agent's latest turn, for turn-scoped diffs. */
 function pinTurnEnd(agentId: string, entry: Tracked): void {
+  noteTurnEnded(entry.sessionId);
   const messages = conversationOf(agentId).messages;
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i]!;

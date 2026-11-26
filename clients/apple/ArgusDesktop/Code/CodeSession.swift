@@ -60,6 +60,8 @@ final class CodeSession {
   @ObservationIgnored var gitRefresh: Task<Void, Never>?
   /// `HEAD` blames by `commit:path`.
   @ObservationIgnored var blameCache: [String: BlameIndex] = [:]
+  /// Who wrote the session's lines, as saved; the gutter's dots and bars.
+  @ObservationIgnored var attribution: LineAttribution?
   @ObservationIgnored private var worktree: String?
 
   init(sessionId: String, store: CodeStore) {

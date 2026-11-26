@@ -55,6 +55,11 @@ public struct Theme: Sendable, Equatable {
   public var prMerged: Color { Color(hex: scheme == .light ? 0x8250DF : 0xAB7DF8) }
   public var prClosed: Color { Color(hex: scheme == .light ? 0xD1242F : 0xF85149) }
 
+  /// Line attribution marks, twins of `--attribution-*` in `tokens.css`. Always paired with a shape:
+  /// an agent's dot, a person's bar.
+  public var attributionAgent: Color { Color(hex: scheme == .light ? 0x6B4FD1 : 0xA78BFA) }
+  public var attributionHuman: Color { Color(hex: scheme == .light ? 0x2367B8 : 0x5AA9F0) }
+
   /// Categorical chart series in fixed order, twins of `--chart-series-*` in
   /// `tokens.css`; validated for colour-blind separation, always with a legend.
   public var chartSeries: [Color] {

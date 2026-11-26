@@ -53,6 +53,7 @@ extension GalleryFixtures {
       ]),
       RemoteMethod.sessionsDiff.rawValue: GalleryJSON.encode(["diff": GalleryGit.workingDiff, "base_branch": "main"]),
       RemoteMethod.sessionsViewedFiles.rawValue: GalleryJSON.encode(["files": viewedFiles]),
+      RemoteMethod.sessionsLineAttribution.rawValue: GalleryJSON.encode(["files": lineAttributionFiles]),
       RemoteMethod.sessionsCommitDiff.rawValue: GalleryJSON.encode(["diff": GalleryGit.commitDiff]),
       RemoteMethod.sessionsStashes.rawValue: GalleryJSON.encode(["stashes": stashes]),
       RemoteMethod.sessionsTags.rawValue: GalleryJSON.encode(["tags": tags]),
@@ -79,6 +80,30 @@ extension GalleryFixtures {
         "browser_presets": [], "protected_branches": ["main"], "release_note_patterns": [], "simulator_deeplinks": [],
       ]),
     ]
+  }
+
+  /// The agent wrote the merge change and the test; a person rewrote its guard and the README's tip.
+  private static let lineAttributionScript: [(path: String, ranges: [(Int, Int, String)])] = [
+    ("README.md", [(4, 5, "human")]),
+    ("src/session/merge.ts", [(4, 4, "agent"), (12, 12, "agent"), (15, 15, "agent"), (18, 20, "human"), (21, 21, "agent")]),
+    ("src/session/strategy.test.ts", [(1, 8, "agent")]),
+  ]
+
+  private static var lineAttributionFiles: [[String: Any]] {
+    lineAttributionScript.map { file in
+      ["path": file.path, "ranges": file.ranges.map { ["start": $0.0, "end": $0.1, "author": $0.2] }]
+    }
+  }
+
+  /// The same marks, for views handed them directly.
+  public static var lineAttribution: LineAttribution {
+    var files: [String: [Int: LineAuthor]] = [:]
+    for file in lineAttributionScript {
+      for (start, end, author) in file.ranges {
+        for line in start...end { files[file.path, default: [:]][line] = author == "human" ? .human : .agent }
+      }
+    }
+    return LineAttribution(files: files)
   }
 
   /// `(prompt, agent, files, +, −, hours ago)`, oldest first: two agents over a day and a half.

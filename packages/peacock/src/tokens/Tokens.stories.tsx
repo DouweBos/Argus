@@ -184,6 +184,23 @@ export const Colors: Story = {
         </div>
       </section>
       <section>
+        <h3 className="eyebrow">Line attribution</h3>
+        <div style={row}>
+          {["agent", "human"].map((author) => (
+            <Token
+              key={author}
+              name={`--attribution-${author}`}
+              value={
+                author === "agent"
+                  ? "Lines an agent wrote: a dot"
+                  : "Lines a person edited: a bar"
+              }
+              preview={<div style={swatch(`var(--attribution-${author})`)} />}
+            />
+          ))}
+        </div>
+      </section>
+      <section>
         <h3 className="eyebrow">Text</h3>
         <div style={row}>
           <Token

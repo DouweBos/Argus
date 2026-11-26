@@ -7711,6 +7711,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsLineAttributionParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
     public struct SessionsListParams: Codable, Sendable {
       public var repoRoot: String
 
@@ -11484,6 +11501,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsLandStackParams
       public typealias Result = ArgusProtocol.LandStackResult
       public static let name = "sessions.land_stack"
+    }
+
+    public enum SessionsLineAttribution: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsLineAttributionParams
+      public typealias Result = ArgusProtocol.LineAttribution
+      public static let name = "sessions.line_attribution"
     }
 
     public enum SessionsList: RemoteCommand {

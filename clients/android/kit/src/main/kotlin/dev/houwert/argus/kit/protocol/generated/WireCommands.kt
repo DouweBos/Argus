@@ -945,6 +945,11 @@ object CommandsTypes {
   )
 
   @Serializable
+  data class GetLineAttributionParams(
+    @SerialName("sessionId") val sessionId: String,
+  )
+
+  @Serializable
   data class GetProjectConfigParams(
     @SerialName("repoRoot") val repoRoot: String,
   )
@@ -3632,6 +3637,8 @@ object Commands {
   object GetLastCommitHash : RemoteCommand<CommandsTypes.GetLastCommitHashParams, String>("get_last_commit_hash", "admin", serializer(), serializer())
 
   object GetLastCommitMessage : RemoteCommand<CommandsTypes.GetLastCommitMessageParams, String>("get_last_commit_message", "admin", serializer(), serializer())
+
+  object GetLineAttribution : RemoteCommand<CommandsTypes.GetLineAttributionParams, LineAttribution>("get_line_attribution", "monitor", serializer(), serializer())
 
   object GetProjectConfig : RemoteCommand<CommandsTypes.GetProjectConfigParams, ProjectConfig>("get_project_config", "admin", serializer(), serializer())
 

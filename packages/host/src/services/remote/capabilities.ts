@@ -54,6 +54,7 @@ import {
   stopAgent,
 } from "../agent/agentService";
 import { alwaysAllowRule } from "../agent/alwaysAllowRule";
+import { getLineAttribution } from "../agent/attribution/attribution";
 import {
   deleteHistoryEntry,
   loadConversation,
@@ -2517,6 +2518,12 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       restores: timeline.restores.map(remoteRestore),
       busy: timeline.busy,
     };
+  },
+  "sessions.line_attribution": async (params) => {
+    const { session_id } = parse("sessions.line_attribution", params);
+    requireSession(session_id);
+
+    return control(() => getLineAttribution(session_id));
   },
   "sessions.restore_turn": async (params) => {
     const { session_id, checkpoint_id } = parse(

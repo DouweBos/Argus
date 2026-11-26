@@ -12,6 +12,7 @@ import {
   setAgentPermissionMode,
   stopAgent,
 } from "../services/agent/agentService";
+import { getLineAttribution } from "../services/agent/attribution/attribution";
 import {
   deleteHistoryEntry,
   loadConversation,
@@ -136,6 +137,9 @@ export function registerAgentCommands(): void {
   );
   defineTypedCommand("get_session_timeline", (p) =>
     getSessionTimeline(p.sessionId),
+  );
+  defineTypedCommand("get_line_attribution", (p) =>
+    getLineAttribution(p.sessionId),
   );
   defineTypedCommand("restore_turn_end", (p) =>
     restoreToTurnEnd(p.sessionId, p.checkpointId),

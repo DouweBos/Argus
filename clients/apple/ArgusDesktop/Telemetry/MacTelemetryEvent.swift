@@ -443,6 +443,8 @@ enum MacTelemetryEvent {
   case diffScoped(scope: StoreEvent.DiffScopeKind)
   /// A session's timeline was opened; `turns` is how many it lists.
   case timelineOpened(turns: Int)
+  /// A diff or the code view showed who wrote its lines; `files` is how many of the session's files carry marks.
+  case lineAttributionShown(surface: LineAttributionSurface, files: Int)
   case reviewGuideUsed(action: StoreEvent.ReviewGuideAction, stops: Int)
   /// The code view read a file into a tab; `language` is a bundled grammar or `other`.
   case editorFileOpened(source: EditorOpenSource, language: String, sizeBucket: String, readOnly: Bool)
@@ -573,6 +575,7 @@ enum MacTelemetryEvent {
     case .diffReviewed: "mac_diff_reviewed"
     case .diffScoped: "mac_diff_scope_changed"
     case .timelineOpened: "mac_timeline_opened"
+    case .lineAttributionShown: "mac_line_attribution_shown"
     case .reviewGuideUsed: "mac_review_guide_used"
     case .editorFileOpened: "mac_editor_file_opened"
     case .editorFileSaved: "mac_editor_file_saved"
@@ -802,6 +805,8 @@ enum MacTelemetryEvent {
       ["scope": scope.rawValue]
     case .timelineOpened(let turns):
       ["turn_count": turns]
+    case .lineAttributionShown(let surface, let files):
+      ["surface": surface.rawValue, "files_bucket": LineAttribution.filesBucket(files)]
     case .reviewGuideUsed(let action, let stops):
       ["action": action.rawValue, "stop_count": stops]
     case .editorFileOpened(let source, let language, let sizeBucket, let readOnly):

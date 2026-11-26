@@ -783,6 +783,25 @@ data class ArgusTerminalConfig(
 )
 
 @Serializable
+@JvmInline
+value class AttributedRangeAuthor(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val agent = AttributedRangeAuthor("agent")
+    val human = AttributedRangeAuthor("human")
+    val entries: List<AttributedRangeAuthor> = listOf(agent, human)
+  }
+}
+
+@Serializable
+data class AttributedRange(
+  @SerialName("author") val author: AttributedRangeAuthor,
+  @SerialName("end") val end: Long,
+  @SerialName("start") val start: Long,
+)
+
+@Serializable
 data class AutomationScope(
   @SerialName("repo_roots") val repoRoots: List<String>,
 )
@@ -3015,6 +3034,12 @@ data class FigmaLayer(
 )
 
 @Serializable
+data class FileLineAttribution(
+  @SerialName("path") val path: String,
+  @SerialName("ranges") val ranges: List<AttributedRange>,
+)
+
+@Serializable
 data class FileStat(
   @SerialName("is_dir") val isDir: Boolean,
   @SerialName("mtime") val mtime: Double,
@@ -3983,6 +4008,11 @@ data class LinearWorkflowState(
   @SerialName("type") val type: String,
   @SerialName("position") val position: Double,
   @SerialName("color") val color: String? = null,
+)
+
+@Serializable
+data class LineAttribution(
+  @SerialName("files") val files: List<FileLineAttribution>,
 )
 
 @Serializable

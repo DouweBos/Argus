@@ -1,5 +1,6 @@
 import type { Equal, Expect } from "./typeEquality";
 import type { ImageAttachment as HostImageAttachment } from "../services/agent/agentService";
+import type { LineAttribution as HostLineAttribution } from "../services/agent/attribution/attribution";
 import type {
   ChatHistoryEntry as HostChatHistoryEntry,
   ChatHistoryMessageMatch as HostChatHistoryMessageMatch,
@@ -50,6 +51,7 @@ import type {
   QueuedImage,
   QueuedMessage,
   SavedConversation,
+  LineAttribution,
   SessionTimeline,
   StartOptions,
   TimelineRestore,
@@ -68,6 +70,7 @@ export type AgentModelChecks = [
   Expect<Equal<TimelineTurn, HostTimelineTurn>>,
   Expect<Equal<TimelineRestore, HostTimelineRestore>>,
   Expect<Equal<SessionTimeline, HostSessionTimeline>>,
+  Expect<Equal<LineAttribution, HostLineAttribution>>,
   Expect<Equal<ChatHistoryEntry, HostChatHistoryEntry>>,
   Expect<Equal<SavedConversation, HostSavedConversation>>,
   Expect<Equal<ChatHistoryMessageMatch, HostChatHistoryMessageMatch>>,

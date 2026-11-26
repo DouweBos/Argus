@@ -18,6 +18,7 @@ import os from "node:os";
 import path from "node:path";
 import { appState } from "../../state";
 import { git } from "../session/git";
+import { noteFilesRestored } from "./attribution/attribution";
 
 const CHECKPOINT_REF_PREFIX = "refs/argus/checkpoints/";
 const TURN_END_REF_PREFIX = "refs/argus/turn-ends/";
@@ -189,6 +190,7 @@ export async function restoreCheckpoint(
   // Apply the checkpoint tree.
   await git(cwd, ["read-tree", "--reset", "-u", `${sha}^{tree}`]);
   await git(cwd, ["clean", "-fd"]);
+  await noteFilesRestored(sessionId);
 }
 
 /**

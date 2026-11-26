@@ -16,6 +16,9 @@ struct FileDiffView: View {
   @State private var failure: String?
   @State private var composing: Composing?
   @State private var viewed: ViewedFiles?
+  @State private var attribution = LineAttribution()
+  /// Sessions whose marks were counted this launch: a refresh every few seconds isn't a new look.
+  @MainActor private static var attributionSeen: Set<String> = []
 
   /// The comment sheet: a new comment on a line, or an edit of a draft.
   private struct Composing: Identifiable {
@@ -41,6 +44,10 @@ struct FileDiffView: View {
             onChange: host.hasControl ? { on in Task { await viewed.set(file.displayPath, viewed: on) } } : nil)
           if let error = viewed.error { Banner(text: error, tone: .danger) }
         }
+        let marks = attribution.lines(file.displayPath)
+        if !marks.isEmpty {
+          AttributionLegend(counts: AttributionCounts(marks, lines: file.addedLineNumbers))
+        }
         if host.hasControl {
           ReviewableDiffHunksView(
             file: file, comments: host.reviews.comments(sessionId, path: file.displayPath),
@@ -50,9 +57,9 @@ struct FileDiffView: View {
               }
             },
             onEdit: { composing = Composing(comment: $0, isNew: false) },
-            onDelete: { host.deleteReviewComment($0.id, sessionId: sessionId) })
+            onDelete: { host.deleteReviewComment($0.id, sessionId: sessionId) }, attribution: marks)
         } else {
-          DiffHunksView(file: file, collapsesLongHunks: false)
+          DiffHunksView(file: file, collapsesLongHunks: false, attribution: marks)
         }
       } else if let failure {
         EmptyState(icon: Icon.warning, title: "Couldn't load changes", body: failure, selectable: true) {
@@ -109,11 +116,23 @@ struct FileDiffView: View {
       let wire = SessionDiffScope.wire(mode: mode)
       let diff = try await host.loadDiff(sessionId: sessionId, mode: wire.mode, checkpointId: wire.checkpointId)
       file = DiffParser.parse(diff).first { $0.displayPath == path }
+      await loadAttribution(mode: wire.mode)
       failure = nil
       loaded = true
     } catch where !HostStore.isQuiet(error) {
       failure = HostStore.describe(error)
     } catch {}
+  }
+
+  /// Marks only fit diffs that end at the files as they are now.
+  private func loadAttribution(mode: String) async {
+    guard LineAttribution.applies(toDiffMode: mode),
+      let loaded = try? await host.loadLineAttribution(sessionId: sessionId)
+    else { return }
+    attribution = loaded
+    if !loaded.files.isEmpty, Self.attributionSeen.insert(sessionId).inserted {
+      Telemetry.capture(.lineAttributionShown(files: loaded.files.count))
+    }
   }
 }
 
