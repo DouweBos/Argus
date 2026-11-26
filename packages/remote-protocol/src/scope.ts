@@ -328,6 +328,11 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "projects.clones": DENIED,
   "projects.clone": DENIED,
   "projects.clone_cancel": DENIED,
+  // The host owner's own skills, which every agent on the computer loads.
+  "skills.list": DENIED,
+  "skills.install": DENIED,
+  "skills.update": DENIED,
+  "skills.remove": DENIED,
   // The host owner's Linear account; a guest has no claim on it.
   "integrations.list": DENIED,
   "integrations.connect_key": DENIED,

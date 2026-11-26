@@ -61,6 +61,10 @@ public enum ArgusRoute: Hashable, Sendable {
   case newProject(blueprintId: String?)
   /// `/projects/clone`: clone a repository from a URL into a new project.
   case cloneRepository
+  /// `/skills`: the skills the runners load on this computer, user and project.
+  case skills
+  /// `/skills/install?url=`: install a skill, from a link when one is given.
+  case installSkill(url: String? = nil)
   /// `/inbox?automation=&project=`: proposals, work waiting for review, failed
   /// runs, optionally narrowed to one automation and/or project.
   case inbox(InboxFilter = .all)
@@ -122,6 +126,14 @@ public enum ArgusRoute: Hashable, Sendable {
     }
   }
 
+  /// The Skills screen, or its install sheet.
+  public var isSkills: Bool {
+    switch self {
+    case .skills, .installSkill: true
+    default: false
+    }
+  }
+
   /// Any of the blueprint screens.
   public var isBlueprints: Bool {
     switch self {
@@ -167,6 +179,8 @@ public enum ArgusRoute: Hashable, Sendable {
     case .generateBlueprint: "/blueprints/generate"
     case .newProject: "/blueprints/new-project"
     case .cloneRepository: "/projects/clone"
+    case .skills: "/skills"
+    case .installSkill: "/skills/install"
     case .inbox: "/inbox"
     case .proposal: "/inbox/proposals/:proposalId"
     case .notifications: "/notifications"

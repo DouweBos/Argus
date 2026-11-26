@@ -7579,6 +7579,122 @@ value class SimulatorProblemKind(val rawValue: String) {
 }
 
 @Serializable
+data class Skill(
+  @SerialName("path") val path: String,
+  @SerialName("name") val name: String,
+  @SerialName("description") @EncodeDefault val description: String? = null,
+  @SerialName("scope") val scope: SkillScope,
+  @SerialName("runner") val runner: SkillRunner,
+  @SerialName("repo_root") @EncodeDefault val repoRoot: String? = null,
+  @SerialName("project_name") @EncodeDefault val projectName: String? = null,
+  @SerialName("source") @EncodeDefault val source: SkillSource? = null,
+  @SerialName("file_count") val fileCount: Long,
+)
+
+@Serializable
+@JvmInline
+value class SkillInstallFrom(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val archive = SkillInstallFrom("archive")
+    val folder = SkillInstallFrom("folder")
+    val url = SkillInstallFrom("url")
+    val entries: List<SkillInstallFrom> = listOf(archive, folder, url)
+  }
+}
+
+@Serializable
+data class SkillInstallInput(
+  @SerialName("from") val from: SkillInstallFrom,
+  @SerialName("location") val location: String,
+  @SerialName("subpath") @EncodeDefault val subpath: String? = null,
+  @SerialName("target") val target: SkillTarget,
+  @SerialName("overwrite") val overwrite: Boolean,
+)
+
+@Serializable
+@JvmInline
+value class SkillInstallResultStatus(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val exists = SkillInstallResultStatus("exists")
+    val installed = SkillInstallResultStatus("installed")
+    val entries: List<SkillInstallResultStatus> = listOf(exists, installed)
+  }
+}
+
+@Serializable
+data class SkillInstallResult(
+  @SerialName("status") val status: SkillInstallResultStatus,
+  @SerialName("name") val name: String,
+  @SerialName("skill") @EncodeDefault val skill: Skill? = null,
+)
+
+@Serializable
+@JvmInline
+value class SkillRunner(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val claudeCode = SkillRunner("claude-code")
+    val codex = SkillRunner("codex")
+    val entries: List<SkillRunner> = listOf(claudeCode, codex)
+  }
+}
+
+@Serializable
+@JvmInline
+value class SkillScope(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val project = SkillScope("project")
+    val user = SkillScope("user")
+    val entries: List<SkillScope> = listOf(project, user)
+  }
+}
+
+@Serializable
+data class SkillSource(
+  @SerialName("kind") val kind: SkillSourceKind,
+  @SerialName("location") val location: String,
+  @SerialName("subpath") @EncodeDefault val subpath: String? = null,
+  @SerialName("ref") @EncodeDefault val ref: String? = null,
+  @SerialName("commit") @EncodeDefault val commit: String? = null,
+  @SerialName("installed_at") val installedAt: Double,
+  @SerialName("updated_at") val updatedAt: Double,
+)
+
+@Serializable
+@JvmInline
+value class SkillSourceKind(val rawValue: String) {
+  override fun toString(): String = rawValue
+
+  companion object {
+    val archive = SkillSourceKind("archive")
+    val folder = SkillSourceKind("folder")
+    val gist = SkillSourceKind("gist")
+    val git = SkillSourceKind("git")
+    val entries: List<SkillSourceKind> = listOf(archive, folder, gist, git)
+  }
+}
+
+@Serializable
+data class SkillTarget(
+  @SerialName("scope") val scope: SkillScope,
+  @SerialName("runner") val runner: SkillRunner,
+  @SerialName("repo_root") @EncodeDefault val repoRoot: String? = null,
+)
+
+@Serializable
+data class SkillUpdateResult(
+  @SerialName("skill") val skill: Skill,
+  @SerialName("changed") val changed: Boolean,
+)
+
+@Serializable
 data class SlackApp(
   @SerialName("id") val id: String,
   @SerialName("name") val name: String,

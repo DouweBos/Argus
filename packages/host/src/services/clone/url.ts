@@ -108,9 +108,12 @@ export interface CloneCommand {
 export function cloneCommand(
   source: CloneSourceSpec,
   dest: string,
-  opts: { gh: boolean; depth?: number },
+  opts: { gh: boolean; depth?: number; branch?: string },
 ): CloneCommand {
-  const depth = opts.depth ? ["--depth", String(opts.depth)] : [];
+  const depth = [
+    ...(opts.depth ? ["--depth", String(opts.depth)] : []),
+    ...(opts.branch ? ["--branch", opts.branch] : []),
+  ];
   if (source.kind === "shorthand" && opts.gh) {
     return {
       program: "gh",

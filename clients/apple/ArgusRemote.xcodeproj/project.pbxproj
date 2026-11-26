@@ -59,6 +59,8 @@
 		F9E631C1DACB66413FDD7C26 /* BlueprintEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5D8AABF46B4A4C83FD11DA /* BlueprintEditorView.swift */; };
 		8CEA41D1E71AE08F31A83D58 /* NewProjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1714A2D8EF889BAA5E52AFD7 /* NewProjectView.swift */; };
 		C10E5EB0000000000000B001 /* CloneRepositoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10E5EB0000000000000F001 /* CloneRepositoryView.swift */; };
+		5C111150000000000000B002 /* SkillInstallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C111150000000000000F002 /* SkillInstallView.swift */; };
+		5C111150000000000000B001 /* SkillsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C111150000000000000F001 /* SkillsView.swift */; };
 		12472B2216FB98512214C5BE /* GenerateBlueprintView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2B8CCD2D8B1407D7C76D86 /* GenerateBlueprintView.swift */; };
 		97AF0DF41C25983BAD9692C1 /* PullRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74103E5844EC73EB127B8F8A /* PullRequestView.swift */; };
 		9EC0F026CA4FC53AA74669D9 /* ProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117E737A68AD0170E2CC50F7 /* ProjectsView.swift */; };
@@ -251,6 +253,8 @@
 		BD5D8AABF46B4A4C83FD11DA /* BlueprintEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlueprintEditorView.swift; sourceTree = "<group>"; };
 		1714A2D8EF889BAA5E52AFD7 /* NewProjectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewProjectView.swift; sourceTree = "<group>"; };
 		C10E5EB0000000000000F001 /* CloneRepositoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloneRepositoryView.swift; sourceTree = "<group>"; };
+		5C111150000000000000F002 /* SkillInstallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillInstallView.swift; sourceTree = "<group>"; };
+		5C111150000000000000F001 /* SkillsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkillsView.swift; sourceTree = "<group>"; };
 		AF2B8CCD2D8B1407D7C76D86 /* GenerateBlueprintView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateBlueprintView.swift; sourceTree = "<group>"; };
 		95ACC76BC6E417BE6A706B18 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9798D9FC585435B89959E156 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -543,6 +547,8 @@
 				BD5D8AABF46B4A4C83FD11DA /* BlueprintEditorView.swift */,
 				1714A2D8EF889BAA5E52AFD7 /* NewProjectView.swift */,
 				C10E5EB0000000000000F001 /* CloneRepositoryView.swift */,
+				5C111150000000000000F002 /* SkillInstallView.swift */,
+				5C111150000000000000F001 /* SkillsView.swift */,
 				AF2B8CCD2D8B1407D7C76D86 /* GenerateBlueprintView.swift */,
 				265F66754A83F20EA323B6C6 /* ProposalView.swift */,
 				74103E5844EC73EB127B8F8A /* PullRequestView.swift */,
@@ -1135,6 +1141,8 @@
 				F9E631C1DACB66413FDD7C26 /* BlueprintEditorView.swift in Sources */,
 				8CEA41D1E71AE08F31A83D58 /* NewProjectView.swift in Sources */,
 				C10E5EB0000000000000B001 /* CloneRepositoryView.swift in Sources */,
+				5C111150000000000000B002 /* SkillInstallView.swift in Sources */,
+				5C111150000000000000B001 /* SkillsView.swift in Sources */,
 				12472B2216FB98512214C5BE /* GenerateBlueprintView.swift in Sources */,
 				13A4F4FA7A12EE9750CF8397 /* ProposalView.swift in Sources */,
 				97AF0DF41C25983BAD9692C1 /* PullRequestView.swift in Sources */,

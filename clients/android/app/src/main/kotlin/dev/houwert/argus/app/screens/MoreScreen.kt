@@ -15,6 +15,7 @@ fun MoreScreen() {
       SettingsGroup {
         Row(AppSection.PullRequests)
         Row(AppSection.Blueprints)
+        Row(AppSection.Skills)
         Row(AppSection.Issues)
         Row(AppSection.Devices)
       }

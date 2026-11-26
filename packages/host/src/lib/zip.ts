@@ -1,6 +1,7 @@
 /**
- * A minimal zip reader for Office documents: the central directory, then each
- * wanted entry stored or deflated. No zip64, encryption or multi-disk archives.
+ * A minimal zip reader and writer for Office documents and skill archives: the
+ * central directory, then each entry stored or deflated. No zip64, encryption
+ * or multi-disk archives.
  */
 
 import zlib from "node:zlib";
@@ -82,4 +83,55 @@ export function readZipEntry(
   }
 
   return null;
+}
+
+export interface ZipFile {
+  /** Forward slashes, relative. */
+  name: string;
+  data: Buffer;
+}
+
+/** A deflated archive of `files`. */
+export function writeZip(files: ZipFile[]): Buffer {
+  const locals: Buffer[] = [];
+  const centrals: Buffer[] = [];
+  let offset = 0;
+  for (const file of files) {
+    const name = Buffer.from(file.name, "utf8");
+    const data = zlib.deflateRawSync(file.data);
+    const crc = zlib.crc32(file.data);
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(LOCAL, 0);
+    local.writeUInt16LE(20, 4);
+    // Bit 11: the name is UTF-8.
+    local.writeUInt16LE(0x0800, 6);
+    local.writeUInt16LE(8, 8);
+    local.writeUInt32LE(crc, 14);
+    local.writeUInt32LE(data.length, 18);
+    local.writeUInt32LE(file.data.length, 22);
+    local.writeUInt16LE(name.length, 26);
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(CENTRAL, 0);
+    central.writeUInt16LE(20, 4);
+    central.writeUInt16LE(20, 6);
+    central.writeUInt16LE(0x0800, 8);
+    central.writeUInt16LE(8, 10);
+    central.writeUInt32LE(crc, 16);
+    central.writeUInt32LE(data.length, 20);
+    central.writeUInt32LE(file.data.length, 24);
+    central.writeUInt16LE(name.length, 28);
+    central.writeUInt32LE(offset, 42);
+    locals.push(local, name, data);
+    centrals.push(central, name);
+    offset += local.length + name.length + data.length;
+  }
+  const directory = Buffer.concat(centrals);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(EOCD, 0);
+  end.writeUInt16LE(files.length, 8);
+  end.writeUInt16LE(files.length, 10);
+  end.writeUInt32LE(directory.length, 12);
+  end.writeUInt32LE(offset, 16);
+
+  return Buffer.concat([...locals, directory, end]);
 }

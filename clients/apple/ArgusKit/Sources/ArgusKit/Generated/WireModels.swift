@@ -20496,6 +20496,278 @@ extension ArgusProtocol {
     public static let unavailable = SimulatorProblemKind(rawValue: "unavailable")
   }
 
+  public struct Skill: Codable, Sendable {
+    public var path: String
+    public var name: String
+    public var description: String?
+    public var scope: SkillScope
+    public var runner: SkillRunner
+    public var repoRoot: String?
+    public var projectName: String?
+    public var source: SkillSource?
+    public var fileCount: Int
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+      case name = "name"
+      case description = "description"
+      case scope = "scope"
+      case runner = "runner"
+      case repoRoot = "repo_root"
+      case projectName = "project_name"
+      case source = "source"
+      case fileCount = "file_count"
+    }
+
+    public init(path: String, name: String, description: String? = nil, scope: SkillScope, runner: SkillRunner, repoRoot: String? = nil, projectName: String? = nil, source: SkillSource? = nil, fileCount: Int) {
+      self.path = path
+      self.name = name
+      self.description = description
+      self.scope = scope
+      self.runner = runner
+      self.repoRoot = repoRoot
+      self.projectName = projectName
+      self.source = source
+      self.fileCount = fileCount
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+      try c.encode(name, forKey: .name)
+      try c.encode(description, forKey: .description)
+      try c.encode(scope, forKey: .scope)
+      try c.encode(runner, forKey: .runner)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(projectName, forKey: .projectName)
+      try c.encode(source, forKey: .source)
+      try c.encode(fileCount, forKey: .fileCount)
+    }
+  }
+
+  public struct SkillInstallFrom: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let archive = SkillInstallFrom(rawValue: "archive")
+    public static let folder = SkillInstallFrom(rawValue: "folder")
+    public static let url = SkillInstallFrom(rawValue: "url")
+  }
+
+  public struct SkillInstallInput: Codable, Sendable {
+    public var from: SkillInstallFrom
+    public var location: String
+    public var subpath: String?
+    public var target: SkillTarget
+    public var overwrite: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case from = "from"
+      case location = "location"
+      case subpath = "subpath"
+      case target = "target"
+      case overwrite = "overwrite"
+    }
+
+    public init(from: SkillInstallFrom, location: String, subpath: String? = nil, target: SkillTarget, overwrite: Bool) {
+      self.from = from
+      self.location = location
+      self.subpath = subpath
+      self.target = target
+      self.overwrite = overwrite
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(from, forKey: .from)
+      try c.encode(location, forKey: .location)
+      try c.encode(subpath, forKey: .subpath)
+      try c.encode(target, forKey: .target)
+      try c.encode(overwrite, forKey: .overwrite)
+    }
+  }
+
+  public struct SkillInstallResultStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let exists = SkillInstallResultStatus(rawValue: "exists")
+    public static let installed = SkillInstallResultStatus(rawValue: "installed")
+  }
+
+  public struct SkillInstallResult: Codable, Sendable {
+    public var status: SkillInstallResultStatus
+    public var name: String
+    public var skill: Skill?
+
+    enum CodingKeys: String, CodingKey {
+      case status = "status"
+      case name = "name"
+      case skill = "skill"
+    }
+
+    public init(status: SkillInstallResultStatus, name: String, skill: Skill? = nil) {
+      self.status = status
+      self.name = name
+      self.skill = skill
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(status, forKey: .status)
+      try c.encode(name, forKey: .name)
+      try c.encode(skill, forKey: .skill)
+    }
+  }
+
+  public struct SkillRunner: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let claudeCode = SkillRunner(rawValue: "claude-code")
+    public static let codex = SkillRunner(rawValue: "codex")
+  }
+
+  public struct SkillScope: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let project = SkillScope(rawValue: "project")
+    public static let user = SkillScope(rawValue: "user")
+  }
+
+  public struct SkillSource: Codable, Sendable {
+    public var kind: SkillSourceKind
+    public var location: String
+    public var subpath: String?
+    public var ref: String?
+    public var commit: String?
+    public var installedAt: Double
+    public var updatedAt: Double
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case location = "location"
+      case subpath = "subpath"
+      case ref = "ref"
+      case commit = "commit"
+      case installedAt = "installed_at"
+      case updatedAt = "updated_at"
+    }
+
+    public init(kind: SkillSourceKind, location: String, subpath: String? = nil, ref: String? = nil, commit: String? = nil, installedAt: Double, updatedAt: Double) {
+      self.kind = kind
+      self.location = location
+      self.subpath = subpath
+      self.ref = ref
+      self.commit = commit
+      self.installedAt = installedAt
+      self.updatedAt = updatedAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(location, forKey: .location)
+      try c.encode(subpath, forKey: .subpath)
+      try c.encode(ref, forKey: .ref)
+      try c.encode(commit, forKey: .commit)
+      try c.encode(installedAt, forKey: .installedAt)
+      try c.encode(updatedAt, forKey: .updatedAt)
+    }
+  }
+
+  public struct SkillSourceKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let archive = SkillSourceKind(rawValue: "archive")
+    public static let folder = SkillSourceKind(rawValue: "folder")
+    public static let gist = SkillSourceKind(rawValue: "gist")
+    public static let git = SkillSourceKind(rawValue: "git")
+  }
+
+  public struct SkillTarget: Codable, Sendable {
+    public var scope: SkillScope
+    public var runner: SkillRunner
+    public var repoRoot: String?
+
+    enum CodingKeys: String, CodingKey {
+      case scope = "scope"
+      case runner = "runner"
+      case repoRoot = "repo_root"
+    }
+
+    public init(scope: SkillScope, runner: SkillRunner, repoRoot: String? = nil) {
+      self.scope = scope
+      self.runner = runner
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(scope, forKey: .scope)
+      try c.encode(runner, forKey: .runner)
+      try c.encode(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct SkillUpdateResult: Codable, Sendable {
+    public var skill: Skill
+    public var changed: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case skill = "skill"
+      case changed = "changed"
+    }
+
+    public init(skill: Skill, changed: Bool) {
+      self.skill = skill
+      self.changed = changed
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(skill, forKey: .skill)
+      try c.encode(changed, forKey: .changed)
+    }
+  }
+
   public struct SlackApp: Codable, Sendable {
     public var id: String
     public var name: String

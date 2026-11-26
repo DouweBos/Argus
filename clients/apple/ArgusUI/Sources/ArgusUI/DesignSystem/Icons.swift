@@ -88,6 +88,8 @@ public enum Icon {
   public static let download = "square.and.arrow.down"
   /// Clone Repository: a project from a git URL.
   public static let cloneRepository = "square.and.arrow.down.on.square"
+  /// The Skills screen: the folders of instructions the runners load.
+  public static let skills = "wand.and.stars"
   public static let share = "square.and.arrow.up"
   public static let lock = "lock"
   public static let clock = "clock"

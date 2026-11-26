@@ -24,6 +24,7 @@ import { registerOnboardingCommands } from "./onboarding";
 import { registerRemoteCommands } from "./remote";
 import { registerSessionCommands } from "./sessions";
 import { registerSettingsCommands } from "./settings";
+import { registerSkillCommands } from "./skills";
 import { registerSlackCommands } from "./slack";
 import { registerTeammateCommands } from "./teammates";
 import { registerTerminalCommands } from "./terminals";
@@ -42,6 +43,7 @@ export function registerHostCommands(): void {
   registerCloneCommands();
   registerOnboardingCommands();
   registerSettingsCommands();
+  registerSkillCommands();
   registerLlmCommands();
   registerDeviceCommands();
   registerBrowserCommands();

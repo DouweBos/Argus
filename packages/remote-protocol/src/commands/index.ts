@@ -24,6 +24,7 @@ import { ONBOARDING_COMMANDS } from "./onboarding";
 import { REMOTE_COMMANDS } from "./remote";
 import { SESSION_COMMANDS } from "./sessions";
 import { SETTINGS_COMMANDS } from "./settings";
+import { SKILL_COMMANDS } from "./skills";
 import { SLACK_COMMANDS } from "./slack";
 import { TEAMMATE_COMMANDS } from "./teammates";
 import { TERMINAL_COMMANDS } from "./terminals";
@@ -39,6 +40,7 @@ export * from "../models/terminals";
 export * from "../models/automations";
 export * from "../models/blueprints";
 export * from "../models/clone";
+export * from "../models/skills";
 export * from "../models/onboarding";
 export * from "../models/settings";
 export * from "../models/llm";
@@ -70,6 +72,7 @@ export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
   clone: CLONE_COMMANDS,
   onboarding: ONBOARDING_COMMANDS,
   settings: SETTINGS_COMMANDS,
+  skills: SKILL_COMMANDS,
   llm: LLM_COMMANDS,
   devices: DEVICE_COMMANDS,
   browser: BROWSER_COMMANDS,
@@ -97,6 +100,7 @@ export const COMMANDS = {
   ...CLONE_COMMANDS,
   ...ONBOARDING_COMMANDS,
   ...SETTINGS_COMMANDS,
+  ...SKILL_COMMANDS,
   ...LLM_COMMANDS,
   ...DEVICE_COMMANDS,
   ...BROWSER_COMMANDS,

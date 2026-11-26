@@ -763,6 +763,31 @@ export interface EventMap {
     platform: "android" | "ios";
   };
   simulator_repaired: { action: "delete" | "erase"; success: boolean };
+  skill_installed: {
+    /** True when it replaced a skill of the same name. */
+    overwrote: boolean;
+    runner: "claude-code" | "codex";
+    scope: "project" | "user";
+    source_kind: "archive" | "folder" | "gist" | "git";
+    success: boolean;
+  };
+  skill_removed: {
+    /** False for a skill that wasn't installed through Argus. */
+    installed: boolean;
+    runner: "claude-code" | "codex";
+    scope: "project" | "user";
+  };
+  skill_updated: {
+    /** False when the source had nothing new. */
+    changed: boolean;
+    source_kind: "archive" | "folder" | "gist" | "git";
+    success: boolean;
+  };
+  skills_viewed: {
+    count_bucket: "0" | "1-5" | "6-20" | "21+";
+    /** How many were installed through Argus. */
+    installed_count: number;
+  };
   telemetry_disabled: undefined;
   terminal_stopped: {
     source: "mcp" | "rerun" | "ui";

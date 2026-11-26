@@ -2,6 +2,7 @@ package dev.houwert.argus.ui.icons
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.outlined.AutoFixHigh
 import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.NotificationsActive
@@ -192,6 +193,8 @@ object Icon {
   val camera = Icons.Outlined.PhotoCamera
   val qrCode = Icons.Outlined.QrCodeScanner
   val plus = Icons.Outlined.Add
+  /** The Skills screen: the folders of instructions the runners load. */
+  val skills = Icons.Outlined.AutoFixHigh
   val close = Icons.Outlined.Close
   val ellipsis = Icons.Outlined.MoreHoriz
   val ellipsisVertical = Icons.Outlined.MoreVert

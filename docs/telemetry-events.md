@@ -273,6 +273,15 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `repository_clone_started`  | host   | Clone Repository started cloning into a new project            | `source` — the app that asked (`mac`, `ios`, `android`, `web`), `url_kind` (`https`, `ssh`, `shorthand` for `owner/repo`) |
 | `repository_clone_finished` | host   | A clone finished: added as a project, failed, or was cancelled | `source`, `url_kind`, `success`, `cancelled`, `duration_bucket` (`<10s`, `<1m`, `<5m`, `>=5m`)                            |
 
+## Skills
+
+| Event             | Source | When                                                                                | Extra props                                                                                                                                                                   |
+| ----------------- | ------ | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `skills_viewed`   | host   | The Skills screen read the skills on the computer, from any app                     | `count_bucket` (`0`, `1-5`, `6-20`, `21+`), `installed_count` — how many were installed through Argus                                                                         |
+| `skill_installed` | host   | A skill install finished or failed (not when it stopped to ask about replacing one) | `source_kind` (`git`, `gist`, `folder`, `archive`), `scope` (`user`, `project`), `runner` (`claude-code`, `codex`), `overwrote` — it replaced a skill of that name, `success` |
+| `skill_updated`   | host   | Update fetched a skill's source again                                               | `source_kind`, `changed` — false when the source had nothing new, `success`                                                                                                   |
+| `skill_removed`   | host   | A skill was removed                                                                 | `scope`, `runner`, `installed` — false for a skill Argus didn't install                                                                                                       |
+
 ## Simulators
 
 | Event                           | Source | When                                                                               | Extra props                                                                                                                                                                                                                                                                                                                       |

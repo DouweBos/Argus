@@ -77,6 +77,7 @@ struct ShortcutCommand: Hashable, Sendable {
   static let inbox = Self("go.inbox", "Inbox", .go, .global, key("i", [.shift, .command]))
   static let automations = Self("go.automations", "Automations", .go, .global, nil)
   static let blueprints = Self("go.blueprints", "Blueprints", .go, .global, nil)
+  static let skills = Self("go.skills", "Skills", .go, .global, nil)
   /// ⌥⌘1–⌥⌘5, in `MenuCommand.screens`' order.
   static let screens: [Self] = MenuCommand.screens.enumerated().map { index, screen in
     Self(
@@ -190,7 +191,7 @@ struct ShortcutCommand: Hashable, Sendable {
   static let all: [Self] =
     [
       newSession, deleteSession, addProject, cloneRepository, newProjectFromBlueprint, importCliProjects, openSession, commandPalette,
-      settings, quit, back, forward, home, inbox, automations, blueprints,
+      settings, quit, back, forward, home, inbox, automations, blueprints, skills,
     ]
     + screens + SessionPanel.allCases.map(panel)
     + [newTab, closeTab, nextTab, previousTab, sidePanel, terminalTab, deviceTab]

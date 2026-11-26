@@ -72,6 +72,10 @@ sealed interface ArgusRoute {
   data class NewProject(val blueprintId: String? = null) : ArgusRoute
   /** `/projects/clone`: clone a repository from a URL into a new project. */
   data object CloneRepository : ArgusRoute
+  /** `/skills`: the skills the runners load on this computer, user and project. */
+  data object Skills : ArgusRoute
+  /** `/skills/install?url=`: install a skill, from a link when one is given. */
+  data class InstallSkill(val url: String? = null) : ArgusRoute
   /** `/inbox?automation=&project=`: proposals, work waiting for review, failed runs. */
   data class Inbox(val filter: InboxFilter = InboxFilter.all) : ArgusRoute
   /** `/inbox/proposals/:proposalId`. */
@@ -155,6 +159,8 @@ sealed interface ArgusRoute {
       GenerateBlueprint -> "/blueprints/generate"
       is NewProject -> "/blueprints/new-project"
       CloneRepository -> "/projects/clone"
+      Skills -> "/skills"
+      is InstallSkill -> "/skills/install"
       is Inbox -> "/inbox"
       is Proposal -> "/inbox/proposals/:proposalId"
       Notifications -> "/notifications"

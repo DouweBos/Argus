@@ -402,6 +402,10 @@ export const REMOTE_METHODS = {
   "projects.clones": "monitor",
   "projects.clone": "control",
   "projects.clone_cancel": "control",
+  "skills.list": "monitor",
+  "skills.install": "control",
+  "skills.update": "control",
+  "skills.remove": "control",
   /** Which integrations the computer has connected, and as whom. */
   "integrations.list": "monitor",
   /** A key typed on the device goes to the computer's secret store and never

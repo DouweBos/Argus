@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.ui.graphics.vector.ImageVector
+import dev.houwert.argus.ui.icons.Icon as ArgusIcon
 
 /**
  * The top-level destinations, as the Mac's sidebar lists them. A phone has room
@@ -28,6 +29,7 @@ enum class AppSection(val title: String, val root: Route, val icon: ImageVector)
   Issues("Issues", Route.Issues, Icons.AutoMirrored.Outlined.List),
   PullRequests("Pull Requests", Route.PullRequests, Icons.Outlined.AccountTree),
   Blueprints("Blueprints", Route.Blueprints, Icons.Outlined.Dashboard),
+  Skills("Skills", Route.Skills, ArgusIcon.skills),
   Usage("Usage", Route.Usage, Icons.Outlined.Speed),
   Notifications("Notifications", Route.Notifications, Icons.Outlined.Notifications),
   Settings("Settings", Route.Settings, Icons.Outlined.Settings),
@@ -40,6 +42,6 @@ enum class AppSection(val title: String, val root: Route, val icon: ImageVector)
     /** The phone's tab bar. */
     val tabs = listOf(Home, Inbox, Agents, Automations, More)
     /** What More lists, in order. */
-    val underMore = listOf(PullRequests, Blueprints, Issues, Devices, Usage, Notifications, Settings)
+    val underMore = listOf(PullRequests, Blueprints, Skills, Issues, Devices, Usage, Notifications, Settings)
   }
 }

@@ -269,6 +269,12 @@ import {
 } from "../simulator/ios";
 import { devicePng } from "../simulator/screenshot";
 import { getVideoDims } from "../simulator/videoForward";
+import {
+  installSkill,
+  removeSkill,
+  updateSkill,
+  viewSkills,
+} from "../skills/install";
 import { slackManifestJson } from "../slack/manifest";
 import { remoteSlackStatus, slackOverview } from "../slack/status";
 import {
@@ -3346,6 +3352,22 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const { clone_id } = parse("projects.clone_cancel", params);
 
     return await control(() => ({ accepted: cancelClone(clone_id) }));
+  },
+  "skills.list": async () => viewSkills(),
+  "skills.install": async (params) => {
+    const { input } = parse("skills.install", params);
+
+    return await control(() => installSkill(input));
+  },
+  "skills.update": async (params) => {
+    const { path } = parse("skills.update", params);
+
+    return await control(() => updateSkill(path));
+  },
+  "skills.remove": async (params) => {
+    const { path } = parse("skills.remove", params);
+
+    return await control(() => removeSkill(path));
   },
   "blueprints.draft": async (params) => {
     const { paths } = parse("blueprints.draft", params);

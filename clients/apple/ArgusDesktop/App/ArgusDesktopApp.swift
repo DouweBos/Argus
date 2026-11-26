@@ -232,6 +232,8 @@ private struct NavigationCommands: View {
       .keyboardShortcut(model.menuShortcut(.automations))
     Button("Blueprints") { model.navigate(.blueprints) }
       .keyboardShortcut(model.menuShortcut(.blueprints))
+    Button("Skills") { model.navigate(.skills) }
+      .keyboardShortcut(model.menuShortcut(.skills))
     Divider()
     Button(model.sidePanelVisible ? "Hide Side Panel" : "Show Side Panel") {
       model.toggleSidePanel(via: NSApp.currentEvent?.type == .keyDown ? .shortcut : .menu)

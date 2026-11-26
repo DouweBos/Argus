@@ -86,6 +86,10 @@ sealed interface Route {
   @Serializable data class NewProject(val blueprintId: String? = null) : Route
   /** Clone a repository from a URL into a new project on the computer. */
   @Serializable data object CloneRepository : Route
+  /** The skills the runners load on the computer. */
+  @Serializable data object Skills : Route
+  /** Install a skill, from a link when one is given. */
+  @Serializable data class InstallSkill(val url: String? = null) : Route
   /** Agents, sessions and teammates by name. */
   @Serializable data class Search(val query: String = "") : Route
   @Serializable data object Settings : Route

@@ -54,6 +54,8 @@ extension ArgusRoute {
       guard let last = parts.last, let number = Int(last) else { return nil }
       self = .pullRequest(repo: parts.dropFirst().dropLast().joined(separator: "/"), number: number)
     case ("projects", 2) where parts[1] == "clone": self = .cloneRepository
+    case ("skills", 1): self = .skills
+    case ("skills", 2) where parts[1] == "install": self = .installSkill(url: query["url"].flatMap(\.nonEmpty))
     case ("blueprints", 1): self = .blueprints
     case ("blueprints", 2) where parts[1] == "new": self = .blueprint(id: nil)
     case ("blueprints", 2) where parts[1] == "generate": self = .generateBlueprint
@@ -133,6 +135,8 @@ extension ArgusRoute {
     case .generateBlueprint: "/blueprints/generate"
     case .newProject(let blueprintId): "/blueprints/new-project" + Self.query([("blueprint", blueprintId)])
     case .cloneRepository: "/projects/clone"
+    case .skills: "/skills"
+    case .installSkill(let url): "/skills/install" + Self.query([("url", url)])
     case .teammates: "/teammates"
     case .teammateGallery: "/teammates/gallery"
     case .teammate(let id, let page): "/teammates/\(Self.encode(id))" + Self.teammateSuffix(page)

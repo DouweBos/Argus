@@ -46,6 +46,8 @@ import dev.houwert.argus.app.screens.home.SearchScreen
 import dev.houwert.argus.app.screens.agent.McpServersScreen
 import dev.houwert.argus.app.screens.newproject.CloneRepositoryScreen
 import dev.houwert.argus.app.screens.newproject.NewProjectScreen
+import dev.houwert.argus.app.screens.skills.SkillInstallScreen
+import dev.houwert.argus.app.screens.skills.SkillsScreen
 import dev.houwert.argus.app.screens.pair.PairScreen
 import dev.houwert.argus.app.screens.project.ProjectScreen
 import dev.houwert.argus.app.screens.quickrun.QuickRunScreen
@@ -107,6 +109,8 @@ fun RouteScreen(route: Route) {
     Route.QuickRun -> QuickRunScreen()
     is Route.NewProject -> NewProjectScreen(route.blueprintId)
     Route.CloneRepository -> CloneRepositoryScreen()
+    Route.Skills -> SkillsScreen()
+    is Route.InstallSkill -> SkillInstallScreen(route.url)
     is Route.Search -> SearchScreen(route.query)
     Route.Automations -> AutomationsScreen()
     is Route.Automation -> AutomationScreen(route.id, route.label)

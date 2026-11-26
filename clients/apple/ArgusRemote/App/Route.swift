@@ -88,6 +88,10 @@ enum Route: Hashable {
   case newProject(blueprintId: String?)
   /// Clone a repository from a URL into a new project on the computer.
   case cloneRepository
+  /// The skills the runners load on the computer.
+  case skills
+  /// Install a skill, from a link when one is given.
+  case installSkill(url: String?)
   /// Agents, sessions and teammates by name; the query rides along for a link.
   case search(query: String)
   case settings
@@ -154,6 +158,8 @@ enum Route: Hashable {
     case .generateBlueprint: ArgusRoute.generateBlueprint.pattern
     case .newProject(let id): ArgusRoute.newProject(blueprintId: id).pattern
     case .cloneRepository: ArgusRoute.cloneRepository.pattern
+    case .skills: ArgusRoute.skills.pattern
+    case .installSkill: ArgusRoute.installSkill().pattern
     case .notifications: ArgusRoute.notifications.pattern
     case .usage: ArgusRoute.usage(.limits).pattern
     case .usageModel(let tab, let runner, let model, _): ArgusRoute.usageModel(tab, runner: runner, model: model).pattern
@@ -191,7 +197,8 @@ enum Route: Hashable {
 /// room for five tabs, so the rest live under More; an iPad's sidebar lists
 /// them all.
 enum AppSection: String, Hashable, CaseIterable, Identifiable {
-  case home, inbox, agents, devices, automations, issues, pullRequests, blueprints, usage, notifications, settings, more
+  case home, inbox, agents, devices, automations, issues, pullRequests, blueprints, skills, usage, notifications, settings,
+    more
 
   var id: String { rawValue }
 
@@ -200,9 +207,9 @@ enum AppSection: String, Hashable, CaseIterable, Identifiable {
   /// The iPad sidebar's everyday rows, then the occasional ones — the Mac's
   /// primary list and its foot. Issues only shows with Linear connected.
   static let primary: [AppSection] = [.home, .inbox, .agents, .devices, .automations, .issues]
-  static let secondary: [AppSection] = [.pullRequests, .blueprints, .usage, .notifications, .settings]
+  static let secondary: [AppSection] = [.pullRequests, .blueprints, .skills, .usage, .notifications, .settings]
   /// What More lists, in order.
-  static let underMore: [AppSection] = [.pullRequests, .blueprints, .issues, .devices, .usage, .notifications, .settings]
+  static let underMore: [AppSection] = [.pullRequests, .blueprints, .skills, .issues, .devices, .usage, .notifications, .settings]
 
   /// Where this section lives on a phone: its own tab, or More.
   var tab: AppSection { Self.tabs.contains(self) ? self : .more }
@@ -218,6 +225,7 @@ enum AppSection: String, Hashable, CaseIterable, Identifiable {
     case .issues: .issues
     case .pullRequests: .pullRequests
     case .blueprints: .blueprints
+    case .skills: .skills
     case .usage: .usage
     case .notifications: .notifications
     case .settings: .settings
@@ -235,6 +243,7 @@ enum AppSection: String, Hashable, CaseIterable, Identifiable {
     case .issues: "Issues"
     case .pullRequests: "Pull Requests"
     case .blueprints: "Blueprints"
+    case .skills: "Skills"
     case .usage: "Usage"
     case .notifications: "Notifications"
     case .settings: "Settings"
@@ -252,6 +261,7 @@ enum AppSection: String, Hashable, CaseIterable, Identifiable {
     case .issues: Icon.issues
     case .pullRequests: Icon.pullRequests
     case .blueprints: Icon.blueprint
+    case .skills: Icon.skills
     case .usage: Icon.usage
     case .notifications: Icon.notifications
     case .settings: Icon.settings

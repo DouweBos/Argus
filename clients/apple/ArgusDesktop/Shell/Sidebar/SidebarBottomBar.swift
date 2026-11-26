@@ -43,6 +43,7 @@ struct SidebarDestination {
       return $0 == .pullRequests
     },
     .init(title: "Blueprints", symbol: BlueprintText.icon, shortcut: .blueprints, route: .blueprints) { $0.isBlueprints },
+    .init(title: "Skills", symbol: Icon.skills, shortcut: .skills, route: .skills) { $0.isSkills },
     .init(title: "Usage", symbol: Icon.usage, shortcut: nil, route: .usage(.limits)) {
       if case .usage = $0 { return true }
       if case .usageModel = $0 { return true }

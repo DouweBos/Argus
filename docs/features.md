@@ -421,6 +421,39 @@ first is the **Clone location** setting — see
 
 ---
 
+## Skills
+
+**Skills** (the sidebar's foot on the Mac, More on the phones) lists every skill
+the runners load on the computer: a folder with a `SKILL.md`, read from
+`~/.claude/skills` and `<project>/.claude/skills` for Claude Code, and
+`$CODEX_HOME/skills` (`~/.codex/skills`) and `<project>/.codex/skills` for
+Codex. Each row shows the skill's name and description from its frontmatter,
+its runner and where it came from; your skills come first, then each project's.
+
+**Install Skill** takes:
+
+- a git URL (anything Clone Repository takes) with an optional folder inside
+  the repository, or a GitHub link straight to that folder
+  (`https://github.com/owner/skills/tree/main/review`); it is cloned shallow;
+- a gist URL (`https://gist.github.com/you/<id>`);
+- on the Mac, a folder or a `.skill`/`.zip` file. Phones install from a URL
+  only: a folder or a file is a path on the computer.
+
+It installs into your skills (every project) or one project's, for Claude Code
+or Codex. The source must hold a `SKILL.md` (or exactly one skill a folder or
+two down; with several, Argus names them so you can pick one); archives that
+write outside their folder are refused. Installing over a skill of the same
+name asks first. The skill's folder is named after its frontmatter `name`.
+
+Argus records where it came from in `.argus-skill.json` inside the skill's
+folder (the source, the folder in it, the branch and the commit), so
+**Update** fetches it again and replaces the files, and reports when nothing
+changed. A project skill's record is checked in with it, so teammates can
+update it too. **Remove** deletes the folder after asking. Installing,
+updating and removing from a phone needs control.
+
+---
+
 ## Blueprints
 
 Your own recipes for new projects. Pick a blueprint, type a name and a

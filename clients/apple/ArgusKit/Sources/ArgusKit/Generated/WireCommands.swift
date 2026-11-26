@@ -9445,6 +9445,91 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SkillInstallParams: Codable, Sendable {
+      public var input: SkillInstallInput
+
+      enum CodingKeys: String, CodingKey {
+        case input = "input"
+      }
+
+      public init(input: SkillInstallInput) {
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
+    public struct SkillRemoveParams: Codable, Sendable {
+      public var path: String
+
+      enum CodingKeys: String, CodingKey {
+        case path = "path"
+      }
+
+      public init(path: String) {
+        self.path = path
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(path, forKey: .path)
+      }
+    }
+
+    public struct SkillRemoveResult: Codable, Sendable {
+      public var removed: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case removed = "removed"
+      }
+
+      public init(removed: Bool) {
+        self.removed = removed
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(removed, forKey: .removed)
+      }
+    }
+
+    public struct SkillUpdateParams: Codable, Sendable {
+      public var path: String
+
+      enum CodingKeys: String, CodingKey {
+        case path = "path"
+      }
+
+      public init(path: String) {
+        self.path = path
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(path, forKey: .path)
+      }
+    }
+
+    public struct SkillsListResult: Codable, Sendable {
+      public var skills: [Skill]
+
+      enum CodingKeys: String, CodingKey {
+        case skills = "skills"
+      }
+
+      public init(skills: [Skill]) {
+        self.skills = skills
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(skills, forKey: .skills)
+      }
+    }
+
     public struct SlackAddAllowedUserParams: Codable, Sendable {
       public var teamId: String
       public var userId: String
@@ -14286,6 +14371,34 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.SimulatorTouchParams
       public typealias Result = IgnoredResult
       public static let name = "simulator_touch"
+      public static let tier = "admin"
+    }
+
+    public enum SkillInstall: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.SkillInstallParams
+      public typealias Result = ArgusProtocol.SkillInstallResult
+      public static let name = "skill_install"
+      public static let tier = "admin"
+    }
+
+    public enum SkillRemove: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.SkillRemoveParams
+      public typealias Result = ArgusProtocol.CommandsTypes.SkillRemoveResult
+      public static let name = "skill_remove"
+      public static let tier = "admin"
+    }
+
+    public enum SkillUpdate: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.SkillUpdateParams
+      public typealias Result = ArgusProtocol.SkillUpdateResult
+      public static let name = "skill_update"
+      public static let tier = "admin"
+    }
+
+    public enum SkillsList: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.CommandsTypes.SkillsListResult
+      public static let name = "skills_list"
       public static let tier = "admin"
     }
 

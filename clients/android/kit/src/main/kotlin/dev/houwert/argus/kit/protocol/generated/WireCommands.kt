@@ -2857,6 +2857,31 @@ object CommandsTypes {
   )
 
   @Serializable
+  data class SkillInstallParams(
+    @SerialName("input") val input: SkillInstallInput,
+  )
+
+  @Serializable
+  data class SkillRemoveParams(
+    @SerialName("path") val path: String,
+  )
+
+  @Serializable
+  data class SkillRemoveResult(
+    @SerialName("removed") val removed: Boolean,
+  )
+
+  @Serializable
+  data class SkillUpdateParams(
+    @SerialName("path") val path: String,
+  )
+
+  @Serializable
+  data class SkillsListResult(
+    @SerialName("skills") val skills: List<Skill>,
+  )
+
+  @Serializable
   data class SlackAddAllowedUserParams(
     @SerialName("teamId") val teamId: String,
     @SerialName("userId") val userId: String,
@@ -4241,6 +4266,14 @@ object Commands {
   object SimulatorSetOrientation : RemoteCommand<CommandsTypes.SimulatorSetOrientationParams, dev.houwert.argus.kit.protocol.generated.SimulatorDeviceState>("simulator_set_orientation", "admin", serializer(), serializer())
 
   object SimulatorTouch : RemoteCommand<CommandsTypes.SimulatorTouchParams, IgnoredResult>("simulator_touch", "admin", serializer(), serializer())
+
+  object SkillInstall : RemoteCommand<CommandsTypes.SkillInstallParams, SkillInstallResult>("skill_install", "admin", serializer(), serializer())
+
+  object SkillRemove : RemoteCommand<CommandsTypes.SkillRemoveParams, CommandsTypes.SkillRemoveResult>("skill_remove", "admin", serializer(), serializer())
+
+  object SkillUpdate : RemoteCommand<CommandsTypes.SkillUpdateParams, SkillUpdateResult>("skill_update", "admin", serializer(), serializer())
+
+  object SkillsList : RemoteCommand<EmptyParams, CommandsTypes.SkillsListResult>("skills_list", "admin", serializer(), serializer())
 
   object SlackAddAllowedUser : RemoteCommand<CommandsTypes.SlackAddAllowedUserParams, SlackOverview>("slack_add_allowed_user", "admin", serializer(), serializer())
 

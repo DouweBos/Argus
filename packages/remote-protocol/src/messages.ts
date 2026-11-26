@@ -113,6 +113,12 @@ import {
   WorktreeCleanupSweep,
 } from "./models/sessions";
 import {
+  Skill,
+  SkillInstallInput,
+  SkillInstallResult,
+  SkillUpdateResult,
+} from "./models/skills";
+import {
   SlackChannelRef,
   SlackStatus,
   SlackTriggerMatch,
@@ -1057,6 +1063,13 @@ export const MethodParams = {
   /** Stops the clone and removes the partial folder. */
   "projects.clone_cancel": z.object({ clone_id: z.string() }),
   "projects.clones": z.object({}),
+  /** Every skill folder on the computer: the runners' user folders and each project's. */
+  "skills.list": z.object({}),
+  /** Stops at `exists` unless `overwrite`, so the client can confirm replacing it. */
+  "skills.install": z.object({ input: SkillInstallInput }),
+  /** Fetches the recorded source again. */
+  "skills.update": z.object({ path: z.string() }),
+  "skills.remove": z.object({ path: z.string() }),
   "integrations.list": z.object({}),
   /** The key goes to the computer's secret store once the service accepts
    *  it; no answer ever carries it back. */
@@ -1658,6 +1671,10 @@ export const MethodResult = {
   "projects.clone": z.object({ clone: CloneJob }),
   "projects.clone_cancel": z.object({ accepted: z.boolean() }),
   "projects.clones": z.object({ clones: z.array(CloneJob) }),
+  "skills.list": z.object({ skills: z.array(Skill) }),
+  "skills.install": SkillInstallResult,
+  "skills.update": SkillUpdateResult,
+  "skills.remove": z.object({ removed: z.boolean() }),
   "integrations.list": z.object({ integrations: z.array(IntegrationStatus) }),
   /** `claim_code` is always null here. `status` is the first workspace, for
    *  clients from before there were several. */

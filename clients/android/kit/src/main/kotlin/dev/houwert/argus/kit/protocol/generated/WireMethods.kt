@@ -2871,6 +2871,34 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class SkillsInstallParams(
+    @SerialName("input") val input: SkillInstallInput,
+  )
+
+  @Serializable
+  class SkillsListParams
+
+  @Serializable
+  data class SkillsListResult(
+    @SerialName("skills") val skills: List<Skill>,
+  )
+
+  @Serializable
+  data class SkillsRemoveParams(
+    @SerialName("path") val path: String,
+  )
+
+  @Serializable
+  data class SkillsRemoveResult(
+    @SerialName("removed") val removed: Boolean,
+  )
+
+  @Serializable
+  data class SkillsUpdateParams(
+    @SerialName("path") val path: String,
+  )
+
+  @Serializable
   data class SlackConnectParams(
     @SerialName("bot_token") val botToken: String,
     @SerialName("app_token") val appToken: String,
@@ -3659,6 +3687,14 @@ object Methods {
   object SessionsViewing : RemoteCommand<MethodsTypes.SessionsViewingParams, MethodsTypes.SessionsViewingResult>("sessions.viewing", "control", serializer(), serializer())
 
   object SessionsWatchPullRequest : RemoteCommand<MethodsTypes.SessionsWatchPullRequestParams, MethodsTypes.SessionsWatchPullRequestResult>("sessions.watch_pull_request", "control", serializer(), serializer())
+
+  object SkillsInstall : RemoteCommand<MethodsTypes.SkillsInstallParams, SkillInstallResult>("skills.install", "control", serializer(), serializer())
+
+  object SkillsList : RemoteCommand<MethodsTypes.SkillsListParams, MethodsTypes.SkillsListResult>("skills.list", "control", serializer(), serializer())
+
+  object SkillsRemove : RemoteCommand<MethodsTypes.SkillsRemoveParams, MethodsTypes.SkillsRemoveResult>("skills.remove", "control", serializer(), serializer())
+
+  object SkillsUpdate : RemoteCommand<MethodsTypes.SkillsUpdateParams, SkillUpdateResult>("skills.update", "control", serializer(), serializer())
 
   object SlackConnect : RemoteCommand<MethodsTypes.SlackConnectParams, MethodsTypes.SlackConnectResult>("slack.connect", "control", serializer(), serializer())
 

@@ -23,6 +23,7 @@ enum BuiltinPalette {
       (.automations, "Automations", Icon.automations),
       (.quickRun(runId: nil), "Quick Run", "bolt"),
       (.blueprints, "Blueprints", BlueprintText.icon),
+      (.skills, "Skills", Icon.skills),
       (.agents, "Agents", Icon.agents),
       (.runtimes, "Runtimes", Icon.runtimes),
       (.devices, "Devices", Icon.devices),
@@ -68,6 +69,7 @@ enum BuiltinPalette {
     case .inbox: .inbox
     case .automations: .automations
     case .blueprints: .blueprints
+    case .skills: .skills
     default: ShortcutCommand.screen(route)
     }
   }

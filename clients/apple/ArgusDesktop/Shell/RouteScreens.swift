@@ -9,7 +9,7 @@ struct RouteScreen: View {
   static func handles(_ route: DesktopRoute) -> Bool {
     switch route {
     case .automations, .quickRun, .describeAutomation, .upcomingRuns, .automation, .teammates, .teammateGallery, .teammate, .inbox, .proposal, .notifications, .usage, .usageModel,
-      .usagePrices, .usageModels, .issues, .design, .compareRun, .blueprints, .blueprint, .generateBlueprint, .newProject:
+      .usagePrices, .usageModels, .issues, .design, .compareRun, .blueprints, .blueprint, .generateBlueprint, .newProject, .skills, .installSkill:
       true
     default: false
     }
@@ -29,6 +29,8 @@ struct RouteScreen: View {
     case .newProject(let blueprintId): BlueprintsScreen(newProject: true, blueprintId: blueprintId).id(blueprintId)
     case .blueprint(let id): BlueprintScreen(blueprintId: id).id(id)
     case .generateBlueprint: GenerateBlueprintScreen()
+    case .skills: SkillsScreen()
+    case .installSkill(let url): SkillsScreen(installing: true, url: url).id(url)
     case .inbox(let filter): InboxScreen(filter: filter)
     case .proposal(let id): ProposalScreen(proposalId: id).id(id)
     case .notifications: NotificationsScreen()
