@@ -13,19 +13,22 @@
   /// permission mode and overflow drop a menu in place; linked projects and
   /// side questions open a sheet.
   struct PhoneComposerPills: View {
+    enum Style { case full, compact, wrapped }
+
     let composer: ComposerModel
     @Binding var picker: PhoneComposerPicker?
+    let style: Style
     @Environment(HostStore.self) private var host
 
     private var asked: Int { host.sideQuestionsByAgent[composer.agentId]?.count ?? 0 }
 
     var body: some View {
-      // The Mac's pills on one line when they fit; then without chevrons and the "Claude"
-      // prefix; then wrapped, as the Mac's do, so none is ever cut off.
-      ViewThatFits(in: .horizontal) {
-        HStack(spacing: 2) { pills(compact: false) }
-        HStack(spacing: 2) { pills(compact: true) }
-        ChipFlowLayout(spacing: 4, lineSpacing: 0) { pills(compact: true, dividers: false) }
+      Group {
+        switch style {
+        case .full: HStack(spacing: 2) { pills(compact: false) }
+        case .compact: HStack(spacing: 2) { pills(compact: true) }
+        case .wrapped: ChipFlowLayout(spacing: 4, lineSpacing: 0) { pills(compact: true, dividers: false) }
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .disabled(!composer.isEnabled)

@@ -124,9 +124,12 @@
         .frame(height: inputHeight)
         .padding(.horizontal, 8)
         .padding(.top, 6)
-        HStack(alignment: .bottom, spacing: 4) {
-          PhoneComposerPills(composer: composer, picker: $picker)
-          actions
+        // Pills beside the actions on one line when they fit, then without chevrons; otherwise
+        // on a full-width row of their own that wraps, since beside the actions it'd stack one per line.
+        ViewThatFits(in: .horizontal) {
+          HStack(alignment: .bottom, spacing: 4) { pills(.full); actions }
+          HStack(alignment: .bottom, spacing: 4) { pills(.compact); actions }
+          VStack(alignment: .trailing, spacing: 6) { pills(.wrapped); actions }
         }
         .padding(.leading, 6)
         .padding(.trailing, 8)
@@ -134,6 +137,10 @@
       }
       .background(theme.surface, in: .rect(cornerRadius: Self.radius))
       .overlay { RoundedRectangle(cornerRadius: Self.radius).strokeBorder(theme.border, lineWidth: 1) }
+    }
+
+    private func pills(_ style: PhoneComposerPills.Style) -> some View {
+      PhoneComposerPills(composer: composer, picker: $picker, style: style)
     }
 
     /// Attach, then send — or, while the agent works, send into the turn and stop.
