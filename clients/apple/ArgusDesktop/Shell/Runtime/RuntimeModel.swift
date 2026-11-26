@@ -14,6 +14,8 @@ final class RuntimeModel {
     case android
     /// A capture card or camera on this Mac.
     case video
+    /// A window of an app on this Mac.
+    case macos
     case web
   }
 
@@ -59,8 +61,11 @@ final class RuntimeModel {
   private var iosBySession: [String: String]
   private var androidBySession: [String: String]
   private var videoBySession: [String: String]
+  private var macAppBySession: [String: String]
   /// Capture cards and cameras on this Mac, listed in-process.
   let videoInputs = VideoInputs()
+  /// Windows of this Mac's apps, listed in-process.
+  let macApps = MacApps()
   /// The page each session's browser was last on, so returning to it doesn't reload.
   var browserUrls: [String: String] = [:]
   /// Sessions whose browser has loaded its start URL this launch.
@@ -81,6 +86,7 @@ final class RuntimeModel {
     static let ios = "runtime.iosBySession"
     static let android = "runtime.androidBySession"
     static let video = "runtime.videoBySession"
+    static let macApp = "runtime.macAppBySession"
     static let browserPreset = "runtime.browserPreset"
     static let devicePlatform = "runtime.devicePlatform"
   }
@@ -96,6 +102,7 @@ final class RuntimeModel {
     iosBySession = defaults.dictionary(forKey: Keys.ios) as? [String: String] ?? [:]
     androidBySession = defaults.dictionary(forKey: Keys.android) as? [String: String] ?? [:]
     videoBySession = defaults.dictionary(forKey: Keys.video) as? [String: String] ?? [:]
+    macAppBySession = defaults.dictionary(forKey: Keys.macApp) as? [String: String] ?? [:]
     browserPreset = defaults.string(forKey: Keys.browserPreset) ?? "desktop"
   }
 
@@ -123,6 +130,9 @@ final class RuntimeModel {
   /// Capture cards are this Mac's own, so only its own sessions get them.
   var videoInputsAvailable: Bool { hostId == Hosts.local }
 
+  /// This Mac's apps, for its own sessions, once the opt-in tool is on.
+  var macAppsAvailable: Bool { hostId == Hosts.local && toolEnabled("macos-apps") }
+
   // MARK: Selection
 
   func selectedDevice(platform: Platform, session: String?) -> String? {
@@ -131,6 +141,7 @@ final class RuntimeModel {
     case .ios: return iosBySession[key]
     case .android: return androidBySession[key]
     case .video: return videoBySession[key]
+    case .macos: return macAppBySession[key]
     case .web: return nil
     }
   }
@@ -149,6 +160,9 @@ final class RuntimeModel {
     case .video:
       videoBySession[key] = device
       defaults.set(videoBySession, forKey: Keys.video)
+    case .macos:
+      macAppBySession[key] = device
+      defaults.set(macAppBySession, forKey: Keys.macApp)
     case .web:
       startBrowser(session: session)
     }
@@ -182,7 +196,7 @@ final class RuntimeModel {
   /// The renderer's `effectiveEnabled`: on unless the user or the project
   /// switched it off, and only while what it needs is on.
   func toolEnabled(_ id: String) -> Bool {
-    if projectDisabledTools.contains(id) || enabledTools[id] == false { return false }
+    if projectDisabledTools.contains(id) || !DesktopTool.userEnabled(id, in: enabledTools) { return false }
     switch id {
     case "device-inspector": return toolEnabled("device-recording")
     case "device-debug": return toolEnabled("device-control")
@@ -216,6 +230,11 @@ final class RuntimeModel {
       androidToolsError = HostStore.describe(error)
     }
     pruneSelections()
+    // Settings can turn the tool on while the panel is up.
+    if let tools = try? await backend.request(ArgusProtocol.Commands.GetEnabledTools.self, .init()) {
+      if tools != enabledTools { enabledTools = tools }
+    }
+    if macAppsAvailable { macApps.refresh() }
   }
 
   private static func hostUnavailable(_ error: Error) -> Bool {
@@ -303,7 +322,7 @@ final class RuntimeModel {
     case .android:
       _ = try? await backend.request(
         ArgusProtocol.Commands.DisconnectAndroidDevice.self, .init(serial: device))
-    case .web, .video:
+    case .web, .video, .macos:
       return
     }
     await refresh()

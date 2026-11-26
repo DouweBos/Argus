@@ -191,6 +191,10 @@ public struct ArgusConfigDraft: Equatable, Sendable {
       "device-debug", "Device debug streams",
       "Tail device logs, memory, and other conductor probes from the Debug panel."
     ),
+    (
+      "macos-apps", "macOS apps",
+      "Mirror a window of an app on this Mac in the runtime panel, click and type into it, and let agents drive it with conductor."
+    ),
   ]
 
   /// Other run commands this one may depend on, by title.

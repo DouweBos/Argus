@@ -95,6 +95,14 @@ struct RuntimePanel: View {
       RuntimeNativeView(platform: platform, sessionId: sessionId)
     case .video:
       VideoInputView(input: runtime.videoInputs.input(selectedDevice), local: panelHost == Hosts.local)
+    case .macos where runtime.toolEnabled("macos-apps"):
+      MacAppMirrorView(apps: runtime.macApps, selection: selectedDevice, local: panelHost == Hosts.local) {
+        runtime.select(platform: .macos, device: $0.target.key, session: sessionId)
+      }
+    case .macos:
+      EmptyState(
+        icon: "macwindow", title: "macOS apps are off",
+        body: "Turn on macOS apps in Settings → Tools to mirror an app's window here.")
     }
   }
 
@@ -168,7 +176,22 @@ struct RuntimeTargetPicker: View {
           ) { runtime.select(platform: .android, device: device.serial, session: sessionId) }
         }
       }
-      // Never offered for another computer's session: the video can't leave this Mac.
+      // Never offered for another computer's session: the picture can't leave this Mac.
+      if runtime.macAppsAvailable {
+        Section("macOS Apps") {
+          toggle("Choose a Window", on: runtime.devicePlatform == .macos && macApp == nil) {
+            runtime.select(platform: .macos, device: nil, session: sessionId)
+          }
+          ForEach(runtime.macApps.windows) { window in
+            toggle(
+              window.title.isEmpty ? window.appName : "\(window.appName) — \(window.title)",
+              on: runtime.devicePlatform == .macos && macApp?.windowId == window.windowId
+            ) {
+              runtime.select(platform: .macos, device: window.target.key, session: sessionId)
+            }
+          }
+        }
+      }
       if runtime.videoInputsAvailable {
         Section("Video Inputs") {
           if runtime.videoInputs.inputs.isEmpty { Text("None") }
@@ -180,13 +203,26 @@ struct RuntimeTargetPicker: View {
         }
       }
     } label: {
-      Label(label, systemImage: runtime.devicePlatform == .video ? "video" : Icon.simulator)
+      Label(label, systemImage: icon)
     }
     .menuStyle(.borderlessButton)
     .clickable()
     // A long device name truncates rather than push the toolbar out.
     .frame(maxWidth: 200, alignment: .leading)
     .accessibilityLabel("Runtime target")
+  }
+
+  private var icon: String {
+    switch runtime.devicePlatform {
+    case .video: "video"
+    case .macos: "macwindow"
+    default: Icon.simulator
+    }
+  }
+
+  /// The picked app window, resolved against what's open now.
+  private var macApp: MacAppWindow? {
+    runtime.macApps.window(runtime.selectedDevice(platform: .macos, session: sessionId))
   }
 
   private func isSelected(_ platform: RuntimeModel.Platform, _ id: String) -> Bool {
@@ -206,6 +242,9 @@ struct RuntimeTargetPicker: View {
     case .android:
       return runtime.androidDevice(runtime.selectedDevice(platform: .android, session: sessionId))?
         .name ?? "Pick device"
+    case .macos:
+      guard runtime.macAppsAvailable else { return "Pick device" }
+      return macApp?.appName ?? "Choose a window"
     case .video:
       guard runtime.videoInputsAvailable else { return "Pick device" }
       return runtime.videoInputs.input(runtime.selectedDevice(platform: .video, session: sessionId))?.name

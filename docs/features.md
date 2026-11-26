@@ -55,6 +55,28 @@ Point it at your dev server with `browser_url` in `.argus.json` (e.g.
 
 ---
 
+## macOS apps
+
+Off by default; turn on **macOS apps** in Settings → Tools.
+
+- The Device tab's picker gets a **macOS Apps** section: every window open on
+  this Mac, with its app's icon and title. Argus itself is never listed.
+- The picked window is mirrored live in the Runtime. Clicks, scrolling and
+  typing in the mirror go straight to that window, without moving your
+  pointer or bringing the app to the front.
+- macOS asks for two permissions, and the Device tab explains both with a
+  button for each: **Screen Recording** to show the window (required) and
+  **Accessibility** to click and type into it (without it the mirror only
+  watches). Argus checks again whenever you switch back to it.
+- Agents drive the same apps with `conductor --device macos`
+  (`launch-app <bundle-id>`, `window focus`, `menu`, taps and typing), and are
+  told so while the tool is on.
+- Only for sessions on this Mac. The picture never leaves the app: it isn't
+  recorded, and it doesn't stream to the iPhone or Android apps or to another
+  computer, since that would put your whole desktop on the network.
+
+---
+
 ## Terminals
 
 - Real terminals, per-session, started in the session's worktree.
@@ -730,6 +752,7 @@ or update prompts.
 | **Device UI inspector** | View hierarchy, accessibility, and layout overlays on whatever device is connected. Builds on recording. |
 | **Device control**      | Drive devices via `conductor` — taps, keyboard, deep links, navigation.                                  |
 | **Device debug**        | Live device log streams and one-shot probes in the Debug panel. Builds on control.                       |
+| **macOS apps**          | Mirror, click and type into a window of an app on this Mac, and let agents drive it. Off by default.     |
 
 Toggle tools under **Settings → Tools**. A project that doesn't use
 any device tooling can mask tools off for the whole team via

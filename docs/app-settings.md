@@ -622,12 +622,15 @@ without the button.
 
 Argus's device tooling — recording, control, debug streams, the UI inspector — ships as togglable **tools**. Turn off the ones you don't use to keep the UI focused on what you actually reach for.
 
-| Tool                    | What it does                                                                                                              | Needs                                                         |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| **Device recording**    | Stream iOS Simulator and Android emulator screens into the runtime panel.                                                 | Native sim bridge, Xcode + iOS runtimes, Android SDK + an AVD |
-| **Device UI inspector** | Inspect view hierarchy, accessibility, and layout on a connected device.                                                  | Device recording (auto)                                       |
-| **Device control**      | Drive devices via `conductor` — taps, keyboard, deep links, navigation. Off also stops telling agents to use `conductor`. | Android SDK (for Android), Playwright (for web)               |
-| **Device debug**        | Tail device logs, memory, and other conductor probes from the Debug panel.                                                | Device control (auto)                                         |
+| Tool                    | What it does                                                                                                                                                      | Needs                                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **Device recording**    | Stream iOS Simulator and Android emulator screens into the runtime panel.                                                                                         | Native sim bridge, Xcode + iOS runtimes, Android SDK + an AVD                                |
+| **Device UI inspector** | Inspect view hierarchy, accessibility, and layout on a connected device.                                                                                          | Device recording (auto)                                                                      |
+| **Device control**      | Drive devices via `conductor` — taps, keyboard, deep links, navigation. Off also stops telling agents to use `conductor`.                                         | Android SDK (for Android), Playwright (for web)                                              |
+| **Device debug**        | Tail device logs, memory, and other conductor probes from the Debug panel.                                                                                        | Device control (auto)                                                                        |
+| **macOS apps**          | Mirror a window of an app on this Mac in the Device tab, click and type into it, and tell agents to drive it with `conductor --device macos`. **Off by default.** | macOS Screen Recording (required) and Accessibility (for input), asked for in the Device tab |
+
+The macOS apps mirror is only offered for sessions on this Mac and never streams to a phone or another computer.
 
 Pick tools from **Settings → Tools**. All tool assets ship bundled with the app — toggling a tool on or off only affects whether its UI surfaces and host handlers are active.
 

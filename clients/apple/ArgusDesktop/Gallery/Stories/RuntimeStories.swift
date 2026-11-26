@@ -33,7 +33,52 @@
         GalleryStory("runtimes/video-input/remote", size: CGSize(width: 520, height: 420)) {
           VideoInputView(input: VideoInputs.Input(id: "card", name: "Elgato HD60 X"), local: false)
         },
+        // macOS apps: what macOS must allow first, the window picker, and a mirror that can only watch.
+        GalleryStory("runtimes/macos-apps/permissions", size: CGSize(width: 520, height: 520)) {
+          MacAppPermissionsView(apps: macApps(screenRecording: false, accessibility: false))
+        },
+        GalleryStory("runtimes/macos-apps/permissions/screen-recording", size: CGSize(width: 520, height: 520)) {
+          MacAppPermissionsView(apps: macApps(screenRecording: false, accessibility: true))
+        },
+        GalleryStory("runtimes/macos-apps/picker", size: CGSize(width: 520, height: 720)) {
+          MacAppPicker(apps: macApps(), selection: macAppWindows[2].target.key) { _ in }
+        },
+        GalleryStory("runtimes/macos-apps/picker/empty", size: CGSize(width: 520, height: 420)) {
+          MacAppPicker(apps: MacApps(windows: [], permissions: .init(screenRecording: true, accessibility: true)), selection: nil) { _ in }
+        },
+        GalleryStory("runtimes/macos-apps/view-only", size: CGSize(width: 520, height: 420)) {
+          Color.clear.overlay(alignment: .bottom) { MacAppViewOnlyBanner(appName: "TextEdit") {} }
+        },
+        GalleryStory("runtimes/macos-apps/remote", size: CGSize(width: 520, height: 420)) {
+          MacAppMirrorView(apps: macApps(), selection: nil, local: false) { _ in }
+        },
       ]
+    }
+
+    @MainActor private static func macApps(screenRecording: Bool = true, accessibility: Bool = true) -> MacApps {
+      MacApps(
+        windows: macAppWindows,
+        permissions: MacAppPermissions(screenRecording: screenRecording, accessibility: accessibility))
+    }
+
+    private static let macAppWindows: [MacAppWindow] = [
+      ("com.apple.calculator", "Calculator", "Calculator"),
+      ("com.apple.iCal", "Calendar", "Week 48"),
+      ("com.apple.finder", "Finder", "Downloads"),
+      ("com.apple.Maps", "Maps", "Amsterdam"),
+      ("com.apple.Music", "Music", "Recently Added"),
+      ("com.apple.Notes", "Notes", "Release checklist"),
+      ("com.apple.Preview", "Preview", "onboarding-flow.pdf"),
+      ("com.apple.Safari", "Safari", "Luma — Dashboard"),
+      ("com.apple.Safari", "Safari", "localhost:3012"),
+      ("com.apple.systempreferences", "System Settings", "Privacy & Security"),
+      ("com.apple.Terminal", "Terminal", "~/Projects/luma — zsh"),
+      ("com.apple.TextEdit", "TextEdit", "Notes.txt"),
+      ("com.apple.dt.Xcode", "Xcode", ""),
+    ].enumerated().map { index, app in
+      MacAppWindow(
+        windowId: UInt32(100 + index), pid: 0, bundleId: app.0, appName: app.1, title: app.2,
+        frame: CGRect(x: 0, y: 0, width: 1200, height: 800))
     }
 
     private static func env(_ pairs: (String, String)...) -> [TerminalsStore.EnvVar] {

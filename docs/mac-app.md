@@ -58,7 +58,9 @@ developed, and an existing install updates into Argus for Mac by itself (see
   connected to this Mac, view-only. It is only offered for sessions on this
   Mac, never for another computer's, and the video never leaves the app: no
   host command or paired device can reach it. macOS asks for camera access the
-  first time.
+  first time. With the macOS apps tool on, its macOS Apps section mirrors a
+  window of an app on this Mac, takes clicks, scrolling and typing, and asks
+  for Screen Recording and Accessibility in place; it stays on this Mac too.
 - The Devices screen: every simulator and emulator, with boot, shut down, a
   live grid, and each device's details with a live picture.
 - **Git** for each session (the Git tab), laid out as in Grove: the refs

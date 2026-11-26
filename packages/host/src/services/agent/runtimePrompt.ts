@@ -22,6 +22,8 @@ export interface RuntimeContext {
   androidDevices: AndroidDeviceSession[];
   browserSession: BrowserSession | null;
   browserUrl: string | null;
+  /** The macOS apps tool is on, so this Mac's own apps are a device too. */
+  macosApps?: boolean;
 }
 
 export const CONDUCTOR_GUIDE = [
@@ -42,6 +44,18 @@ export function deviceControlEnabled(
     toolEnabled("device-control") &&
     !(projectTools?.disabled ?? []).includes("device-control") &&
     !agentDisabled.includes("device-control")
+  );
+}
+
+/** This Mac's apps are offered to agents only while the opt-in macOS apps tool is on everywhere. */
+export function macosAppsEnabled(
+  projectTools: { disabled?: string[] } | null | undefined,
+  agentDisabled: readonly string[] = [],
+): boolean {
+  return (
+    toolEnabled("macos-apps") &&
+    !(projectTools?.disabled ?? []).includes("macos-apps") &&
+    !agentDisabled.includes("macos-apps")
   );
 }
 
@@ -84,7 +98,7 @@ function detectRepoPlatforms(repoRoot: string): RuntimePlatform[] {
 /** The full guide, or null when the project has no runtime to drive. */
 export function buildRuntimeSection(ctx: RuntimeContext): string | null {
   const { platforms } = ctx;
-  if (platforms.size === 0) {
+  if (platforms.size === 0 && !ctx.macosApps) {
     return null;
   }
   const lines = [
@@ -128,6 +142,9 @@ export function buildRuntimeSection(ctx: RuntimeContext): string | null {
   }
   if (platforms.has("web")) {
     lines.push("", ...webLines(ctx.browserSession, ctx.browserUrl));
+  }
+  if (ctx.macosApps) {
+    lines.push("", ...MACOS_APP_LINES);
   }
 
   return lines.join("\n");
@@ -205,6 +222,13 @@ function androidLines(
     ),
   ];
 }
+
+const MACOS_APP_LINES = [
+  "### macOS apps",
+  "",
+  'Apps on this Mac are one device, `--device macos` (`conductor list-devices` shows it as this Mac). `conductor launch-app <bundle-id> --device macos` opens or brings up an app and makes it the one conductor drives; `window list` / `window focus <title>` pick its window, `menu "File > Save"` clicks its menu bar, and coordinates are relative to that window. The user can watch the window live under macOS Apps in the runtime panel.',
+  "These are the user's real apps and documents: don't quit, reset or delete anything you didn't open yourself.",
+];
 
 function webLines(
   session: BrowserSession | null,

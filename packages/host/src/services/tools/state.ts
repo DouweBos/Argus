@@ -45,6 +45,7 @@ const DEFAULT_ENABLED: Record<ToolId, boolean> = {
   "device-inspector": true,
   "device-control": true,
   "device-debug": true,
+  "macos-apps": false,
 };
 
 function load(): ToolsConfigFile {
@@ -113,6 +114,7 @@ const REQUIRES: Record<ToolId, ToolId[]> = {
   "device-inspector": ["device-recording"],
   "device-control": [],
   "device-debug": ["device-control"],
+  "macos-apps": [],
 };
 
 /**

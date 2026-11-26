@@ -5,15 +5,17 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const tools = vi.hoisted(() => ({ deviceControl: true }));
+const tools = vi.hoisted(() => ({ deviceControl: true, macosApps: false }));
 vi.mock("../tools/state", () => ({
-  toolEnabled: () => tools.deviceControl,
+  toolEnabled: (id: string) =>
+    id === "macos-apps" ? tools.macosApps : tools.deviceControl,
 }));
 
 const {
   CONDUCTOR_GUIDE,
   buildRuntimeSection,
   deviceControlEnabled,
+  macosAppsEnabled,
   resolveRuntimePlatforms,
 } = await import("./runtimePrompt");
 
@@ -45,6 +47,7 @@ function repoWith(files: Record<string, string>): string {
 
 function cleanUp() {
   tools.deviceControl = true;
+  tools.macosApps = false;
   for (const dir of tmpDirs.splice(0)) {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -53,6 +56,14 @@ function cleanUp() {
 describe("buildRuntimeSection", () => {
   it("is absent for a project with no runtime", () => {
     expect(buildRuntimeSection(ctx([]))).toBeNull();
+  });
+
+  it("offers this Mac's apps only while the macOS apps tool is on", () => {
+    expect(buildRuntimeSection(ctx(["web"]))).not.toContain("### macOS apps");
+    const text = buildRuntimeSection(ctx([], { macosApps: true }));
+    expect(text).toContain(CONDUCTOR_GUIDE);
+    expect(text).toContain("### macOS apps");
+    expect(text).toContain("--device macos");
   });
 
   it("carries the shared conductor guide for every platform", () => {
@@ -221,5 +232,17 @@ describe("deviceControlEnabled", () => {
     expect(deviceControlEnabled(null, ["device-debug"])).toBe(true);
     tools.deviceControl = false;
     expect(deviceControlEnabled(null)).toBe(false);
+  });
+});
+
+describe("macosAppsEnabled", () => {
+  afterEach(cleanUp);
+
+  it("is off until the tool is turned on, and the project or agent can still mask it", () => {
+    expect(macosAppsEnabled(null)).toBe(false);
+    tools.macosApps = true;
+    expect(macosAppsEnabled(null)).toBe(true);
+    expect(macosAppsEnabled({ disabled: ["macos-apps"] })).toBe(false);
+    expect(macosAppsEnabled(null, ["macos-apps"])).toBe(false);
   });
 });

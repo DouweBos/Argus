@@ -29,6 +29,11 @@ public struct DesktopTool: Identifiable, Sendable {
       id: "device-debug", name: "Device debug streams",
       description: "Tail device logs, memory, and other conductor probes from the Debug panel.",
       defaultEnabled: true, prereqs: [], requires: ["device-control"]),
+    DesktopTool(
+      id: "macos-apps", name: "macOS apps",
+      description:
+        "Mirror a window of an app on this Mac in the runtime panel, click and type into it, and let agents drive it with conductor.",
+      defaultEnabled: false, prereqs: [], requires: []),
   ]
 
   /// The toggle as the user left it, else the tool's default.

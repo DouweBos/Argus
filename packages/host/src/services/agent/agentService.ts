@@ -161,6 +161,7 @@ import { withHistorySeed } from "./runnerHandoff/seed";
 import {
   buildRuntimeSection,
   deviceControlEnabled,
+  macosAppsEnabled,
   resolveRuntimePlatforms,
 } from "./runtimePrompt";
 import { clearSpares, hasSpare, killSpare, takeSpare } from "./spares";
@@ -751,6 +752,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     projectTools,
     profile?.disabledTools,
   );
+  const macosApps = macosAppsEnabled(projectTools, profile?.disabledTools);
   const runtimeSection = deviceControl
     ? buildRuntimeSection({
         platforms: resolveRuntimePlatforms({
@@ -765,6 +767,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
         androidDevices: [...appState.androidDevices.values()],
         browserSession,
         browserUrl,
+        macosApps,
       })
     : null;
   const integrationsSection = buildIntegrationsSection({

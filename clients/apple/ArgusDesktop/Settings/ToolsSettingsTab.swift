@@ -37,6 +37,7 @@ struct ToolsSettingsTab: View {
     Task {
       await host.run(ArgusProtocol.Commands.SetEnabledTools.self, .init(userEnabled: next))
       MacTelemetry.capture(.settingsChanged(setting: .toolToggled))
+      if id == "macos-apps" { MacTelemetry.capture(.macAppsToggled(enabled: on)) }
     }
   }
 }

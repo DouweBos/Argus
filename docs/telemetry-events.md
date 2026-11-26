@@ -698,10 +698,12 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_terminal_used` | Something was done to a terminal from the panel or the run control | `action` (`new_shell`, `close`, `rename`, `run`, `stop`, `stop_others_and_run`, `open_link`) |
 | `mac_terminal_replayed` | A terminal view attached and replayed what the host had captured | `bytes_bucket` (`0`, `<4k`, `<64k`, `64k+`), `truncated` (the host had already dropped older output) |
 | `mac_terminal_find_used` | Find in a terminal closed after a search | `matches_bucket` (`0`, `1-9`, `10-99`, `100+`), `navigated` |
-| `mac_runtime_target_picked` | A device was picked in the side panel's Device tab | `platform` (`ios`, `android`, `video` — a capture card or camera on this Mac, `web`) |
+| `mac_runtime_target_picked` | A device was picked in the side panel's Device tab | `platform` (`ios`, `android`, `video` — a capture card or camera on this Mac, `macos` — a window of an app on this Mac, `web`) |
 | `mac_device_watched` | A live device picture closed | `platform`, `duration_ms`, `interacted` (a tap, key or button was sent) |
 | `mac_device_popout_opened` | A device was opened in its own floating window | `platform` |
 | `mac_video_input_shown` | A capture card or camera on this Mac was picked to watch | `outcome` (`started`, `denied` — camera access is off, `failed`) |
+| `mac_app_mirror_started` | A window of an app on this Mac was picked to mirror in the Device tab | `success` (its first frame arrived), `missing_permission` (`none`, `screen_recording` — the mirror can't show, `accessibility` — it shows view-only) |
+| `mac_apps_toggled` | The macOS apps tool was turned on or off in Settings → Tools | `enabled` |
 | `mac_panel_toggled` | The side panel was shown or hidden for the session on screen, from the toolbar's panel button or the panel's close button, ⌘J, ⇧⌘T or ⌥⌘B on the tab already in front, the View menu or the command palette | `shown` (bool), `via` (`button`, `shortcut`, `menu`, `palette`) |
 | `mac_panel_tab_opened` | A side panel tab was opened or brought to the front, from its "+" menu, a shortcut (⇧⌘T terminal, ⌥⌘B device), the View menu, the command palette, the empty panel's buttons, or a run command or runtime that brings its output into view | `kind` (`browser`, `terminal`, `files`, `diff`, `pull_request`, `device`, `huddle_chat`), `via` (`button`, `shortcut`, `menu`, `palette`, `tab_menu`, `action`) |
 | `mac_artifact_opened` | An Artifact an agent published or opened was shown in the side panel | `via` (`auto` the agent published or opened it, `chat` its card in the chat was clicked) |
