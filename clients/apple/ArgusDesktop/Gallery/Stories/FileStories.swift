@@ -19,6 +19,11 @@
         GalleryStory("previews/pdf", size: CGSize(width: 720, height: 900)) {
           PDFDocumentView(document: PDFDocument(data: GalleryFixtures.previewPDF())!)
         },
+        GalleryStory("previews/html", size: CGSize(width: 820, height: 520)) {
+          SandboxedHTMLView(
+            html: GalleryFixtures.previewHTML,
+            document: MarkdownDocument(path: "site/index.html", loadFile: { GalleryFixtures.previewFile($0) }, open: { _ in }))
+        },
         GalleryStory("previews/large-file", size: CGSize(width: 900, height: 560)) {
           LargeFileView(pager: GalleryFixtures.previewLargePager(), limitation: "edit")
         },

@@ -8,16 +8,22 @@ enum class FilePreviewKind(val wire: String) {
   Markdown("markdown"),
   Pdf("pdf"),
   Image("image"),
+  /** A web page, rendered sandboxed: no network unless the viewer allows it. */
+  Html("html"),
   /** Too large to open whole, so paged; never from an extension. */
   Large("large");
 
   /** Read as bytes rather than text: the host calls these binary. */
   val isBinary: Boolean get() = this == Pdf || this == Image
 
+  /** Text shown rendered instead of its source, with a button to see the source. */
+  val isRenderedText: Boolean get() = this == Markdown || this == Html
+
   companion object {
     fun of(path: String): FilePreviewKind? = when (extension(path)) {
       "md", "mdx", "markdown" -> Markdown
       "pdf" -> Pdf
+      "html", "htm" -> Html
       "png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "heic", "tif", "tiff", "ico" -> Image
       else -> null
     }

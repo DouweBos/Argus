@@ -5,8 +5,8 @@ import ArgusUI
 import PDFKit
 import SwiftUI
 
-/// A Markdown tab: its text, the rendered page following the text as it's
-/// typed, or both side by side.
+/// A Markdown or HTML tab: its text, the rendered page following the text as
+/// it's typed, or both side by side.
 struct CodeMarkdownContent: View {
   @Environment(\.theme) private var theme
   let code: CodeSession
@@ -17,6 +17,13 @@ struct CodeMarkdownContent: View {
   var body: some View {
     VStack(spacing: 0) {
       HStack {
+        if file.preview == .html, file.markdownMode != .source {
+          Toggle("Allow Network", isOn: $file.allowsNetwork)
+            .toggleStyle(.checkbox)
+            .controlSize(.small)
+            .clickable()
+            .help("Let this page load from the web. Off, it only reaches files in the worktree.")
+        }
         Spacer()
         Picker("View", selection: $file.markdownMode) {
           ForEach(MarkdownViewMode.allCases, id: \.self) { Text($0.title).tag($0) }
@@ -25,7 +32,7 @@ struct CodeMarkdownContent: View {
         .labelsHidden()
         .controlSize(.small)
         .fixedSize()
-        .help("Show the Markdown source, the rendered page, or both")
+        .help("Show the source, the rendered page, or both")
       }
       .padding(.horizontal, 10)
       .frame(height: 30)
@@ -46,12 +53,16 @@ struct CodeMarkdownContent: View {
     .onChange(of: file.markdownMode, initial: true) { _, mode in
       guard mode != .source, !file.reportedPreview else { return }
       file.reportedPreview = true
-      MacTelemetry.capture(.previewOpened(kind: .markdown))
+      MacTelemetry.capture(.previewOpened(kind: file.preview ?? .markdown))
     }
   }
 
-  private var preview: some View {
-    CodeMarkdownPreview(document: document, context: code.markdownDocument(for: file.path))
+  @ViewBuilder private var preview: some View {
+    if file.preview == .html {
+      CodeHTMLPreview(document: document, context: code.markdownDocument(for: file.path), allowNetwork: file.allowsNetwork)
+    } else {
+      CodeMarkdownPreview(document: document, context: code.markdownDocument(for: file.path))
+    }
   }
 }
 
@@ -68,6 +79,25 @@ private struct CodeMarkdownPreview: View {
         guard !Task.isCancelled else { return }
         text = document.text
       }
+  }
+}
+
+/// The page in a sandboxed web view, reloaded a beat after typing stops.
+private struct CodeHTMLPreview: View {
+  let document: EditorDocument
+  let context: MarkdownDocument
+  let allowNetwork: Bool
+  @State private var text: String?
+
+  var body: some View {
+    Group {
+      if let text { SandboxedHTMLView(html: text, document: context, allowNetwork: allowNetwork) } else { Color.clear }
+    }
+    .task(id: document.version) {
+      if text != nil { try? await Task.sleep(for: .milliseconds(500)) }
+      guard !Task.isCancelled else { return }
+      text = document.text
+    }
   }
 }
 

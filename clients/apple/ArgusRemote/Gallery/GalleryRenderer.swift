@@ -60,7 +60,7 @@
           stage = fresh
           story = next
           // Lets `.task`s load from the fixtures and the layout settle.
-          try? await Task.sleep(for: .milliseconds(900))
+          try? await Task.sleep(for: next.settle)
           let slug = next.id.replacingOccurrences(of: "/", with: "-")
           let file = out.appendingPathComponent("\(slug).\(name).png")
           capture(cropHeight: next.screen ? nil : contentHeight, to: file)

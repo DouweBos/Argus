@@ -29,6 +29,7 @@ import dev.houwert.argus.ui.components.EmptyState
 import dev.houwert.argus.ui.components.Loading
 import dev.houwert.argus.ui.design.ZoomPanImage
 import dev.houwert.argus.ui.files.PdfDocumentView
+import dev.houwert.argus.ui.files.SandboxedHtmlView
 import dev.houwert.argus.ui.icons.Icon
 import dev.houwert.argus.ui.mermaid.MermaidRenderer
 import dev.houwert.argus.ui.transcript.LocalMarkdownDocument
@@ -75,6 +76,35 @@ internal fun MarkdownFilePreview(host: HostStore, sessionId: String, path: Strin
   CompositionLocalProvider(LocalMarkdownDocument provides document) {
     MarkdownView(text, Modifier.fillMaxSize().verticalScroll(scroll).padding(16.dp))
   }
+}
+
+/** An HTML file in a sandboxed web view: worktree files only, unless [allowNetwork]. */
+@Composable
+internal fun HtmlFilePreview(host: HostStore, sessionId: String, path: String, text: String, allowNetwork: Boolean, onShown: () -> Unit) {
+  val router = LocalRouter.current
+  val uri = LocalUriHandler.current
+  val document = remember(sessionId, path) {
+    MarkdownDocument(
+      path = path,
+      loadFile = { relative ->
+        try {
+          host.readFileBytes(sessionId, relative)
+        } catch (e: Exception) {
+          if (HostStore.isCancellation(e)) throw e
+          null
+        }
+      },
+      open = { target ->
+        when (target) {
+          is MarkdownTarget.File -> router.push(Route.File(sessionId, target.path, target.line, "markdown_link"))
+          is MarkdownTarget.External -> runCatching { uri.openUri(target.url) }
+          is MarkdownTarget.Anchor -> Unit
+        }
+      },
+    )
+  }
+  LaunchedEffect(Unit) { onShown() }
+  SandboxedHtmlView(text, document, allowNetwork, Modifier.fillMaxSize())
 }
 
 /** A PDF's pages or an image (an SVG drawn by the diagram renderer), from bytes the host read. */

@@ -39,6 +39,8 @@ struct FileView: View {
   /// A Markdown file's text rather than its rendered page.
   @State private var showSource = false
   @State private var reportedPreview = false
+  /// An HTML page may load from the web; off until asked, for this visit only.
+  @State private var allowNetwork = false
   /// A file too large for `files.read`, a page at a time.
   @State private var pager: LargeFilePager?
 
@@ -57,7 +59,7 @@ struct FileView: View {
       .navigationBarTitleDisplayMode(.inline)
       .screenBar { title } trailing: {
         HStack(spacing: 14) {
-          if preview == .markdown, file?.readOnlyReason == nil, file != nil {
+          if preview?.isRenderedText == true, file?.readOnlyReason == nil, file != nil {
             Button {
               showSource.toggle()
             } label: {
@@ -103,6 +105,9 @@ struct FileView: View {
       .refreshable { await load() }
     } else if let bytes {
       binary(bytes)
+        .onAppear { reportPreview() }
+    } else if let file, preview == .html, !showSource {
+      SandboxedHTMLView(html: file.content, document: markdownDocument, allowNetwork: allowNetwork)
         .onAppear { reportPreview() }
     } else if let file, preview == .markdown, !showSource {
       MarkdownPreview(text: file.content, document: markdownDocument)
@@ -173,7 +178,10 @@ struct FileView: View {
   private var menu: some View {
     Menu {
       if let file, file.readOnlyReason == nil {
-        if preview != .markdown || showSource {
+        if preview == .html, !showSource {
+          Toggle(isOn: $allowNetwork) { Label("Allow Network", systemImage: "network") }
+        }
+        if preview?.isRenderedText != true || showSource {
           Button("Go to Line", systemImage: "arrow.down.to.line") {
             jumpText = focusLine.map(String.init) ?? ""
             jumping = true

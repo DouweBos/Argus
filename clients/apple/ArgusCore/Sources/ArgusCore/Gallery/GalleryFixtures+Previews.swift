@@ -53,6 +53,34 @@ extension GalleryFixtures {
     > Ranking is stable: equal scores keep the file list's order.
     """
 
+  /// A landing page whose stylesheet comes from the worktree and whose web font is blocked.
+  public static let previewHTML = """
+    <!doctype html>
+    <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Quick Open</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://fonts.example.com/inter.css">
+    </head><body>
+    <header><h1>Quick Open</h1><p>Any file in the worktree, two keystrokes away.</p></header>
+    <main>
+      <section class="card"><h2>Fuzzy</h2><p>Characters in order, runs score higher.</p></section>
+      <section class="card"><h2>Recent</h2><p>Files you opened lately rank first.</p></section>
+      <section class="card"><h2>Everywhere</h2><p>On the Mac, the iPhone and Android.</p></section>
+    </main>
+    <p id="script">Scripts didn't run.</p>
+    <script>document.getElementById("script").textContent = "Scripts run; the network stays off."</script>
+    </body></html>
+    """
+
+  static let previewStyles = """
+    body { font: 15px -apple-system, sans-serif; margin: 0; background: #f6f7fb; color: #1d2433; }
+    header { background: linear-gradient(120deg, #1f6feb, #8957e5); color: white; padding: 32px 24px; }
+    h1 { margin: 0 0 6px; font-size: 28px; }
+    main { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; padding: 20px 24px; }
+    .card { background: white; border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+    .card h2 { font-size: 16px; margin: 0 0 4px; }
+    #script { padding: 0 24px; color: #57606a; }
+    """
+
   public static let previewFlowchart = """
     flowchart LR
       A[Agent edits] --> B{Tests pass?}
@@ -120,6 +148,7 @@ extension GalleryFixtures {
     switch path {
     case "docs/badge-ci.svg": previewBadge("ci", "passing", color: "#2ea043")
     case "docs/badge-coverage.svg": previewBadge("coverage", "94%", color: "#1f6feb")
+    case "site/styles.css": Data(previewStyles.utf8)
     default: nil
     }
   }

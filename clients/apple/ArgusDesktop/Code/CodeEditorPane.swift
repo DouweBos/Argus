@@ -48,7 +48,7 @@ struct CodeEditorPane: View {
     case .loading:
       ProgressView().controlSize(.small)
     case .ready(let document):
-      if file.preview == .markdown {
+      if file.preview?.isRenderedText == true {
         CodeMarkdownContent(code: code, file: file, document: document, editor: AnyView(editor(document)))
       } else {
         editor(document)

@@ -25,11 +25,14 @@
     var fixtures: [String: String] = [:]
     /// Runs after the stores are attached, before the view appears.
     var setup: @MainActor (GalleryStage) async -> Void = { _ in }
+    /// How long the view gets to load before the capture; a web view needs longer.
+    var settle: Duration = .milliseconds(900)
     let content: @MainActor () -> AnyView
 
     init(
       _ id: String, screen: Bool = true, chrome: Bool = true, fixtures: [String: String] = [:],
       setup: @escaping @MainActor (GalleryStage) async -> Void = { _ in },
+      settle: Duration = .milliseconds(900),
       @ViewBuilder content: @escaping @MainActor () -> some View
     ) {
       self.id = id
@@ -37,6 +40,7 @@
       self.chrome = chrome
       self.fixtures = fixtures
       self.setup = setup
+      self.settle = settle
       self.content = { AnyView(content()) }
     }
   }

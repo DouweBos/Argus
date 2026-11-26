@@ -25,8 +25,10 @@ final class CodeFile {
   var phase: Phase = .loading
   /// What renders instead of the text: Markdown next to it, a PDF or an image in its place.
   let preview: FilePreviewKind?
-  /// A Markdown tab's text, page, or both.
+  /// A Markdown or HTML tab's text, page, or both.
   var markdownMode: MarkdownViewMode
+  /// An HTML tab's page may load from the web; off by default, never remembered.
+  var allowsNetwork = false
   /// `mac_preview_opened` once per tab.
   @ObservationIgnored var reportedPreview = false
   var disk = CodeDiskState(baseHash: nil)
@@ -55,8 +57,10 @@ final class CodeFile {
 
   init(path: String) {
     self.path = path
-    preview = FilePreviewKind.of(path: path)
-    markdownMode = AppPreferences.shared.markdownOpensIn
+    let kind = FilePreviewKind.of(path: path)
+    preview = kind
+    // A page is usually being written, so it opens beside its source.
+    markdownMode = kind == .html ? .split : AppPreferences.shared.markdownOpensIn
   }
 
   var document: EditorDocument? {

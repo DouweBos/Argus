@@ -22,7 +22,7 @@ public enum SessionFilePaths {
   }
 
   /// `./a/../b.ts` → `b.ts`; nil when it climbs out of the worktree.
-  static func normalized(_ path: String) -> String? {
+  public static func normalized(_ path: String) -> String? {
     var parts: [Substring] = []
     for part in path.split(separator: "/", omittingEmptySubsequences: true) {
       switch part {

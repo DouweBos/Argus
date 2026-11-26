@@ -105,6 +105,15 @@ the full schema.
 - **Images** (PNG, JPEG, GIF, WebP, SVG and more) open as images, with zoom
   and pan, instead of as a binary file.
 
+- **HTML** pages render in a sandboxed web view: in the Mac code view
+  beside their source (Source / Preview / Split, the page reloading as you
+  type), and in the iPhone and Android file viewers with a button to see the
+  source. Scripts, styles and images from the worktree load; nothing else
+  does, so the page can't reach the network or leave anything behind. **Allow
+  Network** (a checkbox above the page on the Mac, in the ⋯ menu on the
+  phones) lets one preview load from the web until you close it — it is never
+  remembered. Links to other worktree files open them; web links open in the
+  browser.
 - **Large files** open read-only, a page at a time, instead of not at all:
   past 5 MB in the Mac code view (the editor's limit) and past 2 MB in the
   iPhone and Android file viewers. A banner says why it can't be edited, and

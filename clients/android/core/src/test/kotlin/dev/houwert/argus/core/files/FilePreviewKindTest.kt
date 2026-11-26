@@ -12,6 +12,8 @@ class FilePreviewKindTest {
     for (image in listOf("a.png", "a.JPG", "a.gif", "a.webp", "icons/a.svg")) {
       assertEquals(FilePreviewKind.Image, FilePreviewKind.of(image), image)
     }
+    assertEquals(FilePreviewKind.Html, FilePreviewKind.of("site/index.HTML"))
+    assertEquals(FilePreviewKind.Html, FilePreviewKind.of("a.htm"))
     assertNull(FilePreviewKind.of("Main.kt"))
     assertNull(FilePreviewKind.of("Makefile"))
     assertNull(FilePreviewKind.of(".md"))

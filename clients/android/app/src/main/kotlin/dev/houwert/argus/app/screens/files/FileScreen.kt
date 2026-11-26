@@ -86,6 +86,8 @@ fun FileScreen(sessionId: String, path: String, line: Int?) {
   /** A PDF's or an image's bytes. */
   var bytes by remember { mutableStateOf<ByteArray?>(null) }
   var showSource by remember { mutableStateOf(false) }
+  /** An HTML page may load from the web; off until asked, for this visit only. */
+  var allowNetwork by remember { mutableStateOf(false) }
   var reportedPreview by remember { mutableStateOf(false) }
   val reportKind = { kind: FilePreviewKind? ->
     if (!reportedPreview && kind != null) {
@@ -136,7 +138,7 @@ fun FileScreen(sessionId: String, path: String, line: Int?) {
       },
       navigationIcon = { IconButton(router::pop) { Icon(Icon.arrowBack, "Back") } },
       actions = {
-        if (preview == FilePreviewKind.Markdown && file?.readOnlyReason == null && file != null) {
+        if (preview?.isRenderedText == true && file?.readOnlyReason == null && file != null) {
           IconButton({ showSource = !showSource }) {
             Icon(if (showSource) Icon.eye else Icon.source, if (showSource) "Show Preview" else "Show Source")
           }
@@ -146,7 +148,13 @@ fun FileScreen(sessionId: String, path: String, line: Int?) {
           DropdownMenu(menu, { menu = false }) {
             val readable = file?.takeIf { it.readOnlyReason == null }
             if (readable != null) {
-              if (preview != FilePreviewKind.Markdown || showSource) {
+              if (preview == FilePreviewKind.Html && !showSource) {
+                DropdownMenuItem(
+                  { Text(if (allowNetwork) "Block Network" else "Allow Network") },
+                  { menu = false; allowNetwork = !allowNetwork },
+                )
+              }
+              if (preview?.isRenderedText != true || showSource) {
                 DropdownMenuItem({ Text("Go to Line") }, { menu = false; jumping = true })
               }
               DropdownMenuItem({ Text("Copy Contents") }, { menu = false; clipboard.setText(AnnotatedString(readable.content)) })
@@ -174,6 +182,8 @@ fun FileScreen(sessionId: String, path: String, line: Int?) {
         LaunchedEffect(Unit) { reportKind(FilePreviewKind.Large) }
         LargeFileView(pager!!)
       }
+      current != null && current.readOnlyReason == null && preview == FilePreviewKind.Html && !showSource ->
+        HtmlFilePreview(host, sessionId, shownPath, current.content, allowNetwork, reportPreview)
       current != null && current.readOnlyReason == null && preview == FilePreviewKind.Markdown && !showSource ->
         MarkdownFilePreview(host, sessionId, shownPath, current.content, reportPreview)
       current?.readOnlyReason != null -> EmptyState(Icon.file, "Nothing to show", body = message(current.readOnlyReason!!, Formatter.formatShortFileSize(context, current.size.toLong())))

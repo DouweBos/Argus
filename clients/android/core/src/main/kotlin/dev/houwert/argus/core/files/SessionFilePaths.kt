@@ -21,7 +21,7 @@ object SessionFilePaths {
   }
 
   /** `./a/../b.ts` → `b.ts`; null when it climbs out of the worktree. */
-  internal fun normalized(path: String): String? {
+  fun normalized(path: String): String? {
     val parts = ArrayList<String>()
     for (part in path.split('/').filter { it.isNotEmpty() }) {
       when (part) {

@@ -45,6 +45,12 @@
         GalleryStory("previews/pdf") {
           PDFDocumentView(document: PDFDocument(data: GalleryFixtures.previewPDF())!)
         },
+        GalleryStory("previews/html", settle: .seconds(4)) {
+          SandboxedHTMLView(
+            html: GalleryFixtures.previewHTML,
+            document: MarkdownDocument(path: "site/index.html", loadFile: { GalleryFixtures.previewFile($0) }, open: { _ in }))
+          .frame(height: 640)
+        },
         GalleryStory("previews/large-file") {
           LargeFileView(pager: GalleryFixtures.previewLargePager(), limitation: "show in full on a phone")
         },

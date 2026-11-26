@@ -12,6 +12,9 @@ struct FilePreviewKindTests {
     for image in ["a.png", "a.JPG", "a.gif", "a.webp", "icons/a.svg"] {
       #expect(FilePreviewKind.of(path: image) == .image)
     }
+    #expect(FilePreviewKind.of(path: "site/index.HTML") == .html)
+    #expect(FilePreviewKind.of(path: "a.htm") == .html)
+    #expect(FilePreviewKind.html.isRenderedText && !FilePreviewKind.html.isBinary)
     #expect(FilePreviewKind.of(path: "main.swift") == nil)
     #expect(FilePreviewKind.of(path: "Makefile") == nil)
   }
