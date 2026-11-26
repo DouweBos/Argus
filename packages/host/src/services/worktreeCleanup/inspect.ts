@@ -19,10 +19,14 @@ import { git } from "../session/git";
 const execFileAsync = promisify(execFile);
 const DU_TIMEOUT_MS = 120_000;
 
-/** Only plain worktrees: the repo root, scratch pads and automation hosts are never swept. */
+/**
+ * Only plain worktrees: the repo root, scratch pads and automation hosts are
+ * never swept. A cross-project session's linked repo goes with its primary.
+ */
 export function isCleanupCandidate(session: Session): boolean {
   return (
     session.kind === "worktree" &&
+    !session.cross_project_of &&
     session.status === "ready" &&
     session.availability !== "unavailable" &&
     !session.setup_pending

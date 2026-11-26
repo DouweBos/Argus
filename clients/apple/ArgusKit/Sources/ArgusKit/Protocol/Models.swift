@@ -112,8 +112,16 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var pushLocked: Bool?
   /// The base is protected, so this lands through a pull request, not a merge. Nil on older computers.
   public var mergeLocked: Bool?
+  /// The other repositories a cross-project session spans. Nil on a single-repo session and older computers.
+  public var linkedRepos: [RemoteLinkedRepo]?
+  /// On a linked repo's session: the cross-project session it belongs to.
+  public var crossProjectOf: String?
 
   public var isUnavailable: Bool { availability == .unavailable }
+  /// One repository of another session's cross-project session: listed under that one, not on its own.
+  public var isLinkedRepo: Bool { crossProjectOf != nil }
+  /// Spans other repositories besides its own.
+  public var isCrossProject: Bool { !(linkedRepos ?? []).isEmpty }
   public var isArchived: Bool { archivedAt != nil }
   /// Set by the user or an agent; an older computer's done or kept-active reads as Done or In progress.
   public var workflowStatus: RemoteSessionWorkflowStatus? {
@@ -151,6 +159,27 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case compareGroup = "compare_group"
     case pushLocked = "push_locked"
     case mergeLocked = "merge_locked"
+    case linkedRepos = "linked_repos"
+    case crossProjectOf = "cross_project_of"
+  }
+}
+
+/// A repository a cross-project session spans besides its own, held by a session of its own.
+public struct RemoteLinkedRepo: Codable, Hashable, Sendable {
+  public var sessionId: String
+  public var repoRoot: String
+  public var branch: String
+
+  public init(sessionId: String, repoRoot: String, branch: String) {
+    self.sessionId = sessionId
+    self.repoRoot = repoRoot
+    self.branch = branch
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case branch
+    case sessionId = "session_id"
+    case repoRoot = "repo_root"
   }
 }
 

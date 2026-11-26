@@ -82,6 +82,8 @@ export interface LlmRunnerSpawnArgs {
   agentId: string;
   sessionId: string;
   cwd: string;
+  /** More directories the agent may read and write besides `cwd`: a cross-project session's other worktrees. */
+  additionalDirectories?: string[];
   /** Resolved model id (runner-specific). `null` = let runner pick. */
   model: string | null;
   /**

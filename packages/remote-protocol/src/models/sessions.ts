@@ -53,6 +53,19 @@ export const SessionCompareGroup = z.object({
 });
 export type SessionCompareGroup = z.infer<typeof SessionCompareGroup>;
 
+/**
+ * Another repository a cross-project session spans: a worktree of it on the
+ * session's branch name, held by a session of its own (`session_id`).
+ */
+export const SessionLinkedRepo = z.object({
+  session_id: z.string(),
+  repo_root: z.string(),
+  worktree_path: z.string(),
+  branch: z.string(),
+  base_branch: z.string().nullish(),
+});
+export type SessionLinkedRepo = z.infer<typeof SessionLinkedRepo>;
+
 /** A single session backed by a git worktree or the repo root. */
 export const Session = z.object({
   /**
@@ -76,6 +89,13 @@ export const Session = z.object({
   claude_account_id: z.string().nullish(),
   /** Set while the session is one slot of a compare run. */
   compare_group: SessionCompareGroup.nullish(),
+  /**
+   * The other repositories a cross-project session spans, besides
+   * `repo_root`. Absent on a single-repo session.
+   */
+  linked_repos: z.array(SessionLinkedRepo).optional(),
+  /** Set on a linked repo's session: the cross-project session it belongs to. */
+  cross_project_of: z.string().optional(),
   /** The project won't push this session's branch: it's the protected default branch. */
   push_locked: z.boolean().optional(),
   /** The session's base is protected, so it lands through a pull request, not a merge. */
@@ -136,6 +156,20 @@ export const Session = z.object({
   volume: z.string().nullish(),
 });
 export type Session = z.infer<typeof Session>;
+
+/** A repository a cross-project conversion couldn't add, and why. */
+export const CrossProjectFailure = z.object({
+  repo_root: z.string(),
+  error: z.string(),
+});
+export type CrossProjectFailure = z.infer<typeof CrossProjectFailure>;
+
+/** The session after linking repositories, and those that failed. */
+export const CrossProjectResult = z.object({
+  session: Session,
+  failed: z.array(CrossProjectFailure),
+});
+export type CrossProjectResult = z.infer<typeof CrossProjectResult>;
 
 /** A project the host knows about: a registered repo root or a related project. */
 export const ProjectEntry = z.object({

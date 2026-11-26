@@ -12,6 +12,7 @@ import type {
   DesignRef,
   LinkedIssue,
   SessionCompareGroup,
+  SessionLinkedRepo,
 } from "@argus/remote-protocol";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -56,6 +57,10 @@ export interface SessionMeta {
   linked_issue?: LinkedIssue | null;
   design_refs?: DesignRef[] | null;
   compare_group?: SessionCompareGroup | null;
+  /** See `Session.linked_repos`. Absent on a single-repo session, so old files round-trip unchanged. */
+  linked_repos?: SessionLinkedRepo[];
+  /** See `Session.cross_project_of`. */
+  cross_project_of?: string;
   /**
    * Last known branch. Recorded so a session whose drive is disconnected can
    * still be listed — `git worktree list` is not readable for it.

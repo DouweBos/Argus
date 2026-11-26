@@ -10,6 +10,7 @@ import type {
   DesignRef,
   LinkedIssue,
   SessionCompareGroup,
+  SessionLinkedRepo,
 } from "@argus/remote-protocol";
 
 /**
@@ -111,6 +112,13 @@ export interface Session {
   design_refs?: DesignRef[] | null;
   /** Set while the session is one slot of a compare run. */
   compare_group?: SessionCompareGroup | null;
+  /**
+   * The other repositories a cross-project session spans, besides
+   * `repo_root`. Absent on a single-repo session.
+   */
+  linked_repos?: SessionLinkedRepo[];
+  /** Set on a linked repo's session: the cross-project session it belongs to. */
+  cross_project_of?: string;
   /** The project won't push this session's branch: it's the protected default branch. */
   push_locked?: boolean;
   /** The session's base is protected, so it lands through a pull request, not a merge. */

@@ -3,6 +3,7 @@ import { DesignRef, LinkedIssue } from "../models/integrations";
 import {
   CliProjectImportSource,
   CliProjectScan,
+  CrossProjectResult,
   ForkChatResult,
   ForkReplayOp,
   ForkSessionResult,
@@ -101,6 +102,12 @@ export const SESSION_COMMANDS = {
     tier: "admin",
     params: SessionId.extend({ branch: z.string() }),
     result: Void,
+  },
+  /** Span other projects: a worktree per repo on the session's branch name, each set up. */
+  make_cross_project_session: {
+    tier: "admin",
+    params: SessionId.extend({ repoRoots: z.array(z.string()).min(1) }),
+    result: CrossProjectResult,
   },
   clear_session_setup_error: {
     tier: "admin",

@@ -194,6 +194,8 @@ export const REMOTE_METHODS = {
   "sessions.rename": "control",
   /** Rename the git branch backing a session. */
   "sessions.rename_branch": "control",
+  /** Make a session span other projects: a worktree per repo, each set up. */
+  "sessions.make_cross_project": "control",
   "sessions.set_base_branch": "control",
   /** Re-run or clear a failed setup. */
   "sessions.retry_setup": "control",

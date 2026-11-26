@@ -18,6 +18,7 @@ import { listClaudeAccounts } from "../claudeAuth/accounts";
 import { writeDesignFiles } from "../design/files";
 import { sessionPullRequestMayHaveChanged } from "../github/sessionPullRequests";
 import { updateScratchPadRecord } from "../scratchPad/store";
+import { capture as telemetryCapture } from "../telemetry/telemetry";
 import {
   assertPushAllowed,
   assertSessionPushAllowed,
@@ -26,6 +27,7 @@ import {
   loadArgusConfig,
   saveProjectConfig,
 } from "./argusConfig";
+import { isCrossProject } from "./crossProjectState";
 import { readDefaultBranch, defaultBranchFirst } from "./defaultBranch";
 import { git } from "./git";
 import { withGitLock } from "./gitLock";
@@ -1162,6 +1164,11 @@ export async function mergeSessionIntoBase(
   await withGitLock(ws.path, () =>
     doMergeSessionIntoBase(ws.repo_root, ws.path, ws.branch, base, strategy),
   );
+  telemetryCapture("session_merged", {
+    phase: "direct",
+    strategy,
+    cross_project: isCrossProject(ws),
+  });
 
   emitHostEvent("session:merged", {
     sessionId: id,

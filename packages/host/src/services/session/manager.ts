@@ -53,6 +53,11 @@ import {
   untrackSessionBranch,
 } from "./branchTracker";
 import {
+  applyCrossProject,
+  crossProjectFields,
+  unlinkFromPrimary,
+} from "./crossProjectState";
+import {
   addWorktree,
   branchToDir,
   git,
@@ -338,8 +343,10 @@ export async function listSessions(
       ws.design_refs = m.design_refs ?? null;
       ws.compare_group = m.compare_group ?? null;
       ws.setup_pending = m.setup_pending;
+      applyCrossProject(ws, m);
     } else if (existing) {
       ws.setup_pending = existing.setup_pending;
+      applyCrossProject(ws, existing);
     }
     if (adopted) {
       const origin = adoptedWorktreeOrigin(repoRoot, ws.path);
@@ -398,6 +405,7 @@ export async function listSessions(
       linked_issue: entry.linked_issue ?? null,
       design_refs: entry.design_refs ?? null,
       compare_group: entry.compare_group ?? null,
+      ...crossProjectFields(entry),
       availability: "unavailable",
       unavailable_reason: "volume_missing",
       unavailable_volume: availability.volume,
@@ -425,6 +433,7 @@ export async function listSessions(
         linked_issue: w.linked_issue ?? null,
         design_refs: w.design_refs ?? null,
         compare_group: w.compare_group ?? null,
+        ...crossProjectFields(w),
         setup_pending: w.setup_pending || undefined,
         // Recorded so the row can still be drawn with the files unreachable.
         branch: w.branch,
@@ -497,6 +506,10 @@ export interface CreateSessionOptions {
   branchSuffix?: string;
   /** Stack the session on this one: branch from its branch and record it as the parent. */
   parentSessionId?: string;
+  /** Makes the session a linked repo of this cross-project session. */
+  crossProjectOf?: string;
+  /** Use `branch` exactly as given: no generated name, prefix or slug. */
+  exactBranch?: boolean;
 }
 
 /**
@@ -525,7 +538,9 @@ export async function createSession(
     | "awaitWorktreeReady"
     | "branchSuffix"
     | "compareGroup"
+    | "crossProjectOf"
     | "designRefs"
+    | "exactBranch"
     | "linkedIssue"
     | "parentSessionId"
     | "postWorktreeReady"
@@ -597,17 +612,21 @@ export async function createSession(
     linked_issue: linkedIssue,
     design_refs: opts?.designRefs?.length ? opts.designRefs : null,
     compare_group: opts?.compareGroup ?? null,
+    ...(opts?.crossProjectOf ? { cross_project_of: opts.crossProjectOf } : {}),
   };
   appState.sessions.set(id, { ...pending });
   emitHostEvent("session:created", { ...pending });
 
-  telemetryCapture("session_created", {
-    has_explicit_branch: branch.trim().length > 0,
-    has_description: description.trim().length > 0,
-    use_existing_branch: Boolean(useExistingBranch),
-    has_explicit_base_branch: Boolean(explicitBaseBranch),
-    stacked: Boolean(parent),
-  });
+  // A linked repo's session is counted by `cross_project_session_created`.
+  if (!opts?.crossProjectOf) {
+    telemetryCapture("session_created", {
+      has_explicit_branch: branch.trim().length > 0,
+      has_description: description.trim().length > 0,
+      use_existing_branch: Boolean(useExistingBranch),
+      has_explicit_base_branch: Boolean(explicitBaseBranch),
+      stacked: Boolean(parent),
+    });
+  }
   if (linkedIssue) {
     issueSessionStarted(linkedIssue);
   }
@@ -629,6 +648,7 @@ export async function createSession(
     postWorktreeReady: opts?.postWorktreeReady,
     worktreePurpose: opts?.worktreePurpose,
     branchSuffix: opts?.branchSuffix,
+    exactBranch: opts?.exactBranch,
     signalWorktreeReady: signalReady,
     signalWorktreeFailed: signalReadyError,
   }).catch((e: unknown) => {
@@ -671,6 +691,7 @@ async function finalizeSession(
     postWorktreeReady?: (session: Session) => Promise<void>;
     worktreePurpose?: WorktreePurpose;
     branchSuffix?: string;
+    exactBranch?: boolean;
     signalWorktreeReady?: (session: Session) => void;
     signalWorktreeFailed?: (err: unknown) => void;
   },
@@ -681,6 +702,7 @@ async function finalizeSession(
     postWorktreeReady,
     worktreePurpose,
     branchSuffix,
+    exactBranch,
     signalWorktreeReady,
     signalWorktreeFailed,
   } = opts;
@@ -700,7 +722,7 @@ async function finalizeSession(
     // --- Phase 1: resolve branch name + optional pre-generated title ------
     let branchInput = branch;
     let preGeneratedTitle: string | null = null;
-    if (useExistingBranch !== true) {
+    if (useExistingBranch !== true && !exactBranch) {
       if (!branch.trim() && description.trim()) {
         const generated = await generateBranchAndTitle(description);
         if (generated) {
@@ -720,7 +742,7 @@ async function finalizeSession(
 
     // --- Phase 2: uniqueness check ---------------------------------------
     const branchSlug =
-      useExistingBranch === true
+      useExistingBranch === true || exactBranch
         ? branchInput
         : withBranchSuffix(titleToBranchSlug(branchInput), branchSuffix);
     for (const existing of appState.sessions.values()) {
@@ -774,6 +796,7 @@ async function finalizeSession(
             branchInput,
             baseBranch,
             worktreePurpose,
+            exactBranch,
           );
 
     // If the session was deleted while we were creating the worktree, tear
@@ -870,6 +893,7 @@ async function finalizeSession(
       linked_issue: ws.linked_issue ?? null,
       design_refs: ws.design_refs ?? null,
       compare_group: ws.compare_group ?? null,
+      ...crossProjectFields(ws),
     });
     try {
       saveMetadata(repoRoot, meta);
@@ -878,7 +902,8 @@ async function finalizeSession(
     }
 
     // --- Phase 8: fire-and-forget nicer-title generation ---------------
-    if (!preGeneratedTitle) {
+    // A linked repo's session keeps the cross-project session's name.
+    if (!preGeneratedTitle && !ws.cross_project_of) {
       const titleSessionPath = ws.path;
       generateSessionTitle({
         branch: ws.branch,
@@ -1683,7 +1708,7 @@ export async function renameSessionBranch(
 export async function deleteSession(
   id: string,
   shouldDeleteBranch?: boolean,
-  options: { skipTeardown?: boolean } = {},
+  options: { skipTeardown?: boolean; withPrimary?: boolean } = {},
 ): Promise<void> {
   const session = appState.sessions.get(id);
   if (!session) {
@@ -1693,12 +1718,28 @@ export async function deleteSession(
   shouldDeleteBranch ??= failedDeleteBranch.get(id);
   failedDeleteBranch.delete(id);
 
-  telemetryCapture("session_deleted", {
-    kind: session.kind,
-    delete_branch: Boolean(shouldDeleteBranch),
-    teardown_skipped: Boolean(options.skipTeardown),
-  });
+  if (!options.withPrimary) {
+    telemetryCapture("session_deleted", {
+      kind: session.kind,
+      delete_branch: Boolean(shouldDeleteBranch),
+      teardown_skipped: Boolean(options.skipTeardown),
+    });
+  }
   reparentChildrenOf(session);
+  // A cross-project session takes every repo's worktree (and branch) with it.
+  for (const linked of session.linked_repos ?? []) {
+    if (appState.sessions.has(linked.session_id)) {
+      deleteSession(linked.session_id, shouldDeleteBranch, {
+        skipTeardown: options.skipTeardown,
+        withPrimary: true,
+      }).catch((e: unknown) => {
+        error(`deleteSession: linked repo ${linked.repo_root}: ${String(e)}`);
+      });
+    }
+  }
+  if (session.cross_project_of && !options.withPrimary) {
+    unlinkFromPrimary(session);
+  }
 
   // Kill all agent sessions for this session.
   const killedAgentIds: string[] = [];
@@ -1874,8 +1915,9 @@ async function createWorktree(
   branch: string,
   baseBranch: string | undefined,
   purpose: WorktreePurpose = "user",
+  exactBranch = false,
 ): Promise<WorktreeInfo> {
-  const branchSlug = titleToBranchSlug(branch);
+  const branchSlug = exactBranch ? branch : titleToBranchSlug(branch);
   // Spelled the way git will list it, or the session and git disagree on its path.
   const worktreesDir = canonicalPath(worktreesRoot(repoRoot, purpose));
   const dirName = branchToDir(branchSlug);

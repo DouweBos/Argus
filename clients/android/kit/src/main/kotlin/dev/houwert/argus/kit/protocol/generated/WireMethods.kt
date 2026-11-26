@@ -2446,6 +2446,24 @@ object MethodsTypes {
   )
 
   @Serializable
+  data class SessionsMakeCrossProjectParams(
+    @SerialName("id") val id: String,
+    @SerialName("repo_roots") val repoRoots: List<String>,
+  )
+
+  @Serializable
+  data class SessionsMakeCrossProjectResultFailedItem(
+    @SerialName("repo_root") val repoRoot: String,
+    @SerialName("error") val error: String,
+  )
+
+  @Serializable
+  data class SessionsMakeCrossProjectResult(
+    @SerialName("session") val session: RemoteSession,
+    @SerialName("failed") val failed: List<SessionsMakeCrossProjectResultFailedItem>,
+  )
+
+  @Serializable
   data class SessionsMarkReadyParams(
     @SerialName("id") val id: String,
   )
@@ -3629,6 +3647,8 @@ object Methods {
   object SessionsLineAttribution : RemoteCommand<MethodsTypes.SessionsLineAttributionParams, LineAttribution>("sessions.line_attribution", "control", serializer(), serializer())
 
   object SessionsList : RemoteCommand<MethodsTypes.SessionsListParams, MethodsTypes.SessionsListResult>("sessions.list", "control", serializer(), serializer())
+
+  object SessionsMakeCrossProject : RemoteCommand<MethodsTypes.SessionsMakeCrossProjectParams, MethodsTypes.SessionsMakeCrossProjectResult>("sessions.make_cross_project", "control", serializer(), serializer())
 
   object SessionsMarkReady : RemoteCommand<MethodsTypes.SessionsMarkReadyParams, MethodsTypes.SessionsMarkReadyResult>("sessions.mark_ready", "control", serializer(), serializer())
 

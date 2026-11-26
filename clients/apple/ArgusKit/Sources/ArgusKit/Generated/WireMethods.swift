@@ -7762,6 +7762,69 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsMakeCrossProjectParams: Codable, Sendable {
+      public var id: String
+      public var repoRoots: [String]
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case repoRoots = "repo_roots"
+      }
+
+      public init(id: String, repoRoots: [String]) {
+        self.id = id
+        self.repoRoots = repoRoots
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(repoRoots, forKey: .repoRoots)
+      }
+    }
+
+    public struct SessionsMakeCrossProjectResultFailedItem: Codable, Sendable {
+      public var repoRoot: String
+      public var error: String
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoot = "repo_root"
+        case error = "error"
+      }
+
+      public init(repoRoot: String, error: String) {
+        self.repoRoot = repoRoot
+        self.error = error
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repoRoot, forKey: .repoRoot)
+        try c.encode(error, forKey: .error)
+      }
+    }
+
+    public struct SessionsMakeCrossProjectResult: Codable, Sendable {
+      public var session: RemoteSession
+      public var failed: [SessionsMakeCrossProjectResultFailedItem]
+
+      enum CodingKeys: String, CodingKey {
+        case session = "session"
+        case failed = "failed"
+      }
+
+      public init(session: RemoteSession, failed: [SessionsMakeCrossProjectResultFailedItem]) {
+        self.session = session
+        self.failed = failed
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(session, forKey: .session)
+        try c.encode(failed, forKey: .failed)
+      }
+    }
+
     public struct SessionsMarkReadyParams: Codable, Sendable {
       public var id: String
 
@@ -11513,6 +11576,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsListParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsListResult
       public static let name = "sessions.list"
+    }
+
+    public enum SessionsMakeCrossProject: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsMakeCrossProjectParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsMakeCrossProjectResult
+      public static let name = "sessions.make_cross_project"
     }
 
     public enum SessionsMarkReady: RemoteCommand {

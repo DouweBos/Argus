@@ -113,6 +113,9 @@ export class ClaudeCodeRunner implements LlmRunner {
     if (nativeMode) {
       cliArgs.push("--permission-mode", nativeMode);
     }
+    for (const dir of args.additionalDirectories ?? []) {
+      cliArgs.push("--add-dir", dir);
+    }
     if (args.disallowedTools && args.disallowedTools.length > 0) {
       cliArgs.push("--disallowed-tools", ...args.disallowedTools);
     }

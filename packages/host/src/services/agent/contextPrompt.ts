@@ -4,11 +4,13 @@
  * are pure; the gatherers read live state.
  */
 
+import type { Session } from "../session/models";
 import path from "node:path";
 import { appState } from "../../state";
 import { figmaApi } from "../integrations/figma/service";
 import { linearApi } from "../integrations/service";
 import { loadArgusConfig } from "../session/argusConfig";
+import { crossProjectPrimary } from "../session/crossProjectState";
 
 export interface IntegrationsContext {
   linear: boolean;
@@ -124,6 +126,66 @@ export function buildRelatedProjectsSection(
         `  - Worktrees besides \`root\`: ${shown.map((b) => `\`${b}\``).join(", ")}${more > 0 ? ` and ${more} more (\`list_sessions\`)` : ""}`,
       );
     }
+  }
+
+  return lines.join("\n");
+}
+
+export interface CrossProjectRepo {
+  repoRoot: string;
+  path: string;
+  branch: string;
+  /** The agent's own working directory. */
+  current: boolean;
+}
+
+/** Every repository of the session's cross-project session; empty for a single-repo one. */
+export function crossProjectContext(session: Session): CrossProjectRepo[] {
+  const primary = crossProjectPrimary(session);
+  if (!primary?.linked_repos?.length) {
+    return [];
+  }
+  const repos: CrossProjectRepo[] = [
+    {
+      repoRoot: primary.repo_root,
+      path: primary.path,
+      branch: primary.branch,
+      current: primary.id === session.id,
+    },
+    ...primary.linked_repos.map((r) => ({
+      repoRoot: r.repo_root,
+      path: appState.sessions.get(r.session_id)?.path || r.worktree_path,
+      branch: r.branch,
+      current: r.session_id === session.id,
+    })),
+  ];
+
+  return repos.filter((r) => r.path);
+}
+
+/** The other repositories' worktrees, which the runner opens beside its cwd. */
+export function crossProjectDirs(repos: CrossProjectRepo[]): string[] {
+  return repos.filter((r) => !r.current).map((r) => r.path);
+}
+
+/** Where each repository of a cross-project session is checked out, or null for a single-repo one. */
+export function buildCrossProjectSection(
+  repos: CrossProjectRepo[],
+): string | null {
+  if (repos.length < 2) {
+    return null;
+  }
+  const lines = [
+    "## Cross-project session",
+    "",
+    "This session spans several repositories, each checked out in its own git worktree. Work in each one at its worktree path; commit in each repository separately, since each lands on its own base (merged or as its own pull request).",
+    "",
+  ];
+  for (const r of repos) {
+    const where = r.current ? " (your working directory)" : "";
+    lines.push(
+      `- \`${r.repoRoot}\` — worktree \`${r.path}\`${where}, branch \`${r.branch}\``,
+    );
   }
 
   return lines.join("\n");

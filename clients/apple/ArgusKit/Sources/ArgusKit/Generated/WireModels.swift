@@ -6601,6 +6601,48 @@ extension ArgusProtocol {
     }
   }
 
+  public struct CrossProjectFailure: Codable, Sendable {
+    public var repoRoot: String
+    public var error: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repo_root"
+      case error = "error"
+    }
+
+    public init(repoRoot: String, error: String) {
+      self.repoRoot = repoRoot
+      self.error = error
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(error, forKey: .error)
+    }
+  }
+
+  public struct CrossProjectResult: Codable, Sendable {
+    public var session: Session
+    public var failed: [CrossProjectFailure]
+
+    enum CodingKeys: String, CodingKey {
+      case session = "session"
+      case failed = "failed"
+    }
+
+    public init(session: Session, failed: [CrossProjectFailure]) {
+      self.session = session
+      self.failed = failed
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(session, forKey: .session)
+      try c.encode(failed, forKey: .failed)
+    }
+  }
+
   public struct CustomAcpAgent: Codable, Sendable {
     public var command: String
     public var args: [String]
@@ -17834,6 +17876,8 @@ extension ArgusProtocol {
     public var compareGroup: SessionCompareGroup?
     public var pushLocked: Bool?
     public var mergeLocked: Bool?
+    public var linkedRepos: [RemoteSessionLinkedRepo]?
+    public var crossProjectOf: String?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -17866,9 +17910,11 @@ extension ArgusProtocol {
       case compareGroup = "compare_group"
       case pushLocked = "push_locked"
       case mergeLocked = "merge_locked"
+      case linkedRepos = "linked_repos"
+      case crossProjectOf = "cross_project_of"
     }
 
-    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, deleteFailed: RemoteSessionDeleteFailed? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, settled: Bool? = nil, workflowStatus: SessionWorkflowStatus? = nil, statusNote: String? = nil, archivedAt: Double? = nil, snoozedUntil: Double? = nil, unread: Bool? = nil, lastMessageAt: Double? = nil, compareGroup: SessionCompareGroup? = nil, pushLocked: Bool? = nil, mergeLocked: Bool? = nil) {
+    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, deleteFailed: RemoteSessionDeleteFailed? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, settled: Bool? = nil, workflowStatus: SessionWorkflowStatus? = nil, statusNote: String? = nil, archivedAt: Double? = nil, snoozedUntil: Double? = nil, unread: Bool? = nil, lastMessageAt: Double? = nil, compareGroup: SessionCompareGroup? = nil, pushLocked: Bool? = nil, mergeLocked: Bool? = nil, linkedRepos: [RemoteSessionLinkedRepo]? = nil, crossProjectOf: String? = nil) {
       self.id = id
       self.repoRoot = repoRoot
       self.kind = kind
@@ -17899,6 +17945,8 @@ extension ArgusProtocol {
       self.compareGroup = compareGroup
       self.pushLocked = pushLocked
       self.mergeLocked = mergeLocked
+      self.linkedRepos = linkedRepos
+      self.crossProjectOf = crossProjectOf
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -17933,6 +17981,33 @@ extension ArgusProtocol {
       try c.encodeIfPresent(compareGroup, forKey: .compareGroup)
       try c.encodeIfPresent(pushLocked, forKey: .pushLocked)
       try c.encodeIfPresent(mergeLocked, forKey: .mergeLocked)
+      try c.encodeIfPresent(linkedRepos, forKey: .linkedRepos)
+      try c.encodeIfPresent(crossProjectOf, forKey: .crossProjectOf)
+    }
+  }
+
+  public struct RemoteSessionLinkedRepo: Codable, Sendable {
+    public var sessionId: String
+    public var repoRoot: String
+    public var branch: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "session_id"
+      case repoRoot = "repo_root"
+      case branch = "branch"
+    }
+
+    public init(sessionId: String, repoRoot: String, branch: String) {
+      self.sessionId = sessionId
+      self.repoRoot = repoRoot
+      self.branch = branch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(branch, forKey: .branch)
     }
   }
 
@@ -20001,6 +20076,8 @@ extension ArgusProtocol {
     public var branch: String
     public var claudeAccountId: String?
     public var compareGroup: SessionCompareGroup?
+    public var linkedRepos: [SessionLinkedRepo]?
+    public var crossProjectOf: String?
     public var pushLocked: Bool?
     public var mergeLocked: Bool?
     public var description: String
@@ -20031,6 +20108,8 @@ extension ArgusProtocol {
       case branch = "branch"
       case claudeAccountId = "claude_account_id"
       case compareGroup = "compare_group"
+      case linkedRepos = "linked_repos"
+      case crossProjectOf = "cross_project_of"
       case pushLocked = "push_locked"
       case mergeLocked = "merge_locked"
       case description = "description"
@@ -20055,13 +20134,15 @@ extension ArgusProtocol {
       case volume = "volume"
     }
 
-    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, branch: String, claudeAccountId: String? = nil, compareGroup: SessionCompareGroup? = nil, pushLocked: Bool? = nil, mergeLocked: Bool? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, deleteFailed: SessionDeleteFailed? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
+    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, parentSessionId: String? = nil, branch: String, claudeAccountId: String? = nil, compareGroup: SessionCompareGroup? = nil, linkedRepos: [SessionLinkedRepo]? = nil, crossProjectOf: String? = nil, pushLocked: Bool? = nil, mergeLocked: Bool? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, pullRequest: SessionPullRequest? = nil, pullRequestWatched: Bool? = nil, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, deleteFailed: SessionDeleteFailed? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
       self.availability = availability
       self.baseBranch = baseBranch
       self.parentSessionId = parentSessionId
       self.branch = branch
       self.claudeAccountId = claudeAccountId
       self.compareGroup = compareGroup
+      self.linkedRepos = linkedRepos
+      self.crossProjectOf = crossProjectOf
       self.pushLocked = pushLocked
       self.mergeLocked = mergeLocked
       self.description = description
@@ -20094,6 +20175,8 @@ extension ArgusProtocol {
       try c.encode(branch, forKey: .branch)
       try c.encodeIfPresent(claudeAccountId, forKey: .claudeAccountId)
       try c.encodeIfPresent(compareGroup, forKey: .compareGroup)
+      try c.encodeIfPresent(linkedRepos, forKey: .linkedRepos)
+      try c.encodeIfPresent(crossProjectOf, forKey: .crossProjectOf)
       try c.encodeIfPresent(pushLocked, forKey: .pushLocked)
       try c.encodeIfPresent(mergeLocked, forKey: .mergeLocked)
       try c.encode(description, forKey: .description)
@@ -20167,6 +20250,39 @@ extension ArgusProtocol {
     public static let projectRoot = SessionKind(rawValue: "project_root")
     public static let scratchPad = SessionKind(rawValue: "scratch_pad")
     public static let worktree = SessionKind(rawValue: "worktree")
+  }
+
+  public struct SessionLinkedRepo: Codable, Sendable {
+    public var sessionId: String
+    public var repoRoot: String
+    public var worktreePath: String
+    public var branch: String
+    public var baseBranch: String?
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "session_id"
+      case repoRoot = "repo_root"
+      case worktreePath = "worktree_path"
+      case branch = "branch"
+      case baseBranch = "base_branch"
+    }
+
+    public init(sessionId: String, repoRoot: String, worktreePath: String, branch: String, baseBranch: String? = nil) {
+      self.sessionId = sessionId
+      self.repoRoot = repoRoot
+      self.worktreePath = worktreePath
+      self.branch = branch
+      self.baseBranch = baseBranch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(worktreePath, forKey: .worktreePath)
+      try c.encode(branch, forKey: .branch)
+      try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
+    }
   }
 
   public struct SessionPullRequest: Codable, Sendable {

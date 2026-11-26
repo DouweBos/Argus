@@ -2478,6 +2478,18 @@ data class CreateTeammateInput(
 )
 
 @Serializable
+data class CrossProjectFailure(
+  @SerialName("repo_root") val repoRoot: String,
+  @SerialName("error") val error: String,
+)
+
+@Serializable
+data class CrossProjectResult(
+  @SerialName("session") val session: Session,
+  @SerialName("failed") val failed: List<CrossProjectFailure>,
+)
+
+@Serializable
 data class CustomAcpAgent(
   @SerialName("command") val command: String,
   @SerialName("args") val args: List<String>,
@@ -6578,6 +6590,15 @@ data class RemoteSession(
   @SerialName("compare_group") val compareGroup: SessionCompareGroup? = null,
   @SerialName("push_locked") val pushLocked: Boolean? = null,
   @SerialName("merge_locked") val mergeLocked: Boolean? = null,
+  @SerialName("linked_repos") val linkedRepos: List<RemoteSessionLinkedRepo>? = null,
+  @SerialName("cross_project_of") val crossProjectOf: String? = null,
+)
+
+@Serializable
+data class RemoteSessionLinkedRepo(
+  @SerialName("session_id") val sessionId: String,
+  @SerialName("repo_root") val repoRoot: String,
+  @SerialName("branch") val branch: String,
 )
 
 @Serializable
@@ -7384,6 +7405,8 @@ data class Session(
   @SerialName("branch") val branch: String,
   @SerialName("claude_account_id") val claudeAccountId: String? = null,
   @SerialName("compare_group") val compareGroup: SessionCompareGroup? = null,
+  @SerialName("linked_repos") val linkedRepos: List<SessionLinkedRepo>? = null,
+  @SerialName("cross_project_of") val crossProjectOf: String? = null,
   @SerialName("push_locked") val pushLocked: Boolean? = null,
   @SerialName("merge_locked") val mergeLocked: Boolean? = null,
   @SerialName("description") val description: String,
@@ -7430,6 +7453,15 @@ value class SessionKind(val rawValue: String) {
     val entries: List<SessionKind> = listOf(automationHost, projectRoot, scratchPad, worktree)
   }
 }
+
+@Serializable
+data class SessionLinkedRepo(
+  @SerialName("session_id") val sessionId: String,
+  @SerialName("repo_root") val repoRoot: String,
+  @SerialName("worktree_path") val worktreePath: String,
+  @SerialName("branch") val branch: String,
+  @SerialName("base_branch") val baseBranch: String? = null,
+)
 
 @Serializable
 data class SessionPullRequest(

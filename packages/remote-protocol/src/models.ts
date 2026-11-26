@@ -26,6 +26,14 @@ export const SessionWorkflowStatus = z.enum([
 ]);
 export type SessionWorkflowStatus = z.infer<typeof SessionWorkflowStatus>;
 
+/** A repository a cross-project session spans, besides its own. Paths stay off the wire. */
+export const RemoteSessionLinkedRepo = z.object({
+  session_id: z.string(),
+  repo_root: z.string(),
+  branch: z.string(),
+});
+export type RemoteSessionLinkedRepo = z.infer<typeof RemoteSessionLinkedRepo>;
+
 export const RemoteSession = z.object({
   id: z.string(),
   repo_root: z.string(),
@@ -102,6 +110,10 @@ export const RemoteSession = z.object({
   push_locked: z.boolean().optional(),
   /** The base is protected, so this lands through a pull request. Absent on older hosts. */
   merge_locked: z.boolean().optional(),
+  /** The other repositories a cross-project session spans. Absent on a single-repo session and older hosts. */
+  linked_repos: z.array(RemoteSessionLinkedRepo).optional(),
+  /** On a linked repo's session: the cross-project session it belongs to. Absent otherwise. */
+  cross_project_of: z.string().optional(),
 });
 export type RemoteSession = z.infer<typeof RemoteSession>;
 

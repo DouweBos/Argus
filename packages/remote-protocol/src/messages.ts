@@ -628,6 +628,10 @@ export const MethodParams = {
     id: z.string(),
     branch: z.string().trim().min(1),
   }),
+  "sessions.make_cross_project": z.object({
+    id: z.string(),
+    repo_roots: z.array(z.string()).min(1),
+  }),
   "sessions.set_base_branch": z.object({
     id: z.string(),
     base_branch: z.string().trim().min(1),
@@ -1448,6 +1452,10 @@ export const MethodResult = {
   "sessions.delete": z.object({ accepted: z.boolean() }),
   "sessions.rename": z.object({ accepted: z.boolean() }),
   "sessions.rename_branch": z.object({ accepted: z.boolean() }),
+  "sessions.make_cross_project": z.object({
+    session: RemoteSession,
+    failed: z.array(z.object({ repo_root: z.string(), error: z.string() })),
+  }),
   "sessions.set_base_branch": z.object({ accepted: z.boolean() }),
   "sessions.retry_setup": z.object({ accepted: z.boolean() }),
   "sessions.mark_ready": z.object({ accepted: z.boolean() }),

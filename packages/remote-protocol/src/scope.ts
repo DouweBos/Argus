@@ -211,6 +211,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.delete": DENIED,
   "sessions.rename": DENIED,
   "sessions.rename_branch": DENIED,
+  "sessions.make_cross_project": DENIED,
   "sessions.set_base_branch": DENIED,
   "sessions.retry_setup": DENIED,
   "sessions.mark_ready": DENIED,

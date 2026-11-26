@@ -105,9 +105,12 @@ import {
   isConductorInvocation,
 } from "./conductorInjection";
 import {
+  buildCrossProjectSection,
   buildIntegrationsSection,
   buildRelatedProjectsSection,
   connectedIntegrations,
+  crossProjectContext,
+  crossProjectDirs,
   relatedProjectsContext,
 } from "./contextPrompt";
 import {
@@ -776,7 +779,14 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   });
   const relatedProjects = relatedProjectsContext(argusSession.repo_root);
   const relatedSection = buildRelatedProjectsSection(relatedProjects);
-  const subagentContext = [runtimeSection, integrationsSection, relatedSection]
+  const crossProjectRepos = crossProjectContext(argusSession);
+  const crossProjectSection = buildCrossProjectSection(crossProjectRepos);
+  const subagentContext = [
+    runtimeSection,
+    integrationsSection,
+    relatedSection,
+    crossProjectSection,
+  ]
     .filter(Boolean)
     .join("\n\n");
 
@@ -790,6 +800,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     runtimeSection,
     integrationsSection,
     relatedSection,
+    crossProjectSection,
     appendSystemPrompt,
   ]
     .filter(Boolean)
@@ -916,6 +927,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     agentId,
     sessionId,
     cwd: worktreePath,
+    additionalDirectories: crossProjectDirs(crossProjectRepos),
     model: plan.model,
     permissionMode: plan.permissionMode,
     resumeRef: resumeSessionId ?? null,

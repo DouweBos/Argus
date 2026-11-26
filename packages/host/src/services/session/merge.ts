@@ -6,6 +6,7 @@ import { execFile } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
+import { isCrossProjectPath } from "./crossProjectState";
 import { git } from "./git";
 import { assertWorktreePresent } from "./volumeAvailability";
 
@@ -346,7 +347,11 @@ export async function attemptMergeSession(
   }
   await fastForwardBase(repoRoot, sessionBranch, baseBranch);
 
-  telemetryCapture("session_merged", { phase: "attempt", strategy });
+  telemetryCapture("session_merged", {
+    phase: "attempt",
+    strategy,
+    cross_project: isCrossProjectPath(wsPath),
+  });
 
   return { state: "merged" };
 }
@@ -414,7 +419,11 @@ export async function continueSessionMerge(
   }
   await fastForwardBase(repoRoot, sessionBranch, baseBranch);
 
-  telemetryCapture("session_merged", { phase: "continue", strategy });
+  telemetryCapture("session_merged", {
+    phase: "continue",
+    strategy,
+    cross_project: isCrossProjectPath(wsPath),
+  });
 
   return { state: "merged" };
 }

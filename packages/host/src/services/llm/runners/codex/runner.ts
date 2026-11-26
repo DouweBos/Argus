@@ -94,6 +94,7 @@ export class CodexRunner implements LlmRunner {
       agentId: args.agentId,
       child,
       cwd: args.cwd,
+      additionalDirectories: args.additionalDirectories,
       model: args.model,
       permissionMode: args.permissionMode,
       resumeRef: args.resumeRef,

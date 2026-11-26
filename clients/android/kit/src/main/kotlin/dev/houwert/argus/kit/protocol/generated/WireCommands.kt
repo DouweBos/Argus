@@ -2240,6 +2240,12 @@ object CommandsTypes {
   )
 
   @Serializable
+  data class MakeCrossProjectSessionParams(
+    @SerialName("id") val id: String,
+    @SerialName("repoRoots") val repoRoots: List<String>,
+  )
+
+  @Serializable
   data class MakeDirectoryParams(
     @SerialName("id") val id: String,
     @SerialName("relativePath") val relativePath: String,
@@ -4065,6 +4071,8 @@ object Commands {
   object LspStatus : RemoteCommand<CommandsTypes.LspStatusParams, dev.houwert.argus.kit.protocol.generated.LspStatus>("lsp_status", "admin", serializer(), serializer())
 
   object LspWorkspaceSymbols : RemoteCommand<CommandsTypes.LspWorkspaceSymbolsParams, List<CodeSymbol>>("lsp_workspace_symbols", "admin", serializer(), serializer())
+
+  object MakeCrossProjectSession : RemoteCommand<CommandsTypes.MakeCrossProjectSessionParams, CrossProjectResult>("make_cross_project_session", "admin", serializer(), serializer())
 
   object MakeDirectory : RemoteCommand<CommandsTypes.MakeDirectoryParams, IgnoredResult>("make_directory", "admin", serializer(), serializer())
 

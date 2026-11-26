@@ -48,6 +48,8 @@ export interface CodexHandleInit {
   agentId: string;
   child: ChildProcess;
   cwd: string;
+  /** A cross-project session's other worktrees, writable beside `cwd`. */
+  additionalDirectories?: string[];
   model: string | null;
   permissionMode: string | null;
   resumeRef: string | null;
@@ -303,7 +305,10 @@ export class CodexHandle extends EventEmitter implements LlmRunnerHandle {
       model: this.model,
       effort: this.effort,
       approvalPolicy: perms.approvalPolicy,
-      sandboxPolicy: sandboxPolicy(perms, this.opts.cwd),
+      sandboxPolicy: sandboxPolicy(perms, [
+        this.opts.cwd,
+        ...(this.opts.additionalDirectories ?? []),
+      ]),
     });
     this.activeTurnId = res.turn?.id ?? this.activeTurnId;
   }
@@ -556,7 +561,7 @@ function textInput(text: string): CodexUserInput {
 }
 
 /** `turn/start` takes the sandbox as a policy object, not the mode name. */
-function sandboxPolicy(perms: CodexPermissions, cwd: string): object {
+function sandboxPolicy(perms: CodexPermissions, roots: string[]): object {
   switch (perms.sandbox) {
     case "danger-full-access":
       return { type: "dangerFullAccess" };
@@ -565,7 +570,7 @@ function sandboxPolicy(perms: CodexPermissions, cwd: string): object {
     default:
       return {
         type: "workspaceWrite",
-        writableRoots: [cwd],
+        writableRoots: roots,
         networkAccess: false,
         excludeTmpdirEnvVar: false,
         excludeSlashTmp: false,

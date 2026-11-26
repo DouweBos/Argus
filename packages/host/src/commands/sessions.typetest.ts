@@ -1,5 +1,6 @@
 import type { Equal, Expect } from "./typeEquality";
 import type { ProjectEntry as HostProjectEntry } from "../services/mcp/projectDiscovery";
+import type { CrossProjectResult as HostCrossProjectResult } from "../services/session/crossProject";
 import type { HostSnapshot as HostHostSnapshot } from "../services/session/hostState";
 import type {
   ForkReplayOp as HostForkReplayOp,
@@ -14,6 +15,7 @@ import type {
 import type { RestackResult as HostRestackResult } from "../services/session/stack";
 import type { LandStackResult as HostLandStackResult } from "../services/session/stackLand";
 import type {
+  CrossProjectResult,
   ForkReplayOp,
   ForkSessionResult,
   HostSnapshot,
@@ -37,4 +39,5 @@ export type SessionModelChecks = [
   Expect<Equal<HostSnapshot, HostHostSnapshot>>,
   Expect<Equal<ForkReplayOp, HostForkReplayOp>>,
   Expect<Equal<ForkSessionResult, HostForkSessionResult>>,
+  Expect<Equal<CrossProjectResult, HostCrossProjectResult>>,
 ];

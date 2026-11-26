@@ -7373,6 +7373,27 @@ extension ArgusProtocol {
       }
     }
 
+    public struct MakeCrossProjectSessionParams: Codable, Sendable {
+      public var id: String
+      public var repoRoots: [String]
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case repoRoots = "repoRoots"
+      }
+
+      public init(id: String, repoRoots: [String]) {
+        self.id = id
+        self.repoRoots = repoRoots
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(repoRoots, forKey: .repoRoots)
+      }
+    }
+
     public struct MakeDirectoryParams: Codable, Sendable {
       public var id: String
       public var relativePath: String
@@ -13666,6 +13687,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.LspWorkspaceSymbolsParams
       public typealias Result = [ArgusProtocol.CodeSymbol]
       public static let name = "lsp_workspace_symbols"
+      public static let tier = "admin"
+    }
+
+    public enum MakeCrossProjectSession: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.MakeCrossProjectSessionParams
+      public typealias Result = ArgusProtocol.CrossProjectResult
+      public static let name = "make_cross_project_session"
       public static let tier = "admin"
     }
 

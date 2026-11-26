@@ -694,7 +694,22 @@ export interface EventMap {
   session_merge_conflict: { conflicting_files: number; phase: MergePhase };
   /** An agent was started to rebase a session whose merge would conflict. */
   conflict_fix_started: { file_bucket: "1" | "2-5" | "6+"; success: boolean };
-  session_merged: { phase: MergePhase; strategy: MergeStrategy };
+  session_merged: {
+    /** `direct`: the one-step merge from a session's land card. */
+    phase: MergePhase | "direct";
+    strategy: MergeStrategy;
+    /** The session is one repository of a cross-project session. */
+    cross_project: boolean;
+  };
+  /** A session was made to span other repositories, or had more added. */
+  cross_project_session_created: {
+    /** Repositories it spans now, its own included. */
+    repos_bucket: "2" | "3" | "4+";
+    /** It already spanned others before this. */
+    extended: boolean;
+    /** At least one repository's worktree couldn't be made. */
+    failed: boolean;
+  };
   session_prompt_dispatched: { success: boolean };
   secret_requested: {
     delivery: "env" | "file";

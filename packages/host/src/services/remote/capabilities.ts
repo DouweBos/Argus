@@ -193,6 +193,7 @@ import { answerSecretRequest } from "../secretRequest/requests";
 import { isSecretRequestTool } from "../secretRequest/toolName";
 import { draftCommitMessage } from "../session/commitDraft";
 import { startConflictFix } from "../session/conflictFix";
+import { makeCrossProjectSession } from "../session/crossProject";
 import { git } from "../session/git";
 import {
   gitCheckout,
@@ -632,6 +633,16 @@ function toRemoteSession(s: Session): RemoteSession {
     compare_group: s.compare_group ?? null,
     push_locked: s.push_locked ?? false,
     merge_locked: s.merge_locked ?? false,
+    ...(s.linked_repos?.length
+      ? {
+          linked_repos: s.linked_repos.map((r) => ({
+            session_id: r.session_id,
+            repo_root: r.repo_root,
+            branch: r.branch,
+          })),
+        }
+      : {}),
+    ...(s.cross_project_of ? { cross_project_of: s.cross_project_of } : {}),
   };
 }
 
@@ -2032,6 +2043,18 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     await control(() => renameSessionBranch(id, branch));
 
     return { accepted: true };
+  },
+
+  "sessions.make_cross_project": async (params) => {
+    const { id, repo_roots } = parse("sessions.make_cross_project", params);
+    requireSession(id);
+    requireKnownRepoRoots(repo_roots);
+    const result = await control(() => makeCrossProjectSession(id, repo_roots));
+
+    return {
+      session: toRemoteSession(result.session),
+      failed: result.failed,
+    };
   },
 
   "sessions.set_base_branch": async (params) => {

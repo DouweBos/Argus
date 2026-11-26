@@ -9,6 +9,7 @@ import {
   createScratchPad,
   listScratchPads,
 } from "../services/scratchPad/manager";
+import { makeCrossProjectSession } from "../services/session/crossProject";
 import { getSession, hydrateHostState } from "../services/session/hostState";
 import {
   addRepoRoot,
@@ -71,6 +72,9 @@ export function registerSessionCommands(): void {
   );
   defineTypedCommand("rename_session_branch", (p) =>
     renameSessionBranch(p.id, p.branch),
+  );
+  defineTypedCommand("make_cross_project_session", (p) =>
+    makeCrossProjectSession(p.id, p.repoRoots),
   );
   defineTypedCommand("clear_session_setup_error", (p) =>
     clearSessionSetupError(p.id),
