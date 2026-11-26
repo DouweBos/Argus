@@ -32,19 +32,20 @@ const user = (id: string): RemoteMessage => ({
 const ids = (segments: { id: string }[]) => segments.map((s) => s.id);
 
 describe("groupTurns", () => {
-  it("folds the work and keeps the reply", () => {
+  it("folds the work and keeps the opening and closing replies", () => {
     const segments = groupTurns([
       user("u"),
-      message("1", ["Let me look"]),
+      message("1", ["Short answer: yes. Let me look"]),
       message("2", [], ["Read"]),
+      message("n", ["Now the edit"]),
       message("3", [], ["Edit"]),
       message("r", ["Done"]),
     ]);
-    expect(ids(segments)).toEqual(["u", "group-1", "r"]);
-    const work = segments[1];
+    expect(ids(segments)).toEqual(["u", "1", "group-2", "r"]);
+    const work = segments[2];
     expect(work.kind === "collapsed" && ids(work.messages)).toEqual([
-      "1",
       "2",
+      "n",
       "3",
     ]);
   });
@@ -85,7 +86,7 @@ describe("groupTurns", () => {
           message("3", [], ["Bash"]),
         ]),
       ),
-    ).toEqual(["u", "group-1", "v", "group-2"]);
+    ).toEqual(["u", "group-1", "v", "2", "group-3"]);
   });
 });
 

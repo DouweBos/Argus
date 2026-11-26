@@ -16,6 +16,7 @@ import {
   countToolCalls,
   groupRuns,
   groupTurns,
+  isReply,
   segmentMessages,
   type Segment,
 } from "./toolGroups";
@@ -48,8 +49,17 @@ function startsTurn(segment: Segment): boolean {
 function workLog(segments: Segment[], position: number): WorkLog {
   const segment = segments[position];
   const messages = segmentMessages(segment);
+  // Past the turn's opening reply: the turn began with the message that asked.
+  let prior = position - 1;
+  while (prior >= 0) {
+    const candidate = segments[prior];
+    if (candidate.kind !== "single" || !isReply(candidate.message)) {
+      break;
+    }
+    prior -= 1;
+  }
   const before =
-    position > 0 ? segmentMessages(segments[position - 1]).at(-1) : undefined;
+    prior >= 0 ? segmentMessages(segments[prior]).at(-1) : undefined;
   let ended: number | null = null;
   const next =
     position + 1 < segments.length

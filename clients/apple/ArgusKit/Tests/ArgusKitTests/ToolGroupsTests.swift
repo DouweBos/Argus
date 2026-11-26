@@ -16,14 +16,14 @@ final class ToolGroupsTests: XCTestCase {
     RemoteMessage(id: id, role: .user, textBlocks: ["do it"], toolCalls: [])
   }
 
-  func testTurnsFoldWorkAndKeepTheReply() {
+  func testTurnsFoldWorkAndKeepTheOpeningAndClosingReplies() {
     let segments = ToolGroups.groupTurns([
-      user("u"), message("1", text: ["Let me look"]), message("2", tools: ["Read"]),
-      message("3", tools: ["Edit"]), message("r", text: ["Done"]),
+      user("u"), message("1", text: ["Short answer: yes. Let me look"]), message("2", tools: ["Read"]),
+      message("n", text: ["Now the edit"]), message("3", tools: ["Edit"]), message("r", text: ["Done"]),
     ])
-    XCTAssertEqual(segments.map(\.id), ["u", "group-1", "r"])
-    guard case .collapsed(let work) = segments[1] else { return XCTFail("not folded") }
-    XCTAssertEqual(work.map(\.id), ["1", "2", "3"])
+    XCTAssertEqual(segments.map(\.id), ["u", "1", "group-2", "r"])
+    guard case .collapsed(let work) = segments[2] else { return XCTFail("not folded") }
+    XCTAssertEqual(work.map(\.id), ["2", "n", "3"])
   }
 
   func testTurnsLeaveTextOnlyTurnsAlone() {
@@ -47,7 +47,7 @@ final class ToolGroupsTests: XCTestCase {
       user("u"), message("1", tools: ["Read"]), user("v"), message("2", text: ["Ok"]),
       message("3", tools: ["Bash"]),
     ])
-    XCTAssertEqual(segments.map(\.id), ["u", "group-1", "v", "group-2"])
+    XCTAssertEqual(segments.map(\.id), ["u", "group-1", "v", "2", "group-3"])
   }
 
   func testDropsMessagesWithNothingToShow() {

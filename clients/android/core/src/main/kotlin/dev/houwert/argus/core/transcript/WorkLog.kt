@@ -66,7 +66,10 @@ val TranscriptSegments.items: List<TranscriptItem> get() = segments.indices.map(
 /** A work log's span reads its neighbours: the message before it, and the reply after. */
 private fun TranscriptSegments.workLog(position: Int, messages: List<RemoteMessage>): WorkLog {
   val all = segments
-  val before = if (position > 0) all[position - 1].messages.lastOrNull()?.timestamp else null
+  // Past the turn's opening reply: the turn began with the message that asked.
+  var prior = position - 1
+  while (prior >= 0 && (all[prior] as? ToolGroups.Segment.Single)?.message?.let(ToolGroups::isReply) == true) prior -= 1
+  val before = if (prior >= 0) all[prior].messages.lastOrNull()?.timestamp else null
   var ended: Double? = null
   if (position + 1 < all.size) {
     val next = all[position + 1].messages.firstOrNull()
@@ -94,13 +97,24 @@ private fun TranscriptSegments.turn(position: Int): List<ToolGroups.Segment> {
  */
 fun TranscriptSegments.withWorkLogs(change: TranscriptSegments.Change): TranscriptSegments.Change {
   val widened = withTurnLogs(change)
-  if (widened.removed.isEmpty() && widened.inserted.isEmpty()) return widened
   val reloaded = widened.reloaded.toMutableList()
-  for (index in listOf(widened.inserted.first - 1, widened.inserted.last + 1)) {
-    if (index in segments.indices && index !in widened.inserted && index !in reloaded &&
-      segments[index] is ToolGroups.Segment.Collapsed
-    ) {
-      reloaded.add(index)
+  val changed = widened.reloaded + widened.inserted.toList()
+  val anchors = if (widened.removed.isEmpty() && widened.inserted.isEmpty()) changed else {
+    // The log before the edit ends at it.
+    val before = widened.inserted.first - 1
+    if (before in segments.indices && before !in reloaded && segments[before] is ToolGroups.Segment.Collapsed) {
+      reloaded.add(before)
+    }
+    changed + before
+  }
+  // The log after a changed row, past the turn's opening reply, reads its start from it.
+  for (index in anchors) {
+    var next = index + 1
+    while (next < segments.size && (segments[next] as? ToolGroups.Segment.Single)?.message?.let(ToolGroups::isReply) == true) {
+      next += 1
+    }
+    if (next < segments.size && segments[next] is ToolGroups.Segment.Collapsed && next !in widened.inserted && next !in reloaded) {
+      reloaded.add(next)
     }
   }
   return widened.copy(reloaded = reloaded)

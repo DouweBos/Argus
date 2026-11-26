@@ -17,13 +17,16 @@ class ToolGroupsTest {
   private fun pending(id: String) =
     message(id, toolCalls = listOf(toolCall("$id-0", "Bash", status = RemoteToolCallStatus.pending)))
 
-  @Test fun turnsFoldWorkAndKeepTheReply() {
+  @Test fun turnsFoldWorkAndKeepTheOpeningAndClosingReplies() {
     val segments = ToolGroups.groupTurns(
-      listOf(user("u"), msg("1", text = listOf("Let me look")), msg("2", tools = listOf("Read")), msg("3", tools = listOf("Edit")), msg("r", text = listOf("Done"))),
+      listOf(
+        user("u"), msg("1", text = listOf("Short answer: yes. Let me look")), msg("2", tools = listOf("Read")),
+        msg("n", text = listOf("Now the edit")), msg("3", tools = listOf("Edit")), msg("r", text = listOf("Done")),
+      ),
     )
-    assertEquals(listOf("u", "group-1", "r"), segments.map { it.id })
-    val work = assertIs<ToolGroups.Segment.Collapsed>(segments[1])
-    assertEquals(listOf("1", "2", "3"), work.messages.map { it.id })
+    assertEquals(listOf("u", "1", "group-2", "r"), segments.map { it.id })
+    val work = assertIs<ToolGroups.Segment.Collapsed>(segments[2])
+    assertEquals(listOf("2", "n", "3"), work.messages.map { it.id })
   }
 
   @Test fun turnsLeaveTextOnlyTurnsAlone() {
@@ -43,7 +46,7 @@ class ToolGroupsTest {
     val segments = ToolGroups.groupTurns(
       listOf(user("u"), msg("1", tools = listOf("Read")), user("v"), msg("2", text = listOf("Ok")), msg("3", tools = listOf("Bash"))),
     )
-    assertEquals(listOf("u", "group-1", "v", "group-2"), segments.map { it.id })
+    assertEquals(listOf("u", "group-1", "v", "2", "group-3"), segments.map { it.id })
   }
 
   @Test fun dropsMessagesWithNothingToShow() {

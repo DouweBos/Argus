@@ -143,7 +143,7 @@ export function isReply(message: RemoteMessage): boolean {
 
 /**
  * Each assistant turn's tool calls and the narration between them as one
- * collapsed segment; the user's messages, the turn's closing reply and
+ * collapsed segment; the user's messages, the turn's opening and closing replies and
  * whatever `staysOpen` stand on their own. Work with no tool call isn't folded.
  */
 export function groupTurns(
@@ -153,11 +153,17 @@ export function groupTurns(
   const segments: Segment[] = [];
   let work: RemoteMessage[] = [];
   const flush = () => {
+    // Text before the first tool call often answers the question; it stays open like the closing reply.
+    let head = 0;
+    while (head < work.length && isReply(work[head])) {
+      head += 1;
+    }
     let tail = work.length;
-    while (tail > 0 && isReply(work[tail - 1])) {
+    while (tail > head && isReply(work[tail - 1])) {
       tail -= 1;
     }
-    const folded = work.slice(0, tail);
+    segments.push(...work.slice(0, head).map(single));
+    const folded = work.slice(head, tail);
     if (folded.some((m) => m.tool_calls.length > 0)) {
       segments.push(collapsed(folded));
     } else {

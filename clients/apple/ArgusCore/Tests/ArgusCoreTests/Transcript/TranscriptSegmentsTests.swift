@@ -88,11 +88,11 @@ struct TranscriptSegmentsTests {
     var segments = TranscriptSegments(folding: .turns)
     var messages = [user("u"), text("a", "looking"), tool("b")]
     segments.update(messages)
-    #expect(segments.segments.map(\.id) == ["u", "group-a"])
+    #expect(segments.segments.map(\.id) == ["u", "a", "group-b"])
     messages.append(text("r", "done"))
     let change = segments.update(messages)
-    #expect(segments.segments.map(\.id) == ["u", "group-a", "r"])
-    #expect(change.removed.isEmpty && change.inserted == 2..<3)
+    #expect(segments.segments.map(\.id) == ["u", "a", "group-b", "r"])
+    #expect(change.removed.isEmpty && change.inserted == 3..<4)
   }
 
   @Test(

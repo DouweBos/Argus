@@ -120,8 +120,8 @@ public enum ToolGroups {
   }
 
   /// Each assistant turn's tool calls and the narration between them as one
-  /// collapsed segment; the user's messages, the turn's closing reply and
-  /// whatever `staysOpen` stand on their own. Work with no tool call isn't folded.
+  /// collapsed segment; the user's messages, the turn's opening and closing replies
+  /// and whatever `staysOpen` stand on their own. Work with no tool call isn't folded.
   public static func groupTurns(_ messages: [RemoteMessage], hoistImageReads: Bool = false) -> [Segment] {
     foldTurns(messages.enumerated().map { ($0.offset, $0.element) }, hoistImageReads: hoistImageReads).map(\.segment)
   }
@@ -135,11 +135,15 @@ public enum ToolGroups {
 
     func flush() {
       guard !work.isEmpty else { return }
+      // Text before the first tool call often answers the question; it stays open like the closing reply.
+      var head = 0
+      while head < work.count, isReply(work[head].1) { head += 1 }
       var tail = work.count
-      while tail > 0, isReply(work[tail - 1].1) { tail -= 1 }
-      let folded = work[..<tail]
+      while tail > head, isReply(work[tail - 1].1) { tail -= 1 }
+      segments.append(contentsOf: work[..<head].map { ($0.0, .single($0.1)) })
+      let folded = work[head..<tail]
       if folded.contains(where: { !$0.1.toolCalls.isEmpty }) {
-        segments.append((folded[folded.startIndex].0, .collapsed(folded.map(\.1))))
+        segments.append((work[head].0, .collapsed(folded.map(\.1))))
       } else {
         segments.append(contentsOf: folded.map { ($0.0, .single($0.1)) })
       }

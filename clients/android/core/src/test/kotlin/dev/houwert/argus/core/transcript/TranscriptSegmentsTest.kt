@@ -81,12 +81,12 @@ class TranscriptSegmentsTest {
     val segments = TranscriptSegments(folding = ToolGroups.Folding.TURNS)
     val messages = mutableListOf(user("u"), text("a", "looking"), tool("b"))
     segments.update(messages.toList())
-    assertEquals(listOf("u", "group-a"), segments.segments.map { it.id })
+    assertEquals(listOf("u", "a", "group-b"), segments.segments.map { it.id })
     messages.add(text("r", "done"))
     val change = segments.update(messages.toList())
-    assertEquals(listOf("u", "group-a", "r"), segments.segments.map { it.id })
+    assertEquals(listOf("u", "a", "group-b", "r"), segments.segments.map { it.id })
     assertTrue(change.removed.isEmpty())
-    assertEquals(2 until 3, change.inserted)
+    assertEquals(3 until 4, change.inserted)
   }
 
   @Test fun randomEditsAlwaysMatchGroupingTheWholeChat() {

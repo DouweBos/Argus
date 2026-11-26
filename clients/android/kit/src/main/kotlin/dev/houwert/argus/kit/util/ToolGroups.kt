@@ -97,7 +97,7 @@ object ToolGroups {
 
   /**
    * Each assistant turn's calls and narration as one collapsed segment; the user's messages, the
-   * turn's closing reply and whatever [staysOpen] stand alone. Work with no tool call isn't folded.
+   * turn's opening and closing replies and whatever [staysOpen] stand alone. Work with no tool call isn't folded.
    */
   fun groupTurns(messages: List<RemoteMessage>, hoistImageReads: Boolean = false): List<Segment> =
     foldTurns(messages.withIndex().map { it.index to it.value }, hoistImageReads).map { it.segment }
@@ -111,9 +111,13 @@ object ToolGroups {
 
     fun flush() {
       if (work.isEmpty()) return
+      // Text before the first tool call often answers the question; it stays open like the closing reply.
+      var head = 0
+      while (head < work.size && isReply(work[head].second)) head += 1
       var tail = work.size
-      while (tail > 0 && isReply(work[tail - 1].second)) tail -= 1
-      val folded = work.subList(0, tail)
+      while (tail > head && isReply(work[tail - 1].second)) tail -= 1
+      work.subList(0, head).mapTo(segments) { IndexedSegment(it.first, Segment.Single(it.second)) }
+      val folded = work.subList(head, tail)
       if (folded.any { it.second.toolCalls.isNotEmpty() }) {
         segments.add(IndexedSegment(folded[0].first, Segment.Collapsed(folded.map { it.second })))
       } else {

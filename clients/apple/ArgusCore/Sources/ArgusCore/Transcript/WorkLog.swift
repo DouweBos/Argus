@@ -77,7 +77,10 @@ extension TranscriptSegments {
   /// A work log's span reads its neighbours: the message before it, and the reply after.
   private func workLog(_ position: Int, _ messages: [RemoteMessage]) -> WorkLog {
     let all = segments
-    let before = position > 0 ? all[position - 1].messages.last?.timestamp : nil
+    // Past the turn's opening reply: the turn began with the message that asked.
+    var prior = position - 1
+    while prior >= 0, case .single(let message) = all[prior], ToolGroups.isReply(message) { prior -= 1 }
+    let before = prior >= 0 ? all[prior].messages.last?.timestamp : nil
     var ended: Double?
     if position + 1 < all.count, let next = all[position + 1].messages.first {
       ended = next.role == .assistant ? next.timestamp : messages.last?.timestamp
@@ -112,12 +115,25 @@ extension TranscriptSegments {
   /// background work to count.
   public func withWorkLogs(_ change: Change) -> Change {
     var change = withTurnLogs(change)
-    guard !change.removed.isEmpty || !change.inserted.isEmpty else { return change }
-    for index in [change.inserted.lowerBound - 1, change.inserted.upperBound]
-    where segments.indices.contains(index) && !change.inserted.contains(index)
-      && !change.reloaded.contains(index)
-    {
-      if case .collapsed = segments[index] { change.reloaded.append(index) }
+    var changed = change.reloaded + Array(change.inserted)
+    if !change.removed.isEmpty || !change.inserted.isEmpty {
+      // The log before the edit ends at it.
+      let before = change.inserted.lowerBound - 1
+      changed.append(before)
+      if segments.indices.contains(before), case .collapsed = segments[before], !change.reloaded.contains(before) {
+        change.reloaded.append(before)
+      }
+    }
+    // The log after a changed row, past the turn's opening reply, reads its start from it.
+    for index in changed {
+      var next = index + 1
+      while next < segments.count, case .single(let message) = segments[next], ToolGroups.isReply(message) {
+        next += 1
+      }
+      guard next < segments.count, case .collapsed = segments[next], !change.inserted.contains(next),
+        !change.reloaded.contains(next)
+      else { continue }
+      change.reloaded.append(next)
     }
     return change
   }
